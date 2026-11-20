@@ -1,14 +1,15 @@
-# A new campaign to an accepted contract. One record per command: the state
-# once the game is waiting for the next key. Handler names: campaign_continuations.h.
-title          | 150 Return     # the title, to the opening scene
-opening        | 150 Escape     # skip the opening, to the arrival message
-hub            | 150 Return     # dismiss it: the planet hub
-company        | 150 Return     # row 0 COMPANY_MENU
-company_done   | 150 Up         # row 2 PLANET_HUB
-hub_again      | 150 Return
-office_1       | 150 Down
-office_2       | 150 Down       # row 2 CONTRACT_OFFICE
-office         | 150 Return
-offer          | 150 Return     # row 0 REQUEST_MISSION_OFFER
-negotiate_sel  | 150 Left       # row 1 -> row 0 NEGOTIATE_CONTRACT
-negotiate      | 150 Return
+# A new campaign to an accepted contract. Each @snap records the screen the
+# game then waits on. Handler names: campaign_continuations.h.
+@snap:title
+Return   @snap:opening        # the opening scene
+Escape   @snap:arrival        # skip it: the arrival message over the hub
+Return   @snap:hub            # the planet hub
+Return   @snap:company        # row 0 COMPANY_MENU
+Up       @snap:company_done   # row 2 PLANET_HUB
+Return   @snap:hub_again
+Down     @snap:office_1
+Down     @snap:office_2       # row 2 CONTRACT_OFFICE
+Return   @snap:office
+Return   @snap:offer          # row 0 REQUEST_MISSION_OFFER
+Left     @snap:negotiate_sel  # row 1 -> row 0 NEGOTIATE_CONTRACT
+Return   @snap:accepted       # the hub, contract active

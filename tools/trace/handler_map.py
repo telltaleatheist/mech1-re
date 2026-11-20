@@ -20,7 +20,7 @@ import argparse, collections, json, os, re, sys
 ENUM = re.compile(r"^\s*(CAMPAIGN_[A-Z0-9_]+)\s*=\s*(0x[0-9A-Fa-f]+)\s*,?\s*(?:/\*\s*(.*?)\s*\*/)?")
 CASE = re.compile(r"case\s+(CAMPAIGN_[A-Z0-9_]+)\s*:")
 CALL = re.compile(r"\b(Mw[A-Za-z0-9_]+|Btech[A-Za-z0-9_]+)\s*\(")
-RETURN_KEY = 7181  # BIOS word for Return (0x1C0D), as the port's key reads report it
+RETURN_KEYS = {"Return", "Keypad_Enter"}  # script tokens that activate the selected row
 
 
 def read_names(path):
@@ -84,15 +84,24 @@ def read_uses(root, names):
     return uses
 
 
+def selected_row(record):
+    for line in record.get("state", []):
+        if line.startswith("state row "):
+            return int(line.split()[2])
+    return None
+
+
 def read_traces(paths):
     seen = collections.defaultdict(lambda: {"screens": set(), "records": 0, "activated": 0, "traces": set()})
     for path in paths:
         trace = os.path.basename(path).rsplit(".", 1)[0]
         records = [json.loads(line) for line in open(path, encoding="utf-8") if line.strip()]
         for before, after in zip(records, records[1:]):
-            row = before["campaign"].get("selectedRow")
+            # The first key after a snap acts on the screen that snap shows.
+            keys = [k for k in after.get("keys", []) if not k.startswith(("idle:", "random:"))]
+            row = selected_row(before)
             menu = {r["index"]: r for r in before.get("menu", [])}
-            if row in menu and any(k == RETURN_KEY for k, _, _ in after.get("keyReads", [])):
+            if keys and keys[0] in RETURN_KEYS and row in menu:
                 seen[int(menu[row]["callback"], 16)]["activated"] += 1
         for record in records:
             for row in record.get("menu", []):
