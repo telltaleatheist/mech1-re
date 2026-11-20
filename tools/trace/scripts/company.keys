@@ -1,0 +1,21 @@
+# The company screen: the crew (a pilot assigned to a slot) and NewsNet.
+Return Escape Return @snap:hub
+Return   @snap:company           # hub row 0 COMPANY_MENU
+Return   @snap:crew              # row 0 CREW_MENU
+Right    @snap:slot0_sel         # row 1 ASSIGN_PILOT_SLOT_ZERO
+Return   @snap:slot0_assign
+Down     @snap:slot0_down
+Return   @snap:slot0_confirm
+Left     @snap:crew_done_sel     # row 0 COMPANY_MENU
+Return   @snap:company_again
+Down     @snap:news_sel          # row 1 NEWSNET
+Return   @snap:news
+Right    @snap:news_next_sel     # row 1 NEXT_NEWS_ARTICLE
+Return   @snap:news_next_1
+Return   @snap:news_next_2
+Left     @snap:news_prev_sel     # row 0 PREVIOUS_NEWS_ARTICLE
+Return   @snap:news_prev
+Right Right @snap:news_done_sel  # row 2 COMPANY_MENU
+Return   @snap:company_back
+Down     @snap:hub_sel           # row 2 PLANET_HUB
+Return   @snap:hub_back

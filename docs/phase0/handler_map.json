@@ -1,7 +1,12 @@
 {
- "summary": "113 offsets: 105 dispatched by the menu loop, 16 seen on a traced menu, 5 activated by a trace",
+ "summary": "113 offsets: 105 dispatched by the menu loop, 59 seen on a traced menu, 43 activated by a trace",
  "traces": [
-  "campaign_contract.jsonl"
+  "bar.jsonl",
+  "campaign_contract.jsonl",
+  "company.jsonl",
+  "mech_complex.jsonl",
+  "options.jsonl",
+  "travel.jsonl"
  ],
  "offsets": [
   {
@@ -117,11 +122,16 @@
     "MW_MAIN_081B_TRAVEL.c",
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 2,
-   "records": 3,
-   "activated": 1,
+   "screens": 8,
+   "records": 37,
+   "activated": 4,
    "traces": [
-    "campaign_contract"
+    "bar",
+    "campaign_contract",
+    "company",
+    "mech_complex",
+    "options",
+    "travel"
    ]
   },
   {
@@ -289,11 +299,16 @@
     "MW_MAIN_081B_PILOTS.c",
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 2,
-   "records": 5,
-   "activated": 1,
+   "screens": 5,
+   "records": 31,
+   "activated": 4,
    "traces": [
-    "campaign_contract"
+    "bar",
+    "campaign_contract",
+    "company",
+    "mech_complex",
+    "options",
+    "travel"
    ]
   },
   {
@@ -334,10 +349,11 @@
     "MW_MAIN_081B_UI.c"
    ],
    "screens": 1,
-   "records": 2,
-   "activated": 0,
+   "records": 7,
+   "activated": 1,
    "traces": [
-    "campaign_contract"
+    "campaign_contract",
+    "company"
    ]
   },
   {
@@ -355,10 +371,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 6,
+   "activated": 2,
+   "traces": [
+    "company"
+   ]
   },
   {
    "offset": "081B:28EC",
@@ -375,10 +393,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
+   "screens": 1,
+   "records": 6,
    "activated": 0,
-   "traces": []
+   "traces": [
+    "company"
+   ]
   },
   {
    "offset": "081B:28F1",
@@ -395,10 +415,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
+   "screens": 1,
+   "records": 6,
    "activated": 0,
-   "traces": []
+   "traces": [
+    "company"
+   ]
   },
   {
    "offset": "081B:28F6",
@@ -415,10 +437,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
+   "screens": 1,
+   "records": 6,
    "activated": 0,
-   "traces": []
+   "traces": [
+    "company"
+   ]
   },
   {
    "offset": "081B:2911",
@@ -478,10 +502,11 @@
     "MW_MAIN_081B_UI.c"
    ],
    "screens": 1,
-   "records": 2,
-   "activated": 0,
+   "records": 7,
+   "activated": 1,
    "traces": [
-    "campaign_contract"
+    "campaign_contract",
+    "company"
    ]
   },
   {
@@ -499,10 +524,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 7,
+   "activated": 2,
+   "traces": [
+    "company"
+   ]
   },
   {
    "offset": "081B:2D16",
@@ -519,10 +546,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 7,
+   "activated": 1,
+   "traces": [
+    "company"
+   ]
   },
   {
    "offset": "081B:2DA6",
@@ -541,11 +570,16 @@
     "MW_MAIN_081B_SERVICE.c",
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 2,
-   "records": 5,
-   "activated": 0,
+   "screens": 8,
+   "records": 29,
+   "activated": 3,
    "traces": [
-    "campaign_contract"
+    "bar",
+    "campaign_contract",
+    "company",
+    "mech_complex",
+    "options",
+    "travel"
    ]
   },
   {
@@ -585,10 +619,12 @@
     "MW_MAIN_081B_MARKET.c",
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 2,
+   "records": 13,
+   "activated": 2,
+   "traces": [
+    "mech_complex"
+   ]
   },
   {
    "offset": "081B:2F32",
@@ -606,10 +642,12 @@
     "MW_MAIN_081B_MARKET.c",
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 5,
+   "activated": 1,
+   "traces": [
+    "mech_complex"
+   ]
   },
   {
    "offset": "081B:3021",
@@ -627,10 +665,12 @@
     "MW_MAIN_081B_SERVICE.c",
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 33,
+   "activated": 1,
+   "traces": [
+    "mech_complex"
+   ]
   },
   {
    "offset": "081B:3063",
@@ -670,10 +710,12 @@
     "MW_MAIN_081B_SERVICE.c",
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 3,
+   "activated": 1,
+   "traces": [
+    "mech_complex"
+   ]
   },
   {
    "offset": "081B:30A2",
@@ -733,10 +775,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
+   "screens": 1,
+   "records": 8,
    "activated": 0,
-   "traces": []
+   "traces": [
+    "mech_complex"
+   ]
   },
   {
    "offset": "081B:3393",
@@ -793,10 +837,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 8,
+   "activated": 1,
+   "traces": [
+    "mech_complex"
+   ]
   },
   {
    "offset": "081B:3560",
@@ -813,10 +859,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 1,
+   "activated": 1,
+   "traces": [
+    "mech_complex"
+   ]
   },
   {
    "offset": "081B:35C9",
@@ -833,10 +881,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
+   "screens": 1,
+   "records": 1,
    "activated": 0,
-   "traces": []
+   "traces": [
+    "mech_complex"
+   ]
   },
   {
    "offset": "081B:35E3",
@@ -870,10 +920,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 8,
+   "activated": 2,
+   "traces": [
+    "mech_complex"
+   ]
   },
   {
    "offset": "081B:38FC",
@@ -891,10 +943,12 @@
     "MW_MAIN_081B_SERVICE.c",
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 8,
+   "activated": 1,
+   "traces": [
+    "mech_complex"
+   ]
   },
   {
    "offset": "081B:3DF3",
@@ -929,10 +983,12 @@
     "MW_MAIN_081B_SERVICE.c",
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 60,
+   "activated": 1,
+   "traces": [
+    "mech_complex"
+   ]
   },
   {
    "offset": "081B:407C",
@@ -949,10 +1005,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 6,
+   "activated": 1,
+   "traces": [
+    "mech_complex"
+   ]
   },
   {
    "offset": "081B:4317",
@@ -970,10 +1028,12 @@
     "MW_MAIN_081B_MARKET.c",
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 22,
+   "activated": 1,
+   "traces": [
+    "mech_complex"
+   ]
   },
   {
    "offset": "081B:4352",
@@ -1053,10 +1113,12 @@
     "MW_MAIN_081B_MARKET.c",
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 1,
+   "activated": 1,
+   "traces": [
+    "mech_complex"
+   ]
   },
   {
    "offset": "081B:43EB",
@@ -1094,10 +1156,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 6,
+   "activated": 2,
+   "traces": [
+    "mech_complex"
+   ]
   },
   {
    "offset": "081B:475A",
@@ -1115,10 +1179,12 @@
     "MW_MAIN_081B_MARKET.c",
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 6,
+   "activated": 1,
+   "traces": [
+    "mech_complex"
+   ]
   },
   {
    "offset": "081B:476A",
@@ -1135,10 +1201,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 5,
+   "activated": 1,
+   "traces": [
+    "mech_complex"
+   ]
   },
   {
    "offset": "081B:4878",
@@ -1155,10 +1223,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 3,
+   "records": 36,
+   "activated": 2,
+   "traces": [
+    "mech_complex"
+   ]
   },
   {
    "offset": "081B:48E6",
@@ -1192,10 +1262,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 3,
+   "records": 36,
+   "activated": 1,
+   "traces": [
+    "mech_complex"
+   ]
   },
   {
    "offset": "081B:4AA2",
@@ -1214,10 +1286,15 @@
     "MW_MAIN_081B_UI.c"
    ],
    "screens": 2,
-   "records": 6,
+   "records": 18,
    "activated": 1,
    "traces": [
-    "campaign_contract"
+    "bar",
+    "campaign_contract",
+    "company",
+    "mech_complex",
+    "options",
+    "travel"
    ]
   },
   {
@@ -1472,11 +1549,16 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 1,
-   "records": 4,
-   "activated": 0,
+   "screens": 2,
+   "records": 17,
+   "activated": 1,
    "traces": [
-    "campaign_contract"
+    "bar",
+    "campaign_contract",
+    "company",
+    "mech_complex",
+    "options",
+    "travel"
    ]
   },
   {
@@ -1553,10 +1635,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
+   "screens": 1,
+   "records": 5,
    "activated": 0,
-   "traces": []
+   "traces": [
+    "travel"
+   ]
   },
   {
    "offset": "081B:5CF2",
@@ -1573,10 +1657,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 5,
+   "activated": 1,
+   "traces": [
+    "travel"
+   ]
   },
   {
    "offset": "081B:5D21",
@@ -1593,10 +1679,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
+   "screens": 1,
+   "records": 1,
    "activated": 0,
-   "traces": []
+   "traces": [
+    "travel"
+   ]
   },
   {
    "offset": "081B:5D45",
@@ -1613,10 +1701,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 5,
+   "activated": 1,
+   "traces": [
+    "travel"
+   ]
   },
   {
    "offset": "081B:5E26",
@@ -1633,10 +1723,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
+   "screens": 1,
+   "records": 1,
    "activated": 0,
-   "traces": []
+   "traces": [
+    "travel"
+   ]
   },
   {
    "offset": "081B:5E41",
@@ -1653,10 +1745,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 30,
+   "activated": 1,
+   "traces": [
+    "travel"
+   ]
   },
   {
    "offset": "081B:5E5D",
@@ -1673,10 +1767,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 5,
+   "activated": 2,
+   "traces": [
+    "travel"
+   ]
   },
   {
    "offset": "081B:5EA0",
@@ -1941,11 +2037,16 @@
     "MW_MAIN_081B_PILOTS.c",
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 1,
-   "records": 4,
-   "activated": 0,
+   "screens": 2,
+   "records": 17,
+   "activated": 1,
    "traces": [
-    "campaign_contract"
+    "bar",
+    "campaign_contract",
+    "company",
+    "mech_complex",
+    "options",
+    "travel"
    ]
   },
   {
@@ -2027,10 +2128,12 @@
     "MW_MAIN_081B_PILOTS.c",
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 9,
+   "activated": 4,
+   "traces": [
+    "bar"
+   ]
   },
   {
    "offset": "081B:6A03",
@@ -2068,10 +2171,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 9,
+   "activated": 2,
+   "traces": [
+    "bar"
+   ]
   },
   {
    "offset": "081B:6B69",
@@ -2088,10 +2193,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 3,
+   "activated": 1,
+   "traces": [
+    "bar"
+   ]
   },
   {
    "offset": "081B:6BFA",
@@ -2108,10 +2215,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 1,
+   "records": 3,
+   "activated": 1,
+   "traces": [
+    "bar"
+   ]
   },
   {
    "offset": "081B:6CFA",
@@ -2130,11 +2239,16 @@
     "MW_MAIN_081B_SAVE.c",
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 1,
-   "records": 4,
-   "activated": 0,
+   "screens": 3,
+   "records": 19,
+   "activated": 2,
    "traces": [
-    "campaign_contract"
+    "bar",
+    "campaign_contract",
+    "company",
+    "mech_complex",
+    "options",
+    "travel"
    ]
   },
   {
@@ -2194,10 +2308,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 3,
+   "records": 10,
+   "activated": 2,
+   "traces": [
+    "options"
+   ]
   },
   {
    "offset": "081B:6E6A",
@@ -2234,10 +2350,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 3,
+   "records": 10,
+   "activated": 1,
+   "traces": [
+    "options"
+   ]
   },
   {
    "offset": "081B:6F4C",
@@ -2254,10 +2372,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
+   "screens": 1,
+   "records": 24,
    "activated": 0,
-   "traces": []
+   "traces": [
+    "options"
+   ]
   },
   {
    "offset": "081B:6FB9",
@@ -2274,10 +2394,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 3,
+   "records": 10,
+   "activated": 1,
+   "traces": [
+    "options"
+   ]
   },
   {
    "offset": "081B:6FFA",
@@ -2294,10 +2416,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
-   "activated": 0,
-   "traces": []
+   "screens": 3,
+   "records": 10,
+   "activated": 1,
+   "traces": [
+    "options"
+   ]
   },
   {
    "offset": "081B:7047",
@@ -2314,10 +2438,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
+   "screens": 3,
+   "records": 10,
    "activated": 0,
-   "traces": []
+   "traces": [
+    "options"
+   ]
   },
   {
    "offset": "081B:707F",
@@ -2334,10 +2460,12 @@
    "usedIn": [
     "MW_MAIN_081B_UI.c"
    ],
-   "screens": 0,
-   "records": 0,
+   "screens": 3,
+   "records": 10,
    "activated": 0,
-   "traces": []
+   "traces": [
+    "options"
+   ]
   },
   {
    "offset": "081B:70B7",

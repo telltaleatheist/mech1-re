@@ -1,0 +1,16 @@
+# The bar: two drinks, a recruit hired, a recruit rejected.
+Return Escape Return @snap:hub
+Down Down Down Down @snap:bar_sel  # hub row 4 BAR
+Return   @snap:bar
+Return   @snap:drink_1           # row 0 ORDER_DRINK
+Return   @snap:drink_1_after
+Return   @snap:drink_2
+Return   @snap:drink_2_after
+Down     @snap:recruit_sel       # row 1 RECRUIT_INTERVIEW
+Return   @snap:recruit
+Return   @snap:hire              # row 0 HIRE_RECRUIT
+Return   @snap:recruit_2
+Down     @snap:reject_sel        # row 1 REJECT_RECRUIT
+Return   @snap:reject
+Down     @snap:bar_done_sel      # row 2 PLANET_HUB
+Return   @snap:hub_back
