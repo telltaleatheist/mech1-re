@@ -147,11 +147,12 @@ void MwSdlPollEvents(void)
         else if (readIndex==writeIndex) MwSdlQueueBiosKey(CAMPAIGN_KEY_ESCAPE,BIOS_SHIFT_CONTROL);
     }
 }
-static bool Available(void) {MwSdlPump();return readIndex!=writeIndex;}
+static bool Available(void) {MwSdlPump();MwSdlDebugNoteInputPoll();return readIndex!=writeIndex;}
 static uint16_t ReadKey(void)
 {
-    while (readIndex==writeIndex) MwSdlPump();
+    while (readIndex==writeIndex) {MwSdlPump();MwSdlDebugNoteInputPoll();}
     uint16_t key=keys[readIndex];lastShift=keyShifts[readIndex];readIndex=(readIndex+1)%BIOS_KEY_BUFFER_WORDS;
+    MwSdlDebugNoteKeyRead(key);
     return key;
 }
 static uint8_t ShiftFlags(void)

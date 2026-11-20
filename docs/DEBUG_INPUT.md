@@ -34,5 +34,18 @@ native game units, not metres. Clients must retry partial/concurrent JSON reads;
 the file is not an atomic frame snapshot. Combat-return summaries also appear
 in the runtime log to help distinguish mission completion from a crash.
 
+For golden traces (`tools/trace`), status also carries the campaign's two
+random words (`campaign.random`) and an `input` block: `polls` counts the
+game's keyboard checks, so a client can tell when it is waiting for a key;
+`reads` counts key reads; `commandReads` lists each key read since the current
+command began as `[BIOS key word, random word 0, random word 1]`, the random
+words as they stood when the game read that key. The original draws a random
+number on every pass of its wait-for-a-key loop (081B:02FB), so these words,
+not a seed, are what a replay must restore before each key.
+
+`MECHWARRIOR_DEBUG_BIOS_TICKS=<n>` (only with the control directory set) fixes
+the BIOS clock that the campaign's one startup read sees (081B:0C0A mixes it
+into the random words), as if the DOS clock had been set before the run.
+
 The interface changes neither jump physics nor the approved default
 `cpu_cycles_per_ms=2500`.
