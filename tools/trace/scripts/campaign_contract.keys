@@ -1,0 +1,14 @@
+# A new campaign to an accepted contract. One record per command: the state
+# once the game is waiting for the next key. Handler names: campaign_continuations.h.
+title          | 150 Return     # the title, to the opening scene
+opening        | 150 Escape     # skip the opening, to the arrival message
+hub            | 150 Return     # dismiss it: the planet hub
+company        | 150 Return     # row 0 COMPANY_MENU
+company_done   | 150 Up         # row 2 PLANET_HUB
+hub_again      | 150 Return
+office_1       | 150 Down
+office_2       | 150 Down       # row 2 CONTRACT_OFFICE
+office         | 150 Return
+offer          | 150 Return     # row 0 REQUEST_MISSION_OFFER
+negotiate_sel  | 150 Left       # row 1 -> row 0 NEGOTIATE_CONTRACT
+negotiate      | 150 Return
