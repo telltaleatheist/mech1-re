@@ -8,6 +8,7 @@
 #include "mechwarrior/combat_startup.h"
 #include "mechwarrior/combat_render.h"
 #include <stdlib.h>
+#include "mechwarrior/combat_scene.h"
 
 /* Turn the active MechWarrior's orders and target knowledge into a destination
  * and movement state; a lost contact is pursued at its last visible position.

@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "SDLBackend.h"
 #include "mechwarrior/ega_campaign.h"
 #include "mechwarrior/combat_video.h"
@@ -81,7 +82,10 @@ bool MwSdlInitializeVideo(const char *directory)
     if (!directory) directory=".";
     if (strlen(directory)>=sizeof(captureDirectory)) return false;
     strcpy(captureDirectory,directory);
-    window=SDL_CreateWindow("MechWarrior — EGA",960,600,SDL_WINDOW_RESIZABLE);
+    /* mw1-original: MW1O_HIDDEN keeps the window hidden for headless test runs
+     * (macOS's offscreen video driver has no renderer, as mw3-re's --hidden). */
+    const SDL_WindowFlags hidden=getenv("MW1O_HIDDEN")?SDL_WINDOW_HIDDEN:0;
+    window=SDL_CreateWindow("MechWarrior — EGA",960,600,SDL_WINDOW_RESIZABLE|hidden);
     if (!window) return false;
     MwSdlUpdateWindowTitle();
     renderer=SDL_CreateRenderer(window,NULL);

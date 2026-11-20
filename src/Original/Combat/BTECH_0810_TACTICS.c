@@ -6,6 +6,7 @@
 #include "mechwarrior/combat_ballistics.h"
 #include "mechwarrior/combat_startup.h"
 #include <stdlib.h>
+#include "mechwarrior/combat_scene.h"
 
 /* Select the BattleMech, chassis, body objects and orders evaluated by the AI.
  *0810:7766. Ordered writes bind the original five active owners. */

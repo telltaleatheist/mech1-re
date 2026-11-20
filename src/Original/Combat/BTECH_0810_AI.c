@@ -7,6 +7,7 @@
 #include "mechwarrior/combat_startup.h"
 #include "mechwarrior/combat_render.h"
 #include <stdlib.h>
+#include "mechwarrior/combat_scene.h"
 
 /*0810:71ED. The actual non-player update chain, not a replacement AI tick.
  * Global control finishes one-past the eight records unless739C rebinds it. */

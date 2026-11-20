@@ -1,6 +1,7 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/combat_video.h"
 #include <stdlib.h>
+#include "mechwarrior/combat_polygons.h"
 
 /*1BF5:1D04. Clipped-away sides do not acquire replacement borders. Vertical
  * edges use035C; top/bottom use solid fill-colour spans, interior line patterns. */

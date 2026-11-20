@@ -5,6 +5,7 @@
 #include "mechwarrior/combat_import.h"
 #include "mechwarrior/combat_render.h"
 #include <stdlib.h>
+#include "mechwarrior/combat_scene.h"
 
 /*0810:7C89. Square planar arrival test, no height. Positive8000 is special;
  * INT32_MIN still wraps negative and passes the native signed comparison. */

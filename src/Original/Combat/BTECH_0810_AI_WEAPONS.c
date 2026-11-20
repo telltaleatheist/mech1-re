@@ -8,6 +8,7 @@
 #include "mechwarrior/combat_render.h"
 #include "mechwarrior/combat_sound.h"
 #include <stdlib.h>
+#include "mechwarrior/combat_scene.h"
 
 /*0810:43A8. Opposing units use the cached matrix. Special slot8 measures from
  * the PLAYER binding even when firingSlot is another unit. Equality stays in band. */

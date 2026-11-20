@@ -4,6 +4,7 @@
 #include "mechwarrior/combat_orders.h"
 #include "mechwarrior/combat_damage.h"
 #include <stdlib.h>
+#include "mechwarrior/combat_polygons.h"
 
 enum { INSPECTION_DIVIDER_X=0x9D,INSPECTION_NAME_X=0x2E,INSPECTION_NAME_Y=4,
     INSPECTION_LABEL_X=4,INSPECTION_STATUS_X=0x58,INSPECTION_FIRST_SYSTEM_Y=0x12,INSPECTION_ROW_STEP=6,

@@ -4,6 +4,7 @@
 #include "mechwarrior/combat_ballistics.h"
 #include "mechwarrior/combat_startup.h"
 #include <stdlib.h>
+#include "mechwarrior/combat_render.h"
 
 /*17FB:2518. Signed WORD heuristic, not Battle Value. Pass two deliberately
  * reads the TRANSPOSED distance matrix. Failed selection leaves target stale. */
