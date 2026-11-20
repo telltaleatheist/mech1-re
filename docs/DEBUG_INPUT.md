@@ -36,16 +36,35 @@ in the runtime log to help distinguish mission completion from a crash.
 
 For golden traces (`tools/trace`), status also carries the campaign's two
 random words (`campaign.random`) and an `input` block: `polls` counts the
-game's keyboard checks, so a client can tell when it is waiting for a key;
-`reads` counts key reads; `commandReads` lists each key read since the current
-command began as `[BIOS key word, random word 0, random word 1]`, the random
-words as they stood when the game read that key. The original draws a random
-number on every pass of its wait-for-a-key loop (081B:02FB), so these words,
-not a seed, are what a replay must restore before each key.
+game's keyboard checks, `reads` counts key reads, and `commandReads` lists each
+key read since the current command began as `[BIOS key word, random word 0,
+random word 1]`.
+
+## Poll-fed scripts (`feed.txt`)
+
+A `feed.txt` in the directory (read at start, or whenever no command or feed
+is running) is a whole key script. Each key goes into the BIOS buffer only
+when the game is waiting for one: on a blocking read, or on the 4th empty "key
+waiting?" poll since the last key read (a flush asks once, so it never takes
+a key). This follows crescent-hawks-rebuild's reference rig. The original
+draws a random number on every pass of its wait-for-a-key loop (081B:02FB),
+so keys fed at counted polls make every draw, and the whole run, independent
+of the host's speed. Tokens, separated by spaces, commas or newlines:
+
+- an SDL key name (`Return`, `Escape`, `Up`, `A`, `F1`...): a key;
+- `idle:N`: N more empty polls before the next item (skipped by a blocking read);
+- `@snap:NAME`: when the game next waits, capture `NAME.bmp/.indices/.palette/.json`
+  and the status at that moment as `NAME.state.json` (capture directory);
+- `random:WWWWWWWW`: set the two random words (hex, word 0 then word 1), a test
+  aid for starting a side branch where a longer run would have left them.
+
+`status.json`'s `feed` block reports `items`, `next`, `done` and `error`.
 
 `MECHWARRIOR_DEBUG_BIOS_TICKS=<n>` (only with the control directory set) fixes
 the BIOS clock that the campaign's one startup read sees (081B:0C0A mixes it
-into the random words), as if the DOS clock had been set before the run.
+into the random words), as if the DOS clock had been set before the run. With
+a feed present at start and the clock pinned, two runs of one script are
+byte-identical.
 
 The interface changes neither jump physics nor the approved default
 `cpu_cycles_per_ms=2500`.

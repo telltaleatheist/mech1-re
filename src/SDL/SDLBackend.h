@@ -19,7 +19,8 @@ void MwSdlPollEvents(void);
 void MwSdlInitializeDebugControl(void);
 void MwSdlPollDebugControl(void);
 bool MwSdlDebugPinnedBiosTicks(uint32_t *ticks);
-void MwSdlDebugNoteInputPoll(void);
+void MwSdlDebugNoteInputPoll(bool empty,bool blocking);
+bool MwSdlBiosKeyForScancode(SDL_Scancode scancode,SDL_Keymod mod,uint16_t *word,uint8_t *shift);
 void MwSdlDebugNoteKeyRead(uint16_t key);
 void MwSdlShutdownDebugControl(void);
 /* Optional host automation, never enabled by build configuration alone. */
@@ -50,6 +51,7 @@ uint64_t MwSdlLateAudioFrames(void);
 uint64_t MwSdlAudioUnderrunFrames(void);
 uint64_t MwSdlAudioClockSkippedFrames(void);
 bool MwSdlInitializeVideo(const char *captureDirectory);
+const char *MwSdlCaptureDirectory(void);
 void MwSdlUpdateWindowTitle(void);
 void MwSdlPresentVideo(bool force);
 void MwSdlShutdownVideo(void);

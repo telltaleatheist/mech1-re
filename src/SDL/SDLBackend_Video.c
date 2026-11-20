@@ -136,6 +136,7 @@ void MwSdlPresentVideo(bool force)
     if (mwSdlFrameObserver) mwSdlFrameObserver();
     presenting=false;
 }
+const char *MwSdlCaptureDirectory(void) {return captureDirectory;}
 bool MwSdlCapture(const char *stem)
 {
     if (!haveFrame || !stem || strpbrk(stem,"/\\:")) return false;

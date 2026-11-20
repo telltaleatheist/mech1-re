@@ -88,6 +88,24 @@ static uint8_t ScanCode(SDL_Scancode scan)
     for (uint16_t i=0;i<sizeof(map)/sizeof(map[0]);++i) if (map[i].scan==scan) return map[i].bios;
     return 0;
 }
+/* The BIOS word and shift flags a campaign key press produces. */
+static bool BiosKey(SDL_Scancode scancode,SDL_Keycode keycode,SDL_Keymod mod,uint16_t *word,uint8_t *shift)
+{
+    uint8_t scan=ScanCode(scancode);if (!scan) return false;
+    uint8_t ascii=keycode<ASCII_CHARACTER_LIMIT?(uint8_t)keycode:0;
+    if ((mod&SDL_KMOD_NUM) && scancode>=SDL_SCANCODE_KP_1 && scancode<=SDL_SCANCODE_KP_9)
+        ascii=(uint8_t)('1'+scancode-SDL_SCANCODE_KP_1);
+    if (scan==COMBAT_KEY_ENTER) ascii='\r';
+    if (mod&SDL_KMOD_CTRL) {if (ascii>='a' && ascii<='z') ascii-=('a'-1);}
+    else if (((mod&SDL_KMOD_SHIFT)!=0)^((mod&SDL_KMOD_CAPS)!=0))
+    {if (ascii>='a' && ascii<='z') ascii-=ASCII_CASE_DISTANCE;}
+    if (mod&SDL_KMOD_ALT) ascii=0;
+    *shift=(mod&SDL_KMOD_CTRL)?BIOS_SHIFT_CONTROL:0;
+    *word=((uint16_t)scan<<BIOS_KEY_SCAN_SHIFT)|ascii;
+    return true;
+}
+bool MwSdlBiosKeyForScancode(SDL_Scancode scancode,SDL_Keymod mod,uint16_t *word,uint8_t *shift)
+{return BiosKey(scancode,SDL_GetKeyFromScancode(scancode,mod,false),mod,word,shift);}
 void MwSdlPollEvents(void)
 {
     MwSdlPollDebugControl();
@@ -128,18 +146,8 @@ void MwSdlPollEvents(void)
             if (!MwSdlCapture(stem)) fprintf(stderr,"Capture failed or file already exists.\n");
             continue;
         }
-        uint8_t scan=ScanCode(event.key.scancode);if (!scan) continue;
-        uint8_t ascii=event.key.key<ASCII_CHARACTER_LIMIT?(uint8_t)event.key.key:0;
-        if ((event.key.mod&SDL_KMOD_NUM) && event.key.scancode>=SDL_SCANCODE_KP_1
-            && event.key.scancode<=SDL_SCANCODE_KP_9)
-            ascii=(uint8_t)('1'+event.key.scancode-SDL_SCANCODE_KP_1);
-        if (scan==COMBAT_KEY_ENTER) ascii='\r';
-        if (event.key.mod&SDL_KMOD_CTRL) {if (ascii>='a' && ascii<='z') ascii-=('a'-1);}
-        else if (((event.key.mod&SDL_KMOD_SHIFT)!=0)^((event.key.mod&SDL_KMOD_CAPS)!=0))
-        {if (ascii>='a' && ascii<='z') ascii-=ASCII_CASE_DISTANCE;}
-        if (event.key.mod&SDL_KMOD_ALT) ascii=0;
-        uint8_t shift=(event.key.mod&SDL_KMOD_CTRL)?BIOS_SHIFT_CONTROL:0;
-        MwSdlQueueBiosKey(((uint16_t)scan<<BIOS_KEY_SCAN_SHIFT)|ascii,shift);
+        uint16_t word;uint8_t shift;
+        if (BiosKey(event.key.scancode,event.key.key,event.key.mod,&word,&shift)) MwSdlQueueBiosKey(word,shift);
     }
     if (quitRequested)
     {
@@ -147,10 +155,10 @@ void MwSdlPollEvents(void)
         else if (readIndex==writeIndex) MwSdlQueueBiosKey(CAMPAIGN_KEY_ESCAPE,BIOS_SHIFT_CONTROL);
     }
 }
-static bool Available(void) {MwSdlPump();MwSdlDebugNoteInputPoll();return readIndex!=writeIndex;}
+static bool Available(void) {MwSdlPump();MwSdlDebugNoteInputPoll(readIndex==writeIndex,false);return readIndex!=writeIndex;}
 static uint16_t ReadKey(void)
 {
-    while (readIndex==writeIndex) {MwSdlPump();MwSdlDebugNoteInputPoll();}
+    while (readIndex==writeIndex) {MwSdlPump();MwSdlDebugNoteInputPoll(true,true);}
     uint16_t key=keys[readIndex];lastShift=keyShifts[readIndex];readIndex=(readIndex+1)%BIOS_KEY_BUFFER_WORDS;
     MwSdlDebugNoteKeyRead(key);
     return key;

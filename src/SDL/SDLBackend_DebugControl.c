@@ -1,6 +1,7 @@
 /* Opt-in test instrument, not recovered game code. No state setters or game
  * calls: commands enter SDL's ordinary keyboard event path, telemetry only
- * reads canonical owners. Files are private local IPC, never a network server. */
+ * reads canonical owners; a feed's random: token (a test aid, as a rig poke)
+ * is the one writer. Files are private local IPC, never a network server. */
 #include "SDLBackend.h"
 #include "mechwarrior/combat_startup.h"
 #include "mechwarrior/combat_import.h"
@@ -9,6 +10,8 @@
 #include "mechwarrior/campaign_state.h"
 #include "mechwarrior/campaign_ui.h"
 #include "mechwarrior/campaign.h"
+#include "mechwarrior/campaign_economy.h"
+#include "mechwarrior/campaign_exchange.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -32,10 +35,116 @@ enum { DEBUG_MAX_KEY_READS=32 };
 static struct {uint16_t key,random0,random1;} keyReads[DEBUG_MAX_KEY_READS];
 static unsigned keyReadCount;
 static uint64_t inputPolls,totalKeyReads;
-void MwSdlDebugNoteInputPoll(void) {if(enabled)++inputPolls;}
+
+/* Poll-fed scripts (feed.txt), after crescent-hawks-rebuild's SNAP rig: each
+ * key goes into the BIOS buffer only when the game is waiting for one, on a
+ * blocking read or on the FEED_WAIT_POLLS-th empty "key waiting?" poll since
+ * the last key read. A flush asks once and so never takes a key. Since the
+ * original draws one random number per wait-loop pass (081B:02FB), feeding
+ * at counted polls makes every draw independent of the host's speed. Tokens:
+ *   SDL key names (Return, Escape, Up, A, F1...)  a key
+ *   idle:N            N more empty polls before the next item
+ *   @snap:NAME        capture NAME.* and NAME.state.json when the game next waits
+ *   random:WWWWWWWW   set the two random words (hex, word 0 then word 1)
+ * Status reports progress; the game then waits for keys as usual. */
+enum { FEED_MAX_ITEMS=4096,FEED_MAX_BYTES=65536,FEED_WAIT_POLLS=4,FEED_NAME=48 };
+typedef enum { FEED_KEY,FEED_IDLE,FEED_SNAP,FEED_RANDOM } FeedKind;
+typedef struct { FeedKind kind;uint16_t word,word2;uint8_t shift;char name[FEED_NAME]; } FeedItem;
+static FeedItem feed[FEED_MAX_ITEMS];
+static unsigned feedCount,feedIndex,feedPolls,feedWait;
+static bool feedActive;
+static const char *feedError="";
+static char feedPath[4096];
+static void WriteStatus(const char *path);
+static bool ParseFeed(char *text)
+{
+    feedCount=0;
+    for (char *token=strtok(text," \t\r\n,");token;token=strtok(NULL," \t\r\n,"))
+    {
+        if (*token=='#') { strtok(NULL,"\n");continue; }
+        if (feedCount==FEED_MAX_ITEMS) return false;
+        FeedItem *item=&feed[feedCount];memset(item,0,sizeof(*item));
+        char *end=NULL;
+        if (!strncmp(token,"idle:",5))
+        {
+            unsigned long n=strtoul(token+5,&end,10);
+            if (!*(token+5) || *end || n>1000000) return false;
+            item->kind=FEED_IDLE;item->word=(uint16_t)(n>UINT16_MAX?UINT16_MAX:n);
+        }
+        else if (!strncmp(token,"@snap:",6))
+        {
+            const char *name=token+6;size_t length=strlen(name);
+            if (!length || length>=FEED_NAME) return false;
+            for (const char *ch=name;*ch;++ch)
+                if (!((*ch>='a'&&*ch<='z')||(*ch>='A'&&*ch<='Z')||(*ch>='0'&&*ch<='9')||*ch=='_'||*ch=='-')) return false;
+            item->kind=FEED_SNAP;memcpy(item->name,name,length+1);
+        }
+        else if (!strncmp(token,"random:",7))
+        {
+            unsigned long v=strtoul(token+7,&end,16);
+            if (strlen(token+7)!=8 || *end) return false;
+            item->kind=FEED_RANDOM;item->word=(uint16_t)(v>>16);item->word2=(uint16_t)v;
+        }
+        else
+        {
+            for (char *ch=token;*ch;++ch) if (*ch=='_') *ch=' ';
+            SDL_Scancode scan=SDL_GetScancodeFromName(token);
+            if (!scan || !MwSdlBiosKeyForScancode(scan,SDL_KMOD_NONE,&item->word,&item->shift)) return false;
+            item->kind=FEED_KEY;
+        }
+        ++feedCount;
+    }
+    return feedCount>0;
+}
+static void LoadFeed(void)
+{
+    FILE *file=fopen(feedPath,"rb");if(!file)return;
+    static char text[FEED_MAX_BYTES+1];
+    size_t length=fread(text,1,FEED_MAX_BYTES+1,file);fclose(file);
+    remove(feedPath); /* Consume our mailbox only. */
+    text[length<=FEED_MAX_BYTES?length:0]=0;
+    if (length>FEED_MAX_BYTES || !ParseFeed(text))
+    {feedCount=0;feedActive=false;feedError="Rejected malformed or oversized feed";return;}
+    feedIndex=0;feedPolls=0;feedWait=FEED_WAIT_POLLS;feedActive=true;feedError="";
+}
+static void Snap(const char *name)
+{
+    MwSdlPresentVideo(true);
+    if (!MwSdlCapture(name)) {feedError="Snap failed (capture missing or name reused)";return;}
+    char path[4200];
+    /* The whole campaign as the save format encodes it: read-only from the
+     * canonical owners, so traces can compare everything a save holds. */
+    if (!mwSdlCombatActive && snprintf(path,sizeof(path),"%s/%s.exchange",MwSdlCaptureDirectory(),name)<(int)sizeof(path))
+    {
+        static uint8_t exchange[CAMPAIGN_EXCHANGE_BYTES];
+        MwEncodeCampaignExchange(exchange);
+        FILE *file=fopen(path,"wbx");
+        if (!file || fwrite(exchange,1,sizeof(exchange),file)!=sizeof(exchange)) feedError="Snap failed (exchange)";
+        if (file) fclose(file);
+    }
+    if (snprintf(path,sizeof(path),"%s/%s.state.json",MwSdlCaptureDirectory(),name)<(int)sizeof(path)) WriteStatus(path);
+}
+void MwSdlDebugNoteInputPoll(bool empty,bool blocking)
+{
+    if(!enabled)return;
+    ++inputPolls;
+    if(!feedActive || !empty || busy)return;
+    ++feedPolls;
+    while (feedActive && (blocking || feedPolls>=feedWait))
+    {
+        FeedItem *item=&feed[feedIndex];
+        if (item->kind==FEED_IDLE) feedWait+=item->word;
+        else if (item->kind==FEED_SNAP) Snap(item->name);
+        else if (item->kind==FEED_RANDOM) {randomStateWord0=item->word;randomStateWord1=item->word2;}
+        if (++feedIndex==feedCount) feedActive=false;
+        if (item->kind==FEED_KEY) {MwSdlQueueBiosKey(item->word,item->shift);break;}
+        if (item->kind==FEED_IDLE && !blocking) break; /* the extra polls start now */
+    }
+}
 void MwSdlDebugNoteKeyRead(uint16_t key)
 {
     if(!enabled)return;
+    feedPolls=0;feedWait=FEED_WAIT_POLLS;
     ++totalKeyReads;
     if(keyReadCount<DEBUG_MAX_KEY_READS)
     {keyReads[keyReadCount].key=key;keyReads[keyReadCount].random0=randomStateWord0;keyReads[keyReadCount].random1=randomStateWord1;++keyReadCount;}
@@ -62,19 +171,20 @@ static void Position(FILE *file,const BtechWorldObjectPrefix *object)
         (long)(int32_t)object->position.positionC,object->orientationA,
         object->orientationB,object->orientationC,object->resourceId);
 }
-static void PublishStatus(void)
+static void WriteStatus(const char *path)
 {
     /* Client retries concurrent/partial reads. Only this explicitly selected
      * private status file is replaced; screenshots remain exclusive files. */
-    FILE *file=fopen(statusPath,"w");if(!file)return;
+    FILE *file=fopen(path,"w");if(!file)return;
     fprintf(file,"{\"protocol\":1,\"timeMs\":%llu,\"activeId\":%llu,\"completedId\":%llu,\"busy\":%s,\"error\":",
         (unsigned long long)SDL_GetTicks(),(unsigned long long)activeId,(unsigned long long)completedId,busy?"true":"false");
     JsonString(file,commandError);
-    fprintf(file,",\"combat\":%s,\"campaign\":{\"planet\":%u,\"contractActive\":%u,\"missionCategory\":%u,\"scenario\":%u,\"destination\":%u,\"targetHouse\":%u,\"paymentThousands\":%u,\"result\":%u,\"selectedRow\":%u,\"random\":[%u,%u],\"menu\":[",
+    fprintf(file,",\"combat\":%s,\"campaign\":{\"planet\":%u,\"contractActive\":%u,\"missionCategory\":%u,\"scenario\":%u,\"destination\":%u,\"targetHouse\":%u,\"paymentThousands\":%u,\"result\":%u,\"selectedRow\":%u,\"random\":[%u,%u],\"funds\":%lu,\"months\":%u,\"menu\":[",
         mwSdlCombatActive?"true":"false",currentPlanetIndex,acceptedContractActive,missionCategoryOrMemoryTier,
         combatScenarioCode,combatPlanetSelector,acceptedContractTargetHouseIndex,
         acceptedContractPaymentThousands,combatTransitionResult,selectedUiRecordIndex,
-        randomStateWord0,randomStateWord1);
+        randomStateWord0,randomStateWord1,
+        ((unsigned long)campaignFundsHigh<<16)|campaignFundsLow,elapsedBillingMonths);
     if (!mwSdlCombatActive && uiMenu)
         for(unsigned i=0;i<uiMenu->recordCount;++i)
         {
@@ -87,7 +197,9 @@ static void PublishStatus(void)
     fprintf(file,"]},\"input\":{\"polls\":%llu,\"reads\":%llu,\"commandReads\":[",(unsigned long long)inputPolls,(unsigned long long)totalKeyReads);
     for(unsigned i=0;i<keyReadCount;++i)
         fprintf(file,"%s[%u,%u,%u]",i?",":"",keyReads[i].key,keyReads[i].random0,keyReads[i].random1);
-    fprintf(file,"]},\"tick\":%u,\"screen\":%u,\"target\":%u,\"aimY\":%u,\"requestedStep\":%d,\"objectiveRules\":[%u,%u],\"units\":[",
+    fprintf(file,"]},\"feed\":{\"items\":%u,\"next\":%u,\"done\":%s,\"error\":",feedCount,feedIndex,feedActive||!feedCount?"false":"true");
+    JsonString(file,feedError);
+    fprintf(file,"},\"tick\":%u,\"screen\":%u,\"target\":%u,\"aimY\":%u,\"requestedStep\":%d,\"objectiveRules\":[%u,%u],\"units\":[",
         combatTickCounter,combatDispatchState,playerTargetSlot,aimReticleScreenY,
         (int16_t)requestedPlayerForwardStepScale,sideObjectiveRules[0],sideObjectiveRules[1]);
     bool first=true;
@@ -135,6 +247,7 @@ static void PublishStatus(void)
             fprintf(file,"%s[%u,%u]",i?",":"",radarMarkerX[i][page],radarMarkerY[i][page]);
     fputs("]}}\n",file);fclose(file);
 }
+static void PublishStatus(void) {WriteStatus(statusPath);}
 static void SendStep(const DebugKeyStep *step,bool down)
 {
     SDL_Keymod modifiers=SDL_KMOD_NONE;
@@ -160,8 +273,11 @@ void MwSdlInitializeDebugControl(void)
     if(!directory || !*directory)return;
     if(snprintf(debugDirectory,sizeof(debugDirectory),"%s",directory)>=(int)sizeof(debugDirectory)
         || snprintf(commandPath,sizeof(commandPath),"%s/command.txt",directory)>=(int)sizeof(commandPath)
-        || snprintf(statusPath,sizeof(statusPath),"%s/status.json",directory)>=(int)sizeof(statusPath))return;
+        || snprintf(statusPath,sizeof(statusPath),"%s/status.json",directory)>=(int)sizeof(statusPath)
+        || snprintf(feedPath,sizeof(feedPath),"%s/feed.txt",directory)>=(int)sizeof(feedPath))return;
+    feedActive=false;feedCount=0;feedError="";
     enabled=true;commandError="";
+    LoadFeed(); /* A feed present at start covers every poll from the first. */
 }
 /* Golden traces need a repeatable start: the campaign mixes the BIOS tick
  * count into its random words once at startup (081B:0C0A). With debug control
@@ -192,7 +308,8 @@ void MwSdlPollDebugControl(void)
             if(!MwSdlCapture(stem))commandError="Screenshot not available";
         }
     }
-    if(!busy)
+    if(!busy && !feedActive) LoadFeed();
+    if(!busy && !feedActive)
     {
         FILE *file=fopen(commandPath,"r");
         if(file)
