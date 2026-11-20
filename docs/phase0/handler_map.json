@@ -1,0 +1,2364 @@
+{
+ "summary": "113 offsets: 105 dispatched by the menu loop, 16 seen on a traced menu, 5 activated by a trace",
+ "traces": [
+  "campaign_contract.jsonl"
+ ],
+ "offsets": [
+  {
+   "offset": "081B:015F",
+   "names": [
+    "CAMPAIGN_CONTINUE_CLEANUP"
+   ],
+   "note": "Shared MwRunCampaign shutdown tail.",
+   "handler": [
+    "(returns to MwRunCampaign)"
+   ],
+   "dispatchLine": [
+    56
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_CONTRACTS.c",
+    "MW_MAIN_081B_DEPLOYMENT.c",
+    "MW_MAIN_081B_EVENT_UI.c",
+    "MW_MAIN_081B_INPUT.c",
+    "MW_MAIN_081B_OPTIONS.c",
+    "MW_MAIN_081B_PILOTS.c",
+    "MW_MAIN_081B_STARTUP.c",
+    "MW_MAIN_081B_TRAVEL.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:089B",
+   "names": [
+    "CAMPAIGN_CONTINUE_UI"
+   ],
+   "note": "MwCampaignUiEventLoop: resume menu input.",
+   "handler": [],
+   "dispatchLine": [],
+   "usedIn": [
+    "MW_MAIN_081B_CONTRACTS.c",
+    "MW_MAIN_081B_EVENT_UI.c",
+    "MW_MAIN_081B_MARKET.c",
+    "MW_MAIN_081B_NEWS.c",
+    "MW_MAIN_081B_OPTIONS.c",
+    "MW_MAIN_081B_PILOTS.c",
+    "MW_MAIN_081B_PLANET.c",
+    "MW_MAIN_081B_SAVE.c",
+    "MW_MAIN_081B_SERVICE.c",
+    "MW_MAIN_081B_STARTUP.c",
+    "MW_MAIN_081B_TRAVEL.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:166D",
+   "names": [
+    "CAMPAIGN_CONTINUE_COPY_PROTECTION"
+   ],
+   "note": "Protection/new-campaign setup entry.",
+   "handler": [],
+   "dispatchLine": [],
+   "usedIn": [
+    "MW_MAIN_081B_STARTUP.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:181A",
+   "names": [
+    "CAMPAIGN_CONTINUE_INITIALIZE_COMPANY"
+   ],
+   "note": "Same setup body, after protection.",
+   "handler": [
+    "MwRunCopyProtectionAndInitializeCampaign"
+   ],
+   "dispatchLine": [
+    118
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_EVENT_UI.c",
+    "MW_MAIN_081B_STARTUP.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:1909",
+   "names": [
+    "CAMPAIGN_CONTINUE_PLANET_HUB"
+   ],
+   "note": "Enter hub and process arrival/events.",
+   "handler": [
+    "MwEnterCampaignPlanetHub"
+   ],
+   "dispatchLine": [
+    81
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_CONTRACTS.c",
+    "MW_MAIN_081B_PLANET.c",
+    "MW_MAIN_081B_SAVE.c",
+    "MW_MAIN_081B_STARTUP.c",
+    "MW_MAIN_081B_TRAVEL.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 2,
+   "records": 3,
+   "activated": 1,
+   "traces": [
+    "campaign_contract"
+   ]
+  },
+  {
+   "offset": "081B:1A0D",
+   "names": [
+    "CAMPAIGN_CONTINUE_HUB_MENU"
+   ],
+   "note": "Hub menu after event dispatch; no re-entry work.",
+   "handler": [
+    "MwEnterCampaignPlanetHub"
+   ],
+   "dispatchLine": [
+    81
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_PLANET.c",
+    "MW_MAIN_081B_STARTUP.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:1B55",
+   "names": [
+    "CAMPAIGN_CONTINUE_ATTEMPT_DEPLOYMENT"
+   ],
+   "note": "",
+   "handler": [
+    "MwAttemptContractDeployment"
+   ],
+   "dispatchLine": [
+    104
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 1,
+   "records": 1,
+   "activated": 0,
+   "traces": [
+    "campaign_contract"
+   ]
+  },
+  {
+   "offset": "081B:1B5A",
+   "names": [
+    "CAMPAIGN_CONTINUE_CHECK_DEPLOYMENT_READINESS"
+   ],
+   "note": "",
+   "handler": [
+    "MwCheckAssignedMechDeploymentReadiness"
+   ],
+   "dispatchLine": [
+    105
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:1B87",
+   "names": [
+    "CAMPAIGN_CONTINUE_CANCEL_CONTRACT"
+   ],
+   "note": "Deployment-refusal cancellation.",
+   "handler": [
+    "MwCancelContractAfterDeploymentRefusalsContinuation"
+   ],
+   "dispatchLine": [
+    107
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_CONTRACTS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:1C3E",
+   "names": [
+    "CAMPAIGN_CONTINUE_DEPLOYMENT"
+   ],
+   "note": "Resolve deployment or export combat exchange.",
+   "handler": [
+    "MwResolveDeploymentOrExportCombatExchangeContinuation"
+   ],
+   "dispatchLine": [
+    106
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_CONTRACTS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:1CCC",
+   "names": [
+    "CAMPAIGN_CONTINUE_EVENT_DEPLOYMENT"
+   ],
+   "note": "Event combat, without refusal penalty.",
+   "handler": [
+    "MwCheckDeploymentWithoutRefusalPenalty"
+   ],
+   "dispatchLine": [
+    108
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_EVENT_UI.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:1CD4",
+   "names": [
+    "CAMPAIGN_CONTINUE_AFTER_ACTION"
+   ],
+   "note": "Debrief inside MwRunCampaign.",
+   "handler": [
+    "(returns to MwRunCampaign)"
+   ],
+   "dispatchLine": [
+    56
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_DEPLOYMENT.c",
+    "MW_MAIN_081B_STARTUP.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:247A",
+   "names": [
+    "CAMPAIGN_CONTINUE_COMPANY_MENU"
+   ],
+   "note": "",
+   "handler": [
+    "MwEnterCompanyMenuContinuation"
+   ],
+   "dispatchLine": [
+    57
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_PILOTS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 2,
+   "records": 5,
+   "activated": 1,
+   "traces": [
+    "campaign_contract"
+   ]
+  },
+  {
+   "offset": "081B:24B6",
+   "names": [
+    "CAMPAIGN_CONTINUE_COMPANY_MENU_WITHOUT_PROFILE"
+   ],
+   "note": "",
+   "handler": [
+    "MwEnterCompanyMenuContinuation"
+   ],
+   "dispatchLine": [
+    57
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_PILOTS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:260C",
+   "names": [
+    "CAMPAIGN_CONTINUE_CREW_MENU"
+   ],
+   "note": "Rebuild the company's crew screen.",
+   "handler": [
+    "MwEnterCrewMenuContinuation"
+   ],
+   "dispatchLine": [
+    71
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_PILOTS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 1,
+   "records": 2,
+   "activated": 0,
+   "traces": [
+    "campaign_contract"
+   ]
+  },
+  {
+   "offset": "081B:28E7",
+   "names": [
+    "CAMPAIGN_CALLBACK_ASSIGN_PILOT_SLOT_ZERO"
+   ],
+   "note": "",
+   "handler": [
+    "MwBeginPilotMechAssignmentContinuation"
+   ],
+   "dispatchLine": [
+    77
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:28EC",
+   "names": [
+    "CAMPAIGN_CALLBACK_ASSIGN_PILOT_SLOT_ONE"
+   ],
+   "note": "",
+   "handler": [
+    "MwBeginPilotMechAssignmentContinuation"
+   ],
+   "dispatchLine": [
+    77
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:28F1",
+   "names": [
+    "CAMPAIGN_CALLBACK_ASSIGN_PILOT_SLOT_TWO"
+   ],
+   "note": "",
+   "handler": [
+    "MwBeginPilotMechAssignmentContinuation"
+   ],
+   "dispatchLine": [
+    77
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:28F6",
+   "names": [
+    "CAMPAIGN_CALLBACK_ASSIGN_PILOT_SLOT_THREE"
+   ],
+   "note": "",
+   "handler": [
+    "MwBeginPilotMechAssignmentContinuation"
+   ],
+   "dispatchLine": [
+    77
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:2911",
+   "names": [
+    "CAMPAIGN_CONTINUE_PILOT_ASSIGNMENT_INPUT"
+   ],
+   "note": "Poll the selected pilot's Mech assignment.",
+   "handler": [
+    "MwPollPilotMechAssignmentContinuation"
+   ],
+   "dispatchLine": [
+    79
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_PILOTS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:2948",
+   "names": [
+    "CAMPAIGN_CONTINUE_CONFIRM_PILOT_ASSIGNMENT"
+   ],
+   "note": "Accept assignment or resolve a conflict.",
+   "handler": [
+    "MwConfirmPilotMechAssignmentContinuation"
+   ],
+   "dispatchLine": [
+    80
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_PILOTS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:2C13",
+   "names": [
+    "CAMPAIGN_CONTINUE_NEWSNET"
+   ],
+   "note": "",
+   "handler": [
+    "MwOpenNewsNetContinuation"
+   ],
+   "dispatchLine": [
+    63
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 1,
+   "records": 2,
+   "activated": 0,
+   "traces": [
+    "campaign_contract"
+   ]
+  },
+  {
+   "offset": "081B:2C77",
+   "names": [
+    "CAMPAIGN_CONTINUE_NEXT_NEWS_ARTICLE"
+   ],
+   "note": "",
+   "handler": [
+    "MwNextNewsArticleContinuation"
+   ],
+   "dispatchLine": [
+    64
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:2D16",
+   "names": [
+    "CAMPAIGN_CONTINUE_PREVIOUS_NEWS_ARTICLE"
+   ],
+   "note": "",
+   "handler": [
+    "MwPreviousNewsArticleContinuation"
+   ],
+   "dispatchLine": [
+    65
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:2DA6",
+   "names": [
+    "CAMPAIGN_CONTINUE_MECH_COMPLEX"
+   ],
+   "note": "Root Mech Complex menu.",
+   "handler": [
+    "MwEnterMechServiceMenuContinuation"
+   ],
+   "dispatchLine": [
+    132
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_MARKET.c",
+    "MW_MAIN_081B_SERVICE.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 2,
+   "records": 5,
+   "activated": 0,
+   "traces": [
+    "campaign_contract"
+   ]
+  },
+  {
+   "offset": "081B:2DE2",
+   "names": [
+    "CAMPAIGN_CONTINUE_MECH_COMPLEX_EVENT_RETURN"
+   ],
+   "note": "",
+   "handler": [
+    "MwEnterMechServiceMenuContinuation"
+   ],
+   "dispatchLine": [
+    132
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_MARKET.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:2E28",
+   "names": [
+    "CAMPAIGN_CONTINUE_OWNED_MECH_LIST"
+   ],
+   "note": "List company-owned machines.",
+   "handler": [
+    "MwOpenOwnedMechList"
+   ],
+   "dispatchLine": [
+    131
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_MARKET.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:2F32",
+   "names": [
+    "CAMPAIGN_CONTINUE_MARKET_MECH_LIST"
+   ],
+   "note": "List dealer stock.",
+   "handler": [
+    "MwOpenMarketMechList"
+   ],
+   "dispatchLine": [
+    133
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_MARKET.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:3021",
+   "names": [
+    "CAMPAIGN_CALLBACK_SELECT_OWNED_MECH"
+   ],
+   "note": "",
+   "handler": [
+    "MwSelectOwnedUnitListRowCallback"
+   ],
+   "dispatchLine": [
+    148
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_SERVICE.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:3063",
+   "names": [
+    "CAMPAIGN_CONTINUE_OPEN_OWNED_MECH"
+   ],
+   "note": "Open selected owned-unit detail.",
+   "handler": [
+    "MwOpenSelectedMechDetailContinuation"
+   ],
+   "dispatchLine": [
+    149
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_SERVICE.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:3091",
+   "names": [
+    "CAMPAIGN_CONTINUE_RETURN_TO_OWNED_MECH"
+   ],
+   "note": "Restore detail after a modal operation.",
+   "handler": [
+    "MwReturnToSelectedMechDetailCallback"
+   ],
+   "dispatchLine": [
+    150
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_MARKET.c",
+    "MW_MAIN_081B_SERVICE.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:30A2",
+   "names": [
+    "CAMPAIGN_CONTINUE_OWNED_MECH_DETAIL"
+   ],
+   "note": "Draw selected machine's condition and services.",
+   "handler": [
+    "MwDrawSelectedMechDetailContinuation"
+   ],
+   "dispatchLine": [
+    151
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_SERVICE.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:3291",
+   "names": [
+    "CAMPAIGN_CONTINUE_OWNED_MECH_SERVICE_MENU"
+   ],
+   "note": "Shared cancel tail; skip detail drawing.",
+   "handler": [
+    "MwDrawSelectedMechDetailContinuation"
+   ],
+   "dispatchLine": [
+    151
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_MARKET.c",
+    "MW_MAIN_081B_SERVICE.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:3314",
+   "names": [
+    "CAMPAIGN_CALLBACK_BEGIN_MECH_SALE"
+   ],
+   "note": "",
+   "handler": [
+    "MwBeginOwnedUnitSaleCallback"
+   ],
+   "dispatchLine": [
+    137
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:3393",
+   "names": [
+    "CAMPAIGN_CONTINUE_MECH_SALE"
+   ],
+   "note": "",
+   "handler": [
+    "MwSaleContinuation"
+   ],
+   "dispatchLine": [
+    138
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:3477",
+   "names": [
+    "CAMPAIGN_CONTINUE_CANCEL_MECH_SALE"
+   ],
+   "note": "",
+   "handler": [
+    "MwCancelOwnedUnitSale"
+   ],
+   "dispatchLine": [
+    139
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:348D",
+   "names": [
+    "CAMPAIGN_CONTINUE_QUOTE_MECH_REARM"
+   ],
+   "note": "",
+   "handler": [
+    "MwQuoteSelectedMechRearm"
+   ],
+   "dispatchLine": [
+    140
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:3560",
+   "names": [
+    "CAMPAIGN_CONTINUE_REARM_MECH"
+   ],
+   "note": "",
+   "handler": [
+    "MwRearmSelectedMech"
+   ],
+   "dispatchLine": [
+    141
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:35C9",
+   "names": [
+    "CAMPAIGN_CONTINUE_CANCEL_MECH_REARM"
+   ],
+   "note": "",
+   "handler": [
+    "MwCancelSelectedMechRearm"
+   ],
+   "dispatchLine": [
+    142
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:35E3",
+   "names": [
+    "CAMPAIGN_CALLBACK_MECH_SERVICE_IDLE"
+   ],
+   "note": "",
+   "handler": [],
+   "dispatchLine": [],
+   "usedIn": [
+    "MW_MAIN_081B_MARKET.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:3802",
+   "names": [
+    "CAMPAIGN_CALLBACK_REPAIR_ALL_COMPONENTS"
+   ],
+   "note": "",
+   "handler": [
+    "MwRepairAllSelectedMechComponentsCallback"
+   ],
+   "dispatchLine": [
+    154
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:38FC",
+   "names": [
+    "CAMPAIGN_CONTINUE_COMPONENT_REPAIR_MENU"
+   ],
+   "note": "Select a damaged component for repair.",
+   "handler": [
+    "MwOpenMechComponentRepairMenuCallback"
+   ],
+   "dispatchLine": [
+    152
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_SERVICE.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:3DF3",
+   "names": [
+    "CAMPAIGN_CALLBACK_REFRESH_COMPONENT_QUOTE"
+   ],
+   "note": "",
+   "handler": [],
+   "dispatchLine": [],
+   "usedIn": [
+    "MW_MAIN_081B_SERVICE.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:3EE8",
+   "names": [
+    "CAMPAIGN_CALLBACK_REPAIR_MECH_COMPONENT"
+   ],
+   "note": "",
+   "handler": [
+    "MwRepairSelectedMechComponentCallback"
+   ],
+   "dispatchLine": [
+    153
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_SERVICE.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:407C",
+   "names": [
+    "CAMPAIGN_CALLBACK_INSPECT_MARKET_COMPONENTS"
+   ],
+   "note": "",
+   "handler": [
+    "MwOpenMarketMechComponentInspectionCallback"
+   ],
+   "dispatchLine": [
+    143
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:4317",
+   "names": [
+    "CAMPAIGN_CALLBACK_SELECT_MARKET_MECH"
+   ],
+   "note": "",
+   "handler": [
+    "MwSelectMarketUnitListRowCallback"
+   ],
+   "dispatchLine": [
+    144
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_MARKET.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:4352",
+   "names": [
+    "CAMPAIGN_CALLBACK_OPEN_MARKET_MECH_DETAIL"
+   ],
+   "note": "",
+   "handler": [
+    "MwDrawMarketMechDetailContinuation"
+   ],
+   "dispatchLine": [
+    145
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:4353",
+   "names": [
+    "CAMPAIGN_CONTINUE_MARKET_MECH_DETAIL"
+   ],
+   "note": "Dealer detail after the entry's POP.",
+   "handler": [
+    "MwDrawMarketMechDetailContinuation"
+   ],
+   "dispatchLine": [
+    145
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_MARKET.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:4379",
+   "names": [
+    "CAMPAIGN_CONTINUE_MARKET_DETAIL_KEEP_BACKGROUND"
+   ],
+   "note": "",
+   "handler": [
+    "MwDrawMarketMechDetailContinuation"
+   ],
+   "dispatchLine": [
+    145
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_MARKET.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:43E0",
+   "names": [
+    "CAMPAIGN_CONTINUE_MARKET_COMPONENT_INSPECTION_RETURN"
+   ],
+   "note": "",
+   "handler": [
+    "MwDrawMarketMechDetailContinuation"
+   ],
+   "dispatchLine": [
+    145
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_MARKET.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:43EB",
+   "names": [
+    "CAMPAIGN_CONTINUE_MARKET_MECH_STATUS"
+   ],
+   "note": "",
+   "handler": [
+    "MwDrawMarketMechDetailContinuation"
+   ],
+   "dispatchLine": [
+    145
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_MARKET.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:4674",
+   "names": [
+    "CAMPAIGN_CONTINUE_PURCHASE_MECH"
+   ],
+   "note": "",
+   "handler": [
+    "MwPurchaseSelectedMarketUnit"
+   ],
+   "dispatchLine": [
+    147
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:475A",
+   "names": [
+    "CAMPAIGN_CONTINUE_MECH_PURCHASE_FINISHED"
+   ],
+   "note": "",
+   "handler": [
+    "MwPurchaseSelectedMarketUnit"
+   ],
+   "dispatchLine": [
+    147
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_MARKET.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:476A",
+   "names": [
+    "CAMPAIGN_CONTINUE_RESERVE_AMMO_SHOP"
+   ],
+   "note": "",
+   "handler": [
+    "MwOpenReserveAmmunitionShop"
+   ],
+   "dispatchLine": [
+    134
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:4878",
+   "names": [
+    "CAMPAIGN_CALLBACK_BUY_RESERVE_AMMO"
+   ],
+   "note": "",
+   "handler": [
+    "MwBuyReserveAmmunition"
+   ],
+   "dispatchLine": [
+    135
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:48E6",
+   "names": [
+    "CAMPAIGN_CALLBACK_REFRESH_RESERVE_AMMO"
+   ],
+   "note": "",
+   "handler": [],
+   "dispatchLine": [],
+   "usedIn": [
+    "MW_MAIN_081B_MARKET.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:49F2",
+   "names": [
+    "CAMPAIGN_CONTINUE_SELL_RESERVE_AMMO"
+   ],
+   "note": "",
+   "handler": [
+    "MwSellReserveAmmunition"
+   ],
+   "dispatchLine": [
+    136
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:4AA2",
+   "names": [
+    "CAMPAIGN_CONTINUE_CONTRACT_OFFICE"
+   ],
+   "note": "",
+   "handler": [
+    "MwEnterContractOfficeContinuation"
+   ],
+   "dispatchLine": [
+    94
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_CONTRACTS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 2,
+   "records": 6,
+   "activated": 1,
+   "traces": [
+    "campaign_contract"
+   ]
+  },
+  {
+   "offset": "081B:4AA8",
+   "names": [
+    "CAMPAIGN_CONTINUE_CONTRACT_OFFICE_REDRAW"
+   ],
+   "note": "Redraw without charging another day.",
+   "handler": [
+    "MwEnterContractOfficeContinuation"
+   ],
+   "dispatchLine": [
+    94
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_CONTRACTS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:4B43",
+   "names": [
+    "CAMPAIGN_CONTINUE_CONTRACT_OFFICE_MENU"
+   ],
+   "note": "",
+   "handler": [
+    "MwEnterContractOfficeContinuation"
+   ],
+   "dispatchLine": [
+    94
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_CONTRACTS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:4B55",
+   "names": [
+    "CAMPAIGN_CONTINUE_MISSION_BRIEFING"
+   ],
+   "note": "Draw the negotiating mission offer.",
+   "handler": [
+    "MwDrawMissionContractBriefingContinuation"
+   ],
+   "dispatchLine": [
+    97
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_CONTRACTS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:4D35",
+   "names": [
+    "CAMPAIGN_CONTINUE_REQUEST_MISSION_OFFER"
+   ],
+   "note": "",
+   "handler": [
+    "MwRequestMissionOfferContinuation"
+   ],
+   "dispatchLine": [
+    95
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 1,
+   "records": 1,
+   "activated": 1,
+   "traces": [
+    "campaign_contract"
+   ]
+  },
+  {
+   "offset": "081B:4DA5",
+   "names": [
+    "CAMPAIGN_CONTINUE_NEXT_MISSION_OFFER"
+   ],
+   "note": "",
+   "handler": [
+    "MwNextMissionOfferContinuation"
+   ],
+   "dispatchLine": [
+    96
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 1,
+   "records": 2,
+   "activated": 0,
+   "traces": [
+    "campaign_contract"
+   ]
+  },
+  {
+   "offset": "081B:4EC8",
+   "names": [
+    "CAMPAIGN_CONTINUE_REQUEST_PAYMENT"
+   ],
+   "note": "",
+   "handler": [
+    "MwEditContractPaymentRequestContinuation"
+   ],
+   "dispatchLine": [
+    98
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 1,
+   "records": 2,
+   "activated": 0,
+   "traces": [
+    "campaign_contract"
+   ]
+  },
+  {
+   "offset": "081B:4EE7",
+   "names": [
+    "CAMPAIGN_CONTINUE_REQUEST_SALVAGE"
+   ],
+   "note": "",
+   "handler": [
+    "MwEditContractSalvageRequestContinuation"
+   ],
+   "dispatchLine": [
+    99
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 1,
+   "records": 2,
+   "activated": 0,
+   "traces": [
+    "campaign_contract"
+   ]
+  },
+  {
+   "offset": "081B:4F06",
+   "names": [
+    "CAMPAIGN_CONTINUE_REQUEST_ADVANCE"
+   ],
+   "note": "",
+   "handler": [
+    "MwEditContractAdvanceRequestContinuation"
+   ],
+   "dispatchLine": [
+    100
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 1,
+   "records": 2,
+   "activated": 0,
+   "traces": [
+    "campaign_contract"
+   ]
+  },
+  {
+   "offset": "081B:536A",
+   "names": [
+    "CAMPAIGN_CONTINUE_NEGOTIATE_CONTRACT"
+   ],
+   "note": "",
+   "handler": [
+    "MwNegotiateAndAcceptContractContinuation"
+   ],
+   "dispatchLine": [
+    101
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 1,
+   "records": 2,
+   "activated": 1,
+   "traces": [
+    "campaign_contract"
+   ]
+  },
+  {
+   "offset": "081B:55A5",
+   "names": [
+    "CAMPAIGN_CONTINUE_CREDIT_CONTRACT_ADVANCE"
+   ],
+   "note": "Credit accepted advance C-bills.",
+   "handler": [
+    "MwCreditAcceptedContractAdvanceContinuation"
+   ],
+   "dispatchLine": [
+    102
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_CONTRACTS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:55D8",
+   "names": [
+    "CAMPAIGN_CONTINUE_ADJUST_ENEMY_FORCE"
+   ],
+   "note": "Adjust the accepted contract's opposition.",
+   "handler": [
+    "MwAdjustAcceptedContractEnemyForceContinuation"
+   ],
+   "dispatchLine": [
+    103
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_CONTRACTS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:5620",
+   "names": [
+    "CAMPAIGN_CONTINUE_OPEN_TRAVEL_SCREEN"
+   ],
+   "note": "",
+   "handler": [
+    "MwOpenTravelScreenContinuation"
+   ],
+   "dispatchLine": [
+    82
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 1,
+   "records": 4,
+   "activated": 0,
+   "traces": [
+    "campaign_contract"
+   ]
+  },
+  {
+   "offset": "081B:569F",
+   "names": [
+    "CAMPAIGN_CONTINUE_SELECT_TRAVEL_DESTINATION"
+   ],
+   "note": "Select planet and quote travel.",
+   "handler": [
+    "MwSelectTravelDestinationContinuation"
+   ],
+   "dispatchLine": [
+    83
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_TRAVEL.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:56E7",
+   "names": [
+    "CAMPAIGN_CONTINUE_TRAVEL_MAP"
+   ],
+   "note": "Resume map menu without saving the marker again.",
+   "handler": [
+    "MwEnterTravelMapMenuContinuation"
+   ],
+   "dispatchLine": [
+    84
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_TRAVEL.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:598A",
+   "names": [
+    "CAMPAIGN_CALLBACK_SELECT_TRAVEL_MAP_PLANET"
+   ],
+   "note": "",
+   "handler": [],
+   "dispatchLine": [],
+   "usedIn": [
+    "MW_MAIN_081B_TRAVEL.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:5C5D",
+   "names": [
+    "CAMPAIGN_CONTINUE_SEARCH_PLANET"
+   ],
+   "note": "",
+   "handler": [
+    "MwSearchTravelPlanetContinuation"
+   ],
+   "dispatchLine": [
+    85
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:5CF2",
+   "names": [
+    "CAMPAIGN_CONTINUE_OPEN_HOUSE_BROWSER"
+   ],
+   "note": "",
+   "handler": [
+    "MwOpenTravelHouseBrowserContinuation"
+   ],
+   "dispatchLine": [
+    86
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:5D21",
+   "names": [
+    "CAMPAIGN_CONTINUE_CLOSE_HOUSE_BROWSER"
+   ],
+   "note": "",
+   "handler": [
+    "MwCloseTravelHouseBrowserContinuation"
+   ],
+   "dispatchLine": [
+    87
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:5D45",
+   "names": [
+    "CAMPAIGN_CONTINUE_HOUSE_PLANET_LIST"
+   ],
+   "note": "",
+   "handler": [
+    "MwOpenSelectedHousePlanetListContinuation"
+   ],
+   "dispatchLine": [
+    88
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:5E26",
+   "names": [
+    "CAMPAIGN_CONTINUE_RETURN_TO_HOUSE_BROWSER"
+   ],
+   "note": "",
+   "handler": [
+    "MwReturnToTravelHouseBrowserContinuation"
+   ],
+   "dispatchLine": [
+    89
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:5E41",
+   "names": [
+    "CAMPAIGN_CONTINUE_SELECT_HOUSE_PLANET"
+   ],
+   "note": "",
+   "handler": [
+    "MwSelectHousePlanetContinuation"
+   ],
+   "dispatchLine": [
+    90
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:5E5D",
+   "names": [
+    "CAMPAIGN_CONTINUE_CONFIRM_TRAVEL"
+   ],
+   "note": "",
+   "handler": [
+    "MwConfirmPlanetTravelContinuation"
+   ],
+   "dispatchLine": [
+    91
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:5EA0",
+   "names": [
+    "CAMPAIGN_CONTINUE_PAID_TRAVEL"
+   ],
+   "note": "Charge travel and advance the campaign calendar.",
+   "handler": [
+    "MwAdvancePaidTravelAndJoinPlanetArrivalContinuation"
+   ],
+   "dispatchLine": [
+    92
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_TRAVEL.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:5F15",
+   "names": [
+    "CAMPAIGN_CONTINUE_PLANET_ARRIVAL"
+   ],
+   "note": "Finish transport and publish the arrival.",
+   "handler": [
+    "MwFinishPlanetArrivalContinuation"
+   ],
+   "dispatchLine": [
+    93
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_TRAVEL.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:6236",
+   "names": [
+    "CAMPAIGN_CALL_DISPATCH_EVENTS"
+   ],
+   "note": "",
+   "handler": [],
+   "dispatchLine": [],
+   "usedIn": [
+    "MW_MAIN_081B_CONTRACTS.c",
+    "MW_MAIN_081B_EVENTS.c",
+    "MW_MAIN_081B_MARKET.c",
+    "MW_MAIN_081B_PILOTS.c",
+    "MW_MAIN_081B_PLANET.c",
+    "MW_MAIN_081B_STARTUP.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:6290",
+   "names": [
+    "CAMPAIGN_CONTINUE_NEXT_EVENT"
+   ],
+   "note": "Resume dispatcher after its suspended event call.",
+   "handler": [
+    "MwDispatchCampaignEvents"
+   ],
+   "dispatchLine": [
+    122
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_EVENTS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:629F",
+   "names": [
+    "CAMPAIGN_CONTINUE_VICTORY_EVENT_RETURN"
+   ],
+   "note": "Return from fixed event to the campaign victory flow.",
+   "handler": [
+    "(returns to MwRunCampaign)"
+   ],
+   "dispatchLine": [
+    56
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_EVENTS.c",
+    "MW_MAIN_081B_STARTUP.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:67C5",
+   "names": [
+    "CAMPAIGN_CALLBACK_EVENT_FIRST_CHOICE"
+   ],
+   "note": "",
+   "handler": [
+    "MwEventFirstChoiceCallback"
+   ],
+   "dispatchLine": [
+    112
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:67F8",
+   "names": [
+    "CAMPAIGN_CALLBACK_EVENT_SECOND_CHOICE"
+   ],
+   "note": "",
+   "handler": [
+    "MwEventSecondChoiceCallback"
+   ],
+   "dispatchLine": [
+    113
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:6828",
+   "names": [
+    "CAMPAIGN_CALLBACK_EVENT_THIRD_CHOICE"
+   ],
+   "note": "",
+   "handler": [
+    "MwEventThirdChoiceCallback"
+   ],
+   "dispatchLine": [
+    114
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:683D",
+   "names": [
+    "CAMPAIGN_CONTINUE_EVENT_QUIT"
+   ],
+   "note": "Stop music/set launcher result, then shared cleanup.",
+   "handler": [
+    "MwQuitFromEventContinuation"
+   ],
+   "dispatchLine": [
+    115
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_EVENT_UI.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:6855",
+   "names": [
+    "CAMPAIGN_CONTINUE_RESTART"
+   ],
+   "note": "Restart campaign, retaining its native frame contract.",
+   "handler": [
+    "MwRestartCampaignContinuation"
+   ],
+   "dispatchLine": [
+    116
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_EVENT_UI.c",
+    "MW_MAIN_081B_OPTIONS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:6913",
+   "names": [
+    "CAMPAIGN_CONTINUE_EVENT_COMBAT"
+   ],
+   "note": "Prepare the story event's combat scenario.",
+   "handler": [
+    "MwPrepareEventSpecialCombatContinuation"
+   ],
+   "dispatchLine": [
+    117
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_EVENT_UI.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:692B",
+   "names": [
+    "CAMPAIGN_CONTINUE_EVENT_COMBAT_RETURN"
+   ],
+   "note": "Inherited STC/RET; event caller ignores carry.",
+   "handler": [],
+   "dispatchLine": [],
+   "usedIn": [
+    "MW_MAIN_081B_EVENT_UI.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:692E",
+   "names": [
+    "CAMPAIGN_CONTINUE_BAR"
+   ],
+   "note": "",
+   "handler": [
+    "MwEnterBarContinuation"
+   ],
+   "dispatchLine": [
+    72
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_PILOTS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 1,
+   "records": 4,
+   "activated": 0,
+   "traces": [
+    "campaign_contract"
+   ]
+  },
+  {
+   "offset": "081B:6950",
+   "names": [
+    "CAMPAIGN_CONTINUE_BAR_BACKGROUND"
+   ],
+   "note": "Return to Bar without restarting music.",
+   "handler": [
+    "MwEnterBarContinuation"
+   ],
+   "dispatchLine": [
+    72
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_PILOTS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:698F",
+   "names": [
+    "CAMPAIGN_CONTINUE_BAR_REFRESH"
+   ],
+   "note": "Refresh Bar offers/menu without redrawing scenery.",
+   "handler": [
+    "MwEnterBarContinuation"
+   ],
+   "dispatchLine": [
+    72
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_PILOTS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:69B8",
+   "names": [
+    "CAMPAIGN_CONTINUE_BAR_EVENT_RETURN"
+   ],
+   "note": "",
+   "handler": [
+    "MwEnterBarContinuation"
+   ],
+   "dispatchLine": [
+    72
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_PILOTS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:69CA",
+   "names": [
+    "CAMPAIGN_CONTINUE_ORDER_DRINK"
+   ],
+   "note": "",
+   "handler": [
+    "MwOrderDrinkContinuation"
+   ],
+   "dispatchLine": [
+    73
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_PILOTS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:6A03",
+   "names": [
+    "CAMPAIGN_CONTINUE_DRINK_EVENT_RETURN"
+   ],
+   "note": "",
+   "handler": [
+    "MwOrderDrinkContinuation"
+   ],
+   "dispatchLine": [
+    73
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_PILOTS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:6A06",
+   "names": [
+    "CAMPAIGN_CONTINUE_RECRUIT_INTERVIEW"
+   ],
+   "note": "",
+   "handler": [
+    "MwOpenRecruitInterviewContinuation"
+   ],
+   "dispatchLine": [
+    74
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:6B69",
+   "names": [
+    "CAMPAIGN_CONTINUE_HIRE_RECRUIT"
+   ],
+   "note": "",
+   "handler": [
+    "MwHireSelectedRecruitContinuation"
+   ],
+   "dispatchLine": [
+    75
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:6BFA",
+   "names": [
+    "CAMPAIGN_CONTINUE_REJECT_RECRUIT"
+   ],
+   "note": "",
+   "handler": [
+    "MwRejectSelectedRecruitContinuation"
+   ],
+   "dispatchLine": [
+    76
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:6CFA",
+   "names": [
+    "CAMPAIGN_CONTINUE_OPTIONS"
+   ],
+   "note": "Enter options with scenery setup.",
+   "handler": [
+    "MwEnterOptionsMenuContinuation"
+   ],
+   "dispatchLine": [
+    58
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_OPTIONS.c",
+    "MW_MAIN_081B_SAVE.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 1,
+   "records": 4,
+   "activated": 0,
+   "traces": [
+    "campaign_contract"
+   ]
+  },
+  {
+   "offset": "081B:6D23",
+   "names": [
+    "CAMPAIGN_CONTINUE_OPTIONS_REDRAW"
+   ],
+   "note": "Options redraw after confirmation NO.",
+   "handler": [
+    "MwEnterOptionsMenuContinuation"
+   ],
+   "dispatchLine": [
+    58
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_OPTIONS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:6D4E",
+   "names": [
+    "CAMPAIGN_CONTINUE_QUIT_FROM_OPTIONS"
+   ],
+   "note": "Confirmation YES: POP/JMP shared cleanup.",
+   "handler": [
+    "MwQuitFromOptionsContinuation"
+   ],
+   "dispatchLine": [
+    69
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_OPTIONS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:6D52",
+   "names": [
+    "CAMPAIGN_CALLBACK_SAVE_CAMPAIGN"
+   ],
+   "note": "",
+   "handler": [
+    "MwSaveCampaignCallback"
+   ],
+   "dispatchLine": [
+    60
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:6E6A",
+   "names": [
+    "CAMPAIGN_CONTINUE_OPTIONS_FROM_SUBMENU"
+   ],
+   "note": "Native PUSH/JMP options re-entry.",
+   "handler": [
+    "MwEnterOptionsMenuContinuation"
+   ],
+   "dispatchLine": [
+    58
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:6EA3",
+   "names": [
+    "CAMPAIGN_CALLBACK_OPEN_LOAD_MENU"
+   ],
+   "note": "",
+   "handler": [
+    "MwShowLoadCampaignCallback"
+   ],
+   "dispatchLine": [
+    61
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:6F4C",
+   "names": [
+    "CAMPAIGN_CALLBACK_LOAD_SELECTED_CAMPAIGN"
+   ],
+   "note": "",
+   "handler": [
+    "MwLoadSelectedCampaignCallback"
+   ],
+   "dispatchLine": [
+    62
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:6FB9",
+   "names": [
+    "CAMPAIGN_CALLBACK_TOGGLE_AUDIO"
+   ],
+   "note": "",
+   "handler": [
+    "MwToggleAudioOption"
+   ],
+   "dispatchLine": [
+    59
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:6FFA",
+   "names": [
+    "CAMPAIGN_CALLBACK_CYCLE_TERRAIN_DETAIL"
+   ],
+   "note": "",
+   "handler": [
+    "MwCycleTerrainDetailOption"
+   ],
+   "dispatchLine": [
+    66
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:7047",
+   "names": [
+    "CAMPAIGN_CONTINUE_CONFIRM_QUIT"
+   ],
+   "note": "",
+   "handler": [
+    "MwConfirmQuitCampaignContinuation"
+   ],
+   "dispatchLine": [
+    67
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:707F",
+   "names": [
+    "CAMPAIGN_CONTINUE_CONFIRM_RESTART"
+   ],
+   "note": "",
+   "handler": [
+    "MwConfirmRestartCampaignContinuation"
+   ],
+   "dispatchLine": [
+    68
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  },
+  {
+   "offset": "081B:70B7",
+   "names": [
+    "CAMPAIGN_CONTINUE_RESTART_FROM_OPTIONS"
+   ],
+   "note": "Confirmation YES: balance frame before restart.",
+   "handler": [
+    "MwRestartFromOptionsContinuation"
+   ],
+   "dispatchLine": [
+    70
+   ],
+   "usedIn": [
+    "MW_MAIN_081B_OPTIONS.c",
+    "MW_MAIN_081B_UI.c"
+   ],
+   "screens": 0,
+   "records": 0,
+   "activated": 0,
+   "traces": []
+  }
+ ]
+}
