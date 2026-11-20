@@ -8,6 +8,7 @@
 #include "mechwarrior/combat_pose.h"
 #include "mechwarrior/campaign_state.h"
 #include "mechwarrior/campaign_ui.h"
+#include "mechwarrior/campaign.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -23,6 +24,22 @@ static unsigned stepCount,stepIndex;
 static uint64_t activeId,completedId,nextStep,nextPoll,nextStatus;
 static bool enabled,busy;
 static const char *commandError="";
+/* Campaign key reads since the current command began: the BIOS key word and
+ * the random words as the game read it. The original draws once per pass of
+ * its wait-for-a-key loop (081B:02FB), so these words, not the run's seed,
+ * are what a replay must start each key from. */
+enum { DEBUG_MAX_KEY_READS=32 };
+static struct {uint16_t key,random0,random1;} keyReads[DEBUG_MAX_KEY_READS];
+static unsigned keyReadCount;
+static uint64_t inputPolls,totalKeyReads;
+void MwSdlDebugNoteInputPoll(void) {if(enabled)++inputPolls;}
+void MwSdlDebugNoteKeyRead(uint16_t key)
+{
+    if(!enabled)return;
+    ++totalKeyReads;
+    if(keyReadCount<DEBUG_MAX_KEY_READS)
+    {keyReads[keyReadCount].key=key;keyReads[keyReadCount].random0=randomStateWord0;keyReads[keyReadCount].random1=randomStateWord1;++keyReadCount;}
+}
 
 static void JsonString(FILE *file,const char *text)
 {
@@ -53,10 +70,11 @@ static void PublishStatus(void)
     fprintf(file,"{\"protocol\":1,\"timeMs\":%llu,\"activeId\":%llu,\"completedId\":%llu,\"busy\":%s,\"error\":",
         (unsigned long long)SDL_GetTicks(),(unsigned long long)activeId,(unsigned long long)completedId,busy?"true":"false");
     JsonString(file,commandError);
-    fprintf(file,",\"combat\":%s,\"campaign\":{\"planet\":%u,\"contractActive\":%u,\"missionCategory\":%u,\"scenario\":%u,\"destination\":%u,\"targetHouse\":%u,\"paymentThousands\":%u,\"result\":%u,\"selectedRow\":%u,\"menu\":[",
+    fprintf(file,",\"combat\":%s,\"campaign\":{\"planet\":%u,\"contractActive\":%u,\"missionCategory\":%u,\"scenario\":%u,\"destination\":%u,\"targetHouse\":%u,\"paymentThousands\":%u,\"result\":%u,\"selectedRow\":%u,\"random\":[%u,%u],\"menu\":[",
         mwSdlCombatActive?"true":"false",currentPlanetIndex,acceptedContractActive,missionCategoryOrMemoryTier,
         combatScenarioCode,combatPlanetSelector,acceptedContractTargetHouseIndex,
-        acceptedContractPaymentThousands,combatTransitionResult,selectedUiRecordIndex);
+        acceptedContractPaymentThousands,combatTransitionResult,selectedUiRecordIndex,
+        randomStateWord0,randomStateWord1);
     if (!mwSdlCombatActive && uiMenu)
         for(unsigned i=0;i<uiMenu->recordCount;++i)
         {
@@ -66,6 +84,9 @@ static void PublishStatus(void)
                 row->upRecordIndex,row->downRecordIndex,row->leftRecordIndex,row->rightRecordIndex);
             JsonString(file,row->textRecord?row->text:"");fputc('}',file);
         }
+    fprintf(file,"]},\"input\":{\"polls\":%llu,\"reads\":%llu,\"commandReads\":[",(unsigned long long)inputPolls,(unsigned long long)totalKeyReads);
+    for(unsigned i=0;i<keyReadCount;++i)
+        fprintf(file,"%s[%u,%u,%u]",i?",":"",keyReads[i].key,keyReads[i].random0,keyReads[i].random1);
     fprintf(file,"]},\"tick\":%u,\"screen\":%u,\"target\":%u,\"aimY\":%u,\"requestedStep\":%d,\"objectiveRules\":[%u,%u],\"units\":[",
         combatTickCounter,combatDispatchState,playerTargetSlot,aimReticleScreenY,
         (int16_t)requestedPlayerForwardStepScale,sideObjectiveRules[0],sideObjectiveRules[1]);
@@ -135,11 +156,25 @@ void MwSdlInitializeDebugControl(void)
 {
     const char *directory=getenv("MECHWARRIOR_DEBUG_CONTROL_DIRECTORY");
     enabled=false;busy=false;held.count=0;activeId=completedId=nextPoll=nextStatus=0;
+    keyReadCount=0;inputPolls=totalKeyReads=0;
     if(!directory || !*directory)return;
     if(snprintf(debugDirectory,sizeof(debugDirectory),"%s",directory)>=(int)sizeof(debugDirectory)
         || snprintf(commandPath,sizeof(commandPath),"%s/command.txt",directory)>=(int)sizeof(commandPath)
         || snprintf(statusPath,sizeof(statusPath),"%s/status.json",directory)>=(int)sizeof(statusPath))return;
     enabled=true;commandError="";
+}
+/* Golden traces need a repeatable start: the campaign mixes the BIOS tick
+ * count into its random words once at startup (081B:0C0A). With debug control
+ * on, MECHWARRIOR_DEBUG_BIOS_TICKS sets the clock that one read sees, as if
+ * the DOS clock had been set before the run. Game code is untouched. */
+bool MwSdlDebugPinnedBiosTicks(uint32_t *ticks)
+{
+    const char *control=getenv("MECHWARRIOR_DEBUG_CONTROL_DIRECTORY");
+    const char *text=getenv("MECHWARRIOR_DEBUG_BIOS_TICKS");
+    if(!control || !*control || !text || !*text)return false;
+    char *end=NULL;unsigned long value=strtoul(text,&end,0);
+    if(!end || *end)return false;
+    *ticks=(uint32_t)value;return true;
 }
 void MwSdlPollDebugControl(void)
 {
@@ -183,7 +218,7 @@ void MwSdlPollDebugControl(void)
             /* Consume our mailbox only, never an arbitrary user path. */
             remove(commandPath);
             if(valid && total<=DEBUG_MAX_BATCH_MS)
-            {activeId=id;stepCount=count+1;steps[count]=(DebugKeyStep){DEBUG_SETTLE_MS,0,{0}};stepIndex=0;busy=true;nextStep=now;commandError="";}
+            {activeId=id;keyReadCount=0;stepCount=count+1;steps[count]=(DebugKeyStep){DEBUG_SETTLE_MS,0,{0}};stepIndex=0;busy=true;nextStep=now;commandError="";}
             else commandError="Rejected malformed, stale, oversized or unknown-key command";
         }
     }

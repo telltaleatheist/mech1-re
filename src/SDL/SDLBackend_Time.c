@@ -228,4 +228,9 @@ void MwSdlPumpTimer(void)
 }
 void MwSdlInstallCampaignInterrupts(void) {campaignInterruptsInstalled=true;}
 void MwSdlRestoreCampaignInterrupts(void) {campaignInterruptsInstalled=false;}
-uint32_t MwSdlReadBiosTicks(void) {MwSdlPump();return biosTicks;}
+uint32_t MwSdlReadBiosTicks(void)
+{
+    MwSdlPump();
+    uint32_t pinned;
+    return MwSdlDebugPinnedBiosTicks(&pinned)?pinned:biosTicks;
+}

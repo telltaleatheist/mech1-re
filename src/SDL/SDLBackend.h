@@ -18,6 +18,9 @@ void MwSdlInitializeInput(void);
 void MwSdlPollEvents(void);
 void MwSdlInitializeDebugControl(void);
 void MwSdlPollDebugControl(void);
+bool MwSdlDebugPinnedBiosTicks(uint32_t *ticks);
+void MwSdlDebugNoteInputPoll(void);
+void MwSdlDebugNoteKeyRead(uint16_t key);
 void MwSdlShutdownDebugControl(void);
 /* Optional host automation, never enabled by build configuration alone. */
 bool MwSdlConfigureSupportPilot(const char *directory);
