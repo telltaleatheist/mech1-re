@@ -123,4 +123,5 @@ void MwSdlInitializeCombatHardware(void)
     btechHostReadRomByte=ReadRomByte;btechHostQueryEgaInfo=QueryEgaInfo;btechHostSetVideoMode=MwSdlSetVideoMode;
     btechHostDelayLoops=MwSdlDelayCpuLoops;btechHostPollInterrupts=MwSdlPump;btechHostResetMouse=ResetMouse;
     btechHostPaceCombatCpu=MwSdlPaceCombatCpu;
+    btechHostNoteCombatInputPoll=MwSdlDebugNoteCombatPoll;
 }

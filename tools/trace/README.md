@@ -26,6 +26,17 @@ The same approach as crescent-hawks-rebuild's reference rig (its
 Tokens: SDL key names, `idle:N`, `@snap:NAME`, `random:WWWWWWWW` (sets the two
 random words, for a side branch). '#' comments run to the end of the line.
 
+In combat the game reads keys once per tick, and a key is a press and a
+release. `make:KEY` and `break:KEY` press or release only (held keys steer and
+fire), and `ticks:N` lets N ticks pass:
+
+    Return
+    ticks:0 @snap:briefing     # ticks: waits for combat; the briefing map
+    Return ticks:10 @snap:cockpit
+    make:Up ticks:40 break:Up ticks:20 @snap:walking
+    Escape ticks:5 Y           # retreat
+    idle:0 @snap:results       # idle: waits for the campaign again
+
 Each key reaches the game only when it is waiting for one (a blocking read,
 or the 4th empty "key waiting?" poll since the last read). The original draws
 a random number on every pass of its wait-for-a-key loop (081B:02FB), so
@@ -44,6 +55,13 @@ and no host speed or load changes it.
       state row 2
       state combat 0
       state menu 0 enabled 1 callback 247a picture 1 links 5 1 255 3 label 3f1c...
+
+  In combat the menu lines give way to the battle:
+
+      state tick 88 screen 0 target 0
+      state unit 0 side 0 chassis 1 position X Y Z orientation A B C step 66 mode 0 jump 800 torso A B C
+      state unit 0 heat 229 engine 0 gyro 0 cockpit 0 armor ... internal ... ammo ... weapons 1/0 1/29 ...
+      state objective position X Y Z damage D      (when the mission has one)
 
   `callback` is the original 081B code offset the row activates. `label` is a
   12-hex SHA-256 of the row's text: MW1's own text never enters a trace.
@@ -73,7 +91,12 @@ seconds.
 
 ## Limits
 
-- Campaign only. Combat needs the 174,267-byte BTECH.EXE. With any other size
-  the first combat falls into the original's disk prompt.
+- Combat runs with Owen's 1990-01-22 BTECH.EXE (174,533 bytes), which the
+  port loads since upstream 621961a. On Linux the game folder needs
+  lower-case names too (combat opens `desert.pal`); the port has no
+  case-insensitive opens on main yet.
+- Two port gaps stop a script: the heading radar (`T`) and the orders screen
+  (`C`) with empty lance slots hit port failsafes, so the combat script leaves
+  them out until they are fixed.
 - A key script is fixed: if a screen gains or loses rows, the script needs
   editing. Check `state row` and `screenKey` in a fresh recording.

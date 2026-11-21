@@ -46,12 +46,22 @@ static uint64_t inputPolls,totalKeyReads;
  *   idle:N            N more empty polls before the next item
  *   @snap:NAME        capture NAME.* and NAME.state.json when the game next waits
  *   random:WWWWWWWW   set the two random words (hex, word 0 then word 1)
+ * Combat (BTECH) reads its keys once per input poll (0810:2A17): once per
+ * tick in the main loop, many times in a wait-for-a-key loop. Combat ticks
+ * use no clock, so feeding at counted combat polls repeats a battle exactly.
+ * In combat a key token is a press and release of that key's scan code, and:
+ *   make:KEY / break:KEY  press / release only (held keys steer and fire)
+ *   ticks:N           N more combat polls before the next item
+ * These three are combat-only: a campaign poll leaves them waiting, so
+ * ticks:0 marks where combat starts. idle:N is campaign-only, so idle:0
+ * marks where the campaign resumes after a battle.
  * Status reports progress; the game then waits for keys as usual. */
 enum { FEED_MAX_ITEMS=4096,FEED_MAX_BYTES=65536,FEED_WAIT_POLLS=4,FEED_NAME=48 };
-typedef enum { FEED_KEY,FEED_IDLE,FEED_SNAP,FEED_RANDOM } FeedKind;
+typedef enum { FEED_KEY,FEED_IDLE,FEED_SNAP,FEED_RANDOM,FEED_MAKE,FEED_BREAK,FEED_TICKS } FeedKind;
 typedef struct { FeedKind kind;uint16_t word,word2;uint8_t shift;char name[FEED_NAME]; } FeedItem;
 static FeedItem feed[FEED_MAX_ITEMS];
-static unsigned feedCount,feedIndex,feedPolls,feedWait;
+static unsigned feedCount,feedIndex,feedPolls,feedWait,combatFeedPolls,combatFeedWait;
+static uint64_t combatPolls;
 static bool feedActive;
 static const char *feedError="";
 static char feedPath[4096];
@@ -65,11 +75,13 @@ static bool ParseFeed(char *text)
         if (feedCount==FEED_MAX_ITEMS) return false;
         FeedItem *item=&feed[feedCount];memset(item,0,sizeof(*item));
         char *end=NULL;
-        if (!strncmp(token,"idle:",5))
+        bool ticks=!strncmp(token,"ticks:",6);
+        if (ticks || !strncmp(token,"idle:",5))
         {
-            unsigned long n=strtoul(token+5,&end,10);
-            if (!*(token+5) || *end || n>1000000) return false;
-            item->kind=FEED_IDLE;item->word=(uint16_t)(n>UINT16_MAX?UINT16_MAX:n);
+            const char *digits=token+(ticks?6:5);
+            unsigned long n=strtoul(digits,&end,10);
+            if (!*digits || *end || n>UINT16_MAX) return false;
+            item->kind=ticks?FEED_TICKS:FEED_IDLE;item->word=(uint16_t)n;
         }
         else if (!strncmp(token,"@snap:",6))
         {
@@ -87,10 +99,13 @@ static bool ParseFeed(char *text)
         }
         else
         {
+            item->kind=FEED_KEY;
+            if (!strncmp(token,"make:",5)) {item->kind=FEED_MAKE;token+=5;}
+            else if (!strncmp(token,"break:",6)) {item->kind=FEED_BREAK;token+=6;}
             for (char *ch=token;*ch;++ch) if (*ch=='_') *ch=' ';
             SDL_Scancode scan=SDL_GetScancodeFromName(token);
             if (!scan || !MwSdlBiosKeyForScancode(scan,SDL_KMOD_NONE,&item->word,&item->shift)) return false;
-            item->kind=FEED_KEY;
+            if (item->kind!=FEED_KEY && !(item->word>>8)) return false; /* needs a scan code */
         }
         ++feedCount;
     }
@@ -133,6 +148,7 @@ void MwSdlDebugNoteInputPoll(bool empty,bool blocking)
     while (feedActive && (blocking || feedPolls>=feedWait))
     {
         FeedItem *item=&feed[feedIndex];
+        if (item->kind>=FEED_MAKE) break; /* combat-only: wait for combat */
         if (item->kind==FEED_IDLE) feedWait+=item->word;
         else if (item->kind==FEED_SNAP) Snap(item->name);
         else if (item->kind==FEED_RANDOM) {randomStateWord0=item->word;randomStateWord1=item->word2;}
@@ -141,10 +157,37 @@ void MwSdlDebugNoteInputPoll(bool empty,bool blocking)
         if (item->kind==FEED_IDLE && !blocking) break; /* the extra polls start now */
     }
 }
+/* Each combat input poll, before it reads the BIOS buffer. Scans go through
+ * the keyboard interrupt as typed ones do, so the held-key masks see them. */
+void MwSdlDebugNoteCombatPoll(void)
+{
+    if(!enabled)return;
+    ++combatPolls;
+    if(!feedActive || busy)return;
+    ++combatFeedPolls;
+    while (feedActive && combatFeedPolls>=combatFeedWait)
+    {
+        FeedItem *item=&feed[feedIndex];
+        if (item->kind==FEED_IDLE) break; /* campaign-only: wait for the campaign */
+        uint8_t scan=(uint8_t)(item->word>>8);
+        if (++feedIndex==feedCount) feedActive=false;
+        if (item->kind==FEED_SNAP) Snap(item->name);
+        else if (item->kind==FEED_RANDOM) {randomStateWord0=item->word;randomStateWord1=item->word2;}
+        else if (item->kind==FEED_MAKE) MwSdlQueueCombatScan(scan);
+        else if (item->kind==FEED_BREAK) MwSdlQueueCombatScan(scan|0x80);
+        else if (item->kind==FEED_TICKS)
+        {combatFeedPolls=0;combatFeedWait=item->word;if(item->word)break;}
+        else if (item->kind==FEED_KEY)
+        {MwSdlQueueCombatScan(scan);MwSdlQueueCombatScan(scan|0x80);combatFeedPolls=0;combatFeedWait=1;break;}
+    }
+    for(unsigned scans=0;scans<16 && MwSdlCombatKeyboardPending();++scans)MwSdlPumpTimer();
+    if (MwSdlCombatKeyboardPending()) feedError="Combat key delivery blocked";
+}
 void MwSdlDebugNoteKeyRead(uint16_t key)
 {
     if(!enabled)return;
     feedPolls=0;feedWait=FEED_WAIT_POLLS;
+    combatFeedPolls=0;combatFeedWait=0; /* combat's first poll takes the next combat item */
     ++totalKeyReads;
     if(keyReadCount<DEBUG_MAX_KEY_READS)
     {keyReads[keyReadCount].key=key;keyReads[keyReadCount].random0=randomStateWord0;keyReads[keyReadCount].random1=randomStateWord1;++keyReadCount;}
@@ -194,7 +237,7 @@ static void WriteStatus(const char *path)
                 row->upRecordIndex,row->downRecordIndex,row->leftRecordIndex,row->rightRecordIndex);
             JsonString(file,row->textRecord?row->text:"");fputc('}',file);
         }
-    fprintf(file,"]},\"input\":{\"polls\":%llu,\"reads\":%llu,\"commandReads\":[",(unsigned long long)inputPolls,(unsigned long long)totalKeyReads);
+    fprintf(file,"]},\"input\":{\"polls\":%llu,\"combatPolls\":%llu,\"reads\":%llu,\"commandReads\":[",(unsigned long long)inputPolls,(unsigned long long)combatPolls,(unsigned long long)totalKeyReads);
     for(unsigned i=0;i<keyReadCount;++i)
         fprintf(file,"%s[%u,%u,%u]",i?",":"",keyReads[i].key,keyReads[i].random0,keyReads[i].random1);
     fprintf(file,"]},\"feed\":{\"items\":%u,\"next\":%u,\"done\":%s,\"error\":",feedCount,feedIndex,feedActive||!feedCount?"false":"true");

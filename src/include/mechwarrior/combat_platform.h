@@ -15,6 +15,10 @@ extern void (*btechHostPollInterrupts)(void);
 /* Host-only CPU-work instrumentation at native0019 loop boundary. Does not
  * add a native argument, game tick, decision or source procedure. */
 extern void (*btechHostPaceCombatCpu)(void);
+/* Host-only test instrumentation at each 0810:2A17 combat input poll, before
+ * the BIOS buffer is read (a scripted feed queues its scans here). Optional;
+ * no native argument, decision or source procedure. */
+extern void (*btechHostNoteCombatInputPoll)(void);
 extern uint8_t *(*btechHostAllocateParagraphs)(uint16_t paragraphs,uint16_t *largestFreeParagraphs);
 extern void (*btechHostFreeDosAllocation)(uint8_t *allocation);
 extern void (*btechHostFreeDosSelector)(uint16_t selector);

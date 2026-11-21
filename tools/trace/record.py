@@ -15,6 +15,11 @@ Script tokens (whitespace or commas; '#' comments to the end of the line):
     idle:N            N more empty polls before the next item
     @snap:NAME        record the screen and state when the game next waits
     random:WWWWWWWW   set the two random words (a test aid for side branches)
+In combat (one input poll per tick; a key is a press and a release):
+    make:KEY break:KEY   press or release only (held keys steer and fire)
+    ticks:N           N more combat polls (ticks) before the next item
+These three wait for combat, so "ticks:0" marks where combat starts; idle:N
+waits for the campaign, so "idle:0" marks where it resumes after a battle.
 
 A record:
     snap    the snap's name
@@ -57,8 +62,8 @@ def read_script(path):
                 sys.exit(f"{path}: bad or repeated snap name {name!r}")
             seen.add(name)
             snaps.append(name)
-        elif t.startswith("idle:"):
-            if not t[5:].isdigit():
+        elif t.startswith(("idle:", "ticks:")):
+            if not t.split(":", 1)[1].isdigit():
                 sys.exit(f"{path}: bad {t!r}")
         elif t.startswith("random:"):
             if not re.fullmatch(r"[0-9A-Fa-f]{8}", t[7:]):
@@ -96,10 +101,31 @@ def state_lines(status):
              f"state funds {c.get('funds')} months {c.get('months')}",
              f"state row {c.get('selectedRow')}",
              f"state combat {1 if status.get('combat') else 0}"]
+    if status.get("combat"):
+        lines += combat_lines(status)
+        return lines
     for row in c.get("menu", []):
         lines.append("state menu {} enabled {} callback {:04x} picture {} links {} label {}".format(
             row["index"], row["enabled"], row["callback"], row["picture"], " ".join(map(str, row["links"])),
             label_hash(row) or "-"))
+    return lines
+
+
+def combat_lines(status):
+    """The battle: the tick and screen, then each unit on the field."""
+    words = lambda v: " ".join(map(str, v))
+    lines = [f"state tick {status.get('tick')} screen {status.get('screen')} target {status.get('target')}"]
+    for u in status.get("units", []):
+        lines.append(f"state unit {u['slot']} side {u['side']} chassis {u['chassis']} position {words(u['position'])}"
+                     f" orientation {words(u['orientation'])} step {u['step']} mode {u['movementMode']}"
+                     f" jump {u['jumpCharge']} torso {words(u['torsoOrientation'])}")
+        lines.append(f"state unit {u['slot']} heat {u['heat']} engine {u['engineHits']} gyro {u['gyroHits']}"
+                     f" cockpit {u['cockpitDisabled']} armor {words(u['armor'])} internal {words(u['internal'])}"
+                     f" ammo {words(u['ammo'])} weapons "
+                     + " ".join(f"{w['operational']}/{w['reload']}" for w in u["weapons"]))
+    obj = status.get("objective")
+    if obj:
+        lines.append(f"state objective position {words(obj['position'])} damage {obj['damageRemaining']}")
     return lines
 
 

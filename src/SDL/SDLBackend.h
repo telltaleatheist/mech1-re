@@ -22,6 +22,7 @@ bool MwSdlDebugPinnedBiosTicks(uint32_t *ticks);
 void MwSdlDebugNoteInputPoll(bool empty,bool blocking);
 bool MwSdlBiosKeyForScancode(SDL_Scancode scancode,SDL_Keymod mod,uint16_t *word,uint8_t *shift);
 void MwSdlDebugNoteKeyRead(uint16_t key);
+void MwSdlDebugNoteCombatPoll(void);
 void MwSdlShutdownDebugControl(void);
 /* Optional host automation, never enabled by build configuration alone. */
 bool MwSdlConfigureSupportPilot(const char *directory);

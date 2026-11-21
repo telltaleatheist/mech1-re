@@ -58,7 +58,27 @@ of the host's speed. Tokens, separated by spaces, commas or newlines:
 - `random:WWWWWWWW`: set the two random words (hex, word 0 then word 1), a test
   aid for starting a side branch where a longer run would have left them.
 
-`status.json`'s `feed` block reports `items`, `next`, `done` and `error`.
+Combat (BTECH) reads its keys once per input poll (0810:2A17): once per tick
+in the main loop, and many times while a briefing or dialog waits for a key.
+Combat ticks use no clock (the timer only paces frames), so keys fed at
+counted combat polls make a battle repeat exactly. A host hook at the top of
+that poll (`btechHostNoteCombatInputPoll`, unbound outside the debug
+interface) feeds the items, through the keyboard interrupt like typed keys, so
+the held-key masks see them. In combat:
+
+- an SDL key name is a press and release of the key's scan code, and the next
+  item waits one poll;
+- `make:KEY` / `break:KEY`: press or release only, for held keys (steering,
+  throttle, fire button); they take no poll, so several can go at once;
+- `ticks:N`: N more combat polls before the next item.
+
+`make:`, `break:` and `ticks:` are combat-only: a campaign poll leaves them
+waiting, so `ticks:0` marks where combat starts. `idle:N` is campaign-only,
+so `idle:0` marks where the campaign resumes after the battle.
+`@snap` and `random:` work in both.
+
+`status.json`'s `feed` block reports `items`, `next`, `done` and `error`;
+`input.combatPolls` counts combat polls.
 
 `MECHWARRIOR_DEBUG_BIOS_TICKS=<n>` (only with the control directory set) fixes
 the BIOS clock that the campaign's one startup read sees (081B:0C0A mixes it

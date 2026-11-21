@@ -60,6 +60,14 @@ rebuild.
       state menu I enabled E callback XXXX picture P links U D L R label HASH   (one per row)
       state exchange HASH          the save image's SHA-256 (32 hex)
 
+  In combat the menu lines give way to the battle (`tools/trace/README.md`):
+  `state tick T screen S target X`, two `state unit` lines per unit on the
+  field (position, orientation, step, movement mode, jump charge, torso; heat,
+  engine, gyro, cockpit, armour, internal structure, ammunition and each
+  weapon's operational/reload), and `state objective` when there is one.
+  The combat keys are `make:KEY`, `break:KEY` and `ticks:N`, fed at counted
+  combat input polls (0810:2A17), one per tick; combat uses no clock.
+
   `callback` is the original's 081B code offset the row activates (the rebuild
   keeps them as identifiers, `docs/phase0/HANDLER_MAP.md`). `label` is the
   first 12 hex digits of the SHA-256 of the row's text bytes, as the
