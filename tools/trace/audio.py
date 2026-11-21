@@ -19,7 +19,7 @@ compares every line exactly and names the first difference.
 
 Exit status: 0 all match, 1 a mismatch, 77 skipped (no candidate or game).
 """
-import argparse, gzip, os, subprocess, sys
+import argparse, gzip, hashlib, os, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 AUDIO = os.path.join(HERE, "audio")
@@ -27,8 +27,23 @@ DEVICES = ("speaker", "adlib", "mt32")
 SKIP = 77
 
 
-def run(port, game, work, script, device):
-    """The candidate's log for one script and device, cut after the last snap."""
+PIT_HZ, PCM_HZ = 1193182, 48000
+
+
+def pcm_hash(path, device, cycle):
+    """SHA-256 of the PCM dump up to the last snap's PIT cycle."""
+    channels = 1 if device == "speaker" else 2
+    frames = cycle * PCM_HZ // PIT_HZ
+    with open(path, "rb") as f:
+        data = f.read(frames * channels * 4)
+    if len(data) < frames * channels * 4:
+        sys.exit(f"{path}: the PCM dump ends before the last snap")
+    return hashlib.sha256(data).hexdigest()[:32], frames
+
+
+def run(port, game, work, script, device, pcm=False):
+    """The candidate's log for one script and device, cut after the last snap,
+    and with pcm, the hash of its PCM up to that snap."""
     name = f"{os.path.basename(script)[:-5]}.{device}"
     base = os.path.join(work, name)
     os.makedirs(base, exist_ok=True)
@@ -38,6 +53,8 @@ def run(port, game, work, script, device):
     log = os.path.join(base, "sound.log")
     env = dict(os.environ, MECHWARRIOR_TIMING_CONFIG=ini, MECHWARRIOR_AUDIO_LOG=log,
                MECHWARRIOR_DEBUG_VIRTUAL_CLOCK="1")
+    if pcm:
+        env["MECHWARRIOR_AUDIO_PCM"] = os.path.join(base, "sound.pcm")
     rec = subprocess.run([sys.executable, os.path.join(HERE, "record.py"), "--exe", port, "--game", game,
                           "--script", script, "--out", os.path.join(base, "trace.jsonl"),
                           "--frames", os.path.join(base, "frames"), "--work", os.path.join(base, "run"),
@@ -49,7 +66,8 @@ def run(port, game, work, script, device):
     last = max((i for i, line in enumerate(lines) if '"snap"' in line), default=-1)
     if last < 0:
         sys.exit(f"{name}: the log has no snap")
-    return name, lines[:last + 1]
+    digest = pcm_hash(os.path.join(base, "sound.pcm"), device, int(lines[last][1:].split(",")[0])) if pcm else None
+    return name, lines[:last + 1], digest
 
 
 def golden_path(name):
@@ -77,6 +95,8 @@ def main():
     ap.add_argument("--game", help="MW1 game folder (a copy; it is only read)")
     ap.add_argument("--work", required=True, help="logs, saves and frames (outside the repo)")
     ap.add_argument("--only", nargs="*", help="script names, or script.device")
+    ap.add_argument("--pcm", action="store_true",
+                    help="also print each run's PCM hash up to its last snap (synthesis, compared by hand)")
     a = ap.parse_args()
     if not a.port or not os.path.exists(a.port) or not a.game or not os.path.isdir(a.game):
         print("skipped: no candidate build or game folder")
@@ -89,7 +109,9 @@ def main():
             name = f"{script[:-5]}.{device}"
             if a.only and script[:-5] not in a.only and name not in a.only:
                 continue
-            name, ours = run(port, game, work, os.path.join(AUDIO, "scripts", script), device)
+            name, ours, digest = run(port, game, work, os.path.join(AUDIO, "scripts", script), device, a.pcm)
+            if digest:
+                print(f"{name}: PCM {digest[0]} over {digest[1]} frames")
             if a.mode == "record":
                 os.makedirs(os.path.dirname(golden_path(name)), exist_ok=True)
                 with gzip.GzipFile(golden_path(name), "wb", mtime=0) as f:

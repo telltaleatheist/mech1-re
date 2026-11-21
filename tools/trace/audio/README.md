@@ -53,3 +53,16 @@ timed by the harness. It's stored as `traces/<script>.<device>.jsonl.gz`.
   copy so that its golden moves only when this file does.
 
 The logs hold port numbers and values only, no game text or assets.
+
+## PCM hashes (`--pcm`)
+
+`MECHWARRIOR_AUDIO_PCM=FILE` writes every rendered frame as raw 32-bit floats
+at 48 kHz: one channel with the speaker alone, two with a card. `--pcm`
+turns it on and prints each run's SHA-256 up to its last snap. It's for
+comparing synthesis by hand before and after a change; for example, slice 2
+moved the speaker and the mixer and left all six hashes identical.
+
+PCM hashes aren't goldens in the repo. Floating-point synthesis (`sin`,
+`fmod`) can differ between C libraries, so a hash is only comparable on one
+machine. The level 2 metrics (onsets, pitch, envelopes) are what cross
+platforms.

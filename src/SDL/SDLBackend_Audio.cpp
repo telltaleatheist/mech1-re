@@ -1,15 +1,15 @@
 #include "SDLBackend.h"
 #include "mechwarrior/audio_devices.h"
-#include <math.h>
+#include "AudioClock.h"
+#include "Mixer.h"
 #include <stdio.h>
 #include <stdlib.h>
 
-/* Hardware PCM only: PIT channel2 speaker plus the selected external card.
+/* The output layer: the SDL3 device, the bounded PCM queue and its stream
+ * callback. Synthesis (the speaker voice, the selected card, mixing on PIT
+ * time) is mw1o::audio::Mixer in src/Audio, which hands this file blocks.
  * MIDI scheduling, allocation, instruments and rotation remain Original code;
- * the host never plays an SMF itself. Speaker Fourier integration suppresses
- * the native period 0x0014 (about 59 kHz) rather than aliasing it into the
- * audible 48 kHz output. This is a bounded 32-harmonic digital speaker model,
- * not verified analogue acoustics. */
+ * the host never plays an SMF itself. */
 static SDL_AudioStream *audioStream;
 static SDL_Mutex *audioQueueMutex;
 enum { AUDIO_QUEUE_FRAMES=0x4000,AUDIO_START_LEAD_FRAMES=0x0800 };
@@ -19,15 +19,16 @@ static uint64_t generatedFrames,playbackFrames,lateFrames,underrunFrames;
 static uint64_t audioStartedNanoseconds,clockSkippedFrames;
 static uint32_t playbackLeadFrames;
 static uint32_t leadFrames;
-static uint32_t speakerDivisor;
-static uint8_t speakerControl,periodLow;
-static bool highByteNext,counting;
-static double audioTime,speakerPhase,sampleCycles,sampleIntegral;
-static float queuedSamples[512];
-static uint32_t queuedCount;
+static mw1o::audio::Mixer mixer;
+static_assert(HOST_PIT_CLOCK_HZ==mw1o::audio::PIT_CLOCK_HZ && HOST_AUDIO_SAMPLE_RATE==mw1o::audio::OUTPUT_SAMPLE_RATE,
+    "The host timeline and the mixer share one clock and one output rate");
 /* Logging without ROMs (MECHWARRIOR_AUDIO_LOG, both ROM paths empty): the
  * MPU and its byte stream run as usual and the synthesizer is silent. */
 static bool silentMt32;
+/* MECHWARRIOR_AUDIO_PCM=FILE: every rendered frame as raw 32-bit floats at
+ * 48 kHz (one channel for the speaker, two with a card), for comparing
+ * synthesis offline (tools/trace/audio.py --pcm). */
+static FILE *pcmDump;
 void (*mwSdlAudioObserver)(const float *samples,uint32_t count);
 
 /* SDL asks for PCM only. It never runs an original timer/game callback.
@@ -77,7 +78,6 @@ static void SDLCALL FeedAudio(void *unused,SDL_AudioStream *stream,int additiona
 bool MwSdlInitializeAudio(void)
 {
     if (audioStream || audioQueueMutex) return SDL_SetError("Audio is already initialized");
-    outputChannels=mwSdlSoundSystem==MW_SOUND_SPEAKER?1:2;
     if (mwSdlSoundSystem==MW_SOUND_ADLIB) MwAdlibReset(HOST_AUDIO_SAMPLE_RATE);
     silentMt32=mwSdlSoundSystem==MW_SOUND_MT32 && getenv("MECHWARRIOR_AUDIO_LOG")
         && !*mwSdlMt32ControlRom && !*mwSdlMt32PcmRom;
@@ -87,6 +87,9 @@ bool MwSdlInitializeAudio(void)
         if (!MwMt32Open(mwSdlMt32ControlRom,mwSdlMt32PcmRom,HOST_AUDIO_SAMPLE_RATE,error,sizeof(error)))
             return SDL_SetError("%s",error);
     }
+    mixer.reset(mwSdlSoundSystem==MW_SOUND_SPEAKER?mw1o::audio::Mixer::Card::None
+        :mwSdlSoundSystem==MW_SOUND_MT32?mw1o::audio::Mixer::Card::Mt32:mw1o::audio::Mixer::Card::Adlib,silentMt32);
+    outputChannels=mixer.channels();
     SDL_AudioSpec format={SDL_AUDIO_F32,(int)outputChannels,HOST_AUDIO_SAMPLE_RATE};
     audioQueueMutex=SDL_CreateMutex();
     if (!audioQueueMutex) goto failed;
@@ -108,8 +111,10 @@ bool MwSdlInitializeAudio(void)
             deviceFormat.freq,deviceFormat.channels,deviceFrames,1000.0*deviceFrames/deviceFormat.freq);
         fflush(stdout);
     }
-    audioTime=speakerPhase=sampleCycles=sampleIntegral=0;queuedCount=0;
-    speakerControl=0;speakerDivisor=0x10000;highByteNext=counting=false;
+    {
+        const char *pcmPath=getenv("MECHWARRIOR_AUDIO_PCM");
+        if (pcmPath && !pcmDump && !(pcmDump=fopen(pcmPath,"wb"))) return SDL_SetError("Cannot open the PCM dump %s",pcmPath);
+    }
     return true;
 failed:
     {
@@ -121,85 +126,33 @@ failed:
         return SDL_SetError("%s",error);
     }
 }
-void MwSdlAdvanceAudio(double pitTime)
+/* The mixer's sink: one block of frames at a time, onto the bounded queue. */
+static void QueueAudioBlock(const float *samples,uint32_t frames)
 {
-    const double cyclesPerSample=(double)HOST_PIT_CLOCK_HZ/HOST_AUDIO_SAMPLE_RATE;
-    const double pi=3.14159265358979323846;
-    while (audioTime<pitTime)
+    if (mwSdlAudioObserver) mwSdlAudioObserver(samples,frames*outputChannels);
+    if (pcmDump && fwrite(samples,sizeof(float),frames*outputChannels,pcmDump)!=frames*outputChannels)
+        MwSdlFail("Write the PCM dump");
+    if (MwSdlVirtualClock()) {generatedFrames+=frames;return;} /* Test clock outruns the device. */
+    SDL_LockMutex(audioQueueMutex);
+    for (uint32_t index=0;index<frames;++index,++generatedFrames)
     {
-        double duration=fmin(pitTime-audioTime,cyclesPerSample-sampleCycles);
-        if (counting && (speakerControl&SPEAKER_GATE_BITS)==SPEAKER_GATE_BITS)
+        if (generatedFrames<playbackFrames) {++lateFrames;continue;}
+        if (generatedFrames-playbackFrames>=AUDIO_QUEUE_FRAMES)
         {
-            double duty=(double)((speakerDivisor+1)/2)/speakerDivisor;
-            double frequency=(double)HOST_PIT_CLOCK_HZ/speakerDivisor;
-            for (uint32_t harmonic=1;harmonic<=32 && harmonic*frequency<HOST_AUDIO_SAMPLE_RATE/2.0;++harmonic)
-            {
-                double angular=2*pi*harmonic/speakerDivisor;
-                double start=angular*speakerPhase-pi*harmonic*duty;
-                double amplitude=4*sin(pi*harmonic*duty)/(pi*harmonic);
-                sampleIntegral+=amplitude*(sin(start+angular*duration)-sin(start))/angular;
-            }
+            SDL_UnlockMutex(audioQueueMutex);
+            MwSdlFail("Audio producer advanced beyond bounded timeline");
         }
-        if (counting && (speakerControl&1)) speakerPhase=fmod(speakerPhase+duration,speakerDivisor);
-        audioTime+=duration;sampleCycles+=duration;
-        if (sampleCycles>=cyclesPerSample-1e-8)
-        {
-            float speaker=(float)(0.15*sampleIntegral/cyclesPerSample);
-            if (mwSdlSoundSystem!=MW_SOUND_SPEAKER)
-            {
-                if (mwSdlSoundSystem==MW_SOUND_MT32)
-                {
-                    if (silentMt32) queuedSamples[queuedCount*2]=queuedSamples[queuedCount*2+1]=0;
-                    else MwMt32Render(&queuedSamples[queuedCount*outputChannels],1);
-                }
-                else MwAdlibRender(&queuedSamples[queuedCount*outputChannels],1);
-                queuedSamples[queuedCount*outputChannels]+=speaker;
-                queuedSamples[queuedCount*outputChannels+1]+=speaker;
-            }
-            else queuedSamples[queuedCount]=speaker;
-            ++queuedCount;
-            sampleCycles=sampleIntegral=0;
-            if (queuedCount==256)
-            {
-                if (mwSdlAudioObserver) mwSdlAudioObserver(queuedSamples,queuedCount*outputChannels);
-                if (MwSdlVirtualClock()) {generatedFrames+=queuedCount;queuedCount=0;continue;} /* Test clock outruns the device. */
-                SDL_LockMutex(audioQueueMutex);
-                for (uint32_t index=0;index<queuedCount;++index,++generatedFrames)
-                {
-                    if (generatedFrames<playbackFrames) {++lateFrames;continue;}
-                    if (generatedFrames-playbackFrames>=AUDIO_QUEUE_FRAMES)
-                    {
-                        SDL_UnlockMutex(audioQueueMutex);
-                        MwSdlFail("Audio producer advanced beyond bounded timeline");
-                    }
-                    for (uint32_t channel=0;channel<outputChannels;++channel)
-                        audioQueue[generatedFrames%AUDIO_QUEUE_FRAMES][channel]=queuedSamples[index*outputChannels+channel];
-                }
-                SDL_UnlockMutex(audioQueueMutex);
-                queuedCount=0;
-            }
-        }
+        for (uint32_t channel=0;channel<outputChannels;++channel)
+            audioQueue[generatedFrames%AUDIO_QUEUE_FRAMES][channel]=samples[index*outputChannels+channel];
     }
+    SDL_UnlockMutex(audioQueueMutex);
 }
+void MwSdlAdvanceAudio(double pitTime) {mixer.advance(pitTime,QueueAudioBlock);}
 void MwSdlWriteSpeakerPort(uint16_t port,uint8_t value)
 {
-    if (port==PIT_CONTROL_PORT && value==PIT_CHANNEL2_SQUARE_WAVE)
-    {highByteNext=false;counting=false;speakerPhase=0;return;}
-    if (port==PIT_CHANNEL2_PORT)
-    {
-        if (!highByteNext) {periodLow=value;highByteNext=true;return;}
-        uint16_t period=periodLow|((uint16_t)value<<8);
-        speakerDivisor=period?period:0x10000;
-        highByteNext=false;counting=true;speakerPhase=0;return;
-    }
-    if (port==SPEAKER_CONTROL_PORT)
-    {
-        if (!(value&1)) speakerPhase=0; /* Gate-low holds mode3 counter. */
-        speakerControl=value;return;
-    }
-    MwSdlFail("Unsupported speaker hardware write");
+    if (!mixer.speaker().writePort(port,value)) MwSdlFail("Unsupported speaker hardware write");
 }
-uint8_t MwSdlReadSpeakerControl(void) {return speakerControl;}
+uint8_t MwSdlReadSpeakerControl(void) {return mixer.speaker().control();}
 uint32_t MwSdlQueuedAudioMilliseconds(void)
 {
     int bytes=SDL_GetAudioStreamQueued(audioStream);
@@ -221,4 +174,6 @@ void MwSdlShutdownAudio(void)
     audioStream=NULL;
     SDL_DestroyMutex(audioQueueMutex);audioQueueMutex=NULL;
     MwMt32Close();
+    if (pcmDump) fclose(pcmDump);
+    pcmDump=NULL;
 }
