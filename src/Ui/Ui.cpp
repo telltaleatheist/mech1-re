@@ -238,7 +238,7 @@ struct MenuSpec {
 //   Rows         rows of the named words in `names`, which the exe keeps one
 //                field after another (all the first fields, then the second);
 //   CaptionRefs  a pointer table naming colour captions;
-//   PanelRefs    a pointer table naming panels;
+//   PanelRefs    a pointer table naming panels, those in `names` only;
 //   Diagrams     body diagrams: a background rectangle and kBodyRegions
 //                region rectangles each, [x, y, width, height];
 //   DiagramRefs  keyed by `names`: the index of a diagram in the table
@@ -389,13 +389,10 @@ void put_table(const Reader& r, std::string& out, const Json& v, const TableSpec
     case TableKind::KeyedWords:
     case TableKind::DiagramRefs:
         break;
-    case TableKind::PanelRefs: {
-        std::vector<std::string_view> panel_names;
-        for (const PanelSpec& p : screen.panels) panel_names.push_back(p.name);
+    case TableKind::PanelRefs:
         for (const Json& n : entries)
-            put_word(out, piece_offset(r, screen.file, "panel", panel_names[r.name(n, panel_names, what + "'s entry")]));
+            put_word(out, piece_offset(r, screen.file, "panel", table.names[r.name(n, table.names, what + "'s entry")]));
         break;
-    }
     case TableKind::Diagrams:
         for (const Json& diagram : entries) {
             r.only(diagram, {"background", "regions"});
@@ -601,7 +598,27 @@ constexpr MenuSpec kDealerMenus[] = {{"market", 13, MenuCaptions::Screen, false}
                                      {"dropship", 2, MenuCaptions::Screen, false},
                                      {"component", 1, MenuCaptions::Screen, false},
                                      {"ammo", 13, MenuCaptions::Screen, false}};
-constexpr TableSpec kDealerTables[] = {{"compatibility_panels", TableKind::PanelRefs, 6}};
+constexpr std::string_view kCompatibilityPanels[] = {"compatibility_1", "compatibility_2", "compatibility_3",
+                                                     "compatibility_4", "compatibility_5", "compatibility_6"};
+constexpr TableSpec kDealerTables[] = {{"compatibility_panels", TableKind::PanelRefs, 6, kCompatibilityPanels}};
+// travel.json: the travel map's panels and menu, the house browser, the
+// house's planet list (30 planet rows the code fills in), and the transport
+// animations. The travel map's last record is the one its others link left
+// to; its caption is null, as code fills it in.
+constexpr std::string_view kTravelCaptions[] = {
+    "search", "planet_1", "planet_2", "planet_3", "planet_4", "planet_5", "planet_6", "planet_7", "planet_8",
+    "planet_9", "planet_10", "planet_11", "planet_12", "planet_13", "planet_14", "planet_15", "planet_16",
+    "planet_17", "planet_18", "planet_19", "planet_20", "planet_21", "planet_22", "planet_23", "planet_24",
+    "planet_25", "planet_26", "planet_27", "planet_28", "planet_29", "planet_30", "planets_back",
+    "browser_title", "house_1", "house_2", "house_3", "house_4", "house_5", "browser_close",
+    "destination_name", "destination_detail", "confirm_travel", "leave", "browse_houses"};
+constexpr PanelSpec kTravelPanels[] = {{"house_planets", 32}, {"house_browser", 7}, {"cost", 1},
+                                       {"confirm", 1}, {"destination", 2}, {"browse", 1}};
+constexpr MenuSpec kTravelMenus[] = {{"house_planets", 31, MenuCaptions::Screen, false},
+                                     {"house_browser", 6, MenuCaptions::Screen, false},
+                                     {"map", 5, MenuCaptions::Screen, false}};
+constexpr TableSpec kTravelTables[] = {{"hired_transport_frames", TableKind::Words, 34},
+                                       {"dropship_frames", TableKind::Words, 22}};
 constexpr ScreenSpec kScreens[] = {
     {"options", kOptionsCaptions, {}, kOptionsPanels, kOptionsMenus, {}},
     {"events", {}, {}, {}, kEventMenus, {}},
@@ -610,6 +627,7 @@ constexpr ScreenSpec kScreens[] = {
     {"contract_office", kContractCaptions, {}, kContractPanels, kContractMenus, kContractTables},
     {"complex", kComplexCaptions, {}, kComplexPanels, kComplexMenus, kComplexTables},
     {"dealer", kDealerCaptions, {}, kDealerPanels, kDealerMenus, kDealerTables},
+    {"travel", kTravelCaptions, {}, kTravelPanels, kTravelMenus, kTravelTables},
 };
 
 }  // namespace

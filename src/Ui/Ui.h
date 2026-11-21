@@ -19,7 +19,7 @@
 //      "condition_colours": {"engine": [2 schemes of 4],
 //        "system": [2 schemes of 4]}}
 //   MW_MAIN's screens (options, events, hub, crew, contract_office,
-//   complex, dealer; each leaves out the members it has none of)
+//   complex, dealer, travel; each leaves out the members it has none of)
 //     {"captions": {name: {"at": [x, y], "colour": c} | {"colour": c}},
 //      "panels": {name: {"at": [x, y], "width", "bottom_inset", "border",
 //        "line_spacing", "background", "lines_shown" (list panels only),
@@ -29,7 +29,8 @@
 //        "caption": name | null (a text record) | "picture": n (otherwise),
 //        "up", "down", "left", "right": record index | null}]}},
 //      "tables": {name: [words] | {unit kind: word} | [{field: word}] |
-//        [colour caption names] | [panel names] | [{"background": rect,
+//        [colour caption names] | [panel names, of those it may hold] |
+//        [{"background": rect,
 //        "regions": [9 rects]}] | {mech kind: diagram index | null}}}
 //     A caption is its head; its text follows in the exe until slice 5. A
 //     colour caption (crew's pilot assignment captions) is a colour byte

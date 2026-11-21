@@ -499,96 +499,56 @@ static bool ImportInitialString(const uint8_t *data, uint16_t offset, char *text
     if (!end) return false;
     memcpy(text,data+offset,(size_t)(end-(data+offset))+1);return true;
 }
-static bool ImportTravelPanel(const uint8_t *data, uint16_t panelOffset,
-    MwPanelDescriptor *panel, MwServiceCaption *captions, uint16_t expectedLines)
-{
-    uint16_t header[8];ImportInitialWords(data,panelOffset,header,8);
-    panel->x=header[0];panel->y=header[1];panel->width=header[2];panel->bottomInset=header[3];
-    panel->lineCount=header[4];panel->borderEnabled=header[5];panel->lineSpacing=header[6];panel->background=header[7];
-    if (panel->lineCount!=expectedLines) return false;
-    for (uint16_t line=0;line<expectedLines;++line)
-    {
-        uint16_t offset=MwReadNativeWord(data,(uint16_t)(panelOffset+0x10+line*2));
-        if (!ImportInitialString(data,(uint16_t)(offset+5),captions[line].text,sizeof(captions[line].text))) return false;
-        ImportInitialText(data,offset,&captions[line].display,captions[line].text,0);
-        panel->lines[line]=&captions[line].display;
-    }
-    return true;
-}
-static bool ImportTravelCaption(const uint8_t *data, uint16_t offset, MwServiceCaption *caption)
-{
-    if (!ImportInitialString(data,(uint16_t)(offset+5),caption->text,sizeof(caption->text))) return false;
-    ImportInitialText(data,offset,&caption->display,caption->text,0);return true;
-}
-static void ImportTravelMenu(const uint8_t *data, uint16_t offset, MwUiMenu *menu)
-{
-    for (uint16_t index=0;index<menu->recordCount;++index)
-    {
-        const uint8_t *encoded=data+offset+index*CAMPAIGN_UI_RECORD_BYTES;
-        MwUiRecord *record=&menu->records[index];
-        record->enabled=encoded[0];record->textRecord=encoded[1];
-        record->x=MwReadNativeWord(encoded,2);record->y=MwReadNativeWord(encoded,4);
-        record->activateCodeOffset=MwReadNativeWord(encoded,6);record->pictureIndex=MwReadNativeWord(encoded,8);
-        record->upRecordIndex=encoded[10];record->downRecordIndex=encoded[11];
-        record->leftRecordIndex=encoded[12];record->rightRecordIndex=encoded[13];
-        record->text=NULL;record->textColour=NULL;
-    }
-}
 static bool ImportTravelUiData(const uint8_t *data)
 {
-    if (!ImportTravelPanel(data,0x5C35,&travelDestinationHeaderPanel,travelDestinationHeaderLabels,2)
-        || !ImportTravelPanel(data,0x5BF9,&travelCostPanel,&travelCostLabel,1)
-        || !ImportTravelPanel(data,0x5C17,&travelConfirmPanel,&travelConfirmLabel,1)
-        || !ImportTravelPanel(data,0x5C75,&travelBrowsePanel,&travelBrowseLabel,1)
-        || !ImportTravelPanel(data,0x5A0D,&travelHouseBrowserPanel,travelHouseBrowserLabels,TRAVEL_HOUSE_BROWSER_LINE_COUNT)) return false;
-    uint16_t panelHeader[8];ImportInitialWords(data,0x54E4,panelHeader,8);
-    travelHousePlanetPanel.x=panelHeader[0];travelHousePlanetPanel.y=panelHeader[1];
-    travelHousePlanetPanel.width=panelHeader[2];travelHousePlanetPanel.bottomInset=panelHeader[3];
-    travelHousePlanetPanel.lineCount=panelHeader[4];travelHousePlanetPanel.borderEnabled=panelHeader[5];
-    travelHousePlanetPanel.lineSpacing=panelHeader[6];travelHousePlanetPanel.background=panelHeader[7];
-    if (travelHousePlanetPanel.lineCount!=TRAVEL_HOUSE_PLANET_LINE_COUNT
-        || !ImportTravelCaption(data,0x5534,&travelHouseSearchCaption)
-        || !ImportTravelCaption(data,0x57FD,&travelHousePlanetCancelLabel)) return false;
-    travelHousePlanetPanel.lines[0]=&travelHouseSearchCaption.display;
+    /* data/ui/travel.json: the house's planet list (panel 54E4, menu 5809),
+     * the house browser (5A0D, 5A7B) and the travel map (5BF9, 5C17, 5C35,
+     * 5C75; menu 5B8C). */
+    static const char *const planetIds[TRAVEL_PLANET_ROWS_PER_HOUSE]={"travel.caption.planet_1","travel.caption.planet_2",
+        "travel.caption.planet_3","travel.caption.planet_4","travel.caption.planet_5","travel.caption.planet_6",
+        "travel.caption.planet_7","travel.caption.planet_8","travel.caption.planet_9","travel.caption.planet_10",
+        "travel.caption.planet_11","travel.caption.planet_12","travel.caption.planet_13","travel.caption.planet_14",
+        "travel.caption.planet_15","travel.caption.planet_16","travel.caption.planet_17","travel.caption.planet_18",
+        "travel.caption.planet_19","travel.caption.planet_20","travel.caption.planet_21","travel.caption.planet_22",
+        "travel.caption.planet_23","travel.caption.planet_24","travel.caption.planet_25","travel.caption.planet_26",
+        "travel.caption.planet_27","travel.caption.planet_28","travel.caption.planet_29","travel.caption.planet_30"};
+    static const char *const browserIds[TRAVEL_HOUSE_BROWSER_LINE_COUNT]={"travel.caption.browser_title",
+        "travel.caption.house_1","travel.caption.house_2","travel.caption.house_3","travel.caption.house_4",
+        "travel.caption.house_5","travel.caption.browser_close"};
+    UiCaptionOwner owners[2+TRAVEL_PLANET_ROWS_PER_HOUSE+TRAVEL_HOUSE_BROWSER_LINE_COUNT+5];
+    size_t count=0;
+    owners[count++]={"travel.caption.search",&travelHouseSearchCaption.display,travelHouseSearchCaption.text,sizeof(travelHouseSearchCaption.text),0,0};
     for (uint16_t row=0;row<TRAVEL_PLANET_ROWS_PER_HOUSE;++row)
-    {
-        uint16_t rowOffset=0x554B+row*TRAVEL_PLANET_ROW_BYTES;
-        if (!ImportTravelCaption(data,rowOffset,&travelHousePlanetRows[row])) return false;
-        travelHousePlanetPanel.lines[row+1]=&travelHousePlanetRows[row].display;
-    }
-    travelHousePlanetPanel.lines[TRAVEL_HOUSE_PLANET_LINE_COUNT-1]=&travelHousePlanetCancelLabel.display;
-    ImportTravelMenu(data,0x5A7B,&travelHouseBrowserMenu);
-    for (uint16_t house=0;house<TRAVEL_HOUSE_COUNT;++house)
-    {
-        travelHouseBrowserMenu.records[house].text=travelHouseBrowserLabels[house+1].text;
-        travelHouseBrowserMenu.records[house].textColour=&travelHouseBrowserLabels[house+1].display.colour;
-        uint16_t textOffset=MwReadNativeWord(data,(uint16_t)(0x59BB+house*sizeof(uint16_t)));
-        if (!ImportInitialString(data,textOffset,travelHouseSearchNames[house],sizeof(travelHouseSearchNames[house]))) return false;
-    }
-    travelHouseBrowserMenu.records[TRAVEL_HOUSE_COUNT].text=travelHouseBrowserLabels[TRAVEL_HOUSE_COUNT+1].text;
-    travelHouseBrowserMenu.records[TRAVEL_HOUSE_COUNT].textColour=&travelHouseBrowserLabels[TRAVEL_HOUSE_COUNT+1].display.colour;
-    ImportTravelMenu(data,0x5809,&travelHousePlanetMenu);
-    for (uint16_t row=0;row<TRAVEL_PLANET_ROWS_PER_HOUSE;++row)
-    {
-        travelHousePlanetMenu.records[row].text=travelHousePlanetRows[row].text;
-        travelHousePlanetMenu.records[row].textColour=&travelHousePlanetRows[row].display.colour;
-    }
-    travelHousePlanetMenu.records[TRAVEL_PLANET_ROWS_PER_HOUSE].text=travelHousePlanetCancelLabel.text;
-    travelHousePlanetMenu.records[TRAVEL_PLANET_ROWS_PER_HOUSE].textColour=&travelHousePlanetCancelLabel.display.colour;
-    ImportTravelMenu(data,0x5B8C,&travelMapMenu);
+        owners[count++]={planetIds[row],&travelHousePlanetRows[row].display,travelHousePlanetRows[row].text,sizeof(travelHousePlanetRows[row].text),0,0};
+    owners[count++]={"travel.caption.planets_back",&travelHousePlanetCancelLabel.display,travelHousePlanetCancelLabel.text,sizeof(travelHousePlanetCancelLabel.text),0,0};
+    for (uint16_t line=0;line<TRAVEL_HOUSE_BROWSER_LINE_COUNT;++line)
+        owners[count++]={browserIds[line],&travelHouseBrowserLabels[line].display,travelHouseBrowserLabels[line].text,sizeof(travelHouseBrowserLabels[line].text),0,0};
+    owners[count++]={"travel.caption.destination_name",&travelDestinationHeaderLabels[0].display,travelDestinationHeaderLabels[0].text,sizeof(travelDestinationHeaderLabels[0].text),0,0};
+    owners[count++]={"travel.caption.destination_detail",&travelDestinationHeaderLabels[1].display,travelDestinationHeaderLabels[1].text,sizeof(travelDestinationHeaderLabels[1].text),0,0};
+    owners[count++]={"travel.caption.confirm_travel",&travelCostLabel.display,travelCostLabel.text,sizeof(travelCostLabel.text),0,0};
+    owners[count++]={"travel.caption.leave",&travelConfirmLabel.display,travelConfirmLabel.text,sizeof(travelConfirmLabel.text),0,0};
+    owners[count++]={"travel.caption.browse_houses",&travelBrowseLabel.display,travelBrowseLabel.text,sizeof(travelBrowseLabel.text),0,0};
+    if (!MwImportUiCaptions(data,owners,count)) return false;
     /* DS:5C4E is one buffer in the original: 081B:5FEF copies the destination
      * name into it, the header panel's first caption draws it (5C49, colour at
      * 5C4D) and travel record 0 points at it, so the selection redraws the
-     * name in the highlight colour. All three use travelDestinationName. */
+     * name in the highlight colour. All three use travelDestinationName, so
+     * the caption is pointed at it before the menu takes its text. */
     travelDestinationHeaderLabels[0].display.text=travelDestinationName;
-    travelMapMenu.records[0].text=travelDestinationName;
-    travelMapMenu.records[0].textColour=&travelDestinationHeaderLabels[0].display.colour;
-    travelMapMenu.records[1].text=travelCostLabel.text;
-    travelMapMenu.records[1].textColour=&travelCostLabel.display.colour;
-    travelMapMenu.records[2].text=travelBrowseLabel.text;
-    travelMapMenu.records[2].textColour=&travelBrowseLabel.display.colour;
-    travelMapMenu.records[3].text=travelConfirmLabel.text;
-    travelMapMenu.records[3].textColour=&travelConfirmLabel.display.colour;
+    if (!MwImportUiPanel("travel.panel.house_planets",&travelHousePlanetPanel,TRAVEL_HOUSE_PLANET_LINE_COUNT,owners,count)
+        || !MwImportUiPanel("travel.panel.house_browser",&travelHouseBrowserPanel,TRAVEL_HOUSE_BROWSER_LINE_COUNT,owners,count)
+        || !MwImportUiPanel("travel.panel.cost",&travelCostPanel,1,owners,count)
+        || !MwImportUiPanel("travel.panel.confirm",&travelConfirmPanel,1,owners,count)
+        || !MwImportUiPanel("travel.panel.destination",&travelDestinationHeaderPanel,2,owners,count)
+        || !MwImportUiPanel("travel.panel.browse",&travelBrowsePanel,1,owners,count)
+        || !MwImportUiMenu("travel.menu.house_planets",&travelHousePlanetMenu,owners,count)
+        || !MwImportUiMenu("travel.menu.house_browser",&travelHouseBrowserMenu,owners,count)
+        || !MwImportUiMenu("travel.menu.map",&travelMapMenu,owners,count)) return false;
+    for (uint16_t house=0;house<TRAVEL_HOUSE_COUNT;++house)
+    {
+        uint16_t textOffset=MwReadNativeWord(data,(uint16_t)(0x59BB+house*sizeof(uint16_t)));
+        if (!ImportInitialString(data,textOffset,travelHouseSearchNames[house],sizeof(travelHouseSearchNames[house]))) return false;
+    }
     if (!ImportInitialString(data,0x5B83,travelPopulationSuffix,sizeof(travelPopulationSuffix))) return false;
     const uint16_t landscapeLabels[TRAVEL_LANDSCAPE_LABEL_COUNT]={0x5CA6,0x5CAD,0x5CB6};
     for (uint16_t label=0;label<TRAVEL_LANDSCAPE_LABEL_COUNT;++label)
@@ -808,8 +768,8 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     travelAnimationFrameStep=MwReadNativeWord(data,0x5AE6);
     memcpy(&travelDropShipSelected,data+0x5AE5,sizeof(travelDropShipSelected));
     hiredTransportReverseTerminator=MwReadNativeWord(data,0x5AE8);
-    ImportInitialWords(data,0x5AEA,(uint16_t *)hiredTransportFrames,sizeof(hiredTransportFrames)/sizeof(uint16_t));
-    ImportInitialWords(data,0x5B2E,(uint16_t *)dropShipTravelFrames,sizeof(dropShipTravelFrames)/sizeof(uint16_t));
+    if (!MwUiCopyWords("travel.table.hired_transport_frames",(uint16_t *)hiredTransportFrames,sizeof(hiredTransportFrames)/sizeof(uint16_t),0) /*5AEA*/
+        || !MwUiCopyWords("travel.table.dropship_frames",(uint16_t *)dropShipTravelFrames,sizeof(dropShipTravelFrames)/sizeof(uint16_t),0)) return false; /*5B2E*/
     memcpy(travelDestinationName,data+0x5C4E,sizeof(travelDestinationName));
     travelSelectedHouseByteOffset=MwReadNativeWord(data,0x54DC);
     travelHousePlanetStart=MwReadNativeWord(data,0x54DE);

@@ -209,9 +209,16 @@ void what_doesnt_fit_is_refused(const fs::path& data, const fs::path& work) {
     with_complex([&](Json& c) { at(at(at(at(at(c, "tables"), "body_diagrams"), 3), "background"), 1) = Json{-4.0}; });
     refused(load, "background is not a whole number from 0 to 65535", "a negative diagram coordinate");
     with_file("dealer.json", [&](Json& d) { at(at(at(d, "tables"), "compatibility_panels"), 2) = Json{std::string("market")}; });
-    load();  // the layout takes any of the screen's panels here; the importer, only the compatibility panels
+    refused(load, "the table \"compatibility_panels\"'s entry is not one of its names", "a pointer table naming a panel it can't hold");
     with_file("dealer.json", [&](Json& d) { at(at(at(d, "tables"), "compatibility_panels"), 2) = Json{std::string("shelf")}; });
     refused(load, "the table \"compatibility_panels\"'s entry is not one of its names", "a pointer table naming no panel");
+    const auto map_record = [](Json& t, std::size_t index) -> Json& { return at(at(at(at(t, "menus"), "map"), "records"), index); };
+    with_file("travel.json", [&](Json& t) { at(map_record(t, 1), "left") = Json{5.0}; });
+    refused(load, "the menu \"map\"'s link left 5 leads out of the menu", "a link one past the travel map");
+    with_file("travel.json", [&](Json& t) { at(at(at(at(at(t, "menus"), "house_planets"), "records"), 30), "down") = Json{31.0}; });
+    refused(load, "the menu \"house_planets\"'s link down 31 leads out of the menu", "a planet list link one past its end");
+    with_file("travel.json", [&](Json& t) { array(at(at(t, "tables"), "dropship_frames")).pop_back(); });
+    refused(load, "the table \"dropship_frames\" is not a list of 22", "a frame missing");
     restore();
     fs::remove(work / "ui" / "orders.json");
     refused(load, "can't read", "a missing file");

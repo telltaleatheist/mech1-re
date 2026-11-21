@@ -1009,6 +1009,20 @@ Each piece goes on its own branch and needs a build, ctest, `ui_test`,
   - The repair menu's one past-end link is accepted; any other is refused.
   - `ui_test` gained 10 refusals.
 - **4e:** `travel.json` (the 32-line planet panel and the 31-record menu).
+  Done (55 more pieces, 337 in all):
+  - The travel map, the house browser, the house's planet list (a search
+    caption, 30 planet rows and the way back) and the two transport
+    animations.
+  - The travel map menu has five records: the fifth, which the others
+    link left to, is a text record whose caption code fills in (null).
+  - The destination caption's text is the shared `travelDestinationName`
+    buffer, as before. The importer points the caption at it before the map
+    menu takes its text.
+  - `positionedText` (55EC) stays code: it exists only as the dealer
+    component menu's past-end probe, and probes stay code (6.1).
+  - The compatibility panels' pointer table now names only the six
+    compatibility panels; any other panel is refused at load.
+  - `ui_test` gained 4 refusals.
 - **4f:** the ten start values by 3f's method, `orderMapPositionMask` to
   code, the inventory regenerated with the `ui` door, and the record here.
 
