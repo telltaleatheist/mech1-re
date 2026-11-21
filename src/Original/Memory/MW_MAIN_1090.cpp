@@ -7,6 +7,7 @@
 #include "mechwarrior/campaign_market.h"
 #include "mechwarrior/original_data.h"
 #include "mechwarrior/story.h"
+#include <stdio.h>
 #include "mechwarrior/campaign_startup.h"
 #include "mechwarrior/campaign_events.h"
 #include "mechwarrior/campaign_state.h"
@@ -607,7 +608,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     memcpy(&campaignTimerByte,data+0x0008,sizeof(campaignTimerByte));
     memcpy(combatExecutableFilename,data+0x0EF6,sizeof(combatExecutableFilename));
     memcpy(&deploymentResolvedWithoutCombat,data+0x140C,sizeof(deploymentResolvedWithoutCombat));
-    memcpy(darkWingVictoryText,data+0x1A37,sizeof(darkWingVictoryText));
+    if (!MwStoryCopyText("dark_wing.victory",darkWingVictoryText,sizeof(darkWingVictoryText))) return false;
     memcpy(afterActionCrewHeading,data+0x11DF,sizeof(afterActionCrewHeading));
     memcpy(afterActionMechHeading,data+0x11EC,sizeof(afterActionMechHeading));
     memcpy(afterActionSalvageHeading,data+0x11F9,sizeof(afterActionSalvageHeading));
@@ -620,18 +621,18 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     ImportInitialWords(data,0x1241,(uint16_t *)houseDeductionRollThresholds,sizeof(houseDeductionRollThresholds)/sizeof(uint16_t));
     ImportInitialWords(data,0x124B,(uint16_t *)houseReducedPayoutPercentages,sizeof(houseReducedPayoutPercentages)/sizeof(uint16_t));
     ImportInitialWords(data,0x8E46,(uint16_t *)missionDeploymentUnitsByScenario,sizeof(missionDeploymentUnitsByScenario)/sizeof(uint16_t));
-    memcpy(deploymentUneventfulText,data+0x140D,sizeof(deploymentUneventfulText));
-    memcpy(afterActionKuritaFailure,data+0x149B,sizeof(afterActionKuritaFailure));
-    memcpy(afterActionLiaoFailure,data+0x1528,sizeof(afterActionLiaoFailure));
-    memcpy(afterActionGeneralFailure,data+0x159B,sizeof(afterActionGeneralFailure));
-    memcpy(afterActionKuritaSuccess,data+0x1674,sizeof(afterActionKuritaSuccess));
-    memcpy(afterActionLiaoSuccess,data+0x16D6,sizeof(afterActionLiaoSuccess));
-    memcpy(afterActionGeneralSuccess,data+0x1742,sizeof(afterActionGeneralSuccess));
-    memcpy(settlementSupplyDeductionText,data+0x178C,sizeof(settlementSupplyDeductionText));
-    memcpy(settlementPerformanceDeductionText,data+0x1834,sizeof(settlementPerformanceDeductionText));
-    memcpy(settlementTransportDeductionText,data+0x18E0,sizeof(settlementTransportDeductionText));
-    memcpy(settlementNoPaymentText,data+0x19A2,sizeof(settlementNoPaymentText));
-    memcpy(darkWingAttackFailedText,data+0x1BBC,sizeof(darkWingAttackFailedText));
+    if (!MwStoryCopyText("deployment.uneventful",deploymentUneventfulText,sizeof(deploymentUneventfulText))) return false;
+    if (!MwStoryCopyText("after_action.failure.kurita",afterActionKuritaFailure,sizeof(afterActionKuritaFailure))) return false;
+    if (!MwStoryCopyText("after_action.failure.liao",afterActionLiaoFailure,sizeof(afterActionLiaoFailure))) return false;
+    if (!MwStoryCopyText("after_action.failure.general",afterActionGeneralFailure,sizeof(afterActionGeneralFailure))) return false;
+    if (!MwStoryCopyText("after_action.success.kurita",afterActionKuritaSuccess,sizeof(afterActionKuritaSuccess))) return false;
+    if (!MwStoryCopyText("after_action.success.liao",afterActionLiaoSuccess,sizeof(afterActionLiaoSuccess))) return false;
+    if (!MwStoryCopyText("after_action.success.general",afterActionGeneralSuccess,sizeof(afterActionGeneralSuccess))) return false;
+    if (!MwStoryCopyText("settlement.deduction.supply",settlementSupplyDeductionText,sizeof(settlementSupplyDeductionText))) return false;
+    if (!MwStoryCopyText("settlement.deduction.performance",settlementPerformanceDeductionText,sizeof(settlementPerformanceDeductionText))) return false;
+    if (!MwStoryCopyText("settlement.deduction.transport",settlementTransportDeductionText,sizeof(settlementTransportDeductionText))) return false;
+    if (!MwStoryCopyText("settlement.no_payment",settlementNoPaymentText,sizeof(settlementNoPaymentText))) return false;
+    if (!MwStoryCopyText("dark_wing.attack_failed",darkWingAttackFailedText,sizeof(darkWingAttackFailedText))) return false;
     campaignTimerTicks=MwReadNativeWord(data,0x000C);
     memcpy(&campaignTimerAlternatingPhase,data+0x000E,sizeof(campaignTimerAlternatingPhase));
     memcpy(&campaignTimerPhaseTicks,data+0x000F,sizeof(campaignTimerPhaseTicks));
@@ -1005,11 +1006,10 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     barMenuSelectedRow=MwReadNativeWord(data,0x8FF4);
     optionsMenuSelection=MwReadNativeWord(data,0x9D50);
     pilotRosterCount=MwReadNativeWord(data,0x04B5);
-    uint16_t narrationOffset=0x129C;
-    for (uint16_t line=0;line<10;++line)
+    for (unsigned line=0;line<10;++line)
     {
-        if (!ImportInitialString(data,narrationOffset,introNarrationLines[line],sizeof(introNarrationLines[line]))) return false;
-        narrationOffset+=(uint16_t)(strlen(introNarrationLines[line])+1);
+        char id[24];snprintf(id,sizeof(id),"intro.narration.%u",line+1);
+        if (!MwStoryCopyText(id,introNarrationLines[line],sizeof(introNarrationLines[line]))) return false;
     }
     introFirstLeftText.x=MwReadNativeWord(data,0x1C33);introFirstLeftText.y=MwReadNativeWord(data,0x1C35);
     if (!MwStoryCopyText("intro.caption.1.left",introFirstLeftText.text,sizeof(introFirstLeftText.text))) return false;
@@ -2234,11 +2234,11 @@ static bool ImportContractData(const uint8_t *data)
         }
     }
     contractOfficeNavigationProbe=data[0x5661];contractActionsNavigationProbe=data[0x5807];
-    return ImportInitialString(data,0x4890,contractNarrative,sizeof(contractNarrative))
+    return MwStoryCopyText("contract.narrative",contractNarrative,sizeof(contractNarrative))
         && ImportInitialString(data,0x4BFA,noContractsText,sizeof(noContractsText))
         && ImportInitialString(data,0x4C25,negotiationTerminatedText,sizeof(negotiationTerminatedText))
         && ImportInitialString(data,0x4C6C,contractAcceptedText,sizeof(contractAcceptedText))
-        && ImportInitialString(data,0x4C87,houseContractRefusalText,sizeof(houseContractRefusalText))
+        && MwStoryCopyText("contract.refusal.house",houseContractRefusalText,sizeof(houseContractRefusalText))
         && ImportInitialString(data,0x0FC0,commanderNeedsMechText,sizeof(commanderNeedsMechText))
         && ImportInitialString(data,0x0FF7,assignedMechUnreadyText,sizeof(assignedMechUnreadyText))
         && ImportInitialString(data,0x1031,contractCancelledText,sizeof(contractCancelledText));

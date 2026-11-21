@@ -148,6 +148,11 @@ DS:0008 finds the data segment, then each piece must still match its hash.
    `import_table.cpp`), `story/text.json` and `story/import.json`, re-import
    when missing or outdated; the captions read from the story file, their
    positions still from the exe. Unit tests `json_test`, `story_test` (ctest).
+   2b: the intro's ten narration lines, the deployment, after-action,
+   settlement and Dark Wing texts, the contract office's narrative and house
+   refusal (25 pieces; each buffer is filled whole, the rest zeroed, as the
+   exe holds it). The mission descriptions (1090:8A69) mix rule headers with
+   their text and saves keep offsets into them; they wait for 2d.
 3. **Rules and the new campaign** into `data/rules/`. Traces equal (same
    numbers). The importer's piece hashes check them against the exe.
 4. **Layout** into `data/ui/`. Traces equal.

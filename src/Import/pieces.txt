@@ -19,3 +19,36 @@ intro.caption.6.left   MW_MAIN.EXE 1090:1DFB z
 intro.caption.6.right  MW_MAIN.EXE 1090:1E1C z
 intro.caption.7.left   MW_MAIN.EXE 1090:1E44 z
 intro.caption.7.right  MW_MAIN.EXE 1090:1EBC z
+
+# The intro's narration (1090:129C.., ten strings back to back).
+intro.narration.1      MW_MAIN.EXE 1090:129C z
+intro.narration.2      MW_MAIN.EXE 1090:12C1 z
+intro.narration.3      MW_MAIN.EXE 1090:12E5 z
+intro.narration.4      MW_MAIN.EXE 1090:1307 z
+intro.narration.5      MW_MAIN.EXE 1090:132A z
+intro.narration.6      MW_MAIN.EXE 1090:134F z
+intro.narration.7      MW_MAIN.EXE 1090:1377 z
+intro.narration.8      MW_MAIN.EXE 1090:139E z
+intro.narration.9      MW_MAIN.EXE 1090:13C2 z
+intro.narration.10     MW_MAIN.EXE 1090:13E8 z
+
+# Deployment, after action and settlement.
+deployment.uneventful          MW_MAIN.EXE 1090:140D z
+after_action.failure.kurita    MW_MAIN.EXE 1090:149B z
+after_action.failure.liao      MW_MAIN.EXE 1090:1528 z
+after_action.failure.general   MW_MAIN.EXE 1090:159B z
+after_action.success.kurita    MW_MAIN.EXE 1090:1674 z
+after_action.success.liao      MW_MAIN.EXE 1090:16D6 z
+after_action.success.general   MW_MAIN.EXE 1090:1742 z
+settlement.deduction.supply    MW_MAIN.EXE 1090:178C z
+settlement.deduction.performance MW_MAIN.EXE 1090:1834 z
+settlement.deduction.transport MW_MAIN.EXE 1090:18E0 z
+settlement.no_payment          MW_MAIN.EXE 1090:19A2 z
+
+# The Dark Wing.
+dark_wing.victory              MW_MAIN.EXE 1090:1A37 z
+dark_wing.attack_failed        MW_MAIN.EXE 1090:1BBC z
+
+# The contract office.
+contract.narrative             MW_MAIN.EXE 1090:4890 z
+contract.refusal.house         MW_MAIN.EXE 1090:4C87 z

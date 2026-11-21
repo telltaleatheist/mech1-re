@@ -8,7 +8,7 @@
  * read from there. False (with the reason on stderr) if it can't be imported
  * or read. */
 bool MwHostPrepareStory(const char *gameDirectory, const char *writeDirectory);
-/* Copies the story text `id`, NUL-terminated, into `text`. False (with the
- * reason on stderr) if there is no such text or it doesn't fit. */
+/* Copies the story text `id` into `text` and zeroes the rest of the buffer.
+ * False (with the reason on stderr) if there is no such text or it doesn't fit. */
 bool MwStoryCopyText(const char *id, char *text, size_t capacity);
 #endif

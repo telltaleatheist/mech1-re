@@ -38,6 +38,7 @@ bool MwStoryCopyText(const char *id, char *text, size_t capacity)
                      id, capacity - 1);
         return false;
     }
-    std::memcpy(text, found.c_str(), found.size() + 1);
+    std::memcpy(text, found.c_str(), found.size());
+    std::memset(text + found.size(), 0, capacity - found.size());  // the whole buffer, as the exe holds it
     return true;
 }
