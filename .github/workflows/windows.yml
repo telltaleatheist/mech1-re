@@ -1,5 +1,5 @@
 name: windows playable build
-# mw1-original: manual only (Owen's Actions minutes); run before a milestone.
+# mw1-original: manual only (to save Actions minutes); run before a milestone.
 on:
   workflow_dispatch:
   workflow_call:

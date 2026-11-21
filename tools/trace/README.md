@@ -91,7 +91,7 @@ seconds.
 
 ## Limits
 
-- Combat runs with Owen's 1990-01-22 BTECH.EXE (174,533 bytes), which the
+- Combat runs with the 1990-01-22 BTECH.EXE (174,533 bytes), which the
   port loads since upstream 621961a. Game files are found whatever their
   case, as DOS finds them, so an upper-case install works on Linux too.
 - A key script is fixed: if a screen gains or loses rows, the script needs
