@@ -65,9 +65,14 @@ n_polls     dd 0                        ; 107h: int 16h AH=01/11h calls
 n_empty     dd 0                        ; 10Bh: of those, with the buffer empty
 n_reads     dd 0                        ; 10Fh: AH=00/10h calls
 n_fed       dw 0                        ; 113h: campaign keys fed
+log_pos     dw 0                        ; 115h: int 16h calls logged (wraps at LOG_N)
+log_at      dw call_log                 ; 117h: the log: LOG_N entries of 7 words:
+                                        ; caller IP, CS, AX, empty (1/0), the
+                                        ; caller's DS:03F5, DS:03F7, BIOS tick low
 
 POLLS       equ 4
 MAX_KEYS    equ 16384
+LOG_N       equ 1024
 ; Owen's BTECH.EXE (1990-01-22): segments relative to its load segment.
 INT9_SEG    equ 13f6h                   ; 1BF5 (reference) = 1C06 here
 INT9_OFF    equ 2ccbh
@@ -129,6 +134,9 @@ buffer_empty:
 int16:
         cmp byte [cs:feeding], 0
         je .chain
+        call log_call
+        call from_rom                   ; DOS's own console checks (F000:xxxx)
+        jae .chain                      ; are not the game's polls: never counted
         cmp ah, 1
         je .poll
         cmp ah, 11h
@@ -165,6 +173,65 @@ int16:
         call campaign_feed
 .chain:
         jmp far [cs:old16]
+
+; CF clear when this int 16h call came from segment C000h or above (BIOS and
+; ROM code, DOSBox-X's DOS among it); CF set when it came from a program.
+; On the caller's stack as log_call. Keeps registers.
+from_rom:
+        push bp
+        mov bp, sp
+        cmp word [bp + 6], 0c000h
+        pop bp
+        ret
+
+; Logs this int 16h call (see log_at). On the caller's stack: [sp+2] is the
+; return into int16, [sp+4] the caller's IP, [sp+6] its CS. Keeps registers.
+log_call:
+        push bp
+        mov bp, sp
+        push ax
+        push bx
+        push di
+        push es
+        mov bx, [cs:log_pos]
+        and bx, LOG_N - 1
+        mov di, bx
+        shl di, 1
+        shl di, 1
+        shl di, 1
+        sub di, bx
+        shl di, 1                       ; 14 bytes an entry
+        add di, call_log
+        push cs
+        pop es
+        mov bx, [bp + 4]
+        mov [es:di], bx
+        mov bx, [bp + 6]
+        mov [es:di + 2], bx
+        mov [es:di + 4], ax
+        call buffer_empty
+        mov bx, 0
+        jne .full
+        inc bx
+.full:
+        mov [es:di + 6], bx
+        mov bx, [ds:RANDOM0]
+        mov [es:di + 8], bx
+        mov bx, [ds:RANDOM1]
+        mov [es:di + 10], bx
+        push ds
+        mov bx, 40h
+        mov ds, bx
+        mov bx, [6ch]
+        pop ds
+        mov [es:di + 12], bx
+        inc word [cs:log_pos]
+        pop es
+        pop di
+        pop bx
+        pop ax
+        pop bp
+        ret
 
 ; Switches to MWSNAP's stack and runs BX's routine with DS = CS. Keeps every
 ; register and the flags; not re-entered (busy).
@@ -674,6 +741,7 @@ gc_mode     db 0
 stack_top:
 
 keys        times MAX_KEYS dw 0
+call_log    times LOG_N * 7 dw 0
 
 resident_end:
 
