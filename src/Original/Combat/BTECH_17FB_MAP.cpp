@@ -79,7 +79,7 @@ void BtechDrawLanceMapUnitMarkers(void)
         {
             if (control->positionKnowledgeCode==COMBAT_POSITION_UNKNOWN) continue;
             if (control->positionKnowledgeCode==COMBAT_POSITION_REMEMBERED && (combatTickCounter&1)) continue;
-            remembered=(BtechPosition3D){(uint32_t)control->lastVisiblePosition[0],(uint32_t)control->lastVisiblePosition[1],(uint32_t)control->lastVisiblePosition[2]};
+            remembered=BtechPosition3D{(uint32_t)control->lastVisiblePosition[0],(uint32_t)control->lastVisiblePosition[1],(uint32_t)control->lastVisiblePosition[2]};
             position=&remembered;
         }
         else

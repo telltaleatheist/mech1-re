@@ -336,6 +336,6 @@ void BtechReleaseOrderPanelBuffer(void)
     if (orderPanelCaptureBuffer.bytes)
     {
         BtechFreeDosMemorySelector(orderPanelCaptureBuffer.bytes);
-        orderPanelCaptureBuffer=(BtechResourceAllocation){0};
+        orderPanelCaptureBuffer=BtechResourceAllocation{};
     }
 }

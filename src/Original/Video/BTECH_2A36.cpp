@@ -235,7 +235,7 @@ uint16_t BtechEgaLoadFont(BtechRuntimeStream *stream,uint16_t slot,uint8_t *scra
     uint16_t paragraphs=(uint16_t)((bytes>>4)+((bytes&0x0F)!=0)),largestFreeParagraphs;
     uint8_t *allocation=btechHostAllocateParagraphs(paragraphs,&largestFreeParagraphs);
     if (!allocation) return 0;
-    fonts[slot]=(BtechFont){allocation,(size_t)paragraphs*0x10};
+    fonts[slot]=BtechFont{allocation,(size_t)paragraphs*0x10};
     egaFontBuffer=allocation;
     if (bytes/COMBAT_FONT_READ_BYTES>UINT8_MAX) /* Port emulation of a native CPU fault. */ MW_NATIVE_FAULT("Rejected condition: bytes/COMBAT_FONT_READ_BYTES>UINT8_MAX"); // Native DIV BL fault after allocation stores.
     egaFontChunkCounter=(uint16_t)((bytes/COMBAT_FONT_READ_BYTES)|((bytes%COMBAT_FONT_READ_BYTES)<<8));

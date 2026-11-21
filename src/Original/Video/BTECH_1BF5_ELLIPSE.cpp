@@ -58,8 +58,8 @@ void BtechDrawStyledEllipse(int16_t radius, uint16_t centerX, uint16_t centerY)
     spanPrimaryPattern=palettePrimarySlots[drawLineColour/COMBAT_PALETTE_WORDS][drawLineColour%COMBAT_PALETTE_WORDS];
     spanSecondaryPattern=paletteSecondarySlots[drawLineColour/COMBAT_PALETTE_WORDS][drawLineColour%COMBAT_PALETTE_WORDS];
     if (spanPrimaryPattern==spanSecondaryPattern)
-        shapeSpanCallback=(BtechShapeSpanCallback){graphicsFillSolidSpan,NULL};
-    else shapeSpanCallback=(BtechShapeSpanCallback){NULL,graphicsFillAlternatingSpan};
+        shapeSpanCallback=BtechShapeSpanCallback{graphicsFillSolidSpan,NULL};
+    else shapeSpanCallback=BtechShapeSpanCallback{NULL,graphicsFillAlternatingSpan};
     drawColourPattern=palettePrimarySlots[drawFillColour/COMBAT_PALETTE_WORDS][drawFillColour%COMBAT_PALETTE_WORDS];
     uint16_t horizontalRadius=(uint16_t)radius+((uint16_t)radius>>0x0002);
     uint16_t leftX=centerX-horizontalRadius;

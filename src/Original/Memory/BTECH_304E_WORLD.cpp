@@ -126,7 +126,7 @@ bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t 
     for (uint16_t profile=0;profile<COMBAT_PROJECTILE_PROFILES;++profile)
     {
         uint16_t at=0x0E6E +profile*8;
-        projectileProfiles[profile]=(BtechProjectileProfile){MwReadNativeWord(data,at),MwReadNativeWord(data,at+2),MwReadNativeWord(data,at+4),MwReadNativeWord(data,at+6)};
+        projectileProfiles[profile]=BtechProjectileProfile{MwReadNativeWord(data,at),MwReadNativeWord(data,at+2),MwReadNativeWord(data,at+4),MwReadNativeWord(data,at+6)};
     }
     for (uint16_t kind=0;kind<COMBAT_WEAPON_KINDS;++kind) projectileProfileIndicesByWeapon[kind]=MwReadNativeWord(data,0x232E +kind*2);
     for (uint16_t location=0;location<COMBAT_BODY_LOCATIONS;++location) bodyLocationReferenceIndices[location]=MwReadNativeWord(data,0x0EBC+location*2);
@@ -141,21 +141,21 @@ bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t 
         BtechRenderPrimitive *primitive=style?&laserBeamPrimitive:&ppcBeamPrimitive;
         BtechRenderPolygon *polygons=style?laserBeamPolygons:ppcBeamPolygons;
         if (primitiveAt>0xFFF8 || MwReadNativeWord(data,at)!=1 || data[primitiveAt+1]!=RENDER_PRIMITIVE_POLYGON || MwReadNativeWord(data,primitiveAt+2)!=2) return false;
-        *variant=(BtechRenderVariant){1,primitive};
+        *variant=BtechRenderVariant{1,primitive};
         primitive->scaleLimit=data[primitiveAt];primitive->kind=data[primitiveAt+1];
-        primitive->polygonPayload=(BtechRenderPolygonPayload){2,polygons};
+        primitive->polygonPayload=BtechRenderPolygonPayload{2,polygons};
         uint16_t polygonAt=MwReadNativeWord(data,primitiveAt+4);
         for (uint16_t polygon=0;polygon<2;++polygon,polygonAt+=8)
         {
             if (polygonAt>0xFFF8 || MwReadNativeWord(data,polygonAt+6)!=(polygon?0x27C6:0x27C2)) return false;
-            polygons[polygon]=(BtechRenderPolygon){data[polygonAt],data[polygonAt+1],data[polygonAt+2],data[polygonAt+3],data[polygonAt+4],data[polygonAt+5],polygon?beamHorizontalTriangleIndices:beamVerticalTriangleIndices};
+            polygons[polygon]=BtechRenderPolygon{data[polygonAt],data[polygonAt+1],data[polygonAt+2],data[polygonAt+3],data[polygonAt+4],data[polygonAt+5],polygon?beamHorizontalTriangleIndices:beamVerticalTriangleIndices};
         }
     }
     for (uint16_t chassis=0;chassis<COMBAT_MECH_TEMPLATES;++chassis)
         for (uint16_t location=0;location<COMBAT_ARMOR_LOCATIONS;++location)
         {
             uint16_t at=0x0FC8+chassis*0x36+location*6;
-            fallenBodyReferenceBanks[chassis][location]=(BtechBodyReferencePoint){(int16_t)MwReadNativeWord(data,at),(int16_t)MwReadNativeWord(data,at+2),(int16_t)MwReadNativeWord(data,at+4)};
+            fallenBodyReferenceBanks[chassis][location]=BtechBodyReferencePoint{(int16_t)MwReadNativeWord(data,at),(int16_t)MwReadNativeWord(data,at+2),(int16_t)MwReadNativeWord(data,at+4)};
         }
     for (uint16_t frame=0;frame<COMBAT_BODY_EFFECT_FRAMES;++frame) bodyDamageEffectResourceDeltas[frame]=MwReadNativeWord(data,0x2342+frame*2);
     /* Authored near directory is resolved at installation IO, not every frame. */
@@ -207,7 +207,7 @@ bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t 
  * scalars separately. Host bindings and campaign owners are untouched. */
 void BtechInitializeFreshWorldOwners(const uint8_t *data)
 {
-    bodyReferenceWorldPosition=(BtechPosition3D){0};
+    bodyReferenceWorldPosition=BtechPosition3D{};
     jumpGroundHeight=0;
     aiCandidateTargetSlot=aiCandidateDistance=0;
     avoidanceStepX=avoidanceStepY=0;avoidancePosition=NULL;avoidanceOrientation=NULL;
@@ -216,23 +216,23 @@ void BtechInitializeFreshWorldOwners(const uint8_t *data)
     memset(tacticalThreatUnitSlots,0,sizeof(tacticalThreatUnitSlots));
     memset(tacticalThreatHeadings,0,sizeof(tacticalThreatHeadings));
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot) unitMovementObstructionHistory[slot]=0;
-    for (uint16_t slot=0;slot<COMBAT_PROJECTILE_SLOTS;++slot) projectiles[slot]=(BtechProjectileState){0};
+    for (uint16_t slot=0;slot<COMBAT_PROJECTILE_SLOTS;++slot) projectiles[slot]=BtechProjectileState{};
     for (uint16_t row=0;row<COMBAT_MECH_SLOTS;++row)
         for (uint16_t column=0;column<COMBAT_MECH_SLOTS;++column) unitDistances[row][column]=0;
     for (uint16_t slot=0;slot<COMBAT_BEAM_SLOTS;++slot)
     {
-        beamSlotOccupied[slot]=0;beamResources[slot]=(BtechShapeResource){0};
-        beamRenderEntries[slot]=(BtechRenderEntry){0};beamWorldObjects[slot]=(BtechHeapWorldObject){0};
+        beamSlotOccupied[slot]=0;beamResources[slot]=BtechShapeResource{};
+        beamRenderEntries[slot]=BtechRenderEntry{};beamWorldObjects[slot]=BtechHeapWorldObject{};
         for (uint16_t vector=0;vector<COMBAT_BEAM_VECTORS;++vector)
             for (uint16_t axis=0;axis<3;++axis) beamGeometry[slot][vector][axis]=0;
     }
-    for (uint16_t slot=0;slot<COMBAT_BODY_EFFECT_SLOTS;++slot) bodyDamageEffects[slot]=(BtechBodyDamageEffect){0};
-    for (uint16_t slot=0;slot<COMBAT_DESTRUCTION_EMITTER_SLOTS;++slot) bodyDestructionEmitters[slot]=(BtechBodyDestructionEmitter){0};
-    for (uint16_t slot=0;slot<COMBAT_EFFECT_SLOTS;++slot) effectSequences[slot]=(BtechEffectSequenceState){0};
+    for (uint16_t slot=0;slot<COMBAT_BODY_EFFECT_SLOTS;++slot) bodyDamageEffects[slot]=BtechBodyDamageEffect{};
+    for (uint16_t slot=0;slot<COMBAT_DESTRUCTION_EMITTER_SLOTS;++slot) bodyDestructionEmitters[slot]=BtechBodyDestructionEmitter{};
+    for (uint16_t slot=0;slot<COMBAT_EFFECT_SLOTS;++slot) effectSequences[slot]=BtechEffectSequenceState{};
     for (uint16_t byte=0;byte<sizeof(archiveStreamScratch);++byte) archiveStreamScratch[byte]=0;
-    scenarioSelectors=(BtechScenarioSelectors){0};
+    scenarioSelectors=BtechScenarioSelectors{};
     for (uint16_t slot=0;slot<8;++slot)
-        unitFormationPositions[slot]=(BtechFormationPosition){0};
+        unitFormationPositions[slot]=BtechFormationPosition{};
     for (uint16_t slot=0;slot<TERRAIN_GRID_ROWS;++slot)
         for (uint16_t column=0;column<TERRAIN_GRID_COLUMNS;++column)
             terrainHeightGrid[slot][column]=0;
@@ -241,7 +241,7 @@ void BtechInitializeFreshWorldOwners(const uint8_t *data)
     for (uint16_t slot=0;slot<12;++slot)
         terrainGridFilename[slot]=0;
     for (uint16_t slot=0;slot<COMBAT_POOLED_OBJECTS;++slot)
-        pooledWorldObjects[slot]=(BtechPooledWorldObject){0};
+        pooledWorldObjects[slot]=BtechPooledWorldObject{};
     for (uint16_t slot=0;slot<COMBAT_WORLD_OBJECTS;++slot)
         worldObjects[slot]=NULL;
     for (uint16_t slot=0;slot<COMBAT_WORLD_OBJECTS;++slot)
@@ -252,8 +252,8 @@ void BtechInitializeFreshWorldOwners(const uint8_t *data)
     cockpitWorldObjectCount=0;
     distinctSceneMechChassisCount=0;
     for (uint16_t slot=0;slot<COMBAT_CAMERA_CONTEXTS;++slot)
-        cameraContexts[slot]=(BtechCameraContext){0};
-    cameraOrientationBasis=(BtechOrientationBasis){0};
+        cameraContexts[slot]=BtechCameraContext{};
+    cameraOrientationBasis=BtechOrientationBasis{};
     for (uint16_t slot=0;slot<3;++slot)
         cameraReferenceVector[slot]=0;
     playerUnitBinding=NULL;
@@ -298,9 +298,9 @@ void BtechInitializeFreshWorldOwners(const uint8_t *data)
     lzwReverseReadOffset=MwReadNativeWord(data,0x4AAF);
     for (uint16_t slot=0;slot<sizeof(lzwPacketBytes)/sizeof(lzwPacketBytes[0]);++slot) lzwPacketBytes[slot]=data[0x4A9A+slot*1];
     combatInputReplayFilename=NULL;
-    chassisResourceBases=(BtechChassisResourceBases){0};
-    surfaceResourceBank=(BtechSurfaceBank){0};
-    initialShapeResourceBank=(BtechResourceBank){0};
+    chassisResourceBases=BtechChassisResourceBases{};
+    surfaceResourceBank=BtechSurfaceBank{};
+    initialShapeResourceBank=BtechResourceBank{};
     shapeResourceBanks=&initialShapeResourceBank;
     shapeResourceBankCount=1;
 }

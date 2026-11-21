@@ -36,7 +36,7 @@ static uint8_t *AllocateParagraphs(uint16_t paragraphs,uint16_t *largestFreePara
     {
         allocations=static_cast<DosAllocation *>(malloc(sizeof(*allocations)));
         if (!allocations) {*largestFreeParagraphs=0;return NULL;}
-        *allocations=(DosAllocation){NULL,NULL,COMBAT_DOS_CONVENTIONAL_END-COMBAT_DOS_FIRST_MCB-DOS_MCB_PARAGRAPHS,COMBAT_DOS_FIRST_MCB};
+        *allocations=DosAllocation{NULL,NULL,COMBAT_DOS_CONVENTIONAL_END-COMBAT_DOS_FIRST_MCB-DOS_MCB_PARAGRAPHS,COMBAT_DOS_FIRST_MCB};
     }
     *largestFreeParagraphs=0;
     DosAllocation *allocation=NULL;
@@ -53,7 +53,7 @@ static uint8_t *AllocateParagraphs(uint16_t paragraphs,uint16_t *largestFreePara
     {
         DosAllocation *remaining=static_cast<DosAllocation *>(malloc(sizeof(*remaining)));
         if (!remaining) {free(bytes);*largestFreeParagraphs=0;return NULL;}
-        *remaining=(DosAllocation){allocation->next,NULL,(uint16_t)(allocation->paragraphs-paragraphs-DOS_MCB_PARAGRAPHS),
+        *remaining=DosAllocation{allocation->next,NULL,(uint16_t)(allocation->paragraphs-paragraphs-DOS_MCB_PARAGRAPHS),
             (uint16_t)(allocation->controlBlockSegment+paragraphs+DOS_MCB_PARAGRAPHS)};
         allocation->next=remaining;
     }

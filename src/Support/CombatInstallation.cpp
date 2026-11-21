@@ -30,7 +30,7 @@ void BtechHostRetainDetachedShapeRegistry(void)
     for (uint16_t bank=0;bank<shapeResourceBankCount;++bank)
         if (shapeResourceBanks[bank].resources || shapeResourceBanks[bank].decodedResources) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: shapeResourceBanks[bank].resources || shapeResourceBanks[bank].decodedResources");
     RetiredShapeRegistry *retired=static_cast<RetiredShapeRegistry *>(malloc(sizeof(*retired)));if (!retired) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !retired");
-    *retired=(RetiredShapeRegistry){shapeResourceBanks,retiredShapeRegistries};retiredShapeRegistries=retired;
+    *retired=RetiredShapeRegistry{shapeResourceBanks,retiredShapeRegistries};retiredShapeRegistries=retired;
 }
 
 /* Decoded host-only allocations have no counterpart in the native paragraph
@@ -98,7 +98,7 @@ void BtechHostDiscardChildData(void)
     pointPictures=NULL;smallMechPictures=NULL;strutPictures=NULL;
     cockpitPictures=NULL;hudGlyphPictures=NULL;inspectionDamagePictures=NULL;
     paragraphs|=orderPanelCaptureBuffer.bytes!=NULL;
-    orderPanelCaptureBuffer=(BtechResourceAllocation){0};
+    orderPanelCaptureBuffer=BtechResourceAllocation{};
     for (uint16_t slot=0;slot<RESOURCE_ARCHIVE_SLOTS;++slot)
         if (archiveDescriptors[slot])
         {
@@ -119,7 +119,7 @@ void BtechHostDiscardChildData(void)
         /* DOS and near allocator owners include detached/reused nodes. Process
          * disposal must not follow a game's stale or cyclic next chain. */
         paragraphs|=soundBanks[bank].root.allocation.bytes!=NULL;
-        free(soundBanks[bank].events);soundBanks[bank]=(BtechSoundBank){0};
+        free(soundBanks[bank].events);soundBanks[bank]=BtechSoundBank{};
     }
     for (uint32_t owner=0;owner<(uint32_t)shapeResourceBankCount+1;++owner)
     {
@@ -141,13 +141,13 @@ void BtechHostDiscardChildData(void)
     }
     paragraphs|=surfaceResourceBank.allocation.bytes!=NULL;
     BtechHostDiscardDecodedSurfaceBank(&surfaceResourceBank);
-    initialShapeResourceBank=(BtechResourceBank){0};surfaceResourceBank=(BtechSurfaceBank){0};
+    initialShapeResourceBank=BtechResourceBank{};surfaceResourceBank=BtechSurfaceBank{};
     shapeResourceBanks=NULL;shapeResourceBankCount=0;
     for (uint16_t slot=1;slot<COMBAT_FONT_SLOTS;++slot) paragraphs|=fonts[slot].bytes!=NULL;
     paragraphs|=soundAllocationOverride.bytes!=NULL;
     if (paragraphs && !btechHostReleaseChildDosAllocations) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: paragraphs && !btechHostReleaseChildDosAllocations");
     if (btechHostReleaseChildDosAllocations) btechHostReleaseChildDosAllocations();
-    for (uint16_t slot=0;slot<COMBAT_FONT_SLOTS;++slot) fonts[slot]=(BtechFont){0};
+    for (uint16_t slot=0;slot<COMBAT_FONT_SLOTS;++slot) fonts[slot]=BtechFont{};
     egaFontBuffer=NULL; // Borrowed staging reference, not a second allocation owner.
     BtechHostDiscardNearHeap();
 }

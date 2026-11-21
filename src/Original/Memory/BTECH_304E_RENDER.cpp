@@ -57,10 +57,10 @@ bool BtechImportRenderInitialData(const uint8_t *data,size_t bytes)
     projectionScaleMultiplier=MwReadNativeWord(data,0x2CE6);renderGeometryVectorCount=0;
     resourceScaleShift=0;widePolygonCoordinates=0;useWordProductClipping=0;skipWordPolygonRenderer=0;
     activeColourShadeClasses=NULL;activePaletteRemap=NULL;
-    cameraReferencePosition=(BtechPosition3D){0};cameraRelativePosition=(BtechPosition3D){0};
-    transformedViewPosition=(BtechPosition3D){0};projectionVectorScratch=(BtechPosition3D){0};
-    projectionRatio=(BtechProjectionRatio){0};viewTransformBasis=(BtechOrientationBasis){0};
-    composedTransformBasis=(BtechOrientationBasis){0};
+    cameraReferencePosition=BtechPosition3D{};cameraRelativePosition=BtechPosition3D{};
+    transformedViewPosition=BtechPosition3D{};projectionVectorScratch=BtechPosition3D{};
+    projectionRatio=BtechProjectionRatio{};viewTransformBasis=BtechOrientationBasis{};
+    composedTransformBasis=BtechOrientationBasis{};
     for (uint16_t axis=0;axis<3;++axis)
     {cameraViewOrientation[axis]=0;transformedReferenceVector[axis]=0;viewVectorCoefficients[axis]=0;}
     combatProjectionShift=MwReadNativeWord(data,0xC356);nearClipDepth=MwReadNativeWord(data,0xC12E);
@@ -70,7 +70,7 @@ bool BtechImportRenderInitialData(const uint8_t *data,size_t bytes)
     objectNeedsScreenClip=data[0x798C];useViewBasisDirectly=data[0xC94A];
     screenCentreA=(int16_t)MwReadNativeWord(data,0xCB16);screenCentreB=(int16_t)MwReadNativeWord(data,0xCB18);
     dotProductScratchHigh=MwReadNativeWord(data,0x2E0E);dotProductScratchMiddle=MwReadNativeWord(data,0x2E10);dotProductScratchLow=MwReadNativeWord(data,0x2E12);
-    signedDivisionResult=(BtechDwordDivisionResult){MwReadNativeWord(data,0x4BA0),MwReadNativeWord(data,0x4BA2),MwReadNativeWord(data,0x4BA4),MwReadNativeWord(data,0x4BA6)};
+    signedDivisionResult=BtechDwordDivisionResult{MwReadNativeWord(data,0x4BA0),MwReadNativeWord(data,0x4BA2),MwReadNativeWord(data,0x4BA4),MwReadNativeWord(data,0x4BA6)};
     selectionCount=MwReadNativeWord(data,0x6F58);targetSelectionProbeActive=data[0x281A];
     selectionPointScreenX=MwReadNativeWord(data,0x6F54);selectionPointScreenY=MwReadNativeWord(data,0x6F56);
     selectionMarkerPixels=MwReadNativeWord(data,0x2816)|((uint32_t)MwReadNativeWord(data,0x2818)<<16);

@@ -44,7 +44,7 @@ void BtechSetNearHeapHeader(uint16_t offset,uint16_t value)
     if (!selected)
     {
         selected=static_cast<NearHeapHeader *>(malloc(sizeof(*selected)));if (!selected) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !selected");
-        *selected=(NearHeapHeader){headers,offset,0};headers=selected;
+        *selected=NearHeapHeader{headers,offset,0};headers=selected;
     }
     selected->value=value;
 }
@@ -202,7 +202,7 @@ void *BtechAllocateNearBytes(uint16_t bytes,size_t hostBytes,BtechNearOwner owne
     }
     NearHeapRecord *record=static_cast<NearHeapRecord *>(malloc(sizeof(*record)));void *object=malloc(hostBytes?hostBytes:1);
     if (!record || !object) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !record || !object"); /* Host representation failure is not DOS heap exhaustion. */
-    *record=(NearHeapRecord){records,object,hostBytes,offset,bytes,owner,false,false};records=record;
+    *record=NearHeapRecord{records,object,hostBytes,offset,bytes,owner,false,false};records=record;
     return object;
 }
 void *BtechAllocateZeroedNearElements(uint16_t count,uint16_t stride,size_t hostBytes,BtechNearOwner owner)

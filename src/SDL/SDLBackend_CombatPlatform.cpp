@@ -50,7 +50,7 @@ static uint8_t ReadToneDosByte(uint16_t offset)
 static MwNativeByteView BorrowToneDosMemory(uint16_t selector)
 {
     if (selector) MwSdlFail("Unrecovered physical DOS selector for tone fallback");
-    return (MwNativeByteView){NULL,0,0,ReadToneDosByte};
+    return MwNativeByteView{NULL,0,0,ReadToneDosByte};
 }
 static uint8_t ReadBiosByte(uint16_t offset)
 {

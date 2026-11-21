@@ -15,7 +15,7 @@ BtechWorldObjectPrefix *BtechAllocateHeapWorldObject(uint16_t resourceId,const B
 {
     BtechHeapWorldObject *object=static_cast<BtechHeapWorldObject *>(BtechAllocateNearBytes(BTECH_NEAR_WORLD_OBJECT_BYTES,sizeof(*object),BTECH_NEAR_WORLD_OBJECT));
     if (!object || worldObjectCount>=COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !object || worldObjectCount>=COMBAT_WORLD_OBJECTS");
-    *object=(BtechHeapWorldObject){0};
+    *object=BtechHeapWorldObject{};
     object->prefix.updateCallbackOffset=WORLD_OBJECT_SELECTION_PIXEL_CALLBACK;
     object->prefix.resourceId=resourceId;
     if (placement) object->prefix.position=*placement;
@@ -92,7 +92,7 @@ void BtechReleaseHeapWorldObjectList(void)
 void BtechResetWorldObjectPool(void)
 {
     for (uint16_t slot=0;slot<COMBAT_POOLED_OBJECTS;++slot) pooledWorldObjects[slot].occupied=0;
-    for (uint16_t slot=0;slot<COMBAT_POOLED_OBJECTS;++slot) pooledWorldObjects[slot]=(BtechPooledWorldObject){0};
+    for (uint16_t slot=0;slot<COMBAT_POOLED_OBJECTS;++slot) pooledWorldObjects[slot]=BtechPooledWorldObject{};
 }
 
 /*0810:228B. Detach/release every bank before collision and two cameras.
@@ -111,7 +111,7 @@ void BtechReleasePooledWorldObject(BtechPooledWorldObject *object)
 {
     object->occupied=0;
     BtechUnregisterWorldObject(&object->object.prefix);
-    *object=(BtechPooledWorldObject){0};
+    *object=BtechPooledWorldObject{};
 }
 
 /*0810:B0BB. Signed count, live reread; no negative-resource shortcut here. */

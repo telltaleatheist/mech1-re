@@ -147,12 +147,12 @@ bool MwSdlInitialize(const char *gameDirectory,const char *captureDirectory)
     mwMusicHardware.writeInterruptVector=btechHostSetInterruptVector;
     if (!MwSdlInitializeCombatProcess(gameDirectory)) {MwSdlShutdown();return false;}
     mwHostValidateFileDestination=ValidateFileDestination;
-    mwCampaignPlatform=(MwCampaignPlatformCalls){AllocateParagraphs,LoadOverlay,
+    mwCampaignPlatform=MwCampaignPlatformCalls{AllocateParagraphs,LoadOverlay,
         MwSdlInstallCampaignInterrupts,MwSdlRestoreCampaignInterrupts,MwSdlGetVideoMode,MwSdlSetVideoMode,
         MwSdlReadBiosTicks,ResetMouse,DosString};
     campaignStartMusic=MwStartMidiTrackFar;campaignStopMusic=MwStopMidiTrackFar;
     campaignNearCallback=UnsupportedCampaignCall;
-    mwLauncherSystem=(MwLauncherSystemCalls){ResizeResident,AllocateLauncherProbe,free,DetectConfiguredAdapter,
+    mwLauncherSystem=MwLauncherSystemCalls{ResizeResident,AllocateLauncherProbe,free,DetectConfiguredAdapter,
         ClearLauncherText,ExecuteChild,DosString,WriteLauncherChar};
     return true;
 }

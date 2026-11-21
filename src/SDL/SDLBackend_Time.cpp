@@ -162,7 +162,7 @@ void MwSdlInitializeTimer(void)
     counterLoadNanoseconds=startNanoseconds;latchedCounter=0;counterReadHigh=false;picMask=0;
     campaignInterruptsInstalled=inInterrupt=channel0HighNext=false;
     MwMpuReset();
-    mwMusicHardware=(MwMusicHardwareCalls){MwSdlSetInterrupts,MwSdlReadTimerHandler,MwSdlWriteTimerHandler,MwSdlWriteDevicePort,MwSdlReadDevicePort,
+    mwMusicHardware=MwMusicHardwareCalls{MwSdlSetInterrupts,MwSdlReadTimerHandler,MwSdlWriteTimerHandler,MwSdlWriteDevicePort,MwSdlReadDevicePort,
         MwSdlPumpTimer,btechHostGetInterruptVector,btechHostSetInterruptVector};
     /* Same physical PIT/speaker, different original sequencer. No backend
      * selection or invented combat callback is installed at this boundary. */

@@ -63,7 +63,7 @@ uint16_t MwRestartCampaignContinuation(void)
     combatScenarioCode=0;
     deploymentTerrainDetailLevel=0;
     for (size_t i=0;i<sizeof(rosterStatus)/sizeof(rosterStatus[0]);++i) rosterStatus[i]=0;
-    for (size_t i=0;i<sizeof(salvageEntries)/sizeof(salvageEntries[0]);++i) salvageEntries[i]=(CampaignSalvageEntry){0};
+    for (size_t i=0;i<sizeof(salvageEntries)/sizeof(salvageEntries[0]);++i) salvageEntries[i]=CampaignSalvageEntry{};
     returnedDisabledEnemyCount=0;
     combatTransitionResult=0;
     acceptedContractActive=0;
@@ -89,7 +89,7 @@ uint16_t MwRestartCampaignContinuation(void)
     for (size_t i=0;i<sizeof(houseFavorPoints)/sizeof(houseFavorPoints[0]);++i) houseFavorPoints[i]=0;
     for (size_t i=0;i<sizeof(houseGrievancePoints)/sizeof(houseGrievancePoints[0]);++i) houseGrievancePoints[i]=0;
     playerCombatCredit=0;
-    pilotIdentityStorage=(CampaignPilotIdentityStorage){0};
+    pilotIdentityStorage=CampaignPilotIdentityStorage{};
     pilotDepartureFlagTail=0;
     for (size_t i=0;i<sizeof(rosterPayTiers)/sizeof(rosterPayTiers[0]);++i) rosterPayTiers[i]=0;
     for (size_t i=0;i<sizeof(rosterGunneryTiers)/sizeof(rosterGunneryTiers[0]);++i) rosterGunneryTiers[i]=0;
@@ -103,7 +103,7 @@ uint16_t MwRestartCampaignContinuation(void)
     for (size_t i=0;i<sizeof(availableRecruitIds)/sizeof(availableRecruitIds[0]);++i) availableRecruitIds[i]=0;
     ownedUnitCount=0;
     for (size_t i=0;i<sizeof(ownedUnitKinds)/sizeof(ownedUnitKinds[0]);++i) ownedUnitKinds[i]=0;
-    for (size_t i=0;i<sizeof(ownedUnitDamage)/sizeof(ownedUnitDamage[0]);++i) ownedUnitDamage[i]=(CampaignUnitDamage){0};
+    for (size_t i=0;i<sizeof(ownedUnitDamage)/sizeof(ownedUnitDamage[0]);++i) ownedUnitDamage[i]=CampaignUnitDamage{};
     for (size_t i=0;i<sizeof(ownedAmmoQuantitiesByGroup)/sizeof(ownedAmmoQuantitiesByGroup[0]);++i) ownedAmmoQuantitiesByGroup[i]=0;
     for (size_t i=0;i<sizeof(marketAmmoQuantitiesByGroup)/sizeof(marketAmmoQuantitiesByGroup[0]);++i) marketAmmoQuantitiesByGroup[i]=0;
     for (size_t i=0;i<sizeof(reserveAmmoQuantitiesByFamily)/sizeof(reserveAmmoQuantitiesByFamily[0]);++i) reserveAmmoQuantitiesByFamily[i]=0;
@@ -111,7 +111,7 @@ uint16_t MwRestartCampaignContinuation(void)
     for (size_t i=0;i<sizeof(marketAmmoKindsByGroup)/sizeof(marketAmmoKindsByGroup[0]);++i) marketAmmoKindsByGroup[i]=0;
     marketUnitCount=0;
     for (size_t i=0;i<sizeof(marketUnitKinds)/sizeof(marketUnitKinds[0]);++i) marketUnitKinds[i]=0;
-    for (size_t i=0;i<sizeof(marketUnitDamage)/sizeof(marketUnitDamage[0]);++i) marketUnitDamage[i]=(CampaignUnitDamage){0};
+    for (size_t i=0;i<sizeof(marketUnitDamage)/sizeof(marketUnitDamage[0]);++i) marketUnitDamage[i]=CampaignUnitDamage{};
     missionOfferCount=0;
     for (size_t i=0;i<sizeof(missionDescriptionOffsets)/sizeof(missionDescriptionOffsets[0]);++i) missionDescriptionOffsets[i]=0;
     for (size_t i=0;i<sizeof(missionPlanetRecordIndices)/sizeof(missionPlanetRecordIndices[0]);++i) missionPlanetRecordIndices[i]=0;

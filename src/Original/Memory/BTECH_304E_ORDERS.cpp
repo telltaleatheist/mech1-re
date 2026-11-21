@@ -62,7 +62,7 @@ bool BtechImportOrderInitialData(const uint8_t *data,size_t bytes)
         }
     for (uint16_t kind=0;kind<COMBAT_WEAPON_KINDS;++kind)
     {mountedWeaponCountsByKind[kind]=MwReadNativeWord(data,0x4F32+kind*2);operationalWeaponCountsByKind[kind]=MwReadNativeWord(data,0x4F46+kind*2);}
-    orderPanelCaptureBuffer=(BtechResourceAllocation){0};
+    orderPanelCaptureBuffer=BtechResourceAllocation{};
     for (uint16_t selection=0;selection<ORDER_SELECTION_CLASSES;++selection)
     {
         orderSelectionFirstRows[selection]=(int16_t)MwReadNativeWord(data,0x0092+selection*2);

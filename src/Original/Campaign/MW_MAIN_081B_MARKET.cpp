@@ -659,7 +659,7 @@ void MwDrawReserveAmmunitionCompatibleMechs(uint16_t family)
         uint16_t kind=reserveAmmoCompatibleMechs[family][index];
         if (kind==UINT16_MAX) return;
         const char *name=unitDisplayNames[kind];
-        text=(MwNativeByteView){(const uint8_t *)name,0,(uint32_t)strlen(name)+1};
+        text=MwNativeByteView{(const uint8_t *)name,0,(uint32_t)strlen(name)+1};
         EgaDrawTransparentText(RESERVE_AMMO_COMPATIBILITY_TEXT_X,y,reserveAmmoMechColours[kind],&text,0);y+=RESERVE_AMMO_COMPATIBILITY_ROW_HEIGHT;
     }
     /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Reserve ammunition has no supported BattleMech compatibility list.");

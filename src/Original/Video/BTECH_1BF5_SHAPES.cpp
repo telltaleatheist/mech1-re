@@ -14,8 +14,8 @@ uint16_t BtechDrawStyledRectangle(uint16_t left,uint16_t top,uint16_t width,uint
     spanPrimaryPattern=palettePrimarySlots[drawLineColour/COMBAT_PALETTE_WORDS][drawLineColour%COMBAT_PALETTE_WORDS];
     spanSecondaryPattern=paletteSecondarySlots[drawLineColour/COMBAT_PALETTE_WORDS][drawLineColour%COMBAT_PALETTE_WORDS];
     if (spanPrimaryPattern==spanSecondaryPattern)
-        shapeSpanCallback=(BtechShapeSpanCallback){graphicsFillSolidSpan,NULL};
-    else shapeSpanCallback=(BtechShapeSpanCallback){NULL,graphicsFillAlternatingSpan};
+        shapeSpanCallback=BtechShapeSpanCallback{graphicsFillSolidSpan,NULL};
+    else shapeSpanCallback=BtechShapeSpanCallback{NULL,graphicsFillAlternatingSpan};
     drawColourPattern=palettePrimarySlots[drawFillColour/COMBAT_PALETTE_WORDS][drawFillColour%COMBAT_PALETTE_WORDS];
     if ((int16_t)width<=0 || (int16_t)height<=0) return width;
     uint16_t clippedSides=0;

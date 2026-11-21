@@ -89,7 +89,7 @@ beginCampaign:
     mwLauncherSystem.clearTextScreen();
 runCampaign:
     childGraphicsCode=campaignGraphicsCode;
-    launch=(MwCampaignLaunch){{launcherIdentity,0x07D4,sizeof(launcherIdentity)},
+    launch=MwCampaignLaunch{{launcherIdentity,0x07D4,sizeof(launcherIdentity)},
         0x0004,childPhase,childGraphicsCode,childMemoryTier};
     if (mwLauncherSystem.executeChild(launcherCampaignFilename,&launch,childAudioCode,&childExitCode))
     {

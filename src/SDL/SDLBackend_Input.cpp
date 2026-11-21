@@ -188,7 +188,7 @@ void MwSdlInitializeInput(void)
     readIndex=writeIndex=lastShift=0;quitRequested=false;captureNumber=0;MouseReset();
     keyboardRead=keyboardWrite=0;
     MwSdlInitializeDebugControl();
-    mwCampaignInput=(MwCampaignInputCalls){MouseRelease,Available,ReadKey,GamePort,ChargeGamePort,
+    mwCampaignInput=MwCampaignInputCalls{MouseRelease,Available,ReadKey,GamePort,ChargeGamePort,
         MwSdlSetInterrupts,MwSdlPump,CurrentDrive,MouseReset,MouseMotion,ShiftFlags,
         MwSdlSetMousePosition,MwSdlReadMousePosition};
 }

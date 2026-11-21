@@ -155,7 +155,7 @@ void BtechCoordinateSpecialObjectiveUnits(void)
         else
         {
             const int32_t *order=activeUnitControl->orderDestinationPosition;
-            destination=(BtechPosition3D){(uint32_t)order[0],(uint32_t)order[1],(uint32_t)order[2]};
+            destination=BtechPosition3D{(uint32_t)order[0],(uint32_t)order[1],(uint32_t)order[2]};
         }
         BtechNavigateActiveUnitTowardPosition(&destination);
     }

@@ -43,10 +43,10 @@ bool BtechImportSoundInitialData(const uint8_t *data,size_t bytes)
     for (uint16_t bank=0;bank<COMBAT_AUDIO_BANK_ROOTS;++bank)
     {
         free(soundBanks[bank].events);
-        soundBanks[bank]=(BtechSoundBank){0};
+        soundBanks[bank]=BtechSoundBank{};
     }
-    for (uint16_t stream=0;stream<COMBAT_TAGGED_STREAMS;++stream) taggedStreams[stream]=(BtechTaggedStream){0};
-    taggedStreamBackup=(BtechTaggedStream){0};soundAllocationOverride=(BtechResourceAllocation){0};
+    for (uint16_t stream=0;stream<COMBAT_TAGGED_STREAMS;++stream) taggedStreams[stream]=BtechTaggedStream{};
+    taggedStreamBackup=BtechTaggedStream{};soundAllocationOverride=BtechResourceAllocation{};
     lastStreamOffset=MwReadNativeWord(data,0x4CD8);
     if (lastStreamOffset!=COMBAT_STREAM_TABLE+(COMBAT_STREAM_SLOTS-1)*COMBAT_STREAM_STRIDE) return false;
     for (uint16_t slot=0;slot<COMBAT_STREAM_SLOTS;++slot)
@@ -72,7 +72,7 @@ bool BtechImportSoundInitialData(const uint8_t *data,size_t bytes)
     mpuTempoInterval=MwReadNativeWord(data,0x2C86);
     combatMidiStreamOffset=MwReadNativeWord(data,0x2C88);
     if (combatMidiStreamOffset || MwReadNativeWord(data,0x2C8A)) return false;
-    midiStreamData=(MwNativeByteView){0};midiStreamSelectorPresent=false;
+    midiStreamData=MwNativeByteView{};midiStreamSelectorPresent=false;
     queuedMidiDeltaTicks=MwReadNativeWord(data,0x2C8C);midiRunningStatus=data[0x2C8E];
     midiMessageData[0]=data[0x2C8F];midiMessageData[1]=data[0x2C90];
     softwareMusicDelayTicks=MwReadNativeWord(data,0x2C91);

@@ -92,7 +92,7 @@ void MwSdlPollSupportPilot(void)
             if(orders.checkpointCount>=PILOT_CHECKPOINTS || sscanf(line,"point %ld %ld %ld %n",&x,&y,&z,&consumed)!=3)
             {valid=false;break;}
             for(char *ch=line+consumed;*ch;++ch)if(!isspace((unsigned char)*ch))valid=false;
-            orders.checkpoints[orders.checkpointCount++]=(PilotPoint){(int32_t)x,(int32_t)y,(int32_t)z};
+            orders.checkpoints[orders.checkpointCount++]=PilotPoint{(int32_t)x,(int32_t)y,(int32_t)z};
         }
         if(ferror(file))valid=false;fclose(file);remove(pilotCommandPath);
         valid=valid && id>lastCommand && slot<PILOT_TARGETS && minimum>=256 && maximum>minimum && maximum<=30000

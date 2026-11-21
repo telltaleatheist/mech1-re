@@ -42,7 +42,7 @@ bool BtechImportPoseInitialData(const uint8_t *data,size_t bytes)
     for (uint16_t frame=0;frame<PLAYER_POSE_KEYFRAMES;++frame)
     {
         uint16_t offset=0x250E +frame*PLAYER_POSE_KEYFRAME_BYTES;
-        playerPoseKeyframes[frame]=(BtechPoseKeyframe){(int16_t)MwReadNativeWord(data,offset),
+        playerPoseKeyframes[frame]=BtechPoseKeyframe{(int16_t)MwReadNativeWord(data,offset),
             (int16_t)MwReadNativeWord(data,offset+2),(int16_t)MwReadNativeWord(data,offset+4),MwReadNativeWord(data,offset+6)};
     }
     for (uint16_t sequence=0;sequence<PLAYER_POSE_SEQUENCES;++sequence)

@@ -18,7 +18,7 @@ void BtechResetTaggedStreamAndRewind(BtechTaggedStream *taggedStream)
 {
     BtechRuntimeStream *stream=taggedStream->stream;
     uint32_t fileLength=taggedStream->branchEnds[0];
-    *taggedStream=(BtechTaggedStream){0};
+    *taggedStream=BtechTaggedStream{};
     taggedStream->branchEnds[0]=fileLength;
     taggedStream->stream=stream;
     rewind(stream->file);

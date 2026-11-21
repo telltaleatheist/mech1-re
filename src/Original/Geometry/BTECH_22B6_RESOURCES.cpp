@@ -87,7 +87,7 @@ BtechResourceBank BtechDecodeAndRelocateResourceBank(const char *filename)
                     primitive->kind=resource->paragraphBase[(uint16_t)(at+1)];
                     const uint8_t *encodedPayload=resource->paragraphBase+(uint16_t)(at+2);
                     if (primitive->kind==RENDER_PRIMITIVE_ELLIPSE)
-                        primitive->ellipsePayload=(BtechRenderEllipse){(int16_t)MwReadNativeWord(encodedPayload,0),encodedPayload[2],encodedPayload[3],encodedPayload[4],encodedPayload[5]};
+                        primitive->ellipsePayload=BtechRenderEllipse{(int16_t)MwReadNativeWord(encodedPayload,0),encodedPayload[2],encodedPayload[3],encodedPayload[4],encodedPayload[5]};
                     else if (primitive->kind!=RENDER_PRIMITIVE_POLYGON) primitive->encodedPayload=encodedPayload;
                     if (primitive->kind==RENDER_PRIMITIVE_POLYGON)
                     {
@@ -180,7 +180,7 @@ void BtechLoadCollisionResourceBank(const char *filename)
                 uint16_t cursor=boundary==boundaryCount?MwReadNativeWord(base,at+0x0E):(uint16_t)(boundaryOffset+boundary*8);
                 if ((uint32_t)cursor+8>0x10000 || paragraphBytes+cursor+8>allocation.byteCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint32_t)cursor+8>0x10000 || paragraphBytes+cursor+8>allocation.byteCount");
                 BtechSurfaceBoundary *target=boundary==boundaryCount?&patch->heightBoundary:&patch->boundaries[boundary];
-                *target=(BtechSurfaceBoundary){(int16_t)MwReadNativeWord(base,cursor),(int16_t)MwReadNativeWord(base,cursor+2),
+                *target=BtechSurfaceBoundary{(int16_t)MwReadNativeWord(base,cursor),(int16_t)MwReadNativeWord(base,cursor+2),
                     (int16_t)MwReadNativeWord(base,cursor+4),(int16_t)MwReadNativeWord(base,cursor+6)};
             }
         }
@@ -198,7 +198,7 @@ void BtechAllocateShapeBankRegistry(uint16_t count)
     shapeResourceBanks=static_cast<BtechResourceBank *>(BtechAllocateNearBytes((uint16_t)(count*NATIVE_SHAPE_BANK_BYTES),(size_t)count*sizeof(*shapeResourceBanks),BTECH_NEAR_SHAPE_BANKS));
     if (!shapeResourceBanks) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !shapeResourceBanks");
     shapeResourceBanks[0]=initialShapeResourceBank;
-    for (uint16_t slot=1;slot<count;++slot) shapeResourceBanks[slot]=(BtechResourceBank){0};
+    for (uint16_t slot=1;slot<count;++slot) shapeResourceBanks[slot]=BtechResourceBank{};
 }
 
 /*22B6:034E. Native leaves its far pair/count stale until the next load.
@@ -226,7 +226,7 @@ BtechResourceBank BtechDetachShapeResourceBank(uint16_t bankSlot)
     if ((int16_t)bankSlot<0 || (int16_t)bankSlot>=(int16_t)shapeResourceBankCount)
         BtechShowFatalErrorAndExit("bad shape list"); /*304E:2D83*/
     BtechResourceBank bank=shapeResourceBanks[bankSlot];
-    shapeResourceBanks[bankSlot]=(BtechResourceBank){0};
+    shapeResourceBanks[bankSlot]=BtechResourceBank{};
     return bank;
 }
 

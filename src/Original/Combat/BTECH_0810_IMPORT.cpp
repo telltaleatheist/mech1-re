@@ -41,7 +41,7 @@ void BtechPrepareCampaignCombatStage(uint16_t inheritedSoundStreamIdentity)
         {specialAssaultMode=1;combatContinuationProfileIndex=8;combatMissionDefinitionIndex=COMBAT_PLANETARY_ASSAULT;}
     }
     combatSoundEnabled=company.soundDisabled==0;
-    for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot) mechStates[slot]=(BtechMechState){0};
+    for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot) mechStates[slot]=BtechMechState{};
     /*29CA is the genuine XOR AX,AX/RET. Its short-circuited replay predicate
      * can never select this join; no invented successful service is called. */
     if (combatMissionDefinitionIndex==COMBAT_NO_ASSIGNMENT) goto loadWorld;

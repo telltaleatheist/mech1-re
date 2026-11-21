@@ -75,7 +75,7 @@ bool BtechImportVideoInitialData(const uint8_t *data,size_t bytes)
     for (uint16_t slot=0;slot<COMBAT_FONT_SLOTS;++slot)
     {
         if (MwReadNativeWord(data,0x2ED4+slot*2)) return false;
-        fonts[slot]=(BtechFont){0};
+        fonts[slot]=BtechFont{};
         fontAdvanceWidths[slot]=data[0x2E84+slot];combatFontHeights[slot]=data[0x2E98+slot];
         fontFirstCharacters[slot]=data[0x2EAC+slot];fontCharacterCounts[slot]=data[0x2EC0+slot];
     }
@@ -136,7 +136,7 @@ bool BtechImportVideoInitialData(const uint8_t *data,size_t bytes)
     spanSecondaryPattern=MwReadNativeWord(data,0x2E76);spanAlternationState=MwReadNativeWord(data,0x2E7A);
     for (uint16_t i=0;i<8;++i) {egaSpanLeadingMasks[i]=data[0x4702+i];egaSpanTrailingMasks[i]=data[0x470A+i];}
     egaSpanPrimaryColour=data[0x4712];egaSpanSecondaryColour=data[0x4713];
-    graphicsFillSolidSpan=NULL;graphicsFillAlternatingSpan=NULL;shapeSpanCallback=(BtechShapeSpanCallback){0};
+    graphicsFillSolidSpan=NULL;graphicsFillAlternatingSpan=NULL;shapeSpanCallback=BtechShapeSpanCallback{};
     clipMinimumX=(int16_t)MwReadNativeWord(data,0x2E53);clipMaximumX=(int16_t)MwReadNativeWord(data,0x2E55);
     clipMinimumY=(int16_t)MwReadNativeWord(data,0x2E57);clipMaximumY=(int16_t)MwReadNativeWord(data,0x2E59);
     videoScratchPageSelector=MwReadNativeWord(data,0x2E60);backPageSelector=MwReadNativeWord(data,0x2E62);

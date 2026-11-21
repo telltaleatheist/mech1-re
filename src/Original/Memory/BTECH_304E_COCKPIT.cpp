@@ -61,11 +61,11 @@ bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
         uint16_t offset=MwReadNativeWord(data,0x04A8+chassis*2);
         if (offset<0x034E || offset>=0x038E || !memchr(data+offset,0,0x038E -offset)) return false;
         inspectionDamageBitmapFilenames[chassis]=inspectionBitmapNames+offset-0x034E;
-        inspectionDiagramOrigins[chassis]=(BtechHudGaugeAnchor){(int16_t)MwReadNativeWord(data,0x1878+chassis*4),(int16_t)MwReadNativeWord(data,0x187A+chassis*4)};
+        inspectionDiagramOrigins[chassis]=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(data,0x1878+chassis*4),(int16_t)MwReadNativeWord(data,0x187A+chassis*4)};
         for (uint16_t armor=0;armor<COMBAT_ARMOR_LOCATIONS;++armor)
         {
             uint16_t at=0x1898+chassis*0x48+armor*8;
-            inspectionDiagramRegions[chassis][armor]=(BtechScreenRectangle){(int16_t)MwReadNativeWord(data,at),(int16_t)MwReadNativeWord(data,at+2),
+            inspectionDiagramRegions[chassis][armor]=BtechScreenRectangle{(int16_t)MwReadNativeWord(data,at),(int16_t)MwReadNativeWord(data,at+2),
                 (int16_t)MwReadNativeWord(data,at+4),(int16_t)MwReadNativeWord(data,at+6)};
         }
     }
@@ -182,11 +182,11 @@ bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
     for (uint16_t chassis=0;chassis<COMBAT_MECH_TEMPLATES;++chassis)
     {
         mechCockpitLayoutIndices[chassis]=MwReadNativeWord(data,0x1D38+chassis*2);
-        targetDiagramAnchors[chassis]=(BtechHudGaugeAnchor){(int16_t)MwReadNativeWord(data,0x1AD8+chassis*4),(int16_t)MwReadNativeWord(data,0x1ADA+chassis*4)};
+        targetDiagramAnchors[chassis]=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(data,0x1AD8+chassis*4),(int16_t)MwReadNativeWord(data,0x1ADA+chassis*4)};
         for (uint16_t armor=0;armor<COMBAT_ARMOR_LOCATIONS;++armor)
         {
             uint16_t offset=0x1AF8+chassis*0x48+armor*8;
-            targetDiagramRegions[chassis][armor]=(BtechScreenRectangle){(int16_t)MwReadNativeWord(data,offset),(int16_t)MwReadNativeWord(data,offset+2),
+            targetDiagramRegions[chassis][armor]=BtechScreenRectangle{(int16_t)MwReadNativeWord(data,offset),(int16_t)MwReadNativeWord(data,offset+2),
                 (int16_t)MwReadNativeWord(data,offset+4),(int16_t)MwReadNativeWord(data,offset+6)};
         }
     }
@@ -197,22 +197,22 @@ bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
         cockpitScreenFilenames[index]=cockpitScreenNames+offset-0x07F4;
         offset=0x1D48+index*0x6A;
         BtechCockpitLayout *layout=&cockpitLayouts[index];
-        layout->viewport=(BtechScreenRectangle){(int16_t)MwReadNativeWord(data,offset),(int16_t)MwReadNativeWord(data,offset+2),(int16_t)MwReadNativeWord(data,offset+4),(int16_t)MwReadNativeWord(data,offset+6)};
-        layout->radarPanel=(BtechScreenRectangle){(int16_t)MwReadNativeWord(data,offset+8),(int16_t)MwReadNativeWord(data,offset+0x0A),(int16_t)MwReadNativeWord(data,offset+0x0C),(int16_t)MwReadNativeWord(data,offset+0x0E)};
-        layout->targetPanel=(BtechScreenRectangle){(int16_t)MwReadNativeWord(data,offset+0x10),(int16_t)MwReadNativeWord(data,offset+0x12),(int16_t)MwReadNativeWord(data,offset+0x14),(int16_t)MwReadNativeWord(data,offset+0x16)};
+        layout->viewport=BtechScreenRectangle{(int16_t)MwReadNativeWord(data,offset),(int16_t)MwReadNativeWord(data,offset+2),(int16_t)MwReadNativeWord(data,offset+4),(int16_t)MwReadNativeWord(data,offset+6)};
+        layout->radarPanel=BtechScreenRectangle{(int16_t)MwReadNativeWord(data,offset+8),(int16_t)MwReadNativeWord(data,offset+0x0A),(int16_t)MwReadNativeWord(data,offset+0x0C),(int16_t)MwReadNativeWord(data,offset+0x0E)};
+        layout->targetPanel=BtechScreenRectangle{(int16_t)MwReadNativeWord(data,offset+0x10),(int16_t)MwReadNativeWord(data,offset+0x12),(int16_t)MwReadNativeWord(data,offset+0x14),(int16_t)MwReadNativeWord(data,offset+0x16)};
         layout->weaponListX=(int16_t)MwReadNativeWord(data,offset+0x18);layout->weaponListY=(int16_t)MwReadNativeWord(data,offset+0x1A);
-        layout->heatGauge=(BtechHudGaugeAnchor){(int16_t)MwReadNativeWord(data,offset+0x1C),(int16_t)MwReadNativeWord(data,offset+0x1E)};
-        layout->movementGauge=(BtechHudGaugeAnchor){(int16_t)MwReadNativeWord(data,offset+0x20),(int16_t)MwReadNativeWord(data,offset+0x22)};
-        layout->jumpChargeGauge=(BtechHudGaugeAnchor){(int16_t)MwReadNativeWord(data,offset+0x24),(int16_t)MwReadNativeWord(data,offset+0x26)};
+        layout->heatGauge=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(data,offset+0x1C),(int16_t)MwReadNativeWord(data,offset+0x1E)};
+        layout->movementGauge=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(data,offset+0x20),(int16_t)MwReadNativeWord(data,offset+0x22)};
+        layout->jumpChargeGauge=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(data,offset+0x24),(int16_t)MwReadNativeWord(data,offset+0x26)};
         for (uint16_t anchor=0;anchor<3;++anchor)
         {
-            layout->firingIndicatorBank0[anchor]=(BtechHudGaugeAnchor){(int16_t)MwReadNativeWord(data,offset+0x28+anchor*4),(int16_t)MwReadNativeWord(data,offset+0x2A+anchor*4)};
-            layout->firingIndicatorBank1[anchor]=(BtechHudGaugeAnchor){(int16_t)MwReadNativeWord(data,offset+0x34+anchor*4),(int16_t)MwReadNativeWord(data,offset+0x36+anchor*4)};
+            layout->firingIndicatorBank0[anchor]=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(data,offset+0x28+anchor*4),(int16_t)MwReadNativeWord(data,offset+0x2A+anchor*4)};
+            layout->firingIndicatorBank1[anchor]=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(data,offset+0x34+anchor*4),(int16_t)MwReadNativeWord(data,offset+0x36+anchor*4)};
         }
         memcpy(layout->unidentifiedField15,data+offset+0x40,sizeof(layout->unidentifiedField15));
         layout->headingStripY=(int16_t)MwReadNativeWord(data,offset+0x44);
         for (uint16_t placement=0;placement<COMBAT_COCKPIT_PLACEMENTS;++placement)
-            layout->bitmapPlacements[placement]=(BtechCockpitBitmapPlacement){MwReadNativeWord(data,offset+0x46+placement*6),(int16_t)MwReadNativeWord(data,offset+0x48+placement*6),(int16_t)MwReadNativeWord(data,offset+0x4A+placement*6)};
+            layout->bitmapPlacements[placement]=BtechCockpitBitmapPlacement{MwReadNativeWord(data,offset+0x46+placement*6),(int16_t)MwReadNativeWord(data,offset+0x48+placement*6),(int16_t)MwReadNativeWord(data,offset+0x4A+placement*6)};
     }
     cachedJumpChargeGaugeLevel=MwReadNativeWord(data,0x5338);
     cachedHeatGaugeLevel=MwReadNativeWord(data,0x533A);unidentifiedField25=MwReadNativeWord(data,0x533C);

@@ -194,16 +194,16 @@ void BtechInitializeFreshMechOwners(const uint8_t *data)
         combatToOwnedMechSlots[slot]=0;
     for (uint16_t slot=0;slot<4;++slot)
         deployedPilotIds[slot]=0;
-    mechTemplateReservations=(BtechTemplateReservations){0};
+    mechTemplateReservations=BtechTemplateReservations{};
     hudColourSchemeIndex=0;
     savedArgumentCount=0;
     activeUnitControl=NULL;
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
-        mechStates[slot]=(BtechMechState){0};
+        mechStates[slot]=BtechMechState{};
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
-        unitBindings[slot]=(BtechUnitBinding){0};
+        unitBindings[slot]=BtechUnitBinding{};
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
-        unitControls[slot]=(BtechUnitControlState){0};
+        unitControls[slot]=BtechUnitControlState{};
     specialAssaultMode=0;
     specialTargetInteractionBlocked=MwReadNativeWord(data,0x0EEA);
     for (uint16_t slot=0;slot<sizeof(sideObjectiveRules)/sizeof(sideObjectiveRules[0]);++slot) sideObjectiveRules[slot]=MwReadNativeWord(data,0x0ED0+slot*2);

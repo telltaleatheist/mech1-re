@@ -27,7 +27,7 @@ BtechBitmapList *BtechLoadBitmapList(const char *filename,BtechRuntimeStream *st
     if (count<=0 || (uint32_t)(uint16_t)count*0x0A>UINT16_MAX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: count<=0 || (uint32_t)(uint16_t)count*0x0A>UINT16_MAX"); // Native wrapped/zero near allocations are not host arrays.
     list=static_cast<BtechBitmapList *>(BtechAllocateNearBytes((uint16_t)(((uint16_t)count+1)*BTECH_NEAR_POINTER_BYTES),sizeof(*list),BTECH_NEAR_BITMAP_LIST));
     if (!list) goto cleanup;
-    list->imageCount=(uint16_t)count;list->pixels=(BtechResourceAllocation){0};
+    list->imageCount=(uint16_t)count;list->pixels=BtechResourceAllocation{};
     list->images=static_cast<BtechBitmap *>(BtechAllocateNearBytes((uint16_t)((uint16_t)count*BTECH_NEAR_BITMAP_ENTRY_BYTES),(size_t)count*sizeof(*list->images),BTECH_NEAR_BITMAP_IMAGES));
     if (!list->images) goto cleanup;
     for (uint16_t image=0;image<(uint16_t)count;++image)

@@ -44,9 +44,9 @@ BtechSoundEvent BtechAdvanceMusicSequence(void)
 {
     if (activeMusicBankIndex>=COMBAT_MUSIC_SEQUENCE_ROWS || musicSequenceIndex>=COMBAT_MUSIC_SEQUENCE_WORDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeMusicBankIndex>=COMBAT_MUSIC_SEQUENCE_ROWS || musicSequenceIndex>=COMBAT_MUSIC_SEQUENCE_WORDS");
     int16_t next=musicSequences[activeMusicBankIndex][musicSequenceIndex];
-    if (next==-1) return (BtechSoundEvent){0};
+    if (next==-1) return BtechSoundEvent{};
     BtechSoundBank *bank=&soundBanks[COMBAT_MUSIC_FIRST_ROOT+activeMusicBankIndex];
-    if (next>(int16_t)bank->eventCount) return (BtechSoundEvent){0};
+    if (next>(int16_t)bank->eventCount) return BtechSoundEvent{};
     next=musicSequences[activeMusicBankIndex][musicSequenceIndex];
     musicSequenceIndex=(uint16_t)next;
     if (next<0 || !bank->events || (uint16_t)next>=bank->eventReferenceCapacity) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: next<0 || !bank->events || (uint16_t)next>=bank->eventReferenceCapacity");
@@ -243,7 +243,7 @@ uint16_t BtechMergeSoundBackendDirectory(BtechSoundBank *bank,BtechRuntimeStream
         uint32_t eventOffset=(uint32_t)paragraph*0x10+offset;
         if (eventOffset>=node->allocation.byteCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: eventOffset>=node->allocation.byteCount");
         uint32_t paragraphBase=(uint32_t)paragraph*0x10;
-        bank->events[event]=(BtechSoundEvent){{node->allocation.bytes+paragraphBase,0,node->allocation.byteCount-paragraphBase},
+        bank->events[event]=BtechSoundEvent{{node->allocation.bytes+paragraphBase,0,node->allocation.byteCount-paragraphBase},
             offset,(uint16_t)(node->allocationSelector+paragraph)};
     }
     return 1;
@@ -432,7 +432,7 @@ uint16_t BtechFreeSoundAllocationChain(BtechSoundBank *bank)
         if (!btechHostFreeDosSelector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostFreeDosSelector");
         btechHostFreeDosSelector(node->allocationSelector);
     }
-    node->allocationSelector=0;node->allocationOffset=0;node->allocation=(BtechResourceAllocation){0};
+    node->allocationSelector=0;node->allocationOffset=0;node->allocation=BtechResourceAllocation{};
     while ((node=node->next)!=NULL)
     {
         node=BtechHostResolveReleasedSoundNode(node);
@@ -503,14 +503,14 @@ uint16_t BtechAllocateToneEventChannels(BtechSoundEvent event,uint16_t priority,
     /* A missing ITM still starts native effects. Preserve its ambient WORD
      * offset; physical selector0/unknown fallback memory is gated ONLY if read. */
     uint16_t fallbackOffset=fallback?0:missingSoundFallbackOffsetAlias;
-    MwNativeByteView fallbackData=fallback?(MwNativeByteView){fallback->allocation.bytes,0,fallback->allocation.byteCount}:(MwNativeByteView){0};
+    MwNativeByteView fallbackData=fallback?MwNativeByteView{fallback->allocation.bytes,0,fallback->allocation.byteCount}:MwNativeByteView{};
     if (!fallback && btechHostBorrowDosMemory) fallbackData=btechHostBorrowDosMemory(missingSoundFallbackSelectorAlias);
     BtechStartToneInterpreterChannel(event.data,event.offset,selected,fallbackData,fallbackOffset);
     if (MwReadNativeViewWord(&event.data,(uint16_t)(event.offset+6)) && MwReadNativeViewWord(&event.data,event.offset)==1)
     {
         fallback=soundBanks[activeSoundBankIndex].fallback;
         fallbackOffset=fallback?0:missingSoundFallbackOffsetAlias;
-        fallbackData=fallback?(MwNativeByteView){fallback->allocation.bytes,0,fallback->allocation.byteCount}:(MwNativeByteView){0};
+        fallbackData=fallback?MwNativeByteView{fallback->allocation.bytes,0,fallback->allocation.byteCount}:MwNativeByteView{};
         if (!fallback && btechHostBorrowDosMemory) fallbackData=btechHostBorrowDosMemory(missingSoundFallbackSelectorAlias);
         uint16_t factor=MwReadNativeViewWord(&event.data,(uint16_t)(event.offset+6));
         uint16_t secondaryOffset=factor*0x0A+event.offset-0x50;

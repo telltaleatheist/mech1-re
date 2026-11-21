@@ -148,7 +148,7 @@ BtechSoundAllocationNode *BtechHostResolveReleasedSoundNode(BtechSoundAllocation
     if (kind==BTECH_NEAR_SOUND_NODE && !displacement) return static_cast<BtechSoundAllocationNode *>(owner);
     uint16_t words[3];BtechHostReadNearSoundLink(owner,kind,displacement,words);
     node->allocationOffset=words[0];node->allocationSelector=words[1];
-    node->allocation=(BtechResourceAllocation){0};
+    node->allocation=BtechResourceAllocation{};
     node->next=static_cast<struct BtechSoundAllocationNode *>(BtechNearObjectAtOffset(words[2],BTECH_NEAR_SOUND_NODE));
     return node;
 }

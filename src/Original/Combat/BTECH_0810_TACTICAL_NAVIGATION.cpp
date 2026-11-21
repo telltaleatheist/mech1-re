@@ -86,7 +86,7 @@ void BtechUpdateTacticalNavigation(void)
             {
                 if ((uint16_t)control->trackedUnitOrSpecialSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)control->trackedUnitOrSpecialSlot>=COMBAT_MECH_SLOTS");
                 int32_t *lastSeen=unitControls[control->trackedUnitOrSpecialSlot].lastVisiblePosition;
-                waypoint=(BtechPosition3D){(uint32_t)lastSeen[0],(uint32_t)lastSeen[1],(uint32_t)lastSeen[2]};
+                waypoint=BtechPosition3D{(uint32_t)lastSeen[0],(uint32_t)lastSeen[1],(uint32_t)lastSeen[2]};
                 BtechNavigateActiveUnitTowardPosition(&waypoint);
             }
         }
@@ -94,12 +94,12 @@ void BtechUpdateTacticalNavigation(void)
         {
             if (control->sideIndex>=2) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: control->sideIndex>=2");
             if (sideObjectiveRules[control->sideIndex]==OBJECTIVE_DEFEND_SPECIAL_TARGET) {control->tacticalState=TACTICAL_DEFENDING;return;}
-            waypoint=(BtechPosition3D){(uint32_t)control->orderDestinationPosition[0],(uint32_t)control->orderDestinationPosition[1],(uint32_t)control->orderDestinationPosition[2]};
+            waypoint=BtechPosition3D{(uint32_t)control->orderDestinationPosition[0],(uint32_t)control->orderDestinationPosition[1],(uint32_t)control->orderDestinationPosition[2]};
             BtechNavigateActiveUnitTowardPosition(&waypoint);
         }
         else
         {
-            waypoint=(BtechPosition3D){(uint32_t)control->orderDestinationPosition[0],(uint32_t)control->orderDestinationPosition[1],(uint32_t)control->orderDestinationPosition[2]};
+            waypoint=BtechPosition3D{(uint32_t)control->orderDestinationPosition[0],(uint32_t)control->orderDestinationPosition[1],(uint32_t)control->orderDestinationPosition[2]};
             BtechNavigateActiveUnitTowardPosition(&waypoint);
         }
         return;

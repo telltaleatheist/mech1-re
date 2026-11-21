@@ -144,7 +144,7 @@ void BtechInitializeUnitControlRecords(void)
         if (unitBindings[slot].mech)
         {
             BtechUnitControlState *control=&unitControls[slot];
-            *control=(BtechUnitControlState){0};
+            *control=BtechUnitControlState{};
             control->commandCode=COMBAT_ORDER_ACT_ON_OWN;
             control->sideIndex=slot<COMBAT_LANCE_SLOTS?0:1;
             control->unitSlot=slot;

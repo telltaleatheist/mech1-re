@@ -10,7 +10,7 @@
 
 static PilotPoint ReadPosition(const BtechWorldObjectPrefix *object)
 {
-    return (PilotPoint){(int32_t)object->position.positionA,
+    return PilotPoint{(int32_t)object->position.positionA,
         (int32_t)object->position.positionB,(int32_t)object->position.positionC};
 }
 void SupportPilotObserve(PilotObservation *view,bool combatActive)
@@ -82,7 +82,7 @@ void SupportPilotObserve(PilotObservation *view,bool combatActive)
         const BtechWeaponState *state=&playerMechState->weapons[mount];
         bool ammunition=weapon->ammoFamily==-1 || (weapon->ammoFamily>=0 && weapon->ammoFamily<COMBAT_AMMO_FAMILIES &&
             playerMechState->ammoSalvosRemaining[weapon->ammoFamily]!=0);
-        view->weapons[mount]=(PilotWeapon){state->operational && !state->reloadTicksRemaining && ammunition,
+        view->weapons[mount]=PilotWeapon{state->operational && !state->reloadTicksRemaining && ammunition,
             weapon->heatUnits,(uint16_t)(weapon->longRangeBoundary*32*15)};
     }
 }
