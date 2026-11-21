@@ -27,7 +27,7 @@ BtechSubsystemLampColours subsystemLampColourTables;
 char subsystemLampLabels[4][2];
 uint16_t rememberedSensorTargetSlot;
 char zoomLabel[7],automaticWeaponsLabel[4],reactorShutdownText[25];
-char simulationText[11],pausedText[7],retreatQuestionText[14],retreatChoiceText[14];
+char simulationText[11],pausedText[7],retreatQuestionText[15],retreatChoiceText[14];
 uint16_t savedLineColour,savedFillColour,savedCopySourcePage,savedDrawPage;
 uint16_t savedTextBackground,savedTextForeground,savedPolygonFilled,savedPolygonClip;
 BtechDecimalFieldAndTargetCache decimalFieldAndTargetCache;
@@ -91,7 +91,7 @@ bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
     for (uint16_t index=0;index<5;++index) actuatorConditionLabelIndices[index]=MwReadNativeWord(data,0x04E6+index*2);
     memcpy(simulationText,data+0x0076,sizeof(simulationText));
     memcpy(pausedText,data+0x0081,sizeof(pausedText));
-    memcpy(retreatQuestionText,data+0x082F,sizeof(retreatQuestionText));
+    memcpy(retreatQuestionText,data+0x082F,sizeof(retreatQuestionText)); /* 14 characters and their NUL (083E starts the next) */
     memcpy(retreatChoiceText,data+0x083E,sizeof(retreatChoiceText));
     savedLineColour=MwReadNativeWord(data,0x4F7E);savedFillColour=MwReadNativeWord(data,0x4F80);
     savedCopySourcePage=MwReadNativeWord(data,0x4F82);savedDrawPage=MwReadNativeWord(data,0x4F84);
