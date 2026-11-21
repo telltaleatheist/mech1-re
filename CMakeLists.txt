@@ -181,9 +181,24 @@ add_library(mechwarrior_original STATIC
     src/SDL/SDLBackend_Files.cpp
     src/Support/NativeAddress.cpp
     src/Support/PortDiagnostics.cpp
-    src/Support/MidiAddress.cpp)
+    src/Support/MidiAddress.cpp
+    src/Support/Json.cpp
+    src/Support/Sha256.cpp
+    src/Import/import_table.cpp
+    src/Import/Story.cpp
+    src/Import/StoryHost.cpp)
 target_include_directories(mechwarrior_original PUBLIC src/include)
 set_target_properties(mechwarrior_original PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+# Unit tests for our own support code (no SDL, no game files): ctest.
+option(MECHWARRIOR_BUILD_TESTS "Build the unit tests" ON)
+if(MECHWARRIOR_BUILD_TESTS)
+    enable_testing()
+    add_executable(json_test tests/json_test.cpp src/Support/Json.cpp)
+    add_test(NAME json COMMAND json_test)
+    add_executable(story_test tests/story_test.cpp src/Import/Story.cpp src/Support/Json.cpp src/Support/Sha256.cpp)
+    add_test(NAME story COMMAND story_test)
+endif()
 
 
 option(MECHWARRIOR_BUILD_SDL "Build the playable SDL3 game" ON)

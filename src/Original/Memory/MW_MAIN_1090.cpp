@@ -6,6 +6,7 @@
 #include "mechwarrior/campaign_service.h"
 #include "mechwarrior/campaign_market.h"
 #include "mechwarrior/original_data.h"
+#include "mechwarrior/story.h"
 #include "mechwarrior/campaign_startup.h"
 #include "mechwarrior/campaign_events.h"
 #include "mechwarrior/campaign_state.h"
@@ -1011,33 +1012,33 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
         narrationOffset+=(uint16_t)(strlen(introNarrationLines[line])+1);
     }
     introFirstLeftText.x=MwReadNativeWord(data,0x1C33);introFirstLeftText.y=MwReadNativeWord(data,0x1C35);
-    if (!ImportInitialString(data,0x1C37,introFirstLeftText.text,sizeof(introFirstLeftText.text))) return false;
+    if (!MwStoryCopyText("intro.caption.1.left",introFirstLeftText.text,sizeof(introFirstLeftText.text))) return false;
     introFirstRightText.x=MwReadNativeWord(data,0x1C57);introFirstRightText.y=MwReadNativeWord(data,0x1C59);
-    if (!ImportInitialString(data,0x1C5B,introFirstRightText.text,sizeof(introFirstRightText.text))) return false;
+    if (!MwStoryCopyText("intro.caption.1.right",introFirstRightText.text,sizeof(introFirstRightText.text))) return false;
     introSecondLeftText.x=MwReadNativeWord(data,0x1C80);introSecondLeftText.y=MwReadNativeWord(data,0x1C82);
-    if (!ImportInitialString(data,0x1C84,introSecondLeftText.text,sizeof(introSecondLeftText.text))) return false;
+    if (!MwStoryCopyText("intro.caption.2.left",introSecondLeftText.text,sizeof(introSecondLeftText.text))) return false;
     introSecondRightText.x=MwReadNativeWord(data,0x1CA9);introSecondRightText.y=MwReadNativeWord(data,0x1CAB);
-    if (!ImportInitialString(data,0x1CAD,introSecondRightText.text,sizeof(introSecondRightText.text))) return false;
+    if (!MwStoryCopyText("intro.caption.2.right",introSecondRightText.text,sizeof(introSecondRightText.text))) return false;
     introThirdLeftText.x=MwReadNativeWord(data,0x1CCF);introThirdLeftText.y=MwReadNativeWord(data,0x1CD1);
-    if (!ImportInitialString(data,0x1CD3,introThirdLeftText.text,sizeof(introThirdLeftText.text))) return false;
+    if (!MwStoryCopyText("intro.caption.3.left",introThirdLeftText.text,sizeof(introThirdLeftText.text))) return false;
     introThirdRightText.x=MwReadNativeWord(data,0x1D1F);introThirdRightText.y=MwReadNativeWord(data,0x1D21);
-    if (!ImportInitialString(data,0x1D23,introThirdRightText.text,sizeof(introThirdRightText.text))) return false;
+    if (!MwStoryCopyText("intro.caption.3.right",introThirdRightText.text,sizeof(introThirdRightText.text))) return false;
     introFourthLeftText.x=MwReadNativeWord(data,0x1D53);introFourthLeftText.y=MwReadNativeWord(data,0x1D55);
-    if (!ImportInitialString(data,0x1D57,introFourthLeftText.text,sizeof(introFourthLeftText.text))) return false;
+    if (!MwStoryCopyText("intro.caption.4.left",introFourthLeftText.text,sizeof(introFourthLeftText.text))) return false;
     introFourthRightText.x=MwReadNativeWord(data,0x1D6F);introFourthRightText.y=MwReadNativeWord(data,0x1D71);
-    if (!ImportInitialString(data,0x1D73,introFourthRightText.text,sizeof(introFourthRightText.text))) return false;
+    if (!MwStoryCopyText("intro.caption.4.right",introFourthRightText.text,sizeof(introFourthRightText.text))) return false;
     introFifthLeftText.x=MwReadNativeWord(data,0x1D8E);introFifthLeftText.y=MwReadNativeWord(data,0x1D90);
-    if (!ImportInitialString(data,0x1D92,introFifthLeftText.text,sizeof(introFifthLeftText.text))) return false;
+    if (!MwStoryCopyText("intro.caption.5.left",introFifthLeftText.text,sizeof(introFifthLeftText.text))) return false;
     introFifthRightText.x=MwReadNativeWord(data,0x1DD8);introFifthRightText.y=MwReadNativeWord(data,0x1DDA);
-    if (!ImportInitialString(data,0x1DDC,introFifthRightText.text,sizeof(introFifthRightText.text))) return false;
+    if (!MwStoryCopyText("intro.caption.5.right",introFifthRightText.text,sizeof(introFifthRightText.text))) return false;
     introSixthLeftText.x=MwReadNativeWord(data,0x1DF7);introSixthLeftText.y=MwReadNativeWord(data,0x1DF9);
-    if (!ImportInitialString(data,0x1DFB,introSixthLeftText.text,sizeof(introSixthLeftText.text))) return false;
+    if (!MwStoryCopyText("intro.caption.6.left",introSixthLeftText.text,sizeof(introSixthLeftText.text))) return false;
     introSixthRightText.x=MwReadNativeWord(data,0x1E18);introSixthRightText.y=MwReadNativeWord(data,0x1E1A);
-    if (!ImportInitialString(data,0x1E1C,introSixthRightText.text,sizeof(introSixthRightText.text))) return false;
+    if (!MwStoryCopyText("intro.caption.6.right",introSixthRightText.text,sizeof(introSixthRightText.text))) return false;
     introSeventhLeftText.x=MwReadNativeWord(data,0x1E40);introSeventhLeftText.y=MwReadNativeWord(data,0x1E42);
-    if (!ImportInitialString(data,0x1E44,introSeventhLeftText.text,sizeof(introSeventhLeftText.text))) return false;
+    if (!MwStoryCopyText("intro.caption.7.left",introSeventhLeftText.text,sizeof(introSeventhLeftText.text))) return false;
     introSeventhRightText.x=MwReadNativeWord(data,0x1EB8);introSeventhRightText.y=MwReadNativeWord(data,0x1EBA);
-    if (!ImportInitialString(data,0x1EBC,introSeventhRightText.text,sizeof(introSeventhRightText.text))) return false;
+    if (!MwStoryCopyText("intro.caption.7.right",introSeventhRightText.text,sizeof(introSeventhRightText.text))) return false;
     ImportInitialWords(data,0x04B7,rosterPilotIds,CAMPAIGN_ROSTER_SLOTS);
     memcpy(pilotIdentityStorage.roster.unavailablePilots1To42,data+0x04BF,sizeof(pilotIdentityStorage.roster.unavailablePilots1To42));
     for (uint16_t row=0;row<CAMPAIGN_SYSTEM_COUNT;++row)

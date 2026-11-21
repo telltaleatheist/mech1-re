@@ -1,0 +1,21 @@
+# The pieces the importer takes from the player's exes (docs/phase2/PLAN.md,
+# "The import table"). One per line: id, exe, SEG:OFF (MW_MAIN's load
+# segment is 0800), and the length: `z` for a string read up to and including
+# its NUL, or a byte count. tools/import/make_import_table.py turns this and
+# the player's exes into import_table.cpp (lengths and hashes, never bytes).
+
+# The intro's captions (MW_MAIN 1090:1C33.., each x, y, then the text).
+intro.caption.1.left   MW_MAIN.EXE 1090:1C37 z
+intro.caption.1.right  MW_MAIN.EXE 1090:1C5B z
+intro.caption.2.left   MW_MAIN.EXE 1090:1C84 z
+intro.caption.2.right  MW_MAIN.EXE 1090:1CAD z
+intro.caption.3.left   MW_MAIN.EXE 1090:1CD3 z
+intro.caption.3.right  MW_MAIN.EXE 1090:1D23 z
+intro.caption.4.left   MW_MAIN.EXE 1090:1D57 z
+intro.caption.4.right  MW_MAIN.EXE 1090:1D73 z
+intro.caption.5.left   MW_MAIN.EXE 1090:1D92 z
+intro.caption.5.right  MW_MAIN.EXE 1090:1DDC z
+intro.caption.6.left   MW_MAIN.EXE 1090:1DFB z
+intro.caption.6.right  MW_MAIN.EXE 1090:1E1C z
+intro.caption.7.left   MW_MAIN.EXE 1090:1E44 z
+intro.caption.7.right  MW_MAIN.EXE 1090:1EBC z
