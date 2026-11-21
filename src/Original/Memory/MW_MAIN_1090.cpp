@@ -17,6 +17,8 @@
 #include "mechwarrior/campaign_travel.h"
 #include "mechwarrior/campaign_options.h"
 #include "mechwarrior/campaign_handoff.h"
+#include "mechwarrior/ui_layout.h"
+#include "MW_MAIN_1090_LAYOUT.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -713,10 +715,11 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     textPanelFont=MwReadNativeWord(data,0x0440);
     textPanelContinuationMode=MwReadNativeWord(data,0x0442);
     textPanelYOverride=MwReadNativeWord(data,0x0446);
-    ImportInitialWords(data,0x5EB3,(uint16_t *)notificationTextInsetX,sizeof(notificationTextInsetX)/sizeof(uint16_t));
-    ImportInitialWords(data,0x5EBB,(uint16_t *)notificationTextInsetY,sizeof(notificationTextInsetY)/sizeof(uint16_t));
-    ImportInitialWords(data,0x5EC3,(uint16_t *)notificationColumns,sizeof(notificationColumns)/sizeof(uint16_t));
-    ImportInitialWords(data,0x5ECB,(uint16_t *)notificationRows,sizeof(notificationRows)/sizeof(uint16_t));
+    /* The notification boxes (data/ui/hub.json): all insets x, then y, columns, rows (5EB3). */
+    if (!MwUiCopyWords("hub.table.notification_boxes",notificationTextInsetX,4,0)
+        || !MwUiCopyWords("hub.table.notification_boxes",notificationTextInsetY,4,8)
+        || !MwUiCopyWords("hub.table.notification_boxes",notificationColumns,4,16)
+        || !MwUiCopyWords("hub.table.notification_boxes",notificationRows,4,24)) return false;
     ImportInitialWords(data,0x5ED3,(uint16_t *)notificationTextOffsets,sizeof(notificationTextOffsets)/sizeof(uint16_t));
     memcpy(notificationTextStorage,data+0x5EDB,sizeof(notificationTextStorage));
     compressedPictureBufferSelector=MwReadNativeWord(data,0x016D);
@@ -744,7 +747,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
      * (offsets at 6570, storage 67B6.., the alphabetical table at 6694). */
     if (!MwStoryBuildPlanets(planetRecordStorage,sizeof(planetRecordStorage),PLANET_RECORDS_START,
         planetRecordOffsets,CAMPAIGN_PLANET_COUNT,alphabeticPlanetRecordOffsets,TRAVEL_PLANET_DIRECTORY_COUNT)) return false;
-    ImportInitialWords(data,0x11BA,(uint16_t *)calendarMonthNameWidths,sizeof(calendarMonthNameWidths)/sizeof(uint16_t));
+    if (!MwUiCopyWords("hub.table.calendar_month_name_widths",calendarMonthNameWidths,CAMPAIGN_MONTH_COUNT,0)) return false; /*11BA*/
     calendarTextX=MwReadNativeWord(data,0x117E);
     calendarTextY=MwReadNativeWord(data,0x1180);
     memcpy(&calendarBackground,data+0x1182,sizeof(calendarBackground));
@@ -1602,39 +1605,9 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     if (MwReadNativeWord(data,0x2664)!=0x2628) return false;
     mechComplexMenu.records[3].text=mechComplexLabels[4].text;
     mechComplexMenu.records[3].textColour=&(mechComplexLabels[4].display).colour;
-    for (uint16_t i=0;i<planetHubMenu.recordCount;++i)
-    {
-        const uint8_t *encoded=data+0x1083+i*CAMPAIGN_UI_RECORD_BYTES;
-        MwUiRecord *row=&planetHubMenu.records[i];
-        row->enabled=encoded[0];row->textRecord=encoded[1];
-        row->x=MwReadNativeWord(encoded,2);row->y=MwReadNativeWord(encoded,4);
-        row->activateCodeOffset=MwReadNativeWord(encoded,6);row->pictureIndex=MwReadNativeWord(encoded,8);
-        row->upRecordIndex=encoded[10];row->downRecordIndex=encoded[11];
-        row->leftRecordIndex=encoded[12];row->rightRecordIndex=encoded[13];
-        row->text=NULL;row->textColour=NULL;
-    }
-    for (uint16_t i=0;i<contractHubMenu.recordCount;++i)
-    {
-        const uint8_t *encoded=data+0x10D7+i*CAMPAIGN_UI_RECORD_BYTES;
-        MwUiRecord *row=&contractHubMenu.records[i];
-        row->enabled=encoded[0];row->textRecord=encoded[1];
-        row->x=MwReadNativeWord(encoded,2);row->y=MwReadNativeWord(encoded,4);
-        row->activateCodeOffset=MwReadNativeWord(encoded,6);row->pictureIndex=MwReadNativeWord(encoded,8);
-        row->upRecordIndex=encoded[10];row->downRecordIndex=encoded[11];
-        row->leftRecordIndex=encoded[12];row->rightRecordIndex=encoded[13];
-        row->text=NULL;row->textColour=NULL;
-    }
-    for (uint16_t i=0;i<remotePlanetHubMenu.recordCount;++i)
-    {
-        const uint8_t *encoded=data+0x1101+i*CAMPAIGN_UI_RECORD_BYTES;
-        MwUiRecord *row=&remotePlanetHubMenu.records[i];
-        row->enabled=encoded[0];row->textRecord=encoded[1];
-        row->x=MwReadNativeWord(encoded,2);row->y=MwReadNativeWord(encoded,4);
-        row->activateCodeOffset=MwReadNativeWord(encoded,6);row->pictureIndex=MwReadNativeWord(encoded,8);
-        row->upRecordIndex=encoded[10];row->downRecordIndex=encoded[11];
-        row->leftRecordIndex=encoded[12];row->rightRecordIndex=encoded[13];
-        row->text=NULL;row->textColour=NULL;
-    }
+    if (!MwImportUiMenu("hub.menu.planet",&planetHubMenu,NULL,0)) return false; /*1083*/
+    if (!MwImportUiMenu("hub.menu.contract",&contractHubMenu,NULL,0)) return false; /*10D7*/
+    if (!MwImportUiMenu("hub.menu.remote_planet",&remotePlanetHubMenu,NULL,0)) return false; /*1101*/
     for (uint16_t i=0;i<ownedUnitListMenu.recordCount;++i)
     {
         const uint8_t *encoded=data+0x283B+i*CAMPAIGN_UI_RECORD_BYTES;
@@ -1822,216 +1795,36 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
 /* Installation decoder, not an added native gameplay procedure. */
 static bool ImportPilotUiData(const uint8_t *data)
 {
-    companyMenuPanel.x=MwReadNativeWord(data,0x21CE);
-    companyMenuPanel.y=MwReadNativeWord(data,0x21D0);
-    companyMenuPanel.width=MwReadNativeWord(data,0x21D2);
-    companyMenuPanel.bottomInset=MwReadNativeWord(data,0x21D4);
-    companyMenuPanel.lineCount=MwReadNativeWord(data,0x21D6);
-    companyMenuPanel.borderEnabled=MwReadNativeWord(data,0x21D8);
-    companyMenuPanel.lineSpacing=MwReadNativeWord(data,0x21DA);
-    companyMenuPanel.background=MwReadNativeWord(data,0x21DC);
-    if (companyMenuPanel.lineCount!=4) return false;
-    if (MwReadNativeWord(data,0x21DE)!=0x21E6) return false;
-    if (!ImportInitialString(data,0x21EB,companyMenuLabels[0].text,sizeof(companyMenuLabels[0].text))) return false;
-    ImportInitialText(data,0x21E6,&companyMenuLabels[0].display,companyMenuLabels[0].text,0);
-    companyMenuPanel.lines[0]=&companyMenuLabels[0].display;
-    if (MwReadNativeWord(data,0x21E0)!=0x21F8) return false;
-    if (!ImportInitialString(data,0x21FD,companyMenuLabels[1].text,sizeof(companyMenuLabels[1].text))) return false;
-    ImportInitialText(data,0x21F8,&companyMenuLabels[1].display,companyMenuLabels[1].text,0);
-    companyMenuPanel.lines[1]=&companyMenuLabels[1].display;
-    if (MwReadNativeWord(data,0x21E2)!=0x220A) return false;
-    if (!ImportInitialString(data,0x220F,companyMenuLabels[2].text,sizeof(companyMenuLabels[2].text))) return false;
-    ImportInitialText(data,0x220A,&companyMenuLabels[2].display,companyMenuLabels[2].text,0);
-    companyMenuPanel.lines[2]=&companyMenuLabels[2].display;
-    if (MwReadNativeWord(data,0x21E4)!=0x221C) return false;
-    if (!ImportInitialString(data,0x2221,companyMenuLabels[3].text,sizeof(companyMenuLabels[3].text))) return false;
-    ImportInitialText(data,0x221C,&companyMenuLabels[3].display,companyMenuLabels[3].text,0);
-    companyMenuPanel.lines[3]=&companyMenuLabels[3].display;
-    commanderProfilePanel.x=MwReadNativeWord(data,0x2258);
-    commanderProfilePanel.y=MwReadNativeWord(data,0x225A);
-    commanderProfilePanel.width=MwReadNativeWord(data,0x225C);
-    commanderProfilePanel.bottomInset=MwReadNativeWord(data,0x225E);
-    commanderProfilePanel.lineCount=MwReadNativeWord(data,0x2260);
-    commanderProfilePanel.borderEnabled=MwReadNativeWord(data,0x2262);
-    commanderProfilePanel.lineSpacing=MwReadNativeWord(data,0x2264);
-    commanderProfilePanel.background=MwReadNativeWord(data,0x2266);
-    if (commanderProfilePanel.lineCount!=11) return false;
-    if (MwReadNativeWord(data,0x2268)!=0x227E) return false;
-    if (!ImportInitialString(data,0x2283,commanderProfileLabels[0].text,sizeof(commanderProfileLabels[0].text))) return false;
-    ImportInitialText(data,0x227E,&commanderProfileLabels[0].display,commanderProfileLabels[0].text,0);
-    commanderProfilePanel.lines[0]=&commanderProfileLabels[0].display;
-    if (MwReadNativeWord(data,0x226A)!=0x2290) return false;
-    if (!ImportInitialString(data,0x2295,commanderProfileLabels[1].text,sizeof(commanderProfileLabels[1].text))) return false;
-    ImportInitialText(data,0x2290,&commanderProfileLabels[1].display,commanderProfileLabels[1].text,0);
-    commanderProfilePanel.lines[1]=&commanderProfileLabels[1].display;
-    if (MwReadNativeWord(data,0x226C)!=0x22A0) return false;
-    if (!ImportInitialString(data,0x22A5,commanderProfileLabels[2].text,sizeof(commanderProfileLabels[2].text))) return false;
-    ImportInitialText(data,0x22A0,&commanderProfileLabels[2].display,commanderProfileLabels[2].text,0);
-    commanderProfilePanel.lines[2]=&commanderProfileLabels[2].display;
-    if (MwReadNativeWord(data,0x226E)!=0x22AA) return false;
-    if (!ImportInitialString(data,0x22AF,commanderProfileLabels[3].text,sizeof(commanderProfileLabels[3].text))) return false;
-    ImportInitialText(data,0x22AA,&commanderProfileLabels[3].display,commanderProfileLabels[3].text,0);
-    commanderProfilePanel.lines[3]=&commanderProfileLabels[3].display;
-    if (MwReadNativeWord(data,0x2270)!=0x22BB) return false;
-    if (!ImportInitialString(data,0x22C0,commanderProfileLabels[4].text,sizeof(commanderProfileLabels[4].text))) return false;
-    ImportInitialText(data,0x22BB,&commanderProfileLabels[4].display,commanderProfileLabels[4].text,0);
-    commanderProfilePanel.lines[4]=&commanderProfileLabels[4].display;
-    if (MwReadNativeWord(data,0x2272)!=0x22C8) return false;
-    if (!ImportInitialString(data,0x22CD,commanderProfileLabels[5].text,sizeof(commanderProfileLabels[5].text))) return false;
-    ImportInitialText(data,0x22C8,&commanderProfileLabels[5].display,commanderProfileLabels[5].text,0);
-    commanderProfilePanel.lines[5]=&commanderProfileLabels[5].display;
-    if (MwReadNativeWord(data,0x2274)!=0x22DF) return false;
-    if (!ImportInitialString(data,0x22E4,commanderProfileLabels[6].text,sizeof(commanderProfileLabels[6].text))) return false;
-    ImportInitialText(data,0x22DF,&commanderProfileLabels[6].display,commanderProfileLabels[6].text,0);
-    commanderProfilePanel.lines[6]=&commanderProfileLabels[6].display;
-    if (MwReadNativeWord(data,0x2276)!=0x22ED) return false;
-    if (!ImportInitialString(data,0x22F2,commanderProfileLabels[7].text,sizeof(commanderProfileLabels[7].text))) return false;
-    ImportInitialText(data,0x22ED,&commanderProfileLabels[7].display,commanderProfileLabels[7].text,0);
-    commanderProfilePanel.lines[7]=&commanderProfileLabels[7].display;
-    if (MwReadNativeWord(data,0x2278)!=0x22FB) return false;
-    if (!ImportInitialString(data,0x2300,commanderProfileLabels[8].text,sizeof(commanderProfileLabels[8].text))) return false;
-    ImportInitialText(data,0x22FB,&commanderProfileLabels[8].display,commanderProfileLabels[8].text,0);
-    commanderProfilePanel.lines[8]=&commanderProfileLabels[8].display;
-    if (MwReadNativeWord(data,0x227A)!=0x2309) return false;
-    if (!ImportInitialString(data,0x230E,commanderProfileLabels[9].text,sizeof(commanderProfileLabels[9].text))) return false;
-    ImportInitialText(data,0x2309,&commanderProfileLabels[9].display,commanderProfileLabels[9].text,0);
-    commanderProfilePanel.lines[9]=&commanderProfileLabels[9].display;
-    if (MwReadNativeWord(data,0x227C)!=0x2317) return false;
-    if (!ImportInitialString(data,0x231C,commanderProfileLabels[10].text,sizeof(commanderProfileLabels[10].text))) return false;
-    ImportInitialText(data,0x2317,&commanderProfileLabels[10].display,commanderProfileLabels[10].text,0);
-    commanderProfilePanel.lines[10]=&commanderProfileLabels[10].display;
-    crewLabelsPanel.x=MwReadNativeWord(data,0x2325);
-    crewLabelsPanel.y=MwReadNativeWord(data,0x2327);
-    crewLabelsPanel.width=MwReadNativeWord(data,0x2329);
-    crewLabelsPanel.bottomInset=MwReadNativeWord(data,0x232B);
-    crewLabelsPanel.lineCount=MwReadNativeWord(data,0x232D);
-    crewLabelsPanel.borderEnabled=MwReadNativeWord(data,0x232F);
-    crewLabelsPanel.lineSpacing=MwReadNativeWord(data,0x2331);
-    crewLabelsPanel.background=MwReadNativeWord(data,0x2333);
-    if (crewLabelsPanel.lineCount!=7) return false;
-    if (MwReadNativeWord(data,0x2335)!=0x2343) return false;
-    if (!ImportInitialString(data,0x2348,crewLabels[0].text,sizeof(crewLabels[0].text))) return false;
-    ImportInitialText(data,0x2343,&crewLabels[0].display,crewLabels[0].text,0);
-    crewLabelsPanel.lines[0]=&crewLabels[0].display;
-    if (MwReadNativeWord(data,0x2337)!=0x234D) return false;
-    if (!ImportInitialString(data,0x2352,crewLabels[1].text,sizeof(crewLabels[1].text))) return false;
-    ImportInitialText(data,0x234D,&crewLabels[1].display,crewLabels[1].text,0);
-    crewLabelsPanel.lines[1]=&crewLabels[1].display;
-    if (MwReadNativeWord(data,0x2339)!=0x2358) return false;
-    if (!ImportInitialString(data,0x235D,crewLabels[2].text,sizeof(crewLabels[2].text))) return false;
-    ImportInitialText(data,0x2358,&crewLabels[2].display,crewLabels[2].text,0);
-    crewLabelsPanel.lines[2]=&crewLabels[2].display;
-    if (MwReadNativeWord(data,0x233B)!=0x2363) return false;
-    if (!ImportInitialString(data,0x2368,crewLabels[3].text,sizeof(crewLabels[3].text))) return false;
-    ImportInitialText(data,0x2363,&crewLabels[3].display,crewLabels[3].text,0);
-    crewLabelsPanel.lines[3]=&crewLabels[3].display;
-    if (MwReadNativeWord(data,0x233D)!=0x236C) return false;
-    if (!ImportInitialString(data,0x2371,crewLabels[4].text,sizeof(crewLabels[4].text))) return false;
-    ImportInitialText(data,0x236C,&crewLabels[4].display,crewLabels[4].text,0);
-    crewLabelsPanel.lines[4]=&crewLabels[4].display;
-    if (MwReadNativeWord(data,0x233F)!=0x2376) return false;
-    if (!ImportInitialString(data,0x237B,crewLabels[5].text,sizeof(crewLabels[5].text))) return false;
-    ImportInitialText(data,0x2376,&crewLabels[5].display,crewLabels[5].text,0);
-    crewLabelsPanel.lines[5]=&crewLabels[5].display;
-    if (MwReadNativeWord(data,0x2341)!=0x2380) return false;
-    if (!ImportInitialString(data,0x2385,crewLabels[6].text,sizeof(crewLabels[6].text))) return false;
-    ImportInitialText(data,0x2380,&crewLabels[6].display,crewLabels[6].text,0);
-    crewLabelsPanel.lines[6]=&crewLabels[6].display;
-    barMenuPanel.x=MwReadNativeWord(data,0x8FF6);
-    barMenuPanel.y=MwReadNativeWord(data,0x8FF8);
-    barMenuPanel.width=MwReadNativeWord(data,0x8FFA);
-    barMenuPanel.bottomInset=MwReadNativeWord(data,0x8FFC);
-    barMenuPanel.lineCount=MwReadNativeWord(data,0x8FFE);
-    barMenuPanel.borderEnabled=MwReadNativeWord(data,0x9000);
-    barMenuPanel.lineSpacing=MwReadNativeWord(data,0x9002);
-    barMenuPanel.background=MwReadNativeWord(data,0x9004);
-    if (barMenuPanel.lineCount!=4) return false;
-    if (MwReadNativeWord(data,0x9006)!=0x900E) return false;
-    if (!ImportInitialString(data,0x9013,barMenuLabels[0].text,sizeof(barMenuLabels[0].text))) return false;
-    ImportInitialText(data,0x900E,&barMenuLabels[0].display,barMenuLabels[0].text,0);
-    barMenuPanel.lines[0]=&barMenuLabels[0].display;
-    if (MwReadNativeWord(data,0x9008)!=0x901B) return false;
-    if (!ImportInitialString(data,0x9020,barMenuLabels[1].text,sizeof(barMenuLabels[1].text))) return false;
-    ImportInitialText(data,0x901B,&barMenuLabels[1].display,barMenuLabels[1].text,0);
-    barMenuPanel.lines[1]=&barMenuLabels[1].display;
-    if (MwReadNativeWord(data,0x900A)!=0x902C) return false;
-    if (!ImportInitialString(data,0x9031,barMenuLabels[2].text,sizeof(barMenuLabels[2].text))) return false;
-    ImportInitialText(data,0x902C,&barMenuLabels[2].display,barMenuLabels[2].text,0);
-    barMenuPanel.lines[2]=&barMenuLabels[2].display;
-    if (MwReadNativeWord(data,0x900C)!=0x903E) return false;
-    if (!ImportInitialString(data,0x9043,barMenuLabels[3].text,sizeof(barMenuLabels[3].text))) return false;
-    ImportInitialText(data,0x903E,&barMenuLabels[3].display,barMenuLabels[3].text,0);
-    barMenuPanel.lines[3]=&barMenuLabels[3].display;
-    recruitInterviewPanel.x=MwReadNativeWord(data,0x9076);
-    recruitInterviewPanel.y=MwReadNativeWord(data,0x9078);
-    recruitInterviewPanel.width=MwReadNativeWord(data,0x907A);
-    recruitInterviewPanel.bottomInset=MwReadNativeWord(data,0x907C);
-    recruitInterviewPanel.lineCount=MwReadNativeWord(data,0x907E);
-    recruitInterviewPanel.borderEnabled=MwReadNativeWord(data,0x9080);
-    recruitInterviewPanel.lineSpacing=MwReadNativeWord(data,0x9082);
-    recruitInterviewPanel.background=MwReadNativeWord(data,0x9084);
-    if (recruitInterviewPanel.lineCount!=3) return false;
-    if (MwReadNativeWord(data,0x9086)!=0x908C) return false;
-    if (!ImportInitialString(data,0x9091,recruitInterviewLabels[0].text,sizeof(recruitInterviewLabels[0].text))) return false;
-    ImportInitialText(data,0x908C,&recruitInterviewLabels[0].display,recruitInterviewLabels[0].text,0);
-    recruitInterviewPanel.lines[0]=&recruitInterviewLabels[0].display;
-    if (MwReadNativeWord(data,0x9088)!=0x90D9) return false;
-    if (!ImportInitialString(data,0x90DE,recruitInterviewLabels[1].text,sizeof(recruitInterviewLabels[1].text))) return false;
-    ImportInitialText(data,0x90D9,&recruitInterviewLabels[1].display,recruitInterviewLabels[1].text,0);
-    recruitInterviewPanel.lines[1]=&recruitInterviewLabels[1].display;
-    if (MwReadNativeWord(data,0x908A)!=0x90E2) return false;
-    if (!ImportInitialString(data,0x90E7,recruitInterviewLabels[2].text,sizeof(recruitInterviewLabels[2].text))) return false;
-    ImportInitialText(data,0x90E2,&recruitInterviewLabels[2].display,recruitInterviewLabels[2].text,0);
-    recruitInterviewPanel.lines[2]=&recruitInterviewLabels[2].display;
-    for (uint16_t i=0;i<3;++i)
-    {
-        uint16_t offset=0x222E +i*CAMPAIGN_UI_RECORD_BYTES;
-        MwUiRecord *record=&companyMenu.records[i];
-        record->enabled=data[offset];record->textRecord=data[offset+1];
-        record->x=MwReadNativeWord(data,offset+2);record->y=MwReadNativeWord(data,offset+4);
-        record->activateCodeOffset=MwReadNativeWord(data,offset+6);
-        record->upRecordIndex=data[offset+0x0A];record->downRecordIndex=data[offset+0x0B];
-        record->leftRecordIndex=data[offset+0x0C];record->rightRecordIndex=data[offset+0x0D];
-        if (MwReadNativeWord(data,offset+8)!=MwReadNativeWord(data,0x21E0+i*2)+4) return false;
-        record->text=companyMenuLabels[i+1].text;record->textColour=&companyMenuLabels[i+1].display.colour;
-    }
-    for (uint16_t i=0;i<3;++i)
-    {
-        uint16_t offset=0x904C+i*CAMPAIGN_UI_RECORD_BYTES;
-        MwUiRecord *record=&barMenu.records[i];
-        record->enabled=data[offset];record->textRecord=data[offset+1];
-        record->x=MwReadNativeWord(data,offset+2);record->y=MwReadNativeWord(data,offset+4);
-        record->activateCodeOffset=MwReadNativeWord(data,offset+6);
-        record->upRecordIndex=data[offset+0x0A];record->downRecordIndex=data[offset+0x0B];
-        record->leftRecordIndex=data[offset+0x0C];record->rightRecordIndex=data[offset+0x0D];
-        if (MwReadNativeWord(data,offset+8)!=MwReadNativeWord(data,0x9008+i*2)+4) return false;
-        record->text=barMenuLabels[i+1].text;record->textColour=&barMenuLabels[i+1].display.colour;
-    }
-    for (uint16_t i=0;i<2;++i)
-    {
-        uint16_t offset=0x90EA+i*CAMPAIGN_UI_RECORD_BYTES;
-        MwUiRecord *record=&recruitInterviewMenu.records[i];
-        record->enabled=data[offset];record->textRecord=data[offset+1];
-        record->x=MwReadNativeWord(data,offset+2);record->y=MwReadNativeWord(data,offset+4);
-        record->activateCodeOffset=MwReadNativeWord(data,offset+6);
-        record->upRecordIndex=data[offset+0x0A];record->downRecordIndex=data[offset+0x0B];
-        record->leftRecordIndex=data[offset+0x0C];record->rightRecordIndex=data[offset+0x0D];
-        if (MwReadNativeWord(data,offset+8)!=MwReadNativeWord(data,0x9088+i*2)+4) return false;
-        record->text=recruitInterviewLabels[i+1].text;record->textColour=&recruitInterviewLabels[i+1].display.colour;
-    }
-    for (uint16_t i=0;i<5;++i)
-    {
-        uint16_t offset=0x238A+i*CAMPAIGN_UI_RECORD_BYTES;
-        MwUiRecord *record=&crewMenu.records[i];
-        record->enabled=data[offset];record->textRecord=data[offset+1];
-        record->x=MwReadNativeWord(data,offset+2);record->y=MwReadNativeWord(data,offset+4);
-        record->activateCodeOffset=MwReadNativeWord(data,offset+6);
-        record->upRecordIndex=data[offset+0x0A];record->downRecordIndex=data[offset+0x0B];
-        record->leftRecordIndex=data[offset+0x0C];record->rightRecordIndex=data[offset+0x0D];
-        record->text=i?NULL:crewLabels[6].text;
-        record->textColour=i?NULL:&crewLabels[6].display.colour;
-        /*273E/28B2 assigns captions before any pilot record is selected. */
-    }
+    /* data/ui/crew.json: company 21CE, commander profile 2258, crew 2325,
+     * bar 8FF6 and recruit 9076, with their menus 222E, 238A, 904C, 90EA. */
+    static const char *const profileIds[11]={"crew.caption.profile_1","crew.caption.profile_2","crew.caption.profile_3",
+        "crew.caption.profile_4","crew.caption.profile_5","crew.caption.profile_6","crew.caption.profile_7",
+        "crew.caption.profile_8","crew.caption.profile_9","crew.caption.profile_10","crew.caption.profile_11"};
+    static const char *const companyIds[4]={"crew.caption.company_title","crew.caption.company_crew",
+        "crew.caption.company_news","crew.caption.company_leave"};
+    static const char *const crewIds[7]={"crew.caption.crew_1","crew.caption.crew_2","crew.caption.crew_3",
+        "crew.caption.crew_4","crew.caption.crew_5","crew.caption.crew_6","crew.caption.crew_leave"};
+    static const char *const barIds[4]={"crew.caption.bar_title","crew.caption.bar_drink","crew.caption.bar_recruit","crew.caption.bar_leave"};
+    static const char *const recruitIds[3]={"crew.caption.recruit_prompt","crew.caption.recruit_hire","crew.caption.recruit_reject"};
+    UiCaptionOwner owners[4+11+7+4+3];
+    size_t count=0;
+    for (uint16_t i=0;i<4;++i) owners[count++]={companyIds[i],&companyMenuLabels[i].display,companyMenuLabels[i].text,sizeof(companyMenuLabels[i].text),0};
+    for (uint16_t i=0;i<11;++i) owners[count++]={profileIds[i],&commanderProfileLabels[i].display,commanderProfileLabels[i].text,sizeof(commanderProfileLabels[i].text),0};
+    for (uint16_t i=0;i<7;++i) owners[count++]={crewIds[i],&crewLabels[i].display,crewLabels[i].text,sizeof(crewLabels[i].text),0};
+    for (uint16_t i=0;i<4;++i) owners[count++]={barIds[i],&barMenuLabels[i].display,barMenuLabels[i].text,sizeof(barMenuLabels[i].text),0};
+    for (uint16_t i=0;i<3;++i) owners[count++]={recruitIds[i],&recruitInterviewLabels[i].display,recruitInterviewLabels[i].text,sizeof(recruitInterviewLabels[i].text),0};
+    /* The crew menu's pilot rows (1..4) have no caption: 273E/28B2 assigns
+     * them before any pilot record is selected. */
+    if (!MwImportUiCaptions(data,owners,count)
+        || !MwImportUiPanel("crew.panel.company",&companyMenuPanel,4,owners,count)
+        || !MwImportUiPanel("crew.panel.commander_profile",&commanderProfilePanel,11,owners,count)
+        || !MwImportUiPanel("crew.panel.crew",&crewLabelsPanel,7,owners,count)
+        || !MwImportUiPanel("crew.panel.bar",&barMenuPanel,4,owners,count)
+        || !MwImportUiPanel("crew.panel.recruit",&recruitInterviewPanel,3,owners,count)
+        || !MwImportUiMenu("crew.menu.company",&companyMenu,owners,count)
+        || !MwImportUiMenu("crew.menu.crew",&crewMenu,owners,count)
+        || !MwImportUiMenu("crew.menu.bar",&barMenu,owners,count)
+        || !MwImportUiMenu("crew.menu.recruit",&recruitInterviewMenu,owners,count)) return false;
     crewScreenRightEdge=MwReadNativeWord(data,0x2438);
     pilotCardRosterSlot=MwReadNativeWord(data,0x243A);
     pilotCardTextX=MwReadNativeWord(data,0x243C);
@@ -2048,7 +1841,7 @@ static bool ImportPilotUiData(const uint8_t *data)
     recruitOfferSlot=MwReadNativeWord(data,0x911D)/sizeof(uint16_t);
     selectedRecruitPilotId=MwReadNativeWord(data,0x911F);
     assignmentConflictHighlighted=data[0x2585];
-    ImportInitialWords(data,0x244A,pilotCardColumnOrigins,4);
+    if (!MwUiCopyWords("crew.table.pilot_card_column_origins",pilotCardColumnOrigins,PILOT_CARD_COUNT,0)) return false; /*244A*/
     for (uint16_t i=0;i<4;++i)
     {
         if (!ImportInitialString(data,MwReadNativeWord(data,0x23D0+i*2),commanderReputationLabels[i],sizeof(commanderReputationLabels[i]))) return false;
@@ -2064,11 +1857,22 @@ static bool ImportPilotUiData(const uint8_t *data)
         if (label==5) return false;
         houseAttitudeText[i]=houseAttitudeLabels[label];
     }
+    /* The pilot assignment captions: the pointer table (247E) names colour
+     * captions, a colour byte each from the layout and the text after it. */
+    uint16_t assignmentPointers[PILOT_ASSIGNMENT_CAPTION_COUNT];
+    if (!MwUiCopyWords("crew.table.pilot_assignment_captions",assignmentPointers,PILOT_ASSIGNMENT_CAPTION_COUNT,0)) return false;
     for (uint16_t i=0;i<PILOT_ASSIGNMENT_CAPTION_COUNT;++i)
     {
-        uint16_t offset=MwReadNativeWord(data,0x247E +i*2);
-        pilotAssignmentCaptionColours[i]=data[offset];
-        if (!ImportInitialString(data,offset+1,pilotAssignmentCaptions[i],sizeof(pilotAssignmentCaptions[i]))) return false;
+        uint16_t caption=0;
+        char id[32];
+        while (caption<PILOT_ASSIGNMENT_CAPTION_COUNT)
+        {
+            snprintf(id,sizeof(id),"crew.caption.assignment_%u",(unsigned)(caption+1));
+            if (MwUiCaptionOffset(id)==assignmentPointers[i]) break;
+            ++caption;
+        }
+        if (caption==PILOT_ASSIGNMENT_CAPTION_COUNT || !MwUiCopyBytes(id,&pilotAssignmentCaptionColours[i],1,0)) return false;
+        if (!ImportInitialString(data,assignmentPointers[i]+1,pilotAssignmentCaptions[i],sizeof(pilotAssignmentCaptions[i]))) return false;
     }
     pilotDefinitions[0]=NULL;pilotDialogue[0]=NULL;
     for (uint16_t pilotId=1;pilotId<CAMPAIGN_PILOT_ID_COUNT;++pilotId)
@@ -2124,10 +1928,12 @@ static bool ImportContractData(const uint8_t *data)
     acceptedContractAdvanceCbillsLow=MwReadNativeWord(data,0x4B73);
     acceptedContractAdvanceCbillsHigh=MwReadNativeWord(data,0x4B75);
     deploymentRefusalCount=data[0x0FBF];deploymentPenaltySuppressed=data[0x140B];
-    ImportInitialWords(data,0x4B1A,contractDateYearXOffsets,CAMPAIGN_MONTH_COUNT);
-    ImportInitialWords(data,0x49CC,requestedTermX,3);
-    ImportInitialWords(data,0x49D2,requestedTermY,3);
-    ImportInitialWords(data,0x49D8,requestedTermDigits,3);
+    /* data/ui/contract_office.json: the year offsets (4B1A), and the requested
+     * terms' x, then y, then digit counts (49CC). */
+    if (!MwUiCopyWords("contract_office.table.date_year_x_offsets",contractDateYearXOffsets,CAMPAIGN_MONTH_COUNT,0)
+        || !MwUiCopyWords("contract_office.table.requested_terms",requestedTermX,3,0)
+        || !MwUiCopyWords("contract_office.table.requested_terms",requestedTermY,3,6)
+        || !MwUiCopyWords("contract_office.table.requested_terms",requestedTermDigits,3,12)) return false;
     if (!ImportRuleWords("houses.extra_enemy_roll_thresholds",(uint16_t *)houseExtraEnemyRollThresholds,CAMPAIGN_HOUSE_COUNT)) return false;
     memcpy(submitContractCaption,data+0x4B35,6);memcpy(acceptContractCaption,data+0x4B3B,6);
     memcpy(contractOfficePlanetGroupStorage,data+0x4B8A,sizeof(contractOfficePlanetGroupStorage));
@@ -2139,41 +1945,19 @@ static bool ImportContractData(const uint8_t *data)
         if (group<0x4B8A || group>=0x4BF0 || !memchr(data+group,CONTRACT_REGION_END,0x4BF0-group)) return false;
         contractOfficePlanetGroups[house]=contractOfficePlanetGroupStorage+group-0x4B8A;
     }
-    const uint16_t panels[]={0x4822,0x49DE},counts[]={2,3},menus[]={0x486F,0x4A15},menuCounts[]={2,6};
-    MwPanelDescriptor *panelOwners[]={&contractOfficePanel,&contractActionsPanel};
-    MwServiceCaption *labels[]={contractOfficeLabels,contractActionLabels};
-    MwUiMenu *menuOwners[]={&contractOfficeMenu,&contractActionsMenu};
-    for (uint16_t group=0;group<2;++group)
-    {
-        MwPanelDescriptor *panel=panelOwners[group];
-        uint16_t header[8];ImportInitialWords(data,panels[group],header,8);
-        panel->x=header[0];panel->y=header[1];panel->width=header[2];panel->bottomInset=header[3];
-        panel->lineCount=header[4];panel->borderEnabled=header[5];panel->lineSpacing=header[6];panel->background=header[7];
-        if (panel->lineCount!=counts[group]) return false;
-        for (uint16_t row=0;row<counts[group];++row)
-        {
-            uint16_t offset=MwReadNativeWord(data,panels[group]+0x10+row*2);
-            MwServiceCaption *caption=&labels[group][row];
-            if (!ImportInitialString(data,offset+5,caption->text,sizeof(caption->text))) return false;
-            ImportInitialText(data,offset,&caption->display,caption->text,0);
-            panel->lines[row]=&caption->display;
-        }
-        for (uint16_t row=0;row<menuCounts[group];++row)
-        {
-            const uint8_t *encoded=data+menus[group]+row*CAMPAIGN_UI_RECORD_BYTES;
-            MwUiRecord *record=&menuOwners[group]->records[row];
-            record->enabled=encoded[0];record->textRecord=encoded[1];
-            record->x=MwReadNativeWord(encoded,2);record->y=MwReadNativeWord(encoded,4);
-            record->activateCodeOffset=MwReadNativeWord(encoded,6);record->pictureIndex=MwReadNativeWord(encoded,8);
-            record->upRecordIndex=encoded[10];record->downRecordIndex=encoded[11];
-            record->leftRecordIndex=encoded[12];record->rightRecordIndex=encoded[13];
-            if (record->textRecord)
-            {
-                if (row>=counts[group] || record->pictureIndex!=MwReadNativeWord(data,panels[group]+0x10+row*2)+4) return false;
-                record->text=labels[group][row].text;record->textColour=&labels[group][row].display.colour;
-            }
-        }
-    }
+    /* The office (panel 4822, menu 486F) and the offer's actions (49DE, 4A15). */
+    UiCaptionOwner owners[]={
+        {"contract_office.caption.request_offer",&contractOfficeLabels[0].display,contractOfficeLabels[0].text,sizeof(contractOfficeLabels[0].text),0},
+        {"contract_office.caption.leave_office",&contractOfficeLabels[1].display,contractOfficeLabels[1].text,sizeof(contractOfficeLabels[1].text),0},
+        {"contract_office.caption.negotiate",&contractActionLabels[0].display,contractActionLabels[0].text,sizeof(contractActionLabels[0].text),0},
+        {"contract_office.caption.next_offer",&contractActionLabels[1].display,contractActionLabels[1].text,sizeof(contractActionLabels[1].text),0},
+        {"contract_office.caption.back_to_office",&contractActionLabels[2].display,contractActionLabels[2].text,sizeof(contractActionLabels[2].text),0}};
+    const size_t count=sizeof(owners)/sizeof(owners[0]);
+    if (!MwImportUiCaptions(data,owners,count)
+        || !MwImportUiPanel("contract_office.panel.office",&contractOfficePanel,2,owners,count)
+        || !MwImportUiPanel("contract_office.panel.actions",&contractActionsPanel,3,owners,count)
+        || !MwImportUiMenu("contract_office.menu.office",&contractOfficeMenu,owners,count)
+        || !MwImportUiMenu("contract_office.menu.actions",&contractActionsMenu,owners,count)) return false;
     contractOfficeNavigationProbe=data[0x5661];contractActionsNavigationProbe=data[0x5807];
     return MwStoryCopyText("contract.narrative",contractNarrative,sizeof(contractNarrative))
         && ImportInitialString(data,0x4BFA,noContractsText,sizeof(noContractsText))

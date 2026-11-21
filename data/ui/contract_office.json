@@ -1,0 +1,135 @@
+{
+  "captions": {
+    "request_offer": {"at": [10, 10], "colour": 3},
+    "leave_office": {"at": [10, 20], "colour": 3},
+    "negotiate": {"at": [55, 0], "colour": 3},
+    "next_offer": {"at": [143, 0], "colour": 3},
+    "back_to_office": {"at": [217, 0], "colour": 3}
+  },
+  "panels": {
+    "office": {
+      "at": [90, 150],
+      "width": 140,
+      "bottom_inset": 16,
+      "border": 1,
+      "line_spacing": 8,
+      "background": 4,
+      "lines": ["request_offer", "leave_office"]
+    },
+    "actions": {
+      "at": [0, 185],
+      "width": 140,
+      "bottom_inset": 0,
+      "border": 0,
+      "line_spacing": 0,
+      "background": 1,
+      "lines": ["negotiate", "next_offer", "back_to_office"]
+    }
+  },
+  "menus": {
+    "office": {
+      "records": [
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [100, 160],
+          "action": "continue.request_mission_offer",
+          "caption": "request_offer",
+          "up": 1,
+          "down": 1,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [100, 170],
+          "action": "continue.planet_hub",
+          "caption": "leave_office",
+          "up": 0,
+          "down": 0,
+          "left": null,
+          "right": null
+        }
+      ]
+    },
+    "actions": {
+      "records": [
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [55, 185],
+          "action": "continue.negotiate_contract",
+          "caption": "negotiate",
+          "up": 5,
+          "down": 3,
+          "left": 5,
+          "right": 1
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [143, 185],
+          "action": "continue.next_mission_offer",
+          "caption": "next_offer",
+          "up": 5,
+          "down": 3,
+          "left": 0,
+          "right": 2
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [217, 185],
+          "action": "continue.contract_office",
+          "caption": "back_to_office",
+          "up": 5,
+          "down": 3,
+          "left": 1,
+          "right": 3
+        },
+        {
+          "enabled": true,
+          "text_record": false,
+          "at": [148, 130],
+          "action": "continue.request_payment",
+          "picture": 2,
+          "up": 0,
+          "down": 4,
+          "left": 2,
+          "right": 4
+        },
+        {
+          "enabled": true,
+          "text_record": false,
+          "at": [44, 138],
+          "action": "continue.request_salvage",
+          "picture": 2,
+          "up": 3,
+          "down": 5,
+          "left": 3,
+          "right": 5
+        },
+        {
+          "enabled": true,
+          "text_record": false,
+          "at": [132, 146],
+          "action": "continue.request_advance",
+          "picture": 2,
+          "up": 4,
+          "down": 0,
+          "left": 4,
+          "right": 0
+        }
+      ]
+    }
+  },
+  "tables": {
+    "requested_terms": [
+      {"x": 174, "y": 126, "digits": 4},
+      {"x": 70, "y": 134, "digits": 3},
+      {"x": 158, "y": 142, "digits": 3}
+    ],
+    "date_year_x_offsets": [64, 72, 48, 48, 32, 40, 40, 56, 80, 64, 72, 72]
+  }
+}

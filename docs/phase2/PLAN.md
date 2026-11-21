@@ -971,6 +971,22 @@ Each piece goes on its own branch and needs a build, ctest, `ui_test`,
   - `ui_test` gained 13 refusals: unknown actions, links out of the menu,
     unknown caption names, missing lines, records and captions.
 - **4c:** `hub.json`, `crew.json` and `contract_office.json`.
+  Done (68 more pieces, 121 in all):
+  - Screens gain tables: lists of words (the calendar's month name widths,
+    the pilot card columns, the contract date's year offsets), rows of named
+    words that the exe keeps one field after another (the notification
+    boxes; the requested terms' x, y and digits), and the pilot assignment
+    captions' pointer table as a list of caption names.
+  - Those twelve captions are colour captions: one colour byte each,
+    `{"colour": c}`, with the text after it. A panel line can't name one,
+    and the pointer table can't name a caption with a head.
+  - A text record's caption may be null where code fills it in (the crew
+    menu's four pilot rows). The hub menus are picture records.
+  - The caption, panel and menu importers moved to
+    `Original/Memory/MW_MAIN_1090_LAYOUT.*` and serve every screen. A
+    caption's place in the exe now comes from the piece table through
+    `MwUiCaptionOffset`, so the importers no longer list offsets.
+  - `ui_test` gained 11 refusals and accepts the two kinds of record above.
 - **4d:** `complex.json` and `dealer.json`: the largest, with the body
   diagrams and the reserve ammunition pointer tables.
 - **4e:** `travel.json` (the 32-line planet panel and the 31-record menu).

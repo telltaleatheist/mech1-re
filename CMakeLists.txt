@@ -37,6 +37,7 @@ add_library(mechwarrior_original STATIC
     src/Original/Campaign/MW_MAIN_081B_DISK.cpp
     src/Original/Memory/MW_MAIN_1090.cpp
     src/Original/Memory/MW_MAIN_1090_OPTIONS.cpp
+    src/Original/Memory/MW_MAIN_1090_LAYOUT.cpp
     src/Original/Memory/MW_0806_STATE.cpp
     src/Original/Launcher/MW_0806.cpp
     src/Original/Combat/BTECH_0810.cpp

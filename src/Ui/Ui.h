@@ -18,15 +18,21 @@
 //      "navigation_deltas": {"panel": [11], "row": [11]},
 //      "condition_colours": {"engine": [2 schemes of 4],
 //        "system": [2 schemes of 4]}}
-//   MW_MAIN's screens (options.json; events.json has menus only)
-//     {"captions": {name: {"at": [x, y], "colour": c}},
+//   MW_MAIN's screens (options, events, hub, crew, contract_office; each
+//   leaves out the members it has none of)
+//     {"captions": {name: {"at": [x, y], "colour": c} | {"colour": c}},
 //      "panels": {name: {"at": [x, y], "width", "bottom_inset", "border",
 //        "line_spacing", "background", "lines": [caption names]}},
 //      "menus": {name: {"records": [{"enabled": bool, "text_record": bool,
 //        "at": [x, y], "action": "continue.mech_complex" | null,
-//        "caption": name (a text record) | "picture": n (otherwise),
-//        "up", "down", "left", "right": record index | null}]}}}
-//     A caption is its head; its text follows in the exe until slice 5.
+//        "caption": name | null (a text record) | "picture": n (otherwise),
+//        "up", "down", "left", "right": record index | null}]}},
+//      "tables": {name: [words] | [{field: word}] | [colour caption names]}}
+//     A caption is its head; its text follows in the exe until slice 5. A
+//     colour caption (crew's pilot assignment captions) is a colour byte
+//     alone, named by a pointer table rather than a panel. A null caption
+//     on a text record is one code fills in. A table of rows is kept as the
+//     exe keeps it, one field after another.
 //     Actions are the continuation enums' members, by name; a link must stay
 //     inside its menu. The event menus' records name the story's captions by
 //     the original address story/events.json keeps ("story_caption").

@@ -18,4 +18,8 @@ bool MwUiCopyWords(const char *id, uint16_t *words, size_t count, size_t at);
 bool MwUiCopyBytes(const char *id, uint8_t *bytes, size_t count, size_t at);
 /* The length of layout piece `id`, or 0 if there is none. */
 size_t MwUiPieceSize(const char *id);
+/* Where caption piece `id` sits in MW_MAIN's data segment (its head; its text
+ * follows), or 0 if there is no such caption. The importers read the text
+ * there until slice 5. */
+uint16_t MwUiCaptionOffset(const char *id);
 #endif

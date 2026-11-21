@@ -37,15 +37,7 @@
       "border": 1,
       "line_spacing": 8,
       "background": 4,
-      "lines": [
-        "save",
-        "restore",
-        "sound",
-        "detail",
-        "restart",
-        "quit",
-        "continue"
-      ]
+      "lines": ["save", "restore", "sound", "detail", "restart", "quit", "continue"]
     },
     "restore": {
       "at": [52, 20],
@@ -54,22 +46,7 @@
       "border": 1,
       "line_spacing": 8,
       "background": 4,
-      "lines": [
-        "restore_heading",
-        "save_1",
-        "save_2",
-        "save_3",
-        "save_4",
-        "save_5",
-        "save_6",
-        "save_7",
-        "save_8",
-        "save_9",
-        "save_10",
-        "save_11",
-        "save_12",
-        "restore_cancel"
-      ]
+      "lines": ["restore_heading", "save_1", "save_2", "save_3", "save_4", "save_5", "save_6", "save_7", "save_8", "save_9", "save_10", "save_11", "save_12", "restore_cancel"]
     },
     "confirmation": {
       "at": [76, 100],
@@ -78,11 +55,7 @@
       "border": 4,
       "line_spacing": 8,
       "background": 4,
-      "lines": [
-        "confirm_quit",
-        "yes",
-        "no"
-      ]
+      "lines": ["confirm_quit", "yes", "no"]
     },
     "news": {
       "at": [46, 185],
@@ -91,11 +64,7 @@
       "border": 0,
       "line_spacing": 0,
       "background": 1,
-      "lines": [
-        "news_previous",
-        "news_next",
-        "news_done"
-      ]
+      "lines": ["news_previous", "news_next", "news_done"]
     }
   },
   "menus": {

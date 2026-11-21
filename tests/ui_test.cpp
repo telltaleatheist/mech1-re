@@ -167,6 +167,27 @@ void what_doesnt_fit_is_refused(const fs::path& data, const fs::path& work) {
     refused(load, "unknown key \"captions\"", "captions on a screen that has none");
     with_file("events.json", [&](Json& e) { at(at(at(at(at(e, "menus"), "two_choices"), "records"), 0), "left") = Json{2.0}; });
     refused(load, "the menu \"two_choices\"'s link left 2 leads out of the menu", "an event link out of its menu");
+    const auto with_crew = [&](const std::function<void(Json&)>& change) { with_file("crew.json", change); };
+    with_crew([&](Json& c) { at(at(at(at(c, "panels"), "company"), "lines"), 0) = Json{std::string("assignment_1")}; });
+    refused(load, "a line names a colour caption", "a panel line naming a colour caption");
+    with_crew([&](Json& c) { at(at(at(c, "tables"), "pilot_assignment_captions"), 0) = Json{std::string("bar_title")}; });
+    refused(load, "names a caption with a head, not a colour caption", "a pointer table naming a head caption");
+    with_crew([&](Json& c) { object(at(at(c, "captions"), "assignment_1"))["at"] = Json{Json::Array{Json{1.0}, Json{2.0}}}; });
+    refused(load, "unknown key \"at\"", "a colour caption with a place");
+    with_crew([&](Json& c) { array(at(at(c, "tables"), "pilot_card_column_origins")).pop_back(); });
+    refused(load, "the table \"pilot_card_column_origins\" is not a list of 4", "a short word table");
+    with_crew([&](Json& c) { at(at(at(at(at(c, "menus"), "crew"), "records"), 1), "caption") = Json{std::string("crew_leave")}; });
+    load();  // the layout accepts a caption on a pilot row that code fills in
+    with_crew([&](Json& c) { at(at(at(at(at(c, "menus"), "company"), "records"), 0), "caption") = Json{}; });
+    load();  // and a text record with none (null: code fills it in)
+    with_file("hub.json", [&](Json& h) { object(at(at(at(h, "tables"), "notification_boxes"), 2))["width"] = Json{1.0}; });
+    refused(load, "unknown key \"width\"", "an unknown field in a table's row");
+    with_file("hub.json", [&](Json& h) { object(at(at(at(h, "tables"), "notification_boxes"), 2)).erase("rows"); });
+    refused(load, "no \"rows\"", "a table's row missing a field");
+    with_file("hub.json", [&](Json& h) { at(at(at(at(at(h, "menus"), "planet"), "records"), 5), "down") = Json{6.0}; });
+    refused(load, "the menu \"planet\"'s link down 6 leads out of the menu", "a hub link out of its menu");
+    with_file("contract_office.json", [&](Json& c) { object(at(c, "tables")).erase("requested_terms"); });
+    refused(load, "no \"requested_terms\"", "a table missing");
     restore();
     fs::remove(work / "ui" / "orders.json");
     refused(load, "can't read", "a missing file");

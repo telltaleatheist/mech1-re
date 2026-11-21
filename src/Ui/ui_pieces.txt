@@ -67,3 +67,81 @@ options.caption.restore_cancel      MW_MAIN.EXE 1090:9F6C 5
 # events.json: the event choice menus (their captions are the story's).
 events.menu.two_choices             MW_MAIN.EXE 1090:5E1C 28
 events.menu.three_choices           MW_MAIN.EXE 1090:5E38 42
+
+# hub.json: the three hub menus, the calendar's month name widths and the
+# notification boxes (inset x, inset y, columns, rows; four of each).
+hub.menu.planet                     MW_MAIN.EXE 1090:1083 84
+hub.menu.contract                   MW_MAIN.EXE 1090:10D7 42
+hub.menu.remote_planet              MW_MAIN.EXE 1090:1101 84
+hub.table.calendar_month_name_widths     MW_MAIN.EXE 1090:11BA 24
+hub.table.notification_boxes        MW_MAIN.EXE 1090:5EB3 32
+
+# crew.json: company, commander profile, crew, bar and recruit. The pilot
+# assignment captions are colour captions: one colour byte, then the text,
+# found through the pointer table at 247E.
+crew.panel.company                  MW_MAIN.EXE 1090:21CE 24
+crew.panel.commander_profile        MW_MAIN.EXE 1090:2258 38
+crew.panel.crew                     MW_MAIN.EXE 1090:2325 30
+crew.panel.bar                      MW_MAIN.EXE 1090:8FF6 24
+crew.panel.recruit                  MW_MAIN.EXE 1090:9076 22
+crew.menu.company                   MW_MAIN.EXE 1090:222E 42
+crew.menu.crew                      MW_MAIN.EXE 1090:238A 70
+crew.menu.bar                       MW_MAIN.EXE 1090:904C 42
+crew.menu.recruit                   MW_MAIN.EXE 1090:90EA 28
+crew.caption.company_title          MW_MAIN.EXE 1090:21E6 5
+crew.caption.company_crew           MW_MAIN.EXE 1090:21F8 5
+crew.caption.company_news           MW_MAIN.EXE 1090:220A 5
+crew.caption.company_leave          MW_MAIN.EXE 1090:221C 5
+crew.caption.profile_1              MW_MAIN.EXE 1090:227E 5
+crew.caption.profile_2              MW_MAIN.EXE 1090:2290 5
+crew.caption.profile_3              MW_MAIN.EXE 1090:22A0 5
+crew.caption.profile_4              MW_MAIN.EXE 1090:22AA 5
+crew.caption.profile_5              MW_MAIN.EXE 1090:22BB 5
+crew.caption.profile_6              MW_MAIN.EXE 1090:22C8 5
+crew.caption.profile_7              MW_MAIN.EXE 1090:22DF 5
+crew.caption.profile_8              MW_MAIN.EXE 1090:22ED 5
+crew.caption.profile_9              MW_MAIN.EXE 1090:22FB 5
+crew.caption.profile_10             MW_MAIN.EXE 1090:2309 5
+crew.caption.profile_11             MW_MAIN.EXE 1090:2317 5
+crew.caption.crew_1                 MW_MAIN.EXE 1090:2343 5
+crew.caption.crew_2                 MW_MAIN.EXE 1090:234D 5
+crew.caption.crew_3                 MW_MAIN.EXE 1090:2358 5
+crew.caption.crew_4                 MW_MAIN.EXE 1090:2363 5
+crew.caption.crew_5                 MW_MAIN.EXE 1090:236C 5
+crew.caption.crew_6                 MW_MAIN.EXE 1090:2376 5
+crew.caption.crew_leave             MW_MAIN.EXE 1090:2380 5
+crew.caption.bar_title              MW_MAIN.EXE 1090:900E 5
+crew.caption.bar_drink              MW_MAIN.EXE 1090:901B 5
+crew.caption.bar_recruit            MW_MAIN.EXE 1090:902C 5
+crew.caption.bar_leave              MW_MAIN.EXE 1090:903E 5
+crew.caption.recruit_prompt         MW_MAIN.EXE 1090:908C 5
+crew.caption.recruit_hire           MW_MAIN.EXE 1090:90D9 5
+crew.caption.recruit_reject         MW_MAIN.EXE 1090:90E2 5
+crew.caption.assignment_1           MW_MAIN.EXE 1090:2496 1
+crew.caption.assignment_2           MW_MAIN.EXE 1090:249F 1
+crew.caption.assignment_3           MW_MAIN.EXE 1090:24A5 1
+crew.caption.assignment_4           MW_MAIN.EXE 1090:24AD 1
+crew.caption.assignment_5           MW_MAIN.EXE 1090:24B3 1
+crew.caption.assignment_6           MW_MAIN.EXE 1090:24BB 1
+crew.caption.assignment_7           MW_MAIN.EXE 1090:24C4 1
+crew.caption.assignment_8           MW_MAIN.EXE 1090:24CC 1
+crew.caption.assignment_9           MW_MAIN.EXE 1090:24D7 1
+crew.caption.assignment_10          MW_MAIN.EXE 1090:24E1 1
+crew.caption.assignment_11          MW_MAIN.EXE 1090:24EC 1
+crew.caption.assignment_12          MW_MAIN.EXE 1090:24F6 1
+crew.table.pilot_card_column_origins     MW_MAIN.EXE 1090:244A 8
+crew.table.pilot_assignment_captions     MW_MAIN.EXE 1090:247E 24
+
+# contract_office.json: the office and the offer's actions, the requested
+# terms (x, y, digits; three of each) and the contract date's year offsets.
+contract_office.panel.office        MW_MAIN.EXE 1090:4822 20
+contract_office.panel.actions       MW_MAIN.EXE 1090:49DE 22
+contract_office.menu.office         MW_MAIN.EXE 1090:486F 28
+contract_office.menu.actions        MW_MAIN.EXE 1090:4A15 84
+contract_office.caption.request_offer    MW_MAIN.EXE 1090:484A 5
+contract_office.caption.leave_office     MW_MAIN.EXE 1090:485F 5
+contract_office.caption.negotiate   MW_MAIN.EXE 1090:49F4 5
+contract_office.caption.next_offer  MW_MAIN.EXE 1090:4A00 5
+contract_office.caption.back_to_office   MW_MAIN.EXE 1090:4A0A 5
+contract_office.table.requested_terms    MW_MAIN.EXE 1090:49CC 18
+contract_office.table.date_year_x_offsets MW_MAIN.EXE 1090:4B1A 24
