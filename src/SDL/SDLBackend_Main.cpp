@@ -3,7 +3,10 @@
 #include "mechwarrior/campaign_runtime.h"
 #include "mechwarrior/campaign_ui.h"
 #include "mechwarrior/original_data.h"
+#include "mechwarrior/campaign_events.h"
 #include "mechwarrior/dos_files.h"
+#include "mechwarrior/rules.h"
+#include "mechwarrior/story.h"
 #include "mechwarrior/launcher.h"
 #include "mechwarrior/campaign_startup.h"
 #include "mechwarrior/combat_startup.h"
@@ -37,7 +40,7 @@ static bool ExecuteChild(const char *filename,const MwCampaignLaunch *launch,uin
     if (strcmp(filename,"MW_MAIN.EXE")) MwSdlFail("Unknown launcher child executable");
     /* Fresh DOS child image on EACH execution, then0002 decides new/resume.
      * Keep input/ticks, physical video and resident exchange alive across EXEC. */
-    if (!MwHostLoadCampaignInitialData(path) || !MwHostLoadCampaignEventText(path)
+    if (!MwHostLoadCampaignInitialData(path) || !MwImportCampaignEventText()
         || !MwHostLoadCampaignMusicData(path)) return true;
     *exitCode=(uint8_t)MwRunCampaignProgram(launch,audioCode);
     ReleaseChildResources();
@@ -110,26 +113,45 @@ finished:
     if (fclose(file)!=0) loaded=false;
     return loaded;
 }
+static char dataDirectory[4096];
+bool MwSdlSetDataDirectory(const char *directory)
+{
+    if (strlen(directory)>=sizeof(dataDirectory)) return false;
+    strcpy(dataDirectory,directory);
+    return true;
+}
 bool MwSdlInitialize(const char *gameDirectory,const char *captureDirectory)
 {
     if (initialized || strlen(gameDirectory)>=sizeof(installationDirectory)) return false;
     strcpy(installationDirectory,gameDirectory);
+    /* The player's write dir holds the saves and the story file, which is
+     * imported (once) before the campaign's initial data reads it. */
+    char writeDirectory[4096];
+    const char *configuredSaveDirectory=getenv("MECHWARRIOR_SAVE_DIRECTORY");
+    if (configuredSaveDirectory)
+    {
+        if (strlen(configuredSaveDirectory)>=sizeof(writeDirectory)) return false;
+        strcpy(writeDirectory,configuredSaveDirectory);
+    }
+    else
+    {
+        char *prefPath=SDL_GetPrefPath("BattleTechReverse","MechWarrior");
+        if (!prefPath || strlen(prefPath)>=sizeof(writeDirectory)) {SDL_free(prefPath);return false;}
+        strcpy(writeDirectory,prefPath);SDL_free(prefPath);
+    }
+    if (!dataDirectory[0])
+    {
+        const char *base=SDL_GetBasePath();
+        if (!base || snprintf(dataDirectory,sizeof(dataDirectory),"%sdata",base)>=(int)sizeof(dataDirectory)) return false;
+    }
+    if (!MwHostPrepareRules(dataDirectory)) return false;
+    if (!MwHostSetCampaignSaveDirectory(writeDirectory) || !MwHostPrepareStory(gameDirectory,writeDirectory)) return false;
     char path[4096];
     if (!MwHostJoinGamePath(path,sizeof(path),gameDirectory,"MW_MAIN.EXE")
-        || !MwHostLoadCampaignInitialData(path) || !MwHostLoadCampaignEventText(path)
+        || !MwHostLoadCampaignInitialData(path) || !MwImportCampaignEventText()
         || !MwHostLoadCampaignMusicData(path) || !MwHostSetOriginalGameDirectory(gameDirectory)) return false;
     if (!MwHostJoinGamePath(path,sizeof(path),gameDirectory,"MW.EXE") || !LoadResidentLauncher(path)) return false;
     if (!SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_EVENTS)) return false;
-    const char *configuredSaveDirectory=getenv("MECHWARRIOR_SAVE_DIRECTORY");
-    bool saveDirectorySet;
-    if (configuredSaveDirectory) saveDirectorySet=MwHostSetCampaignSaveDirectory(configuredSaveDirectory);
-    else
-    {
-        char *saveDirectory=SDL_GetPrefPath("BattleTechReverse","MechWarrior");
-        if (!saveDirectory) {SDL_Quit();return false;}
-        saveDirectorySet=MwHostSetCampaignSaveDirectory(saveDirectory);SDL_free(saveDirectory);
-    }
-    if (!saveDirectorySet) {SDL_Quit();return false;}
     initialized=true;
     if (!MwSdlInitializeVideo(captureDirectory) || !MwSdlInitializeAudio()) {MwSdlShutdown();return false;}
     MwSdlInitializeTimer();MwSdlInitializeInput();

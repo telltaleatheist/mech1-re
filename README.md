@@ -18,8 +18,8 @@ code under `src/SDL` and `src/Support`; see `docs/LICENSES/README.md` for the re
 
 ## Where it is
 
-- **C++20:** the sources are `.cpp` and build as C++20 (CMake; the Visual Studio project points at the same files
-  but isn't tested here). The first step changed no behaviour: the C build and the C++20 build record identical
+- **C++20:** the sources are `.cpp` and build as C++20 (CMake, the only build; Visual Studio opens the folder as
+  a CMake project). The first step changed no behaviour: the C build and the C++20 build record identical
   traces (`tools/trace/scripts/campaign_contract.keys`).
 - **Build (macOS, Linux):** `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build -j4`.
   SDL3 from the system (Homebrew on the Mac); Munt and Nuked-OPL3 are fetched.
@@ -87,7 +87,8 @@ Alternatively place private files in ignored `assets/original-game`. Saves and
 F12 captures go to ignored local directories, not into the original installation.
 The runtime reads original executable-authored tables as well as resource files;
 copying just the TBL/BMP assets is insufficient. Keep SDL3.dll next to the built
-executable. Open `MechWarrior.slnx` for Visual Studio source navigation.
+executable. Visual Studio opens the repository folder as a CMake project
+(File > Open > Folder) for source navigation and debugging.
 The [reviewed executable hashes](docs/SUPPORTED_VERSIONS.md) identify the tested revision.
 See [build instructions](docs/BUILDING.md) for direct CMake and Visual Studio setup.
 

@@ -18,11 +18,13 @@ the repository root:
 ```
 
 The executable and SDL3.dll are written to `build-visual-studio/Release`.
-Open `MechWarrior.slnx` for source navigation and F5 debugging. Its build commands
-use `src/Build.ps1`; set SDL3_DIR or MECHWARRIOR_SDL_SOURCE_DIR when needed.
-F5 uses your private `assets/original-game` installation and ignored
-`local/visual-studio` save/capture directories. The launcher supports an external
-installation instead. See [original-game requirements](ORIGINAL_GAME.md).
+For source navigation and debugging, open the repository folder in Visual Studio
+(File > Open > Folder): it reads `CMakeLists.txt` as a CMake project, so it builds
+the same targets as `src/Build.ps1` (set SDL3_DIR or MECHWARRIOR_SDL_SOURCE_DIR in
+its CMake settings when needed). To debug `mechwarrior`, give it your game folder
+as its argument, for example your private `assets/original-game`; the launcher
+supports an external installation instead. See
+[original-game requirements](ORIGINAL_GAME.md).
 
 ## Direct CMake
 

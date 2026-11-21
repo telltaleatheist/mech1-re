@@ -1,4 +1,5 @@
 #include "mechwarrior/combat_adlib.h"
+#include "mechwarrior/story.h"
 #include "mechwarrior/native_address.h"
 #include <string.h>
 
@@ -26,7 +27,9 @@ bool BtechImportAdlibInitialData(const uint8_t *data,size_t bytes)
 {
     if (!data || bytes<0x10000) return false;
     memcpy(combatAdlibNoteReferences.bytes,data+0x2B86,25);
-    memcpy(combatAdlibDefaultInstruments,data+0x2BA0,sizeof(combatAdlibDefaultInstruments));
+    /* 304E:2BA0 comes from the story file (story/music.json). */
+    if (!MwStoryCopyAdlibInstruments(&combatAdlibDefaultInstruments[0][0],BTECH_OPL_DEFAULT_INSTRUMENTS,
+        sizeof(combatAdlibDefaultInstruments[0]))) return false;
     memcpy(combatAdlibOperatorMapping,data+0x2C10,sizeof(combatAdlibOperatorMapping));
     memcpy(combatAdlibRegisterOffsets,data+0x2C2C,sizeof(combatAdlibRegisterOffsets));
     memcpy(combatAdlibCarrierFlags,data+0x2C3E,sizeof(combatAdlibCarrierFlags));

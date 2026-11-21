@@ -1,0 +1,494 @@
+{
+  "mechs": [
+    {
+      "name": "combat.mech_template.1.name",
+      "tonnage": 20,
+      "display_scale": 500,
+      "firing_movement_threshold": 48,
+      "maximum_speed_scale": 72,
+      "jump_acceleration": 0,
+      "jump_speed_limit": 0,
+      "unknown_0e": 9,
+      "heat_sinks": 10,
+      "reference_points": {
+        "left_arm": [-140, -15, 230],
+        "right_arm": [140, -15, 230],
+        "left_leg": [-87, 5, -78],
+        "right_leg": [87, 5, -78],
+        "center_torso": [0, 67, 152],
+        "rear_center_torso": [0, -50, 152],
+        "left_torso": [-100, 0, 177],
+        "right_torso": [100, 0, 177],
+        "head": [0, 135, 132]
+      },
+      "armour": {
+        "left_arm": 4,
+        "right_arm": 4,
+        "left_leg": 8,
+        "right_leg": 8,
+        "center_torso": 10,
+        "rear_center_torso": 6,
+        "left_torso": 8,
+        "right_torso": 8,
+        "head": 16
+      },
+      "internal": {
+        "left_arm": 3,
+        "right_arm": 3,
+        "left_leg": 4,
+        "right_leg": 4,
+        "center_torso": 6,
+        "left_torso": 5,
+        "right_torso": 5,
+        "head": 6
+      },
+      "mounts": [
+        {"weapon": "medium_laser", "location": "center_torso", "unknown_4": 79, "unknown_6": 62},
+        {"weapon": "machine_gun", "location": "right_arm", "unknown_4": 36, "unknown_6": 15},
+        {"weapon": "machine_gun", "location": "left_arm", "unknown_4": 122, "unknown_6": 15}
+      ],
+      "ammo": [
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": "center_torso", "salvos": 200}
+      ],
+      "jump_jets": []
+    },
+    {
+      "name": "combat.mech_template.2.name",
+      "tonnage": 35,
+      "display_scale": 600,
+      "firing_movement_threshold": 42,
+      "maximum_speed_scale": 66,
+      "jump_acceleration": 6,
+      "jump_speed_limit": 72,
+      "unknown_0e": 9,
+      "heat_sinks": 10,
+      "reference_points": {
+        "left_arm": [-175, 0, 190],
+        "right_arm": [175, 0, 190],
+        "left_leg": [-78, 30, -87],
+        "right_leg": [78, 30, -87],
+        "center_torso": [0, 210, 190],
+        "rear_center_torso": [0, -90, 190],
+        "left_torso": [-160, 5, 197],
+        "right_torso": [160, 5, 197],
+        "head": [-5, 210, 170]
+      },
+      "armour": {
+        "left_arm": 4,
+        "right_arm": 4,
+        "left_leg": 6,
+        "right_leg": 6,
+        "center_torso": 10,
+        "rear_center_torso": 11,
+        "left_torso": 8,
+        "right_torso": 8,
+        "head": 14
+      },
+      "internal": {
+        "left_arm": 6,
+        "right_arm": 6,
+        "left_leg": 8,
+        "right_leg": 8,
+        "center_torso": 11,
+        "left_torso": 8,
+        "right_torso": 8,
+        "head": 6
+      },
+      "mounts": [
+        {"weapon": "srm4", "location": "center_torso", "unknown_4": 75, "unknown_6": 18},
+        {"weapon": "medium_laser", "location": "right_arm", "unknown_4": 12, "unknown_6": 29},
+        {"weapon": "medium_laser", "location": "right_arm", "unknown_4": 21, "unknown_6": 39},
+        {"weapon": "medium_laser", "location": "left_arm", "unknown_4": 138, "unknown_6": 29},
+        {"weapon": "medium_laser", "location": "left_arm", "unknown_4": 129, "unknown_6": 39}
+      ],
+      "ammo": [
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": "right_torso", "salvos": 25},
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0}
+      ],
+      "jump_jets": [
+        {"location": "right_torso", "critical_slots": 2},
+        {"location": "left_torso", "critical_slots": 2},
+        {"location": "center_torso", "critical_slots": 1}
+      ]
+    },
+    {
+      "name": "combat.mech_template.3.name",
+      "tonnage": 45,
+      "display_scale": 700,
+      "firing_movement_threshold": 36,
+      "maximum_speed_scale": 54,
+      "jump_acceleration": 6,
+      "jump_speed_limit": 72,
+      "unknown_0e": 1,
+      "heat_sinks": 10,
+      "reference_points": {
+        "left_arm": [-145, 0, 132],
+        "right_arm": [145, 0, 70],
+        "left_leg": [-65, 15, -127],
+        "right_leg": [65, 15, -127],
+        "center_torso": [0, 80, 170],
+        "rear_center_torso": [0, -48, 150],
+        "left_torso": [-86, 7, 115],
+        "right_torso": [86, 7, 115],
+        "head": [0, 0, 238]
+      },
+      "armour": {
+        "left_arm": 10,
+        "right_arm": 10,
+        "left_leg": 15,
+        "right_leg": 15,
+        "center_torso": 23,
+        "rear_center_torso": 13,
+        "left_torso": 18,
+        "right_torso": 18,
+        "head": 18
+      },
+      "internal": {
+        "left_arm": 7,
+        "right_arm": 7,
+        "left_leg": 11,
+        "right_leg": 11,
+        "center_torso": 14,
+        "left_torso": 11,
+        "right_torso": 11,
+        "head": 9
+      },
+      "mounts": [
+        {"weapon": "large_laser", "location": "right_arm", "unknown_4": 27, "unknown_6": 100},
+        {"weapon": "medium_laser", "location": "right_arm", "unknown_4": 14, "unknown_6": 70},
+        {"weapon": "medium_laser", "location": "left_arm", "unknown_4": 137, "unknown_6": 70},
+        {"weapon": "machine_gun", "location": "right_arm", "unknown_4": 27, "unknown_6": 74},
+        {"weapon": "machine_gun", "location": "left_arm", "unknown_4": 125, "unknown_6": 74}
+      ],
+      "ammo": [
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": "center_torso", "salvos": 200}
+      ],
+      "jump_jets": [
+        {"location": "right_torso", "critical_slots": 3},
+        {"location": "left_torso", "critical_slots": 3}
+      ]
+    },
+    {
+      "name": "combat.mech_template.4.name",
+      "tonnage": 55,
+      "display_scale": 700,
+      "firing_movement_threshold": 30,
+      "maximum_speed_scale": 48,
+      "jump_acceleration": 5,
+      "jump_speed_limit": 72,
+      "unknown_0e": 0,
+      "heat_sinks": 12,
+      "reference_points": {
+        "left_arm": [-147, 0, 110],
+        "right_arm": [147, 0, 110],
+        "left_leg": [-62, 17, -78],
+        "right_leg": [62, 17, -78],
+        "center_torso": [0, 60, 150],
+        "rear_center_torso": [0, -60, 150],
+        "left_torso": [-95, 0, 155],
+        "right_torso": [95, 0, 155],
+        "head": [0, -10, 267]
+      },
+      "armour": {
+        "left_arm": 16,
+        "right_arm": 16,
+        "left_leg": 16,
+        "right_leg": 16,
+        "center_torso": 23,
+        "rear_center_torso": 20,
+        "left_torso": 18,
+        "right_torso": 18,
+        "head": 27
+      },
+      "internal": {
+        "left_arm": 3,
+        "right_arm": 3,
+        "left_leg": 4,
+        "right_leg": 4,
+        "center_torso": 6,
+        "left_torso": 5,
+        "right_torso": 5,
+        "head": 9
+      },
+      "mounts": [
+        {"weapon": "ac5", "location": "left_torso", "unknown_4": 109, "unknown_6": 21},
+        {"weapon": "lrm5", "location": "right_torso", "unknown_4": 56, "unknown_6": 38},
+        {"weapon": "srm2", "location": "head", "unknown_4": 77, "unknown_6": 6},
+        {"weapon": "medium_laser", "location": "right_arm", "unknown_4": 20, "unknown_6": 94}
+      ],
+      "ammo": [
+        {"location": "left_torso", "salvos": 20},
+        {"location": "right_torso", "salvos": 24},
+        {"location": "head", "salvos": 50},
+        {"location": "center_torso", "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0}
+      ],
+      "jump_jets": [
+        {"location": "left_torso", "critical_slots": 1},
+        {"location": "right_torso", "critical_slots": 1},
+        {"location": "center_torso", "critical_slots": 1}
+      ]
+    },
+    {
+      "name": "combat.mech_template.5.name",
+      "tonnage": 60,
+      "display_scale": 800,
+      "firing_movement_threshold": 24,
+      "maximum_speed_scale": 36,
+      "jump_acceleration": 0,
+      "jump_speed_limit": 0,
+      "unknown_0e": 9,
+      "heat_sinks": 10,
+      "reference_points": {
+        "left_arm": [-225, 0, 50],
+        "right_arm": [225, 0, 50],
+        "left_leg": [-100, 12, -212],
+        "right_leg": [100, 12, -212],
+        "center_torso": [0, 70, 188],
+        "rear_center_torso": [0, -70, 188],
+        "left_torso": [-125, 0, 200],
+        "right_torso": [125, 0, 200],
+        "head": [0, 92, 125]
+      },
+      "armour": {
+        "left_arm": 15,
+        "right_arm": 15,
+        "left_leg": 12,
+        "right_leg": 12,
+        "center_torso": 22,
+        "rear_center_torso": 8,
+        "left_torso": 15,
+        "right_torso": 15,
+        "head": 24
+      },
+      "internal": {
+        "left_arm": 10,
+        "right_arm": 10,
+        "left_leg": 14,
+        "right_leg": 14,
+        "center_torso": 20,
+        "left_torso": 14,
+        "right_torso": 14,
+        "head": 12
+      },
+      "mounts": [
+        {"weapon": "large_laser", "location": "right_arm", "unknown_4": 23, "unknown_6": 81},
+        {"weapon": "large_laser", "location": "left_arm", "unknown_4": 132, "unknown_6": 81},
+        {"weapon": "ac5", "location": "right_arm", "unknown_4": 29, "unknown_6": 96},
+        {"weapon": "ac5", "location": "left_arm", "unknown_4": 126, "unknown_6": 96},
+        {"weapon": "medium_laser", "location": "right_torso", "unknown_4": 58, "unknown_6": 62},
+        {"weapon": "medium_laser", "location": "left_torso", "unknown_4": 97, "unknown_6": 62}
+      ],
+      "ammo": [
+        {"location": "center_torso", "salvos": 20},
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0}
+      ],
+      "jump_jets": []
+    },
+    {
+      "name": "combat.mech_template.6.name",
+      "tonnage": 70,
+      "display_scale": 800,
+      "firing_movement_threshold": 24,
+      "maximum_speed_scale": 36,
+      "jump_acceleration": 0,
+      "jump_speed_limit": 0,
+      "unknown_0e": 9,
+      "heat_sinks": 18,
+      "reference_points": {
+        "left_arm": [-225, 0, 55],
+        "right_arm": [225, 0, 55],
+        "left_leg": [-82, 12, -192],
+        "right_leg": [82, 12, -192],
+        "center_torso": [0, 90, 140],
+        "rear_center_torso": [0, -90, 140],
+        "left_torso": [-103, 5, 212],
+        "right_torso": [103, 5, 212],
+        "head": [-2, 37, 307]
+      },
+      "armour": {
+        "left_arm": 20,
+        "right_arm": 20,
+        "left_leg": 15,
+        "right_leg": 15,
+        "center_torso": 22,
+        "rear_center_torso": 25,
+        "left_torso": 17,
+        "right_torso": 17,
+        "head": 36
+      },
+      "internal": {
+        "left_arm": 11,
+        "right_arm": 11,
+        "left_leg": 15,
+        "right_leg": 15,
+        "center_torso": 22,
+        "left_torso": 15,
+        "right_torso": 15,
+        "head": 12
+      },
+      "mounts": [
+        {"weapon": "ppc", "location": "right_arm", "unknown_4": 36, "unknown_6": 97},
+        {"weapon": "ppc", "location": "left_arm", "unknown_4": 125, "unknown_6": 97},
+        {"weapon": "srm6", "location": "right_torso", "unknown_4": 26, "unknown_6": 17},
+        {"weapon": "medium_laser", "location": "right_torso", "unknown_4": 55, "unknown_6": 69},
+        {"weapon": "medium_laser", "location": "left_torso", "unknown_4": 106, "unknown_6": 69},
+        {"weapon": "small_laser", "location": "right_torso", "unknown_4": 51, "unknown_6": 76},
+        {"weapon": "small_laser", "location": "left_torso", "unknown_4": 110, "unknown_6": 76},
+        {"weapon": "machine_gun", "location": "right_torso", "unknown_4": 61, "unknown_6": 75},
+        {"weapon": "machine_gun", "location": "left_torso", "unknown_4": 100, "unknown_6": 75}
+      ],
+      "ammo": [
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": "right_torso", "salvos": 15},
+        {"location": "center_torso", "salvos": 200}
+      ],
+      "jump_jets": []
+    },
+    {
+      "name": "combat.mech_template.7.name",
+      "tonnage": 75,
+      "display_scale": 900,
+      "firing_movement_threshold": 24,
+      "maximum_speed_scale": 36,
+      "jump_acceleration": 0,
+      "jump_speed_limit": 0,
+      "unknown_0e": 0,
+      "heat_sinks": 16,
+      "reference_points": {
+        "left_arm": [-172, 200, 95],
+        "right_arm": [172, 200, 95],
+        "left_leg": [-110, 110, -175],
+        "right_leg": [110, 110, -175],
+        "center_torso": [0, 300, 137],
+        "rear_center_torso": [0, -200, 137],
+        "left_torso": [-125, -88, 328],
+        "right_torso": [125, -88, 328],
+        "head": [0, 305, 232]
+      },
+      "armour": {
+        "left_arm": 22,
+        "right_arm": 22,
+        "left_leg": 18,
+        "right_leg": 18,
+        "center_torso": 35,
+        "rear_center_torso": 26,
+        "left_torso": 17,
+        "right_torso": 17,
+        "head": 36
+      },
+      "internal": {
+        "left_arm": 12,
+        "right_arm": 12,
+        "left_leg": 16,
+        "right_leg": 16,
+        "center_torso": 23,
+        "left_torso": 16,
+        "right_torso": 16,
+        "head": 12
+      },
+      "mounts": [
+        {"weapon": "ppc", "location": "right_arm", "unknown_4": 21, "unknown_6": 94},
+        {"weapon": "ppc", "location": "left_arm", "unknown_4": 129, "unknown_6": 94},
+        {"weapon": "medium_laser", "location": "right_arm", "unknown_4": 21, "unknown_6": 108},
+        {"weapon": "medium_laser", "location": "left_arm", "unknown_4": 129, "unknown_6": 108},
+        {"weapon": "ac5", "location": "right_torso", "unknown_4": 75, "unknown_6": 11}
+      ],
+      "ammo": [
+        {"location": "left_torso", "salvos": 20},
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0}
+      ],
+      "jump_jets": []
+    },
+    {
+      "name": "combat.mech_template.8.name",
+      "tonnage": 85,
+      "display_scale": 960,
+      "firing_movement_threshold": 24,
+      "maximum_speed_scale": 36,
+      "jump_acceleration": 0,
+      "jump_speed_limit": 0,
+      "unknown_0e": 0,
+      "heat_sinks": 18,
+      "reference_points": {
+        "left_arm": [-237, 12, 140],
+        "right_arm": [237, 12, 60],
+        "left_leg": [-112, 17, -262],
+        "right_leg": [112, 17, -262],
+        "center_torso": [0, 170, 237],
+        "rear_center_torso": [0, -95, 237],
+        "left_torso": [-232, 32, 230],
+        "right_torso": [232, 32, 230],
+        "head": [0, 75, 400]
+      },
+      "armour": {
+        "left_arm": 24,
+        "right_arm": 24,
+        "left_leg": 26,
+        "right_leg": 26,
+        "center_torso": 40,
+        "rear_center_torso": 27,
+        "left_torso": 28,
+        "right_torso": 28,
+        "head": 36
+      },
+      "internal": {
+        "left_arm": 14,
+        "right_arm": 14,
+        "left_leg": 18,
+        "right_leg": 18,
+        "center_torso": 27,
+        "left_torso": 18,
+        "right_torso": 18,
+        "head": 12
+      },
+      "mounts": [
+        {"weapon": "ppc", "location": "right_arm", "unknown_4": 30, "unknown_6": 135},
+        {"weapon": "medium_laser", "location": "right_torso", "unknown_4": 50, "unknown_6": 44},
+        {"weapon": "medium_laser", "location": "right_torso", "unknown_4": 56, "unknown_6": 50},
+        {"weapon": "medium_laser", "location": "right_torso", "unknown_4": 62, "unknown_6": 44},
+        {"weapon": "machine_gun", "location": "left_arm", "unknown_4": 24, "unknown_6": 118},
+        {"weapon": "machine_gun", "location": "left_arm", "unknown_4": 36, "unknown_6": 118},
+        {"weapon": "srm6", "location": "left_torso", "unknown_4": 95, "unknown_6": 23},
+        {"weapon": "medium_laser", "location": "left_torso", "unknown_4": 88, "unknown_6": 44},
+        {"weapon": "medium_laser", "location": "left_torso", "unknown_4": 94, "unknown_6": 50},
+        {"weapon": "medium_laser", "location": "left_torso", "unknown_4": 100, "unknown_6": 44}
+      ],
+      "ammo": [
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": null, "salvos": 0},
+        {"location": "left_torso", "salvos": 30},
+        {"location": "left_torso", "salvos": 200}
+      ],
+      "jump_jets": []
+    }
+  ]
+}

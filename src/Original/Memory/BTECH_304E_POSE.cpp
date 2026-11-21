@@ -1,5 +1,6 @@
 #include "mechwarrior/combat_pose.h"
 #include "mechwarrior/native_address.h"
+#include "mechwarrior/rules.h"
 
 BtechPoseKeyframe playerPoseKeyframes[PLAYER_POSE_KEYFRAMES];
 const BtechPoseKeyframe *playerPoseSequences[PLAYER_POSE_SEQUENCES];
@@ -34,8 +35,9 @@ bool BtechImportPoseInitialData(const uint8_t *data,size_t bytes)
         animationFrameMaps[sequence]=&animationFrameMapStorage[offset-0x245E];
         animationLogicalFrameCounts[sequence]=data[0x24A0+sequence];
         animationPartFrameCounts[sequence]=data[0x24AA+sequence];
-        animationPrefixSequenceCounts[sequence]=MwReadNativeWord(data,0x24B4+sequence*2);
     }
+    /* The rule tables come from data/rules (src/Rules), laid out as the exe's. */
+    if (!MwRulesCopyWords("assets.animation_prefix_counts",animationPrefixSequenceCounts,UNIT_ANIMATION_SEQUENCES,0)) return false;
     for (uint16_t chassis=0;chassis<COMBAT_MECH_TEMPLATES;++chassis)
         for (uint16_t sequence=0;sequence<UNIT_ANIMATION_SEQUENCES;++sequence)
             chassisAnimationAvailability[chassis][sequence]=data[0x24C6+chassis*UNIT_ANIMATION_SEQUENCES+sequence];
@@ -50,8 +52,8 @@ bool BtechImportPoseInitialData(const uint8_t *data,size_t bytes)
         uint16_t offset=MwReadNativeWord(data,0x264E +sequence*2);
         if (offset<0x250E || offset>=0x264E || (offset-0x250E)%PLAYER_POSE_KEYFRAME_BYTES) return false;
         playerPoseSequences[sequence]=&playerPoseKeyframes[(offset-0x250E)/PLAYER_POSE_KEYFRAME_BYTES];
-        playerPoseFrameCounts[sequence]=MwReadNativeWord(data,0x265E +sequence*2);
     }
+    if (!MwRulesCopyWords("assets.player_pose_frame_counts",playerPoseFrameCounts,PLAYER_POSE_SEQUENCES,0)) return false;
     playerPoseDistanceAccumulator=MwReadNativeWord(data,0x5432);
     playerPosePerturbationTicks=MwReadNativeWord(data,0x5434);
     playerPoseSequence=MwReadNativeWord(data,0x5436);

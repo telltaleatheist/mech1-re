@@ -1,0 +1,114 @@
+{
+  "houses": {
+    "kurita": {
+      "advance_base_percent": 5,
+      "salvage_base_percent": 5,
+      "payment_roll_bias": 10,
+      "payment_adjustment_percent": -1,
+      "deduction_roll_threshold": 10,
+      "reduced_payout_percent": 0,
+      "extra_enemy_roll_threshold": 20,
+      "negotiation_attempt_base": 3,
+      "planets": {"first": 1, "count": 30},
+      "mission_type_limits": [0, 4, 2, 2, 4, 0, 2, 2],
+      "mission_planet_policy": [
+        [null, null, null, null, null, null, null, null],
+        [16, 17, 18, 20, 23, 26, 27, 15],
+        [13, 16, 13, 16, 13, 16, 13, 16],
+        [13, 16, 13, 16, 13, 16, 13, 16],
+        [7, 8, 9, 10, 15, 12, 13, 14],
+        [null, null, null, null, null, null, null, null],
+        [3, 4, 5, 30, 3, 4, 5, 30],
+        [3, 4, 5, 30, 3, 4, 5, 30]
+      ]
+    },
+    "steiner": {
+      "advance_base_percent": 10,
+      "salvage_base_percent": 15,
+      "payment_roll_bias": 10,
+      "payment_adjustment_percent": 1,
+      "deduction_roll_threshold": 10,
+      "reduced_payout_percent": 75,
+      "extra_enemy_roll_threshold": 15,
+      "negotiation_attempt_base": 0,
+      "planets": {"first": 31, "count": 30},
+      "mission_type_limits": [4, 0, 4, 3, 0, 2, 2, 0],
+      "mission_planet_policy": [
+        [43, 45, 46, 47, 49, 52, 58, 59],
+        [null, null, null, null, null, null, null, null],
+        [35, 41, 44, 54, 55, 56, 58, 42],
+        [44, 58, 44, 58, 44, 58, 44, 58],
+        [39, 44, 58, 39, 44, 58, 39, 44],
+        [35, 57, 36, 35, 57, 36, 35, 57],
+        [50, 51, 50, 51, 50, 51, 50, 51],
+        [null, null, null, null, null, null, null, null]
+      ]
+    },
+    "marik": {
+      "advance_base_percent": 15,
+      "salvage_base_percent": 20,
+      "payment_roll_bias": 5,
+      "payment_adjustment_percent": -1,
+      "deduction_roll_threshold": 30,
+      "reduced_payout_percent": 50,
+      "extra_enemy_roll_threshold": 40,
+      "negotiation_attempt_base": 4,
+      "planets": {"first": 61, "count": 30},
+      "mission_type_limits": [2, 4, 0, 2, 3, 2, 0, 0],
+      "mission_planet_policy": [
+        [66, 76, 80, 66, 76, 80, 66, 76],
+        [66, 74, 75, 76, 80, 85, 86, 90],
+        [null, null, null, null, null, null, null, null],
+        [65, 66, 68, 69, 76, 81, 82, 83],
+        [66, 76, 80, 66, 76, 80, 66, 76],
+        [64, 73, 86, 64, 73, 86, 64, 73],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null]
+      ]
+    },
+    "liao": {
+      "advance_base_percent": 20,
+      "salvage_base_percent": 25,
+      "payment_roll_bias": 5,
+      "payment_adjustment_percent": 1,
+      "deduction_roll_threshold": 30,
+      "reduced_payout_percent": 0,
+      "extra_enemy_roll_threshold": 30,
+      "negotiation_attempt_base": 5,
+      "planets": {"first": 91, "count": 25},
+      "mission_type_limits": [2, 3, 2, 0, 4, 0, 0, 0],
+      "mission_planet_policy": [
+        [99, 100, 101, 99, 100, 101, 99, 100],
+        [99, 100, 101, 99, 100, 101, 99, 100],
+        [92, 93, 96, 103, 106, 107, 110, 111],
+        [null, null, null, null, null, null, null, null],
+        [95, 97, 102, 105, 108, 112, 113, 114],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null]
+      ]
+    },
+    "davion": {
+      "advance_base_percent": 25,
+      "salvage_base_percent": 20,
+      "payment_roll_bias": 0,
+      "payment_adjustment_percent": 0,
+      "deduction_roll_threshold": 0,
+      "reduced_payout_percent": 100,
+      "extra_enemy_roll_threshold": 10,
+      "negotiation_attempt_base": 0,
+      "planets": {"first": 116, "count": 30},
+      "mission_type_limits": [4, 0, 3, 4, 0, 0, 0, 1],
+      "mission_planet_policy": [
+        [119, 121, 126, 126, 129, 133, 134, 143],
+        [121, 133, 121, 133, 121, 133, 121, 133],
+        [133, 133, 133, 133, 133, 133, 133, 133],
+        [121, 123, 131, 133, 138, 139, 140, 143],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [null, null, null, null, null, null, null, null],
+        [124, 132, 137, 124, 132, 137, 124, 132]
+      ]
+    }
+  }
+}

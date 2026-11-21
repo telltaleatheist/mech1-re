@@ -1,0 +1,11 @@
+{
+  "deployment_units_by_scenario": [0, 360, 60, 28, 28, 28, 28, 60, 60, 180, 60, 2, 2, 2, 2, 360, 360, 28, 360, 60, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
+  "pilot_wages": {"poor": 400, "average": 600, "good": 1000, "excellent": 2000},
+  "start": {
+    "mission_force_budget": 0,
+    "mission_payment_base_thousands": 0,
+    "pilot_card": {"gunnery": 0, "piloting": 0, "quoted_wage": 0},
+    "settlement_payout_percent": 0,
+    "travel_destination_time_weight": 0
+  }
+}

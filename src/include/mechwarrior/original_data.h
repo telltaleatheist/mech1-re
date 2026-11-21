@@ -9,7 +9,6 @@
 bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount);
 bool MwHostLoadCampaignInitialData(const char *executablePath);
 bool MwHostLoadEgaInitialData(const char *executablePath);
-bool MwHostLoadCampaignEventText(const char *executablePath);
 bool MwImportCampaignMusicData(const uint8_t *data,size_t byteCount);
 bool MwHostLoadCampaignMusicData(const char *executablePath);
 #endif

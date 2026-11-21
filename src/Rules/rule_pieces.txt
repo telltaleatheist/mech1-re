@@ -1,0 +1,109 @@
+# The rule table (docs/phase2/PLAN.md section 5): every original table the
+# rules in data/rules/ stand for, by id, with its place in the exe and its
+# length. tools/import/make_import_table.py --rules writes rule_table.cpp
+# from this file and the 1990-01-22 exes; the hashes check that data/rules
+# rebuilds each table byte for byte (rules_test). A table changed on purpose
+# is marked "tuned" (a fifth column): it keeps its row and loses its hash.
+#
+# id                                exe          SEG:OFF   bytes
+# units.json: per unit kind (CampaignUnitKind order; the DropShip only where
+# the exe has 11 rows).
+units.tonnages                      MW_MAIN.EXE  1090:122B 20
+units.weapons                       MW_MAIN.EXE  1090:2AED 10
+units.condition_fields              MW_MAIN.EXE  1090:2AE3 10
+units.condition_score_divisors      MW_MAIN.EXE  1090:2B18 11
+units.display_tonnages              MW_MAIN.EXE  1090:2B65 10
+units.display_speeds                MW_MAIN.EXE  1090:2B6F 10
+units.display_jumps                 MW_MAIN.EXE  1090:2B79 10
+units.ammo_groups                   MW_MAIN.EXE  1090:2EEE 10
+units.ammo_profiles                 MW_MAIN.EXE  1090:2F28 20
+units.ammo_profile_entries          MW_MAIN.EXE  1090:2F3C 60
+units.base_prices                   MW_MAIN.EXE  1090:305F 22
+units.heat_sinks                    MW_MAIN.EXE  1090:368C 10
+units.jump_jet_groups               MW_MAIN.EXE  1090:3696 10
+units.weapon_repair_price_lists     MW_MAIN.EXE  1090:3C1B 20
+units.weapon_repair_prices          MW_MAIN.EXE  1090:3C2F 124
+units.body_repair_prices            MW_MAIN.EXE  1090:3CAB 10
+units.force_weights                 MW_MAIN.EXE  1090:4B55 10
+# market.json
+market.ammunition_prices            MW_MAIN.EXE  1090:2EF8 24
+market.price_tier_multipliers       MW_MAIN.EXE  1090:3057 4
+market.stock_kind_range_maxima      MW_MAIN.EXE  1090:3A37 3
+market.stock_kind_range_starts      MW_MAIN.EXE  1090:3A3A 3
+market.freight_rates                MW_MAIN.EXE  1090:5C94 12
+# market.json "start": runtime values, as the exe starts them.
+market.start.ammunition_transaction_prices  MW_MAIN.EXE  1090:2F10 24
+market.start.generated_ammo_kinds   MW_MAIN.EXE  1090:3A5E 6
+market.start.generated_ammo_quantities  MW_MAIN.EXE  1090:3A64 6
+market.start.generate_starting_jenner  MW_MAIN.EXE  1090:3A6A 1
+# repair.json
+repair.success_roll_limits          MW_MAIN.EXE  1090:3A6B 4
+repair.system_prices                MW_MAIN.EXE  1090:3B53 200
+# houses.json: per House (HOUSE_* order).
+houses.negotiation_attempt_base     MW_MAIN.EXE  1090:11A3 5
+houses.deduction_roll_thresholds    MW_MAIN.EXE  1090:1241 10
+houses.reduced_payout_percent       MW_MAIN.EXE  1090:124B 10
+houses.payment_roll_bias            MW_MAIN.EXE  1090:4B41 10
+houses.payment_adjustment_percent   MW_MAIN.EXE  1090:4B4B 10
+houses.salvage_base_percent         MW_MAIN.EXE  1090:4B5F 10
+houses.advance_base_percent         MW_MAIN.EXE  1090:4B69 10
+houses.extra_enemy_roll_thresholds  MW_MAIN.EXE  1090:4BF0 10
+houses.mission_type_limits          MW_MAIN.EXE  1090:5CBA 40
+houses.planet_range_starts          MW_MAIN.EXE  1090:655C 10
+houses.planet_range_counts          MW_MAIN.EXE  1090:6566 10
+houses.mission_planet_policy_offsets  MW_MAIN.EXE  1090:8E90 10
+houses.mission_planet_policies      MW_MAIN.EXE  1090:8E9A 320
+# contracts.json, and its "start".
+contracts.start.settlement_payout_percent  MW_MAIN.EXE  1090:123F 2
+contracts.start.pilot_card_gunnery  MW_MAIN.EXE  1090:2440 2
+contracts.start.pilot_card_piloting  MW_MAIN.EXE  1090:2442 2
+contracts.start.pilot_card_quoted_wage  MW_MAIN.EXE  1090:2446 2
+contracts.pilot_wages               MW_MAIN.EXE  1090:2476 8
+contracts.start.mission_force_budget  MW_MAIN.EXE  1090:4B79 2
+contracts.start.mission_payment_base_thousands  MW_MAIN.EXE  1090:4B7B 2
+contracts.start.travel_destination_time_weight  MW_MAIN.EXE  1090:54DA 2
+contracts.deployment_units_by_scenario  MW_MAIN.EXE  1090:8E46 74
+# combat.json (BTECH), and its "start".
+combat.campaign_body_tier_of_armour  BTECH.EXE  304E:08AE 18
+combat.weapon_disabled_by_tier      BTECH.EXE  304E:08C0 8
+combat.system_hits_by_tier          BTECH.EXE  304E:08C8 8
+combat.actuator_loss_by_tier        BTECH.EXE  304E:08D0 8
+combat.opposing_objective           BTECH.EXE  304E:08D8 10
+combat.template_of_unit_kind        BTECH.EXE  304E:08E2 20
+combat.continuation_profiles        BTECH.EXE  304E:08F6 54
+combat.mission_side_zero_rules      BTECH.EXE  304E:092C 74
+combat.fallback_start_template      BTECH.EXE  304E:0982 16
+combat.fallback_template_steps      BTECH.EXE  304E:0992 16
+combat.template_budget_costs        BTECH.EXE  304E:09A2 32
+combat.unit_kind_of_template        BTECH.EXE  304E:09CC 16
+combat.actuator_integrity_by_condition  BTECH.EXE  304E:09DC 10
+combat.system_tier_by_hits          BTECH.EXE  304E:09E6 6
+combat.weapon_integrity_by_operational  BTECH.EXE  304E:09EC 4
+combat.critical_transfer            BTECH.EXE  304E:0E28 16
+combat.body_of_armour               BTECH.EXE  304E:0E3A 18
+combat.damage_transfer              BTECH.EXE  304E:0E4C 16
+combat.actuator_of_limb             BTECH.EXE  304E:0E5E 8
+combat.body_reference_point         BTECH.EXE  304E:0EBC 16
+combat.start.side_objective_rules   BTECH.EXE  304E:0ED0 4
+combat.opposing_side_first_unit_slots  BTECH.EXE  304E:2434 4
+combat.avoidance_heading_offsets    BTECH.EXE  304E:2438 6
+combat.missile_cluster_rows         BTECH.EXE  304E:235E 96
+combat.hit_locations                BTECH.EXE  304E:26BC 88
+combat.range_hit_modifiers          BTECH.EXE  304E:2714 10
+combat.heat_aim_jitter_thresholds   BTECH.EXE  304E:271E 10
+# weapons.json (BTECH).
+weapons.definitions                 BTECH.EXE  304E:0EEC 220
+weapons.projectile_profiles         BTECH.EXE  304E:232E 20
+weapons.missile_cluster_rows        BTECH.EXE  304E:234A 20
+# combat_assets.json (BTECH).
+assets.default_effect_steps         BTECH.EXE  304E:0E96 14
+assets.machine_gun_effect_steps     BTECH.EXE  304E:0EA4 6
+assets.body_damage_effect_steps     BTECH.EXE  304E:2342 8
+assets.animation_prefix_counts      BTECH.EXE  304E:24B4 18
+assets.player_pose_frame_counts     BTECH.EXE  304E:265E 16
+# mechs.json (BTECH): the 8 templates, 0xE0 bytes each.
+mechs.templates                     BTECH.EXE  304E:1178 1792
+# new_campaign.json: MW_MAIN's save block, split around the commander's name
+# (1090:0483, 10 bytes, story text commander.default_name).
+new_campaign.before_name            MW_MAIN.EXE  1090:0448 59
+new_campaign.after_name             MW_MAIN.EXE  1090:048D 1747

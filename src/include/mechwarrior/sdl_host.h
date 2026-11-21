@@ -3,6 +3,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 /* Host boundary only. Original headers/procedures never depend on SDL. */
+/* Where our data/ folder is (the rules); without it, data/ beside the
+ * program. Before MwSdlInitialize. */
+bool MwSdlSetDataDirectory(const char *dataDirectory);
 bool MwSdlInitialize(const char *gameDirectory,const char *captureDirectory);
 int MwSdlRunCampaign(void);
 void MwSdlShutdown(void);
