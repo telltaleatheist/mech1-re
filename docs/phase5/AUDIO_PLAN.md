@@ -40,8 +40,10 @@ rendered block, which the tests below use.
     `sysexManufacturer`). The driver parses them (0F41:0D41..0E81) into
     channel configuration, its 32-entry instrument table and the voice count.
     Each backend only accepts records with its own byte, so one file carries
-    MT-32 and AdLib instruments side by side. *To confirm in slice 1: which
-    byte belongs to which backend.*
+    every device's setup side by side. Confirmed in slice 1 from the backend
+    records in MW_MAIN's segment 28BE (AdLib at 00B0, MPU at 01EE, speaker at
+    07FC): **7Ah AdLib** (11 voices), **41h MPU** (the Roland DT1 messages pass
+    through to the MT-32), **7Fh speaker**. Every .MUS file has all three.
 - **Sequencer:** MW_MAIN's own (0F41:02A1..0573) reads the SMF bytes and runs
   tempo and bar arithmetic. A priority voice allocator (11 voices, 0F41:0C37)
   feeds the selected backend:
@@ -145,8 +147,11 @@ Audio can't be bit-compared after the synth changes, but everything above the
 synth can, and that's most of the risk. Three levels:
 
 **Level 1: the port-event log, exact, against today's port.**
-- A log of every hardware event, timestamped in PIT ticks (the port's
-  timeline, deterministic under the trace contract):
+- A log of every hardware event, timestamped in PIT cycles. In the port, PIT
+  time follows the wall clock, so the log runs under a test clock
+  (`MECHWARRIOR_DEBUG_VIRTUAL_CLOCK`). Time then moves only where the port
+  would wait (CPU-budget deadlines, idle pumps, 1 µs per port read), and the
+  log depends on the script alone (slice 1). Events logged:
   - OPL index/data writes and status reads;
   - MPU bytes and status reads;
   - PIT channel 2 and 61h writes.

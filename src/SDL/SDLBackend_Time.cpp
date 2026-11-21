@@ -5,6 +5,8 @@
 #include "mechwarrior/combat_startup.h"
 #include "mechwarrior/combat_mpu.h"
 #include <float.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 
 /* User-approved playable budget; see the human speed review in CPU_TIMING_PROFILE.md.
@@ -19,6 +21,13 @@ uint32_t mwSdlCpuCyclesPerMillisecond=HOST_DEFAULT_CPU_CYCLES_PER_MS;
 enum { REFERENCE_LOGIC_CYCLES=24080,REFERENCE_RENDER_CYCLES=263005,
     REFERENCE_VIDEO_BYTES=14154,REFERENCE_VIDEO_READ_NS=1000,
     REFERENCE_VIDEO_WRITE_NS=750 };
+static bool virtualClock;
+static uint64_t virtualNanoseconds;
+bool MwSdlVirtualClock(void) {return virtualClock;}
+uint64_t MwSdlNowNanoseconds(void) {return virtualClock?virtualNanoseconds:SDL_GetTicksNS();}
+/* A host wait: real sleep, or under the test clock the same time spent at once. */
+void MwSdlSpendNanoseconds(uint64_t nanoseconds)
+{if (virtualClock) virtualNanoseconds+=nanoseconds;else SDL_DelayNS(nanoseconds);}
 static bool combatCpuActive;
 static uint64_t cpuIterationStarted,videoReadBytes,videoWriteBytes,lastCpuCycles;
 
@@ -32,8 +41,8 @@ void MwSdlAccountCombatVideoAccess(bool write)
 uint64_t MwSdlLastCombatCpuCycles(void) {return lastCpuCycles;}
 static void WaitCpuDeadline(uint64_t deadline)
 {
-    while (SDL_GetTicksNS()<deadline)
-    {MwSdlPollEvents();MwSdlPumpTimer();SDL_DelayNS(HOST_IDLE_WAIT_NS);}
+    while (MwSdlNowNanoseconds()<deadline)
+    {MwSdlPollEvents();MwSdlPumpTimer();MwSdlSpendNanoseconds(HOST_IDLE_WAIT_NS);}
 }
 void MwSdlPaceCombatCpu(void)
 {
@@ -48,12 +57,12 @@ void MwSdlPaceCombatCpu(void)
     }
     /* No accumulated catch-up debt after loading, a native wait or a slow
      * host. Explicit original delays already consumed their wall time. */
-    cpuIterationStarted=SDL_GetTicksNS();combatCpuActive=true;
+    cpuIterationStarted=MwSdlNowNanoseconds();combatCpuActive=true;
     videoReadBytes=videoWriteBytes=0;
     MwSdlUpdateSupportPilot(); /* Optional host input at the existing loop boundary. */
 }
 void MwSdlDelayCpuLoops(uint16_t loops)
-{WaitCpuDeadline(SDL_GetTicksNS()+(uint64_t)loops*HOST_NS_PER_MILLISECOND/mwSdlCpuCyclesPerMillisecond);}
+{WaitCpuDeadline(MwSdlNowNanoseconds()+(uint64_t)loops*HOST_NS_PER_MILLISECOND/mwSdlCpuCyclesPerMillisecond);}
 
 static MwMusicTimerHandler irq0;
 static bool interruptsEnabled,campaignInterruptsInstalled,inInterrupt;
@@ -86,11 +95,42 @@ uint8_t MwSdlExchangeInterrupts(uint8_t enabled)
 double MwSdlHardwareTime(void) {return hardwareTime;}
 double MwSdlTimerLagMilliseconds(void)
 {
-    double elapsed=(double)(SDL_GetTicksNS()-startNanoseconds)/(double)HOST_NS_PER_MILLISECOND;
+    double elapsed=(double)(MwSdlNowNanoseconds()-startNanoseconds)/(double)HOST_NS_PER_MILLISECOND;
     return elapsed-hardwareTime*HOST_MS_PER_SECOND/HOST_PIT_CLOCK_HZ;
+}
+/* Sound-port event log (MECHWARRIOR_AUDIO_LOG=FILE): every access to the
+ * speaker, PIT, AdLib and MPU ports, one JSON array per line:
+ * [PIT cycle, "w" or "r", port, value]. Reads log the value returned. The
+ * device lines come first. Exact under the test clock (docs/phase5). */
+static FILE *audioLog;
+static void AudioLogOpen(void)
+{
+    const char *path=getenv("MECHWARRIOR_AUDIO_LOG");
+    if (audioLog || !path) return;
+    audioLog=fopen(path,"w");
+    if (!audioLog) MwSdlFail("Open the audio event log");
+    static const char *const devices[]={"speaker","mt32","adlib"};
+    fprintf(audioLog,"{\"device\": \"%s\", \"clock\": \"%s\"}\n",devices[mwSdlSoundSystem],
+        virtualClock?"virtual":"wall");
+}
+static bool AudioPort(uint16_t port)
+{
+    return port==ADLIB_INDEX_PORT || port==ADLIB_DATA_PORT || port==MPU_DATA_PORT || port==MPU_STATUS_COMMAND_PORT
+        || port==PIT_CHANNEL0_PORT || port==PIT_CHANNEL2_PORT || port==PIT_CONTROL_PORT || port==SPEAKER_CONTROL_PORT
+        || port==0 || port==1;
+}
+static void AudioLogEvent(char kind,uint16_t port,uint8_t value)
+{
+    if (audioLog && AudioPort(port))
+        fprintf(audioLog,"[%llu, \"%c\", %u, %u]\n",(unsigned long long)hardwareTime,kind,port,value);
+}
+void MwSdlAudioLogSnap(const char *name)
+{
+    if (audioLog) {fprintf(audioLog,"[%llu, \"snap\", \"%s\"]\n",(unsigned long long)hardwareTime,name);fflush(audioLog);}
 }
 void MwSdlWriteDevicePort(uint16_t port,uint8_t value)
 {
+    AudioLogEvent('w',port,value);
     /* Device writes occur at the delivered hardware time, including inside
      * an IRQ. No game state is ever touched by an SDL audio thread. */
     if (MwSdlWriteCombatVideoPort(port,value)) return;
@@ -113,7 +153,7 @@ void MwSdlWriteDevicePort(uint16_t port,uint8_t value)
     if (port==0 || port==1 || port==GAME_PORT) return;
     if (port==PIT_CONTROL_PORT && !(value&PIT_CONTROL_LATCH_TEST_MASK))
     {
-        uint64_t cycles=(uint64_t)((double)(SDL_GetTicksNS()-counterLoadNanoseconds)*HOST_PIT_CLOCK_HZ/(double)HOST_NS_PER_SECOND);
+        uint64_t cycles=(uint64_t)((double)(MwSdlNowNanoseconds()-counterLoadNanoseconds)*HOST_PIT_CLOCK_HZ/(double)HOST_NS_PER_SECOND);
         latchedCounter=(uint16_t)(channel0Divisor-(cycles*2)%channel0Divisor);counterReadHigh=false;return;
     }
     if (port==PIT_CONTROL_PORT && value==PIT_CHANNEL0_SQUARE_WAVE)
@@ -123,13 +163,21 @@ void MwSdlWriteDevicePort(uint16_t port,uint8_t value)
         if (!channel0HighNext) {channel0Low=value;channel0HighNext=true;return;}
         uint16_t divisor=channel0Low|((uint16_t)value<<8);
         channel0Divisor=divisor?divisor:PIT_COUNTER_MODULUS;
-        counterLoadNanoseconds=SDL_GetTicksNS();
+        counterLoadNanoseconds=MwSdlNowNanoseconds();
         channel0HighNext=false;nextIrq=hardwareTime+channel0Divisor;
         return;
     }
     MwSdlWriteSpeakerPort(port,value);
 }
+static uint8_t ReadDevicePort(uint16_t port);
 uint8_t MwSdlReadDevicePort(uint16_t port)
+{
+    if (virtualClock) MwSdlSpendNanoseconds(1000); /* One ISA read: timing loops that count reads still see time pass. */
+    uint8_t value=ReadDevicePort(port);
+    if (port!=PIT_CHANNEL0_PORT) AudioLogEvent('r',port,value); /* Latched timer reads are timing, not sound. */
+    return value;
+}
+static uint8_t ReadDevicePort(uint16_t port)
 {
     uint8_t videoValue;if (MwSdlReadCombatVideoPort(port,&videoValue)) return videoValue;
     if (port==KEYBOARD_DATA_PORT) return MwSdlReadKeyboardScanByte();
@@ -157,7 +205,9 @@ void MwSdlInitializeTimer(void)
 #endif
     uint32_t seconds=localTime.tm_hour*HOST_SECONDS_PER_HOUR+localTime.tm_min*HOST_SECONDS_PER_MINUTE+localTime.tm_sec;
     biosTicks=(uint32_t)((double)seconds*HOST_PIT_CLOCK_HZ/(double)PIT_COUNTER_MODULUS);
-    startNanoseconds=SDL_GetTicksNS();hardwareTime=0;channel0Divisor=PIT_COUNTER_MODULUS;
+    virtualClock=getenv("MECHWARRIOR_DEBUG_VIRTUAL_CLOCK")!=NULL;virtualNanoseconds=0;
+    AudioLogOpen();
+    startNanoseconds=MwSdlNowNanoseconds();hardwareTime=0;channel0Divisor=PIT_COUNTER_MODULUS;
     nextIrq=channel0Divisor;irq0=BiosTimerInterrupt;interruptsEnabled=true;
     counterLoadNanoseconds=startNanoseconds;latchedCounter=0;counterReadHigh=false;picMask=0;
     campaignInterruptsInstalled=inInterrupt=channel0HighNext=false;
@@ -184,7 +234,7 @@ void MwSdlPumpTimer(void)
         MwSdlDeliverCombatKeyboardInterrupt();
         interruptsEnabled=true;inInterrupt=false;
     }
-    double target=(double)(SDL_GetTicksNS()-startNanoseconds)*HOST_PIT_CLOCK_HZ/(double)HOST_NS_PER_SECOND;
+    double target=(double)(MwSdlNowNanoseconds()-startNanoseconds)*HOST_PIT_CLOCK_HZ/(double)HOST_NS_PER_SECOND;
     while (interruptsEnabled)
     {
         double mpuEvent=mwSdlCombatActive && mwSdlSoundSystem==MW_SOUND_MT32?MwMpuNextEventTime():DBL_MAX;
@@ -223,7 +273,7 @@ void MwSdlPumpTimer(void)
     if (nextIrq>target)
     {
         hardwareTime=target;MwSdlAdvanceAudio(hardwareTime);
-        SDL_DelayNS(HOST_IDLE_WAIT_NS); /* Host idle only; no synthetic game ticks. */
+        MwSdlSpendNanoseconds(HOST_IDLE_WAIT_NS); /* Host idle only; no synthetic game ticks. */
     }
 }
 void MwSdlInstallCampaignInterrupts(void) {campaignInterruptsInstalled=true;}

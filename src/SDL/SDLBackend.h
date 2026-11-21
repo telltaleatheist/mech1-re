@@ -32,6 +32,12 @@ void MwSdlStopSupportPilot(void);
 void MwSdlQueueCombatScan(uint8_t scan);
 void MwSdlQueueBiosKey(uint16_t key,uint8_t shift);
 void MwSdlInitializeTimer(void);
+/* Test clock (MECHWARRIOR_DEBUG_VIRTUAL_CLOCK): time advances only where the
+ * host would wait, so the PIT timeline depends on the input alone. */
+bool MwSdlVirtualClock(void);
+uint64_t MwSdlNowNanoseconds(void);
+void MwSdlSpendNanoseconds(uint64_t nanoseconds);
+void MwSdlAudioLogSnap(const char *name); /* A trace snap, as a mark in the sound-port log. */
 void MwSdlPumpTimer(void);
 /* Measured reference-workload CPU budget, not an instruction interpreter. */
 extern uint32_t mwSdlCpuCyclesPerMillisecond;

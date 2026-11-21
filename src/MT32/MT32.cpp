@@ -52,7 +52,7 @@ void MwMt32ReceiveByte(uint8_t value)
 {
     /* Library parser retains running status and fragmented SysEx between bytes.
      * Original MIDI bytes are never translated to General MIDI programs. */
-    mt32emu_parse_stream(synthesizer,&value,1);
+    if (synthesizer) mt32emu_parse_stream(synthesizer,&value,1); /* None while logging without ROMs. */
 }
 void MwMt32Render(float *stereo,uint32_t frames)
 {mt32emu_render_float(synthesizer,stereo,frames);}

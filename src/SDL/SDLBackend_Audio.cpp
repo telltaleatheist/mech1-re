@@ -25,6 +25,9 @@ static bool highByteNext,counting;
 static double audioTime,speakerPhase,sampleCycles,sampleIntegral;
 static float queuedSamples[512];
 static uint32_t queuedCount;
+/* Logging without ROMs (MECHWARRIOR_AUDIO_LOG, both ROM paths empty): the
+ * MPU and its byte stream run as usual and the synthesizer is silent. */
+static bool silentMt32;
 void (*mwSdlAudioObserver)(const float *samples,uint32_t count);
 
 /* SDL asks for PCM only. It never runs an original timer/game callback.
@@ -76,7 +79,9 @@ bool MwSdlInitializeAudio(void)
     if (audioStream || audioQueueMutex) return SDL_SetError("Audio is already initialized");
     outputChannels=mwSdlSoundSystem==MW_SOUND_SPEAKER?1:2;
     if (mwSdlSoundSystem==MW_SOUND_ADLIB) MwAdlibReset(HOST_AUDIO_SAMPLE_RATE);
-    if (mwSdlSoundSystem==MW_SOUND_MT32)
+    silentMt32=mwSdlSoundSystem==MW_SOUND_MT32 && getenv("MECHWARRIOR_AUDIO_LOG")
+        && !*mwSdlMt32ControlRom && !*mwSdlMt32PcmRom;
+    if (mwSdlSoundSystem==MW_SOUND_MT32 && !silentMt32)
     {
         char error[1024];
         if (!MwMt32Open(mwSdlMt32ControlRom,mwSdlMt32PcmRom,HOST_AUDIO_SAMPLE_RATE,error,sizeof(error)))
@@ -142,7 +147,11 @@ void MwSdlAdvanceAudio(double pitTime)
             float speaker=(float)(0.15*sampleIntegral/cyclesPerSample);
             if (mwSdlSoundSystem!=MW_SOUND_SPEAKER)
             {
-                if (mwSdlSoundSystem==MW_SOUND_MT32) MwMt32Render(&queuedSamples[queuedCount*outputChannels],1);
+                if (mwSdlSoundSystem==MW_SOUND_MT32)
+                {
+                    if (silentMt32) queuedSamples[queuedCount*2]=queuedSamples[queuedCount*2+1]=0;
+                    else MwMt32Render(&queuedSamples[queuedCount*outputChannels],1);
+                }
                 else MwAdlibRender(&queuedSamples[queuedCount*outputChannels],1);
                 queuedSamples[queuedCount*outputChannels]+=speaker;
                 queuedSamples[queuedCount*outputChannels+1]+=speaker;
@@ -153,6 +162,7 @@ void MwSdlAdvanceAudio(double pitTime)
             if (queuedCount==256)
             {
                 if (mwSdlAudioObserver) mwSdlAudioObserver(queuedSamples,queuedCount*outputChannels);
+                if (MwSdlVirtualClock()) {generatedFrames+=queuedCount;queuedCount=0;continue;} /* Test clock outruns the device. */
                 SDL_LockMutex(audioQueueMutex);
                 for (uint32_t index=0;index<queuedCount;++index,++generatedFrames)
                 {

@@ -124,6 +124,7 @@ static void LoadFeed(void)
 }
 static void Snap(const char *name)
 {
+    MwSdlAudioLogSnap(name);
     MwSdlPresentVideo(true);
     if (!MwSdlCapture(name)) {feedError="Snap failed (capture missing or name reused)";return;}
     char path[4200];

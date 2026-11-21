@@ -55,7 +55,8 @@ bool MwSdlReadCombatVideoPort(uint16_t port,uint8_t *value)
         *value=crtcRegisters[crtcIndex];return true;
     case EGA_STATUS:
         /* Independent 60Hz scanout. Reading status is not a simulation tick. */
-        *value=SDL_GetTicksNS()%UINT64_C(16666667)>=UINT64_C(15000000)?COMBAT_EGA_VERTICAL_RETRACE:0;
+        if (MwSdlVirtualClock()) MwSdlSpendNanoseconds(1000); /* One ISA read, so retrace waits end. */
+        *value=MwSdlNowNanoseconds()%UINT64_C(16666667)>=UINT64_C(15000000)?COMBAT_EGA_VERTICAL_RETRACE:0;
         return true;
     default:return false;
     }

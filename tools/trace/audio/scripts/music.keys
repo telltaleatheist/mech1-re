@@ -1,0 +1,5 @@
+# Campaign music: the title tune, then the bar's, each left playing.
+idle:60000 idle:60000 @snap:title
+Return Escape Return @snap:hub
+Down Down Down Down @snap:bar_sel
+Return idle:60000 idle:60000 @snap:bar

@@ -1,0 +1,29 @@
+# A copy of tools/trace/scripts/combat_cockpit.keys, so its audio golden moves only with this file.
+# A contract's battle on the port with the 1990 BTECH: walk, turn, fire,
+# the HUD keys, pause and the retreat dialog, a jump, the inspection and
+# order screens, then the battle ends on its own and the campaign resumes.
+Return Escape Return Down Down Return Return Left Return @snap:accepted Return @snap:deploy
+Return
+ticks:0 @snap:briefing               # the lance map, waiting for a key
+Return ticks:10 @snap:cockpit
+make:Up ticks:40 break:Up ticks:20 @snap:walking
+make:Left ticks:15 break:Left ticks:1 @snap:turned
+Space ticks:1 @snap:fired
+2 ticks:1 Space ticks:1 @snap:fired2
+Tab ticks:40 @snap:cycle
+Tab ticks:1 W ticks:1 @snap:group
+W ticks:1 T ticks:1 R ticks:1 Z ticks:1 @snap:hud       # T: heading radar; empty slots read a null torso
+Z ticks:1 Z ticks:1 T ticks:1 Return ticks:1 @snap:target
+P ticks:5 @snap:paused
+Space ticks:5 @snap:unpaused
+Escape ticks:5 @snap:retreat_ask
+N ticks:5 @snap:retreat_no
+J ticks:20 @snap:jump
+ticks:60 @snap:landed                # a hard landing: the mech falls
+D ticks:5 @snap:inspection
+Space ticks:5 @snap:inspection_back
+C ticks:5 @snap:orders               # no lancemates: the empty panel's null control
+Down ticks:2 Return ticks:2 @snap:orders_command
+Space ticks:5 @snap:orders_back
+idle:0 @snap:results                 # the battle is decided and ends by itself; the campaign
+Return @snap:after
