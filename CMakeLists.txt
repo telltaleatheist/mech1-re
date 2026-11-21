@@ -166,6 +166,7 @@ add_library(mechwarrior_original STATIC
     src/Original/Memory/BTECH_22B6_DATA.cpp
     src/Support/CombatPlatform.cpp
     src/Support/CombatInstallation.cpp
+    src/Support/BtechImage.cpp
     src/Support/CombatNearHeap.cpp
     src/Original/Memory/MW_MAIN_1090_EVENTS.cpp
     src/Original/Memory/MW_MAIN_1AA5.cpp
@@ -196,9 +197,21 @@ if(MECHWARRIOR_BUILD_TESTS)
     enable_testing()
     add_executable(json_test tests/json_test.cpp src/Support/Json.cpp)
     add_test(NAME json COMMAND json_test)
-    add_executable(story_test tests/story_test.cpp src/Import/Story.cpp src/Support/Json.cpp src/Support/Sha256.cpp)
+    add_executable(story_test tests/story_test.cpp src/Import/Story.cpp src/Support/Json.cpp src/Support/Sha256.cpp
+        src/Support/BtechImage.cpp)
+    target_include_directories(story_test PRIVATE src/include)
     add_test(NAME story COMMAND story_test)
+    # Needs the player's files (MW1O_GAME, MW1O_BTECH_REFERENCE, MW1O_BTECH_1990); skipped without them.
+    add_executable(btech_revisions_test tests/btech_revisions_test.cpp src/Import/Story.cpp
+        src/Import/import_table.cpp src/Support/Json.cpp src/Support/Sha256.cpp src/Support/BtechImage.cpp)
+    target_include_directories(btech_revisions_test PRIVATE src/include)
+    add_test(NAME btech_revisions COMMAND btech_revisions_test)
+    set_tests_properties(btech_revisions PROPERTIES SKIP_RETURN_CODE 77)
 endif()
+
+# BTECH.EXE's unpacked image on stdout, for tools/import/make_import_table.py.
+add_executable(btech_image tools/import/btech_image.cpp src/Support/BtechImage.cpp)
+target_include_directories(btech_image PRIVATE src/include)
 
 
 option(MECHWARRIOR_BUILD_SDL "Build the playable SDL3 game" ON)

@@ -1,3 +1,5 @@
+#include "mechwarrior/story.h"
+#include <stdio.h>
 #include "mechwarrior/combat_cockpit.h"
 #include "mechwarrior/native_address.h"
 #include <string.h>
@@ -155,24 +157,35 @@ bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
     }
     memcpy(cockpitScreenNames,data+0x07F4,sizeof(cockpitScreenNames));
     memcpy(missionTitleText,data+0x09F0,sizeof(missionTitleText));
-    memcpy(mechTemplateNames,data+0x2045,sizeof(mechTemplateNames));
-    memcpy(pilotDefinitionNames,data+0x20AD,sizeof(pilotDefinitionNames));
-    for (uint16_t name=0;name<COMBAT_MECH_TEMPLATES;++name)
-        if (mechTemplateNames[name][12]) return false;
-    for (uint16_t name=0;name<COMBAT_PILOT_NAMES;++name)
-        if (pilotDefinitionNames[name][10]) return false;
+    /* The names come from the story file (combat.mech_template.N.name,
+     * combat.pilot.N.name); the directories stay the exe's, and each name is
+     * written at its directory offset in its own record, as the exe holds it. */
+    memset(mechTemplateNames,0,sizeof(mechTemplateNames));
+    memset(pilotDefinitionNames,0,sizeof(pilotDefinitionNames));
     for (uint16_t name=0;name<COMBAT_MECH_TEMPLATES;++name)
     {
         uint16_t offset=MwReadNativeWord(data,0x229C+name*2);
-        if (offset<0x2045 || offset>=0x20AD || !memchr(data+offset,0,0x20AD-offset)) return false;
-        mechTemplateNameDirectory[name]=(const char *)mechTemplateNames+offset-0x2045;
+        if (offset<0x2045 || offset>=0x20AD) return false;
+        char *at=(char *)mechTemplateNames+offset-0x2045,id[40];
+        size_t room=sizeof(mechTemplateNames[0])<(size_t)(0x20AD-offset)?sizeof(mechTemplateNames[0]):(size_t)(0x20AD-offset);
+        snprintf(id,sizeof(id),"combat.mech_template.%u.name",(unsigned)name+1);
+        if (!MwStoryCopyText(id,at,room)) return false;
+        mechTemplateNameDirectory[name]=at;
     }
     for (uint16_t name=0;name<COMBAT_PILOT_NAMES;++name)
     {
         uint16_t offset=MwReadNativeWord(data,0x22AC+name*2);
-        if (offset<0x20AD || offset>=0x2286 || !memchr(data+offset,0,0x2286-offset)) return false;
-        pilotDefinitionNameDirectory[name]=(const char *)pilotDefinitionNames+offset-0x20AD;
+        if (offset<0x20AD || offset>=0x2286) return false;
+        char *at=(char *)pilotDefinitionNames+offset-0x20AD,id[40];
+        size_t room=sizeof(pilotDefinitionNames[0])<(size_t)(0x2286-offset)?sizeof(pilotDefinitionNames[0]):(size_t)(0x2286-offset);
+        snprintf(id,sizeof(id),"combat.pilot.%u.name",(unsigned)name+1);
+        if (!MwStoryCopyText(id,at,room)) return false;
+        pilotDefinitionNameDirectory[name]=at;
     }
+    for (uint16_t name=0;name<COMBAT_MECH_TEMPLATES;++name)
+        if (mechTemplateNames[name][12]) return false;
+    for (uint16_t name=0;name<COMBAT_PILOT_NAMES;++name)
+        if (pilotDefinitionNames[name][10]) return false;
     for (uint16_t mission=0;mission<COMBAT_BRIEFING_MISSIONS;++mission)
     {
         uint16_t offset=MwReadNativeWord(data,0x0DD2+mission*2);

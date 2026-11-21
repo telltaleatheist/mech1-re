@@ -27,7 +27,7 @@ struct ImportPiece {
     Kind kind;
     std::string_view id;
     std::string_view exe;  // the file in the game folder, e.g. "MW_MAIN.EXE"
-    std::uint16_t segment;  // as the traces see it, the image loaded at kLoadSegment
+    std::uint16_t segment;  // as the traces see it, the image loaded at load_segment(exe)
     std::uint16_t offset;
     std::uint16_t length;
     std::string_view sha16;  // the first 16 hex digits of the piece's SHA-256
@@ -36,6 +36,18 @@ struct ImportPiece {
 // Where DOS loaded the image in the traces: a piece's segment is relative to
 // it, so SEG:OFF is file offset (header) + (SEG - kLoadSegment) * 16 + OFF.
 inline constexpr std::uint16_t kLoadSegment = 0x0800;
+
+// BTECH.EXE is EXEPACKed: its pieces are addressed in the unpacked image,
+// rebased into the reference layout (src/Support/BtechImage.cpp) and loaded at
+// 0810 as the game sees it, so one row serves both revisions where their bytes
+// agree. BTECH's data segment is 304E.
+inline constexpr std::string_view kBtechExe = "BTECH.EXE";
+inline constexpr std::uint16_t kBtechLoadSegment = 0x0810;
+
+// The segment `exe`'s image is loaded at.
+constexpr std::uint16_t load_segment(std::string_view exe) {
+    return exe == kBtechExe ? kBtechLoadSegment : kLoadSegment;
+}
 
 // The shape of the story file. A data folder written by another version, or
 // with another table (import_table_hash), is imported again.

@@ -88,3 +88,60 @@ unit.dropship.name             MW_MAIN.EXE 1090:2EE5 z
 
 # The commander's name in a new campaign.
 commander.default_name         MW_MAIN.EXE 1090:5CE2 z
+
+# BTECH's names, in its unpacked image (BTECH.EXE is EXEPACKed; segment 304E is
+# its data segment, src/Import/ImportTable.h): the mech templates (directory
+# 304E:229C into 2045..20AD), the pilots (directory 304E:22AC into 20AD..2286),
+# and the commander's name in a combat started without a campaign.
+combat.mech_template.1.name        BTECH.EXE 304E:2045 z
+combat.mech_template.2.name        BTECH.EXE 304E:2052 z
+combat.mech_template.3.name        BTECH.EXE 304E:205F z
+combat.mech_template.4.name        BTECH.EXE 304E:206C z
+combat.mech_template.5.name        BTECH.EXE 304E:2079 z
+combat.mech_template.6.name        BTECH.EXE 304E:2086 z
+combat.mech_template.7.name        BTECH.EXE 304E:2093 z
+combat.mech_template.8.name        BTECH.EXE 304E:20A0 z
+combat.pilot.1.name                BTECH.EXE 304E:20AD z
+combat.pilot.2.name                BTECH.EXE 304E:20B8 z
+combat.pilot.3.name                BTECH.EXE 304E:20C3 z
+combat.pilot.4.name                BTECH.EXE 304E:20CE z
+combat.pilot.5.name                BTECH.EXE 304E:20D9 z
+combat.pilot.6.name                BTECH.EXE 304E:20E4 z
+combat.pilot.7.name                BTECH.EXE 304E:20EF z
+combat.pilot.8.name                BTECH.EXE 304E:20FA z
+combat.pilot.9.name                BTECH.EXE 304E:2105 z
+combat.pilot.10.name               BTECH.EXE 304E:2110 z
+combat.pilot.11.name               BTECH.EXE 304E:211B z
+combat.pilot.12.name               BTECH.EXE 304E:2126 z
+combat.pilot.13.name               BTECH.EXE 304E:2131 z
+combat.pilot.14.name               BTECH.EXE 304E:213C z
+combat.pilot.15.name               BTECH.EXE 304E:2147 z
+combat.pilot.16.name               BTECH.EXE 304E:2152 z
+combat.pilot.17.name               BTECH.EXE 304E:215D z
+combat.pilot.18.name               BTECH.EXE 304E:2168 z
+combat.pilot.19.name               BTECH.EXE 304E:2173 z
+combat.pilot.20.name               BTECH.EXE 304E:217E z
+combat.pilot.21.name               BTECH.EXE 304E:2189 z
+combat.pilot.22.name               BTECH.EXE 304E:2194 z
+combat.pilot.23.name               BTECH.EXE 304E:219F z
+combat.pilot.24.name               BTECH.EXE 304E:21AA z
+combat.pilot.25.name               BTECH.EXE 304E:21B5 z
+combat.pilot.26.name               BTECH.EXE 304E:21C0 z
+combat.pilot.27.name               BTECH.EXE 304E:21CB z
+combat.pilot.28.name               BTECH.EXE 304E:21D6 z
+combat.pilot.29.name               BTECH.EXE 304E:21E1 z
+combat.pilot.30.name               BTECH.EXE 304E:21EC z
+combat.pilot.31.name               BTECH.EXE 304E:21F7 z
+combat.pilot.32.name               BTECH.EXE 304E:2202 z
+combat.pilot.33.name               BTECH.EXE 304E:220D z
+combat.pilot.34.name               BTECH.EXE 304E:2218 z
+combat.pilot.35.name               BTECH.EXE 304E:2223 z
+combat.pilot.36.name               BTECH.EXE 304E:222E z
+combat.pilot.37.name               BTECH.EXE 304E:2239 z
+combat.pilot.38.name               BTECH.EXE 304E:2244 z
+combat.pilot.39.name               BTECH.EXE 304E:224F z
+combat.pilot.40.name               BTECH.EXE 304E:225A z
+combat.pilot.41.name               BTECH.EXE 304E:2265 z
+combat.pilot.42.name               BTECH.EXE 304E:2270 z
+combat.pilot.43.name               BTECH.EXE 304E:227B z
+combat.commander.default_name      BTECH.EXE 304E:0978 z

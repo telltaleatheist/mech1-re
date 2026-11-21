@@ -1,6 +1,7 @@
 #include "Story.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <iterator>
 #include <set>
@@ -8,6 +9,7 @@
 
 #include "../Support/Json.h"
 #include "../Support/Sha256.h"
+#include "mechwarrior/combat_installation.h"
 
 namespace mw1o::import {
 
@@ -60,14 +62,26 @@ fs::path find_game_file(const fs::path& game_dir, std::string_view name) {
 
 struct Exe {
     std::vector<std::uint8_t> file;
-    std::size_t image = 0;  // where the load image starts (after the MZ header)
+    std::vector<std::uint8_t> image;  // the load image, as DOS loads it at load_segment()
 };
 
-Exe load_exe(const fs::path& path) {
-    Exe exe{read_file(path)};
+static_assert(kBtechLoadSegment == BTECH_IMAGE_LOAD_SELECTOR, "BTECH's image loads where the game decodes it to");
+
+Exe load_exe(const fs::path& path, std::string_view name) {
+    Exe exe{read_file(path), {}};
     if (exe.file.size() < 0x1C || exe.file[0] != 'M' || exe.file[1] != 'Z')
         throw ImportError(path.string() + " is not a DOS program");
-    exe.image = std::size_t(exe.file[8] | exe.file[9] << 8) * 16;
+    if (name == kBtechExe) {
+        std::uint8_t* image = nullptr;
+        if (!BtechDecodeImage(exe.file.data(), exe.file.size(), &image, nullptr))
+            throw ImportError(path.string() + " is not a BTECH.EXE this game knows (by size and checksum)");
+        exe.image.assign(image, image + BTECH_IMAGE_BYTES);
+        std::free(image);
+    } else {
+        const std::size_t header = std::size_t(exe.file[8] | exe.file[9] << 8) * 16;
+        if (header > exe.file.size()) throw ImportError(path.string() + " is not a DOS program");
+        exe.image.assign(exe.file.begin() + std::ptrdiff_t(header), exe.file.end());
+    }
     return exe;
 }
 
@@ -127,11 +141,12 @@ void import_story(const fs::path& game_dir, const fs::path& write_dir, std::span
     for (const auto& piece : table) {
         auto it = exes.find(piece.exe);
         if (it == exes.end())
-            it = exes.emplace(std::string(piece.exe), load_exe(find_game_file(game_dir, piece.exe))).first;
+            it = exes.emplace(std::string(piece.exe), load_exe(find_game_file(game_dir, piece.exe), piece.exe)).first;
         const Exe& exe = it->second;
-        const std::size_t at = exe.image + std::size_t(piece.segment - kLoadSegment) * 16 + piece.offset;
-        const bool inside = piece.segment >= kLoadSegment && at + piece.length <= exe.file.size();
-        const std::string_view bytes = inside ? bytes_view(exe.file, at, piece.length) : std::string_view();
+        const std::uint16_t base = load_segment(piece.exe);
+        const std::size_t at = std::size_t(piece.segment - base) * 16 + piece.offset;
+        const bool inside = piece.segment >= base && at + piece.length <= exe.image.size();
+        const std::string_view bytes = inside ? bytes_view(exe.image, at, piece.length) : std::string_view();
         if (!inside || sha256_of(bytes).substr(0, 16) != piece.sha16) {
             refused.push_back(std::string(piece.id) + " (" + std::string(piece.exe) + " " + piece_address(piece) + ")");
             continue;

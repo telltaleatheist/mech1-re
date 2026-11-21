@@ -156,9 +156,16 @@ DS:0008 finds the data segment, then each piece must still match its hash.
    2c: MW_MAIN's names (the houses' in the contract office, the units' in
    the shop and elsewhere, the new campaign's commander; 28 pieces), keyed
    by HOUSE_* and CampaignUnitKind. BTECH's names (the mech templates, the
-   pilots, the default commander) need BTECH.EXE unpacked first (EXEPACK,
-   `BtechDecodeInstallationImage`); they come with the importer's BTECH
-   support.
+   pilots, the default commander) need BTECH.EXE unpacked first (EXEPACK);
+   2c-2 brings them. 2c-2: the decoder moved to `src/Support/BtechImage.cpp`
+   (no goto), and `BtechDecodeImage` leaves `btechLoadedRevision` alone. The
+   importer reads BTECH's pieces in the unpacked image, rebased into the
+   reference layout and loaded at 0810, so one table and one code path serve
+   both revisions; `tools/import/btech_image` pipes that image to
+   make_import_table.py (no second decoder). 52 pieces: the 8 mech templates,
+   the 43 pilots (each written at its directory offset in its own record)
+   and the default commander. `btech_revisions_test` imports both revisions
+   and compares their texts (skipped without the player's files).
 3. **Rules and the new campaign** into `data/rules/`. Traces equal (same
    numbers). The importer's piece hashes check them against the exe.
 4. **Layout** into `data/ui/`. Traces equal.

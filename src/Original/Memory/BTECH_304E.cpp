@@ -1,3 +1,4 @@
+#include "mechwarrior/story.h"
 #include "mechwarrior/combat_mechs.h"
 #include "mechwarrior/native_address.h"
 #include "mechwarrior/combat_import.h"
@@ -46,7 +47,7 @@ bool BtechImportCombatStageInitialData(const uint8_t *data,size_t byteCount)
         criticalTransferBodyLocations[location]=MwReadNativeWord(data,0x0E28+location*2);
     }
     for (uint16_t location=0;location<4;++location) actuatorIndicesByBodyLocation[location]=MwReadNativeWord(data,0x0E5E +location*2);
-    memcpy(combatDefaultCommanderNameBytes,data+0x0978,sizeof(combatDefaultCommanderNameBytes));
+    if (!MwStoryCopyText("combat.commander.default_name",(char *)combatDefaultCommanderNameBytes,sizeof(combatDefaultCommanderNameBytes))) return false;
     salvageEntryCount=MwReadNativeWord(data,0x0976);
     for (uint16_t chassis=0;chassis<COMBAT_MECH_TEMPLATES;++chassis)
         campaignUnitKindByCombatTemplate[chassis]=MwReadNativeWord(data,0x09CC+chassis*2);
@@ -206,6 +207,7 @@ void BtechInitializeFreshMechOwners(const uint8_t *data)
     specialTargetInteractionBlocked=MwReadNativeWord(data,0x0EEA);
     for (uint16_t slot=0;slot<sizeof(sideObjectiveRules)/sizeof(sideObjectiveRules[0]);++slot) sideObjectiveRules[slot]=MwReadNativeWord(data,0x0ED0+slot*2);
     combatLandscapeIndex=MwReadNativeWord(data,0x1E86);
-    for (uint16_t slot=0;slot<sizeof(combatDefaultCommanderNameBytes)/sizeof(combatDefaultCommanderNameBytes[0]);++slot) combatDefaultCommanderNameBytes[slot]=data[0x0978+slot*1];
+    /* From the story file, as the importer reads it; a missing text fails that import. */
+    (void)MwStoryCopyText("combat.commander.default_name",(char *)combatDefaultCommanderNameBytes,sizeof(combatDefaultCommanderNameBytes));
     savedArguments=NULL;
 }
