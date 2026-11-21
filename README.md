@@ -1,3 +1,36 @@
+# mw1-original (private)
+
+This is a private fork of **Elthial's MechWarrior SDL port**, the readable reconstruction of MechWarrior (1989) whose
+README follows below. It keeps Elthial's full history (the fork point is `e119a72a`), their `LICENSE`, the MIT text and
+the [rights notice](docs/NOTICE.md). The original port is at https://github.com/Elthial/MechWarrior and is the
+`upstream` remote here (fetch only).
+
+**What we're doing with it:** rebuilding the 1989 game as modern C++ for *MechWarrior 1: Critical Hit* (FIXES 130 in
+mw3-re's `mw1/FIXES.md`). The plan is to turn the port into C++20 with classes, namespaces and plain names, no `goto`,
+and code organized by what it does, each function keeping the original's address. The game's creative content still
+comes only from the player's own copy of the game. Every step is checked against golden traces recorded from the port
+(`tools/trace`): the rebuilt game must replay each script exactly as the original logic does.
+
+**It stays private for now.** Don't publish it, mirror it or open pull requests upstream from it without Owen's word.
+
+**Credit:** the reconstruction, its research and its tools are Elthial's work. Their licence terms (MIT for the host
+code under `src/SDL` and `src/Support`; see `docs/LICENSES/README.md` for the rest) apply to everything taken from it.
+
+## Where it is
+
+- **C++20:** the sources are `.cpp` and build as C++20 (CMake; the Visual Studio project points at the same files
+  but isn't tested here). The first step changed no behaviour: the C build and the C++20 build record identical
+  traces (`tools/trace/scripts/campaign_contract.keys`).
+- **Build (macOS, Linux):** `cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build -j4`.
+  SDL3 from the system (Homebrew on the Mac); Munt and Nuked-OPL3 are fetched.
+- **Headless runs:** `SDL_AUDIO_DRIVER=dummy`; on Linux `SDL_VIDEO_DRIVER=offscreen`; on the Mac `MW1O_HIDDEN=1` (a
+  hidden window: macOS's offscreen driver has no renderer).
+- **Golden traces and the menu-handler map:** `tools/trace/README.md`, `docs/phase0/`.
+
+---
+
+*Elthial's README, as forked:*
+
 <p align="center"><img src="docs/images/title-banner.svg" alt="MechWarrior preservation project" width="900"></p>
 
 # MechWarrior SDL port
