@@ -66,3 +66,41 @@ PCM hashes aren't goldens in the repo. Floating-point synthesis (`sin`,
 `fmod`) can differ between C libraries, so a hash is only comparable on one
 machine. The level 2 metrics (onsets, pitch, envelopes) are what cross
 platforms.
+
+## The original under DOSBox-X (level 3)
+
+`tools/capture/run_audio_wsl.sh NAME KEYS.BIN A|R|S [LIMIT [HOLD]]` runs a
+script against the original headless and captures what it sends: AdLib as
+DROv2 (`DX-CAPTURE /O`; no mapper key needed), Roland MIDI through DOSBox-X's
+OSS handler into a plain file, the speaker as WAV (`DX-CAPTURE /A`).
+`compare_original.py` compares a capture with a golden section by section:
+
+- AdLib: key-ons, channel-free, with onset timing;
+- MIDI: bytes;
+- speaker: notes from the WAV's square wave (semitones, onset timing). A note
+  under 5 periods on one side only is skipped and counted, since the WAV
+  can't always show one that brief; every longer note must match in order.
+
+The original's empty polls take almost no emulated time, so `idle:` can't
+hold a screen there. `wait:MS` (MWSNAP's own; the port's feed doesn't read
+it) holds the next item for emulated time, by the BIOS tick count, which the
+game's music timer keeps running. `original/music.keys` is the port's music
+script with its idles as waits.
+
+Results (`original/music.keys` against `traces/music.*`):
+
+- AdLib: title 361 of 361 key-ons, bar 659 of 659, in order; onset gaps
+  median 0 ms, at most 8 ms.
+- MIDI: title 3,003 of 3,003 bytes, bar 4,730 of 4,730.
+- Speaker: title 66 of 67 notes (one short note on one side only), bar 219
+  of 219; onset gaps median 0 ms, at most 14 ms.
+- Combat: the original sends no MIDI and keys no OPL note, as the plan
+  assumes (the port's combat logs: 0 key-ons; only MPU commands).
+
+Leaving the title early: the title's length decides the start world (the
+campaign draws a random number on every poll), and leaving before the title
+tune starts gives the bar other music. The original and the port agree on
+it: titles of 0.5 to 6 s give the port's own title-early run (`idle:1000`)
+exactly, AdLib 569 of 569 key-ons (within 7 ms) and MIDI 4,698 of 4,698
+bytes. What looked like a stall in the original was this other music
+measured against the full-title golden.

@@ -194,13 +194,41 @@ synth can, and that's most of the risk. Three levels:
   - **raw OPL capture (`mapper_caprawopl`, .dro):** every register write
     with millisecond delays;
   - **raw MIDI capture (`mapper_caprawmidi`):** the MPU byte stream.
-- **Spike (slice 3):** start these headlessly. They're mapper events, so
-  that needs a startup binding or option. If neither exists, we'd send the
-  bound key through the same 8042 path MWSNAP already feeds, or patch
-  DOSBox-X locally (outside the repo).
+- **Spike (slice 3), done:** no mapper key is needed.
+  - **AdLib:** DOSBox-X's `DX-CAPTURE /O` shell command wraps the game and
+    writes DROv2 from the first key-on.
+  - **MIDI:** DOSBox-X's OSS MIDI handler, with `midiconfig` pointed at a
+    plain file, writes every MIDI byte unbuffered (4-byte `SEQ_MIDIPUTC`
+    records, no timestamps).
+  - **Speaker:** `DX-CAPTURE /A` writes WAV.
+  - SIGTERM makes DOSBox-X close the captures properly.
+  - `tools/capture/run_audio_wsl.sh` runs it; `tools/trace/audio/compare_original.py`
+    compares a capture with a golden, section by section.
+- **What level 3 found (music, `tools/trace/audio/original/music.keys`):**
+  the original matches the port's goldens on all three devices.
+  - AdLib: 361 title and 659 bar key-ons, in order, onsets within 8 ms.
+  - MIDI: 3,003 title and 4,730 bar bytes, exactly.
+  - Speaker (WAV notes): 66 of 67 title notes (one short note seen on one
+    side only) and 219 of 219 bar notes, onsets within 14 ms.
+  - Combat: the original sends no MIDI and keys no OPL note, which supports
+    dropping the combat card drivers (section 5).
+- **Holding a screen on the original:** its empty polls take almost no
+  emulated time, so MWSNAP has `wait:MS`, by the BIOS tick count.
+- **Leaving the title early:** the title's length decides the start world,
+  and leaving before its tune gives the bar other music. The original and
+  the port agree on that path too (AdLib 569 of 569 key-ons, MIDI 4,698 of
+  4,698 bytes). The "stall" seen earlier was that music measured against the
+  full-title golden: nothing to change in the port.
 - **Comparison:** same register writes in the same order; inter-event times
   within the capture's 1 ms resolution, with the start aligned on the first
   key-on.
+  - **As built:** register order isn't comparable across a different history
+    (DRO drops writes that don't change a register; voice allocation picks
+    channels), so AdLib compares key-ons channel-free, MIDI its bytes, the
+    speaker its WAV's notes. Onset gaps: median 0 ms, at most 8 ms (AdLib)
+    and 14 ms (speaker), not the 1 ms planned. On AdLib, 1,004 of 1,018
+    gaps are within 1 ms (the DRO's resolution); the 8 ms is one gap in each
+    tune, and the tunes drift at most 8 ms over 36 s.
 - MWSNAP's existing clock pin and fixed cycles keep the original
   deterministic.
 - **Speaker against the original:** DOSBox-X's WAV capture, compared by onset
@@ -274,8 +302,7 @@ on the tick.
    MIDI out plays nothing unless the player runs a synth. AdLib stays the
    default everywhere, so nobody hears silence by default.
 5. **The headless DOSBox-X capture may not start without a key** (slice 3).
-   The fallback is the 8042 key path MWSNAP already uses, or a local patch.
-   Level 1 and level 2 don't depend on it.
+   Resolved: `DX-CAPTURE` and the OSS MIDI handler need no key (level 3).
 6. **Fixed-tick timing.** If IRQ0 delivery per tick drifts from the
    programmed rate, tempo drifts. The level 1 timestamps catch it exactly.
 7. **Dropping the combat card drivers changes what "exists" in combat.**
