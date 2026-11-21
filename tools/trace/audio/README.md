@@ -85,5 +85,10 @@ First results (music, `original/music.keys`, hold 36 s):
   assumes (the port's combat logs: 0 key-ons; only MPU commands).
 
 Still to do: a time-based wait in MWSNAP (polls can't hold a screen on the
-original), the speaker by WAV onsets, and an original-only quirk to check in
-the port: leaving the title before its tune starts stalls the bar tune.
+original), and the speaker by WAV onsets.
+
+Open: when a script leaves the title before its tune starts, the original's
+bar tune sends its opening and stops, on every device. The port on the same
+path plays the bar in full (36 s; 703 MIDI note-ons, 569 AdLib key-ons), so
+the difference is in the original's run (MWSNAP's feeding, DOSBox-X, or the
+original itself) until original runs that bisect the title's length say which.
