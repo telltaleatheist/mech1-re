@@ -23,8 +23,10 @@ The original stores no row count, so a menu's rows are counted by its
 record table (MENU_ROWS, from the port's imports); an unknown table is
 reported, never guessed.
 
-The palette's 17th byte (the overscan register) is not in the capture; it is
-written as 0, which is all the port has seen. Frames are MW1 art: --frames
+The palette's 17th byte (the overscan register, attribute register 11h) is
+not in a version 1 capture; it is written as 0. BTECH sets it during the
+briefing (2A36 BtechEgaSetOverscanColour), so that frame's palette differs
+until the capture carries it. Frames are MW1 art: --frames
 writes them outside the repo, in the recorder's .indices/.palette form.
 """
 import argparse, json, os, struct, sys
@@ -41,6 +43,14 @@ MWSNAP_TAG, MWSNAP_IN_COMBAT, MWSNAP_GAME_DS = 0x103, 0x128, 0x131
 EXCHANGE, EXCHANGE_BYTES = 0x0448, 0x0718
 MENU_TABLE, SELECTED_ROW, RANDOM0, RANDOM1 = 0x03E3, 0x03E5, 0x03F5, 0x03F7
 RECORD_BYTES = 14
+MW_EXCHANGE = 0x0164   # MW.EXE's copy of the exchange block, from its PSP
+# BTECH's DS (the 1990-01-22 revision; records are packed, the port's
+# combat_mechs.h / combat_world.h field order).
+TICK, SCREEN, TARGET = 0xD244, 0x0E1C, 0xCD36        # 0810 key dispatch: C sets [0E1C]=2,
+OBJECTIVE, OBJECTIVE_DAMAGE = 0xCD2E, 0xCD30         # Enter cycles [CD36]; 1D24 sets [CD30]=28h
+BINDINGS, BINDING_BYTES = 0xCD5A, 0x0E               # mech, torso, right leg, left leg, ...
+CONTROLS, CONTROL_BYTES = 0xD374, 0x55               # side +10h, movement mode +51h
+SLOTS = 8
 # Record table (DS offset) -> rows, as the port imports them (MW_MAIN_1090.cpp);
 # each was seen with the same count in every golden snap that shows it.
 MENU_ROWS = {
@@ -81,6 +91,20 @@ class Capture:
         self.mwsnap = seg
         self.combat = self.mem[seg * 16 + MWSNAP_IN_COMBAT] != 0
         self.game_ds = self.word(seg, MWSNAP_GAME_DS)
+        self.mw_psp = self.program_psp(b"MW")
+
+    def program_psp(self, name):
+        """The PSP of the program DOS's memory chain names NAME (its block's owner)."""
+        for start in range(0x40, 0x400):
+            seg = start
+            while seg < 0xA000 and self.mem[seg * 16] in (0x4D, 0x5A):
+                owner, size = struct.unpack_from("<HH", self.mem, seg * 16 + 1)
+                if owner == seg + 1 and self.mem[seg * 16 + 8: seg * 16 + 16].split(b"\0")[0] == name:
+                    return owner
+                if self.mem[seg * 16] == 0x5A:
+                    break
+                seg += size + 1
+        return None
 
     def word(self, seg, off):
         return struct.unpack_from("<H", self.mem, seg * 16 + off)[0]
@@ -110,14 +134,49 @@ def cstring(cap, ds, off, limit=96):
     return raw[:end if end >= 0 else limit].decode("latin-1")
 
 
-def campaign_status(cap):
-    """The status dict record.state_lines reads, from MW_MAIN's memory."""
+def combat_status(cap):
+    """tick, screen, target, units and objective, as the port's status.json has them."""
+    ds = cap.ds
+    w = lambda o: cap.word(ds, o)
+    sw = lambda o: struct.unpack_from("<h", cap.mem, ds * 16 + o)[0]
+    sd = lambda o: struct.unpack_from("<i", cap.mem, ds * 16 + o)[0]
+    words = lambda o, n: [w(o + 2 * i) for i in range(n)]
+    position = lambda obj: [sd(obj + 8), sd(obj + 0x0C), sd(obj + 0x10)]
+    orientation = lambda obj: words(obj + 0x14, 3)
+    units = []
+    for slot in range(SLOTS):
+        b = BINDINGS + slot * BINDING_BYTES
+        mech, torso, body = w(b), w(b + 2), w(b + 6)
+        if not mech or not body:
+            continue
+        control = CONTROLS + slot * CONTROL_BYTES
+        units.append({"slot": slot, "side": w(control + 0x10), "chassis": w(mech),
+                      "position": position(body), "orientation": orientation(body),
+                      "step": sw(body + 0x3C), "movementMode": w(control + 0x51), "jumpCharge": w(mech + 0x09),
+                      "torsoOrientation": orientation(torso) if torso else [0, 0, 0],
+                      "heat": w(mech + 0x06), "engineHits": w(mech + 0x11), "gyroHits": w(mech + 0x13),
+                      "cockpitDisabled": w(mech + 0x15), "armor": words(mech + 0x19, 9),
+                      "internal": words(mech + 0x2B, 8), "ammo": words(mech + 0x59, 6),
+                      "weapons": [{"operational": cap.mem[ds * 16 + mech + 0x3B + 3 * i],
+                                   "reload": w(mech + 0x3C + 3 * i)} for i in range(10)]})
+    obj = w(OBJECTIVE)
+    return {"tick": w(TICK), "screen": w(SCREEN), "target": w(TARGET), "units": units,
+            "objective": {"position": position(obj), "damageRemaining": w(OBJECTIVE_DAMAGE)} if obj else None}
+
+
+def campaign_status(cap, frozen):
+    """The status dict record.state_lines reads, from MW_MAIN's memory. In
+    combat MW_MAIN is gone: the campaign is the exchange block MW.EXE keeps
+    for BTECH (MW_EXCHANGE past its PSP), and the random words and the row are
+    those MW_MAIN left (FROZEN, from the last campaign capture), as the port
+    holds them while a battle runs."""
     ds = cap.game_ds
-    ex = cap.bytes(ds, EXCHANGE, EXCHANGE_BYTES)
+    ex = cap.bytes(cap.mw_psp, MW_EXCHANGE, EXCHANGE_BYTES) if cap.combat else cap.bytes(ds, EXCHANGE, EXCHANGE_BYTES)
     w = lambda o: struct.unpack_from("<H", ex, o)[0]
     c = {"planet": w(0x21), "contractActive": ex[0x20], "missionCategory": ex[0x01], "scenario": ex[0x07],
          "destination": ex[0x06], "targetHouse": w(0x70B), "paymentThousands": w(0x5B2), "result": ex[0x1F],
-         "selectedRow": cap.word(ds, SELECTED_ROW), "random": [cap.word(ds, RANDOM0), cap.word(ds, RANDOM1)],
+         "selectedRow": frozen["row"] if cap.combat else cap.word(ds, SELECTED_ROW),
+         "random": frozen["random"] if cap.combat else [cap.word(ds, RANDOM0), cap.word(ds, RANDOM1)],
          "funds": w(0x49) | (w(0x4B) << 16), "months": w(0x39), "menu": []}
     problems = []
     if not cap.combat:
@@ -131,7 +190,10 @@ def campaign_status(cap):
             c["menu"].append({"index": i, "enabled": r[0], "callback": struct.unpack_from("<H", r, 6)[0],
                               "picture": picture, "links": list(r[10:14]),
                               "label": cstring(cap, ds, picture + 1) if r[1] and picture else ""})
-    return {"combat": cap.combat, "campaign": c}, ex, problems
+    status = {"combat": cap.combat, "campaign": c}
+    if cap.combat:
+        status.update(combat_status(cap))
+    return status, ex, problems
 
 
 def main():
@@ -151,6 +213,7 @@ def main():
     if a.frames:
         os.makedirs(a.frames, exist_ok=True)
     missing = 0
+    frozen = {"row": 0, "random": [0, 0]}
     with open(a.out, "w", encoding="utf-8") as out:
         for seq, name in enumerate(snaps):
             path = os.path.join(a.run, f"MW1S{seq:04d}.BIN")
@@ -164,7 +227,9 @@ def main():
                 missing += 1
                 continue
             indices, palette = cap.indices(), cap.palette()
-            status, ex, problems = campaign_status(cap)
+            status, ex, problems = campaign_status(cap, frozen)
+            if not cap.combat:
+                frozen = {"row": status["campaign"]["selectedRow"], "random": status["campaign"]["random"]}
             lines = record.state_lines(status)
             if not cap.combat:
                 lines.append(f"state exchange {record.sha(ex, 32)}")
