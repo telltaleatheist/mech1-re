@@ -6,6 +6,7 @@
 #include "mechwarrior/campaign_events.h"
 #include "mechwarrior/dos_files.h"
 #include "mechwarrior/rules.h"
+#include "mechwarrior/ui_layout.h"
 #include "mechwarrior/story.h"
 #include "mechwarrior/launcher.h"
 #include "mechwarrior/campaign_startup.h"
@@ -144,7 +145,7 @@ bool MwSdlInitialize(const char *gameDirectory,const char *captureDirectory)
         const char *base=SDL_GetBasePath();
         if (!base || snprintf(dataDirectory,sizeof(dataDirectory),"%sdata",base)>=(int)sizeof(dataDirectory)) return false;
     }
-    if (!MwHostPrepareRules(dataDirectory)) return false;
+    if (!MwHostPrepareRules(dataDirectory) || !MwHostPrepareUi(dataDirectory)) return false;
     if (!MwHostSetCampaignSaveDirectory(writeDirectory) || !MwHostPrepareStory(gameDirectory,writeDirectory)) return false;
     char path[4096];
     if (!MwHostJoinGamePath(path,sizeof(path),gameDirectory,"MW_MAIN.EXE")

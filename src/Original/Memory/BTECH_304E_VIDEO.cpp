@@ -1,5 +1,6 @@
 #include "mechwarrior/combat_video.h"
 #include "mechwarrior/native_address.h"
+#include "mechwarrior/ui_layout.h"
 
 const uint8_t glyphTailMasks[8]={0xFF,0x80,0xC0,0xE0,0xF0,0xFF,0xFC,0xFE};
 const char errorCardNotFound[]="card not found";
@@ -101,21 +102,25 @@ bool BtechImportVideoInitialData(const uint8_t *data,size_t bytes)
     for (uint16_t bit=0;bit<8;++bit) egaPixelBitMasks[bit]=data[0x46D4+bit];
     egaLinePixelMask=data[0x46DC];egaLineRunLength=MwReadNativeWord(data,0x46DD);
     egaLineFractionStep=MwReadNativeWord(data,0x46DF);egaLineRemainingBeforeRun=MwReadNativeWord(data,0x46E1);egaLineFractionAccumulator=MwReadNativeWord(data,0x46E3);
+    /* The layout's camera rows (data/ui, src/Ui), at their native offset. */
+    uint8_t ui[0x1F3C];
+    if (MwUiPieceSize("cockpit.landscape_camera_rows")!=0x1F3C-0x1E88
+        || !MwUiCopyNative("cockpit.landscape_camera_rows",ui+0x1E88,0x1F3C-0x1E88)) return false;
     /* Actual image/BSS IO boundary; runtime consumers use typed rows. */
     for (uint16_t scheme=0;scheme<COMBAT_HUD_COLOUR_SCHEMES;++scheme)
         for (uint16_t landscape=0;landscape<COMBAT_LANDSCAPES;++landscape)
         {
             BtechLandscapeCameraColourRow *row=&landscapeCameraColourRows[scheme][landscape];
             uint16_t offset=0x1E88+scheme*0x5A+landscape*0x1E;
-            row->playerFillPaletteA=data[offset];row->unidentifiedField2=data[offset+1];
-            row->sharedFillPaletteB=data[offset+2];
-            row->unidentifiedField3=data[offset+3];row->unidentifiedField4[0]=data[offset+4];row->unidentifiedField4[1]=data[offset+5];
-            row->mapBoundaryColour=MwReadNativeWord(data,offset+6);row->mapRetreatBoundaryColour=MwReadNativeWord(data,offset+8);
-            for (uint16_t unit=0;unit<5;++unit) row->unitMarkerColours[unit]=MwReadNativeWord(data,offset+0x0A+unit*2);
-            row->orderTrackingLineColour=MwReadNativeWord(data,offset+0x14);
-            row->hudReticleColour=data[offset+0x16];row->unidentifiedField11=data[offset+0x17];
-            row->headingTickPaletteIndex=MwReadNativeWord(data,offset+0x18);
-            for (uint16_t byte=0;byte<sizeof(row->unidentifiedField12);++byte) row->unidentifiedField12[byte]=data[offset+0x1A+byte];
+            row->playerFillPaletteA=ui[offset];row->unidentifiedField2=ui[offset+1];
+            row->sharedFillPaletteB=ui[offset+2];
+            row->unidentifiedField3=ui[offset+3];row->unidentifiedField4[0]=ui[offset+4];row->unidentifiedField4[1]=ui[offset+5];
+            row->mapBoundaryColour=MwReadNativeWord(ui,offset+6);row->mapRetreatBoundaryColour=MwReadNativeWord(ui,offset+8);
+            for (uint16_t unit=0;unit<5;++unit) row->unitMarkerColours[unit]=MwReadNativeWord(ui,offset+0x0A+unit*2);
+            row->orderTrackingLineColour=MwReadNativeWord(ui,offset+0x14);
+            row->hudReticleColour=ui[offset+0x16];row->unidentifiedField11=ui[offset+0x17];
+            row->headingTickPaletteIndex=MwReadNativeWord(ui,offset+0x18);
+            for (uint16_t byte=0;byte<sizeof(row->unidentifiedField12);++byte) row->unidentifiedField12[byte]=ui[offset+0x1A+byte];
         }
     for (uint16_t landscape=0;landscape<COMBAT_LANDSCAPES;++landscape) landscapePaletteSlots[landscape]=0;
     damagePaletteSlot=0;

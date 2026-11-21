@@ -1,0 +1,24 @@
+# The layout's pieces (docs/phase2/PLAN.md section 6): id, exe, SEG:OFF in
+# the trace layout (BTECH in its unpacked image, loaded at 0810), byte count.
+# tools/import/make_import_table.py --ui writes ui_table.cpp from this table
+# and the player's exes. A fifth column "tuned" keeps a row without its hash.
+
+# cockpit.json: BTECH 304E:1878..2004 (the two bytes at 1E86 are runtime
+# state), and the subsystem lamps.
+cockpit.inspection_diagram_origins  BTECH.EXE 304E:1878 32
+cockpit.inspection_diagram_regions  BTECH.EXE 304E:1898 576
+cockpit.target_diagram_anchors      BTECH.EXE 304E:1AD8 32
+cockpit.target_diagram_regions      BTECH.EXE 304E:1AF8 576
+cockpit.layout_by_template          BTECH.EXE 304E:1D38 16
+cockpit.layouts                     BTECH.EXE 304E:1D48 318
+cockpit.landscape_camera_rows       BTECH.EXE 304E:1E88 180
+cockpit.hud_colour_schemes          BTECH.EXE 304E:1F3C 200
+cockpit.subsystem_lamp_colours      BTECH.EXE 304E:23CE 28
+
+# orders.json: the lance order panel.
+orders.selection_first_rows         BTECH.EXE 304E:0092 4
+orders.selection_last_rows          BTECH.EXE 304E:0096 4
+orders.navigation_panel_deltas      BTECH.EXE 304E:009A 22
+orders.navigation_row_deltas        BTECH.EXE 304E:00B0 22
+orders.engine_condition_colours     BTECH.EXE 304E:030E 16
+orders.system_condition_colours     BTECH.EXE 304E:031E 16

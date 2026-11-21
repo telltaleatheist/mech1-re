@@ -1,0 +1,583 @@
+{
+  "templates": [
+    {
+      "cockpit_layout": 0,
+      "inspection_diagram": {
+        "origin": [12, 5],
+        "regions": {
+          "left_arm": [126, 17, 14, 22],
+          "right_arm": [30, 17, 14, 22],
+          "left_leg": [94, 80, 30, 109],
+          "right_leg": [46, 62, 29, 127],
+          "center_torso": [67, 23, 34, 57],
+          "rear_center_torso": [0, 0, 0, 0],
+          "left_torso": [103, 25, 19, 37],
+          "right_torso": [42, 24, 24, 37],
+          "head": [71, 44, 28, 12]
+        }
+      },
+      "target_diagram": {
+        "anchor": [67, 34],
+        "regions": {
+          "left_arm": [105, 37, 3, 6],
+          "right_arm": [83, 37, 3, 6],
+          "left_leg": [98, 48, 7, 33],
+          "right_leg": [86, 48, 7, 33],
+          "center_torso": [91, 37, 9, 15],
+          "rear_center_torso": [0, 0, 0, 0],
+          "left_torso": [101, 38, 3, 9],
+          "right_torso": [87, 38, 3, 9],
+          "head": [93, 41, 5, 2]
+        }
+      }
+    },
+    {
+      "cockpit_layout": 0,
+      "inspection_diagram": {
+        "origin": [164, 5],
+        "regions": {
+          "left_arm": [287, 35, 16, 32],
+          "right_arm": [180, 36, 15, 24],
+          "left_leg": [264, 67, 22, 116],
+          "right_leg": [197, 65, 24, 118],
+          "center_torso": [215, 21, 50, 42],
+          "rear_center_torso": [0, 0, 0, 0],
+          "left_torso": [267, 34, 16, 32],
+          "right_torso": [199, 34, 14, 32],
+          "head": [217, 44, 42, 28]
+        }
+      },
+      "target_diagram": {
+        "anchor": [73, 40],
+        "regions": {
+          "left_arm": [112, 46, 7, 8],
+          "right_arm": [83, 46, 7, 8],
+          "left_leg": [104, 58, 6, 28],
+          "right_leg": [92, 58, 6, 28],
+          "center_torso": [96, 44, 10, 17],
+          "rear_center_torso": [0, 0, 0, 0],
+          "left_torso": [106, 44, 5, 13],
+          "right_torso": [91, 44, 5, 13],
+          "head": [96, 50, 10, 4]
+        }
+      }
+    },
+    {
+      "cockpit_layout": 1,
+      "inspection_diagram": {
+        "origin": [12, 5],
+        "regions": {
+          "left_arm": [126, 45, 18, 75],
+          "right_arm": [33, 44, 19, 76],
+          "left_leg": [104, 95, 18, 97],
+          "right_leg": [55, 96, 21, 96],
+          "center_torso": [75, 14, 27, 112],
+          "rear_center_torso": [0, 0, 0, 0],
+          "left_torso": [103, 13, 22, 82],
+          "right_torso": [52, 13, 22, 83],
+          "head": [79, 25, 21, 19]
+        }
+      },
+      "target_diagram": {
+        "anchor": [68, 32],
+        "regions": {
+          "left_arm": [105, 43, 9, 17],
+          "right_arm": [79, 43, 9, 18],
+          "left_leg": [98, 55, 8, 24],
+          "right_leg": [87, 55, 8, 24],
+          "center_torso": [93, 38, 7, 20],
+          "rear_center_torso": [0, 0, 0, 0],
+          "left_torso": [100, 36, 5, 19],
+          "right_torso": [88, 36, 5, 19],
+          "head": [94, 38, 5, 6]
+        }
+      }
+    },
+    {
+      "cockpit_layout": 1,
+      "inspection_diagram": {
+        "origin": [12, 5],
+        "regions": {
+          "left_arm": [123, 36, 21, 85],
+          "right_arm": [29, 36, 20, 85],
+          "left_leg": [92, 108, 29, 82],
+          "right_leg": [51, 104, 30, 86],
+          "center_torso": [68, 25, 36, 86],
+          "rear_center_torso": [0, 0, 0, 0],
+          "left_torso": [105, 26, 17, 79],
+          "right_torso": [50, 26, 19, 79],
+          "head": [71, 11, 31, 30]
+        }
+      },
+      "target_diagram": {
+        "anchor": [70, 32],
+        "regions": {
+          "left_arm": [108, 39, 6, 18],
+          "right_arm": [83, 39, 6, 29],
+          "left_leg": [98, 54, 10, 25],
+          "right_leg": [89, 54, 9, 25],
+          "center_torso": [94, 38, 9, 20],
+          "rear_center_torso": [0, 0, 0, 0],
+          "left_torso": [101, 36, 7, 23],
+          "right_torso": [90, 38, 7, 20],
+          "head": [96, 35, 5, 6]
+        }
+      }
+    },
+    {
+      "cockpit_layout": 2,
+      "inspection_diagram": {
+        "origin": [164, 5],
+        "regions": {
+          "left_arm": [279, 26, 26, 119],
+          "right_arm": [174, 26, 25, 122],
+          "left_leg": [249, 93, 36, 99],
+          "right_leg": [195, 92, 35, 99],
+          "center_torso": [228, 22, 23, 100],
+          "rear_center_torso": [0, 0, 0, 0],
+          "left_torso": [251, 20, 27, 70],
+          "right_torso": [200, 20, 28, 72],
+          "head": [228, 51, 25, 11]
+        }
+      },
+      "target_diagram": {
+        "anchor": [69, 30],
+        "regions": {
+          "left_arm": [105, 38, 8, 28],
+          "right_arm": [80, 38, 8, 28],
+          "left_leg": [98, 50, 11, 27],
+          "right_leg": [84, 50, 11, 27],
+          "center_torso": [93, 33, 7, 23],
+          "rear_center_torso": [0, 0, 0, 0],
+          "left_torso": [100, 36, 5, 15],
+          "right_torso": [88, 36, 5, 15],
+          "head": [94, 38, 5, 6]
+        }
+      }
+    },
+    {
+      "cockpit_layout": 2,
+      "inspection_diagram": {
+        "origin": [164, 5],
+        "regions": {
+          "left_arm": [276, 40, 17, 61],
+          "right_arm": [186, 38, 17, 62],
+          "left_leg": [248, 102, 36, 86],
+          "right_leg": [196, 101, 34, 86],
+          "center_torso": [220, 28, 37, 72],
+          "rear_center_torso": [0, 0, 0, 0],
+          "left_torso": [258, 37, 15, 59],
+          "right_torso": [204, 36, 16, 61],
+          "head": [225, 28, 27, 27]
+        }
+      },
+      "target_diagram": {
+        "anchor": [68, 25],
+        "regions": {
+          "left_arm": [106, 35, 4, 16],
+          "right_arm": [82, 35, 4, 16],
+          "left_leg": [96, 51, 12, 21],
+          "right_leg": [84, 51, 12, 21],
+          "center_torso": [91, 37, 11, 15],
+          "rear_center_torso": [0, 0, 0, 0],
+          "left_torso": [101, 32, 3, 18],
+          "right_torso": [86, 32, 5, 18],
+          "head": [91, 29, 10, 8]
+        }
+      }
+    },
+    {
+      "cockpit_layout": 2,
+      "inspection_diagram": {
+        "origin": [164, 5],
+        "regions": {
+          "left_arm": [257, 71, 43, 66],
+          "right_arm": [180, 71, 38, 66],
+          "left_leg": [247, 87, 32, 104],
+          "right_leg": [201, 89, 31, 102],
+          "center_torso": [219, 33, 38, 56],
+          "rear_center_torso": [0, 0, 0, 0],
+          "left_torso": [253, 38, 19, 35],
+          "right_torso": [205, 38, 17, 35],
+          "head": [226, 51, 25, 22]
+        }
+      },
+      "target_diagram": {
+        "anchor": [69, 32],
+        "regions": {
+          "left_arm": [105, 47, 8, 16],
+          "right_arm": [81, 47, 8, 16],
+          "left_leg": [99, 52, 8, 27],
+          "right_leg": [87, 52, 8, 27],
+          "center_torso": [93, 36, 8, 17],
+          "rear_center_torso": [0, 0, 0, 0],
+          "left_torso": [101, 40, 4, 11],
+          "right_torso": [89, 40, 4, 11],
+          "head": [94, 43, 6, 5]
+        }
+      }
+    },
+    {
+      "cockpit_layout": 2,
+      "inspection_diagram": {
+        "origin": [12, 5],
+        "regions": {
+          "left_arm": [118, 30, 30, 93],
+          "right_arm": [23, 29, 30, 93],
+          "left_leg": [91, 102, 31, 84],
+          "right_leg": [44, 102, 31, 84],
+          "center_torso": [65, 34, 37, 63],
+          "rear_center_torso": [0, 0, 0, 0],
+          "left_torso": [102, 34, 15, 63],
+          "right_torso": [48, 35, 17, 67],
+          "head": [70, 10, 27, 33]
+        }
+      },
+      "target_diagram": {
+        "anchor": [18, 34],
+        "regions": {
+          "left_arm": [56, 41, 6, 23],
+          "right_arm": [31, 41, 6, 34],
+          "left_leg": [48, 57, 7, 24],
+          "right_leg": [38, 57, 7, 24],
+          "center_torso": [43, 46, 7, 14],
+          "rear_center_torso": [0, 0, 0, 0],
+          "left_torso": [50, 37, 5, 19],
+          "right_torso": [38, 43, 5, 13],
+          "head": [44, 38, 5, 8]
+        }
+      }
+    }
+  ],
+  "layouts": [
+    {
+      "viewport": [11, 11, 296, 91],
+      "radar_panel": [120, 117, 72, 67],
+      "target_panel": [240, 122, 53, 49],
+      "weapon_list": [29, 125],
+      "heat_gauge": [198, 183],
+      "movement_gauge": [246, 177],
+      "jump_charge_gauge": [299, 171],
+      "firing_indicator_bank_0": [
+        [36, 92],
+        [36, 88],
+        [33, 84]
+      ],
+      "firing_indicator_bank_1": [
+        [242, 92],
+        [241, 88],
+        [246, 84]
+      ],
+      "unknown_40": [40, 0, 168, 0],
+      "heading_strip_y": 22,
+      "bitmap_placements": [
+        {
+          "bitmap": 0,
+          "at": [11, 11]
+        },
+        {
+          "bitmap": 2,
+          "at": [11, 73]
+        },
+        {
+          "bitmap": 1,
+          "at": [293, 11]
+        },
+        {
+          "bitmap": 3,
+          "at": [277, 73]
+        },
+        {
+          "bitmap": 11,
+          "at": [109, 100]
+        },
+        {
+          "bitmap": 4,
+          "at": [122, 11]
+        }
+      ]
+    },
+    {
+      "viewport": [9, 0, 300, 102],
+      "radar_panel": [120, 117, 72, 67],
+      "target_panel": [240, 122, 53, 49],
+      "weapon_list": [29, 125],
+      "heat_gauge": [198, 183],
+      "movement_gauge": [246, 177],
+      "jump_charge_gauge": [299, 171],
+      "firing_indicator_bank_0": [
+        [15, 92],
+        [15, 88],
+        [12, 84]
+      ],
+      "firing_indicator_bank_1": [
+        [263, 92],
+        [262, 88],
+        [267, 84]
+      ],
+      "unknown_40": [40, 0, 111, 0],
+      "heading_strip_y": 4,
+      "bitmap_placements": [
+        {
+          "bitmap": 5,
+          "at": [9, 0]
+        },
+        {
+          "bitmap": 6,
+          "at": [9, 89]
+        },
+        {
+          "bitmap": 7,
+          "at": [296, 0]
+        },
+        {
+          "bitmap": 8,
+          "at": [296, 89]
+        },
+        {
+          "bitmap": 11,
+          "at": [109, 100]
+        },
+        {
+          "bitmap": 12,
+          "at": [0, 0]
+        }
+      ]
+    },
+    {
+      "viewport": [0, 0, 320, 102],
+      "radar_panel": [120, 117, 72, 67],
+      "target_panel": [23, 131, 53, 49],
+      "weapon_list": [243, 112],
+      "heat_gauge": [198, 183],
+      "movement_gauge": [29, 186],
+      "jump_charge_gauge": [82, 135],
+      "firing_indicator_bank_0": [
+        [0, 92],
+        [0, 88],
+        [0, 84]
+      ],
+      "firing_indicator_bank_1": [
+        [279, 92],
+        [278, 88],
+        [280, 84]
+      ],
+      "unknown_40": [8, 1, 194, 0],
+      "heading_strip_y": 4,
+      "bitmap_placements": [
+        {
+          "bitmap": 9,
+          "at": [0, 0]
+        },
+        {
+          "bitmap": 10,
+          "at": [293, 0]
+        },
+        {
+          "bitmap": 11,
+          "at": [109, 100]
+        },
+        {
+          "bitmap": 12,
+          "at": [0, 0]
+        },
+        {
+          "bitmap": 0,
+          "at": [0, 0]
+        },
+        {
+          "bitmap": 0,
+          "at": [0, 0]
+        }
+      ]
+    }
+  ],
+  "landscape_camera_rows": [
+    {
+      "desert": {
+        "player_fill_palette_a": 15,
+        "unknown_01": 0,
+        "shared_fill_palette_b": 6,
+        "unknown_03": 0,
+        "unknown_04": [2, 0],
+        "map_boundary": 15,
+        "map_retreat_boundary": 10,
+        "unit_markers": [15, 9, 11, 10, 12],
+        "order_tracking_line": 10,
+        "hud_reticle": 2,
+        "unknown_17": 0,
+        "heading_tick_palette_index": 2,
+        "unknown_1a": [2, 0, 12, 0]
+      },
+      "tropical": {
+        "player_fill_palette_a": 9,
+        "unknown_01": 0,
+        "shared_fill_palette_b": 2,
+        "unknown_03": 0,
+        "unknown_04": [11, 0],
+        "map_boundary": 15,
+        "map_retreat_boundary": 10,
+        "unit_markers": [15, 9, 11, 10, 12],
+        "order_tracking_line": 10,
+        "hud_reticle": 11,
+        "unknown_17": 0,
+        "heading_tick_palette_index": 11,
+        "unknown_1a": [11, 0, 12, 0]
+      },
+      "arctic": {
+        "player_fill_palette_a": 11,
+        "unknown_01": 0,
+        "shared_fill_palette_b": 15,
+        "unknown_03": 0,
+        "unknown_04": [9, 0],
+        "map_boundary": 8,
+        "map_retreat_boundary": 10,
+        "unit_markers": [0, 9, 11, 10, 12],
+        "order_tracking_line": 10,
+        "hud_reticle": 2,
+        "unknown_17": 0,
+        "heading_tick_palette_index": 2,
+        "unknown_1a": [2, 0, 12, 0]
+      }
+    },
+    {
+      "desert": {
+        "player_fill_palette_a": 15,
+        "unknown_01": 0,
+        "shared_fill_palette_b": 4,
+        "unknown_03": 0,
+        "unknown_04": [11, 0],
+        "map_boundary": 15,
+        "map_retreat_boundary": 11,
+        "unit_markers": [3, 3, 3, 3, 0],
+        "order_tracking_line": 0,
+        "hud_reticle": 11,
+        "unknown_17": 0,
+        "heading_tick_palette_index": 1,
+        "unknown_1a": [11, 0, 0, 0]
+      },
+      "tropical": {
+        "player_fill_palette_a": 11,
+        "unknown_01": 0,
+        "shared_fill_palette_b": 4,
+        "unknown_03": 0,
+        "unknown_04": [15, 0],
+        "map_boundary": 15,
+        "map_retreat_boundary": 11,
+        "unit_markers": [3, 3, 3, 3, 0],
+        "order_tracking_line": 0,
+        "hud_reticle": 15,
+        "unknown_17": 0,
+        "heading_tick_palette_index": 3,
+        "unknown_1a": [15, 0, 0, 0]
+      },
+      "arctic": {
+        "player_fill_palette_a": 11,
+        "unknown_01": 0,
+        "shared_fill_palette_b": 15,
+        "unknown_03": 0,
+        "unknown_04": [4, 0],
+        "map_boundary": 0,
+        "map_retreat_boundary": 11,
+        "unit_markers": [1, 1, 1, 1, 2],
+        "order_tracking_line": 0,
+        "hud_reticle": 4,
+        "unknown_17": 0,
+        "heading_tick_palette_index": 2,
+        "unknown_1a": [4, 0, 0, 0]
+      }
+    }
+  ],
+  "hud_colour_schemes": [
+    {
+      "inspection_background": 10,
+      "inspection_subsystem_text": 14,
+      "inspection_equipment_text": 14,
+      "inspection_equipment_heading": 9,
+      "inspection_footer": 15,
+      "inspection_mech_name": 4,
+      "order_highlight": 14,
+      "order_reference_highlight": 12,
+      "order_conditions": [8, 4, 14, 2, 2],
+      "radar_player": 0,
+      "radar_friendly": 15,
+      "radar_opposing": 12,
+      "radar_special_target": 11,
+      "radar_background": 2,
+      "radar_terrain_bands": [10, 14, 12, 4],
+      "weapon_ready": 15,
+      "weapon_unavailable": 0,
+      "weapon_reloading": 4,
+      "ammo_text": 10,
+      "selected_mount": 10,
+      "unselected_mount": 9,
+      "forward_ticks": 2,
+      "reverse_ticks": 4,
+      "movement_zero_reference": 14,
+      "selected_movement_tick": 8,
+      "jump_rising": 9,
+      "jump_falling": 7,
+      "jump_charged": 2,
+      "jump_below_threshold": 4,
+      "jump_reference": 4,
+      "heat_rising": 4,
+      "heat_falling": 7,
+      "range_buckets": [1, 9, 14, 4, 0],
+      "unknown_58": [14, 12],
+      "undamaged": 7,
+      "above_half_condition": 14,
+      "damaged": 4,
+      "destroyed": 0
+    },
+    {
+      "inspection_background": 10,
+      "inspection_subsystem_text": 14,
+      "inspection_equipment_text": 14,
+      "inspection_equipment_heading": 10,
+      "inspection_footer": 14,
+      "inspection_mech_name": 12,
+      "order_highlight": 15,
+      "order_reference_highlight": 12,
+      "order_conditions": [0, 4, 11, 15, 15],
+      "radar_player": 0,
+      "radar_friendly": 0,
+      "radar_opposing": 2,
+      "radar_special_target": 3,
+      "radar_background": 11,
+      "radar_terrain_bands": [0, 3, 2, 3],
+      "weapon_ready": 15,
+      "weapon_unavailable": 0,
+      "weapon_reloading": 4,
+      "ammo_text": 11,
+      "selected_mount": 4,
+      "unselected_mount": 9,
+      "forward_ticks": 11,
+      "reverse_ticks": 4,
+      "movement_zero_reference": 15,
+      "selected_movement_tick": 0,
+      "jump_rising": 11,
+      "jump_falling": 0,
+      "jump_charged": 11,
+      "jump_below_threshold": 12,
+      "jump_reference": 4,
+      "heat_rising": 4,
+      "heat_falling": 15,
+      "range_buckets": [11, 11, 15, 4, 0],
+      "unknown_58": [11, 11],
+      "undamaged": 15,
+      "above_half_condition": 11,
+      "damaged": 4,
+      "destroyed": 0
+    }
+  ],
+  "subsystem_lamp_colours": {
+    "subsystem": [
+      [10, 12, 0],
+      [11, 4, 0]
+    ],
+    "engine": [
+      [10, 14, 12, 0],
+      [11, 15, 4, 0]
+    ]
+  }
+}

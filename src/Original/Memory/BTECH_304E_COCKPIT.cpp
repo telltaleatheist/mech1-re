@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "mechwarrior/combat_cockpit.h"
 #include "mechwarrior/native_address.h"
+#include "mechwarrior/ui_layout.h"
 #include <string.h>
 
 uint16_t mechCockpitLayoutIndices[COMBAT_MECH_TEMPLATES];
@@ -53,9 +54,27 @@ static_assert(sizeof(BtechCockpitLayout)==0x6A,"Native cockpit layout stride");
 
 /* Actual executable IO. Authored directories become references to their single
  * string owners; runtime game code never looks them up by DOS address. */
+/* A layout piece (data/ui, src/Ui) copied into `view` at its native offset,
+ * so the reads below keep the exe's addresses. */
+static bool CopyLayoutPiece(uint8_t *view,size_t viewBytes,const char *id,uint16_t offset)
+{
+    const size_t size=MwUiPieceSize(id);
+    return size && offset<=viewBytes && size<=viewBytes-offset && MwUiCopyNative(id,view+offset,size);
+}
 bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
 {
     if (!data || bytes<0x7755) return false;
+    /* The layout's pieces, at their native offsets (304E:1878..23EA). */
+    static uint8_t ui[0x23EA];
+    memset(ui,0,sizeof(ui));
+    if (!CopyLayoutPiece(ui,sizeof(ui),"cockpit.inspection_diagram_origins",0x1878)
+        || !CopyLayoutPiece(ui,sizeof(ui),"cockpit.inspection_diagram_regions",0x1898)
+        || !CopyLayoutPiece(ui,sizeof(ui),"cockpit.target_diagram_anchors",0x1AD8)
+        || !CopyLayoutPiece(ui,sizeof(ui),"cockpit.target_diagram_regions",0x1AF8)
+        || !CopyLayoutPiece(ui,sizeof(ui),"cockpit.layout_by_template",0x1D38)
+        || !CopyLayoutPiece(ui,sizeof(ui),"cockpit.layouts",0x1D48)
+        || !CopyLayoutPiece(ui,sizeof(ui),"cockpit.hud_colour_schemes",0x1F3C)
+        || !CopyLayoutPiece(ui,sizeof(ui),"cockpit.subsystem_lamp_colours",0x23CE)) return false;
     inspectionMechTemplate=NULL;inspectionMechState=NULL; /* Fresh native BSS only. */
     memcpy(inspectionBitmapNames,data+0x034E,sizeof(inspectionBitmapNames));
     for (uint16_t chassis=0;chassis<COMBAT_MECH_TEMPLATES;++chassis)
@@ -63,12 +82,12 @@ bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
         uint16_t offset=MwReadNativeWord(data,0x04A8+chassis*2);
         if (offset<0x034E || offset>=0x038E || !memchr(data+offset,0,0x038E -offset)) return false;
         inspectionDamageBitmapFilenames[chassis]=inspectionBitmapNames+offset-0x034E;
-        inspectionDiagramOrigins[chassis]=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(data,0x1878+chassis*4),(int16_t)MwReadNativeWord(data,0x187A+chassis*4)};
+        inspectionDiagramOrigins[chassis]=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(ui,0x1878+chassis*4),(int16_t)MwReadNativeWord(ui,0x187A+chassis*4)};
         for (uint16_t armor=0;armor<COMBAT_ARMOR_LOCATIONS;++armor)
         {
             uint16_t at=0x1898+chassis*0x48+armor*8;
-            inspectionDiagramRegions[chassis][armor]=BtechScreenRectangle{(int16_t)MwReadNativeWord(data,at),(int16_t)MwReadNativeWord(data,at+2),
-                (int16_t)MwReadNativeWord(data,at+4),(int16_t)MwReadNativeWord(data,at+6)};
+            inspectionDiagramRegions[chassis][armor]=BtechScreenRectangle{(int16_t)MwReadNativeWord(ui,at),(int16_t)MwReadNativeWord(ui,at+2),
+                (int16_t)MwReadNativeWord(ui,at+4),(int16_t)MwReadNativeWord(ui,at+6)};
         }
     }
     memcpy(bodyLocationLabels,data+0x038E,sizeof(bodyLocationLabels));
@@ -131,11 +150,11 @@ bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
     if (zoomLabel[6] || automaticWeaponsLabel[3] || reactorShutdownText[24]) return false;
     memcpy(subsystemLampLabels,data+0x23BE,sizeof(subsystemLampLabels));
     for (uint16_t label=0;label<4;++label) if (subsystemLampLabels[label][1]) return false;
-    for (uint16_t word=0;word<14;++word) subsystemLampColourTables.words[word]=MwReadNativeWord(data,0x23CE +word*2);
+    for (uint16_t word=0;word<14;++word) subsystemLampColourTables.words[word]=MwReadNativeWord(ui,0x23CE +word*2);
     for (uint16_t scheme=0;scheme<COMBAT_HUD_COLOUR_SCHEMES;++scheme)
     {
         BtechHudColourScheme *colours=&hudColourSchemes[scheme];uint16_t base=0x1F3C+scheme*0x64;
-#define HUD_COLOUR(field,offset) colours->field=MwReadNativeWord(data,base+(offset))
+#define HUD_COLOUR(field,offset) colours->field=MwReadNativeWord(ui,base+(offset))
         HUD_COLOUR(inspectionBackground,0x00);HUD_COLOUR(inspectionSubsystemText,0x02);
         HUD_COLOUR(inspectionEquipmentText,0x04);HUD_COLOUR(inspectionEquipmentHeading,0x06);
         HUD_COLOUR(inspectionFooter,0x08);HUD_COLOUR(inspectionMechName,0x0A);
@@ -194,13 +213,13 @@ bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
     }
     for (uint16_t chassis=0;chassis<COMBAT_MECH_TEMPLATES;++chassis)
     {
-        mechCockpitLayoutIndices[chassis]=MwReadNativeWord(data,0x1D38+chassis*2);
-        targetDiagramAnchors[chassis]=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(data,0x1AD8+chassis*4),(int16_t)MwReadNativeWord(data,0x1ADA+chassis*4)};
+        mechCockpitLayoutIndices[chassis]=MwReadNativeWord(ui,0x1D38+chassis*2);
+        targetDiagramAnchors[chassis]=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(ui,0x1AD8+chassis*4),(int16_t)MwReadNativeWord(ui,0x1ADA+chassis*4)};
         for (uint16_t armor=0;armor<COMBAT_ARMOR_LOCATIONS;++armor)
         {
             uint16_t offset=0x1AF8+chassis*0x48+armor*8;
-            targetDiagramRegions[chassis][armor]=BtechScreenRectangle{(int16_t)MwReadNativeWord(data,offset),(int16_t)MwReadNativeWord(data,offset+2),
-                (int16_t)MwReadNativeWord(data,offset+4),(int16_t)MwReadNativeWord(data,offset+6)};
+            targetDiagramRegions[chassis][armor]=BtechScreenRectangle{(int16_t)MwReadNativeWord(ui,offset),(int16_t)MwReadNativeWord(ui,offset+2),
+                (int16_t)MwReadNativeWord(ui,offset+4),(int16_t)MwReadNativeWord(ui,offset+6)};
         }
     }
     for (uint16_t index=0;index<COMBAT_COCKPIT_LAYOUTS;++index)
@@ -210,22 +229,22 @@ bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
         cockpitScreenFilenames[index]=cockpitScreenNames+offset-0x07F4;
         offset=0x1D48+index*0x6A;
         BtechCockpitLayout *layout=&cockpitLayouts[index];
-        layout->viewport=BtechScreenRectangle{(int16_t)MwReadNativeWord(data,offset),(int16_t)MwReadNativeWord(data,offset+2),(int16_t)MwReadNativeWord(data,offset+4),(int16_t)MwReadNativeWord(data,offset+6)};
-        layout->radarPanel=BtechScreenRectangle{(int16_t)MwReadNativeWord(data,offset+8),(int16_t)MwReadNativeWord(data,offset+0x0A),(int16_t)MwReadNativeWord(data,offset+0x0C),(int16_t)MwReadNativeWord(data,offset+0x0E)};
-        layout->targetPanel=BtechScreenRectangle{(int16_t)MwReadNativeWord(data,offset+0x10),(int16_t)MwReadNativeWord(data,offset+0x12),(int16_t)MwReadNativeWord(data,offset+0x14),(int16_t)MwReadNativeWord(data,offset+0x16)};
-        layout->weaponListX=(int16_t)MwReadNativeWord(data,offset+0x18);layout->weaponListY=(int16_t)MwReadNativeWord(data,offset+0x1A);
-        layout->heatGauge=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(data,offset+0x1C),(int16_t)MwReadNativeWord(data,offset+0x1E)};
-        layout->movementGauge=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(data,offset+0x20),(int16_t)MwReadNativeWord(data,offset+0x22)};
-        layout->jumpChargeGauge=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(data,offset+0x24),(int16_t)MwReadNativeWord(data,offset+0x26)};
+        layout->viewport=BtechScreenRectangle{(int16_t)MwReadNativeWord(ui,offset),(int16_t)MwReadNativeWord(ui,offset+2),(int16_t)MwReadNativeWord(ui,offset+4),(int16_t)MwReadNativeWord(ui,offset+6)};
+        layout->radarPanel=BtechScreenRectangle{(int16_t)MwReadNativeWord(ui,offset+8),(int16_t)MwReadNativeWord(ui,offset+0x0A),(int16_t)MwReadNativeWord(ui,offset+0x0C),(int16_t)MwReadNativeWord(ui,offset+0x0E)};
+        layout->targetPanel=BtechScreenRectangle{(int16_t)MwReadNativeWord(ui,offset+0x10),(int16_t)MwReadNativeWord(ui,offset+0x12),(int16_t)MwReadNativeWord(ui,offset+0x14),(int16_t)MwReadNativeWord(ui,offset+0x16)};
+        layout->weaponListX=(int16_t)MwReadNativeWord(ui,offset+0x18);layout->weaponListY=(int16_t)MwReadNativeWord(ui,offset+0x1A);
+        layout->heatGauge=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(ui,offset+0x1C),(int16_t)MwReadNativeWord(ui,offset+0x1E)};
+        layout->movementGauge=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(ui,offset+0x20),(int16_t)MwReadNativeWord(ui,offset+0x22)};
+        layout->jumpChargeGauge=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(ui,offset+0x24),(int16_t)MwReadNativeWord(ui,offset+0x26)};
         for (uint16_t anchor=0;anchor<3;++anchor)
         {
-            layout->firingIndicatorBank0[anchor]=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(data,offset+0x28+anchor*4),(int16_t)MwReadNativeWord(data,offset+0x2A+anchor*4)};
-            layout->firingIndicatorBank1[anchor]=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(data,offset+0x34+anchor*4),(int16_t)MwReadNativeWord(data,offset+0x36+anchor*4)};
+            layout->firingIndicatorBank0[anchor]=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(ui,offset+0x28+anchor*4),(int16_t)MwReadNativeWord(ui,offset+0x2A+anchor*4)};
+            layout->firingIndicatorBank1[anchor]=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(ui,offset+0x34+anchor*4),(int16_t)MwReadNativeWord(ui,offset+0x36+anchor*4)};
         }
-        memcpy(layout->unidentifiedField15,data+offset+0x40,sizeof(layout->unidentifiedField15));
-        layout->headingStripY=(int16_t)MwReadNativeWord(data,offset+0x44);
+        memcpy(layout->unidentifiedField15,ui+offset+0x40,sizeof(layout->unidentifiedField15));
+        layout->headingStripY=(int16_t)MwReadNativeWord(ui,offset+0x44);
         for (uint16_t placement=0;placement<COMBAT_COCKPIT_PLACEMENTS;++placement)
-            layout->bitmapPlacements[placement]=BtechCockpitBitmapPlacement{MwReadNativeWord(data,offset+0x46+placement*6),(int16_t)MwReadNativeWord(data,offset+0x48+placement*6),(int16_t)MwReadNativeWord(data,offset+0x4A+placement*6)};
+            layout->bitmapPlacements[placement]=BtechCockpitBitmapPlacement{MwReadNativeWord(ui,offset+0x46+placement*6),(int16_t)MwReadNativeWord(ui,offset+0x48+placement*6),(int16_t)MwReadNativeWord(ui,offset+0x4A+placement*6)};
     }
     cachedJumpChargeGaugeLevel=MwReadNativeWord(data,0x5338);
     cachedHeatGaugeLevel=MwReadNativeWord(data,0x533A);unidentifiedField25=MwReadNativeWord(data,0x533C);

@@ -1,5 +1,6 @@
 #include "mechwarrior/combat_orders.h"
 #include "mechwarrior/native_address.h"
+#include "mechwarrior/ui_layout.h"
 #include <string.h>
 
 BtechResourceAllocation orderPanelCaptureBuffer;
@@ -27,8 +28,24 @@ BtechPosition3D combatWorldBoundaryCorners[2];
 int16_t unitOrderMapScreenX[COMBAT_MECH_SLOTS],unitOrderMapScreenY[COMBAT_MECH_SLOTS];
 
 /* Actual fresh image/BSS boundary.0040 itself does not blanket-clear state. */
+/* A layout piece (data/ui, src/Ui) copied into `view` at its native offset,
+ * so the reads below keep the exe's addresses. */
+static bool CopyLayoutPiece(uint8_t *view,size_t viewBytes,const char *id,uint16_t offset)
+{
+    const size_t size=MwUiPieceSize(id);
+    return size && offset<=viewBytes && size<=viewBytes-offset && MwUiCopyNative(id,view+offset,size);
+}
 bool BtechImportOrderInitialData(const uint8_t *data,size_t bytes)
 {
+    /* The layout's pieces, at their native offsets (304E:0092..032E). */
+    uint8_t ui[0x032E];
+    memset(ui,0,sizeof(ui));
+    if (!CopyLayoutPiece(ui,sizeof(ui),"orders.selection_first_rows",0x0092)
+        || !CopyLayoutPiece(ui,sizeof(ui),"orders.selection_last_rows",0x0096)
+        || !CopyLayoutPiece(ui,sizeof(ui),"orders.navigation_panel_deltas",0x009A)
+        || !CopyLayoutPiece(ui,sizeof(ui),"orders.navigation_row_deltas",0x00B0)
+        || !CopyLayoutPiece(ui,sizeof(ui),"orders.engine_condition_colours",0x030E)
+        || !CopyLayoutPiece(ui,sizeof(ui),"orders.system_condition_colours",0x031E)) return false;
     if (!data || bytes<0x4F5A || MwReadNativeWord(data,0x4F2E) || MwReadNativeWord(data,0x4F30)) return false;
     memcpy(orderPanelText,data+ORDER_PANEL_TEXT_START,sizeof(orderPanelText));
     /* Authored string directories are decoded once at executable IO. Runtime
@@ -57,8 +74,8 @@ bool BtechImportOrderInitialData(const uint8_t *data,size_t bytes)
     for (uint16_t scheme=0;scheme<2;++scheme)
         for (uint16_t condition=0;condition<4;++condition)
         {
-            orderEngineConditionColours[scheme][condition]=MwReadNativeWord(data,0x030E +scheme*8+condition*2);
-            orderSystemConditionColours[scheme][condition]=MwReadNativeWord(data,0x031E +scheme*8+condition*2);
+            orderEngineConditionColours[scheme][condition]=MwReadNativeWord(ui,0x030E +scheme*8+condition*2);
+            orderSystemConditionColours[scheme][condition]=MwReadNativeWord(ui,0x031E +scheme*8+condition*2);
         }
     /* 4F32 and 4F46 lie past BTECH's file data: zero where the exe reloaded them. */
     memset(mountedWeaponCountsByKind,0,sizeof(mountedWeaponCountsByKind));
@@ -66,13 +83,13 @@ bool BtechImportOrderInitialData(const uint8_t *data,size_t bytes)
     orderPanelCaptureBuffer=BtechResourceAllocation{};
     for (uint16_t selection=0;selection<ORDER_SELECTION_CLASSES;++selection)
     {
-        orderSelectionFirstRows[selection]=(int16_t)MwReadNativeWord(data,0x0092+selection*2);
-        orderSelectionLastRows[selection]=(int16_t)MwReadNativeWord(data,0x0096+selection*2);
+        orderSelectionFirstRows[selection]=(int16_t)MwReadNativeWord(ui,0x0092+selection*2);
+        orderSelectionLastRows[selection]=(int16_t)MwReadNativeWord(ui,0x0096+selection*2);
     }
     for (uint16_t direction=0;direction<ORDER_NAVIGATION_CODES;++direction)
     {
-        orderNavigationPanelDeltas[direction]=(int16_t)MwReadNativeWord(data,0x009A+direction*2);
-        orderNavigationRowDeltas[direction]=(int16_t)MwReadNativeWord(data,0x00B0+direction*2);
+        orderNavigationPanelDeltas[direction]=(int16_t)MwReadNativeWord(ui,0x009A+direction*2);
+        orderNavigationRowDeltas[direction]=(int16_t)MwReadNativeWord(ui,0x00B0+direction*2);
     }
     for (uint16_t scale=0;scale<ORDER_MAP_SCALE_COUNT;++scale) orderMapScaleShifts[scale]=data[0x0088+scale];
     for (uint16_t style=0;style<ORDER_MAP_MARKER_STYLES;++style)

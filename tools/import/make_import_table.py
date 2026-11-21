@@ -3,11 +3,12 @@
 player's exes: each piece's id, exe, SEG:OFF, length and the first 16 hex
 digits of its SHA-256. Prints nothing from the exes but lengths and hashes.
 
-    tools/import/make_import_table.py [--rules] GAME_DIR [BTECH_IMAGE_TOOL]
+    tools/import/make_import_table.py [--rules | --ui] GAME_DIR [BTECH_IMAGE_TOOL]
 
 --rules writes the rule table instead, src/Rules/rule_table.cpp from
 src/Rules/rule_pieces.txt (byte counts only; a fifth column "tuned" keeps a
-row without its hash).
+row without its hash). --ui writes the layout table the same way,
+src/Ui/ui_table.cpp from src/Ui/ui_pieces.txt.
 
 BTECH.EXE is EXEPACKed: its pieces are hashed in the unpacked image, rebased
 into the reference layout and loaded at 0810, which the game's own decoder
@@ -26,6 +27,13 @@ PIECES = os.path.join(ROOT, "src", "Import", "pieces.txt")
 OUT = os.path.join(ROOT, "src", "Import", "import_table.cpp")
 RULE_PIECES = os.path.join(ROOT, "src", "Rules", "rule_pieces.txt")
 RULE_OUT = os.path.join(ROOT, "src", "Rules", "rule_table.cpp")
+# Our own tables (byte counts, "tuned" allowed): flag -> (pieces, output,
+# namespace, piece type, table function, header, what).
+OWN = {
+    "--rules": (RULE_PIECES, RULE_OUT, "rules", "RulePiece", "rule_table", "RuleTable.h", "rule"),
+    "--ui": (os.path.join(ROOT, "src", "Ui", "ui_pieces.txt"), os.path.join(ROOT, "src", "Ui", "ui_table.cpp"),
+             "ui", "UiPiece", "ui_table", "UiTable.h", "layout"),
+}
 LOAD_SEGMENT = 0x0800  # where DOS put the image in the traces (the table's addresses)
 BTECH_EXE = "BTECH.EXE"
 BTECH_LOAD_SEGMENT = 0x0810  # the unpacked image, as src/Import/ImportTable.h
@@ -60,14 +68,16 @@ def btech_image(tool, path):
 
 def main():
     args = sys.argv[1:]
-    rules = bool(args) and args[0] == "--rules"
+    own = OWN.get(args[0]) if args else None
+    flag = args[0] if own else None
+    rules = own is not None
     if rules:
         args = args[1:]
     if len(args) not in (1, 2):
         sys.exit(__doc__)
     game_dir = args[0]
     tool = args[1] if len(args) == 2 else None
-    source, out = (RULE_PIECES, RULE_OUT) if rules else (PIECES, OUT)
+    source, out = (own[0], own[1]) if rules else (PIECES, OUT)
     name = os.path.basename(source)
     images = {}
     rows = []
@@ -82,7 +92,7 @@ def main():
                 sys.exit(f"{name}:{number}: expected id, exe, SEG:OFF and length")
             piece_id, exe, address, length = fields[:4]
             if rules and length == "z":
-                sys.exit(f"{name}:{number}: a rule piece has a byte count")
+                sys.exit(f"{name}:{number}: a {own[6]} piece has a byte count")
             segment, offset = (int(part, 16) for part in address.split(":"))
             if exe not in images:
                 images[exe] = btech_image(tool, find(game_dir, exe)) if exe == BTECH_EXE else image(find(game_dir, exe))
@@ -109,18 +119,19 @@ def main():
                         f'{size}, "{digest}"}},')
             print(f"{piece_id:24} {exe} {segment:04X}:{offset:04X} {size:5} {digest}")
     if rules:
+        space, piece_type, function, header, what = own[2:]
         with open(out, "w", encoding="utf-8", newline="\n") as f:
-            f.write("// Written by tools/import/make_import_table.py --rules from rule_pieces.txt; don't edit.\n"
-                    "#include \"RuleTable.h\"\n\n"
-                    "namespace mw1o::rules {\n\n"
+            f.write(f"// Written by tools/import/make_import_table.py {flag} from {name}; don't edit.\n"
+                    f"#include \"{header}\"\n\n"
+                    f"namespace mw1o::{space} {{\n\n"
                     "namespace {\n"
-                    "constexpr RulePiece kTable[] = {\n")
+                    f"constexpr {piece_type} kTable[] = {{\n")
             f.write("\n".join(rows) + "\n")
             f.write("};\n"
                     "}  // namespace\n\n"
-                    "std::span<const RulePiece> rule_table() { return kTable; }\n\n"
-                    "}  // namespace mw1o::rules\n")
-        print(f"{len(rows)} rule pieces -> {os.path.relpath(out, ROOT)}")
+                    f"std::span<const {piece_type}> {function}() {{ return kTable; }}\n\n"
+                    f"}}  // namespace mw1o::{space}\n")
+        print(f"{len(rows)} {what} pieces -> {os.path.relpath(out, ROOT)}")
         return
     with open(OUT, "w", encoding="utf-8", newline="\n") as f:
         f.write("// Written by tools/import/make_import_table.py from pieces.txt; don't edit.\n"

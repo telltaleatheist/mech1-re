@@ -831,7 +831,9 @@ Shapes:
   of the list, and the encoder rebuilds the native pointers from the
   captions' offsets, as slice 3 did for its pointer tables.
 - **Menu links are record indices within the menu**, or null for the
-  original's FF. **Actions are names** from `MwCampaignContinuation`
+  original's FF. The loader refuses a link that is out of range, or one
+  that leads into a different menu than the exe's structure allows: bad
+  layout data fails at load, never jumps somewhere odd. **Actions are names** from `MwCampaignContinuation`
   (`CAMPAIGN_CONTINUE_MECH_COMPLEX` → `"continue.mech_complex"`); an unknown
   name is refused. The event menus name a caption id instead of a picture.
 - **Keyed axes use the code's enums**, as in slice 3: armour locations, unit
@@ -918,6 +920,30 @@ Each piece goes on its own branch and needs a build, ctest, `ui_test`,
   both tests, `cockpit.json` and `orders.json` (BTECH 1878..2004, the order
   tables and the fonts). These are typed structs with no text, the
   smallest end-to-end proof.
+  Done (15 pieces):
+  - `src/Support/NativePieces.*`: the piece type and `NativeStore` (the
+    copy, word and byte doors and their messages), now shared by the rules
+    and the layout. `RulePiece` is an alias for it, and the rule table is
+    unchanged. `make_import_table.py --ui` writes `ui_table.cpp`.
+  - `src/Ui/`: `Ui.*` reads `cockpit.json` and `orders.json` strictly. Each
+    record is described as a list of fields (bytes, words, signed words,
+    points, rectangles, bitmap placements) with one reader and encoder.
+    `UiHost.cpp` is the door, declared in `mechwarrior/ui_layout.h`
+    (`MwHostPrepareUi`, `MwUiCopyNative`, `MwUiCopyWords`, `MwUiCopyBytes`,
+    `MwUiPieceSize`). The host loads it after the rules.
+  - Templates are in order, as in mechs.json, and each names its cockpit
+    layout by index; an index past the last layout is refused. Armour
+    regions are keyed by COMBAT_ARMOR_*, landscapes by desert, tropical
+    and arctic. The two colour schemes stay in hudColourSchemeIndex order,
+    since the code doesn't name them.
+  - BTECH_304E_COCKPIT, _VIDEO and _ORDERS copy each piece into a local
+    view at its native offset, so their reads keep the exe's addresses.
+  - `ui_test` (the hashes, plus 15 refusals) and `ui_exe_test` (both BTECH
+    revisions). `rules_exe_test` and `ui_exe_test` share
+    `tests/native_exe.h`.
+  - The fonts (`fontAdvanceWidths`, `combatFontHeights`, 304E:2E84) are
+    written from the font files at load, so they are start values and go
+    to 4f with the others.
 - **4b, the caption and panel model** on the smallest screens:
   `options.json` and `events.json`, which bring the caption ids, the line
   references and the menu actions by name.
