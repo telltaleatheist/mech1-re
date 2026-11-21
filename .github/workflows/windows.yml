@@ -1,8 +1,6 @@
 name: windows playable build
+# mw1-original: manual only (Owen's Actions minutes); run before a milestone.
 on:
-  push:
-    branches: [main, develop, 'ci/**']
-  pull_request:
   workflow_dispatch:
   workflow_call:
     inputs:

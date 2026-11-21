@@ -1,8 +1,8 @@
 name: linux playable build
+# mw1-original: on pushes to main, and by hand.
 on:
   push:
-    branches: [main, develop, 'ci/**']
-  pull_request:
+    branches: [main]
   workflow_dispatch:
   workflow_call:
     inputs:
