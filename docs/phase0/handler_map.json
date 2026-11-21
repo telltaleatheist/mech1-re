@@ -4,6 +4,7 @@
   "bar.jsonl",
   "campaign_contract.jsonl",
   "combat_cockpit.jsonl",
+  "combat_retreat.jsonl",
   "company.jsonl",
   "mech_complex.jsonl",
   "options.jsonl",
@@ -173,11 +174,12 @@
     "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
-   "records": 3,
-   "activated": 2,
+   "records": 5,
+   "activated": 4,
    "traces": [
     "campaign_contract",
-    "combat_cockpit"
+    "combat_cockpit",
+    "combat_retreat"
    ]
   },
   {
@@ -302,12 +304,13 @@
     "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 5,
-   "records": 34,
+   "records": 37,
    "activated": 4,
    "traces": [
     "bar",
     "campaign_contract",
     "combat_cockpit",
+    "combat_retreat",
     "company",
     "mech_complex",
     "options",
@@ -574,12 +577,13 @@
     "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 8,
-   "records": 32,
+   "records": 35,
    "activated": 3,
    "traces": [
     "bar",
     "campaign_contract",
     "combat_cockpit",
+    "combat_retreat",
     "company",
     "mech_complex",
     "options",
@@ -1290,12 +1294,13 @@
     "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 2,
-   "records": 19,
+   "records": 20,
    "activated": 1,
    "traces": [
     "bar",
     "campaign_contract",
     "combat_cockpit",
+    "combat_retreat",
     "company",
     "mech_complex",
     "options",
@@ -1555,12 +1560,13 @@
     "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 2,
-   "records": 18,
+   "records": 19,
    "activated": 1,
    "traces": [
     "bar",
     "campaign_contract",
     "combat_cockpit",
+    "combat_retreat",
     "company",
     "mech_complex",
     "options",
@@ -2044,12 +2050,13 @@
     "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 2,
-   "records": 18,
+   "records": 19,
    "activated": 1,
    "traces": [
     "bar",
     "campaign_contract",
     "combat_cockpit",
+    "combat_retreat",
     "company",
     "mech_complex",
     "options",
@@ -2247,12 +2254,13 @@
     "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 3,
-   "records": 20,
+   "records": 21,
    "activated": 2,
    "traces": [
     "bar",
     "campaign_contract",
     "combat_cockpit",
+    "combat_retreat",
     "company",
     "mech_complex",
     "options",

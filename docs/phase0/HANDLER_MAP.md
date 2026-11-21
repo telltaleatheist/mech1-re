@@ -8,7 +8,7 @@ callback carries them. Names and notes are the port's
 
 113 offsets: 105 dispatched by the menu loop, 59 seen on a traced menu, 44 activated by a trace.
 
-Traces: `bar.jsonl`, `campaign_contract.jsonl`, `combat_cockpit.jsonl`, `company.jsonl`, `mech_complex.jsonl`, `options.jsonl`, `travel.jsonl`.
+Traces: `bar.jsonl`, `campaign_contract.jsonl`, `combat_cockpit.jsonl`, `combat_retreat.jsonl`, `company.jsonl`, `mech_complex.jsonl`, `options.jsonl`, `travel.jsonl`.
 
 | Offset | Port name | Port handler | Used in | Screens | Activated | Note |
 |---|---|---|---|---:|---:|---|
@@ -18,7 +18,7 @@ Traces: `bar.jsonl`, `campaign_contract.jsonl`, `combat_cockpit.jsonl`, `company
 | 081B:181A | CONTINUE_INITIALIZE_COMPANY | `MwStartNewCampaign` | MW_MAIN_081B_EVENT_UI.cpp, MW_MAIN_081B_STARTUP.cpp, MW_MAIN_081B_UI.cpp |  |  | The company setup (new campaigns arrive here directly). |
 | 081B:1909 | CONTINUE_PLANET_HUB | `MwEnterCampaignPlanetHub` | MW_MAIN_081B_CONTRACTS.cpp, MW_MAIN_081B_PLANET.cpp, MW_MAIN_081B_SAVE.cpp, MW_MAIN_081B_STARTUP.cpp, MW_MAIN_081B_TRAVEL.cpp, MW_MAIN_081B_UI.cpp | 9 | 4 | Enter hub and process arrival/events. |
 | 081B:1A0D | CONTINUE_HUB_MENU | `MwEnterCampaignPlanetHub` | MW_MAIN_081B_PLANET.cpp, MW_MAIN_081B_STARTUP.cpp, MW_MAIN_081B_UI.cpp |  |  | Hub menu after event dispatch; no re-entry work. |
-| 081B:1B55 | CONTINUE_ATTEMPT_DEPLOYMENT | `MwAttemptContractDeployment` | MW_MAIN_081B_UI.cpp | 1 | 2 |  |
+| 081B:1B55 | CONTINUE_ATTEMPT_DEPLOYMENT | `MwAttemptContractDeployment` | MW_MAIN_081B_UI.cpp | 1 | 4 |  |
 | 081B:1B5A | CONTINUE_CHECK_DEPLOYMENT_READINESS | `MwCheckAssignedMechDeploymentReadiness` | MW_MAIN_081B_UI.cpp |  |  |  |
 | 081B:1B87 | CONTINUE_CANCEL_CONTRACT | `MwCancelContractAfterDeploymentRefusalsContinuation` | MW_MAIN_081B_CONTRACTS.cpp, MW_MAIN_081B_UI.cpp |  |  | Deployment-refusal cancellation. |
 | 081B:1C3E | CONTINUE_DEPLOYMENT | `MwResolveDeploymentOrExportCombatExchangeContinuation` | MW_MAIN_081B_CONTRACTS.cpp, MW_MAIN_081B_UI.cpp |  |  | Resolve deployment or export combat exchange. |

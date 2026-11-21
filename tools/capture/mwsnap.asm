@@ -51,9 +51,12 @@
 ; at the campaign's clock read (int 1Ah AH=00 returning to 081B:0C0E, each
 ; time MW_MAIN starts) MWSNAP checks the bytes at 081B:16A4 (the protection,
 ; after the launch music) and 081B:181A (the company setup) and writes a near
-; jump from the one to the other. Only the 137,871-byte MW_MAIN.EXE is
-; patched; on other bytes, or when the clock read never came, MWSNAP writes
-; NOPATCH.TXT.
+; jump from the one to the other. The patch is gated on those bytes (they
+; are the 137,871-byte MW_MAIN.EXE's), not on the file's size; on other
+; bytes, or when the clock read never came, MWSNAP writes NOPATCH.TXT. The
+; skipped range holds two MwRandomUpTo draws (calls to 0C17), so the
+; campaign's random words differ from an unpatched original's from there on;
+; the rebuild drops the same two.
 ;
 ; A capture: 'MW1S' (4) version 2 (1) video mode (1) CRTC start (2), the
 ; attribute registers 0-15 (16), the overscan colour (attribute register 11h,

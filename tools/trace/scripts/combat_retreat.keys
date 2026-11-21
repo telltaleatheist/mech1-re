@@ -1,0 +1,30 @@
+# combat_cockpit's keys from the start the campaign makes without the copy
+# protection (no random: pin): a different contract and battle, which does
+# not end by itself, so it ends with a retreat (the question, then Y) and the
+# campaign takes the retreat's result.
+Return Return Down Down Return Return Left Return @snap:accepted Return @snap:deploy
+Return
+ticks:0 @snap:briefing               # the lance map, waiting for a key
+Return ticks:10 @snap:cockpit
+make:Up ticks:40 break:Up ticks:20 @snap:walking
+make:Left ticks:15 break:Left ticks:1 @snap:turned
+Space ticks:1 @snap:fired
+2 ticks:1 Space ticks:1 @snap:fired2
+Tab ticks:40 @snap:cycle
+Tab ticks:1 W ticks:1 @snap:group
+W ticks:1 T ticks:1 R ticks:1 Z ticks:1 @snap:hud       # T: heading radar; empty slots read a null torso
+Z ticks:1 Z ticks:1 T ticks:1 Return ticks:1 @snap:target
+P ticks:5 @snap:paused
+Space ticks:5 @snap:unpaused
+Escape ticks:5 @snap:retreat_ask
+N ticks:5 @snap:retreat_no
+J ticks:20 @snap:jump
+ticks:60 @snap:landed                # a hard landing: the mech falls
+D ticks:5 @snap:inspection
+Space ticks:5 @snap:inspection_back
+C ticks:5 @snap:orders               # no lancemates: the empty panel's null control
+Down ticks:2 Return ticks:2 @snap:orders_command
+Space ticks:5 @snap:orders_back
+Escape ticks:5 Y ticks:5               # retreat: the battle ends
+idle:0 @snap:results                 # the campaign resumes with the result
+Return @snap:after

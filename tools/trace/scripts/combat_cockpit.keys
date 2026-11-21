@@ -1,6 +1,9 @@
 # A contract's battle on the port with the 1990 BTECH: walk, turn, fire,
 # the HUD keys, pause and the retreat dialog, a jump, the inspection and
 # order screens, then the battle ends on its own and the campaign resumes.
+# random: the words the original's copy protection left (its screen's), so
+# the campaign starts as it did with it and this battle ends on its own.
+random:178ab0ad
 Return Return Down Down Return Return Left Return @snap:accepted Return @snap:deploy
 Return
 ticks:0 @snap:briefing               # the lance map, waiting for a key
@@ -24,6 +27,5 @@ Space ticks:5 @snap:inspection_back
 C ticks:5 @snap:orders               # no lancemates: the empty panel's null control
 Down ticks:2 Return ticks:2 @snap:orders_command
 Space ticks:5 @snap:orders_back
-Escape ticks:5 Y ticks:5               # retreat: the battle ends
-idle:0 @snap:results                 # the campaign resumes with the result
+idle:0 @snap:results                 # the battle is decided and ends by itself; the campaign
 Return @snap:after
