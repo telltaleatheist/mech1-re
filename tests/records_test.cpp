@@ -2,6 +2,7 @@
 // files). Pieces -> pilots/planets/missions.json -> load -> rebuilt storage
 // laid out as the exe lays it out; the strict reader and the rebuild refuse
 // what doesn't fit.
+#include "../src/Import/Events.h"
 #include "../src/Import/Records.h"
 
 #include <algorithm>
@@ -238,6 +239,94 @@ void the_event_text_bank() {
     refused([&] { load_event_text(dir / "bad"); }, "has no pages", "a record without pages");
 }
 
+// A made-up event region (1090:5CF4..655C). Captions fill 5CF4..5E1C; every
+// list entry but the last names a record; records A (6121), B (6140), the
+// fixed event C (6353) and D (6200), which only A's choice reaches.
+std::string made_up_event_region() {
+    std::string r(0x655C - 0x5CF4, '\0');
+    const auto put = [&](std::uint16_t at, const std::string& bytes) { r.replace(at - 0x5CF4, bytes.size(), bytes); };
+    put(0x5CF4, std::string("\x05Yes\0", 5));
+    put(0x5CF9, std::string("\x06", 1) + std::string(0x5E1C - 0x5CF9 - 2, 'n') + std::string("\0", 1));
+    put(0x6067, word(0x6073) + word(0) + word(0x6075) + word(0) + word(0) + word(0));
+    for (std::uint16_t at = 0x6073; at < 0x611F; at += 2) put(at, word(at % 4 == 3 ? 0x6121 : 0x6140));
+    put(0x611F, word(0));
+    put(0x6121, std::string("\x01\x00" "\x00\x32" "\x04\x45\x23\x01\x00" "\x09\x02", 11) + word(0x5CF4) + word(0x5CF9) +
+                    word(0x6200) + word(0) + std::string("\xFF", 1));
+    put(0x6140, std::string("\x02\x03" "\x01\x01\x02\x03" "\x02\x04\x05\x06\x07\x08\x09" "\x04\x02\xFD" "\x08\xFE" "\xFF", 20));
+    put(0x6200, std::string("\x04\x00" "\x02\xFF" "\x00" "\xFF", 6));
+    put(0x6353, std::string("\x03\x01\xFF", 3));
+    return r;
+}
+
+PieceMap made_up_events() {
+    PieceMap p;
+    p["events.data"] = {0x5CF4, made_up_event_region()};
+    p["events.planet_pools"] = {0x8FDA, std::string("\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19", 25)};
+    return p;
+}
+
+void the_event_script() {
+    const fs::path dir = kDir / "script";
+    write(story_dir(dir) / "events.json", events_json(made_up_events()));
+    const Events e = load_events(dir);
+    check(e.captions.size() == 2 && e.captions[0].colour == 5 && e.captions[0].address == 0x5CF4 &&
+              e.captions[1].address == 0x5CF9 && e.captions[1].text == "event.caption.2",
+          "captions keep colour, address and a text id");
+    check(e.events.size() == 4 && e.events[0].id == 1 && e.events[1].id == 2 && e.events[2].id == 3 && e.events[3].id == 4,
+          "events in the order the original importer meets them (entries, fixed event, branches)");
+    check(e.list_entries.size() == 87 && e.list_entries[0] == 1 && e.list_entries[1] == 2 && !e.list_entries[86],
+          "list entries name events; the last is none");
+    check(e.lists == std::vector<std::optional<int>>{1, std::nullopt, 2, std::nullopt, std::nullopt, std::nullopt},
+          "lists name their first entry");
+    check(e.fixed_event == 3, "the fixed event");
+    const auto& a = e.events[0].script;
+    check(a.size() == 3 && !a[0].action && a[0].opcode == 0 && a[0].random_threshold == 0x32 && a[1].action &&
+              a[1].opcode == 4 && a[1].cash_delta == 0x00012345 && !a[2].action && a[2].opcode == 9 &&
+              a[2].choices.size() == 2 && a[2].choices[0].caption == 1 && a[2].choices[0].branch == 4 &&
+              a[2].choices[1].caption == 2 && !a[2].choices[1].branch,
+          "a script alternates condition and action, with threshold, cash and choices");
+    const auto& b = e.events[1].script;
+    check(b.size() == 4 && b[0].date.month == 1 && b[0].date.year == 3 && b[1].window_start.month == 4 &&
+              b[1].window_end.year == 9 && b[2].house_selector == 2 && b[2].threshold_half == -3 &&
+              b[3].planet_selector == -2 && e.events[1].class_code == 3,
+          "dates, windows, house standing and signed selectors");
+    check(e.events[2].script.empty() && e.events[3].script[0].planet_selector == -1, "an empty script, a planet condition");
+    check(e.planet_pools.size() == 6 && e.planet_pools[0].size() == 8 && e.planet_pools[0][7] == 8 &&
+              e.planet_pools[5] == std::vector<std::uint8_t>{0x17, 0x18, 0x19},
+          "the six planet pools keep their lengths");
+
+    write(story_dir(kDir / "noevents") / "events.json", events_json({}));
+    check(load_events(kDir / "noevents").events.empty(), "a table without the event pieces writes an empty file");
+
+    PieceMap broken = made_up_events();
+    broken["events.data"].bytes[0x6200 - 0x5CF4 + 2] = 0x0A;
+    refused([&] { events_json(broken); }, "opcode is past 9", "an opcode past 9");
+    broken = made_up_events();
+    broken["events.data"].bytes[0x6121 - 0x5CF4 + 10] = 0x04;
+    refused([&] { events_json(broken); }, "neither 2 nor 3 choices", "four choices");
+    broken = made_up_events();
+    broken["events.data"].bytes.replace(0x612C - 0x5CF4, 2, word(0x5CF5));
+    refused([&] { events_json(broken); }, "names no caption", "a choice naming no caption");
+    broken = made_up_events();
+    broken["events.data"].bytes.replace(0x6075 - 0x5CF4, 2, word(0));
+    refused([&] { events_json(broken); }, "don't end with their one zero", "a zero list entry before the end");
+    broken = made_up_events();
+    broken.erase("events.planet_pools");
+    refused([&] { events_json(broken); }, "only one of", "the pools without the script");
+
+    const auto file = story_dir(dir / "bad") / "events.json";
+    const std::string head = "{\"captions\": [{\"colour\": 1, \"address\": 1, \"text\": \"c\"}], \"events\": [{\"id\": 1, \"class\": 0, \"script\": ";
+    const std::string tail = "}], \"list_entries\": [1, null], \"lists\": [1], \"fixed_event\": 1, \"planet_pools\": [[1]]}";
+    write(file, head + "[{\"kind\": \"action\", \"opcode\": 0}]" + tail);
+    refused([&] { load_events(dir / "bad"); }, "alternate condition and action", "a script starting with an action");
+    write(file, head + "[{\"kind\": \"condition\", \"opcode\": 9, \"choices\": [{\"caption\": 1, \"branch\": 2}, {\"caption\": 1, \"branch\": null}]}]" + tail);
+    refused([&] { load_events(dir / "bad"); }, "branch 2 names nothing", "a branch naming no event");
+    write(file, head + "[{\"kind\": \"condition\", \"opcode\": 9, \"choices\": [{\"caption\": 2, \"branch\": 1}, {\"caption\": 1, \"branch\": null}]}]" + tail);
+    refused([&] { load_events(dir / "bad"); }, "names no caption", "a choice naming no caption");
+    write(file, head + "[{\"kind\": \"condition\", \"opcode\": 2, \"planet_selector\": -129}]" + tail);
+    refused([&] { load_events(dir / "bad"); }, "from -128 to 127", "a signed byte out of range");
+}
+
 }  // namespace
 
 int main() {
@@ -247,6 +336,7 @@ int main() {
         the_storage_is_rebuilt_as_the_exe_lays_it_out();
         what_doesnt_fit_is_refused();
         the_event_text_bank();
+        the_event_script();
     } catch (const std::exception& e) {
         check(false, std::string("unexpected: ") + e.what());
     }

@@ -1,5 +1,6 @@
 #include "Story.h"
 
+#include "Events.h"
 #include "Records.h"
 
 #include <cstdio>
@@ -25,7 +26,8 @@ namespace {
 fs::path manifest_path(const fs::path& write_dir) { return story_dir(write_dir) / "import.json"; }
 fs::path text_path(const fs::path& write_dir) { return story_dir(write_dir) / "text.json"; }
 // The typed records (Records.h), beside the text.
-constexpr const char* kRecordFiles[] = {"pilots.json", "planets.json", "missions.json", "event_text.json"};
+constexpr const char* kRecordFiles[] = {"pilots.json", "planets.json", "missions.json", "event_text.json",
+                                        "events.json"};
 
 std::vector<std::uint8_t> read_file(const fs::path& path) {
     std::ifstream in(path, std::ios::binary);
@@ -180,6 +182,7 @@ void import_story(const fs::path& game_dir, const fs::path& write_dir, std::span
     write_file(story_dir(write_dir) / kRecordFiles[1], planets_json(pieces));
     write_file(story_dir(write_dir) / kRecordFiles[2], missions_json(pieces));
     write_file(story_dir(write_dir) / kRecordFiles[3], event_text_json(pieces));
+    write_file(story_dir(write_dir) / kRecordFiles[4], events_json(pieces));
     std::string sources;
     for (const auto& [name, exe] : exes) {
         if (!sources.empty()) sources += ", ";

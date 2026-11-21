@@ -1074,3 +1074,37 @@ event_text.117.2.header              MW_MAIN.EXE 1AA5:DFEB 3
 event_text.117.2.text                MW_MAIN.EXE 1AA5:DFEE z
 event_text.118.1.header              MW_MAIN.EXE 1AA5:E050 3
 event_text.118.1.text                MW_MAIN.EXE 1AA5:E053 z
+
+# The event script (1090:5CF4..655C: the captions, the choice menus, the
+# dispatch tables, the lists and the records), decoded into story/events.json,
+# the captions' texts, and the story-planet pools (1090:8FDA..8FF3).
+events.data                    MW_MAIN.EXE 1090:5CF4 2152
+events.planet_pools            MW_MAIN.EXE 1090:8FDA 25
+event.caption.1                MW_MAIN.EXE 1090:5CF5 z
+event.caption.2                MW_MAIN.EXE 1090:5CFC z
+event.caption.3                MW_MAIN.EXE 1090:5D01 z
+event.caption.4                MW_MAIN.EXE 1090:5D11 z
+event.caption.5                MW_MAIN.EXE 1090:5D1C z
+event.caption.6                MW_MAIN.EXE 1090:5D22 z
+event.caption.7                MW_MAIN.EXE 1090:5D28 z
+event.caption.8                MW_MAIN.EXE 1090:5D3A z
+event.caption.9                MW_MAIN.EXE 1090:5D4F z
+event.caption.10               MW_MAIN.EXE 1090:5D5B z
+event.caption.11               MW_MAIN.EXE 1090:5D66 z
+event.caption.12               MW_MAIN.EXE 1090:5D73 z
+event.caption.13               MW_MAIN.EXE 1090:5D82 z
+event.caption.14               MW_MAIN.EXE 1090:5D87 z
+event.caption.15               MW_MAIN.EXE 1090:5D8B z
+event.caption.16               MW_MAIN.EXE 1090:5D97 z
+event.caption.17               MW_MAIN.EXE 1090:5D9D z
+event.caption.18               MW_MAIN.EXE 1090:5DA4 z
+event.caption.19               MW_MAIN.EXE 1090:5DB4 z
+event.caption.20               MW_MAIN.EXE 1090:5DBA z
+event.caption.21               MW_MAIN.EXE 1090:5DC3 z
+event.caption.22               MW_MAIN.EXE 1090:5DCE z
+event.caption.23               MW_MAIN.EXE 1090:5DD4 z
+event.caption.24               MW_MAIN.EXE 1090:5DE0 z
+event.caption.25               MW_MAIN.EXE 1090:5DF2 z
+event.caption.26               MW_MAIN.EXE 1090:5E04 z
+event.caption.27               MW_MAIN.EXE 1090:5E0B z
+event.caption.28               MW_MAIN.EXE 1090:5E13 z

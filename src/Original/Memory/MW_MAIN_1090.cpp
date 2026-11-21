@@ -958,12 +958,14 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     memcpy(&textInputLastPhase,data+0x03D8,sizeof(textInputLastPhase));
     textInputLength=MwReadNativeWord(data,0x03D6);
     ImportInitialWords(data,0x0B46,(uint16_t *)campaignEventPlanetSelectors,sizeof(campaignEventPlanetSelectors)/sizeof(uint16_t));
-    memcpy(eventPlanetChoicePool0,data+0x8FDA,sizeof(eventPlanetChoicePool0));
-    memcpy(eventPlanetChoicePool1,data+0x8FE2,sizeof(eventPlanetChoicePool1));
-    memcpy(eventPlanetChoicePool2,data+0x8FE5,sizeof(eventPlanetChoicePool2));
-    memcpy(eventPlanetChoicePool3,data+0x8FE9,sizeof(eventPlanetChoicePool3));
-    memcpy(eventPlanetChoicePool4,data+0x8FEC,sizeof(eventPlanetChoicePool4));
-    memcpy(eventPlanetChoicePool5,data+0x8FF0,sizeof(eventPlanetChoicePool5));
+    {
+        /* The story-planet pools from story/events.json (1090:8FDA..8FF3). */
+        uint8_t *const pools[6]={eventPlanetChoicePool0,eventPlanetChoicePool1,eventPlanetChoicePool2,
+            eventPlanetChoicePool3,eventPlanetChoicePool4,eventPlanetChoicePool5};
+        const size_t sizes[6]={sizeof(eventPlanetChoicePool0),sizeof(eventPlanetChoicePool1),sizeof(eventPlanetChoicePool2),
+            sizeof(eventPlanetChoicePool3),sizeof(eventPlanetChoicePool4),sizeof(eventPlanetChoicePool5)};
+        if (!MwStoryCopyPlanetPools(pools,sizes,6)) return false;
+    }
     eventDirectoryIndex=MwReadNativeWord(data,0x0AB8);
     campaignEventClass=MwReadNativeWord(data,0x5E62);
     currentEventId=MwReadNativeWord(data,0x5E64);

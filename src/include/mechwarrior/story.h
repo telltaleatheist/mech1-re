@@ -25,4 +25,12 @@ bool MwStoryBuildMissions(uint8_t *storage, size_t capacity, uint16_t base, uint
 /* The event text bank from story/event_text.json; directory[i] is 0 where no
  * record has entry i. */
 bool MwStoryBuildEventText(uint8_t *storage, size_t capacity, uint16_t base, uint16_t *directory, size_t directoryCount);
+/* The event script from story/events.json (src/Import/Events.h) into the
+ * game's typed owners: eventChoiceCaptions, campaignEventRecords and
+ * campaignEventCommands (filled in the original importer's order),
+ * eventListEntries, eventLists and fixedCampaignEvent. captionOffsets[i] gets
+ * caption i's original address, which the choice menus are matched by. */
+bool MwStoryBuildCampaignEvents(uint16_t *captionOffsets, size_t captionCount);
+/* The story-planet pools, each copied whole into pools[i] (sizes[i] bytes). */
+bool MwStoryCopyPlanetPools(uint8_t *const *pools, const size_t *sizes, size_t poolCount);
 #endif

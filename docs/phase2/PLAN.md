@@ -186,6 +186,15 @@ DS:0008 finds the data segment, then each piece must still match its hash.
    exe's byte for byte. The game rebuilds the bank and its directory at start
    and on every EXEC (which restores the planet names events write into it)
    instead of reading the exe.
+   2e, the script: `story/events.json` (`src/Import/Events.*`): the 28
+   choice captions (colour, original address, text id), the 117 events in
+   the order the original importer meets them (id, class, a script of 203
+   commands alternating condition and action with named operands, choices
+   naming captions and events), the list entries, the six lists, the fixed
+   event and the six story-planet pools. The importer decodes 1090:5CF4..655C
+   as the game did; the game fills its typed owners from the file. The choice
+   menus are layout (slice 4) and still come from the exe; they find their
+   captions by the original address the file keeps.
 3. **Rules and the new campaign** into `data/rules/`. Traces equal (same
    numbers). The importer's piece hashes check them against the exe.
 4. **Layout** into `data/ui/`. Traces equal.
