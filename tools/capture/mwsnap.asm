@@ -117,9 +117,6 @@ feed_polls  dw 0
 feed_wait   dw POLLS
 c_polls     dw 0
 c_wait      dw 0
-wait_on     db 0
-wait_start  dw 0                        ; the BIOS tick when the wait began
-wait_n      dw 0
 game_ds     dw 0                        ; the campaign's, at its last int 16h call
 btech_base  dw 0
 btech_int9  dd 0                        ; BTECH's own int 9 handler
@@ -136,6 +133,10 @@ saved_ss    dw 0
 saved_sp    dw 0
 ret_ip      dw 0
 ret_cs      dw 0
+; (after the fields tools/trace/state.py reads at fixed offsets)
+wait_on     db 0
+wait_start  dw 0                        ; the BIOS tick when the wait began
+wait_n      dw 0
 fname       db 'MW1S0000.BIN', 0
 end_name    db 'MWSNAPEN.TXT', 0
 nopatch     db 'NOPATCH.TXT', 0
