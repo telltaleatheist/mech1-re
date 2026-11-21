@@ -139,7 +139,15 @@ DS:0008 finds the data segment, then each piece must still match its hash.
    table into it).
 2. **The story file.** `Original/Memory` becomes the importer: it reads the
    exes once, writes `story/`, and the game's importers read `story/`
-   instead. Traces equal (same content, new route).
+   instead. Traces equal (same content, new route). In pieces, each on its
+   own branch: 2a the machinery and the intro's 14 captions, 2b the rest of
+   the narrative text, 2c names, 2d `pilots.json` and `planets.json`, 2e
+   `events.json` and the 1AA5 text bank, 2f `music.json`. 2a: the JSON reader
+   and writer and SHA-256 (`src/Support`, from Inception's), the import table
+   (`src/Import/pieces.txt` → `tools/import/make_import_table.py` →
+   `import_table.cpp`), `story/text.json` and `story/import.json`, re-import
+   when missing or outdated; the captions read from the story file, their
+   positions still from the exe. Unit tests `json_test`, `story_test` (ctest).
 3. **Rules and the new campaign** into `data/rules/`. Traces equal (same
    numbers). The importer's piece hashes check them against the exe.
 4. **Layout** into `data/ui/`. Traces equal.
