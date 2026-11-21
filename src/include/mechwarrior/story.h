@@ -33,4 +33,7 @@ bool MwStoryBuildEventText(uint8_t *storage, size_t capacity, uint16_t base, uin
 bool MwStoryBuildCampaignEvents(uint16_t *captionOffsets, size_t captionCount);
 /* The story-planet pools, each copied whole into pools[i] (sizes[i] bytes). */
 bool MwStoryCopyPlanetPools(uint8_t *const *pools, const size_t *sizes, size_t poolCount);
+/* BTECH's AdLib default instruments from story/music.json (src/Import/Music.h):
+ * rowCount rows of rowBytes, each the 13 operator parameters and then zeros. */
+bool MwStoryCopyAdlibInstruments(uint8_t *rows, size_t rowCount, size_t rowBytes);
 #endif

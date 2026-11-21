@@ -6,6 +6,7 @@
 #include <cstring>
 
 #include "Events.h"
+#include "Music.h"
 #include "Records.h"
 #include "mechwarrior/campaign_events.h"
 #include "Story.h"
@@ -17,6 +18,7 @@ mw1o::import::Planets g_planets;
 mw1o::import::Missions g_missions;
 std::vector<mw1o::import::EventTextRecord> g_event_text;
 mw1o::import::Events g_events;
+std::vector<mw1o::import::AdlibInstrument> g_music;
 
 // Runs a rebuild; an error goes to stderr and returns false.
 template <typename Build>
@@ -44,6 +46,7 @@ bool MwHostPrepareStory(const char *gameDirectory, const char *writeDirectory)
         g_missions = mw1o::import::load_missions(writeDirectory);
         g_event_text = mw1o::import::load_event_text(writeDirectory);
         g_events = mw1o::import::load_events(writeDirectory);
+        g_music = mw1o::import::load_music(writeDirectory);
         return true;
     } catch (const std::exception &e) {
         std::fprintf(stderr, "MechWarrior: %s\n", e.what());
@@ -201,6 +204,20 @@ bool MwStoryCopyPlanetPools(uint8_t *const *pools, const size_t *sizes, size_t p
             need(g_events.planet_pools[i].size() == sizes[i], "planet pool " + std::to_string(i + 1) + " has " +
                  std::to_string(g_events.planet_pools[i].size()) + " numbers, the game " + std::to_string(sizes[i]));
             std::memcpy(pools[i], g_events.planet_pools[i].data(), sizes[i]);
+        }
+    });
+}
+
+bool MwStoryCopyAdlibInstruments(uint8_t *rows, size_t rowCount, size_t rowBytes)
+{
+    return rebuild([&] {
+        need(g_music.size() == rowCount,
+             "has " + std::to_string(g_music.size()) + " AdLib instruments, the game " + std::to_string(rowCount));
+        need(rowBytes >= mw1o::import::kAdlibParameters, "an AdLib instrument row is too short");
+        for (size_t i = 0; i < rowCount; ++i) {
+            uint8_t *row = rows + i * rowBytes;
+            std::memset(row, 0, rowBytes);
+            std::memcpy(row, g_music[i].data(), mw1o::import::kAdlibParameters);
         }
     });
 }

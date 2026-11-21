@@ -36,7 +36,9 @@ files stay in the install and are read in place):
   (names and descriptions), the commander's default name (both exes), mech
   display names as MW1 spells them (campaign and combat), House contract
   names and refusals;
-- MW1's music sequence table and the AdLib default instruments (sound design).
+- BTECH's AdLib default instruments (sound design). The rest of MW1's music
+  (the songs, the combat sequence table filled from MUS:INF, MW_MAIN's
+  instruments) is in the game's data files, not the exes.
 
 **Ours, UI words.** Every menu and panel label, heading, caption, cockpit
 lamp and inspection label, the retreat question, ZOOM/AUTO/PAUSED, month
@@ -106,7 +108,7 @@ it meant in the exe; each array's length is checked at load.
     story/pilots.json      pilot definitions: portrait id, starting skills, text ids
     story/planets.json     planet records: house, tier, position, text ids
     story/missions.json    mission descriptions: scenario, text id; the categories
-    story/music.json       the sequence table and the AdLib instruments
+    story/music.json       BTECH's AdLib default instruments
 
 `import.json` is written last, so an interrupted import counts as missing.
 The game re-imports when it is missing, when `import_version` differs, or
@@ -195,6 +197,14 @@ DS:0008 finds the data segment, then each piece must still match its hash.
    as the game did; the game fills its typed owners from the file. The choice
    menus are layout (slice 4) and still come from the exe; they find their
    captions by the original address the file keeps.
+   2f, `story/music.json` (`src/Import/Music.*`): BTECH's eight AdLib default
+   instruments (304E:2BA0), each the 13 operator parameters by name, in
+   BTECH's order. The 14th byte of each row is never read and is zero; the
+   importer refuses a row where it isn't, so the rebuild stays exact. The
+   combat loader fills `combatAdlibDefaultInstruments` from the file. BTECH's
+   sequence table (304E:7D8A) is uninitialised data filled from MUS:INF, and
+   MW_MAIN's instruments (28BE:064E) are zero in the exe, so neither is
+   imported.
 3. **Rules and the new campaign** into `data/rules/`. Traces equal (same
    numbers). The importer's piece hashes check them against the exe.
 4. **Layout** into `data/ui/`. Traces equal.

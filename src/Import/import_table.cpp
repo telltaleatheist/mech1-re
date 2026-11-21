@@ -1066,6 +1066,7 @@ constexpr ImportPiece kTable[] = {
     {ImportPiece::Kind::String, "event.caption.26", "MW_MAIN.EXE", 0x1090, 0x5E04, 6, "d643dbb9939d724f"},
     {ImportPiece::Kind::String, "event.caption.27", "MW_MAIN.EXE", 0x1090, 0x5E0B, 7, "fcb392b83cca0185"},
     {ImportPiece::Kind::String, "event.caption.28", "MW_MAIN.EXE", 0x1090, 0x5E13, 9, "8ccb48c80eadc0f6"},
+    {ImportPiece::Kind::Bytes, "music.adlib_instruments", "BTECH.EXE", 0x304E, 0x2BA0, 112, "62b08512d194e07d"},
 };
 }  // namespace
 

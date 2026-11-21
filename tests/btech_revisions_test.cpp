@@ -1,5 +1,5 @@
 // BTECH.EXE's two known revisions (the reference and the 1990-01-22 build)
-// import to the same story text wherever their bytes agree: one table, one
+// import to the same story wherever their bytes agree: one table, one
 // code path (src/Support/BtechImage.cpp unpacks and rebases both).
 //
 // Needs the player's files, so ctest skips it (77) unless these are set:
@@ -103,6 +103,7 @@ int main() {
     // In the directory ctest runs it from (the build), removed at the end.
     const fs::path work = fs::current_path() / "btech_revisions_work";
     StoryText texts[2];
+    std::string music[2];  // BTECH's one Bytes piece, music.adlib_instruments, imports to music.json
     const fs::path exes[2] = {reference, build1990};
     for (int r = 0; r < 2; ++r) {
         const fs::path folder = game_folder(work / ("game" + std::to_string(r)), game, exes[r]);
@@ -110,6 +111,8 @@ int main() {
         try {
             import_story(folder, write, import_table());
             texts[r] = load_story_text(write);
+            std::ifstream in(story_dir(write) / "music.json", std::ios::binary);
+            music[r].assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
         } catch (const ImportError& e) {
             // Only pieces that really differ may refuse a revision.
             const std::string message = e.what();
@@ -126,12 +129,17 @@ int main() {
         int same = 0;
         for (const auto& piece : import_table()) {
             if (piece.exe != kBtechExe || differ.count(std::string(piece.id))) continue;
+            if (piece.kind == ImportPiece::Kind::Bytes) {
+                check(!music[0].empty() && music[0] == music[1], std::string(piece.id) + " imports differently");
+                ++same;
+                continue;
+            }
             const auto x = texts[0].find(piece.id), y = texts[1].find(piece.id);
             check(x != texts[0].end() && y != texts[1].end() && x->second == y->second,
                   std::string(piece.id) + " imports differently");
             ++same;
         }
-        std::printf("%d BTECH texts identical in both imports\n", same);
+        std::printf("%d BTECH pieces import identically in both\n", same);
     }
     fs::remove_all(work);
     std::printf("%s\n", g_failures ? "FAILED" : "ok");

@@ -1108,3 +1108,7 @@ event.caption.25               MW_MAIN.EXE 1090:5DF2 z
 event.caption.26               MW_MAIN.EXE 1090:5E04 z
 event.caption.27               MW_MAIN.EXE 1090:5E0B z
 event.caption.28               MW_MAIN.EXE 1090:5E13 z
+
+# BTECH's AdLib default instruments (304E:2BA0, eight rows of 13 operator
+# parameters and an unread byte), written to story/music.json.
+music.adlib_instruments            BTECH.EXE 304E:2BA0 112
