@@ -1,6 +1,7 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/combat_input.h"
 #include "mechwarrior/combat_runtime.h"
+#include "mechwarrior/combat_installation.h"
 #include <stdlib.h>
 
 /*0810:0010. FAR termination callback reached by keyboard Ctrl-Escape. */
@@ -9,17 +10,50 @@ void BtechRequestTermination(void)
     terminationFlag=1;
 }
 
-/*0810:026B. Keep native release phase, then press phase and their original
- * short-circuit order. Timer/key interrupts arrive through hardware bindings. */
-void BtechWaitForCombatInputReleaseThenPress(void)
+static bool CombatInputHeld(void)
 {
-    while (combatInputScanCode || BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_ONE) || BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_TWO))
+    return combatInputScanCode || BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_ONE) || BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_TWO);
+}
+
+/*0810:026B. Keep native release phase, then press phase and their original
+ * short-circuit order. Timer/key interrupts arrive through hardware bindings.
+ * The 1990-01-22 build's routine (0810:02CB in that build) adds a third phase:
+ * it saves the pressed scan, waits for the release again and returns the scan.
+ * That costs one poll after a press, so combat's first tick comes one poll
+ * later after the briefing. Returns the scan seen at the press (both). */
+uint16_t BtechWaitForCombatInputReleaseThenPress(void)
+{
+    while (CombatInputHeld())
         BtechPollCombatCommandInput();
     while (!combatInputScanCode && !BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_ONE) && !BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_TWO))
     {
         if (terminationFlag) BtechTerminateToLauncher(1);
         BtechPollCombatCommandInput();
     }
+    uint16_t scanCode=combatInputScanCode;
+    if (btechLoadedRevision==BTECH_REVISION_1990_01_22)
+        while (CombatInputHeld()) BtechPollCombatCommandInput();
+    return scanCode;
+}
+
+/* The two-line dialog's key (0810:27F4 in the reference). The reference polls
+ * on until the scan changes, after the wait. The 1990-01-22 build's wait has
+ * already seen the release (call at 0810:29B2 in that build); its dialog then
+ * clears the scan and both button words (DS:C9AC, D22C, D230 there) and keeps
+ * the direction mask. Returns the scan seen at the press. */
+uint16_t BtechWaitForDialogKey(void)
+{
+    if (btechLoadedRevision==BTECH_REVISION_1990_01_22)
+    {
+        uint16_t scanCode=BtechWaitForCombatInputReleaseThenPress();
+        combatInputScanCode=combatInputButton1State=combatInputButton0State=0;
+        return scanCode;
+    }
+    BtechWaitForCombatInputReleaseThenPress();
+    uint16_t scanCode=combatInputScanCode;
+    if (scanCode)
+        while (scanCode==combatInputScanCode) BtechPollCombatCommandInput();
+    return scanCode;
 }
 
 /*0810:2A17. Native SI/DI are preserved machine registers, not arguments or

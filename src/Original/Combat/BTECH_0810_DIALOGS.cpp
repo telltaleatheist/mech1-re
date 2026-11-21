@@ -51,10 +51,7 @@ uint16_t BtechShowCapturedTwoLineDialog(const BtechDialogMessagePair *message)
         BtechDrawNearText(message->secondText,(int16_t)(DIALOG_CENTRE_X-textHalfWidth),DIALOG_SECOND_TEXT_Y);
         textTransparentBackground=false;
     }
-    BtechWaitForCombatInputReleaseThenPress();
-    uint16_t scanCode=combatInputScanCode;
-    if (scanCode)
-        while (scanCode==combatInputScanCode) BtechPollCombatCommandInput();
+    uint16_t scanCode=BtechWaitForDialogKey();
     if (capture.bytes) BtechRestoreScreenRectangle(capture,DIALOG_LEFT,DIALOG_TOP,DIALOG_WIDTH,DIALOG_HEIGHT);
     BtechRestoreDrawingState();
     return scanCode;

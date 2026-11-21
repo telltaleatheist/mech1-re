@@ -163,7 +163,7 @@ void BtechHostDiscardChildData(void)
  * reference-equivalent; the port reads none of them as data. */
 typedef struct BtechInstallationRevision
 {
-    size_t packedBytes;uint32_t crc;size_t imageBytes;
+    BtechRevision name;size_t packedBytes;uint32_t crc;size_t imageBytes;
     uint16_t headShrinkStart,headShift,tailStart,tailShift; /* paragraphs, image-relative */
     const uint16_t (*dgroupFixups)[3];size_t dgroupFixupCount; /* {offset, this revision, reference} */
 } BtechInstallationRevision;
@@ -177,10 +177,11 @@ static const uint16_t btech1990DgroupFixups[][3]={
     {0x4DFA,0xFFA6,0xFE80}, /* runtime exit flush callback */
 };
 static const BtechInstallationRevision btechInstallationRevisions[]={
-    {BTECH_PACKED_BYTES,0x36A13E1Au,BTECH_IMAGE_BYTES,0,0,0,0,NULL,0},
-    {0x2A9C5,0x7E06BB28u,0x2D3D0,0x0FFD,0x12,0x12DF,0x11,
+    {BTECH_REVISION_REFERENCE,BTECH_PACKED_BYTES,0x36A13E1Au,BTECH_IMAGE_BYTES,0,0,0,0,NULL,0},
+    {BTECH_REVISION_1990_01_22,0x2A9C5,0x7E06BB28u,0x2D3D0,0x0FFD,0x12,0x12DF,0x11,
         btech1990DgroupFixups,sizeof(btech1990DgroupFixups)/sizeof(btech1990DgroupFixups[0])},
 };
+BtechRevision btechLoadedRevision=BTECH_REVISION_REFERENCE;
 static uint32_t InstallationCrc(const uint8_t *bytes,size_t count)
 {
     uint32_t crc=UINT32_MAX;
@@ -277,7 +278,7 @@ bool BtechDecodeInstallationImage(const uint8_t *packed,size_t packedBytes,uint8
         if (at+2>BTECH_BSS_START || MwReadNativeWord(dgroup,at)!=revision->dgroupFixups[i][1]) goto failed;
         dgroup[at]=(uint8_t)revision->dgroupFixups[i][2];dgroup[at+1]=(uint8_t)(revision->dgroupFixups[i][2]>>8);
     }
-    *image=decoded;return true;
+    *image=decoded;btechLoadedRevision=revision->name;return true;
 failed:
     free(decoded);return false;
 }
