@@ -4,6 +4,10 @@
 **/__pycache__/
 /.vs/
 /AGENTS.md
+# Local agent instructions and settings never go public.
+CLAUDE.md
+CLAUDE.local.md
+.claude/
 *.user
 *.suo
 *.exe
