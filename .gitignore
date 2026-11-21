@@ -66,3 +66,6 @@
 *.jpg
 *.jpeg
 !docs/images/*.png
+
+# Our own DOS tool sources (not game data or disassembly).
+!tools/capture/*.asm
