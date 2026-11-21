@@ -989,6 +989,25 @@ Each piece goes on its own branch and needs a build, ctest, `ui_test`,
   - `ui_test` gained 11 refusals and accepts the two kinds of record above.
 - **4d:** `complex.json` and `dealer.json`: the largest, with the body
   diagrams and the reserve ammunition pointer tables.
+  Done (161 more pieces, 282 in all):
+  - List panels: the owned list, the market list, repair and the dealer's
+    component panel have 14 or 24 line pointers, while the header counts
+    the lines shown at first (1); code changes it as rows fill. The file
+    gives both: `lines_shown` and every line. The census in 6.1 counted
+    their headers, not their pointers.
+  - Many of these rows are fixed-width templates that code fills in, read
+    by a byte count rather than to their NUL. The caption importer takes
+    that count, as `ImportInitialText` did.
+  - Tables gain words keyed by unit kind (the detail picture offsets, the
+    repair title spaces), the body diagrams (a background and nine regions,
+    in the campaign's body damage order), the diagram for each mech kind
+    (an index, or null), and the compatibility panels' pointer table (panel
+    names). The exe reads 3CDA for the ten mech kinds only, so that piece
+    is 20 bytes, not 22.
+  - `MwUiPieceOffset` gives any piece's exe offset, for the pointer tables
+    the importers resolve (panels, diagrams).
+  - The repair menu's one past-end link is accepted; any other is refused.
+  - `ui_test` gained 10 refusals.
 - **4e:** `travel.json` (the 32-line planet panel and the 31-record menu).
 - **4f:** the ten start values by 3f's method, `orderMapPositionMask` to
   code, the inventory regenerated with the `ui` door, and the record here.

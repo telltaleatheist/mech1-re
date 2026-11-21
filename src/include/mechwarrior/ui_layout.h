@@ -22,4 +22,8 @@ size_t MwUiPieceSize(const char *id);
  * follows), or 0 if there is no such caption. The importers read the text
  * there until slice 5. */
 uint16_t MwUiCaptionOffset(const char *id);
+/* Where layout piece `id` sits in its exe's data segment, or 0 if there is
+ * none: what the exe's pointer tables hold, which the layout rebuilds from
+ * names (a panel, a diagram). */
+uint16_t MwUiPieceOffset(const char *id);
 #endif

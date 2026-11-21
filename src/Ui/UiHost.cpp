@@ -35,3 +35,9 @@ uint16_t MwUiCaptionOffset(const char *id)
     if (!caption) std::fprintf(stderr, "MechWarrior: the layout has no caption \"%s\"\n", id);
     return caption ? piece->offset : 0;
 }
+uint16_t MwUiPieceOffset(const char *id)
+{
+    const mw1o::ui::UiPiece *piece = mw1o::ui::find_ui_piece(id);
+    if (!piece) std::fprintf(stderr, "MechWarrior: the layout has no piece \"%s\"\n", id);
+    return piece ? piece->offset : 0;
+}

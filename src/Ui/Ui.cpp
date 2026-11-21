@@ -219,6 +219,10 @@ enum class MenuCaptions { Screen, Story };
 struct PanelSpec {
     std::string_view name;
     std::size_t lines;
+    // A list panel's header counts the lines it starts out showing
+    // ("lines_shown"); code changes it as rows fill. Otherwise the header
+    // counts every line.
+    bool list = false;
 };
 struct MenuSpec {
     std::string_view name;
@@ -228,16 +232,26 @@ struct MenuSpec {
     // original's past-end probe answers (PLAN 6.1); otherwise refused.
     bool past_end_link;
 };
-// A table is a list of words; rows of named words, which the exe keeps one
-// field after another (all the first fields, then all the second); or a list
-// of references to colour captions (the exe's pointer table).
-enum class TableKind { Words, Rows, CaptionRefs };
+// A table is one of:
+//   Words        a list of words;
+//   KeyedWords   words keyed by `names` (unit kinds, say), in that order;
+//   Rows         rows of the named words in `names`, which the exe keeps one
+//                field after another (all the first fields, then the second);
+//   CaptionRefs  a pointer table naming colour captions;
+//   PanelRefs    a pointer table naming panels;
+//   Diagrams     body diagrams: a background rectangle and kBodyRegions
+//                region rectangles each, [x, y, width, height];
+//   DiagramRefs  keyed by `names`: the index of a diagram in the table
+//                `target`, or null for none (the exe's pointer, or 0).
+enum class TableKind { Words, KeyedWords, Rows, CaptionRefs, PanelRefs, Diagrams, DiagramRefs };
 struct TableSpec {
     std::string_view name;
     TableKind kind;
     std::size_t count;
-    std::span<const std::string_view> fields;  // Rows only
+    std::span<const std::string_view> names = {};
+    std::string_view target = {};
 };
+constexpr std::size_t kBodyRegions = 9, kDiagramBytes = (1 + kBodyRegions) * 8;
 struct ScreenSpec {
     std::string_view file;  // "options": data/ui/options.json, pieces "options.*"
     std::span<const std::string_view> captions;
@@ -330,12 +344,65 @@ void put_menu_record(const Reader& r, std::string& out, const Json& record, cons
         out += static_cast<char>(link(r, r.member(record, direction), menu, direction));
 }
 
-void put_table(const Reader& r, std::string& out, const Json& v, const TableSpec& table, const Captions& captions) {
+void put_rectangle(const Reader& r, std::string& out, const Json& v, std::string_view what) {
+    if (!v.is_array() || v.array().size() != 4) r.fail(std::string(what) + " is not a list of 4 numbers");
+    for (const Json& n : v.array()) put_word(out, r.word(n, what));
+}
+
+// The exe offset of a screen's piece of `kind` named `name`.
+std::uint16_t piece_offset(const Reader& r, std::string_view file, std::string_view kind, std::string_view name) {
+    const UiPiece* piece = find_ui_piece(piece_id(file, kind, name));
+    if (!piece) r.fail("the " + std::string(kind) + " \"" + std::string(name) + "\" has no piece in the layout table");
+    return piece->offset;
+}
+
+void put_table(const Reader& r, std::string& out, const Json& v, const TableSpec& table, const ScreenSpec& screen,
+               const Captions& captions) {
     const std::string what = "the table \"" + std::string(table.name) + "\"";
+    if (table.kind == TableKind::KeyedWords || table.kind == TableKind::DiagramRefs) {
+        if (!v.is_object()) r.fail(what + " is not an object");
+        r.only(v, table.names);
+        for (std::string_view key : table.names) {
+            const Json& entry = r.member(v, key);
+            if (table.kind == TableKind::KeyedWords) {
+                put_word(out, r.word(entry, key));
+                continue;
+            }
+            if (Reader::is_null(entry)) {
+                put_word(out, 0);
+                continue;
+            }
+            const TableSpec* target = nullptr;
+            for (const TableSpec& t : screen.tables)
+                if (t.name == table.target) target = &t;
+            const double index = r.whole(entry, key, 65535);
+            if (!target || index >= double(target->count))
+                r.fail(what + "'s \"" + std::string(key) + "\" names no diagram");
+            put_word(out, static_cast<std::uint16_t>(piece_offset(r, screen.file, "table", table.target) + index * kDiagramBytes));
+        }
+        return;
+    }
     if (!v.is_array() || v.array().size() != table.count)
         r.fail(what + " is not a list of " + std::to_string(table.count));
     const Json::Array& entries = v.array();
     switch (table.kind) {
+    case TableKind::KeyedWords:
+    case TableKind::DiagramRefs:
+        break;
+    case TableKind::PanelRefs: {
+        std::vector<std::string_view> panel_names;
+        for (const PanelSpec& p : screen.panels) panel_names.push_back(p.name);
+        for (const Json& n : entries)
+            put_word(out, piece_offset(r, screen.file, "panel", panel_names[r.name(n, panel_names, what + "'s entry")]));
+        break;
+    }
+    case TableKind::Diagrams:
+        for (const Json& diagram : entries) {
+            r.only(diagram, {"background", "regions"});
+            put_rectangle(r, out, r.member(diagram, "background"), "background");
+            for (const Json& region : r.array(diagram, "regions", kBodyRegions)) put_rectangle(r, out, region, "a region");
+        }
+        break;
     case TableKind::Words:
         for (const Json& n : entries) put_word(out, r.word(n, what));
         break;
@@ -343,8 +410,8 @@ void put_table(const Reader& r, std::string& out, const Json& v, const TableSpec
         for (const Json& n : entries) put_word(out, captions.colour_caption(r, n, what + "'s entry"));
         break;
     case TableKind::Rows:
-        for (const Json& row : entries) r.only(row, table.fields);
-        for (std::string_view field : table.fields)
+        for (const Json& row : entries) r.only(row, table.names);
+        for (std::string_view field : table.names)
             for (const Json& row : entries) put_word(out, r.u16(row, field));
         break;
     }
@@ -382,13 +449,17 @@ void read_screen(const fs::path& data_dir, const ScreenSpec& screen, support::Na
     for (std::size_t i = 0; i < screen.panels.size(); ++i) {
         const PanelSpec& spec = screen.panels[i];
         const Json& p = *panels[i];
-        r.only(p, {"at", "width", "bottom_inset", "border", "line_spacing", "background", "lines"});
+        if (spec.list) r.only(p, {"at", "width", "bottom_inset", "border", "line_spacing", "background", "lines_shown", "lines"});
+        else r.only(p, {"at", "width", "bottom_inset", "border", "line_spacing", "background", "lines"});
         std::string bytes;
         put_unsigned_point(r, bytes, r.member(p, "at"), "at");
         put_word(bytes, r.u16(p, "width"));
         put_word(bytes, r.u16(p, "bottom_inset"));
         const auto& lines = r.array(p, "lines", spec.lines);
-        put_word(bytes, static_cast<std::uint16_t>(lines.size()));
+        const std::uint16_t shown = spec.list ? r.u16(p, "lines_shown") : static_cast<std::uint16_t>(lines.size());
+        if (shown > lines.size())
+            r.fail("the panel \"" + std::string(spec.name) + "\" shows " + std::to_string(shown) + " lines of " + std::to_string(lines.size()));
+        put_word(bytes, shown);
         put_word(bytes, r.u16(p, "border"));
         put_word(bytes, r.u16(p, "line_spacing"));
         put_word(bytes, r.u16(p, "background"));
@@ -407,7 +478,7 @@ void read_screen(const fs::path& data_dir, const ScreenSpec& screen, support::Na
     const auto tables = screen.tables.empty() ? std::vector<const Json*>{} : r.keyed(file, "tables", table_names);
     for (std::size_t i = 0; i < screen.tables.size(); ++i) {
         std::string bytes;
-        put_table(r, bytes, *tables[i], screen.tables[i], captions);
+        put_table(r, bytes, *tables[i], screen.tables[i], screen, captions);
         out[piece_id(screen.file, "table", screen.tables[i].name)] = bytes;
     }
 }
@@ -467,12 +538,78 @@ constexpr MenuSpec kContractMenus[] = {{"office", 2, MenuCaptions::Screen, false
 constexpr std::string_view kRequestedTermFields[] = {"x", "y", "digits"};
 constexpr TableSpec kContractTables[] = {{"requested_terms", TableKind::Rows, 3, kRequestedTermFields},
                                          {"date_year_x_offsets", TableKind::Words, 12, {}}};
+// complex.json: the Mech Complex, the owned unit list, the 'Mech and
+// DropShip service screens, the sale and rearm confirmations, component
+// repair, the detail pictures and the body diagrams. The owned list and the
+// repair panel are list panels.
+constexpr std::string_view kComplexCaptions[] = {
+    "complex_title", "complex_owned", "complex_ammo", "complex_market", "complex_leave",
+    "owned_heading", "owned_1", "owned_2", "owned_3", "owned_4", "owned_5", "owned_6", "owned_7",
+    "owned_8", "owned_9", "owned_10", "owned_11", "owned_12", "owned_13",
+    "mech_status", "service_repair", "service_repair_all", "service_rearm", "service_sell", "service_leave",
+    "dropship_status", "dropship_sell", "dropship_leave",
+    "sale_prompt", "sale_yes", "sale_no", "rearm_prompt", "rearm_yes", "rearm_no",
+    "repair_title", "repair_system_1", "repair_system_2", "repair_system_3", "repair_system_4", "repair_system_5",
+    "repair_system_6", "repair_system_7", "repair_system_8", "repair_system_9", "repair_system_10",
+    "repair_body", "repair_footer", "repair_weapon_1", "repair_weapon_2", "repair_weapon_3", "repair_weapon_4",
+    "repair_weapon_5", "repair_weapon_6", "repair_weapon_7", "repair_weapon_8", "repair_weapon_9",
+    "repair_weapon_10", "repair_weapon_11"};
+constexpr PanelSpec kComplexPanels[] = {{"complex", 5}, {"owned", 14, true}, {"mech_status", 6},
+                                        {"dropship_status", 3}, {"sale", 3}, {"rearm", 3}, {"repair", 24, true}};
+constexpr MenuSpec kComplexMenus[] = {{"complex", 4, MenuCaptions::Screen, false},
+                                      {"owned", 13, MenuCaptions::Screen, false},
+                                      {"mech_service", 5, MenuCaptions::Screen, false},
+                                      {"dropship_service", 2, MenuCaptions::Screen, false},
+                                      {"sale", 2, MenuCaptions::Screen, false},
+                                      {"rearm", 2, MenuCaptions::Screen, false},
+                                      {"repair", 22, MenuCaptions::Screen, true}};
+constexpr std::span<const std::string_view> kUnitKinds = rules::kUnitKinds;
+constexpr std::span<const std::string_view> kMechKinds = kUnitKinds.first(10);
+constexpr TableSpec kComplexTables[] = {
+    {"detail_picture_x_offsets", TableKind::KeyedWords, 0, kUnitKinds},
+    {"detail_picture_y_origins", TableKind::KeyedWords, 0, kUnitKinds},
+    {"animation_frames", TableKind::Words, 23},
+    {"repair_title_leading_spaces", TableKind::KeyedWords, 0, kUnitKinds},
+    {"body_damage_fill_colours", TableKind::Words, 4},
+    {"body_diagram_by_kind", TableKind::DiagramRefs, 0, kMechKinds, "body_diagrams"},
+    {"body_diagrams", TableKind::Diagrams, 8}};
+// dealer.json: the market list, the 'Mech and DropShip detail panels, the
+// component panel, and reserve ammunition with its six compatibility
+// panels, which a pointer table names.
+constexpr std::string_view kDealerCaptions[] = {
+    "market_heading", "market_1", "market_2", "market_3", "market_4", "market_5", "market_6", "market_7",
+    "market_8", "market_9", "market_10", "market_11", "market_12", "market_13",
+    "mech_title", "mech_buy", "mech_inspect", "mech_leave",
+    "dropship_title", "dropship_buy", "dropship_leave",
+    "component_title", "component_system_1", "component_system_2", "component_system_3", "component_system_4",
+    "component_system_5", "component_system_6", "component_system_7", "component_system_8",
+    "component_system_9", "component_system_10", "component_body", "component_weapon_heading",
+    "component_weapon_1", "component_weapon_2", "component_weapon_3", "component_weapon_4", "component_weapon_5",
+    "component_weapon_6", "component_weapon_7", "component_weapon_8", "component_weapon_9",
+    "component_weapon_10", "component_done",
+    "ammo_heading", "ammo_family_1", "ammo_family_2", "ammo_family_3", "ammo_family_4", "ammo_family_5",
+    "ammo_family_6", "ammo_quantity_1", "ammo_quantity_2", "ammo_quantity_3", "ammo_quantity_4",
+    "ammo_quantity_5", "ammo_quantity_6", "ammo_done",
+    "compatibility_1", "compatibility_2", "compatibility_3", "compatibility_4", "compatibility_5",
+    "compatibility_6"};
+constexpr PanelSpec kDealerPanels[] = {{"market", 14, true}, {"mech", 4}, {"dropship", 3}, {"component", 24, true},
+                                       {"ammo", 14}, {"compatibility_1", 1}, {"compatibility_2", 1},
+                                       {"compatibility_3", 1}, {"compatibility_4", 1}, {"compatibility_5", 1},
+                                       {"compatibility_6", 1}};
+constexpr MenuSpec kDealerMenus[] = {{"market", 13, MenuCaptions::Screen, false},
+                                     {"mech", 3, MenuCaptions::Screen, false},
+                                     {"dropship", 2, MenuCaptions::Screen, false},
+                                     {"component", 1, MenuCaptions::Screen, false},
+                                     {"ammo", 13, MenuCaptions::Screen, false}};
+constexpr TableSpec kDealerTables[] = {{"compatibility_panels", TableKind::PanelRefs, 6}};
 constexpr ScreenSpec kScreens[] = {
     {"options", kOptionsCaptions, {}, kOptionsPanels, kOptionsMenus, {}},
     {"events", {}, {}, {}, kEventMenus, {}},
     {"hub", {}, {}, {}, kHubMenus, kHubTables},
     {"crew", kCrewCaptions, kCrewColourCaptions, kCrewPanels, kCrewMenus, kCrewTables},
     {"contract_office", kContractCaptions, {}, kContractPanels, kContractMenus, kContractTables},
+    {"complex", kComplexCaptions, {}, kComplexPanels, kComplexMenus, kComplexTables},
+    {"dealer", kDealerCaptions, {}, kDealerPanels, kDealerMenus, kDealerTables},
 };
 
 }  // namespace

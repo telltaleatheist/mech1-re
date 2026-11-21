@@ -188,6 +188,30 @@ void what_doesnt_fit_is_refused(const fs::path& data, const fs::path& work) {
     refused(load, "the menu \"planet\"'s link down 6 leads out of the menu", "a hub link out of its menu");
     with_file("contract_office.json", [&](Json& c) { object(at(c, "tables")).erase("requested_terms"); });
     refused(load, "no \"requested_terms\"", "a table missing");
+    const auto with_complex = [&](const std::function<void(Json&)>& change) { with_file("complex.json", change); };
+    const auto repair_record = [](Json& c, std::size_t index) -> Json& { return at(at(at(at(c, "menus"), "repair"), "records"), index); };
+    with_complex([&](Json& c) { at(at(at(c, "panels"), "owned"), "lines_shown") = Json{15.0}; });
+    refused(load, "the panel \"owned\" shows 15 lines of 14", "a list panel showing more lines than it has");
+    with_complex([&](Json& c) { object(at(at(c, "panels"), "repair")).erase("lines_shown"); });
+    refused(load, "no \"lines_shown\"", "a list panel without its shown count");
+    with_complex([&](Json& c) { object(at(at(c, "panels"), "sale"))["lines_shown"] = Json{1.0}; });
+    refused(load, "unknown key \"lines_shown\"", "a shown count on a panel that isn't a list");
+    with_complex([&](Json& c) { at(repair_record(c, 20), "down") = Json{22.0}; });
+    load();  // the repair menu may link one past its last record, as the exe's does
+    with_complex([&](Json& c) { at(repair_record(c, 21), "down") = Json{23.0}; });
+    refused(load, "the menu \"repair\"'s link down 23 leads out of the menu", "a link two past the repair menu");
+    with_complex([&](Json& c) { object(at(at(c, "tables"), "detail_picture_x_offsets"))["elemental"] = Json{1.0}; });
+    refused(load, "unknown key \"elemental\"", "an unknown unit kind");
+    with_complex([&](Json& c) { at(at(at(c, "tables"), "body_diagram_by_kind"), "wasp") = Json{8.0}; });
+    refused(load, "the table \"body_diagram_by_kind\"'s \"wasp\" names no diagram", "a kind naming a diagram past the last");
+    with_complex([&](Json& c) { array(at(at(at(at(c, "tables"), "body_diagrams"), 0), "regions")).pop_back(); });
+    refused(load, "\"regions\" has 8 entries, not 9", "a body diagram with a region missing");
+    with_complex([&](Json& c) { at(at(at(at(at(c, "tables"), "body_diagrams"), 3), "background"), 1) = Json{-4.0}; });
+    refused(load, "background is not a whole number from 0 to 65535", "a negative diagram coordinate");
+    with_file("dealer.json", [&](Json& d) { at(at(at(d, "tables"), "compatibility_panels"), 2) = Json{std::string("market")}; });
+    load();  // the layout takes any of the screen's panels here; the importer, only the compatibility panels
+    with_file("dealer.json", [&](Json& d) { at(at(at(d, "tables"), "compatibility_panels"), 2) = Json{std::string("shelf")}; });
+    refused(load, "the table \"compatibility_panels\"'s entry is not one of its names", "a pointer table naming no panel");
     restore();
     fs::remove(work / "ui" / "orders.json");
     refused(load, "can't read", "a missing file");

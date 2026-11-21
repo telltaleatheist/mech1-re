@@ -863,8 +863,8 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     if (!ImportRuleBytes("units.display_tonnages",unitDisplayTonnages,sizeof(unitDisplayTonnages))) return false;
     if (!ImportRuleBytes("units.display_speeds",unitDisplaySpeedsKph,sizeof(unitDisplaySpeedsKph))) return false;
     if (!ImportRuleBytes("units.display_jumps",unitDisplayJumpCapacitiesMetres,sizeof(unitDisplayJumpCapacitiesMetres))) return false;
-    ImportInitialWords(data,0x2B83,(uint16_t *)unitDetailPictureXOffsets,sizeof(unitDetailPictureXOffsets)/sizeof(uint16_t));
-    ImportInitialWords(data,0x2B99,(uint16_t *)unitDetailPictureYOrigins,sizeof(unitDetailPictureYOrigins)/sizeof(uint16_t));
+    if (!MwUiCopyWords("complex.table.detail_picture_x_offsets",(uint16_t *)unitDetailPictureXOffsets,sizeof(unitDetailPictureXOffsets)/sizeof(uint16_t),0) /*2B83*/
+        || !MwUiCopyWords("complex.table.detail_picture_y_origins",(uint16_t *)unitDetailPictureYOrigins,sizeof(unitDetailPictureYOrigins)/sizeof(uint16_t),0)) return false; /*2B99*/
     memcpy(&repairWorkIncomplete,data+0x2BAF,sizeof(repairWorkIncomplete));
     ownedListRowUnitByteOffset=MwReadNativeWord(data,0x3022);
     saleMarketSlotByteOffset=MwReadNativeWord(data,0x3055);
@@ -872,7 +872,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     selectedMechRearmQuoteHigh=MwReadNativeWord(data,0x310E);
     mechServiceNextAnimationTick=MwReadNativeWord(data,0x3189);
     mechServiceAnimationByteOffset=MwReadNativeWord(data,0x318B);
-    ImportInitialWords(data,0x31F2,(uint16_t *)repairTitleLeadingSpacesByKind,sizeof(repairTitleLeadingSpacesByKind)/sizeof(uint16_t));
+    if (!MwUiCopyWords("complex.table.repair_title_leading_spaces",(uint16_t *)repairTitleLeadingSpacesByKind,sizeof(repairTitleLeadingSpacesByKind)/sizeof(uint16_t),0)) return false; /*31F2*/
     repairSystemRowIndex=MwReadNativeWord(data,0x3208);
     repairMenuSelectedCategory=MwReadNativeWord(data,0x320A);
     if (!ImportRuleBytes("units.heat_sinks",unitHeatSinkCounts,sizeof(unitHeatSinkCounts))) return false;
@@ -880,7 +880,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     memcpy(repairJumpJetCountTemplateBytes,data+0x36A5,sizeof(repairJumpJetCountTemplateBytes));
     if (!ImportRuleBytes("repair.success_roll_limits",repairSuccessRollLimitsByMarketTier,sizeof(repairSuccessRollLimitsByMarketTier))) return false;
     mechDiagramUnitKind=MwReadNativeWord(data,0x3CCC);
-    ImportInitialWords(data,0x3CD2,(uint16_t *)bodyDamageTierFillColours,sizeof(bodyDamageTierFillColours)/sizeof(uint16_t));
+    if (!MwUiCopyWords("complex.table.body_damage_fill_colours",(uint16_t *)bodyDamageTierFillColours,sizeof(bodyDamageTierFillColours)/sizeof(uint16_t),0)) return false; /*3CD2*/
     memcpy(unassignedMechWarriorText,data+0x3024,sizeof(unassignedMechWarriorText));
     memcpy(ownedListDoneText,data+0x302F,sizeof(ownedListDoneText));
     memcpy(cannotAffordRepairText,data+0x2BB0,sizeof(cannotAffordRepairText));
@@ -901,7 +901,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     ImportInitialWords(data,0x432A,(uint16_t *)selectedMarketAmmoQuantities,sizeof(selectedMarketAmmoQuantities)/sizeof(uint16_t));
     marketSystemRowIndex=MwReadNativeWord(data,0x44EF);
     purchaseOwnedSlotByteOffset=MwReadNativeWord(data,0x481D);
-    ImportInitialWords(data,0x318D,(uint16_t *)mechComplexAnimationFrames,sizeof(mechComplexAnimationFrames)/sizeof(uint16_t));
+    if (!MwUiCopyWords("complex.table.animation_frames",(uint16_t *)mechComplexAnimationFrames,sizeof(mechComplexAnimationFrames)/sizeof(uint16_t),0)) return false; /*318D*/
     campaignMusicBufferSelector=MwReadNativeWord(data,0x016F);
     graphicsOverlaySelector=MwReadNativeWord(data,0x002E);
     memcpy(&launcherExitCode,data+0x0006,sizeof(launcherExitCode));
@@ -987,17 +987,22 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
         unitAmmoProfileEntries[entry].ammoFamily=MwReadNativeWord(ammoProfileEntries,(uint16_t)(entry*4));
         unitAmmoProfileEntries[entry].quantityMaximum=MwReadNativeWord(ammoProfileEntries,(uint16_t)(entry*4+2));
     }
+    /* complex.table.body_diagram_by_kind (3CDA): each kind's diagram at its
+     * exe address in the body_diagrams table (3CEE), or 0 for none. */
+    uint16_t diagramByKind[CAMPAIGN_MECH_KIND_COUNT];
+    const uint16_t diagramBase=MwUiPieceOffset("complex.table.body_diagrams");
+    if (!diagramBase || !MwUiCopyWords("complex.table.body_diagram_by_kind",diagramByKind,CAMPAIGN_MECH_KIND_COUNT,0)) return false;
     for (uint16_t kind=0;kind<CAMPAIGN_MECH_KIND_COUNT;++kind)
     {
         uint16_t profile=MwReadNativeWord(ammoProfiles,(uint16_t)(kind*2));
         uint16_t prices=MwReadNativeWord(weaponRepairPriceLists,(uint16_t)(kind*2));
-        uint16_t layout=MwReadNativeWord(data,(uint16_t)(0x3CDA+kind*2));
+        uint16_t layout=diagramByKind[kind];
         if (profile<0x2F3C || profile>=0x2F78 || (profile-0x2F3C)%4
             || prices<0x3C2F || prices>=0x3CAB || (prices-0x3C2F)%2
-            || (layout && (layout<0x3CEE || layout>=0x3F6E || (layout-0x3CEE)%0x50))) return false;
+            || (layout && (layout<diagramBase || layout>=diagramBase+8*0x50 || (layout-diagramBase)%0x50))) return false;
         unitAmmoProfiles[kind]=&unitAmmoProfileEntries[(profile-0x2F3C)/4];
         weaponRepairPricesByKind[kind]=&weaponRepairPrices[(prices-0x3C2F)/2];
-        mechBodyDiagramLayoutsByKind[kind]=layout?&mechBodyDiagramLayouts[(layout-0x3CEE)/0x50]:NULL;
+        mechBodyDiagramLayoutsByKind[kind]=layout?&mechBodyDiagramLayouts[(layout-diagramBase)/0x50]:NULL;
         uint16_t labelOffset=MwReadNativeWord(data,(uint16_t)(0x36AE +kind*2)),label=0;
         while (data[labelOffset]!=0xFF && label<CAMPAIGN_WEAPON_SLOTS+1)
         {
@@ -1028,763 +1033,156 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
         calendarMonthNames[month]=calendarMonthText+text-0x4AAC;
     }
     ImportInitialText(data,0x55EC,&positionedText.display,positionedText.text,18);
-    if (!ImportInitialString(data,0x46A2,marketWeaponHeading.text,sizeof(marketWeaponHeading.text))) return false;
-    ImportInitialText(data,0x469D,&marketWeaponHeading.display,marketWeaponHeading.text,0);
-    if (!ImportInitialString(data,0x312B,rearmConfirmationLabels[0].text,sizeof(rearmConfirmationLabels[0].text))) return false;
-    ImportInitialText(data,0x3126,&rearmConfirmationLabels[0].display,rearmConfirmationLabels[0].text,0);
-    if (!ImportInitialString(data,0x3148,rearmConfirmationLabels[1].text,sizeof(rearmConfirmationLabels[1].text))) return false;
-    ImportInitialText(data,0x3143,&rearmConfirmationLabels[1].display,rearmConfirmationLabels[1].text,0);
-    if (!ImportInitialString(data,0x3154,rearmConfirmationLabels[2].text,sizeof(rearmConfirmationLabels[2].text))) return false;
-    ImportInitialText(data,0x314F,&rearmConfirmationLabels[2].display,rearmConfirmationLabels[2].text,0);
-    if (!ImportInitialString(data,0x3090,saleConfirmationLabels[0].text,sizeof(saleConfirmationLabels[0].text))) return false;
-    ImportInitialText(data,0x308B,&saleConfirmationLabels[0].display,saleConfirmationLabels[0].text,0);
-    if (!ImportInitialString(data,0x30DD,saleConfirmationLabels[1].text,sizeof(saleConfirmationLabels[1].text))) return false;
-    ImportInitialText(data,0x30D8,&saleConfirmationLabels[1].display,saleConfirmationLabels[1].text,0);
-    if (!ImportInitialString(data,0x30E9,saleConfirmationLabels[2].text,sizeof(saleConfirmationLabels[2].text))) return false;
-    ImportInitialText(data,0x30E4,&saleConfirmationLabels[2].display,saleConfirmationLabels[2].text,0);
-    if (!ImportInitialString(data,0x2922,marketListHeading.text,sizeof(marketListHeading.text))) return false;
-    ImportInitialText(data,0x291D,&marketListHeading.display,marketListHeading.text,0);
-    if (!ImportInitialString(data,0x439B,marketMechStatusLabels[0].text,sizeof(marketMechStatusLabels[0].text))) return false;
-    ImportInitialText(data,0x4396,&marketMechStatusLabels[0].display,marketMechStatusLabels[0].text,0);
-    if (!ImportInitialString(data,0x441D,marketMechStatusLabels[1].text,sizeof(marketMechStatusLabels[1].text))) return false;
-    ImportInitialText(data,0x4418,&marketMechStatusLabels[1].display,marketMechStatusLabels[1].text,0);
-    if (!ImportInitialString(data,0x4426,marketMechStatusLabels[2].text,sizeof(marketMechStatusLabels[2].text))) return false;
-    ImportInitialText(data,0x4421,&marketMechStatusLabels[2].display,marketMechStatusLabels[2].text,0);
-    if (!ImportInitialString(data,0x4439,marketMechStatusLabels[3].text,sizeof(marketMechStatusLabels[3].text))) return false;
-    ImportInitialText(data,0x4434,&marketMechStatusLabels[3].display,marketMechStatusLabels[3].text,0);
-    if (!ImportInitialString(data,0x4459,marketDropShipStatusLabels[0].text,sizeof(marketDropShipStatusLabels[0].text))) return false;
-    ImportInitialText(data,0x4454,&marketDropShipStatusLabels[0].display,marketDropShipStatusLabels[0].text,0);
-    if (!ImportInitialString(data,0x449B,marketDropShipStatusLabels[1].text,sizeof(marketDropShipStatusLabels[1].text))) return false;
-    ImportInitialText(data,0x4496,&marketDropShipStatusLabels[1].display,marketDropShipStatusLabels[1].text,0);
-    if (!ImportInitialString(data,0x44A4,marketDropShipStatusLabels[2].text,sizeof(marketDropShipStatusLabels[2].text))) return false;
-    ImportInitialText(data,0x449F,&marketDropShipStatusLabels[2].display,marketDropShipStatusLabels[2].text,0);
-    if (!ImportInitialString(data,0x25E4,mechComplexLabels[0].text,sizeof(mechComplexLabels[0].text))) return false;
-    ImportInitialText(data,0x25DF,&mechComplexLabels[0].display,mechComplexLabels[0].text,0);
-    if (!ImportInitialString(data,0x25F6,mechComplexLabels[1].text,sizeof(mechComplexLabels[1].text))) return false;
-    ImportInitialText(data,0x25F1,&mechComplexLabels[1].display,mechComplexLabels[1].text,0);
-    if (!ImportInitialString(data,0x2608,mechComplexLabels[2].text,sizeof(mechComplexLabels[2].text))) return false;
-    ImportInitialText(data,0x2603,&mechComplexLabels[2].display,mechComplexLabels[2].text,0);
-    if (!ImportInitialString(data,0x2619,mechComplexLabels[3].text,sizeof(mechComplexLabels[3].text))) return false;
-    ImportInitialText(data,0x2614,&mechComplexLabels[3].display,mechComplexLabels[3].text,0);
-    if (!ImportInitialString(data,0x2629,mechComplexLabels[4].text,sizeof(mechComplexLabels[4].text))) return false;
-    ImportInitialText(data,0x2624,&mechComplexLabels[4].display,mechComplexLabels[4].text,0);
-    if (!ImportInitialString(data,0x4536,marketComponentTitle.text,sizeof(marketComponentTitle.text))) return false;
-    ImportInitialText(data,0x4531,&marketComponentTitle.display,marketComponentTitle.text,0);
-    ImportInitialText(data,0x4685,&marketBodyCondition.display,marketBodyCondition.caption.text,19);
-    if (!ImportInitialString(data,0x47F5,marketComponentDone.text,sizeof(marketComponentDone.text))) return false;
-    ImportInitialText(data,0x47F0,&marketComponentDone.display,marketComponentDone.text,0);
-    ImportInitialText(data,0x2931,&marketUnitListRows[0].display,marketUnitListRows[0].text,13);
-    ImportInitialText(data,0x2943,&marketUnitListRows[1].display,marketUnitListRows[1].text,13);
-    ImportInitialText(data,0x2955,&marketUnitListRows[2].display,marketUnitListRows[2].text,13);
-    ImportInitialText(data,0x2967,&marketUnitListRows[3].display,marketUnitListRows[3].text,13);
-    ImportInitialText(data,0x2979,&marketUnitListRows[4].display,marketUnitListRows[4].text,13);
-    ImportInitialText(data,0x298B,&marketUnitListRows[5].display,marketUnitListRows[5].text,13);
-    ImportInitialText(data,0x299D,&marketUnitListRows[6].display,marketUnitListRows[6].text,13);
-    ImportInitialText(data,0x29AF,&marketUnitListRows[7].display,marketUnitListRows[7].text,13);
-    ImportInitialText(data,0x29C1,&marketUnitListRows[8].display,marketUnitListRows[8].text,13);
-    ImportInitialText(data,0x29D3,&marketUnitListRows[9].display,marketUnitListRows[9].text,13);
-    ImportInitialText(data,0x29E5,&marketUnitListRows[10].display,marketUnitListRows[10].text,13);
-    ImportInitialText(data,0x29F7,&marketUnitListRows[11].display,marketUnitListRows[11].text,13);
-    ImportInitialText(data,0x2A09,&marketUnitListRows[12].display,marketUnitListRows[12].text,13);
-    ImportInitialText(data,0x454F,&marketSystemConditionRows[0].display,marketSystemConditionRows[0].caption.text,26);
-    ImportInitialText(data,0x46BA,&marketWeaponConditionRows[0].display,marketWeaponConditionRows[0].caption.text,26);
-    ImportInitialText(data,0x456E,&marketSystemConditionRows[1].display,marketSystemConditionRows[1].caption.text,26);
-    ImportInitialText(data,0x46D9,&marketWeaponConditionRows[1].display,marketWeaponConditionRows[1].caption.text,26);
-    ImportInitialText(data,0x458D,&marketSystemConditionRows[2].display,marketSystemConditionRows[2].caption.text,26);
-    ImportInitialText(data,0x46F8,&marketWeaponConditionRows[2].display,marketWeaponConditionRows[2].caption.text,26);
-    ImportInitialText(data,0x45AC,&marketSystemConditionRows[3].display,marketSystemConditionRows[3].caption.text,26);
-    ImportInitialText(data,0x4717,&marketWeaponConditionRows[3].display,marketWeaponConditionRows[3].caption.text,26);
-    ImportInitialText(data,0x45CB,&marketSystemConditionRows[4].display,marketSystemConditionRows[4].caption.text,26);
-    ImportInitialText(data,0x4736,&marketWeaponConditionRows[4].display,marketWeaponConditionRows[4].caption.text,26);
-    ImportInitialText(data,0x45EA,&marketSystemConditionRows[5].display,marketSystemConditionRows[5].caption.text,26);
-    ImportInitialText(data,0x4755,&marketWeaponConditionRows[5].display,marketWeaponConditionRows[5].caption.text,26);
-    ImportInitialText(data,0x4609,&marketSystemConditionRows[6].display,marketSystemConditionRows[6].caption.text,26);
-    ImportInitialText(data,0x4774,&marketWeaponConditionRows[6].display,marketWeaponConditionRows[6].caption.text,26);
-    ImportInitialText(data,0x4628,&marketSystemConditionRows[7].display,marketSystemConditionRows[7].caption.text,26);
-    ImportInitialText(data,0x4793,&marketWeaponConditionRows[7].display,marketWeaponConditionRows[7].caption.text,26);
-    ImportInitialText(data,0x4647,&marketSystemConditionRows[8].display,marketSystemConditionRows[8].caption.text,26);
-    ImportInitialText(data,0x47B2,&marketWeaponConditionRows[8].display,marketWeaponConditionRows[8].caption.text,26);
-    ImportInitialText(data,0x4666,&marketSystemConditionRows[9].display,marketSystemConditionRows[9].caption.text,26);
-    ImportInitialText(data,0x47D1,&marketWeaponConditionRows[9].display,marketWeaponConditionRows[9].caption.text,26);
-    ImportInitialText(data,0x2696,&ownedUnitListHeading.display,ownedUnitListHeading.text,26);
-    ImportInitialText(data,0x3254,&repairTitle.display,repairTitle.text,25);
-    ImportInitialText(data,0x33A8,&repairBodyCondition.display,repairBodyCondition.caption.text,19);
-    ImportInitialText(data,0x33C0,&repairFooter.display,repairFooter.text,62);
-    ImportInitialText(data,0x26B5,&ownedUnitListRows[0].display,ownedUnitListRows[0].caption.text,25);
-    ImportInitialText(data,0x26D3,&ownedUnitListRows[1].display,ownedUnitListRows[1].caption.text,25);
-    ImportInitialText(data,0x26F1,&ownedUnitListRows[2].display,ownedUnitListRows[2].caption.text,25);
-    ImportInitialText(data,0x270F,&ownedUnitListRows[3].display,ownedUnitListRows[3].caption.text,25);
-    ImportInitialText(data,0x272D,&ownedUnitListRows[4].display,ownedUnitListRows[4].caption.text,25);
-    ImportInitialText(data,0x274B,&ownedUnitListRows[5].display,ownedUnitListRows[5].caption.text,25);
-    ImportInitialText(data,0x2769,&ownedUnitListRows[6].display,ownedUnitListRows[6].caption.text,25);
-    ImportInitialText(data,0x2787,&ownedUnitListRows[7].display,ownedUnitListRows[7].caption.text,25);
-    ImportInitialText(data,0x27A5,&ownedUnitListRows[8].display,ownedUnitListRows[8].caption.text,25);
-    ImportInitialText(data,0x27C3,&ownedUnitListRows[9].display,ownedUnitListRows[9].caption.text,25);
-    ImportInitialText(data,0x27E1,&ownedUnitListRows[10].display,ownedUnitListRows[10].caption.text,25);
-    ImportInitialText(data,0x27FF,&ownedUnitListRows[11].display,ownedUnitListRows[11].caption.text,25);
-    ImportInitialText(data,0x281D,&ownedUnitListRows[12].display,ownedUnitListRows[12].caption.text,25);
-    ImportInitialText(data,0x3272,&repairSystemConditionRows[0].display,repairSystemConditionRows[0].caption.text,26);
-    ImportInitialText(data,0x3291,&repairSystemConditionRows[1].display,repairSystemConditionRows[1].caption.text,26);
-    ImportInitialText(data,0x32B0,&repairSystemConditionRows[2].display,repairSystemConditionRows[2].caption.text,26);
-    ImportInitialText(data,0x32CF,&repairSystemConditionRows[3].display,repairSystemConditionRows[3].caption.text,26);
-    ImportInitialText(data,0x32EE,&repairSystemConditionRows[4].display,repairSystemConditionRows[4].caption.text,26);
-    ImportInitialText(data,0x330D,&repairSystemConditionRows[5].display,repairSystemConditionRows[5].caption.text,26);
-    ImportInitialText(data,0x332C,&repairSystemConditionRows[6].display,repairSystemConditionRows[6].caption.text,26);
-    ImportInitialText(data,0x334B,&repairSystemConditionRows[7].display,repairSystemConditionRows[7].caption.text,26);
-    ImportInitialText(data,0x336A,&repairSystemConditionRows[8].display,repairSystemConditionRows[8].caption.text,26);
-    ImportInitialText(data,0x3389,&repairSystemConditionRows[9].display,repairSystemConditionRows[9].caption.text,26);
-    ImportInitialText(data,0x3403,&repairWeaponConditionRows[0].display,repairWeaponConditionRows[0].caption.text,26);
-    ImportInitialText(data,0x3422,&repairWeaponConditionRows[1].display,repairWeaponConditionRows[1].caption.text,26);
-    ImportInitialText(data,0x3441,&repairWeaponConditionRows[2].display,repairWeaponConditionRows[2].caption.text,26);
-    ImportInitialText(data,0x3460,&repairWeaponConditionRows[3].display,repairWeaponConditionRows[3].caption.text,26);
-    ImportInitialText(data,0x347F,&repairWeaponConditionRows[4].display,repairWeaponConditionRows[4].caption.text,26);
-    ImportInitialText(data,0x349E,&repairWeaponConditionRows[5].display,repairWeaponConditionRows[5].caption.text,26);
-    ImportInitialText(data,0x34BD,&repairWeaponConditionRows[6].display,repairWeaponConditionRows[6].caption.text,26);
-    ImportInitialText(data,0x34DC,&repairWeaponConditionRows[7].display,repairWeaponConditionRows[7].caption.text,26);
-    ImportInitialText(data,0x34FB,&repairWeaponConditionRows[8].display,repairWeaponConditionRows[8].caption.text,26);
-    ImportInitialText(data,0x351A,&repairWeaponConditionRows[9].display,repairWeaponConditionRows[9].caption.text,26);
-    ImportInitialText(data,0x3539,&repairWeaponConditionRows[10].display,repairWeaponConditionRows[10].caption.text,26);
-    ImportInitialText(data,0x2C5B,&mechStatusLabels[0].display,mechStatusLabels[0].text,106);
-    ImportInitialText(data,0x2CCA,&mechStatusLabels[1].display,mechStatusLabels[1].text,7);
-    ImportInitialText(data,0x2CD6,&mechStatusLabels[2].display,mechStatusLabels[2].text,11);
-    ImportInitialText(data,0x2CE6,&mechStatusLabels[3].display,mechStatusLabels[3].text,7);
-    ImportInitialText(data,0x2CF2,&mechStatusLabels[4].display,mechStatusLabels[4].text,5);
-    ImportInitialText(data,0x2CFC,&mechStatusLabels[5].display,mechStatusLabels[5].text,5);
-    ImportInitialText(data,0x2D1C,&dropShipStatusLabels[0].display,dropShipStatusLabels[0].text,30);
-    ImportInitialText(data,0x2D3F,&dropShipStatusLabels[1].display,dropShipStatusLabels[1].text,5);
-    ImportInitialText(data,0x2D49,&dropShipStatusLabels[2].display,dropShipStatusLabels[2].text,5);
-    rearmConfirmationPanel.x=MwReadNativeWord(data,0x3110);
-    rearmConfirmationPanel.y=MwReadNativeWord(data,0x3112);
-    rearmConfirmationPanel.width=MwReadNativeWord(data,0x3114);
-    rearmConfirmationPanel.bottomInset=MwReadNativeWord(data,0x3116);
-    rearmConfirmationPanel.lineCount=MwReadNativeWord(data,0x3118);
-    rearmConfirmationPanel.borderEnabled=MwReadNativeWord(data,0x311A);
-    rearmConfirmationPanel.lineSpacing=MwReadNativeWord(data,0x311C);
-    rearmConfirmationPanel.background=MwReadNativeWord(data,0x311E);
-    if (MwReadNativeWord(data,0x3120)!=0x3126) return false;
-    rearmConfirmationPanel.lines[0]=&rearmConfirmationLabels[0].display;
-    if (MwReadNativeWord(data,0x3122)!=0x3143) return false;
-    rearmConfirmationPanel.lines[1]=&rearmConfirmationLabels[1].display;
-    if (MwReadNativeWord(data,0x3124)!=0x314F) return false;
-    rearmConfirmationPanel.lines[2]=&rearmConfirmationLabels[2].display;
-    saleConfirmationPanel.x=MwReadNativeWord(data,0x3075);
-    saleConfirmationPanel.y=MwReadNativeWord(data,0x3077);
-    saleConfirmationPanel.width=MwReadNativeWord(data,0x3079);
-    saleConfirmationPanel.bottomInset=MwReadNativeWord(data,0x307B);
-    saleConfirmationPanel.lineCount=MwReadNativeWord(data,0x307D);
-    saleConfirmationPanel.borderEnabled=MwReadNativeWord(data,0x307F);
-    saleConfirmationPanel.lineSpacing=MwReadNativeWord(data,0x3081);
-    saleConfirmationPanel.background=MwReadNativeWord(data,0x3083);
-    if (MwReadNativeWord(data,0x3085)!=0x308B) return false;
-    saleConfirmationPanel.lines[0]=&saleConfirmationLabels[0].display;
-    if (MwReadNativeWord(data,0x3087)!=0x30D8) return false;
-    saleConfirmationPanel.lines[1]=&saleConfirmationLabels[1].display;
-    if (MwReadNativeWord(data,0x3089)!=0x30E4) return false;
-    saleConfirmationPanel.lines[2]=&saleConfirmationLabels[2].display;
-    marketUnitListPanel.x=MwReadNativeWord(data,0x28F1);
-    marketUnitListPanel.y=MwReadNativeWord(data,0x28F3);
-    marketUnitListPanel.width=MwReadNativeWord(data,0x28F5);
-    marketUnitListPanel.bottomInset=MwReadNativeWord(data,0x28F7);
-    marketUnitListPanel.lineCount=MwReadNativeWord(data,0x28F9);
-    marketUnitListPanel.borderEnabled=MwReadNativeWord(data,0x28FB);
-    marketUnitListPanel.lineSpacing=MwReadNativeWord(data,0x28FD);
-    marketUnitListPanel.background=MwReadNativeWord(data,0x28FF);
-    if (MwReadNativeWord(data,0x2901)!=0x291D) return false;
-    marketUnitListPanel.lines[0]=&marketListHeading.display;
-    if (MwReadNativeWord(data,0x2903)!=0x2931) return false;
-    marketUnitListPanel.lines[1]=&marketUnitListRows[0].display;
-    if (MwReadNativeWord(data,0x2905)!=0x2943) return false;
-    marketUnitListPanel.lines[2]=&marketUnitListRows[1].display;
-    if (MwReadNativeWord(data,0x2907)!=0x2955) return false;
-    marketUnitListPanel.lines[3]=&marketUnitListRows[2].display;
-    if (MwReadNativeWord(data,0x2909)!=0x2967) return false;
-    marketUnitListPanel.lines[4]=&marketUnitListRows[3].display;
-    if (MwReadNativeWord(data,0x290B)!=0x2979) return false;
-    marketUnitListPanel.lines[5]=&marketUnitListRows[4].display;
-    if (MwReadNativeWord(data,0x290D)!=0x298B) return false;
-    marketUnitListPanel.lines[6]=&marketUnitListRows[5].display;
-    if (MwReadNativeWord(data,0x290F)!=0x299D) return false;
-    marketUnitListPanel.lines[7]=&marketUnitListRows[6].display;
-    if (MwReadNativeWord(data,0x2911)!=0x29AF) return false;
-    marketUnitListPanel.lines[8]=&marketUnitListRows[7].display;
-    if (MwReadNativeWord(data,0x2913)!=0x29C1) return false;
-    marketUnitListPanel.lines[9]=&marketUnitListRows[8].display;
-    if (MwReadNativeWord(data,0x2915)!=0x29D3) return false;
-    marketUnitListPanel.lines[10]=&marketUnitListRows[9].display;
-    if (MwReadNativeWord(data,0x2917)!=0x29E5) return false;
-    marketUnitListPanel.lines[11]=&marketUnitListRows[10].display;
-    if (MwReadNativeWord(data,0x2919)!=0x29F7) return false;
-    marketUnitListPanel.lines[12]=&marketUnitListRows[11].display;
-    if (MwReadNativeWord(data,0x291B)!=0x2A09) return false;
-    marketUnitListPanel.lines[13]=&marketUnitListRows[12].display;
-    marketMechStatusPanel.x=MwReadNativeWord(data,0x437E);
-    marketMechStatusPanel.y=MwReadNativeWord(data,0x4380);
-    marketMechStatusPanel.width=MwReadNativeWord(data,0x4382);
-    marketMechStatusPanel.bottomInset=MwReadNativeWord(data,0x4384);
-    marketMechStatusPanel.lineCount=MwReadNativeWord(data,0x4386);
-    marketMechStatusPanel.borderEnabled=MwReadNativeWord(data,0x4388);
-    marketMechStatusPanel.lineSpacing=MwReadNativeWord(data,0x438A);
-    marketMechStatusPanel.background=MwReadNativeWord(data,0x438C);
-    if (MwReadNativeWord(data,0x438E)!=0x4396) return false;
-    marketMechStatusPanel.lines[0]=&marketMechStatusLabels[0].display;
-    if (MwReadNativeWord(data,0x4390)!=0x4418) return false;
-    marketMechStatusPanel.lines[1]=&marketMechStatusLabels[1].display;
-    if (MwReadNativeWord(data,0x4392)!=0x4421) return false;
-    marketMechStatusPanel.lines[2]=&marketMechStatusLabels[2].display;
-    if (MwReadNativeWord(data,0x4394)!=0x4434) return false;
-    marketMechStatusPanel.lines[3]=&marketMechStatusLabels[3].display;
-    marketDropShipStatusPanel.x=MwReadNativeWord(data,0x443E);
-    marketDropShipStatusPanel.y=MwReadNativeWord(data,0x4440);
-    marketDropShipStatusPanel.width=MwReadNativeWord(data,0x4442);
-    marketDropShipStatusPanel.bottomInset=MwReadNativeWord(data,0x4444);
-    marketDropShipStatusPanel.lineCount=MwReadNativeWord(data,0x4446);
-    marketDropShipStatusPanel.borderEnabled=MwReadNativeWord(data,0x4448);
-    marketDropShipStatusPanel.lineSpacing=MwReadNativeWord(data,0x444A);
-    marketDropShipStatusPanel.background=MwReadNativeWord(data,0x444C);
-    if (MwReadNativeWord(data,0x444E)!=0x4454) return false;
-    marketDropShipStatusPanel.lines[0]=&marketDropShipStatusLabels[0].display;
-    if (MwReadNativeWord(data,0x4450)!=0x4496) return false;
-    marketDropShipStatusPanel.lines[1]=&marketDropShipStatusLabels[1].display;
-    if (MwReadNativeWord(data,0x4452)!=0x449F) return false;
-    marketDropShipStatusPanel.lines[2]=&marketDropShipStatusLabels[2].display;
-    marketComponentPanel.x=MwReadNativeWord(data,0x44F1);
-    marketComponentPanel.y=MwReadNativeWord(data,0x44F3);
-    marketComponentPanel.width=MwReadNativeWord(data,0x44F5);
-    marketComponentPanel.bottomInset=MwReadNativeWord(data,0x44F7);
-    marketComponentPanel.lineCount=MwReadNativeWord(data,0x44F9);
-    marketComponentPanel.borderEnabled=MwReadNativeWord(data,0x44FB);
-    marketComponentPanel.lineSpacing=MwReadNativeWord(data,0x44FD);
-    marketComponentPanel.background=MwReadNativeWord(data,0x44FF);
-    if (MwReadNativeWord(data,0x4501)!=0x4531) return false;
-    marketComponentPanel.lines[0]=&marketComponentTitle.display;
-    if (MwReadNativeWord(data,0x4503)!=0x454F) return false;
-    marketComponentPanel.lines[1]=&marketSystemConditionRows[0].display;
-    if (MwReadNativeWord(data,0x4505)!=0x456E) return false;
-    marketComponentPanel.lines[2]=&marketSystemConditionRows[1].display;
-    if (MwReadNativeWord(data,0x4507)!=0x458D) return false;
-    marketComponentPanel.lines[3]=&marketSystemConditionRows[2].display;
-    if (MwReadNativeWord(data,0x4509)!=0x45AC) return false;
-    marketComponentPanel.lines[4]=&marketSystemConditionRows[3].display;
-    if (MwReadNativeWord(data,0x450B)!=0x45CB) return false;
-    marketComponentPanel.lines[5]=&marketSystemConditionRows[4].display;
-    if (MwReadNativeWord(data,0x450D)!=0x45EA) return false;
-    marketComponentPanel.lines[6]=&marketSystemConditionRows[5].display;
-    if (MwReadNativeWord(data,0x450F)!=0x4609) return false;
-    marketComponentPanel.lines[7]=&marketSystemConditionRows[6].display;
-    if (MwReadNativeWord(data,0x4511)!=0x4628) return false;
-    marketComponentPanel.lines[8]=&marketSystemConditionRows[7].display;
-    if (MwReadNativeWord(data,0x4513)!=0x4647) return false;
-    marketComponentPanel.lines[9]=&marketSystemConditionRows[8].display;
-    if (MwReadNativeWord(data,0x4515)!=0x4666) return false;
-    marketComponentPanel.lines[10]=&marketSystemConditionRows[9].display;
-    if (MwReadNativeWord(data,0x4517)!=0x4685) return false;
-    marketComponentPanel.lines[11]=&marketBodyCondition.display;
-    if (MwReadNativeWord(data,0x4519)!=0x469D) return false;
-    marketComponentPanel.lines[12]=&marketWeaponHeading.display;
-    if (MwReadNativeWord(data,0x451B)!=0x46BA) return false;
-    marketComponentPanel.lines[13]=&marketWeaponConditionRows[0].display;
-    if (MwReadNativeWord(data,0x451D)!=0x46D9) return false;
-    marketComponentPanel.lines[14]=&marketWeaponConditionRows[1].display;
-    if (MwReadNativeWord(data,0x451F)!=0x46F8) return false;
-    marketComponentPanel.lines[15]=&marketWeaponConditionRows[2].display;
-    if (MwReadNativeWord(data,0x4521)!=0x4717) return false;
-    marketComponentPanel.lines[16]=&marketWeaponConditionRows[3].display;
-    if (MwReadNativeWord(data,0x4523)!=0x4736) return false;
-    marketComponentPanel.lines[17]=&marketWeaponConditionRows[4].display;
-    if (MwReadNativeWord(data,0x4525)!=0x4755) return false;
-    marketComponentPanel.lines[18]=&marketWeaponConditionRows[5].display;
-    if (MwReadNativeWord(data,0x4527)!=0x4774) return false;
-    marketComponentPanel.lines[19]=&marketWeaponConditionRows[6].display;
-    if (MwReadNativeWord(data,0x4529)!=0x4793) return false;
-    marketComponentPanel.lines[20]=&marketWeaponConditionRows[7].display;
-    if (MwReadNativeWord(data,0x452B)!=0x47B2) return false;
-    marketComponentPanel.lines[21]=&marketWeaponConditionRows[8].display;
-    if (MwReadNativeWord(data,0x452D)!=0x47D1) return false;
-    marketComponentPanel.lines[22]=&marketWeaponConditionRows[9].display;
-    if (MwReadNativeWord(data,0x452F)!=0x47F0) return false;
-    marketComponentPanel.lines[23]=&marketComponentDone.display;
-    mechComplexPanel.x=MwReadNativeWord(data,0x25C5);
-    mechComplexPanel.y=MwReadNativeWord(data,0x25C7);
-    mechComplexPanel.width=MwReadNativeWord(data,0x25C9);
-    mechComplexPanel.bottomInset=MwReadNativeWord(data,0x25CB);
-    mechComplexPanel.lineCount=MwReadNativeWord(data,0x25CD);
-    mechComplexPanel.borderEnabled=MwReadNativeWord(data,0x25CF);
-    mechComplexPanel.lineSpacing=MwReadNativeWord(data,0x25D1);
-    mechComplexPanel.background=MwReadNativeWord(data,0x25D3);
-    if (MwReadNativeWord(data,0x25D5)!=0x25DF) return false;
-    mechComplexPanel.lines[0]=&mechComplexLabels[0].display;
-    if (MwReadNativeWord(data,0x25D7)!=0x25F1) return false;
-    mechComplexPanel.lines[1]=&mechComplexLabels[1].display;
-    if (MwReadNativeWord(data,0x25D9)!=0x2603) return false;
-    mechComplexPanel.lines[2]=&mechComplexLabels[2].display;
-    if (MwReadNativeWord(data,0x25DB)!=0x2614) return false;
-    mechComplexPanel.lines[3]=&mechComplexLabels[3].display;
-    if (MwReadNativeWord(data,0x25DD)!=0x2624) return false;
-    mechComplexPanel.lines[4]=&mechComplexLabels[4].display;
-    ownedUnitListPanel.x=MwReadNativeWord(data,0x266A);
-    ownedUnitListPanel.y=MwReadNativeWord(data,0x266C);
-    ownedUnitListPanel.width=MwReadNativeWord(data,0x266E);
-    ownedUnitListPanel.bottomInset=MwReadNativeWord(data,0x2670);
-    ownedUnitListPanel.lineCount=MwReadNativeWord(data,0x2672);
-    ownedUnitListPanel.borderEnabled=MwReadNativeWord(data,0x2674);
-    ownedUnitListPanel.lineSpacing=MwReadNativeWord(data,0x2676);
-    ownedUnitListPanel.background=MwReadNativeWord(data,0x2678);
-    if (MwReadNativeWord(data,0x267A)!=0x2696) return false;
-    ownedUnitListPanel.lines[0]=&ownedUnitListHeading.display;
-    if (MwReadNativeWord(data,0x267C)!=0x26B5) return false;
-    ownedUnitListPanel.lines[1]=&ownedUnitListRows[0].display;
-    if (MwReadNativeWord(data,0x267E)!=0x26D3) return false;
-    ownedUnitListPanel.lines[2]=&ownedUnitListRows[1].display;
-    if (MwReadNativeWord(data,0x2680)!=0x26F1) return false;
-    ownedUnitListPanel.lines[3]=&ownedUnitListRows[2].display;
-    if (MwReadNativeWord(data,0x2682)!=0x270F) return false;
-    ownedUnitListPanel.lines[4]=&ownedUnitListRows[3].display;
-    if (MwReadNativeWord(data,0x2684)!=0x272D) return false;
-    ownedUnitListPanel.lines[5]=&ownedUnitListRows[4].display;
-    if (MwReadNativeWord(data,0x2686)!=0x274B) return false;
-    ownedUnitListPanel.lines[6]=&ownedUnitListRows[5].display;
-    if (MwReadNativeWord(data,0x2688)!=0x2769) return false;
-    ownedUnitListPanel.lines[7]=&ownedUnitListRows[6].display;
-    if (MwReadNativeWord(data,0x268A)!=0x2787) return false;
-    ownedUnitListPanel.lines[8]=&ownedUnitListRows[7].display;
-    if (MwReadNativeWord(data,0x268C)!=0x27A5) return false;
-    ownedUnitListPanel.lines[9]=&ownedUnitListRows[8].display;
-    if (MwReadNativeWord(data,0x268E)!=0x27C3) return false;
-    ownedUnitListPanel.lines[10]=&ownedUnitListRows[9].display;
-    if (MwReadNativeWord(data,0x2690)!=0x27E1) return false;
-    ownedUnitListPanel.lines[11]=&ownedUnitListRows[10].display;
-    if (MwReadNativeWord(data,0x2692)!=0x27FF) return false;
-    ownedUnitListPanel.lines[12]=&ownedUnitListRows[11].display;
-    if (MwReadNativeWord(data,0x2694)!=0x281D) return false;
-    ownedUnitListPanel.lines[13]=&ownedUnitListRows[12].display;
-    mechStatusPanel.x=MwReadNativeWord(data,0x2C3F);
-    mechStatusPanel.y=MwReadNativeWord(data,0x2C41);
-    mechStatusPanel.width=MwReadNativeWord(data,0x2C43);
-    mechStatusPanel.bottomInset=MwReadNativeWord(data,0x2C45);
-    mechStatusPanel.lineCount=MwReadNativeWord(data,0x2C47);
-    mechStatusPanel.borderEnabled=MwReadNativeWord(data,0x2C49);
-    mechStatusPanel.lineSpacing=MwReadNativeWord(data,0x2C4B);
-    mechStatusPanel.background=MwReadNativeWord(data,0x2C4D);
-    if (MwReadNativeWord(data,0x2C4F)!=0x2C5B) return false;
-    mechStatusPanel.lines[0]=&mechStatusLabels[0].display;
-    if (MwReadNativeWord(data,0x2C51)!=0x2CCA) return false;
-    mechStatusPanel.lines[1]=&mechStatusLabels[1].display;
-    if (MwReadNativeWord(data,0x2C53)!=0x2CD6) return false;
-    mechStatusPanel.lines[2]=&mechStatusLabels[2].display;
-    if (MwReadNativeWord(data,0x2C55)!=0x2CE6) return false;
-    mechStatusPanel.lines[3]=&mechStatusLabels[3].display;
-    if (MwReadNativeWord(data,0x2C57)!=0x2CF2) return false;
-    mechStatusPanel.lines[4]=&mechStatusLabels[4].display;
-    if (MwReadNativeWord(data,0x2C59)!=0x2CFC) return false;
-    mechStatusPanel.lines[5]=&mechStatusLabels[5].display;
-    dropShipStatusPanel.x=MwReadNativeWord(data,0x2D06);
-    dropShipStatusPanel.y=MwReadNativeWord(data,0x2D08);
-    dropShipStatusPanel.width=MwReadNativeWord(data,0x2D0A);
-    dropShipStatusPanel.bottomInset=MwReadNativeWord(data,0x2D0C);
-    dropShipStatusPanel.lineCount=MwReadNativeWord(data,0x2D0E);
-    dropShipStatusPanel.borderEnabled=MwReadNativeWord(data,0x2D10);
-    dropShipStatusPanel.lineSpacing=MwReadNativeWord(data,0x2D12);
-    dropShipStatusPanel.background=MwReadNativeWord(data,0x2D14);
-    if (MwReadNativeWord(data,0x2D16)!=0x2D1C) return false;
-    dropShipStatusPanel.lines[0]=&dropShipStatusLabels[0].display;
-    if (MwReadNativeWord(data,0x2D18)!=0x2D3F) return false;
-    dropShipStatusPanel.lines[1]=&dropShipStatusLabels[1].display;
-    if (MwReadNativeWord(data,0x2D1A)!=0x2D49) return false;
-    dropShipStatusPanel.lines[2]=&dropShipStatusLabels[2].display;
-    componentRepairPanel.x=MwReadNativeWord(data,0x3214);
-    componentRepairPanel.y=MwReadNativeWord(data,0x3216);
-    componentRepairPanel.width=MwReadNativeWord(data,0x3218);
-    componentRepairPanel.bottomInset=MwReadNativeWord(data,0x321A);
-    componentRepairPanel.lineCount=MwReadNativeWord(data,0x321C);
-    componentRepairPanel.borderEnabled=MwReadNativeWord(data,0x321E);
-    componentRepairPanel.lineSpacing=MwReadNativeWord(data,0x3220);
-    componentRepairPanel.background=MwReadNativeWord(data,0x3222);
-    if (MwReadNativeWord(data,0x3224)!=0x3254) return false;
-    componentRepairPanel.lines[0]=&repairTitle.display;
-    if (MwReadNativeWord(data,0x3226)!=0x3272) return false;
-    componentRepairPanel.lines[1]=&repairSystemConditionRows[0].display;
-    if (MwReadNativeWord(data,0x3228)!=0x3291) return false;
-    componentRepairPanel.lines[2]=&repairSystemConditionRows[1].display;
-    if (MwReadNativeWord(data,0x322A)!=0x32B0) return false;
-    componentRepairPanel.lines[3]=&repairSystemConditionRows[2].display;
-    if (MwReadNativeWord(data,0x322C)!=0x32CF) return false;
-    componentRepairPanel.lines[4]=&repairSystemConditionRows[3].display;
-    if (MwReadNativeWord(data,0x322E)!=0x32EE) return false;
-    componentRepairPanel.lines[5]=&repairSystemConditionRows[4].display;
-    if (MwReadNativeWord(data,0x3230)!=0x330D) return false;
-    componentRepairPanel.lines[6]=&repairSystemConditionRows[5].display;
-    if (MwReadNativeWord(data,0x3232)!=0x332C) return false;
-    componentRepairPanel.lines[7]=&repairSystemConditionRows[6].display;
-    if (MwReadNativeWord(data,0x3234)!=0x334B) return false;
-    componentRepairPanel.lines[8]=&repairSystemConditionRows[7].display;
-    if (MwReadNativeWord(data,0x3236)!=0x336A) return false;
-    componentRepairPanel.lines[9]=&repairSystemConditionRows[8].display;
-    if (MwReadNativeWord(data,0x3238)!=0x3389) return false;
-    componentRepairPanel.lines[10]=&repairSystemConditionRows[9].display;
-    if (MwReadNativeWord(data,0x323A)!=0x33A8) return false;
-    componentRepairPanel.lines[11]=&repairBodyCondition.display;
-    if (MwReadNativeWord(data,0x323C)!=0x33C0) return false;
-    componentRepairPanel.lines[12]=&repairFooter.display;
-    if (MwReadNativeWord(data,0x323E)!=0x3403) return false;
-    componentRepairPanel.lines[13]=&repairWeaponConditionRows[0].display;
-    if (MwReadNativeWord(data,0x3240)!=0x3422) return false;
-    componentRepairPanel.lines[14]=&repairWeaponConditionRows[1].display;
-    if (MwReadNativeWord(data,0x3242)!=0x3441) return false;
-    componentRepairPanel.lines[15]=&repairWeaponConditionRows[2].display;
-    if (MwReadNativeWord(data,0x3244)!=0x3460) return false;
-    componentRepairPanel.lines[16]=&repairWeaponConditionRows[3].display;
-    if (MwReadNativeWord(data,0x3246)!=0x347F) return false;
-    componentRepairPanel.lines[17]=&repairWeaponConditionRows[4].display;
-    if (MwReadNativeWord(data,0x3248)!=0x349E) return false;
-    componentRepairPanel.lines[18]=&repairWeaponConditionRows[5].display;
-    if (MwReadNativeWord(data,0x324A)!=0x34BD) return false;
-    componentRepairPanel.lines[19]=&repairWeaponConditionRows[6].display;
-    if (MwReadNativeWord(data,0x324C)!=0x34DC) return false;
-    componentRepairPanel.lines[20]=&repairWeaponConditionRows[7].display;
-    if (MwReadNativeWord(data,0x324E)!=0x34FB) return false;
-    componentRepairPanel.lines[21]=&repairWeaponConditionRows[8].display;
-    if (MwReadNativeWord(data,0x3250)!=0x351A) return false;
-    componentRepairPanel.lines[22]=&repairWeaponConditionRows[9].display;
-    if (MwReadNativeWord(data,0x3252)!=0x3539) return false;
-    componentRepairPanel.lines[23]=&repairWeaponConditionRows[10].display;
-    for (uint16_t i=0;i<rearmConfirmationMenu.recordCount;++i)
-    {
-        const uint8_t *encoded=data+0x316D+i*CAMPAIGN_UI_RECORD_BYTES;
-        MwUiRecord *row=&rearmConfirmationMenu.records[i];
-        row->enabled=encoded[0];row->textRecord=encoded[1];
-        row->x=MwReadNativeWord(encoded,2);row->y=MwReadNativeWord(encoded,4);
-        row->activateCodeOffset=MwReadNativeWord(encoded,6);row->pictureIndex=MwReadNativeWord(encoded,8);
-        row->upRecordIndex=encoded[10];row->downRecordIndex=encoded[11];
-        row->leftRecordIndex=encoded[12];row->rightRecordIndex=encoded[13];
-        row->text=NULL;row->textColour=NULL;
-    }
-    if (MwReadNativeWord(data,0x3175)!=0x3147) return false;
-    rearmConfirmationMenu.records[0].text=rearmConfirmationLabels[1].text;
-    rearmConfirmationMenu.records[0].textColour=&(rearmConfirmationLabels[1].display).colour;
-    if (MwReadNativeWord(data,0x3183)!=0x3153) return false;
-    rearmConfirmationMenu.records[1].text=rearmConfirmationLabels[2].text;
-    rearmConfirmationMenu.records[1].textColour=&(rearmConfirmationLabels[2].display).colour;
-    for (uint16_t i=0;i<saleConfirmationMenu.recordCount;++i)
-    {
-        const uint8_t *encoded=data+0x30F0+i*CAMPAIGN_UI_RECORD_BYTES;
-        MwUiRecord *row=&saleConfirmationMenu.records[i];
-        row->enabled=encoded[0];row->textRecord=encoded[1];
-        row->x=MwReadNativeWord(encoded,2);row->y=MwReadNativeWord(encoded,4);
-        row->activateCodeOffset=MwReadNativeWord(encoded,6);row->pictureIndex=MwReadNativeWord(encoded,8);
-        row->upRecordIndex=encoded[10];row->downRecordIndex=encoded[11];
-        row->leftRecordIndex=encoded[12];row->rightRecordIndex=encoded[13];
-        row->text=NULL;row->textColour=NULL;
-    }
-    if (MwReadNativeWord(data,0x30F8)!=0x30DC) return false;
-    saleConfirmationMenu.records[0].text=saleConfirmationLabels[1].text;
-    saleConfirmationMenu.records[0].textColour=&(saleConfirmationLabels[1].display).colour;
-    if (MwReadNativeWord(data,0x3106)!=0x30E8) return false;
-    saleConfirmationMenu.records[1].text=saleConfirmationLabels[2].text;
-    saleConfirmationMenu.records[1].textColour=&(saleConfirmationLabels[2].display).colour;
-    for (uint16_t i=0;i<marketUnitListMenu.recordCount;++i)
-    {
-        const uint8_t *encoded=data+0x2A1B+i*CAMPAIGN_UI_RECORD_BYTES;
-        MwUiRecord *row=&marketUnitListMenu.records[i];
-        row->enabled=encoded[0];row->textRecord=encoded[1];
-        row->x=MwReadNativeWord(encoded,2);row->y=MwReadNativeWord(encoded,4);
-        row->activateCodeOffset=MwReadNativeWord(encoded,6);row->pictureIndex=MwReadNativeWord(encoded,8);
-        row->upRecordIndex=encoded[10];row->downRecordIndex=encoded[11];
-        row->leftRecordIndex=encoded[12];row->rightRecordIndex=encoded[13];
-        row->text=NULL;row->textColour=NULL;
-    }
-    if (MwReadNativeWord(data,0x2A23)!=0x2935) return false;
-    marketUnitListMenu.records[0].text=marketUnitListRows[0].text;
-    marketUnitListMenu.records[0].textColour=&(marketUnitListRows[0].display).colour;
-    if (MwReadNativeWord(data,0x2A31)!=0x2947) return false;
-    marketUnitListMenu.records[1].text=marketUnitListRows[1].text;
-    marketUnitListMenu.records[1].textColour=&(marketUnitListRows[1].display).colour;
-    if (MwReadNativeWord(data,0x2A3F)!=0x2959) return false;
-    marketUnitListMenu.records[2].text=marketUnitListRows[2].text;
-    marketUnitListMenu.records[2].textColour=&(marketUnitListRows[2].display).colour;
-    if (MwReadNativeWord(data,0x2A4D)!=0x296B) return false;
-    marketUnitListMenu.records[3].text=marketUnitListRows[3].text;
-    marketUnitListMenu.records[3].textColour=&(marketUnitListRows[3].display).colour;
-    if (MwReadNativeWord(data,0x2A5B)!=0x297D) return false;
-    marketUnitListMenu.records[4].text=marketUnitListRows[4].text;
-    marketUnitListMenu.records[4].textColour=&(marketUnitListRows[4].display).colour;
-    if (MwReadNativeWord(data,0x2A69)!=0x298F) return false;
-    marketUnitListMenu.records[5].text=marketUnitListRows[5].text;
-    marketUnitListMenu.records[5].textColour=&(marketUnitListRows[5].display).colour;
-    if (MwReadNativeWord(data,0x2A77)!=0x29A1) return false;
-    marketUnitListMenu.records[6].text=marketUnitListRows[6].text;
-    marketUnitListMenu.records[6].textColour=&(marketUnitListRows[6].display).colour;
-    if (MwReadNativeWord(data,0x2A85)!=0x29B3) return false;
-    marketUnitListMenu.records[7].text=marketUnitListRows[7].text;
-    marketUnitListMenu.records[7].textColour=&(marketUnitListRows[7].display).colour;
-    if (MwReadNativeWord(data,0x2A93)!=0x29C5) return false;
-    marketUnitListMenu.records[8].text=marketUnitListRows[8].text;
-    marketUnitListMenu.records[8].textColour=&(marketUnitListRows[8].display).colour;
-    if (MwReadNativeWord(data,0x2AA1)!=0x29D7) return false;
-    marketUnitListMenu.records[9].text=marketUnitListRows[9].text;
-    marketUnitListMenu.records[9].textColour=&(marketUnitListRows[9].display).colour;
-    if (MwReadNativeWord(data,0x2AAF)!=0x29E9) return false;
-    marketUnitListMenu.records[10].text=marketUnitListRows[10].text;
-    marketUnitListMenu.records[10].textColour=&(marketUnitListRows[10].display).colour;
-    if (MwReadNativeWord(data,0x2ABD)!=0x29FB) return false;
-    marketUnitListMenu.records[11].text=marketUnitListRows[11].text;
-    marketUnitListMenu.records[11].textColour=&(marketUnitListRows[11].display).colour;
-    if (MwReadNativeWord(data,0x2ACB)!=0x2A0D) return false;
-    marketUnitListMenu.records[12].text=marketUnitListRows[12].text;
-    marketUnitListMenu.records[12].textColour=&(marketUnitListRows[12].display).colour;
-    for (uint16_t i=0;i<marketMechMenu.recordCount;++i)
-    {
-        const uint8_t *encoded=data+0x44A9+i*CAMPAIGN_UI_RECORD_BYTES;
-        MwUiRecord *row=&marketMechMenu.records[i];
-        row->enabled=encoded[0];row->textRecord=encoded[1];
-        row->x=MwReadNativeWord(encoded,2);row->y=MwReadNativeWord(encoded,4);
-        row->activateCodeOffset=MwReadNativeWord(encoded,6);row->pictureIndex=MwReadNativeWord(encoded,8);
-        row->upRecordIndex=encoded[10];row->downRecordIndex=encoded[11];
-        row->leftRecordIndex=encoded[12];row->rightRecordIndex=encoded[13];
-        row->text=NULL;row->textColour=NULL;
-    }
-    if (MwReadNativeWord(data,0x44B1)!=0x441C) return false;
-    marketMechMenu.records[0].text=marketMechStatusLabels[1].text;
-    marketMechMenu.records[0].textColour=&(marketMechStatusLabels[1].display).colour;
-    if (MwReadNativeWord(data,0x44BF)!=0x4425) return false;
-    marketMechMenu.records[1].text=marketMechStatusLabels[2].text;
-    marketMechMenu.records[1].textColour=&(marketMechStatusLabels[2].display).colour;
-    if (MwReadNativeWord(data,0x44CD)!=0x4438) return false;
-    marketMechMenu.records[2].text=marketMechStatusLabels[3].text;
-    marketMechMenu.records[2].textColour=&(marketMechStatusLabels[3].display).colour;
-    for (uint16_t i=0;i<marketDropShipMenu.recordCount;++i)
-    {
-        const uint8_t *encoded=data+0x44D3+i*CAMPAIGN_UI_RECORD_BYTES;
-        MwUiRecord *row=&marketDropShipMenu.records[i];
-        row->enabled=encoded[0];row->textRecord=encoded[1];
-        row->x=MwReadNativeWord(encoded,2);row->y=MwReadNativeWord(encoded,4);
-        row->activateCodeOffset=MwReadNativeWord(encoded,6);row->pictureIndex=MwReadNativeWord(encoded,8);
-        row->upRecordIndex=encoded[10];row->downRecordIndex=encoded[11];
-        row->leftRecordIndex=encoded[12];row->rightRecordIndex=encoded[13];
-        row->text=NULL;row->textColour=NULL;
-    }
-    if (MwReadNativeWord(data,0x44DB)!=0x449A) return false;
-    marketDropShipMenu.records[0].text=marketDropShipStatusLabels[1].text;
-    marketDropShipMenu.records[0].textColour=&(marketDropShipStatusLabels[1].display).colour;
-    if (MwReadNativeWord(data,0x44E9)!=0x44A3) return false;
-    marketDropShipMenu.records[1].text=marketDropShipStatusLabels[2].text;
-    marketDropShipMenu.records[1].textColour=&(marketDropShipStatusLabels[2].display).colour;
-    for (uint16_t i=0;i<marketComponentMenu.recordCount;++i)
-    {
-        const uint8_t *encoded=data+0x480F+i*CAMPAIGN_UI_RECORD_BYTES;
-        MwUiRecord *row=&marketComponentMenu.records[i];
-        row->enabled=encoded[0];row->textRecord=encoded[1];
-        row->x=MwReadNativeWord(encoded,2);row->y=MwReadNativeWord(encoded,4);
-        row->activateCodeOffset=MwReadNativeWord(encoded,6);row->pictureIndex=MwReadNativeWord(encoded,8);
-        row->upRecordIndex=encoded[10];row->downRecordIndex=encoded[11];
-        row->leftRecordIndex=encoded[12];row->rightRecordIndex=encoded[13];
-        row->text=NULL;row->textColour=NULL;
-    }
-    if (MwReadNativeWord(data,0x4817)!=0x4553) return false;
-    marketComponentMenu.records[0].text=marketSystemConditionRows[0].caption.text;
-    marketComponentMenu.records[0].textColour=&(marketSystemConditionRows[0].display).colour;
-    for (uint16_t i=0;i<mechComplexMenu.recordCount;++i)
-    {
-        const uint8_t *encoded=data+0x2632+i*CAMPAIGN_UI_RECORD_BYTES;
-        MwUiRecord *row=&mechComplexMenu.records[i];
-        row->enabled=encoded[0];row->textRecord=encoded[1];
-        row->x=MwReadNativeWord(encoded,2);row->y=MwReadNativeWord(encoded,4);
-        row->activateCodeOffset=MwReadNativeWord(encoded,6);row->pictureIndex=MwReadNativeWord(encoded,8);
-        row->upRecordIndex=encoded[10];row->downRecordIndex=encoded[11];
-        row->leftRecordIndex=encoded[12];row->rightRecordIndex=encoded[13];
-        row->text=NULL;row->textColour=NULL;
-    }
-    if (MwReadNativeWord(data,0x263A)!=0x25F5) return false;
-    mechComplexMenu.records[0].text=mechComplexLabels[1].text;
-    mechComplexMenu.records[0].textColour=&(mechComplexLabels[1].display).colour;
-    if (MwReadNativeWord(data,0x2648)!=0x2607) return false;
-    mechComplexMenu.records[1].text=mechComplexLabels[2].text;
-    mechComplexMenu.records[1].textColour=&(mechComplexLabels[2].display).colour;
-    if (MwReadNativeWord(data,0x2656)!=0x2618) return false;
-    mechComplexMenu.records[2].text=mechComplexLabels[3].text;
-    mechComplexMenu.records[2].textColour=&(mechComplexLabels[3].display).colour;
-    if (MwReadNativeWord(data,0x2664)!=0x2628) return false;
-    mechComplexMenu.records[3].text=mechComplexLabels[4].text;
-    mechComplexMenu.records[3].textColour=&(mechComplexLabels[4].display).colour;
+    /* data/ui/complex.json: the Mech Complex (panel 25C5, menu 2632), the owned
+     * list (266A, 283B), 'Mech and DropShip service (2C3F, 2D53; 2D06, 2D99),
+     * sale (3075, 30F0), rearm (3110, 316D) and component repair (3214, 3558).
+     * Rows the code fills in keep their fixed-width templates. */
+    UiCaptionOwner complexOwners[]={
+        {"complex.caption.complex_title",&mechComplexLabels[0].display,mechComplexLabels[0].text,sizeof(mechComplexLabels[0].text),0,0},
+        {"complex.caption.complex_owned",&mechComplexLabels[1].display,mechComplexLabels[1].text,sizeof(mechComplexLabels[1].text),0,0},
+        {"complex.caption.complex_ammo",&mechComplexLabels[2].display,mechComplexLabels[2].text,sizeof(mechComplexLabels[2].text),0,0},
+        {"complex.caption.complex_market",&mechComplexLabels[3].display,mechComplexLabels[3].text,sizeof(mechComplexLabels[3].text),0,0},
+        {"complex.caption.complex_leave",&mechComplexLabels[4].display,mechComplexLabels[4].text,sizeof(mechComplexLabels[4].text),0,0},
+        {"complex.caption.owned_heading",&ownedUnitListHeading.display,ownedUnitListHeading.text,sizeof(ownedUnitListHeading.text),0,26},
+        {"complex.caption.owned_1",&ownedUnitListRows[0].display,ownedUnitListRows[0].caption.text,sizeof(ownedUnitListRows[0].caption.text),0,25},
+        {"complex.caption.owned_2",&ownedUnitListRows[1].display,ownedUnitListRows[1].caption.text,sizeof(ownedUnitListRows[1].caption.text),0,25},
+        {"complex.caption.owned_3",&ownedUnitListRows[2].display,ownedUnitListRows[2].caption.text,sizeof(ownedUnitListRows[2].caption.text),0,25},
+        {"complex.caption.owned_4",&ownedUnitListRows[3].display,ownedUnitListRows[3].caption.text,sizeof(ownedUnitListRows[3].caption.text),0,25},
+        {"complex.caption.owned_5",&ownedUnitListRows[4].display,ownedUnitListRows[4].caption.text,sizeof(ownedUnitListRows[4].caption.text),0,25},
+        {"complex.caption.owned_6",&ownedUnitListRows[5].display,ownedUnitListRows[5].caption.text,sizeof(ownedUnitListRows[5].caption.text),0,25},
+        {"complex.caption.owned_7",&ownedUnitListRows[6].display,ownedUnitListRows[6].caption.text,sizeof(ownedUnitListRows[6].caption.text),0,25},
+        {"complex.caption.owned_8",&ownedUnitListRows[7].display,ownedUnitListRows[7].caption.text,sizeof(ownedUnitListRows[7].caption.text),0,25},
+        {"complex.caption.owned_9",&ownedUnitListRows[8].display,ownedUnitListRows[8].caption.text,sizeof(ownedUnitListRows[8].caption.text),0,25},
+        {"complex.caption.owned_10",&ownedUnitListRows[9].display,ownedUnitListRows[9].caption.text,sizeof(ownedUnitListRows[9].caption.text),0,25},
+        {"complex.caption.owned_11",&ownedUnitListRows[10].display,ownedUnitListRows[10].caption.text,sizeof(ownedUnitListRows[10].caption.text),0,25},
+        {"complex.caption.owned_12",&ownedUnitListRows[11].display,ownedUnitListRows[11].caption.text,sizeof(ownedUnitListRows[11].caption.text),0,25},
+        {"complex.caption.owned_13",&ownedUnitListRows[12].display,ownedUnitListRows[12].caption.text,sizeof(ownedUnitListRows[12].caption.text),0,25},
+        {"complex.caption.mech_status",&mechStatusLabels[0].display,mechStatusLabels[0].text,sizeof(mechStatusLabels[0].text),0,106},
+        {"complex.caption.service_repair",&mechStatusLabels[1].display,mechStatusLabels[1].text,sizeof(mechStatusLabels[1].text),0,7},
+        {"complex.caption.service_repair_all",&mechStatusLabels[2].display,mechStatusLabels[2].text,sizeof(mechStatusLabels[2].text),0,11},
+        {"complex.caption.service_rearm",&mechStatusLabels[3].display,mechStatusLabels[3].text,sizeof(mechStatusLabels[3].text),0,7},
+        {"complex.caption.service_sell",&mechStatusLabels[4].display,mechStatusLabels[4].text,sizeof(mechStatusLabels[4].text),0,5},
+        {"complex.caption.service_leave",&mechStatusLabels[5].display,mechStatusLabels[5].text,sizeof(mechStatusLabels[5].text),0,5},
+        {"complex.caption.dropship_status",&dropShipStatusLabels[0].display,dropShipStatusLabels[0].text,sizeof(dropShipStatusLabels[0].text),0,30},
+        {"complex.caption.dropship_sell",&dropShipStatusLabels[1].display,dropShipStatusLabels[1].text,sizeof(dropShipStatusLabels[1].text),0,5},
+        {"complex.caption.dropship_leave",&dropShipStatusLabels[2].display,dropShipStatusLabels[2].text,sizeof(dropShipStatusLabels[2].text),0,5},
+        {"complex.caption.sale_prompt",&saleConfirmationLabels[0].display,saleConfirmationLabels[0].text,sizeof(saleConfirmationLabels[0].text),0,0},
+        {"complex.caption.sale_yes",&saleConfirmationLabels[1].display,saleConfirmationLabels[1].text,sizeof(saleConfirmationLabels[1].text),0,0},
+        {"complex.caption.sale_no",&saleConfirmationLabels[2].display,saleConfirmationLabels[2].text,sizeof(saleConfirmationLabels[2].text),0,0},
+        {"complex.caption.rearm_prompt",&rearmConfirmationLabels[0].display,rearmConfirmationLabels[0].text,sizeof(rearmConfirmationLabels[0].text),0,0},
+        {"complex.caption.rearm_yes",&rearmConfirmationLabels[1].display,rearmConfirmationLabels[1].text,sizeof(rearmConfirmationLabels[1].text),0,0},
+        {"complex.caption.rearm_no",&rearmConfirmationLabels[2].display,rearmConfirmationLabels[2].text,sizeof(rearmConfirmationLabels[2].text),0,0},
+        {"complex.caption.repair_title",&repairTitle.display,repairTitle.text,sizeof(repairTitle.text),0,25},
+        {"complex.caption.repair_system_1",&repairSystemConditionRows[0].display,repairSystemConditionRows[0].caption.text,sizeof(repairSystemConditionRows[0].caption.text),0,26},
+        {"complex.caption.repair_system_2",&repairSystemConditionRows[1].display,repairSystemConditionRows[1].caption.text,sizeof(repairSystemConditionRows[1].caption.text),0,26},
+        {"complex.caption.repair_system_3",&repairSystemConditionRows[2].display,repairSystemConditionRows[2].caption.text,sizeof(repairSystemConditionRows[2].caption.text),0,26},
+        {"complex.caption.repair_system_4",&repairSystemConditionRows[3].display,repairSystemConditionRows[3].caption.text,sizeof(repairSystemConditionRows[3].caption.text),0,26},
+        {"complex.caption.repair_system_5",&repairSystemConditionRows[4].display,repairSystemConditionRows[4].caption.text,sizeof(repairSystemConditionRows[4].caption.text),0,26},
+        {"complex.caption.repair_system_6",&repairSystemConditionRows[5].display,repairSystemConditionRows[5].caption.text,sizeof(repairSystemConditionRows[5].caption.text),0,26},
+        {"complex.caption.repair_system_7",&repairSystemConditionRows[6].display,repairSystemConditionRows[6].caption.text,sizeof(repairSystemConditionRows[6].caption.text),0,26},
+        {"complex.caption.repair_system_8",&repairSystemConditionRows[7].display,repairSystemConditionRows[7].caption.text,sizeof(repairSystemConditionRows[7].caption.text),0,26},
+        {"complex.caption.repair_system_9",&repairSystemConditionRows[8].display,repairSystemConditionRows[8].caption.text,sizeof(repairSystemConditionRows[8].caption.text),0,26},
+        {"complex.caption.repair_system_10",&repairSystemConditionRows[9].display,repairSystemConditionRows[9].caption.text,sizeof(repairSystemConditionRows[9].caption.text),0,26},
+        {"complex.caption.repair_body",&repairBodyCondition.display,repairBodyCondition.caption.text,sizeof(repairBodyCondition.caption.text),0,19},
+        {"complex.caption.repair_footer",&repairFooter.display,repairFooter.text,sizeof(repairFooter.text),0,62},
+        {"complex.caption.repair_weapon_1",&repairWeaponConditionRows[0].display,repairWeaponConditionRows[0].caption.text,sizeof(repairWeaponConditionRows[0].caption.text),0,26},
+        {"complex.caption.repair_weapon_2",&repairWeaponConditionRows[1].display,repairWeaponConditionRows[1].caption.text,sizeof(repairWeaponConditionRows[1].caption.text),0,26},
+        {"complex.caption.repair_weapon_3",&repairWeaponConditionRows[2].display,repairWeaponConditionRows[2].caption.text,sizeof(repairWeaponConditionRows[2].caption.text),0,26},
+        {"complex.caption.repair_weapon_4",&repairWeaponConditionRows[3].display,repairWeaponConditionRows[3].caption.text,sizeof(repairWeaponConditionRows[3].caption.text),0,26},
+        {"complex.caption.repair_weapon_5",&repairWeaponConditionRows[4].display,repairWeaponConditionRows[4].caption.text,sizeof(repairWeaponConditionRows[4].caption.text),0,26},
+        {"complex.caption.repair_weapon_6",&repairWeaponConditionRows[5].display,repairWeaponConditionRows[5].caption.text,sizeof(repairWeaponConditionRows[5].caption.text),0,26},
+        {"complex.caption.repair_weapon_7",&repairWeaponConditionRows[6].display,repairWeaponConditionRows[6].caption.text,sizeof(repairWeaponConditionRows[6].caption.text),0,26},
+        {"complex.caption.repair_weapon_8",&repairWeaponConditionRows[7].display,repairWeaponConditionRows[7].caption.text,sizeof(repairWeaponConditionRows[7].caption.text),0,26},
+        {"complex.caption.repair_weapon_9",&repairWeaponConditionRows[8].display,repairWeaponConditionRows[8].caption.text,sizeof(repairWeaponConditionRows[8].caption.text),0,26},
+        {"complex.caption.repair_weapon_10",&repairWeaponConditionRows[9].display,repairWeaponConditionRows[9].caption.text,sizeof(repairWeaponConditionRows[9].caption.text),0,26},
+        {"complex.caption.repair_weapon_11",&repairWeaponConditionRows[10].display,repairWeaponConditionRows[10].caption.text,sizeof(repairWeaponConditionRows[10].caption.text),0,26}};
+    const size_t complexCount=sizeof(complexOwners)/sizeof(complexOwners[0]);
+    if (!MwImportUiCaptions(data,complexOwners,complexCount)
+        || !MwImportUiPanel("complex.panel.complex",&mechComplexPanel,5,complexOwners,complexCount)
+        || !MwImportUiListPanel("complex.panel.owned",&ownedUnitListPanel,14,complexOwners,complexCount)
+        || !MwImportUiPanel("complex.panel.mech_status",&mechStatusPanel,6,complexOwners,complexCount)
+        || !MwImportUiPanel("complex.panel.dropship_status",&dropShipStatusPanel,3,complexOwners,complexCount)
+        || !MwImportUiPanel("complex.panel.sale",&saleConfirmationPanel,3,complexOwners,complexCount)
+        || !MwImportUiPanel("complex.panel.rearm",&rearmConfirmationPanel,3,complexOwners,complexCount)
+        || !MwImportUiListPanel("complex.panel.repair",&componentRepairPanel,24,complexOwners,complexCount)
+        || !MwImportUiMenu("complex.menu.complex",&mechComplexMenu,complexOwners,complexCount)
+        || !MwImportUiMenu("complex.menu.owned",&ownedUnitListMenu,complexOwners,complexCount)
+        || !MwImportUiMenu("complex.menu.mech_service",&mechServiceMenu,complexOwners,complexCount)
+        || !MwImportUiMenu("complex.menu.dropship_service",&dropShipServiceMenu,complexOwners,complexCount)
+        || !MwImportUiMenu("complex.menu.sale",&saleConfirmationMenu,complexOwners,complexCount)
+        || !MwImportUiMenu("complex.menu.rearm",&rearmConfirmationMenu,complexOwners,complexCount)
+        || !MwImportUiMenu("complex.menu.repair",&componentRepairMenu,complexOwners,complexCount)) return false;
+    /* data/ui/dealer.json: the market list (28F1, 2A1B), the 'Mech and
+     * DropShip panels (437E, 44A9; 443E, 44D3) and the component panel (44F1,
+     * 480F). Reserve ammunition is ImportReserveAmmoUiData's. */
+    UiCaptionOwner dealerOwners[]={
+        {"dealer.caption.market_heading",&marketListHeading.display,marketListHeading.text,sizeof(marketListHeading.text),0,0},
+        {"dealer.caption.market_1",&marketUnitListRows[0].display,marketUnitListRows[0].text,sizeof(marketUnitListRows[0].text),0,13},
+        {"dealer.caption.market_2",&marketUnitListRows[1].display,marketUnitListRows[1].text,sizeof(marketUnitListRows[1].text),0,13},
+        {"dealer.caption.market_3",&marketUnitListRows[2].display,marketUnitListRows[2].text,sizeof(marketUnitListRows[2].text),0,13},
+        {"dealer.caption.market_4",&marketUnitListRows[3].display,marketUnitListRows[3].text,sizeof(marketUnitListRows[3].text),0,13},
+        {"dealer.caption.market_5",&marketUnitListRows[4].display,marketUnitListRows[4].text,sizeof(marketUnitListRows[4].text),0,13},
+        {"dealer.caption.market_6",&marketUnitListRows[5].display,marketUnitListRows[5].text,sizeof(marketUnitListRows[5].text),0,13},
+        {"dealer.caption.market_7",&marketUnitListRows[6].display,marketUnitListRows[6].text,sizeof(marketUnitListRows[6].text),0,13},
+        {"dealer.caption.market_8",&marketUnitListRows[7].display,marketUnitListRows[7].text,sizeof(marketUnitListRows[7].text),0,13},
+        {"dealer.caption.market_9",&marketUnitListRows[8].display,marketUnitListRows[8].text,sizeof(marketUnitListRows[8].text),0,13},
+        {"dealer.caption.market_10",&marketUnitListRows[9].display,marketUnitListRows[9].text,sizeof(marketUnitListRows[9].text),0,13},
+        {"dealer.caption.market_11",&marketUnitListRows[10].display,marketUnitListRows[10].text,sizeof(marketUnitListRows[10].text),0,13},
+        {"dealer.caption.market_12",&marketUnitListRows[11].display,marketUnitListRows[11].text,sizeof(marketUnitListRows[11].text),0,13},
+        {"dealer.caption.market_13",&marketUnitListRows[12].display,marketUnitListRows[12].text,sizeof(marketUnitListRows[12].text),0,13},
+        {"dealer.caption.mech_title",&marketMechStatusLabels[0].display,marketMechStatusLabels[0].text,sizeof(marketMechStatusLabels[0].text),0,0},
+        {"dealer.caption.mech_buy",&marketMechStatusLabels[1].display,marketMechStatusLabels[1].text,sizeof(marketMechStatusLabels[1].text),0,0},
+        {"dealer.caption.mech_inspect",&marketMechStatusLabels[2].display,marketMechStatusLabels[2].text,sizeof(marketMechStatusLabels[2].text),0,0},
+        {"dealer.caption.mech_leave",&marketMechStatusLabels[3].display,marketMechStatusLabels[3].text,sizeof(marketMechStatusLabels[3].text),0,0},
+        {"dealer.caption.dropship_title",&marketDropShipStatusLabels[0].display,marketDropShipStatusLabels[0].text,sizeof(marketDropShipStatusLabels[0].text),0,0},
+        {"dealer.caption.dropship_buy",&marketDropShipStatusLabels[1].display,marketDropShipStatusLabels[1].text,sizeof(marketDropShipStatusLabels[1].text),0,0},
+        {"dealer.caption.dropship_leave",&marketDropShipStatusLabels[2].display,marketDropShipStatusLabels[2].text,sizeof(marketDropShipStatusLabels[2].text),0,0},
+        {"dealer.caption.component_title",&marketComponentTitle.display,marketComponentTitle.text,sizeof(marketComponentTitle.text),0,0},
+        {"dealer.caption.component_system_1",&marketSystemConditionRows[0].display,marketSystemConditionRows[0].caption.text,sizeof(marketSystemConditionRows[0].caption.text),0,26},
+        {"dealer.caption.component_system_2",&marketSystemConditionRows[1].display,marketSystemConditionRows[1].caption.text,sizeof(marketSystemConditionRows[1].caption.text),0,26},
+        {"dealer.caption.component_system_3",&marketSystemConditionRows[2].display,marketSystemConditionRows[2].caption.text,sizeof(marketSystemConditionRows[2].caption.text),0,26},
+        {"dealer.caption.component_system_4",&marketSystemConditionRows[3].display,marketSystemConditionRows[3].caption.text,sizeof(marketSystemConditionRows[3].caption.text),0,26},
+        {"dealer.caption.component_system_5",&marketSystemConditionRows[4].display,marketSystemConditionRows[4].caption.text,sizeof(marketSystemConditionRows[4].caption.text),0,26},
+        {"dealer.caption.component_system_6",&marketSystemConditionRows[5].display,marketSystemConditionRows[5].caption.text,sizeof(marketSystemConditionRows[5].caption.text),0,26},
+        {"dealer.caption.component_system_7",&marketSystemConditionRows[6].display,marketSystemConditionRows[6].caption.text,sizeof(marketSystemConditionRows[6].caption.text),0,26},
+        {"dealer.caption.component_system_8",&marketSystemConditionRows[7].display,marketSystemConditionRows[7].caption.text,sizeof(marketSystemConditionRows[7].caption.text),0,26},
+        {"dealer.caption.component_system_9",&marketSystemConditionRows[8].display,marketSystemConditionRows[8].caption.text,sizeof(marketSystemConditionRows[8].caption.text),0,26},
+        {"dealer.caption.component_system_10",&marketSystemConditionRows[9].display,marketSystemConditionRows[9].caption.text,sizeof(marketSystemConditionRows[9].caption.text),0,26},
+        {"dealer.caption.component_body",&marketBodyCondition.display,marketBodyCondition.caption.text,sizeof(marketBodyCondition.caption.text),0,19},
+        {"dealer.caption.component_weapon_heading",&marketWeaponHeading.display,marketWeaponHeading.text,sizeof(marketWeaponHeading.text),0,0},
+        {"dealer.caption.component_weapon_1",&marketWeaponConditionRows[0].display,marketWeaponConditionRows[0].caption.text,sizeof(marketWeaponConditionRows[0].caption.text),0,26},
+        {"dealer.caption.component_weapon_2",&marketWeaponConditionRows[1].display,marketWeaponConditionRows[1].caption.text,sizeof(marketWeaponConditionRows[1].caption.text),0,26},
+        {"dealer.caption.component_weapon_3",&marketWeaponConditionRows[2].display,marketWeaponConditionRows[2].caption.text,sizeof(marketWeaponConditionRows[2].caption.text),0,26},
+        {"dealer.caption.component_weapon_4",&marketWeaponConditionRows[3].display,marketWeaponConditionRows[3].caption.text,sizeof(marketWeaponConditionRows[3].caption.text),0,26},
+        {"dealer.caption.component_weapon_5",&marketWeaponConditionRows[4].display,marketWeaponConditionRows[4].caption.text,sizeof(marketWeaponConditionRows[4].caption.text),0,26},
+        {"dealer.caption.component_weapon_6",&marketWeaponConditionRows[5].display,marketWeaponConditionRows[5].caption.text,sizeof(marketWeaponConditionRows[5].caption.text),0,26},
+        {"dealer.caption.component_weapon_7",&marketWeaponConditionRows[6].display,marketWeaponConditionRows[6].caption.text,sizeof(marketWeaponConditionRows[6].caption.text),0,26},
+        {"dealer.caption.component_weapon_8",&marketWeaponConditionRows[7].display,marketWeaponConditionRows[7].caption.text,sizeof(marketWeaponConditionRows[7].caption.text),0,26},
+        {"dealer.caption.component_weapon_9",&marketWeaponConditionRows[8].display,marketWeaponConditionRows[8].caption.text,sizeof(marketWeaponConditionRows[8].caption.text),0,26},
+        {"dealer.caption.component_weapon_10",&marketWeaponConditionRows[9].display,marketWeaponConditionRows[9].caption.text,sizeof(marketWeaponConditionRows[9].caption.text),0,26},
+        {"dealer.caption.component_done",&marketComponentDone.display,marketComponentDone.text,sizeof(marketComponentDone.text),0,0}};
+    const size_t dealerCount=sizeof(dealerOwners)/sizeof(dealerOwners[0]);
+    if (!MwImportUiCaptions(data,dealerOwners,dealerCount)
+        || !MwImportUiListPanel("dealer.panel.market",&marketUnitListPanel,14,dealerOwners,dealerCount)
+        || !MwImportUiPanel("dealer.panel.mech",&marketMechStatusPanel,4,dealerOwners,dealerCount)
+        || !MwImportUiPanel("dealer.panel.dropship",&marketDropShipStatusPanel,3,dealerOwners,dealerCount)
+        || !MwImportUiListPanel("dealer.panel.component",&marketComponentPanel,24,dealerOwners,dealerCount)
+        || !MwImportUiMenu("dealer.menu.market",&marketUnitListMenu,dealerOwners,dealerCount)
+        || !MwImportUiMenu("dealer.menu.mech",&marketMechMenu,dealerOwners,dealerCount)
+        || !MwImportUiMenu("dealer.menu.dropship",&marketDropShipMenu,dealerOwners,dealerCount)
+        || !MwImportUiMenu("dealer.menu.component",&marketComponentMenu,dealerOwners,dealerCount)) return false;
     if (!MwImportUiMenu("hub.menu.planet",&planetHubMenu,NULL,0)) return false; /*1083*/
     if (!MwImportUiMenu("hub.menu.contract",&contractHubMenu,NULL,0)) return false; /*10D7*/
     if (!MwImportUiMenu("hub.menu.remote_planet",&remotePlanetHubMenu,NULL,0)) return false; /*1101*/
-    for (uint16_t i=0;i<ownedUnitListMenu.recordCount;++i)
-    {
-        const uint8_t *encoded=data+0x283B+i*CAMPAIGN_UI_RECORD_BYTES;
-        MwUiRecord *row=&ownedUnitListMenu.records[i];
-        row->enabled=encoded[0];row->textRecord=encoded[1];
-        row->x=MwReadNativeWord(encoded,2);row->y=MwReadNativeWord(encoded,4);
-        row->activateCodeOffset=MwReadNativeWord(encoded,6);row->pictureIndex=MwReadNativeWord(encoded,8);
-        row->upRecordIndex=encoded[10];row->downRecordIndex=encoded[11];
-        row->leftRecordIndex=encoded[12];row->rightRecordIndex=encoded[13];
-        row->text=NULL;row->textColour=NULL;
-    }
-    if (MwReadNativeWord(data,0x2843)!=0x26B9) return false;
-    ownedUnitListMenu.records[0].text=ownedUnitListRows[0].caption.text;
-    ownedUnitListMenu.records[0].textColour=&(ownedUnitListRows[0].display).colour;
-    if (MwReadNativeWord(data,0x2851)!=0x26D7) return false;
-    ownedUnitListMenu.records[1].text=ownedUnitListRows[1].caption.text;
-    ownedUnitListMenu.records[1].textColour=&(ownedUnitListRows[1].display).colour;
-    if (MwReadNativeWord(data,0x285F)!=0x26F5) return false;
-    ownedUnitListMenu.records[2].text=ownedUnitListRows[2].caption.text;
-    ownedUnitListMenu.records[2].textColour=&(ownedUnitListRows[2].display).colour;
-    if (MwReadNativeWord(data,0x286D)!=0x2713) return false;
-    ownedUnitListMenu.records[3].text=ownedUnitListRows[3].caption.text;
-    ownedUnitListMenu.records[3].textColour=&(ownedUnitListRows[3].display).colour;
-    if (MwReadNativeWord(data,0x287B)!=0x2731) return false;
-    ownedUnitListMenu.records[4].text=ownedUnitListRows[4].caption.text;
-    ownedUnitListMenu.records[4].textColour=&(ownedUnitListRows[4].display).colour;
-    if (MwReadNativeWord(data,0x2889)!=0x274F) return false;
-    ownedUnitListMenu.records[5].text=ownedUnitListRows[5].caption.text;
-    ownedUnitListMenu.records[5].textColour=&(ownedUnitListRows[5].display).colour;
-    if (MwReadNativeWord(data,0x2897)!=0x276D) return false;
-    ownedUnitListMenu.records[6].text=ownedUnitListRows[6].caption.text;
-    ownedUnitListMenu.records[6].textColour=&(ownedUnitListRows[6].display).colour;
-    if (MwReadNativeWord(data,0x28A5)!=0x278B) return false;
-    ownedUnitListMenu.records[7].text=ownedUnitListRows[7].caption.text;
-    ownedUnitListMenu.records[7].textColour=&(ownedUnitListRows[7].display).colour;
-    if (MwReadNativeWord(data,0x28B3)!=0x27A9) return false;
-    ownedUnitListMenu.records[8].text=ownedUnitListRows[8].caption.text;
-    ownedUnitListMenu.records[8].textColour=&(ownedUnitListRows[8].display).colour;
-    if (MwReadNativeWord(data,0x28C1)!=0x27C7) return false;
-    ownedUnitListMenu.records[9].text=ownedUnitListRows[9].caption.text;
-    ownedUnitListMenu.records[9].textColour=&(ownedUnitListRows[9].display).colour;
-    if (MwReadNativeWord(data,0x28CF)!=0x27E5) return false;
-    ownedUnitListMenu.records[10].text=ownedUnitListRows[10].caption.text;
-    ownedUnitListMenu.records[10].textColour=&(ownedUnitListRows[10].display).colour;
-    if (MwReadNativeWord(data,0x28DD)!=0x2803) return false;
-    ownedUnitListMenu.records[11].text=ownedUnitListRows[11].caption.text;
-    ownedUnitListMenu.records[11].textColour=&(ownedUnitListRows[11].display).colour;
-    if (MwReadNativeWord(data,0x28EB)!=0x2821) return false;
-    ownedUnitListMenu.records[12].text=ownedUnitListRows[12].caption.text;
-    ownedUnitListMenu.records[12].textColour=&(ownedUnitListRows[12].display).colour;
-    for (uint16_t i=0;i<mechServiceMenu.recordCount;++i)
-    {
-        const uint8_t *encoded=data+0x2D53+i*CAMPAIGN_UI_RECORD_BYTES;
-        MwUiRecord *row=&mechServiceMenu.records[i];
-        row->enabled=encoded[0];row->textRecord=encoded[1];
-        row->x=MwReadNativeWord(encoded,2);row->y=MwReadNativeWord(encoded,4);
-        row->activateCodeOffset=MwReadNativeWord(encoded,6);row->pictureIndex=MwReadNativeWord(encoded,8);
-        row->upRecordIndex=encoded[10];row->downRecordIndex=encoded[11];
-        row->leftRecordIndex=encoded[12];row->rightRecordIndex=encoded[13];
-        row->text=NULL;row->textColour=NULL;
-    }
-    if (MwReadNativeWord(data,0x2D5B)!=0x2CCE) return false;
-    mechServiceMenu.records[0].text=mechStatusLabels[1].text;
-    mechServiceMenu.records[0].textColour=&(mechStatusLabels[1].display).colour;
-    if (MwReadNativeWord(data,0x2D69)!=0x2CDA) return false;
-    mechServiceMenu.records[1].text=mechStatusLabels[2].text;
-    mechServiceMenu.records[1].textColour=&(mechStatusLabels[2].display).colour;
-    if (MwReadNativeWord(data,0x2D77)!=0x2CEA) return false;
-    mechServiceMenu.records[2].text=mechStatusLabels[3].text;
-    mechServiceMenu.records[2].textColour=&(mechStatusLabels[3].display).colour;
-    if (MwReadNativeWord(data,0x2D85)!=0x2CF6) return false;
-    mechServiceMenu.records[3].text=mechStatusLabels[4].text;
-    mechServiceMenu.records[3].textColour=&(mechStatusLabels[4].display).colour;
-    if (MwReadNativeWord(data,0x2D93)!=0x2D00) return false;
-    mechServiceMenu.records[4].text=mechStatusLabels[5].text;
-    mechServiceMenu.records[4].textColour=&(mechStatusLabels[5].display).colour;
-    for (uint16_t i=0;i<dropShipServiceMenu.recordCount;++i)
-    {
-        const uint8_t *encoded=data+0x2D99+i*CAMPAIGN_UI_RECORD_BYTES;
-        MwUiRecord *row=&dropShipServiceMenu.records[i];
-        row->enabled=encoded[0];row->textRecord=encoded[1];
-        row->x=MwReadNativeWord(encoded,2);row->y=MwReadNativeWord(encoded,4);
-        row->activateCodeOffset=MwReadNativeWord(encoded,6);row->pictureIndex=MwReadNativeWord(encoded,8);
-        row->upRecordIndex=encoded[10];row->downRecordIndex=encoded[11];
-        row->leftRecordIndex=encoded[12];row->rightRecordIndex=encoded[13];
-        row->text=NULL;row->textColour=NULL;
-    }
-    if (MwReadNativeWord(data,0x2DA1)!=0x2D43) return false;
-    dropShipServiceMenu.records[0].text=dropShipStatusLabels[1].text;
-    dropShipServiceMenu.records[0].textColour=&(dropShipStatusLabels[1].display).colour;
-    if (MwReadNativeWord(data,0x2DAF)!=0x2D4D) return false;
-    dropShipServiceMenu.records[1].text=dropShipStatusLabels[2].text;
-    dropShipServiceMenu.records[1].textColour=&(dropShipStatusLabels[2].display).colour;
-    for (uint16_t i=0;i<componentRepairMenu.recordCount;++i)
-    {
-        const uint8_t *encoded=data+0x3558+i*CAMPAIGN_UI_RECORD_BYTES;
-        MwUiRecord *row=&componentRepairMenu.records[i];
-        row->enabled=encoded[0];row->textRecord=encoded[1];
-        row->x=MwReadNativeWord(encoded,2);row->y=MwReadNativeWord(encoded,4);
-        row->activateCodeOffset=MwReadNativeWord(encoded,6);row->pictureIndex=MwReadNativeWord(encoded,8);
-        row->upRecordIndex=encoded[10];row->downRecordIndex=encoded[11];
-        row->leftRecordIndex=encoded[12];row->rightRecordIndex=encoded[13];
-        row->text=NULL;row->textColour=NULL;
-    }
-    if (MwReadNativeWord(data,0x3560)!=0x3276) return false;
-    componentRepairMenu.records[0].text=repairSystemConditionRows[0].caption.text;
-    componentRepairMenu.records[0].textColour=&(repairSystemConditionRows[0].display).colour;
-    if (MwReadNativeWord(data,0x356E)!=0x3295) return false;
-    componentRepairMenu.records[1].text=repairSystemConditionRows[1].caption.text;
-    componentRepairMenu.records[1].textColour=&(repairSystemConditionRows[1].display).colour;
-    if (MwReadNativeWord(data,0x357C)!=0x32B4) return false;
-    componentRepairMenu.records[2].text=repairSystemConditionRows[2].caption.text;
-    componentRepairMenu.records[2].textColour=&(repairSystemConditionRows[2].display).colour;
-    if (MwReadNativeWord(data,0x358A)!=0x32D3) return false;
-    componentRepairMenu.records[3].text=repairSystemConditionRows[3].caption.text;
-    componentRepairMenu.records[3].textColour=&(repairSystemConditionRows[3].display).colour;
-    if (MwReadNativeWord(data,0x3598)!=0x32F2) return false;
-    componentRepairMenu.records[4].text=repairSystemConditionRows[4].caption.text;
-    componentRepairMenu.records[4].textColour=&(repairSystemConditionRows[4].display).colour;
-    if (MwReadNativeWord(data,0x35A6)!=0x3311) return false;
-    componentRepairMenu.records[5].text=repairSystemConditionRows[5].caption.text;
-    componentRepairMenu.records[5].textColour=&(repairSystemConditionRows[5].display).colour;
-    if (MwReadNativeWord(data,0x35B4)!=0x3330) return false;
-    componentRepairMenu.records[6].text=repairSystemConditionRows[6].caption.text;
-    componentRepairMenu.records[6].textColour=&(repairSystemConditionRows[6].display).colour;
-    if (MwReadNativeWord(data,0x35C2)!=0x334F) return false;
-    componentRepairMenu.records[7].text=repairSystemConditionRows[7].caption.text;
-    componentRepairMenu.records[7].textColour=&(repairSystemConditionRows[7].display).colour;
-    if (MwReadNativeWord(data,0x35D0)!=0x336E) return false;
-    componentRepairMenu.records[8].text=repairSystemConditionRows[8].caption.text;
-    componentRepairMenu.records[8].textColour=&(repairSystemConditionRows[8].display).colour;
-    if (MwReadNativeWord(data,0x35DE)!=0x338D) return false;
-    componentRepairMenu.records[9].text=repairSystemConditionRows[9].caption.text;
-    componentRepairMenu.records[9].textColour=&(repairSystemConditionRows[9].display).colour;
-    if (MwReadNativeWord(data,0x35EC)!=0x33AC) return false;
-    componentRepairMenu.records[10].text=repairBodyCondition.caption.text;
-    componentRepairMenu.records[10].textColour=&(repairBodyCondition.display).colour;
-    if (MwReadNativeWord(data,0x35FA)!=0x3407) return false;
-    componentRepairMenu.records[11].text=repairWeaponConditionRows[0].caption.text;
-    componentRepairMenu.records[11].textColour=&(repairWeaponConditionRows[0].display).colour;
-    if (MwReadNativeWord(data,0x3608)!=0x3426) return false;
-    componentRepairMenu.records[12].text=repairWeaponConditionRows[1].caption.text;
-    componentRepairMenu.records[12].textColour=&(repairWeaponConditionRows[1].display).colour;
-    if (MwReadNativeWord(data,0x3616)!=0x3445) return false;
-    componentRepairMenu.records[13].text=repairWeaponConditionRows[2].caption.text;
-    componentRepairMenu.records[13].textColour=&(repairWeaponConditionRows[2].display).colour;
-    if (MwReadNativeWord(data,0x3624)!=0x3464) return false;
-    componentRepairMenu.records[14].text=repairWeaponConditionRows[3].caption.text;
-    componentRepairMenu.records[14].textColour=&(repairWeaponConditionRows[3].display).colour;
-    if (MwReadNativeWord(data,0x3632)!=0x3483) return false;
-    componentRepairMenu.records[15].text=repairWeaponConditionRows[4].caption.text;
-    componentRepairMenu.records[15].textColour=&(repairWeaponConditionRows[4].display).colour;
-    if (MwReadNativeWord(data,0x3640)!=0x34A2) return false;
-    componentRepairMenu.records[16].text=repairWeaponConditionRows[5].caption.text;
-    componentRepairMenu.records[16].textColour=&(repairWeaponConditionRows[5].display).colour;
-    if (MwReadNativeWord(data,0x364E)!=0x34C1) return false;
-    componentRepairMenu.records[17].text=repairWeaponConditionRows[6].caption.text;
-    componentRepairMenu.records[17].textColour=&(repairWeaponConditionRows[6].display).colour;
-    if (MwReadNativeWord(data,0x365C)!=0x34E0) return false;
-    componentRepairMenu.records[18].text=repairWeaponConditionRows[7].caption.text;
-    componentRepairMenu.records[18].textColour=&(repairWeaponConditionRows[7].display).colour;
-    if (MwReadNativeWord(data,0x366A)!=0x34FF) return false;
-    componentRepairMenu.records[19].text=repairWeaponConditionRows[8].caption.text;
-    componentRepairMenu.records[19].textColour=&(repairWeaponConditionRows[8].display).colour;
-    if (MwReadNativeWord(data,0x3678)!=0x351E) return false;
-    componentRepairMenu.records[20].text=repairWeaponConditionRows[9].caption.text;
-    componentRepairMenu.records[20].textColour=&(repairWeaponConditionRows[9].display).colour;
-    if (MwReadNativeWord(data,0x3686)!=0x353D) return false;
-    componentRepairMenu.records[21].text=repairWeaponConditionRows[10].caption.text;
-    componentRepairMenu.records[21].textColour=&(repairWeaponConditionRows[10].display).colour;
+    /* The body diagrams (3CEE): a background and nine regions each. */
+    uint16_t diagrams[8*10*4];
+    if (!MwUiCopyWords("complex.table.body_diagrams",diagrams,sizeof(diagrams)/sizeof(diagrams[0]),0)) return false;
     for (uint16_t chassis=0;chassis<8;++chassis)
         for (uint16_t region=0;region<10;++region)
         {
             MwMechDiagramRectangle *rectangle=region?&mechBodyDiagramLayouts[chassis].bodyRegions[region-1]:&mechBodyDiagramLayouts[chassis].background;
-            uint16_t at=0x3CEE +chassis*0x50+region*8;
-            rectangle->x=MwReadNativeWord(data,at);rectangle->y=MwReadNativeWord(data,(uint16_t)(at+2));
-            rectangle->width=MwReadNativeWord(data,(uint16_t)(at+4));rectangle->height=MwReadNativeWord(data,(uint16_t)(at+6));
+            const uint16_t *at=diagrams+(chassis*10+region)*4;
+            rectangle->x=at[0];rectangle->y=at[1];rectangle->width=at[2];rectangle->height=at[3];
         }
     /* These initial near values have no live object until their callers set them. */
     repairQuoteDamage=NULL;componentRepairDamage=NULL;
@@ -2005,62 +1403,47 @@ static bool ImportReserveAmmoUiData(const uint8_t *data)
     reserveAmmoSelling=data[0x4139];memcpy(reserveAmmoMechColours,data+0x3F70,sizeof(reserveAmmoMechColours));
     if (!ImportInitialString(data,0x413A,reserveAmmoBuyLabel,sizeof(reserveAmmoBuyLabel))
         || !ImportInitialString(data,0x413F,reserveAmmoSellLabel,sizeof(reserveAmmoSellLabel))) return false;
-    for (uint16_t panelIndex=0;panelIndex<=CAMPAIGN_AMMO_FAMILY_COUNT;++panelIndex)
+    /* data/ui/dealer.json: the shop panel (4144) and menu (4268), and the six
+     * compatibility panels the pointer table at 3F7B names, in family order. */
+    static const char *const familyIds[CAMPAIGN_AMMO_FAMILY_COUNT]={"dealer.caption.ammo_family_1","dealer.caption.ammo_family_2",
+        "dealer.caption.ammo_family_3","dealer.caption.ammo_family_4","dealer.caption.ammo_family_5","dealer.caption.ammo_family_6"};
+    static const char *const quantityIds[CAMPAIGN_AMMO_FAMILY_COUNT]={"dealer.caption.ammo_quantity_1","dealer.caption.ammo_quantity_2",
+        "dealer.caption.ammo_quantity_3","dealer.caption.ammo_quantity_4","dealer.caption.ammo_quantity_5","dealer.caption.ammo_quantity_6"};
+    static const char *const compatibilityIds[CAMPAIGN_AMMO_FAMILY_COUNT]={"dealer.caption.compatibility_1","dealer.caption.compatibility_2",
+        "dealer.caption.compatibility_3","dealer.caption.compatibility_4","dealer.caption.compatibility_5","dealer.caption.compatibility_6"};
+    static const char *const compatibilityPanelIds[CAMPAIGN_AMMO_FAMILY_COUNT]={"dealer.panel.compatibility_1","dealer.panel.compatibility_2",
+        "dealer.panel.compatibility_3","dealer.panel.compatibility_4","dealer.panel.compatibility_5","dealer.panel.compatibility_6"};
+    UiCaptionOwner owners[2+3*CAMPAIGN_AMMO_FAMILY_COUNT];
+    size_t count=0;
+    owners[count++]={"dealer.caption.ammo_heading",&reserveAmmoShopHeading.display,reserveAmmoShopHeading.text,sizeof(reserveAmmoShopHeading.text),0,0};
+    for (uint16_t i=0;i<CAMPAIGN_AMMO_FAMILY_COUNT;++i)
+        owners[count++]={familyIds[i],&reserveAmmoFamilyLabels[i].display,reserveAmmoFamilyLabels[i].text,sizeof(reserveAmmoFamilyLabels[i].text),0,0};
+    for (uint16_t i=0;i<CAMPAIGN_AMMO_FAMILY_COUNT;++i)
+        owners[count++]={quantityIds[i],&reserveAmmoQuantityRows[i].display,reserveAmmoQuantityRows[i].text,sizeof(reserveAmmoQuantityRows[i].text),0,0};
+    owners[count++]={"dealer.caption.ammo_done",&reserveAmmoDoneLabel.display,reserveAmmoDoneLabel.text,sizeof(reserveAmmoDoneLabel.text),0,0};
+    for (uint16_t i=0;i<CAMPAIGN_AMMO_FAMILY_COUNT;++i)
+        owners[count++]={compatibilityIds[i],&reserveAmmoCompatibilityHeadings[i].display,reserveAmmoCompatibilityHeadings[i].text,
+            sizeof(reserveAmmoCompatibilityHeadings[i].text),0,0};
+    if (!MwImportUiCaptions(data,owners,count)
+        || !MwImportUiPanel("dealer.panel.ammo",&reserveAmmoShopPanel,14,owners,count)
+        || !MwImportUiMenu("dealer.menu.ammo",&reserveAmmoShopMenu,owners,count)) return false;
+    uint16_t compatibilityPanels[CAMPAIGN_AMMO_FAMILY_COUNT];
+    if (!MwUiCopyWords("dealer.table.compatibility_panels",compatibilityPanels,CAMPAIGN_AMMO_FAMILY_COUNT,0)) return false;
+    for (uint16_t family=0;family<CAMPAIGN_AMMO_FAMILY_COUNT;++family)
     {
-        bool shop=panelIndex==CAMPAIGN_AMMO_FAMILY_COUNT;
-        uint16_t offset=shop?0x4144:MwReadNativeWord(data,0x3F7B+panelIndex*2);
-        MwPanelDescriptor *panel=shop?&reserveAmmoShopPanel:&reserveAmmoCompatibilityPanels[panelIndex];
-        panel->x=MwReadNativeWord(data,offset);panel->y=MwReadNativeWord(data,offset+2);
-        panel->width=MwReadNativeWord(data,offset+4);panel->bottomInset=MwReadNativeWord(data,offset+6);
-        panel->lineCount=MwReadNativeWord(data,offset+8);panel->borderEnabled=MwReadNativeWord(data,offset+10);
-        panel->lineSpacing=MwReadNativeWord(data,offset+12);panel->background=MwReadNativeWord(data,offset+14);
-        if (panel->lineCount!=(shop?14:1)) return false;
-        for (uint16_t line=0;line<panel->lineCount;++line)
-        {
-            uint16_t caption=MwReadNativeWord(data,offset+16+line*2);
-            MwPanelText *display;char *text;size_t capacity;
-            if (!shop)
-            {
-                display=&reserveAmmoCompatibilityHeadings[panelIndex].display;
-                text=reserveAmmoCompatibilityHeadings[panelIndex].text;capacity=sizeof(reserveAmmoCompatibilityHeadings[panelIndex].text);
-            }
-            else if (line>=7 && line<=12)
-            {
-                display=&reserveAmmoQuantityRows[line-7].display;
-                text=reserveAmmoQuantityRows[line-7].text;capacity=sizeof(reserveAmmoQuantityRows[line-7].text);
-            }
-            else
-            {
-                MwServiceCaption *label=line==0?&reserveAmmoShopHeading:
-                    line==13?&reserveAmmoDoneLabel:&reserveAmmoFamilyLabels[line-1];
-                display=&label->display;text=label->text;capacity=sizeof(label->text);
-            }
-            if (!ImportInitialString(data,caption+5,text,capacity)) return false;
-            ImportInitialText(data,caption,display,text,0);panel->lines[line]=display;
-        }
-        if (shop) continue;
-        uint16_t kinds=MwReadNativeWord(data,0x3F87+panelIndex*2),index=0;
+        uint16_t panel=0;
+        while (panel<CAMPAIGN_AMMO_FAMILY_COUNT && MwUiPieceOffset(compatibilityPanelIds[panel])!=compatibilityPanels[family]) ++panel;
+        if (panel==CAMPAIGN_AMMO_FAMILY_COUNT
+            || !MwImportUiPanel(compatibilityPanelIds[panel],&reserveAmmoCompatibilityPanels[family],1,owners,count)) return false;
+        uint16_t kinds=MwReadNativeWord(data,0x3F87+family*2),index=0;
         do
         {
             if (index>=6) return false;
             uint16_t kind=MwReadNativeWord(data,kinds+index*2);
-            reserveAmmoCompatibleMechs[panelIndex][index++]=kind;
+            reserveAmmoCompatibleMechs[family][index++]=kind;
             if (kind==UINT16_MAX) break;
             if (kind>=CAMPAIGN_MECH_KIND_COUNT) return false;
         } while (true);
-    }
-    for (uint16_t index=0;index<RESERVE_AMMO_MENU_ROWS;++index)
-    {
-        const uint8_t *encoded=data+0x4268+index*CAMPAIGN_UI_RECORD_BYTES;
-        MwUiRecord *record=&reserveAmmoShopRecords[index];
-        record->enabled=encoded[0];record->textRecord=encoded[1];
-        record->x=MwReadNativeWord(encoded,2);record->y=MwReadNativeWord(encoded,4);
-        record->activateCodeOffset=MwReadNativeWord(encoded,6);record->pictureIndex=0;
-        MwPanelText *caption=index<6?&reserveAmmoFamilyLabels[index].display:
-            index<12?&reserveAmmoQuantityRows[index-6].display:&reserveAmmoDoneLabel.display;
-        record->text=caption->text;record->textColour=&caption->colour;
-        record->upRecordIndex=encoded[10];record->downRecordIndex=encoded[11];
-        record->leftRecordIndex=encoded[12];record->rightRecordIndex=encoded[13];
     }
     return true;
 }

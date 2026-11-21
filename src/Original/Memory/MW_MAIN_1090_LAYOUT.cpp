@@ -16,8 +16,8 @@ bool MwImportUiCaptions(const uint8_t *data,UiCaptionOwner *owners,size_t count)
         if (!owner.offset || (size_t)owner.offset+UI_CAPTION_HEAD_BYTES+owner.capacity>NATIVE_SEGMENT_BYTE_COUNT
             || !MwUiCopyNative(owner.id,head,sizeof(head))) return false;
         const uint8_t *text=data+owner.offset+UI_CAPTION_HEAD_BYTES;
-        const uint8_t *end=static_cast<const uint8_t *>(memchr(text,0,owner.capacity));
-        if (!end) return false;
+        const uint8_t *end=owner.bytes?text+owner.bytes-1:static_cast<const uint8_t *>(memchr(text,0,owner.capacity));
+        if (!end || owner.bytes>owner.capacity) return false;
         owner.display->x=MwReadNativeWord(head,0);owner.display->y=MwReadNativeWord(head,2);
         owner.display->colour=head[4];owner.display->text=owner.text;
         memcpy(owner.text,text,(size_t)(end-text)+1);
@@ -30,7 +30,7 @@ static const UiCaptionOwner *FindUiCaption(const UiCaptionOwner *owners,size_t c
     for (size_t i=0;i<count;++i) if (owners[i].offset==offset) return &owners[i];
     return NULL;
 }
-bool MwImportUiPanel(const char *id,MwPanelDescriptor *panel,uint16_t lineCount,const UiCaptionOwner *owners,size_t count)
+static bool ImportUiPanel(const char *id,MwPanelDescriptor *panel,uint16_t lineCount,const UiCaptionOwner *owners,size_t count,bool list)
 {
     uint8_t bytes[UI_PANEL_HEADER_BYTES+2*CAMPAIGN_PANEL_MAX_LINES];
     const size_t size=UI_PANEL_HEADER_BYTES+2*(size_t)lineCount;
@@ -39,7 +39,7 @@ bool MwImportUiPanel(const char *id,MwPanelDescriptor *panel,uint16_t lineCount,
     panel->width=MwReadNativeWord(bytes,4);panel->bottomInset=MwReadNativeWord(bytes,6);
     panel->lineCount=MwReadNativeWord(bytes,8);panel->borderEnabled=MwReadNativeWord(bytes,10);
     panel->lineSpacing=MwReadNativeWord(bytes,12);panel->background=MwReadNativeWord(bytes,14);
-    if (panel->lineCount!=lineCount) return false;
+    if (list?panel->lineCount>lineCount:panel->lineCount!=lineCount) return false;
     for (uint16_t line=0;line<lineCount;++line)
     {
         const UiCaptionOwner *owner=FindUiCaption(owners,count,MwReadNativeWord(bytes,(uint16_t)(UI_PANEL_HEADER_BYTES+line*2)));
@@ -47,6 +47,14 @@ bool MwImportUiPanel(const char *id,MwPanelDescriptor *panel,uint16_t lineCount,
         panel->lines[line]=owner->display;
     }
     return true;
+}
+bool MwImportUiPanel(const char *id,MwPanelDescriptor *panel,uint16_t lineCount,const UiCaptionOwner *owners,size_t count)
+{
+    return ImportUiPanel(id,panel,lineCount,owners,count,false);
+}
+bool MwImportUiListPanel(const char *id,MwPanelDescriptor *panel,uint16_t lineCount,const UiCaptionOwner *owners,size_t count)
+{
+    return ImportUiPanel(id,panel,lineCount,owners,count,true);
 }
 bool MwImportUiMenu(const char *id,MwUiMenu *menu,const UiCaptionOwner *owners,size_t count)
 {
