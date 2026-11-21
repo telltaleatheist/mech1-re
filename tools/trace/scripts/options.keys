@@ -2,8 +2,9 @@
 Return Escape Return @snap:hub
 Up       @snap:options_sel       # hub row 5 OPTIONS
 Return   @snap:options
-Return   @snap:save              # row 0 SAVE_CAMPAIGN
-Return   @snap:save_after
+Return T 1 Return @snap:saved   # row 0 SAVE_CAMPAIGN, the name "T1", saved
+# No snap while the name box waits: its cursor blinks on the real-time timer
+# (campaignTimerAlternatingPhase), so that frame depends on the host.
 Down Down @snap:audio_sel        # row 2 TOGGLE_AUDIO
 Return   @snap:audio
 Down     @snap:detail_sel        # row 3 CYCLE_TERRAIN_DETAIL

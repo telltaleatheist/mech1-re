@@ -76,7 +76,7 @@ def read_uses(root, names):
     word = re.compile(r"\bCAMPAIGN_[A-Z0-9_]+\b")
     for base, _, files in os.walk(os.path.join(root, "src")):
         for name in files:
-            if not name.endswith((".c", ".h")) or name == "campaign_continuations.h":
+            if not name.endswith((".c", ".cpp", ".h")) or name == "campaign_continuations.h":
                 continue
             path = os.path.join(base, name)
             for hit in set(word.findall(open(path, encoding="utf-8", errors="replace").read())) & wanted:
@@ -123,7 +123,8 @@ def main():
     args = ap.parse_args()
 
     names = read_names(os.path.join(args.src, "src/include/mechwarrior/campaign_continuations.h"))
-    dispatch = read_dispatch(os.path.join(args.src, "src/Original/Campaign/MW_MAIN_081B_UI.c"))
+    ui = os.path.join(args.src, "src/Original/Campaign/MW_MAIN_081B_UI")
+    dispatch = read_dispatch(next(ui + ext for ext in (".cpp", ".c") if os.path.exists(ui + ext)))
     seen = read_traces(args.traces)
     uses = read_uses(args.src, names)
 

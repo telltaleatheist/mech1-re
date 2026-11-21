@@ -22,15 +22,15 @@
     56
    ],
    "usedIn": [
-    "MW_MAIN_081B_CONTRACTS.c",
-    "MW_MAIN_081B_DEPLOYMENT.c",
-    "MW_MAIN_081B_EVENT_UI.c",
-    "MW_MAIN_081B_INPUT.c",
-    "MW_MAIN_081B_OPTIONS.c",
-    "MW_MAIN_081B_PILOTS.c",
-    "MW_MAIN_081B_STARTUP.c",
-    "MW_MAIN_081B_TRAVEL.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_CONTRACTS.cpp",
+    "MW_MAIN_081B_DEPLOYMENT.cpp",
+    "MW_MAIN_081B_EVENT_UI.cpp",
+    "MW_MAIN_081B_INPUT.cpp",
+    "MW_MAIN_081B_OPTIONS.cpp",
+    "MW_MAIN_081B_PILOTS.cpp",
+    "MW_MAIN_081B_STARTUP.cpp",
+    "MW_MAIN_081B_TRAVEL.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -46,18 +46,18 @@
    "handler": [],
    "dispatchLine": [],
    "usedIn": [
-    "MW_MAIN_081B_CONTRACTS.c",
-    "MW_MAIN_081B_EVENT_UI.c",
-    "MW_MAIN_081B_MARKET.c",
-    "MW_MAIN_081B_NEWS.c",
-    "MW_MAIN_081B_OPTIONS.c",
-    "MW_MAIN_081B_PILOTS.c",
-    "MW_MAIN_081B_PLANET.c",
-    "MW_MAIN_081B_SAVE.c",
-    "MW_MAIN_081B_SERVICE.c",
-    "MW_MAIN_081B_STARTUP.c",
-    "MW_MAIN_081B_TRAVEL.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_CONTRACTS.cpp",
+    "MW_MAIN_081B_EVENT_UI.cpp",
+    "MW_MAIN_081B_MARKET.cpp",
+    "MW_MAIN_081B_NEWS.cpp",
+    "MW_MAIN_081B_OPTIONS.cpp",
+    "MW_MAIN_081B_PILOTS.cpp",
+    "MW_MAIN_081B_PLANET.cpp",
+    "MW_MAIN_081B_SAVE.cpp",
+    "MW_MAIN_081B_SERVICE.cpp",
+    "MW_MAIN_081B_STARTUP.cpp",
+    "MW_MAIN_081B_TRAVEL.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -73,7 +73,7 @@
    "handler": [],
    "dispatchLine": [],
    "usedIn": [
-    "MW_MAIN_081B_STARTUP.c"
+    "MW_MAIN_081B_STARTUP.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -93,9 +93,9 @@
     118
    ],
    "usedIn": [
-    "MW_MAIN_081B_EVENT_UI.c",
-    "MW_MAIN_081B_STARTUP.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_EVENT_UI.cpp",
+    "MW_MAIN_081B_STARTUP.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -115,15 +115,15 @@
     81
    ],
    "usedIn": [
-    "MW_MAIN_081B_CONTRACTS.c",
-    "MW_MAIN_081B_PLANET.c",
-    "MW_MAIN_081B_SAVE.c",
-    "MW_MAIN_081B_STARTUP.c",
-    "MW_MAIN_081B_TRAVEL.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_CONTRACTS.cpp",
+    "MW_MAIN_081B_PLANET.cpp",
+    "MW_MAIN_081B_SAVE.cpp",
+    "MW_MAIN_081B_STARTUP.cpp",
+    "MW_MAIN_081B_TRAVEL.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 8,
-   "records": 37,
+   "records": 36,
    "activated": 4,
    "traces": [
     "bar",
@@ -147,9 +147,9 @@
     81
    ],
    "usedIn": [
-    "MW_MAIN_081B_PLANET.c",
-    "MW_MAIN_081B_STARTUP.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_PLANET.cpp",
+    "MW_MAIN_081B_STARTUP.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -169,7 +169,7 @@
     104
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 1,
@@ -191,7 +191,7 @@
     105
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -211,8 +211,8 @@
     107
    ],
    "usedIn": [
-    "MW_MAIN_081B_CONTRACTS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_CONTRACTS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -232,8 +232,8 @@
     106
    ],
    "usedIn": [
-    "MW_MAIN_081B_CONTRACTS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_CONTRACTS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -253,8 +253,8 @@
     108
    ],
    "usedIn": [
-    "MW_MAIN_081B_EVENT_UI.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_EVENT_UI.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -274,9 +274,9 @@
     56
    ],
    "usedIn": [
-    "MW_MAIN_081B_DEPLOYMENT.c",
-    "MW_MAIN_081B_STARTUP.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_DEPLOYMENT.cpp",
+    "MW_MAIN_081B_STARTUP.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -296,8 +296,8 @@
     57
    ],
    "usedIn": [
-    "MW_MAIN_081B_PILOTS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_PILOTS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 5,
    "records": 31,
@@ -324,8 +324,8 @@
     57
    ],
    "usedIn": [
-    "MW_MAIN_081B_PILOTS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_PILOTS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -345,8 +345,8 @@
     71
    ],
    "usedIn": [
-    "MW_MAIN_081B_PILOTS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_PILOTS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 7,
@@ -369,7 +369,7 @@
     77
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 6,
@@ -391,7 +391,7 @@
     77
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 6,
@@ -413,7 +413,7 @@
     77
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 6,
@@ -435,7 +435,7 @@
     77
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 6,
@@ -457,8 +457,8 @@
     79
    ],
    "usedIn": [
-    "MW_MAIN_081B_PILOTS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_PILOTS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -478,8 +478,8 @@
     80
    ],
    "usedIn": [
-    "MW_MAIN_081B_PILOTS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_PILOTS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -499,7 +499,7 @@
     63
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 7,
@@ -522,7 +522,7 @@
     64
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 7,
@@ -544,7 +544,7 @@
     65
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 7,
@@ -566,9 +566,9 @@
     132
    ],
    "usedIn": [
-    "MW_MAIN_081B_MARKET.c",
-    "MW_MAIN_081B_SERVICE.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_MARKET.cpp",
+    "MW_MAIN_081B_SERVICE.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 8,
    "records": 29,
@@ -595,8 +595,8 @@
     132
    ],
    "usedIn": [
-    "MW_MAIN_081B_MARKET.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_MARKET.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -616,8 +616,8 @@
     131
    ],
    "usedIn": [
-    "MW_MAIN_081B_MARKET.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_MARKET.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 2,
    "records": 13,
@@ -639,8 +639,8 @@
     133
    ],
    "usedIn": [
-    "MW_MAIN_081B_MARKET.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_MARKET.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 5,
@@ -662,8 +662,8 @@
     148
    ],
    "usedIn": [
-    "MW_MAIN_081B_SERVICE.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_SERVICE.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 33,
@@ -685,8 +685,8 @@
     149
    ],
    "usedIn": [
-    "MW_MAIN_081B_SERVICE.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_SERVICE.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -706,9 +706,9 @@
     150
    ],
    "usedIn": [
-    "MW_MAIN_081B_MARKET.c",
-    "MW_MAIN_081B_SERVICE.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_MARKET.cpp",
+    "MW_MAIN_081B_SERVICE.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 3,
@@ -730,8 +730,8 @@
     151
    ],
    "usedIn": [
-    "MW_MAIN_081B_SERVICE.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_SERVICE.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -751,9 +751,9 @@
     151
    ],
    "usedIn": [
-    "MW_MAIN_081B_MARKET.c",
-    "MW_MAIN_081B_SERVICE.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_MARKET.cpp",
+    "MW_MAIN_081B_SERVICE.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -773,7 +773,7 @@
     137
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 8,
@@ -795,7 +795,7 @@
     138
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -815,7 +815,7 @@
     139
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -835,7 +835,7 @@
     140
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 8,
@@ -857,7 +857,7 @@
     141
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 1,
@@ -879,7 +879,7 @@
     142
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 1,
@@ -897,8 +897,8 @@
    "handler": [],
    "dispatchLine": [],
    "usedIn": [
-    "MW_MAIN_081B_MARKET.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_MARKET.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -918,7 +918,7 @@
     154
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 8,
@@ -940,8 +940,8 @@
     152
    ],
    "usedIn": [
-    "MW_MAIN_081B_SERVICE.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_SERVICE.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 8,
@@ -959,8 +959,8 @@
    "handler": [],
    "dispatchLine": [],
    "usedIn": [
-    "MW_MAIN_081B_SERVICE.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_SERVICE.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -980,8 +980,8 @@
     153
    ],
    "usedIn": [
-    "MW_MAIN_081B_SERVICE.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_SERVICE.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 60,
@@ -1003,7 +1003,7 @@
     143
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 6,
@@ -1025,8 +1025,8 @@
     144
    ],
    "usedIn": [
-    "MW_MAIN_081B_MARKET.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_MARKET.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 22,
@@ -1048,7 +1048,7 @@
     145
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1068,8 +1068,8 @@
     145
    ],
    "usedIn": [
-    "MW_MAIN_081B_MARKET.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_MARKET.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1089,8 +1089,8 @@
     145
    ],
    "usedIn": [
-    "MW_MAIN_081B_MARKET.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_MARKET.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1110,8 +1110,8 @@
     145
    ],
    "usedIn": [
-    "MW_MAIN_081B_MARKET.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_MARKET.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 1,
@@ -1133,8 +1133,8 @@
     145
    ],
    "usedIn": [
-    "MW_MAIN_081B_MARKET.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_MARKET.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1154,7 +1154,7 @@
     147
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 6,
@@ -1176,8 +1176,8 @@
     147
    ],
    "usedIn": [
-    "MW_MAIN_081B_MARKET.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_MARKET.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 6,
@@ -1199,7 +1199,7 @@
     134
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 5,
@@ -1221,7 +1221,7 @@
     135
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 3,
    "records": 36,
@@ -1239,8 +1239,8 @@
    "handler": [],
    "dispatchLine": [],
    "usedIn": [
-    "MW_MAIN_081B_MARKET.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_MARKET.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1260,7 +1260,7 @@
     136
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 3,
    "records": 36,
@@ -1282,8 +1282,8 @@
     94
    ],
    "usedIn": [
-    "MW_MAIN_081B_CONTRACTS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_CONTRACTS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 2,
    "records": 18,
@@ -1310,8 +1310,8 @@
     94
    ],
    "usedIn": [
-    "MW_MAIN_081B_CONTRACTS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_CONTRACTS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1331,8 +1331,8 @@
     94
    ],
    "usedIn": [
-    "MW_MAIN_081B_CONTRACTS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_CONTRACTS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1352,8 +1352,8 @@
     97
    ],
    "usedIn": [
-    "MW_MAIN_081B_CONTRACTS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_CONTRACTS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1373,7 +1373,7 @@
     95
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 1,
@@ -1395,7 +1395,7 @@
     96
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 2,
@@ -1417,7 +1417,7 @@
     98
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 2,
@@ -1439,7 +1439,7 @@
     99
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 2,
@@ -1461,7 +1461,7 @@
     100
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 2,
@@ -1483,7 +1483,7 @@
     101
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 2,
@@ -1505,8 +1505,8 @@
     102
    ],
    "usedIn": [
-    "MW_MAIN_081B_CONTRACTS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_CONTRACTS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1526,8 +1526,8 @@
     103
    ],
    "usedIn": [
-    "MW_MAIN_081B_CONTRACTS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_CONTRACTS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1547,7 +1547,7 @@
     82
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 2,
    "records": 17,
@@ -1574,8 +1574,8 @@
     83
    ],
    "usedIn": [
-    "MW_MAIN_081B_TRAVEL.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_TRAVEL.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1595,8 +1595,8 @@
     84
    ],
    "usedIn": [
-    "MW_MAIN_081B_TRAVEL.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_TRAVEL.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1612,8 +1612,8 @@
    "handler": [],
    "dispatchLine": [],
    "usedIn": [
-    "MW_MAIN_081B_TRAVEL.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_TRAVEL.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1633,7 +1633,7 @@
     85
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 5,
@@ -1655,7 +1655,7 @@
     86
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 5,
@@ -1677,7 +1677,7 @@
     87
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 1,
@@ -1699,7 +1699,7 @@
     88
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 5,
@@ -1721,7 +1721,7 @@
     89
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 1,
@@ -1743,7 +1743,7 @@
     90
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 30,
@@ -1765,7 +1765,7 @@
     91
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 5,
@@ -1787,8 +1787,8 @@
     92
    ],
    "usedIn": [
-    "MW_MAIN_081B_TRAVEL.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_TRAVEL.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1808,8 +1808,8 @@
     93
    ],
    "usedIn": [
-    "MW_MAIN_081B_TRAVEL.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_TRAVEL.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1825,12 +1825,12 @@
    "handler": [],
    "dispatchLine": [],
    "usedIn": [
-    "MW_MAIN_081B_CONTRACTS.c",
-    "MW_MAIN_081B_EVENTS.c",
-    "MW_MAIN_081B_MARKET.c",
-    "MW_MAIN_081B_PILOTS.c",
-    "MW_MAIN_081B_PLANET.c",
-    "MW_MAIN_081B_STARTUP.c"
+    "MW_MAIN_081B_CONTRACTS.cpp",
+    "MW_MAIN_081B_EVENTS.cpp",
+    "MW_MAIN_081B_MARKET.cpp",
+    "MW_MAIN_081B_PILOTS.cpp",
+    "MW_MAIN_081B_PLANET.cpp",
+    "MW_MAIN_081B_STARTUP.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1850,8 +1850,8 @@
     122
    ],
    "usedIn": [
-    "MW_MAIN_081B_EVENTS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_EVENTS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1871,9 +1871,9 @@
     56
    ],
    "usedIn": [
-    "MW_MAIN_081B_EVENTS.c",
-    "MW_MAIN_081B_STARTUP.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_EVENTS.cpp",
+    "MW_MAIN_081B_STARTUP.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1893,7 +1893,7 @@
     112
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1913,7 +1913,7 @@
     113
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1933,7 +1933,7 @@
     114
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1953,8 +1953,8 @@
     115
    ],
    "usedIn": [
-    "MW_MAIN_081B_EVENT_UI.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_EVENT_UI.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1974,9 +1974,9 @@
     116
    ],
    "usedIn": [
-    "MW_MAIN_081B_EVENT_UI.c",
-    "MW_MAIN_081B_OPTIONS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_EVENT_UI.cpp",
+    "MW_MAIN_081B_OPTIONS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -1996,8 +1996,8 @@
     117
    ],
    "usedIn": [
-    "MW_MAIN_081B_EVENT_UI.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_EVENT_UI.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -2013,8 +2013,8 @@
    "handler": [],
    "dispatchLine": [],
    "usedIn": [
-    "MW_MAIN_081B_EVENT_UI.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_EVENT_UI.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -2034,8 +2034,8 @@
     72
    ],
    "usedIn": [
-    "MW_MAIN_081B_PILOTS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_PILOTS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 2,
    "records": 17,
@@ -2062,8 +2062,8 @@
     72
    ],
    "usedIn": [
-    "MW_MAIN_081B_PILOTS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_PILOTS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -2083,8 +2083,8 @@
     72
    ],
    "usedIn": [
-    "MW_MAIN_081B_PILOTS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_PILOTS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -2104,8 +2104,8 @@
     72
    ],
    "usedIn": [
-    "MW_MAIN_081B_PILOTS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_PILOTS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -2125,8 +2125,8 @@
     73
    ],
    "usedIn": [
-    "MW_MAIN_081B_PILOTS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_PILOTS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 9,
@@ -2148,8 +2148,8 @@
     73
    ],
    "usedIn": [
-    "MW_MAIN_081B_PILOTS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_PILOTS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -2169,7 +2169,7 @@
     74
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 9,
@@ -2191,7 +2191,7 @@
     75
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 3,
@@ -2213,7 +2213,7 @@
     76
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 3,
@@ -2235,9 +2235,9 @@
     58
    ],
    "usedIn": [
-    "MW_MAIN_081B_OPTIONS.c",
-    "MW_MAIN_081B_SAVE.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_OPTIONS.cpp",
+    "MW_MAIN_081B_SAVE.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 3,
    "records": 19,
@@ -2264,8 +2264,8 @@
     58
    ],
    "usedIn": [
-    "MW_MAIN_081B_OPTIONS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_OPTIONS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -2285,8 +2285,8 @@
     69
    ],
    "usedIn": [
-    "MW_MAIN_081B_OPTIONS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_OPTIONS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -2306,11 +2306,11 @@
     60
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 3,
-   "records": 10,
-   "activated": 2,
+   "records": 9,
+   "activated": 1,
    "traces": [
     "options"
    ]
@@ -2328,7 +2328,7 @@
     58
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,
@@ -2348,10 +2348,10 @@
     61
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 3,
-   "records": 10,
+   "records": 9,
    "activated": 1,
    "traces": [
     "options"
@@ -2370,7 +2370,7 @@
     62
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 1,
    "records": 24,
@@ -2392,10 +2392,10 @@
     59
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 3,
-   "records": 10,
+   "records": 9,
    "activated": 1,
    "traces": [
     "options"
@@ -2414,10 +2414,10 @@
     66
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 3,
-   "records": 10,
+   "records": 9,
    "activated": 1,
    "traces": [
     "options"
@@ -2436,10 +2436,10 @@
     67
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 3,
-   "records": 10,
+   "records": 9,
    "activated": 0,
    "traces": [
     "options"
@@ -2458,10 +2458,10 @@
     68
    ],
    "usedIn": [
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 3,
-   "records": 10,
+   "records": 9,
    "activated": 0,
    "traces": [
     "options"
@@ -2480,8 +2480,8 @@
     70
    ],
    "usedIn": [
-    "MW_MAIN_081B_OPTIONS.c",
-    "MW_MAIN_081B_UI.c"
+    "MW_MAIN_081B_OPTIONS.cpp",
+    "MW_MAIN_081B_UI.cpp"
    ],
    "screens": 0,
    "records": 0,

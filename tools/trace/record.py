@@ -129,7 +129,10 @@ def main():
         os.makedirs(d, mode=0o700)
     os.makedirs(args.frames, exist_ok=True)
 
-    env = dict(os.environ, SDL_VIDEO_DRIVER="offscreen", SDL_AUDIO_DRIVER="dummy",
+    # No window on screen: SDL's offscreen video on Linux and Windows; macOS's
+    # offscreen driver has no renderer, so there the port's hidden window.
+    headless = {"MW1O_HIDDEN": "1"} if sys.platform == "darwin" else {"SDL_VIDEO_DRIVER": "offscreen"}
+    env = dict(os.environ, **headless, SDL_AUDIO_DRIVER="dummy",
                MECHWARRIOR_SAVE_DIRECTORY=saves, MECHWARRIOR_DEBUG_CONTROL_DIRECTORY=ctl,
                MECHWARRIOR_DEBUG_BIOS_TICKS=args.bios_ticks)
     # The feed is in place before the game starts, so it counts every poll.
