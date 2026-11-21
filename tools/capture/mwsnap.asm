@@ -47,8 +47,9 @@
 ; 1990-01-22 revision (174,533 bytes, the poll at image 2AE1h) is patched; on
 ; any other bytes MWSNAP writes NOPATCH.TXT and feeds no combat.
 ;
-; A capture: 'MW1S' (4) version 1 (1) video mode (1) CRTC start (2), the
-; attribute registers 0-15 (16), the DAC 256 x RGB (768); in mode 0Dh the
+; A capture: 'MW1S' (4) version 2 (1) video mode (1) CRTC start (2), the
+; attribute registers 0-15 (16), the overscan colour (attribute register 11h,
+; 1; version 2 on), the DAC 256 x RGB (768); in mode 0Dh the
 ; four planes (8000 bytes each, from the CRTC start); in every mode 'MEMS' (4), the
 ; game's DS (2: MW_MAIN's at its last int 16h call in the campaign, BTECH's at
 ; its last input poll in combat), and the first
@@ -114,10 +115,11 @@ nopatch     db 'NOPATCH.TXT', 0
 keyfail     db 'KEYFAIL.TXT', 0
 itemfail    db 'ITEMFAIL.TXT', 0
 poll_bytes  db 55h, 8bh, 0ech, 83h, 0ech, 0ch, 9ah, 58h, 2fh
-header      db 'MW1S', 1
+header      db 'MW1S', 2
 h_mode      db 0
 h_start     dw 0
 h_attr      times 16 db 0
+h_overscan  db 0                        ; attribute register 11h, read by the same loop
 h_dac       times 768 db 0
 header_end:
 
@@ -744,6 +746,14 @@ capture:
         inc cl
         cmp cl, 16
         jb .attr
+        mov dx, 3dah                    ; then 11h, the overscan, into h_overscan (SI)
+        in al, dx
+        mov dx, 3c0h
+        mov al, 31h                     ; index 11h, palette address source set
+        out dx, al
+        inc dx
+        in al, dx
+        mov [si], al
         mov dx, 3dah
         in al, dx
         mov dx, 3c0h

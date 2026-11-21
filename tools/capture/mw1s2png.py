@@ -22,8 +22,9 @@ def main():
     if d[:4] != b"MW1S" or d[5] != 0x0D:
         sys.exit(f"{sys.argv[1]}: not an MWSNAP mode 0Dh capture")
     attr = d[8:24]
-    dac = d[24:24 + 768]
-    planes = [d[792 + p * 8000: 792 + (p + 1) * 8000] for p in range(4)]
+    base = 25 if d[4] >= 2 else 24  # version 2 adds the overscan byte after attr
+    dac = d[base:base + 768]
+    planes = [d[base + 768 + p * 8000: base + 768 + (p + 1) * 8000] for p in range(4)]
     rgb = [tuple(min(255, dac[a * 3 + i] * 255 // 63) for i in range(3)) for a in (x & 0x3F for x in attr)]
     rows = []
     for y in range(200):
