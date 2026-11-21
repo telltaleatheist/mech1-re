@@ -8,6 +8,10 @@
 //                         "description"}, ...], "alphabetical": [planet ids]}
 //   story/missions.json  {"missions": [{"scenario", "unidentified_2", "text"}, ...],
 //                         "categories": [[mission ids], ...]}
+//   story/event_text.json {"records": [{"directory": index or null, "pages":
+//                         [{"marker", "format", "rows", "text"}, ...]}, ...]}
+//                         the event text bank (MW_MAIN 1AA5), records in the
+//                         exe's storage order; "marker" is the page's leading FF
 //
 // Numbers are the original's; "name", "dialogue", "description" and "text"
 // are text ids into story/text.json. Ids count from 1 in the original's
@@ -20,6 +24,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <map>
+#include <optional>
 #include <span>
 #include <string>
 #include <vector>
@@ -55,6 +60,17 @@ struct Missions {
     std::vector<std::vector<int>> categories;  // mission ids per category; each a consecutive run
 };
 
+struct EventTextPage {
+    bool marker = false;  // the page starts with FF (its panel discards the return)
+    std::uint8_t format = 0, rows = 0;
+    std::string text;  // text id; the text keeps its control codes and FF placeholders
+};
+
+struct EventTextRecord {
+    std::optional<int> directory;  // the directory entry pointing at it; none for text no entry reaches
+    std::vector<EventTextPage> pages;
+};
+
 // A verified piece's bytes and the offset it was read at (its SEG:OFF's OFF).
 struct PieceBytes {
     std::uint16_t offset = 0;
@@ -69,11 +85,13 @@ using PieceMap = std::map<std::string, PieceBytes, std::less<>>;
 std::string pilots_json(const PieceMap& pieces);
 std::string planets_json(const PieceMap& pieces);
 std::string missions_json(const PieceMap& pieces);
+std::string event_text_json(const PieceMap& pieces);  // event_text.directory, event_text.<key>.<page>.*
 
 // The files, read strictly. Throw ImportError naming the file.
 std::vector<PilotRecord> load_pilots(const std::filesystem::path& write_dir);
 Planets load_planets(const std::filesystem::path& write_dir);
 Missions load_missions(const std::filesystem::path& write_dir);
+std::vector<EventTextRecord> load_event_text(const std::filesystem::path& write_dir);
 
 // The original's storage, rebuilt. `base` is the storage's offset in the data
 // segment; offsets written are data-segment offsets, as the exe holds them.
@@ -97,5 +115,11 @@ void build_planets(const Planets& planets, const StoryText& texts, std::span<std
 void build_missions(const Missions& missions, const StoryText& texts, std::span<std::uint8_t> storage,
                     std::uint16_t base, std::span<std::uint8_t> maximum_indices, std::span<std::uint16_t> list_offsets,
                     std::span<std::uint16_t> entries, std::uint16_t entry_base);
+
+// The event text bank: each record's pages ([FF] format rows text NUL) and a 0
+// after them, in order; directory[i] is the offset of the record whose
+// directory is i, and 0 where none is.
+void build_event_text(const std::vector<EventTextRecord>& records, const StoryText& texts,
+                      std::span<std::uint8_t> storage, std::uint16_t base, std::span<std::uint16_t> directory);
 
 }  // namespace mw1o::import

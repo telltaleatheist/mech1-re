@@ -3,6 +3,7 @@
 #include "mechwarrior/campaign_runtime.h"
 #include "mechwarrior/campaign_ui.h"
 #include "mechwarrior/original_data.h"
+#include "mechwarrior/campaign_events.h"
 #include "mechwarrior/dos_files.h"
 #include "mechwarrior/story.h"
 #include "mechwarrior/launcher.h"
@@ -38,7 +39,7 @@ static bool ExecuteChild(const char *filename,const MwCampaignLaunch *launch,uin
     if (strcmp(filename,"MW_MAIN.EXE")) MwSdlFail("Unknown launcher child executable");
     /* Fresh DOS child image on EACH execution, then0002 decides new/resume.
      * Keep input/ticks, physical video and resident exchange alive across EXEC. */
-    if (!MwHostLoadCampaignInitialData(path) || !MwHostLoadCampaignEventText(path)
+    if (!MwHostLoadCampaignInitialData(path) || !MwImportCampaignEventText()
         || !MwHostLoadCampaignMusicData(path)) return true;
     *exitCode=(uint8_t)MwRunCampaignProgram(launch,audioCode);
     ReleaseChildResources();
@@ -133,7 +134,7 @@ bool MwSdlInitialize(const char *gameDirectory,const char *captureDirectory)
     if (!MwHostSetCampaignSaveDirectory(writeDirectory) || !MwHostPrepareStory(gameDirectory,writeDirectory)) return false;
     char path[4096];
     if (!MwHostJoinGamePath(path,sizeof(path),gameDirectory,"MW_MAIN.EXE")
-        || !MwHostLoadCampaignInitialData(path) || !MwHostLoadCampaignEventText(path)
+        || !MwHostLoadCampaignInitialData(path) || !MwImportCampaignEventText()
         || !MwHostLoadCampaignMusicData(path) || !MwHostSetOriginalGameDirectory(gameDirectory)) return false;
     if (!MwHostJoinGamePath(path,sizeof(path),gameDirectory,"MW.EXE") || !LoadResidentLauncher(path)) return false;
     if (!SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_EVENTS)) return false;

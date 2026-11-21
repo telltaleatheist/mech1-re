@@ -1,11 +1,13 @@
 #include "Records.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <fstream>
 #include <iterator>
 
 #include "../Support/Json.h"
+#include "StrictReader.h"
 
 namespace mw1o::import {
 
@@ -13,6 +15,7 @@ namespace fs = std::filesystem;
 using support::Json;
 using support::json_quote;
 using support::parse_json;
+using detail::Reader;
 
 namespace {
 
@@ -57,69 +60,6 @@ std::string ids(const std::vector<int>& list) {
     for (std::size_t i = 0; i < list.size(); ++i) out += (i ? ", " : "") + std::to_string(list[i]);
     return out + "]";
 }
-
-std::string read_text_file(const fs::path& path) {
-    std::ifstream in(path, std::ios::binary);
-    if (!in) throw ImportError("can't read " + path.string());
-    return {std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
-}
-
-// Strict reading of one record file: the shape is checked, and every error
-// names the file.
-class Reader {
-public:
-    explicit Reader(fs::path path) : path_(std::move(path)) {}
-
-    Json parse() {
-        try {
-            return parse_json(read_text_file(path_));
-        } catch (const support::JsonError& e) {
-            fail(e.what());
-        }
-    }
-    [[noreturn]] void fail(const std::string& why) const { throw ImportError(path_.string() + ": " + why); }
-
-    const Json& member(const Json& object, std::string_view key) const {
-        if (!object.is_object()) fail("expected an object");
-        const Json* found = object.find(key);
-        if (!found) fail("no \"" + std::string(key) + "\"");
-        return *found;
-    }
-    const Json::Array& array(const Json& object, std::string_view key) const {
-        const Json& v = member(object, key);
-        if (!v.is_array()) fail("\"" + std::string(key) + "\" is not an array");
-        return v.array();
-    }
-    double whole(const Json& v, std::string_view what, double maximum) const {
-        if (!v.is_number() || v.number() < 0 || v.number() > maximum || std::floor(v.number()) != v.number())
-            fail(std::string(what) + " is not a whole number from 0 to " + std::to_string(static_cast<long>(maximum)));
-        return v.number();
-    }
-    std::uint8_t u8(const Json& object, std::string_view key) const {
-        return static_cast<std::uint8_t>(whole(member(object, key), key, 255));
-    }
-    std::uint16_t u16(const Json& object, std::string_view key) const {
-        return static_cast<std::uint16_t>(whole(member(object, key), key, 65535));
-    }
-    std::string text(const Json& object, std::string_view key) const {
-        const Json& v = member(object, key);
-        if (!v.is_string() || v.string().empty()) fail("\"" + std::string(key) + "\" is not a text id");
-        return v.string();
-    }
-    std::vector<int> id_list(const Json& list, std::size_t count) const {
-        if (!list.is_array()) fail("expected a list of ids");
-        std::vector<int> out;
-        for (const Json& v : list.array()) {
-            const int id = static_cast<int>(whole(v, "an id", 65535));
-            if (id < 1 || static_cast<std::size_t>(id) > count) fail("the id " + std::to_string(id) + " names no record");
-            out.push_back(id);
-        }
-        return out;
-    }
-
-private:
-    fs::path path_;
-};
 
 const std::string& text_for(const StoryText& texts, const std::string& id) {
     const auto it = texts.find(id);
@@ -354,6 +294,130 @@ void build_missions(const Missions& missions, const StoryText& texts, std::span<
         maximum_indices[c] = run.empty() ? 0 : static_cast<std::uint8_t>(run.size() - 1);
         list_offsets[c] = run.empty() ? 0 : static_cast<std::uint16_t>(entry_base + (run.front() - 1) * 2);
     }
+}
+
+// ---- the event text bank ----
+
+std::string event_text_json(const PieceMap& pieces) {
+    struct Page {
+        std::string key;
+        std::size_t number;
+        const PieceBytes* header;
+    };
+    const std::string prefix = "event_text.", suffix = ".header";
+    std::vector<Page> pages;
+    for (const auto& [id, piece] : pieces) {
+        if (id.size() <= prefix.size() + suffix.size() || id.compare(0, prefix.size(), prefix) != 0 ||
+            id.compare(id.size() - suffix.size(), suffix.size(), suffix) != 0)
+            continue;
+        const std::string middle = id.substr(prefix.size(), id.size() - prefix.size() - suffix.size());
+        const auto dot = middle.rfind('.');
+        if (dot == std::string::npos || dot + 1 == middle.size() ||
+            middle.find_first_not_of("0123456789", dot + 1) != std::string::npos)
+            throw ImportError("the import table's piece " + id + " is not event_text.<key>.<page>.header");
+        pages.push_back({middle.substr(0, dot), std::stoul(middle.substr(dot + 1)), &piece});
+    }
+    if (pages.empty()) return "{\n  \"records\": []\n}\n";
+    std::sort(pages.begin(), pages.end(), [](const Page& a, const Page& b) { return a.header->offset < b.header->offset; });
+
+    // Records: runs of one key's pages, numbered from 1, in storage order.
+    struct Record {
+        std::string key;
+        std::vector<const Page*> pages;
+        int directory = -1;
+    };
+    std::vector<Record> records;
+    for (const Page& page : pages) {
+        if (records.empty() || records.back().key != page.key) {
+            for (const Record& r : records)
+                if (r.key == page.key) throw ImportError("the event text " + page.key + "'s pages are not together");
+            records.push_back({page.key, {}});
+        }
+        records.back().pages.push_back(&page);
+        if (page.number != records.back().pages.size())
+            throw ImportError("the event text " + page.key + "'s pages are out of order");
+        const std::string& h = page.header->bytes;
+        if (!(h.size() == 2 || (h.size() == 3 && byte_at(h, 0) == 0xFF)))
+            throw ImportError("an event text page header is not [FF] format rows");
+    }
+    const PieceBytes* directory = find_piece(pieces, "event_text.directory");
+    if (!directory || directory->bytes.size() % 2)
+        throw ImportError("the import table's piece event_text.directory is missing");
+    for (std::size_t i = 0; i < directory->bytes.size() / 2; ++i) {
+        const std::uint16_t at = word_at(directory->bytes, i * 2);
+        if (!at) continue;
+        auto it = std::find_if(records.begin(), records.end(), [&](const Record& r) { return r.pages[0]->header->offset == at; });
+        if (it == records.end()) throw ImportError("event text directory entry " + std::to_string(i) + " names no record");
+        if (it->key != std::to_string(i) || it->directory >= 0)
+            throw ImportError("event text directory entry " + std::to_string(i) + " doesn't match its record's key");
+        it->directory = static_cast<int>(i);
+    }
+    std::string out = "{\n  \"records\": [";
+    for (std::size_t r = 0; r < records.size(); ++r) {
+        const Record& record = records[r];
+        if (record.directory < 0 && record.key.find_first_not_of("0123456789") == std::string::npos)
+            throw ImportError("the event text " + record.key + " has no directory entry");
+        out += std::string(r ? "," : "") + "\n    {\"directory\": " +
+               (record.directory < 0 ? std::string("null") : std::to_string(record.directory)) + ", \"pages\": [";
+        for (std::size_t p = 0; p < record.pages.size(); ++p) {
+            const std::string& h = record.pages[p]->header->bytes;
+            const bool marker = h.size() == 3;
+            out += std::string(p ? ", " : "") + "{\"marker\": " + (marker ? "true" : "false") +
+                   ", \"format\": " + std::to_string(byte_at(h, marker ? 1 : 0)) +
+                   ", \"rows\": " + std::to_string(byte_at(h, marker ? 2 : 1)) + ", \"text\": " +
+                   json_quote("event_text." + record.key + "." + std::to_string(p + 1) + ".text") + "}";
+        }
+        out += "]}";
+    }
+    return out + "\n  ]\n}\n";
+}
+
+std::vector<EventTextRecord> load_event_text(const fs::path& write_dir) {
+    Reader r(story_dir(write_dir) / "event_text.json");
+    const Json file = r.parse();
+    std::vector<EventTextRecord> out;
+    std::vector<bool> used;
+    for (const Json& record : r.array(file, "records")) {
+        EventTextRecord rec;
+        const Json& directory = r.member(record, "directory");
+        if (!std::holds_alternative<std::nullptr_t>(directory.value)) {
+            const int index = static_cast<int>(r.whole(directory, "directory", 65535));
+            if (std::size_t(index) >= used.size()) used.resize(std::size_t(index) + 1);
+            if (used[std::size_t(index)]) r.fail("two records have the directory entry " + std::to_string(index));
+            used[std::size_t(index)] = true;
+            rec.directory = index;
+        }
+        for (const Json& page : r.array(record, "pages")) {
+            const Json& marker = r.member(page, "marker");
+            if (!std::holds_alternative<bool>(marker.value)) r.fail("\"marker\" is not true or false");
+            rec.pages.push_back({std::get<bool>(marker.value), r.u8(page, "format"), r.u8(page, "rows"), r.text(page, "text")});
+        }
+        if (rec.pages.empty()) r.fail("a record has no pages");
+        out.push_back(std::move(rec));
+    }
+    return out;
+}
+
+void build_event_text(const std::vector<EventTextRecord>& records, const StoryText& texts,
+                      std::span<std::uint8_t> storage, std::uint16_t base, std::span<std::uint16_t> directory) {
+    std::fill(directory.begin(), directory.end(), std::uint16_t(0));
+    Writer w(storage, base, "the event texts");
+    for (const EventTextRecord& record : records) {
+        if (record.directory) {
+            if (std::size_t(*record.directory) >= directory.size())
+                throw ImportError("the event text directory has " + std::to_string(directory.size()) + " entries, not " +
+                                  std::to_string(*record.directory + 1));
+            directory[std::size_t(*record.directory)] = w.here();
+        }
+        for (const EventTextPage& page : record.pages) {
+            if (page.marker) w.byte(0xFF);
+            w.byte(page.format);
+            w.byte(page.rows);
+            w.string(text_for(texts, page.text));
+        }
+        w.byte(0);
+    }
+    w.finish();
 }
 
 }  // namespace mw1o::import

@@ -268,27 +268,6 @@ finished:
     return loaded;
 }
 
-bool MwHostLoadCampaignEventText(const char *executablePath)
-{
-    uint8_t header[0x001C];
-    FILE *file=fopen(executablePath,"rb");
-    if (!file) return false;
-    bool loaded=false;
-    uint8_t *data=NULL;
-    if (fread(header,1,sizeof(header),file)!=sizeof(header) || header[0]!='M' || header[1]!='Z') goto finished;
-    uint16_t paragraphs;paragraphs=(uint16_t)(header[8]|((uint16_t)header[9]<<8));
-    long position;position=(long)paragraphs*0x10+(0x1AA5-0x0800)*0x10;
-    if ((uint32_t)paragraphs*0x10<sizeof(header) || fseek(file,position,SEEK_SET)!=0) goto finished;
-    data=static_cast<uint8_t *>(malloc(EVENT_TEXT_STORAGE_END));
-    if (!data) goto finished;
-    if (fread(data,1,EVENT_TEXT_STORAGE_END,file)!=EVENT_TEXT_STORAGE_END || ferror(file)) goto finished;
-    loaded=MwImportCampaignEventText(data,EVENT_TEXT_STORAGE_END);
-finished:
-    free(data);
-    if (fclose(file)!=0) loaded=false;
-    return loaded;
-}
-
 bool MwHostLoadCampaignMusicData(const char *executablePath)
 {
     uint8_t header[0x1C],data[0x0A12];

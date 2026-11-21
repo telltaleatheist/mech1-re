@@ -13,6 +13,7 @@ mw1o::import::StoryText g_story;
 std::vector<mw1o::import::PilotRecord> g_pilots;
 mw1o::import::Planets g_planets;
 mw1o::import::Missions g_missions;
+std::vector<mw1o::import::EventTextRecord> g_event_text;
 
 // Runs a rebuild; an error goes to stderr and returns false.
 template <typename Build>
@@ -38,6 +39,7 @@ bool MwHostPrepareStory(const char *gameDirectory, const char *writeDirectory)
         g_pilots = mw1o::import::load_pilots(writeDirectory);
         g_planets = mw1o::import::load_planets(writeDirectory);
         g_missions = mw1o::import::load_missions(writeDirectory);
+        g_event_text = mw1o::import::load_event_text(writeDirectory);
         return true;
     } catch (const std::exception &e) {
         std::fprintf(stderr, "MechWarrior: %s\n", e.what());
@@ -85,5 +87,12 @@ bool MwStoryBuildMissions(uint8_t *storage, size_t capacity, uint16_t base, uint
     return rebuild([&] {
         mw1o::import::build_missions(g_missions, g_story, {storage, capacity}, base, {maximumIndices, categoryCount},
                                      {listOffsets, categoryCount}, {entries, entryCount}, entryBase);
+    });
+}
+
+bool MwStoryBuildEventText(uint8_t *storage, size_t capacity, uint16_t base, uint16_t *directory, size_t directoryCount)
+{
+    return rebuild([&] {
+        mw1o::import::build_event_text(g_event_text, g_story, {storage, capacity}, base, {directory, directoryCount});
     });
 }

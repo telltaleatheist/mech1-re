@@ -179,6 +179,13 @@ DS:0008 finds the data segment, then each piece must still match its hash.
    change length moves them; the save format should keep ids (slice 6).
    The story-planet pools (`eventPlanetChoicePool*`,
    `campaignEventPlanetSelectors`) go with the events in 2e.
+   2e, the text bank: `story/event_text.json`, MW_MAIN 1AA5's records in
+   the exe's storage order, each with its directory entry and its pages
+   ([FF] marker, format, rows, text id). One record (834 bytes at B1EF) no
+   directory entry reaches; it is kept, unreferenced, so the bank is the
+   exe's byte for byte. The game rebuilds the bank and its directory at start
+   and on every EXEC (which restores the planet names events write into it)
+   instead of reading the exe.
 3. **Rules and the new campaign** into `data/rules/`. Traces equal (same
    numbers). The importer's piece hashes check them against the exe.
 4. **Layout** into `data/ui/`. Traces equal.

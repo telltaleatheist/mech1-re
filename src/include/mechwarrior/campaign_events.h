@@ -95,7 +95,7 @@ enum { EVENT_TEXT_DIRECTORY_COUNT=0x77, EVENT_TEXT_STORAGE_START=0x00EE,
 typedef struct MwEventTextPageHeader { uint8_t format,rowCount; } MwEventTextPageHeader;
 extern uint8_t eventTextStorage[EVENT_TEXT_STORAGE_END-EVENT_TEXT_STORAGE_START];
 extern uint8_t *eventTextRecords[EVENT_TEXT_DIRECTORY_COUNT];
-bool MwImportCampaignEventText(const uint8_t *data,size_t byteCount);
+bool MwImportCampaignEventText(void);
 extern uint8_t eventChoiceCount,eventTextRowCount;
 extern MwCampaignEvent *eventChoiceBranches[3];
 extern uint16_t eventChoiceSavedFontIndex;

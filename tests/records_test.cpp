@@ -177,6 +177,67 @@ void what_doesnt_fit_is_refused() {
     refused([&] { planets_json(broken); }, "names no planet record", "an alphabetical offset naming nothing");
 }
 
+// Directory of 4: entry 1 -> record "1" (two pages, the second marked),
+// entry 3 -> record "3"; a record no entry reaches between them.
+PieceMap made_up_event_text() {
+    PieceMap p;
+    p["event_text.directory"] = {0, word(0) + word(0x00EE) + word(0) + word(0x0104)};
+    p["event_text.1.1.header"] = {0x00EE, std::string("\x2D\x03", 2)};
+    p["event_text.1.2.header"] = {0x00F6, std::string("\xFF\x2E\x02", 3)};
+    p["event_text.unreferenced1.1.header"] = {0x00FE, std::string("\x01\x01", 2)};
+    p["event_text.3.1.header"] = {0x0104, std::string("\x04\x05", 2)};
+    return p;
+}
+
+void the_event_text_bank() {
+    const fs::path dir = kDir / "events";
+    write(story_dir(dir) / "event_text.json", event_text_json(made_up_event_text()));
+    const auto records = load_event_text(dir);
+    check(records.size() == 3 && records[0].directory == 1 && !records[1].directory && records[2].directory == 3,
+          "records in storage order with their directory entries (none for the unreferenced one)");
+    check(records[0].pages.size() == 2 && !records[0].pages[0].marker && records[0].pages[1].marker &&
+              records[0].pages[1].format == 0x2E && records[0].pages[1].rows == 2 &&
+              records[0].pages[1].text == "event_text.1.2.text" && records[1].pages[0].text == "event_text.unreferenced1.1.text",
+          "pages keep their marker, format, rows and text ids");
+
+    const StoryText texts = {{"event_text.1.1.text", "Ab"}, {"event_text.1.2.text", std::string("C\xFF", 2)},
+                             {"event_text.unreferenced1.1.text", "D"}, {"event_text.3.1.text", "Efg"}};
+    std::vector<std::uint8_t> storage(32, 0xEE);
+    std::vector<std::uint16_t> directory(4, 0xEEEE);
+    build_event_text(records, texts, storage, 0x00EE, directory);
+    const std::string want = std::string("\x2D\x03" "Ab\0", 5) + std::string("\xFF\x2E\x02" "C\xFF\0", 6) +
+                             std::string("\0", 1) + std::string("\x01\x01" "D\0", 4) + std::string("\0", 1) +
+                             std::string("\x04\x05" "Efg\0", 6) + std::string("\0", 1);
+    check(std::string(storage.begin(), storage.begin() + std::ptrdiff_t(want.size())) == want,
+          "the bank's bytes: pages, a 0 after each record, FF kept in the text");
+    check(directory == std::vector<std::uint16_t>{0, 0x00EE, 0, 0x00EE + 17}, "the directory (0 where no record is)");
+    std::vector<std::uint16_t> small_directory(2);
+    refused([&] { build_event_text(records, texts, storage, 0x00EE, small_directory); }, "has 2 entries, not 4",
+            "a directory entry past the game's directory");
+
+    PieceMap broken = made_up_event_text();
+    broken["event_text.directory"].bytes = word(0x00F6) + word(0) + word(0) + word(0);
+    refused([&] { event_text_json(broken); }, "names no record", "a directory entry pointing mid-record");
+    broken = made_up_event_text();
+    broken["event_text.directory"].bytes = word(0x0104) + word(0x00EE) + word(0) + word(0);
+    refused([&] { event_text_json(broken); }, "doesn't match its record's key", "a directory entry and key that differ");
+    broken = made_up_event_text();
+    broken["event_text.1.2.header"].offset = 0x0110;
+    refused([&] { event_text_json(broken); }, "not together", "a record's pages split by another");
+    broken = made_up_event_text();
+    broken["event_text.3.1.header"].bytes = std::string("\x01\x02\x03", 3);
+    refused([&] { event_text_json(broken); }, "not [FF] format rows", "a three-byte header without FF");
+
+    const auto file = story_dir(dir / "bad") / "event_text.json";
+    write(file, "{\"records\": [{\"directory\": 1, \"pages\": [{\"marker\": false, \"format\": 1, \"rows\": 1, \"text\": \"a\"}]},"
+                " {\"directory\": 1, \"pages\": [{\"marker\": false, \"format\": 1, \"rows\": 1, \"text\": \"b\"}]}]}");
+    refused([&] { load_event_text(dir / "bad"); }, "two records have the directory entry 1", "a directory entry twice");
+    write(file, "{\"records\": [{\"directory\": null, \"pages\": [{\"marker\": 1, \"format\": 1, \"rows\": 1, \"text\": \"a\"}]}]}");
+    refused([&] { load_event_text(dir / "bad"); }, "\"marker\" is not true or false", "a marker that isn't a boolean");
+    write(file, "{\"records\": [{\"directory\": null, \"pages\": []}]}");
+    refused([&] { load_event_text(dir / "bad"); }, "has no pages", "a record without pages");
+}
+
 }  // namespace
 
 int main() {
@@ -185,6 +246,7 @@ int main() {
         the_files_round_trip();
         the_storage_is_rebuilt_as_the_exe_lays_it_out();
         what_doesnt_fit_is_refused();
+        the_event_text_bank();
     } catch (const std::exception& e) {
         check(false, std::string("unexpected: ") + e.what());
     }

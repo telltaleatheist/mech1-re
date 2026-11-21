@@ -22,4 +22,7 @@ bool MwStoryBuildPlanets(uint8_t *storage, size_t capacity, uint16_t base, uint1
     uint16_t *alphabetical, size_t alphabeticalCount);
 bool MwStoryBuildMissions(uint8_t *storage, size_t capacity, uint16_t base, uint8_t *maximumIndices,
     uint16_t *listOffsets, size_t categoryCount, uint16_t *entries, size_t entryCount, uint16_t entryBase);
+/* The event text bank from story/event_text.json; directory[i] is 0 where no
+ * record has entry i. */
+bool MwStoryBuildEventText(uint8_t *storage, size_t capacity, uint16_t base, uint16_t *directory, size_t directoryCount);
 #endif
