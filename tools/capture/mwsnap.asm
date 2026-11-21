@@ -46,7 +46,7 @@
 ;
 ; A capture: 'MW1S' (4) version 1 (1) video mode (1) CRTC start (2), the
 ; attribute registers 0-15 (16), the DAC 256 x RGB (768); in mode 0Dh the
-; four planes (8000 bytes each, from the CRTC start), then 'MEMS' (4), the
+; four planes (8000 bytes each, from the CRTC start); in every mode 'MEMS' (4), the
 ; game's DS (2: MW_MAIN's at its last int 16h call in the campaign, BTECH's at
 ; its last input poll in combat), and the first
 ; 640K of memory. The same layout as SNAP's but the magic.
@@ -59,7 +59,12 @@
 ; Build: nasm -f bin -o MWSNAP.COM mwsnap.asm
 
         org 100h
-        jmp install
+        jmp near install
+        db 'MWSN'                       ; 103h: a tag, then counters a dump can read
+n_polls     dd 0                        ; 107h: int 16h AH=01/11h calls
+n_empty     dd 0                        ; 10Bh: of those, with the buffer empty
+n_reads     dd 0                        ; 10Fh: AH=00/10h calls
+n_fed       dw 0                        ; 113h: campaign keys fed
 
 POLLS       equ 4
 MAX_KEYS    equ 16384
@@ -134,6 +139,8 @@ int16:
         jne .chain
 .read:
         mov [cs:game_ds], ds
+        add word [cs:n_reads], 1
+        adc word [cs:n_reads+2], 0
         call buffer_empty
         jne .reset
         mov byte [cs:blocking], 1
@@ -148,8 +155,12 @@ int16:
         jmp .chain
 .poll:
         mov [cs:game_ds], ds
+        add word [cs:n_polls], 1
+        adc word [cs:n_polls+2], 0
         call buffer_empty
         jne .chain
+        add word [cs:n_empty], 1
+        adc word [cs:n_empty+2], 0
         mov byte [cs:blocking], 0
         call campaign_feed
 .chain:
@@ -266,6 +277,7 @@ campaign_items:
         mov [es:RANDOM1], ax
         jmp .next
 .key:
+        inc word [n_fed]
         mov ah, 5
         pushf
         call far [old16]
@@ -344,6 +356,8 @@ patch_btech:
 
 int1a:
         cmp ah, 0
+        jne .chain
+        cmp byte [cs:busy], 0           ; DOS stamping a capture file: not the game
         jne .chain
         cmp byte [cs:pin_used], 0
         jne .chain
@@ -567,7 +581,7 @@ capture:
         mov dx, header
         int 21h
         cmp byte [h_mode], 0dh
-        jne .close
+        jne .memory
         mov dx, 3ceh
         in al, dx
         mov [gc_index], al
@@ -620,6 +634,7 @@ capture:
         dec dx
         mov al, [gc_index]
         out dx, al
+.memory:
         mov ax, [game_ds]
         cmp byte [in_combat], 0
         je .ds
