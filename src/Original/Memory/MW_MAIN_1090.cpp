@@ -562,7 +562,12 @@ static bool ImportTravelUiData(const uint8_t *data)
     travelHousePlanetMenu.records[TRAVEL_PLANET_ROWS_PER_HOUSE].text=travelHousePlanetCancelLabel.text;
     travelHousePlanetMenu.records[TRAVEL_PLANET_ROWS_PER_HOUSE].textColour=&travelHousePlanetCancelLabel.display.colour;
     ImportTravelMenu(data,0x5B8C,&travelMapMenu);
-    travelMapMenu.records[0].text=travelDestinationHeaderLabels[0].text;
+    /* DS:5C4E is one buffer in the original: 081B:5FEF copies the destination
+     * name into it, the header panel's first caption draws it (5C49, colour at
+     * 5C4D) and travel record 0 points at it, so the selection redraws the
+     * name in the highlight colour. All three use travelDestinationName. */
+    travelDestinationHeaderLabels[0].display.text=travelDestinationName;
+    travelMapMenu.records[0].text=travelDestinationName;
     travelMapMenu.records[0].textColour=&travelDestinationHeaderLabels[0].display.colour;
     travelMapMenu.records[1].text=travelCostLabel.text;
     travelMapMenu.records[1].textColour=&travelCostLabel.display.colour;
