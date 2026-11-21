@@ -1,5 +1,6 @@
 #include "mechwarrior/combat_render.h"
 #include "mechwarrior/native_address.h"
+#include <string.h>
 
 BtechCameraContext *activeCameraContext;
 BtechPosition3D cameraReferencePosition,cameraRelativePosition,transformedViewPosition,projectionVectorScratch;

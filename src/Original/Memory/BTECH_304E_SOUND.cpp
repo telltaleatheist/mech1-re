@@ -4,6 +4,7 @@
 #include "mechwarrior/combat_adlib.h"
 #include "mechwarrior/combat_mpu.h"
 #include <stdlib.h>
+#include <string.h>
 
 BtechRuntimeStream runtimeStreams[COMBAT_STREAM_SLOTS];
 uint16_t lastStreamOffset,streamSetupCounter;
