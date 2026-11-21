@@ -40,7 +40,8 @@ bool BtechImportOrderInitialData(const uint8_t *data,size_t bytes)
     /* The layout's pieces, at their native offsets (304E:0092..032E). */
     uint8_t ui[0x032E];
     memset(ui,0,sizeof(ui));
-    if (!CopyLayoutPiece(ui,sizeof(ui),"orders.selection_first_rows",0x0092)
+    if (!CopyLayoutPiece(ui,sizeof(ui),"orders.start.lance_panel_text_x",0x008C)
+        || !CopyLayoutPiece(ui,sizeof(ui),"orders.selection_first_rows",0x0092)
         || !CopyLayoutPiece(ui,sizeof(ui),"orders.selection_last_rows",0x0096)
         || !CopyLayoutPiece(ui,sizeof(ui),"orders.navigation_panel_deltas",0x009A)
         || !CopyLayoutPiece(ui,sizeof(ui),"orders.navigation_row_deltas",0x00B0)
@@ -102,11 +103,11 @@ bool BtechImportOrderInitialData(const uint8_t *data,size_t bytes)
     }
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
     {unitOrderMapScreenX[slot]=(int16_t)MwReadNativeWord(data,0x4F08+slot*2);unitOrderMapScreenY[slot]=(int16_t)MwReadNativeWord(data,0x4F18+slot*2);}
-    for (uint16_t panel=0;panel<3;++panel) lanceOrderPanelTextX[panel]=MwReadNativeWord(data,0x008C+panel*2);
+    for (uint16_t panel=0;panel<3;++panel) lanceOrderPanelTextX[panel]=MwReadNativeWord(ui,0x008C+panel*2); /* orders.json "start" */
     orderScreenFullRedrawPending=data[0x4EEC];
     previousOrderHighlightPanel=MwReadNativeWord(data,0x4EEE);
     previousOrderHighlightRow=MwReadNativeWord(data,0x4EF4);
-    orderMapPositionMask=MwReadNativeWord(data,0x4EF0)|((uint32_t)MwReadNativeWord(data,0x4EF2)<<16);
+    orderMapPositionMask=0; /* 4EF0, past BTECH's file data: written before it's read, zero where the exe reloaded it. */
     for (uint16_t panel=0;panel<ORDER_WINGMATE_PANELS;++panel)
     {
         if (MwReadNativeWord(data,0x4EFC+panel*2)) return false; /* Fresh EXEC has no live near control references. */

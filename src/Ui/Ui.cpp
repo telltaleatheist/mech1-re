@@ -189,7 +189,7 @@ void read_cockpit(const fs::path& data_dir, support::NativeBytes& out) {
 void read_orders(const fs::path& data_dir, support::NativeBytes& out) {
     Reader r(data_dir / "ui" / "orders.json");
     const Json file = r.parse();
-    r.only(file, {"selection_rows", "navigation_deltas", "condition_colours"});
+    r.only(file, {"selection_rows", "navigation_deltas", "condition_colours", "start"});
     const auto signed_list = [&](const Json& object, std::string_view key, std::size_t count) {
         std::string bytes;
         for (const Json& v : r.array(object, key, count)) put_signed(r, bytes, v, key);
@@ -207,6 +207,12 @@ void read_orders(const fs::path& data_dir, support::NativeBytes& out) {
     r.only(colours, {"engine", "system"});
     put_word_rows(r, out["orders.engine_condition_colours"], colours, "engine", kColourSchemes, 4, false);
     put_word_rows(r, out["orders.system_condition_colours"], colours, "system", kColourSchemes, 4, false);
+    // Play writes the panels' x (one moves in reduced memory mode), but a
+    // fresh EXEC reads them first, so they start from here.
+    const Json& start = r.member(file, "start");
+    r.only(start, {"lance_panel_text_x"});
+    std::string& text_x = out["orders.start.lance_panel_text_x"];
+    for (const Json& v : r.array(start, "lance_panel_text_x", 3)) put_word(text_x, r.word(v, "lance_panel_text_x"));
 }
 
 // MW_MAIN's screens: captions, panels, menus and tables (docs/phase2/PLAN.md

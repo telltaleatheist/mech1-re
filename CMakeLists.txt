@@ -243,6 +243,12 @@ if(MECHWARRIOR_BUILD_TESTS)
     target_include_directories(ui_exe_test PRIVATE src/include)
     add_test(NAME ui_exe COMMAND ui_exe_test)
     set_tests_properties(ui_exe PROPERTIES SKIP_RETURN_CODE 77)
+    # The whole import at start (story, rules, ui, MW_MAIN's and BTECH's
+    # importers) on the player's files; any refusal fails. Skipped without them.
+    add_executable(import_exe_test tests/import_exe_test.cpp)
+    target_link_libraries(import_exe_test PRIVATE mechwarrior_original)
+    add_test(NAME import_exe COMMAND import_exe_test "${CMAKE_CURRENT_SOURCE_DIR}/data" "${CMAKE_CURRENT_BINARY_DIR}/import_exe_work")
+    set_tests_properties(import_exe PROPERTIES SKIP_RETURN_CODE 77)
 endif()
 
 # BTECH.EXE's unpacked image on stdout, for tools/import/make_import_table.py.

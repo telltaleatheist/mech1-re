@@ -1025,6 +1025,47 @@ Each piece goes on its own branch and needs a build, ctest, `ui_test`,
   - `ui_test` gained 4 refusals.
 - **4f:** the ten start values by 3f's method, `orderMapPositionMask` to
   code, the inventory regenerated with the `ui` door, and the record here.
+  Done (1 more piece, 338 in all):
+  - The start values. Each was read in the code for every write and read
+    after an EXEC reload, as in 3f.
+    - Written before read, now code, zeroed where the exe reloaded them
+      (all nine are zero in the exe): the calendar's `calendarTextX`,
+      `calendarTextY`, `calendarBackground` and `calendarForeground` (set
+      as the calendar is drawn), `pilotCardTextX` and `crewScreenRightEdge`
+      (set as the roster card is drawn), `contractRequestTextColour` (set by
+      the term editor, its only reader's only caller),
+      `afterActionRosterRowOffset` (set at each after-action) and
+      `reserveAmmoMechColours` (set on entering the shop, before the
+      compatibility panels show them).
+    - Read first: `lanceOrderPanelTextX` (304E:008C, 16, 121 and 228). Its
+      only write is reduced memory mode's copy of the third panel's x into
+      the second; every other read takes the reloaded value. It is
+      orders.json's `"start"` (`orders.start.lance_panel_text_x`), applied
+      on every EXEC as before.
+    - The fonts (`fontAdvanceWidths`, `combatFontHeights`, and with them
+      `fontFirstCharacters` and `fontCharacterCounts`, 304E:2E84..2ED3) are
+      zero in the exe and written when a font loads into its slot
+      (`BtechLoadFontSlot`), so they are code, zeroed, not start values.
+  - `orderMapPositionMask` (304E:4EF0, past the file data) is code, zeroed:
+    `BtechBuildOrderMapPositionMask` writes it before the order screen
+    reads it.
+  - The check: a scratch build set every one of the values made code above
+    to non-zero values in place of zero, and ran the 8 traces, which all
+    matched. With `lance_panel_text_x` also changed in that build's data
+    copy (the control), the two combat traces' order screens
+    (combat_cockpit, combat_retreat) went off, so the copy did read its data.
+  - `import_exe_test` (ctest `import_exe`) runs the whole import at start
+    on the player's files, as the game does: the story into a scratch write
+    dir, the rules, the layout, then MW_MAIN's and BTECH's importers (and
+    BTECH's again on the reference revision when it is given). Any refusal
+    fails it, so a piece the importers can't take fails ctest, not only the
+    traces. It skips (77) without `MW1O_GAME`.
+  - `tools/phase2/inventory.py` learns the `ui` door: an item a layout
+    piece fills is layout, with the piece's exe offset; a caption whose
+    head is a layout piece stays with the UI words until slice 5 moves its
+    text. `INVENTORY.md` is regenerated, with slice 4's reclassifications at
+    its end.
+  - `ui_test` gained 1 refusal.
 
 Decisions for review:
 1. One file per screen family (6.2), rather than one file per record kind.
