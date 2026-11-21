@@ -5,6 +5,7 @@
 
     compare_original.py CAPTURE.dro  traces/music.adlib.jsonl.gz
     compare_original.py midi.oss     traces/music.mt32.jsonl.gz
+    compare_original.py CAPTURE.wav  traces/music.speaker.jsonl.gz
 
 The original and the port don't spend time the same way on a script (the
 original's empty polls take almost no emulated time), so the comparison is
@@ -17,6 +18,14 @@ either side ends.
   follow voice allocation and DRO drops writes that don't change a register,
   so register-level order isn't comparable across a different history; the
   notes are. Onset gaps are compared in milliseconds (DRO's resolution).
+- Speaker (.wav, DX-CAPTURE /A): the notes. The driver leaves the speaker
+  gated on and plays a note by writing PIT channel 2's divisor; a rest is
+  divisor 20 (about 60 kHz, inaudible). The port's notes are the divisor in
+  force after each instant's writes, each time it turns audible or changes;
+  the original's are found in the WAV by the square wave's transitions: a
+  note runs while their spacing holds steady, and starts at its first. Notes
+  compare as semitones (the WAV can't give a divisor exactly), with onset
+  gaps in milliseconds.
 - MIDI (.oss): the byte stream. DOSBox-X sends its own reset first (Bn 78,
   79, 7B on all 16 channels) and doesn't pass on FF (system reset); both are
   set aside.
@@ -25,11 +34,14 @@ Prints the numbers only: no notes, no bytes of the music. Exit 0 when every
 section that both sides reached matches, 1 otherwise.
 """
 import argparse
+import array
 import gzip
+import math
 import json
 import statistics
 import struct
 import sys
+import wave
 
 PIT_HZ = 1193182
 WINDOW = 12  # notes or bytes that identify a section's opening
@@ -156,6 +168,155 @@ def compare_adlib(capture, events, snaps):
                             "key-ons", 0, gaps)
 
 
+SPEAKER_REST = 20  # the driver's rest divisor
+
+
+def semitone(hz):
+    return round(12 * math.log2(hz / 440))
+
+
+MERGE_MS = 15  # the same note picked up again within this is one note
+
+
+def speaker_segments(segments, tag=lambda seg: None):
+    """[(ms, semitone, tag, periods)] from [(start ms, end ms, semitone,
+    ...)], both sides alike: the same note again within MERGE_MS is one note
+    (a dropped edge in the WAV, a short rest in the driver), and a note under
+    1.5 periods is left out (the WAV can't show it)."""
+    merged = []
+    for seg in segments:
+        if merged and merged[-1][2] == seg[2] and seg[0] - merged[-1][1] < MERGE_MS:
+            merged[-1] = (merged[-1][0], seg[1]) + merged[-1][2:]
+        else:
+            merged.append(seg)
+    out = []
+    for seg in merged:
+        periods = (seg[1] - seg[0]) * 440 * 2 ** (seg[2] / 12) / 1000
+        if periods >= 1.5:
+            out.append((seg[0], seg[2], tag(seg), periods))
+    return out
+
+
+def port_speaker_notes(events):
+    """The port's notes: the channel 2 divisor in force after each instant's
+    writes (43h starts a low/high pair at 42h); each audible one a segment
+    until the next change."""
+    lo, by_time = None, []
+    for i, e in enumerate(events):
+        if e[1] != "w":
+            continue
+        if e[2] == 0x43:
+            lo = None
+        elif e[2] == 0x42:
+            if lo is None:
+                lo = e[3]
+                continue
+            d, lo = lo | e[3] << 8, None
+            if by_time and by_time[-1][0] == e[0]:
+                by_time[-1] = (e[0], d, by_time[-1][2])
+            else:
+                by_time.append((e[0], d, i))
+    segs = []
+    for k, (t, d, i) in enumerate(by_time):
+        if d in (SPEAKER_REST, 0) or k + 1 == len(by_time):
+            continue
+        end = by_time[k + 1][0]
+        segs.append((t * 1000 / PIT_HZ, end * 1000 / PIT_HZ, semitone(PIT_HZ / d), i))
+    return speaker_segments(segs, lambda seg: seg[3])
+
+
+def wav_speaker_notes(path):
+    """The original's notes from its WAV: the square wave's transitions (with
+    hysteresis, around a slow mean); a segment runs while the half-periods
+    stay within 5% of its first."""
+    w = wave.open(path, "rb")
+    rate, channels, width = w.getframerate(), w.getnchannels(), w.getsampwidth()
+    if width != 2:
+        sys.exit(f"{path}: 16-bit WAV expected")
+    samples = array.array("h", w.readframes(w.getnframes()))
+    if sys.byteorder == "big":
+        samples.byteswap()
+    mono = samples[::channels]
+    peak = sorted(abs(x) for x in mono[::97])
+    high = peak[int(len(peak) * 0.99)] if peak else 0
+    if not high:
+        return []
+    h = high * 0.15
+    edges, mean, state = [], 0.0, 0
+    for k, x in enumerate(mono):
+        mean += (x - mean) * 0.0005
+        v = x - mean
+        if state <= 0 and v > h:
+            if state < 0:
+                edges.append(k)
+            state = 1
+        elif state >= 0 and v < -h:
+            if state > 0:
+                edges.append(k)
+            state = -1
+    segs, k = [], 0
+    while k + 2 < len(edges):
+        half = edges[k + 1] - edges[k]
+        j = k + 1
+        while j + 1 < len(edges) and abs((edges[j + 1] - edges[j]) - half) <= max(1, half * 0.05):
+            j += 1
+        if j - k >= 3:
+            span = (edges[j] - edges[k]) / (j - k)
+            segs.append((edges[k] * 1000 / rate, (edges[j] + span) * 1000 / rate, semitone(rate / (2 * span))))
+        k = j
+    return speaker_segments(segs)
+
+
+SHORT = 5  # periods: a note this short may be missing from either side
+
+
+def compare_speaker(capture, events, snaps):
+    """Each golden section is found in the WAV by its first long notes, then
+    walked in step: equal notes match; a short note (under SHORT periods) on
+    one side only is skipped and counted (the WAV can't always show a note
+    that brief); any other difference ends the section's match."""
+    ours = port_speaker_notes(events)
+    theirs = wav_speaker_notes(capture)
+    print(f"original: {len(theirs)} notes; port: {len(ours)}")
+    longs = [k for k, n in enumerate(theirs) if n[3] >= SHORT]
+    ok, used = True, 0
+    for name, part in sections(events, snaps, [(n[2], n) for n in ours]):
+        if len(part) < WINDOW:
+            continue
+        key = [n[1] for n in part if n[3] >= SHORT][:WINDOW]
+        at = next((longs[i] for i in range(len(longs) - WINDOW + 1)
+                   if longs[i] >= used and [theirs[k][1] for k in longs[i:i + WINDOW]] == key), None)
+        if at is None:
+            print(f"  {name}: {len(part)} notes; its opening isn't in the original")
+            ok = False
+            continue
+        p = next(k for k, n in enumerate(part) if n[3] >= SHORT)
+        t, matched, skipped, gaps, prev = at, 0, 0, [], None
+        while p < len(part) and t < len(theirs):
+            a, b = part[p], theirs[t]
+            if a[1] == b[1]:
+                if prev:
+                    gaps.append((b[0] - prev[1]) - (a[0] - prev[0]))
+                prev, matched, p, t = (a[0], b[0]), matched + 1, p + 1, t + 1
+            elif a[3] < SHORT:
+                skipped, p = skipped + 1, p + 1
+            elif b[3] < SHORT:
+                skipped, t = skipped + 1, t + 1
+            else:
+                break
+        used = t
+        note = ""
+        if p < len(part):
+            if t == len(theirs):
+                note = " (the original's capture ends there)"
+            else:
+                ok = False
+        timing = f"; onset gaps differ by median {statistics.median(gaps):.0f} ms, at most {max(map(abs, gaps)):.0f} ms" if gaps else ""
+        print(f"  {name}: {matched} of {len(part)} notes match in order (short notes on one side only: {skipped})"
+              f"{note}{timing}")
+    return ok
+
+
 def compare_midi(capture, events, snaps):
     data = open(capture, "rb").read()
     theirs = bytes(data[i + 1] for i in range(0, len(data) - 3, 4) if data[i] == 5)
@@ -175,7 +336,11 @@ def main():
     a = ap.parse_args()
     header, events = golden(a.golden)
     snaps = [(e[2], i) for i, e in enumerate(events) if e[1] == "snap"]
-    if a.capture.lower().endswith(".dro"):
+    if a.capture.lower().endswith(".wav"):
+        if header["device"] != "speaker":
+            sys.exit("a .wav compares with a speaker golden")
+        ok = compare_speaker(a.capture, events, snaps)
+    elif a.capture.lower().endswith(".dro"):
         if header["device"] != "adlib":
             sys.exit("a .dro compares with an adlib golden")
         ok = compare_adlib(a.capture, events, snaps)

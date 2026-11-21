@@ -204,28 +204,31 @@ synth can, and that's most of the risk. Three levels:
   - SIGTERM makes DOSBox-X close the captures properly.
   - `tools/capture/run_audio_wsl.sh` runs it; `tools/trace/audio/compare_original.py`
     compares a capture with a golden, section by section.
-- **What the spike found (music, `tools/trace/audio/original/music.keys`):**
-  - AdLib: the bar tune's 659 key-ons match the port's in order, with onset
-    gaps a median 0 ms and at most 21 ms apart; the title's opening matches
-    as far as the original plays it.
-  - MIDI: the bar's 4,730 bytes match exactly; the title's first 732 match.
+- **What level 3 found (music, `tools/trace/audio/original/music.keys`):**
+  the original matches the port's goldens on all three devices.
+  - AdLib: 361 title and 659 bar key-ons, in order, onsets within 8 ms.
+  - MIDI: 3,003 title and 4,730 bar bytes, exactly.
+  - Speaker (WAV notes): 66 of 67 title notes (one short note seen on one
+    side only) and 219 of 219 bar notes, onsets within 14 ms.
   - Combat: the original sends no MIDI and keys no OPL note, which supports
     dropping the combat card drivers (section 5).
-- **The original's polls take almost no emulated time:** an `idle` chain
-  can't hold a screen there as it does on the port's test clock, so a screen
-  is held by very long idle chains or by the runner's hold after the
-  script. A time-based wait in MWSNAP is still to do.
-- **Open: a stall seen only in the original.** When the script leaves the
-  title before its tune starts (about 2 s in), the original's bar tune sends
-  its opening, then stops, on every device. The port, on the same path,
-  plays the bar in full (36 s, 703 MIDI note-ons). The port follows the
-  original's code here (the title skips to the campaign before starting its
-  tune; the bar starts its own), so this may be MWSNAP's feeding or DOSBox-X
-  rather than the original. It needs original runs that bisect the title's
-  length before anything changes in the port.
+- **Holding a screen on the original:** its empty polls take almost no
+  emulated time, so MWSNAP has `wait:MS`, by the BIOS tick count.
+- **Leaving the title early:** the title's length decides the start world,
+  and leaving before its tune gives the bar other music. The original and
+  the port agree on that path too (AdLib 569 of 569 key-ons, MIDI 4,698 of
+  4,698 bytes). The "stall" seen earlier was that music measured against the
+  full-title golden: nothing to change in the port.
 - **Comparison:** same register writes in the same order; inter-event times
   within the capture's 1 ms resolution, with the start aligned on the first
   key-on.
+  - **As built:** register order isn't comparable across a different history
+    (DRO drops writes that don't change a register; voice allocation picks
+    channels), so AdLib compares key-ons channel-free, MIDI its bytes, the
+    speaker its WAV's notes. Onset gaps: median 0 ms, at most 8 ms (AdLib)
+    and 14 ms (speaker), not the 1 ms planned. On AdLib, 1,004 of 1,018
+    gaps are within 1 ms (the DRO's resolution); the 8 ms is one gap in each
+    tune, and the tunes drift at most 8 ms over 36 s.
 - MWSNAP's existing clock pin and fixed cycles keep the original
   deterministic.
 - **Speaker against the original:** DOSBox-X's WAV capture, compared by onset

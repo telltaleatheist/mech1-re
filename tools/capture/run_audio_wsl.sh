@@ -13,9 +13,9 @@
 #   run_audio_wsl.sh NAME KEYS.BIN A|R|S [LIMIT_SECONDS [HOLD_SECONDS]]
 #
 # HOLD: seconds to leave the game running after the script is used up (the
-# last screen's music keeps playing). The original's empty polls take almost
-# no emulated time, so a screen can only be held by HOLD or by very long
-# idle chains (see tools/trace/audio/README.md).
+# last screen's music keeps playing). Within a script, a screen is held by
+# wait:MS (emulated time); idle: can't hold one on the original, whose empty
+# polls take almost no emulated time (see tools/trace/audio/README.md).
 #
 # Shutdown is SIGTERM, which DOSBox-X answers by closing its captures (the
 # DRO and WAV headers get their lengths); SIGKILL only if it hangs.

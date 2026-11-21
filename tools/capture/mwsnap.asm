@@ -19,6 +19,13 @@
 ;   0FFFFh          @snap: capture now (MW1Snnnn.BIN, numbered from 0)
 ;   0FFFEh N        idle:N: N more empty campaign polls (a blocking read skips
 ;                   it; combat waits at it: idle:0 is where the campaign resumes)
+;   0FFF7h N        wait:N: no item until N BIOS ticks (0040:006Ch, 18.2 a
+;                   second) have passed; time, not polls, since the original's
+;                   empty polls take almost no emulated time (campaign only: a
+;                   blocking read skips it, as idle; combat waits at it). The
+;                   game's music timer chains to the BIOS's at 18.2 Hz, so the
+;                   count runs through the campaign. MWSNAP's own: the port's
+;                   feed has no wait.
 ;   0FFF8h W0 W1    random: set the campaign's two random words (MW_MAIN's
 ;                   DS:03F5 and DS:03F7; campaign only)
 ;   0FFFBh S        make:S, a scan code pressed (combat only; takes no poll)
@@ -110,6 +117,9 @@ feed_polls  dw 0
 feed_wait   dw POLLS
 c_polls     dw 0
 c_wait      dw 0
+wait_on     db 0
+wait_start  dw 0                        ; the BIOS tick when the wait began
+wait_n      dw 0
 game_ds     dw 0                        ; the campaign's, at its last int 16h call
 btech_base  dw 0
 btech_int9  dd 0                        ; BTECH's own int 9 handler
@@ -331,6 +341,18 @@ take:
 
 campaign_items:
         inc word [feed_polls]
+        cmp byte [wait_on], 0
+        je .next
+        cmp byte [blocking], 0          ; a blocking read: the wait ends
+        jne .wait_over
+        call bios_tick
+        sub ax, [wait_start]
+        cmp ax, [wait_n]
+        jb .out
+.wait_over:
+        mov byte [wait_on], 0
+        mov ax, [feed_polls]            ; the next item goes in now
+        mov [feed_wait], ax
 .next:
         call peek
         jz .finished
@@ -354,12 +376,23 @@ campaign_items:
         jmp .next
 .idle:
         cmp cx, 0fffeh
-        jne .random
+        jne .wait
         call take
         add [feed_wait], ax
         cmp byte [blocking], 0
         jne .next
         jmp .out                        ; the extra polls start now
+.wait:
+        cmp cx, 0fff7h
+        jne .random
+        call take
+        cmp byte [blocking], 0
+        jne .next                       ; a blocking read skips it
+        mov [wait_n], ax
+        call bios_tick
+        mov [wait_start], ax
+        mov byte [wait_on], 1
+        jmp .out
 .random:
         cmp cx, 0fff8h
         jne .key
@@ -379,6 +412,15 @@ campaign_items:
 .finished:
         call finished
 .out:
+        ret
+
+; The BIOS tick count's low word in AX.
+bios_tick:
+        push ds
+        mov ax, 40h
+        mov ds, ax
+        mov ax, [6ch]
+        pop ds
         ret
 
 finished:
@@ -592,7 +634,9 @@ combat_items:
         mov ax, [c_polls]
         cmp ax, [c_wait]
         jb .out
-        cmp cx, 0fffeh                  ; idle: the campaign's; wait
+        cmp cx, 0fffeh                  ; idle and wait: the campaign's; wait
+        je .out
+        cmp cx, 0fff7h
         je .out
         inc word [key_pos]
         cmp cx, 0ffffh

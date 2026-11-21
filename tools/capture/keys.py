@@ -8,6 +8,8 @@ script drives the port and the original under DOSBox-X.
 Key names are SDL's, as the port reads them (case ignored, '_' for a space),
 mapped to the same BIOS words the port's feed produces (no modifiers: the
 scan code in the high byte, the unshifted character in the low byte).
+`wait:MS` (MWSNAP only; the port's feed doesn't read it) holds the next item
+until that much emulated time has passed, in BIOS ticks.
 MWSNAP numbers its captures MW1S0000.BIN, MW1S0001.BIN, ...; --names writes
 the @snap names in that order, one per line.
 """
@@ -16,7 +18,7 @@ import re
 import struct
 import sys
 
-SNAP, IDLE, MAKE, BREAK, TICKS, RANDOM = 0xFFFF, 0xFFFE, 0xFFFB, 0xFFFA, 0xFFF9, 0xFFF8
+SNAP, IDLE, MAKE, BREAK, TICKS, RANDOM, WAIT = 0xFFFF, 0xFFFE, 0xFFFB, 0xFFFA, 0xFFF9, 0xFFF8, 0xFFF7
 MAX_WORDS = 16384
 
 # SDL key name -> (XT scan code, character), the port's ScanCode()/BiosKey().
@@ -82,6 +84,15 @@ def compile_script(path):
                     if not count.isdigit() or int(count) > 0xFFFF:
                         sys.exit(f"{where}: bad {t!r}")
                     words += [IDLE if kind == "idle" else TICKS, int(count)]
+                elif t.startswith("wait:"):
+                    # MWSNAP's own (the port's feed has none): milliseconds of
+                    # emulated time, as BIOS ticks, rounded up.
+                    if not t[5:].isdigit():
+                        sys.exit(f"{where}: bad {t!r} (wait:MILLISECONDS)")
+                    ticks = -(-int(t[5:]) * 1193182 // (65536 * 1000))
+                    if ticks > 0xFFFF:
+                        sys.exit(f"{where}: {t!r} is too long")
+                    words += [WAIT, ticks]
                 elif t.startswith("random:"):
                     if not re.fullmatch(r"[0-9A-Fa-f]{8}", t[7:]):
                         sys.exit(f"{where}: bad {t!r} (random:WWWWWWWW, hex)")
