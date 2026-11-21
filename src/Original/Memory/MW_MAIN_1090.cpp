@@ -562,7 +562,12 @@ static bool ImportTravelUiData(const uint8_t *data)
     travelHousePlanetMenu.records[TRAVEL_PLANET_ROWS_PER_HOUSE].text=travelHousePlanetCancelLabel.text;
     travelHousePlanetMenu.records[TRAVEL_PLANET_ROWS_PER_HOUSE].textColour=&travelHousePlanetCancelLabel.display.colour;
     ImportTravelMenu(data,0x5B8C,&travelMapMenu);
-    travelMapMenu.records[0].text=travelDestinationHeaderLabels[0].text;
+    /* The header's line0 (5C49: x, y, colour5C4D) and map row0 (5B8C, text
+     * pointer5C4D) share one name buffer,5C4E, which5FEF rewrites with each
+     * destination: the panel draws it in the line's colour, the row selected
+     * in the selected colour (0838). */
+    travelDestinationHeaderLabels[0].display.text=travelDestinationName;
+    travelMapMenu.records[0].text=travelDestinationName;
     travelMapMenu.records[0].textColour=&travelDestinationHeaderLabels[0].display.colour;
     travelMapMenu.records[1].text=travelCostLabel.text;
     travelMapMenu.records[1].textColour=&travelCostLabel.display.colour;
