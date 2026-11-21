@@ -141,9 +141,9 @@ uint8_t numericSuppressLeadingZeros, numericNegativeSign;
 uint16_t numericFieldDigitCount, numericCursorX, numericCursorY;
 uint8_t numericBackgroundColour, numericForegroundColour;
 
-/* Current planet, Great House and market state use WORDs even where the planet
- * record stores a BYTE. Startup loads the authored tables from the original
- * executable rather than substituting a default market. */
+/* 1ACE's planet/market outputs are original WORDs even for BYTE record fields.
+ * Original image tables are populated by native data initialization, not by a
+ * substitute safe/default market. The compiled startup is still unconverted. */
 uint16_t currentPlanetIndex, currentPlanetLandscapeIndex;
 uint16_t currentPlanetHouseIndex, currentPlanetMarketTier;
 uint16_t currentPlanetFacilityDisplayFlag;

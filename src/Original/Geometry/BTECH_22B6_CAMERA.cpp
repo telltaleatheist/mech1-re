@@ -84,8 +84,8 @@ void BtechPrepareCameraContext(BtechCameraContext *camera)
     }
 }
 
-/*22B6:2EEE. Cull hidden, near-clipped and off-screen world objects, then select
- * their orientation basis and submit the visible resource entries for drawing. */
+/*22B6:2EEE. Native culling and basis selection. Stops before the unconverted
+ * resource primitives; hidden/near/outside returns really return. */
 void BtechCullAndRenderWorldObject(BtechHeapWorldObject *object)
 {
     if (object->prefix.renderFlags&OBJECT_HIDDEN) return;
