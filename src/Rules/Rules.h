@@ -158,8 +158,7 @@ struct Contracts {
     ContractsStart start;
 };
 
-// COMBAT_ARMOR_*, in order; the body locations are the same less the rear
-// centre torso (armorToBodyLocations maps the two centre torsos to one).
+// COMBAT_ARMOR_* and COMBAT_BODY_* (combat_damage.h, combat_mechs.h), in order.
 inline constexpr std::array<std::string_view, 9> kArmourLocations = {
     "left_arm", "right_arm", "left_leg", "right_leg", "center_torso", "rear_center_torso",
     "left_torso", "right_torso", "head"};
