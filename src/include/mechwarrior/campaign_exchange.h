@@ -28,11 +28,11 @@ typedef struct MwCampaignTransferData
     MwTransferWord reserveAmmo[CAMPAIGN_AMMO_FAMILY_COUNT];
     uint8_t campaignMiddleBytes[0x02E8],soundDisabled,campaignSuffixBytes[0x0135];
 } MwCampaignTransferData;
-_Static_assert(sizeof(MwCampaignTransferData)==CAMPAIGN_EXCHANGE_BYTES,"Resident transfer/GAM wire size");
-_Static_assert(offsetof(MwCampaignTransferData,ownedDamage)==0x0102,"Combat damage transfer offset");
-_Static_assert(offsetof(MwCampaignTransferData,ammo)==0x025E,"Packed ammo transfer offset");
-_Static_assert(offsetof(MwCampaignTransferData,reserveAmmo)==0x02EE,"Reserve ammo transfer offset");
-_Static_assert(offsetof(MwCampaignTransferData,soundDisabled)==0x05E2,"Sound preference transfer offset");
+static_assert(sizeof(MwCampaignTransferData)==CAMPAIGN_EXCHANGE_BYTES,"Resident transfer/GAM wire size");
+static_assert(offsetof(MwCampaignTransferData,ownedDamage)==0x0102,"Combat damage transfer offset");
+static_assert(offsetof(MwCampaignTransferData,ammo)==0x025E,"Packed ammo transfer offset");
+static_assert(offsetof(MwCampaignTransferData,reserveAmmo)==0x02EE,"Reserve ammo transfer offset");
+static_assert(offsetof(MwCampaignTransferData,soundDisabled)==0x05E2,"Sound preference transfer offset");
 typedef union MwCampaignTransferStorage {uint8_t bytes[CAMPAIGN_EXCHANGE_BYTES];MwCampaignTransferData fields;} MwCampaignTransferStorage;
 extern MwCampaignTransferStorage campaignTransfer;
 #define campaignCombatExchange campaignTransfer.bytes

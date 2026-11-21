@@ -51,7 +51,7 @@ typedef struct BtechFont {
 typedef struct BtechFontMetrics {
     uint8_t advancePixels,heightPixels,firstCharacter,characterCount;
 } BtechFontMetrics;
-_Static_assert(sizeof(BtechFontMetrics)==4,"Native FNT metrics are four bytes");
+static_assert(sizeof(BtechFontMetrics)==4,"Native FNT metrics are four bytes");
 /* Runtime references replace the selector-first ten-byte native image entry.
  * The native count+1 pointer list's terminator becomes this typed extent. */
 typedef struct BtechBitmap {

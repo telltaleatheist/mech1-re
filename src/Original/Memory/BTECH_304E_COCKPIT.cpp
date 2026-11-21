@@ -31,7 +31,7 @@ char simulationText[11],pausedText[7],retreatQuestionText[14],retreatChoiceText[
 uint16_t savedLineColour,savedFillColour,savedCopySourcePage,savedDrawPage;
 uint16_t savedTextBackground,savedTextForeground,savedPolygonFilled,savedPolygonClip;
 BtechDecimalFieldAndTargetCache decimalFieldAndTargetCache;
-_Static_assert(offsetof(BtechDecimalFieldAndTargetCache,fields.targetSlot)==8,"53C4 overlaps decimal field tail");
+static_assert(offsetof(BtechDecimalFieldAndTargetCache,fields.targetSlot)==8,"53C4 overlaps decimal field tail");
 BtechHudGaugeAnchor targetDiagramAnchors[COMBAT_MECH_TEMPLATES];
 BtechScreenRectangle targetDiagramRegions[COMBAT_MECH_TEMPLATES][COMBAT_ARMOR_LOCATIONS];
 uint16_t radarPreviousTick,radarMarkerCounts[COMBAT_RADAR_CACHE_PAGES];
@@ -47,7 +47,7 @@ static char radarRangeText[28];
 const char *weaponLabels[COMBAT_WEAPON_KINDS],*weaponRangeClassLabels[4],*energyAmmoPlaceholder;
 static char weaponLabelText[60],weaponRangeAndAmmoText[12];
 static char cockpitScreenNames[0x20],missionTitleText[0x39B];
-_Static_assert(sizeof(BtechCockpitLayout)==0x6A,"Native cockpit layout stride");
+static_assert(sizeof(BtechCockpitLayout)==0x6A,"Native cockpit layout stride");
 
 /* Actual executable IO. Authored directories become references to their single
  * string owners; runtime game code never looks them up by DOS address. */

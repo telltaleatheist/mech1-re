@@ -108,15 +108,15 @@ typedef struct MwPlanetHeader
     unsigned char travelTimeWeight;
     unsigned char populationMillions[0x0002];
 } MwPlanetHeader;
-_Static_assert(sizeof(MwPlanetHeader) == PLANET_NAME_HEADER_BYTES, "Native planet prefix");
-_Static_assert(offsetof(MwPlanetHeader, populationMillions) == 0x0008, "Native population offset");
-_Static_assert(_Alignof(MwPlanetHeader) == 1, "Unaligned planet records");
+static_assert(sizeof(MwPlanetHeader) == PLANET_NAME_HEADER_BYTES, "Native planet prefix");
+static_assert(offsetof(MwPlanetHeader, populationMillions) == 0x0008, "Native population offset");
+static_assert(alignof(MwPlanetHeader) == 1, "Unaligned planet records");
 
 typedef struct CampaignRepairAttemptRow
 {
     uint8_t failedByDamageIndex[REPAIR_ATTEMPT_SLOTS_PER_KIND];
 } CampaignRepairAttemptRow;
-_Static_assert(sizeof(CampaignRepairAttemptRow) == 0x0016, "Native repair-attempt row");
+static_assert(sizeof(CampaignRepairAttemptRow) == 0x0016, "Native repair-attempt row");
 
 extern uint16_t currentPlanetIndex, currentPlanetLandscapeIndex;
 extern uint16_t currentPlanetHouseIndex, currentPlanetMarketTier;

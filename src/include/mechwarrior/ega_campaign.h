@@ -13,9 +13,9 @@ typedef struct PackedPictureHeader
     unsigned char width[0x02];
     unsigned char height[0x02];
 } PackedPictureHeader;
-_Static_assert(sizeof(PackedPictureHeader) == 0x04, "Native picture header size");
-_Static_assert(offsetof(PackedPictureHeader, height) == 0x02, "Native height offset");
-_Static_assert(_Alignof(PackedPictureHeader) == 1, "Unaligned picture headers");
+static_assert(sizeof(PackedPictureHeader) == 0x04, "Native picture header size");
+static_assert(offsetof(PackedPictureHeader, height) == 0x02, "Native height offset");
+static_assert(alignof(PackedPictureHeader) == 1, "Unaligned picture headers");
 
 enum
 {

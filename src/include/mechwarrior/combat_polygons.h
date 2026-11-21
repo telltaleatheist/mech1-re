@@ -7,7 +7,7 @@ typedef union BtechPolygonSpan {
     struct {uint16_t left,right;} endpoints;
     struct {uint16_t firstRow,rowCount;} header;
 } BtechPolygonSpan;
-_Static_assert(sizeof(BtechPolygonSpan)==4,"Native row/header aliases two WORDs");
+static_assert(sizeof(BtechPolygonSpan)==4,"Native row/header aliases two WORDs");
 extern int16_t screenPolygonX[COMBAT_POLYGON_VERTEX_WORDS],screenPolygonY[COMBAT_POLYGON_VERTEX_WORDS];
 extern int16_t polygonWorkX[COMBAT_POLYGON_VERTEX_WORDS],polygonWorkY[COMBAT_POLYGON_VERTEX_WORDS];
 extern int16_t polygonOutlineX[COMBAT_POLYGON_VERTEX_WORDS],polygonOutlineY[COMBAT_POLYGON_VERTEX_WORDS];

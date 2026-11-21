@@ -68,19 +68,19 @@ typedef struct MwHouseMissionPlanetPolicy
 {
     uint8_t planetSelectorsByTarget[MISSION_TARGET_COLUMNS][HOUSE_PLANET_CHOICES];
 } MwHouseMissionPlanetPolicy;
-_Static_assert(sizeof(CampaignMissionDescriptionHeader) == 0x0002, "Native description prefix");
-_Static_assert(sizeof(MwHouseMissionPlanetPolicy) == 0x0040, "Native House destination policy");
+static_assert(sizeof(CampaignMissionDescriptionHeader) == 0x0002, "Native description prefix");
+static_assert(sizeof(MwHouseMissionPlanetPolicy) == 0x0040, "Native House destination policy");
 
 typedef struct CampaignAmmoProfileEntry
 {
     uint16_t ammoFamily, quantityMaximum;
 } CampaignAmmoProfileEntry;
-_Static_assert(sizeof(CampaignAmmoProfileEntry) == 0x0004, "Native ammunition profile pair");
+static_assert(sizeof(CampaignAmmoProfileEntry) == 0x0004, "Native ammunition profile pair");
 typedef struct CampaignDropShipConditionPrefix
 {
     uint8_t deterioration;
 } CampaignDropShipConditionPrefix;
-_Static_assert(sizeof(CampaignDropShipConditionPrefix) == 1, "DropShip view of first condition byte");
+static_assert(sizeof(CampaignDropShipConditionPrefix) == 1, "DropShip view of first condition byte");
 
 extern uint8_t generatedKindRangeMaxima[STOCK_KIND_RANGE_COUNT];
 extern uint8_t generatedKindRangeStarts[STOCK_KIND_RANGE_COUNT];

@@ -311,8 +311,8 @@ uint16_t BtechDecodeRleRepeatedRun(uint16_t value,uint16_t bytes)
  * remain allocation residue. Native DOS workspace has offset0000 and DF=0. */
 void BtechInitializeLzwReader(void)
 {
-    _Static_assert(offsetof(BtechLzwReaderWorkspace,suffixBytes)==0x2720,"Native suffix workspace");
-    _Static_assert(offsetof(BtechLzwReaderWorkspace,reversePhraseBytes)==0x3720,"Native reverse workspace");
+    static_assert(offsetof(BtechLzwReaderWorkspace,suffixBytes)==0x2720,"Native suffix workspace");
+    static_assert(offsetof(BtechLzwReaderWorkspace,reversePhraseBytes)==0x3720,"Native reverse workspace");
     BtechLzwReaderWorkspace *workspace=selectedArchive->workspace;
     memset(workspace,0,0x3AA1);
     for (uint16_t literal=0;literal<0x100;++literal) workspace->suffixBytes[literal]=(uint8_t)literal;

@@ -13,7 +13,7 @@ void MwMpuWritePort(uint16_t port,uint8_t value);
 uint8_t MwMpuReadPort(uint16_t port);
 /* Captured DOS machine profile, shared by physical aliases and first-fit MCBs. */
 enum { HOST_DOS_COMBAT_CODE_SELECTOR=0x0956 };
-_Noreturn void MwSdlFail(const char *operation);
+[[noreturn]] void MwSdlFail(const char *operation);
 void MwSdlInitializeInput(void);
 void MwSdlPollEvents(void);
 void MwSdlInitializeDebugControl(void);

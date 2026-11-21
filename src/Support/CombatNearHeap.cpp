@@ -130,8 +130,8 @@ void BtechHostReadNearSoundLink(void *owner,BtechNearOwner kind,uint16_t displac
 }
 void BtechHostWriteNearSoundNext(void *owner,BtechNearOwner kind,uint16_t displacement,uint16_t next)
 {
-    NearAliasTransfer transfer={.start=(uint16_t)(displacement+4),.count=2,.write=true,
-        .bytes={(uint8_t)next,(uint8_t)(next>>8)}};
+    NearAliasTransfer transfer={.start=(uint16_t)(displacement+4),.count=2,
+        .bytes={(uint8_t)next,(uint8_t)(next>>8)},.write=true};
     TransferOwner(owner,kind,&transfer);
 }
 void BtechHostMarkNearOwnerReleased(void *owner,BtechNearOwner kind,uint16_t displacement)

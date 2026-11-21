@@ -15,7 +15,7 @@ uint8_t soundOutputEnableMask;
 uint8_t musicNoteBase,musicChannelBias;
 uint16_t musicPitchTableOffset,musicPriority,musicHandlerOffsets[8];
 uint16_t speakerMusicPeriods[TONE_SPEAKER_PITCH_WORDS],tandyMusicPeriods[TONE_TANDY_PITCH_WORDS],noiseMusicPeriods[TONE_NOISE_PERIOD_WORDS];
-_Static_assert(sizeof(BtechToneChannelState)==0x30,"Native tone record");
+static_assert(sizeof(BtechToneChannelState)==0x30,"Native tone record");
 
 bool BtechImportToneInitialData(const uint8_t *data,size_t bytes,const uint8_t *toneData,size_t toneBytes)
 {

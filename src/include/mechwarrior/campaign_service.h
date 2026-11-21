@@ -60,7 +60,7 @@ typedef struct MwMechBodyDiagramLayout
 {
     MwMechDiagramRectangle background, bodyRegions[9];
 } MwMechBodyDiagramLayout;
-_Static_assert(sizeof(MwMechDiagramRectangle)==8, "Four native WORD coordinates");
+static_assert(sizeof(MwMechDiagramRectangle)==8, "Four native WORD coordinates");
 void MwDrawDescriptorTextPanel(const MwPanelDescriptor *textPanel);
 void MwDrawStoredStandardPanelBorder(void);
 extern uint16_t panelBorderEnabled;

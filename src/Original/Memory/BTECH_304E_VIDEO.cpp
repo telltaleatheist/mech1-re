@@ -58,7 +58,7 @@ void (*graphicsUploadAlternateScreenRegion)(void),(*graphicsPresentRectangle)(vo
 uint16_t egaScreenUploadColumns,egaScreenUploadRowSkip,egaScreenUploadRowsRemaining;
 uint8_t inspectionReloadPending;
 uint16_t inspectionSetupComplete;
-_Static_assert(sizeof(BtechLandscapeCameraColourRow)==0x1E,"Native landscape colour row");
+static_assert(sizeof(BtechLandscapeCameraColourRow)==0x1E,"Native landscape colour row");
 uint32_t (*graphicsBitmapStorageSize)(const BtechBitmapList *,uint16_t *);
 void (*graphicsPrepareBitmapList)(BtechBitmapList *,BtechResourceAllocation,uint32_t);
 void (*graphicsDrawBitmap)(const BtechBitmap *,uint16_t,uint16_t);

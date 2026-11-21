@@ -5,7 +5,7 @@
  * Call only at an existing fatal boundary. Keep its condition and ordering.
  * The reason is flushed before abort raises SIGABRT; the SDL entry's handler
  * can then add a stack trace. The launcher retains stderr in runtime.log. */
-_Noreturn void MwAbortWithReason(const char *category,const char *reason,
+[[noreturn]] void MwAbortWithReason(const char *category,const char *reason,
     const char *file,int line,const char *function);
 
 #define MW_PORT_FAILSAFE(reason) \

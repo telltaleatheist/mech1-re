@@ -60,22 +60,22 @@ typedef struct CampaignUnitDamage
     uint8_t weaponDamageTiers[CAMPAIGN_WEAPON_SLOTS];
     uint8_t bodyDamageTiers[CAMPAIGN_BODY_LOCATION_COUNT];
 } CampaignUnitDamage;
-_Static_assert(sizeof(CampaignUnitDamage) == CAMPAIGN_DAMAGE_BYTES, "Native campaign damage record");
-_Static_assert(offsetof(CampaignUnitDamage, bodyDamageTiers) == CAMPAIGN_BODY_DAMAGE_OFFSET, "Native body tiers");
+static_assert(sizeof(CampaignUnitDamage) == CAMPAIGN_DAMAGE_BYTES, "Native campaign damage record");
+static_assert(offsetof(CampaignUnitDamage, bodyDamageTiers) == CAMPAIGN_BODY_DAMAGE_OFFSET, "Native body tiers");
 
 typedef struct CampaignSystemRepairPriceRow
 {
     uint16_t basePriceByMechKind[CAMPAIGN_MECH_KIND_COUNT];
 } CampaignSystemRepairPriceRow;
-_Static_assert(sizeof(CampaignSystemRepairPriceRow) == 0x0014, "Native system repair row");
+static_assert(sizeof(CampaignSystemRepairPriceRow) == 0x0014, "Native system repair row");
 
 typedef struct MwPilotDefinitionPrefix
 {
     unsigned char portraitId, initialGunneryTier, initialPilotingTier;
     unsigned char nameBytes[0x000B];
 } MwPilotDefinitionPrefix;
-_Static_assert(sizeof(MwPilotDefinitionPrefix) == 0x000E, "Native pilot prefix");
-_Static_assert(_Alignof(MwPilotDefinitionPrefix) == 1, "Odd pilot prefix offsets");
+static_assert(sizeof(MwPilotDefinitionPrefix) == 0x000E, "Native pilot prefix");
+static_assert(alignof(MwPilotDefinitionPrefix) == 1, "Odd pilot prefix offsets");
 
 /* 04BE is BOTH roster ID3's high byte and availability[0]. One canonical
  * owner; releasing definition0 must be visible to the following roster copy. */
@@ -93,9 +93,9 @@ typedef union CampaignPilotIdentityStorage
         uint8_t flags[CAMPAIGN_PILOT_ID_COUNT];
     } availability;
 } CampaignPilotIdentityStorage;
-_Static_assert(offsetof(CampaignPilotIdentityStorage, roster.pilotIds) == 0x0002, "Roster IDs at04B7");
-_Static_assert(offsetof(CampaignPilotIdentityStorage, availability.flags) == 0x0009, "Availability alias at04BE");
-_Static_assert(sizeof(CampaignPilotIdentityStorage) == 0x0034, "Canonical04B5..04E8");
+static_assert(offsetof(CampaignPilotIdentityStorage, roster.pilotIds) == 0x0002, "Roster IDs at04B7");
+static_assert(offsetof(CampaignPilotIdentityStorage, availability.flags) == 0x0009, "Availability alias at04BE");
+static_assert(sizeof(CampaignPilotIdentityStorage) == 0x0034, "Canonical04B5..04E8");
 extern CampaignPilotIdentityStorage pilotIdentityStorage;
 #define pilotRosterCount pilotIdentityStorage.roster.count
 #define rosterPilotIds pilotIdentityStorage.roster.pilotIds

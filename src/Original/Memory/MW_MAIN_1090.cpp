@@ -17,8 +17,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-_Static_assert(sizeof(uint8_t) == 1, "Native BYTE width");
-_Static_assert(sizeof(uint16_t) == 2, "Native WORD width");
+static_assert(sizeof(uint8_t) == 1, "Native BYTE width");
+static_assert(sizeof(uint16_t) == 2, "Native WORD width");
 uint8_t campaignTimerInhibited, campaignTimerByte;
 char combatExecutableFilename[10];
 MwCombatDiskPrompt combatDiskPrompt;
@@ -155,7 +155,7 @@ uint16_t ammunitionTransactionPrices[AMMUNITION_PRICE_COUNT];
 /* Shared by kind/component, NOT by owned Mech slot. 3FFD clears all 00DC bytes,
  * including the two trailing slots per row not reached by normal repair work. */
 CampaignRepairAttemptRow repairAttemptFailuresByKind[REPAIR_ATTEMPT_KIND_COUNT];
-_Static_assert(sizeof(repairAttemptFailuresByKind) == 0x00DC, "Native reset extent");
+static_assert(sizeof(repairAttemptFailuresByKind) == 0x00DC, "Native reset extent");
 
 /* Native game tables/state. Original image initialization remains required;
  * no default prices, authored lookup values or pilot definitions are invented. */

@@ -11,7 +11,7 @@ typedef struct MwCombatDiskPrompt
 {
     uint8_t beforeDrive[0x1E],driveLetter,afterDrive[0x4E];
 } MwCombatDiskPrompt;
-_Static_assert(sizeof(MwCombatDiskPrompt)==0x6D,"Simulator disk prompt before picture decoder state");
+static_assert(sizeof(MwCombatDiskPrompt)==0x6D,"Simulator disk prompt before picture decoder state");
 extern char combatExecutableFilename[10];
 extern MwCombatDiskPrompt combatDiskPrompt;
 extern uint8_t deploymentResolvedWithoutCombat;

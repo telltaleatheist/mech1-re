@@ -54,7 +54,7 @@ static uint16_t DetectConfiguredAdapter(void) {return LAUNCHER_ADAPTER_EGA;}
 static void ClearLauncherText(void) {MwSdlSetVideoMode(3);}
 static void WriteLauncherChar(uint8_t character) {fputc(character,stderr);fflush(stderr);}
 
-_Noreturn void MwSdlFail(const char *operation)
+[[noreturn]] void MwSdlFail(const char *operation)
 {
     fprintf(stderr,"MechWarrior: %s",operation);
     const char *error=SDL_GetError();

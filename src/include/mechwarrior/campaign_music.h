@@ -135,7 +135,7 @@ typedef union MwMidiVoicePool
     MwMidiChannel headChannelAlias;
     struct {uint16_t prefix;MwMidiChannel channel;} tailChannelAlias;
 } MwMidiVoicePool;
-_Static_assert(offsetof(MwMidiVoicePool,records.voices)==6,"Sentinel/first voice alias");
+static_assert(offsetof(MwMidiVoicePool,records.voices)==6,"Sentinel/first voice alias");
 typedef struct MwCampaignAudioBackend
 {
     uint16_t nameOffset;
@@ -164,16 +164,16 @@ typedef struct MwMidiSysexWorkspace
      * read adjacent authored words, not a clamped or invented frequency. */
     uint16_t tonePeriodsAndAdjacentWords[SPEAKER_PERIOD_WORDS];
 } MwMidiSysexWorkspace;
-_Static_assert(sizeof(MwMidiChannel)==0x08,"Native MIDI channel width");
-_Static_assert(sizeof(MwAdlibInstrument)==MIDI_INSTRUMENT_BYTES,"Native AdLib instrument width");
-_Static_assert(sizeof(MwAdlibVoice)==8,"Native AdLib voice overlay");
-_Static_assert(sizeof(MwMidiVoice)==0x12,"Native voice width");
-_Static_assert(offsetof(MwMidiVoice,pitPeriod)==0x0A,"Native speaker overlay");
-_Static_assert(sizeof(MwMidiListSentinels)==6,"Overlapping list sentinels");
-_Static_assert(sizeof(MwCampaignAudioBackend)==0x1A,"Native backend data width");
-_Static_assert(offsetof(MwMidiSysexWorkspace,speakerBackend)==0x2E,"SysEx/backend alias");
-_Static_assert(offsetof(MwMidiSysexWorkspace,currentVoiceOffset)==0x5A,"Speaker cursor alias");
-_Static_assert(offsetof(MwMidiSysexWorkspace,tonePeriodsAndAdjacentWords)==0x60,"Speaker tone alias");
+static_assert(sizeof(MwMidiChannel)==0x08,"Native MIDI channel width");
+static_assert(sizeof(MwAdlibInstrument)==MIDI_INSTRUMENT_BYTES,"Native AdLib instrument width");
+static_assert(sizeof(MwAdlibVoice)==8,"Native AdLib voice overlay");
+static_assert(sizeof(MwMidiVoice)==0x12,"Native voice width");
+static_assert(offsetof(MwMidiVoice,pitPeriod)==0x0A,"Native speaker overlay");
+static_assert(sizeof(MwMidiListSentinels)==6,"Overlapping list sentinels");
+static_assert(sizeof(MwCampaignAudioBackend)==0x1A,"Native backend data width");
+static_assert(offsetof(MwMidiSysexWorkspace,speakerBackend)==0x2E,"SysEx/backend alias");
+static_assert(offsetof(MwMidiSysexWorkspace,currentVoiceOffset)==0x5A,"Speaker cursor alias");
+static_assert(offsetof(MwMidiSysexWorkspace,tonePeriodsAndAdjacentWords)==0x60,"Speaker tone alias");
 extern MwMidiVoicePool audioVoicePool;
 #define audioVoiceList audioVoicePool.records.sentinels
 #define audioVoices audioVoicePool.records.voices

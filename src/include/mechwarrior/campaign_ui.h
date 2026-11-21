@@ -97,8 +97,8 @@ typedef struct MwInsertDiskPrompt
 {
     uint8_t textBeforeDrive[0x001B], driveLetter, textAfterDrive[2];
 } MwInsertDiskPrompt;
-_Static_assert(sizeof(MwChangeDiskPrompt) == 0x0065, "Native disk prompt extent");
-_Static_assert(sizeof(MwInsertDiskPrompt) == 0x001E, "Native disk-one prompt extent");
+static_assert(sizeof(MwChangeDiskPrompt) == 0x0065, "Native disk prompt extent");
+static_assert(sizeof(MwInsertDiskPrompt) == 0x001E, "Native disk-one prompt extent");
 extern MwChangeDiskPrompt changeDiskPrompt;
 extern MwInsertDiskPrompt insertDiskOnePrompt;
 void MwShowPendingNotifications(void);

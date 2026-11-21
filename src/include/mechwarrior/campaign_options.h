@@ -26,7 +26,7 @@ typedef struct MwSaveDiskPrompt
 {
     uint8_t beforeDrive[0x1E],driveLetter,afterDrive[2];
 } MwSaveDiskPrompt;
-_Static_assert(sizeof(MwSaveDiskPrompt)==0x21,"Native save-disk prompt endsA134, before numeric flags");
+static_assert(sizeof(MwSaveDiskPrompt)==0x21,"Native save-disk prompt endsA134, before numeric flags");
 extern MwPanelDescriptor optionsPanel,restorePanel,confirmationPanel,newsMenuPanel;
 extern MwServiceCaption optionsLabels[CAMPAIGN_OPTIONS_ROWS],confirmationLabels[4],newsMenuLabels[3];
 extern MwServiceCaption restoreHeading,restoreCancel;

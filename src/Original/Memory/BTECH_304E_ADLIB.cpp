@@ -17,10 +17,10 @@ BtechAdlibOperator combatAdlibOperators[BTECH_OPL_OPERATORS];
 int32_t combatAdlibCachedScaledBend;
 uint16_t combatAdlibCachedTranspose;
 uint16_t *combatAdlibCachedFrequencyRow;
-_Static_assert(sizeof(BtechAdlibOperator)==14,"Native OPL operator parameters");
-_Static_assert(sizeof(BtechAdlibWordInstrument)==0x38,"Native two-operator WORD instrument");
-_Static_assert(offsetof(BtechAdlibWordInstrument,carrier)==0x1A,"Native carrier parameter offset");
-_Static_assert(offsetof(BtechAdlibNoteReferences,fields.percussionMasks)==14,"Native count/mask overlap");
+static_assert(sizeof(BtechAdlibOperator)==14,"Native OPL operator parameters");
+static_assert(sizeof(BtechAdlibWordInstrument)==0x38,"Native two-operator WORD instrument");
+static_assert(offsetof(BtechAdlibWordInstrument,carrier)==0x1A,"Native carrier parameter offset");
+static_assert(offsetof(BtechAdlibNoteReferences,fields.percussionMasks)==14,"Native count/mask overlap");
 
 bool BtechImportAdlibInitialData(const uint8_t *data,size_t bytes)
 {
