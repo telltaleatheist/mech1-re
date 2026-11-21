@@ -220,7 +220,7 @@ DS:0008 finds the data segment, then each piece must still match its hash.
 3. **Rules and the new campaign** into `data/rules/`. Traces equal (same
    numbers). The rule table's hashes check them against the exe. The plan
    is section 5.
-4. **Layout** into `data/ui/`. Traces equal.
+4. **Layout** into `data/ui/`. Traces equal. The plan is section 6.
 5. **UI words** into `data/text/interface.json`, screen by screen, in our
    wording. Each slice re-records its snaps with the changed words listed.
 6. **No exe at play time.** The game starts from `story/` and `data/` alone;
@@ -679,3 +679,259 @@ Decisions, as reviewed: keyed objects for enumerated axes (5.2); dropping
 `unusedRepairTimeByDamageTier`; moving the four label-index tables to
 slice 5; start values kept in data until a trace proves them unneeded
 (eight were, in 3f). All were approved and carried out.
+
+## 6. Slice 4: layout
+
+Plan for review; no code yet. Slice 4 moves where things go on screen, and
+in what colour, out of the exes and into `data/ui/`. It follows slice 3's
+pattern: one piece per native table, hashes from the 1990-01-22 exes, and
+traces equal. Words stay in the exe until slice 5. Where a record mixes the
+two (a caption's position and colour, then its text), slice 4 takes the
+numbers and leaves the text bytes where they are.
+
+### 6.1 What moves
+
+The inventory's layout group (58 items) came from name heuristics, and it
+missed most of the structure: the menus, several panels, the cockpit
+layouts, the HUD colour schemes. This census comes instead from the
+importers' record readers and a scratch reader over MW_MAIN's data segment
+(numbers only). The generated piece table will give the exact list, and the
+hash test will prove it complete.
+
+**MW_MAIN, three record kinds** (`MwPanelDescriptor`, `MwPanelText`,
+`MwUiRecord`; readers 081B_UI, plus each screen's module):
+
+- **Panels (35).** An 8-word header (x, y, width, bottom inset, line count,
+  border, line spacing, background), then one native pointer per line, so
+  each is 0x10 + 2 × lines bytes, 872 in all. They are:
+  - company and crew (21CE, 2258, 2325, 8FF6, 9076);
+  - news (2500);
+  - the Mech Complex and the dealer (25C5, 266A, 28F1, 2C3F, 2D06, 3075,
+    3110, 3214, 437E, 443E, 44F1);
+  - reserve ammunition (4144, plus the six compatibility panels that the
+    pointer table at 3F7B names);
+  - the contract office (4822, 49DE);
+  - travel (54E4, 5A0D, 5BF9, 5C17, 5C35, 5C75);
+  - options, restore and confirmation (9CBE, 9D52, 9E4D).
+- **Menus (30), 14-byte records:** enabled, text record, x, y, action (a
+  081B code offset), picture, and the up/down/left/right links. That is
+  2660 bytes in all:
+  - hubs: 1083, 10D7, 1101;
+  - company and crew: 222E, 238A, 904C, 90EA;
+  - news: 2538;
+  - the Mech Complex and the dealer: 2632, 283B, 2A1B, 2D53, 2D99, 30F0,
+    316D, 3558, 44A9, 44D3, 480F;
+  - reserve ammunition: 4268;
+  - the contract office: 486F, 4A15;
+  - travel: 5809, 5A7B, 5B8C;
+  - the event choices: 5E1C, 5E38, which 2e left for this slice;
+  - options, confirmation and restore: 9D34, 9DEB, 9F7B.
+
+  Every non-zero action is a member of `MwCampaignContinuation` (65
+  distinct values; all are named). Zero means none, or that code fills it in
+  later (the unit lists, the component rows, one hub and one travel
+  record). In the event menus, the picture word holds the caption's
+  original address instead.
+- **Caption heads, about 230:** x, y and colour (5 bytes), followed by the
+  text. 156 are reached through panel line tables and 72 are read directly;
+  the rest are rows read in loops (the travel planet rows, the save rows,
+  the unit and condition rows). Slice 4 takes the 5 bytes and leaves the
+  text.
+
+**MW_MAIN tables:**
+
+| Table | Exe SEG:OFF | Bytes | Shape | Read by |
+|---|---|---|---|---|
+| `calendarMonthNameWidths` | MW_MAIN 1090:11BA | 24 | `uint16_t[12]` | 081B_TEXT |
+| `unitDetailPictureXOffsets` | MW_MAIN 1090:2B83 | 22 | `uint16_t[11]` | 081B_MARKET,081B_SERVICE |
+| `unitDetailPictureYOrigins` | MW_MAIN 1090:2B99 | 22 | `uint16_t[11]` | 081B_MARKET,081B_SERVICE |
+| `mechComplexAnimationFrames` | MW_MAIN 1090:318D | 46 | `uint16_t[23]` | 081B_MARKET |
+| `repairTitleLeadingSpacesByKind` | MW_MAIN 1090:31F2 | 22 | `uint16_t[11]` | 081B_MARKET,081B_SERVICE |
+| `bodyDamageTierFillColours` | MW_MAIN 1090:3CD2 | 8 | `uint16_t[4]` | 081B_SERVICE |
+| body diagram pointers | MW_MAIN 1090:3CDA | 22 | `uint16_t[11]` → references | 081B_SERVICE |
+| `mechBodyDiagramLayouts` | MW_MAIN 1090:3CEE | 640 | 8 × (background + 9 regions, 4 words each) | 081B_SERVICE |
+| `pilotCardColumnOrigins` | MW_MAIN 1090:244A | 8 | `uint16_t[4]` | 081B_PILOTS |
+| `requestedTermX`, `Y`, `Digits` | MW_MAIN 1090:49CC | 18 | `uint16_t[3]` × 3 | 081B_CONTRACTS |
+| `contractDateYearXOffsets` | MW_MAIN 1090:4B1A | 24 | `uint16_t[12]` | 081B_CONTRACTS |
+| `hiredTransportFrames` | MW_MAIN 1090:5AEA | 68 | `uint16_t[34]` | 081B_TRAVEL |
+| `dropShipTravelFrames` | MW_MAIN 1090:5B2E | 44 | `uint16_t[22]` | 081B_TRAVEL |
+| notification boxes | MW_MAIN 1090:5EB3 | 32 | inset x, inset y, columns, rows: `uint16_t[4]` each | 081B_UI |
+| pilot assignment caption colours | MW_MAIN 1090:247E | 12 | one byte before each of 12 captions (through pointers) | 081B_PILOTS |
+
+**BTECH, 304E:1878..2004 almost whole** (the 2-byte gap at 1E86 is
+`combatLandscapeIndex`, which is runtime state):
+
+| Table | Exe SEG:OFF | Bytes | Shape | Read by |
+|---|---|---|---|---|
+| `inspectionDiagramOrigins` | BTECH 304E:1878 | 32 | `BtechHudGaugeAnchor[8]` | 0810_INSPECTION |
+| `inspectionDiagramRegions` | BTECH 304E:1898 | 576 | 8 templates × 9 armour rectangles | 0810_INSPECTION |
+| `targetDiagramAnchors` | BTECH 304E:1AD8 | 32 | `BtechHudGaugeAnchor[8]` | 0810_TARGET_HUD |
+| `targetDiagramRegions` | BTECH 304E:1AF8 | 576 | 8 × 9 rectangles | 0810_TARGET_HUD |
+| `mechCockpitLayoutIndices` | BTECH 304E:1D38 | 16 | `uint16_t[8]` | 0810_COCKPIT and 6 more |
+| `cockpitLayouts` | BTECH 304E:1D48 | 318 | 3 × 0x6A (`BtechCockpitLayout`) | 0810_COCKPIT and 7 more |
+| `landscapeCameraColourRows` | BTECH 304E:1E88 | 180 | 2 schemes × 3 landscapes × 30 | 0810_SCENE and 8 more |
+| `hudColourSchemes` | BTECH 304E:1F3C | 200 | 2 × 0x64 (`BtechHudColourScheme`) | 0810_GAUGES and 7 more |
+| `subsystemLampColourTables` | BTECH 304E:23CE | 28 | `uint16_t[14]` | 17FB_HUD |
+| `fontAdvanceWidths`, `combatFontHeights` | BTECH 304E:2E84 | 40 | `uint8_t[20]` × 2 | 1BF5, 2A36 |
+| `orderSelectionFirstRows`, `LastRows` | BTECH 304E:0092 | 8 | `int16_t[2]` × 2 | 17FB_ORDERS |
+| `orderNavigationPanelDeltas`, `RowDeltas` | BTECH 304E:009A | 44 | `int16_t[11]` × 2 | 17FB_ORDERS |
+| `orderEngineConditionColours`, `System…` | BTECH 304E:030E | 32 | `uint16_t[2][4]` × 2 | 17FB_PANELS |
+
+**Start values (10).** These are layout-shaped, but play writes them:
+`calendarTextX`, `calendarTextY`, `calendarBackground` and
+`calendarForeground` (1090:117E), `pilotCardTextX` (243C),
+`crewScreenRightEdge` (2438), `contractRequestTextColour` (4B34),
+`afterActionRosterRowOffset` (1229), `reserveAmmoMechColours` (3F70), and
+BTECH's `lanceOrderPanelTextX` (304E:008C). 3f's method decides each one:
+read the code, then perturb the value against the traces with a control.
+A value that is always written before it's read becomes code, zeroed or set
+where the exe reloaded it. The others become `"start"` entries in their
+screen's file.
+
+**Not layout:**
+- `orderMapPositionMask` (304E:4EF0) lies past BTECH's file data, so it is
+  code, zeroed like 4F32.
+- The menus' past-end probes (`*NavigationProbe`, and the
+  `sentinelEnabled` pointers into neighbouring objects) copy the original
+  reading one byte past a menu. They stay code as they are: several point
+  at state that play changes, so a fixed value in a file would differ.
+- The 103 layout enumerators in the headers (`REPAIR_DONE_X` and the like)
+  are the exe's code immediates, not data. They stay code. A later change
+  can move them into data/ui by name.
+
+### 6.2 The files
+
+Plain JSON, read strictly with `StrictReader`, one file per screen family:
+
+    hub.json        the three hub menus, the calendar, the notification boxes
+    crew.json       company, commander profile, crew, bar, recruit, the pilot card
+    complex.json    Mech Complex, owned list, service, repair, the body diagrams
+    dealer.json     the market lists, detail panels, reserve ammunition
+    contract_office.json  the two panels and menus, the term and date positions
+    travel.json     the travel panels and menus, the transport frames
+    options.json    options, restore, confirmation, news
+    events.json     the two choice menus
+    cockpit.json    BTECH: layouts, diagrams, HUD colour schemes, landscape rows, fonts
+    orders.json     BTECH: the lance order panel's rows, deltas and colours
+
+Shapes:
+
+    caption  {"at": [x, y], "colour": c}
+    panel    {"at": [x, y], "width", "bottom_inset", "border", "line_spacing",
+              "background", "lines": ["<caption id>", ...]}
+    menu     {"records": [{"enabled", "text_record", "at": [x, y],
+              "action": "continue.mech_complex" | null, "picture",
+              "up", "down", "left", "right"}]}
+
+- **Captions are keyed by our ids** (`complex.repair.title`, for example).
+  The same ids name their words in slice 5. Until slice 5, the loader takes
+  each caption's text from the exe at the native offset that the piece
+  table gives for that id.
+- **Panels name their lines by caption id.** The line count is the length
+  of the list, and the encoder rebuilds the native pointers from the
+  captions' offsets, as slice 3 did for its pointer tables.
+- **Menu links are record indices within the menu**, or null for the
+  original's FF. **Actions are names** from `MwCampaignContinuation`
+  (`CAMPAIGN_CONTINUE_MECH_COMPLEX` → `"continue.mech_complex"`); an unknown
+  name is refused. The event menus name a caption id instead of a picture.
+- **Keyed axes use the code's enums**, as in slice 3: armour locations, unit
+  kinds and templates key the diagrams, the per-kind tables and
+  `mechCockpitLayoutIndices`. A cockpit layout's fields use the
+  `BtechCockpitLayout` and `BtechHudColourScheme` member names, and
+  unnamed fields keep `unknown_<offset>`.
+- **Pointer tables become references:** the body diagram per unit kind
+  (null for none), the six reserve ammunition compatibility panels, and the
+  pilot assignment captions.
+- data/ui holds numbers and our own names only, never exe text.
+
+### 6.3 What may change, and what must stay exact
+
+In slice 4, every number keeps the exe's value, so the traces stay equal and
+the hashes prove it. After slice 4:
+- **Tunable:**
+  - positions, sizes and spacing;
+  - borders and backgrounds;
+  - colours: captions, HUD schemes, lamps, body damage fills, order
+    conditions;
+  - cockpit rectangles and gauge anchors;
+  - the bitmap placements' x and y;
+  - menu links, provided every link stays in range (the loader checks).
+- **Fixed by contract:**
+  - **Line and record counts:** the code indexes the lines and records by
+    number, and the importers check the counts today.
+  - **Actions:** the code dispatches on them.
+  - **The install's art and fonts:** picture indices, the animation and
+    transport frames, the bitmap indices in cockpit placements, the font
+    widths and heights, and the landscape camera rows' palette slots. These
+    describe the install's files, like combat_assets.json.
+  - **`mechCockpitLayoutIndices`:** it maps templates to layouts, so
+    change it only together with the layouts.
+- **Tied to words (slice 5):** `calendarMonthNameWidths`,
+  `repairTitleLeadingSpacesByKind` and `contractDateYearXOffsets` measure
+  or pad particular texts. Slice 5 should derive them from the words (and
+  `pilotCardColumnOrigins` if that proves to be text-bound too) rather
+  than tune them separately.
+- **Code still draws some things itself:** a moved panel doesn't move what
+  code places by immediates (6.1). The file says this in a note beside the
+  affected screens.
+
+### 6.4 How the hashes check them
+
+This is slice 3's scheme with a table of its own. `src/Ui/ui_pieces.txt`
+uses the same row format, `make_import_table.py --ui` turns it into
+`ui_table.cpp`, and the same `btech_image` path serves both BTECH
+revisions. There is one piece per:
+- panel: its header and line pointers;
+- menu: all of its records;
+- caption head: 5 bytes, with the text excluded;
+- table, as listed in 6.1.
+
+That is roughly 35 + 30 + 230 + 25 pieces. A caption piece's offset is
+also where that caption's text starts, 5 bytes later, until slice 5.
+
+- **`ui_test`** (ctest, no game files): loads `data/ui/`, encodes each
+  piece back to native bytes and compares hash prefixes, naming any piece
+  that differs. A piece tuned on purpose is marked `tuned`, as in rules.
+- **`ui_exe_test`** (ctest, skipped without `MW1O_GAME`): compares every
+  piece byte for byte with the player's exes, in both BTECH revisions.
+- The game opens no exe for layout and checks no hash at play time.
+
+### 6.5 The machinery
+
+- `src/Ui/` mirrors `src/Rules/`: typed structs, strict loaders, encoders to
+  native bytes, and C doors in `mechwarrior/ui_layout.h`
+  (`MwUiCopyNative`, `MwUiCopyWords`, `MwUiCopyBytes`, and
+  `MwUiCaptionOffset` for the text lookup until slice 5). These are not
+  copies of the rules code. The piece lookup, `piece_range`, the hashing
+  and `StrictReader` move to `src/Support` and serve both. data/ui is
+  installed and found beside data/rules.
+- The importers keep their shape. A panel read becomes one door call into
+  the same `MwPanelDescriptor`, and a menu read fills the same `MwUiRecord`
+  array. The runtime code doesn't change.
+- The inventory learns the `ui` door, as it learned the rule door in 3f.
+
+### 6.6 The pieces
+
+Each piece goes on its own branch and needs a build, ctest, `ui_test`,
+`ui_exe_test` and traces 8 of 8, gated as for slice 3:
+- **4a, the machinery and the cockpit:** `src/Ui/`, the shared support,
+  both tests, `cockpit.json` and `orders.json` (BTECH 1878..2004, the order
+  tables and the fonts). These are typed structs with no text, the
+  smallest end-to-end proof.
+- **4b, the caption and panel model** on the smallest screens:
+  `options.json` and `events.json`, which bring the caption ids, the line
+  references and the menu actions by name.
+- **4c:** `hub.json`, `crew.json` and `contract_office.json`.
+- **4d:** `complex.json` and `dealer.json`: the largest, with the body
+  diagrams and the reserve ammunition pointer tables.
+- **4e:** `travel.json` (the 32-line planet panel and the 31-record menu).
+- **4f:** the ten start values by 3f's method, `orderMapPositionMask` to
+  code, the inventory regenerated with the `ui` door, and the record here.
+
+Decisions for review:
+1. One file per screen family (6.2), rather than one file per record kind.
+2. Captions keyed by our ids, shared with slice 5, while their text keeps
+   coming from the exe until then.
+3. Actions by `MwCampaignContinuation` name.
+4. The past-end probes and the code immediates stay code in slice 4.
+5. The three text-bound tables are flagged for slice 5 to derive.
