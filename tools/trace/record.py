@@ -71,7 +71,9 @@ def read_script(path):
 def read_json(path, deadline):
     while True:
         try:
-            with open(path, encoding="utf-8", errors="replace") as f:
+            # latin-1: the port writes text bytes as they are, so each byte
+            # becomes one character and a label hashes as the original's bytes.
+            with open(path, encoding="latin-1") as f:
                 return json.load(f)
         except (OSError, ValueError):
             if time.monotonic() > deadline:
@@ -81,7 +83,7 @@ def read_json(path, deadline):
 
 def label_hash(row):
     label = row.get("label", "")
-    return sha(label.encode("latin-1", "replace"), 12) if label else ""
+    return sha(label.encode("latin-1"), 12) if label else ""
 
 
 def state_lines(status):

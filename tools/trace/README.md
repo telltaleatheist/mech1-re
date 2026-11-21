@@ -7,6 +7,7 @@ tests can run the same script and compare.
 | File | What it does |
 |---|---|
 | `record.py` | Runs the port headless with a poll-fed key script (`feed.txt`, `docs/DEBUG_INPUT.md`) and writes one JSON line per `@snap`. |
+| `check.py` | Compares a candidate (a port build, the rebuild, or recorded traces) with the golden traces, snap by snap (`docs/phase0/REPLAY.md`). |
 | `repeat.py` | Records a script twice and checks the runs are byte-identical. |
 | `scripts/*.keys` | Key scripts, each from a new campaign: `campaign_contract` (an offer accepted), `company` (crew, a pilot assigned, NewsNet), `mech_complex` (component repairs, repair all, rearm, reserve ammo bought and sold, the market), `bar` (drinks, a recruit hired and one rejected), `travel` (the house browser, a trip), `options` (save, audio, terrain detail, the load menu). |
 | `traces/*.jsonl` | Recorded traces, the golden references. |
