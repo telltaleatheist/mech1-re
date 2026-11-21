@@ -77,7 +77,7 @@ log_at      dw call_log                 ; 117h: the log: LOG_N entries of 7 word
 POLLS       equ 4
 MAX_KEYS    equ 16384
 LOG_N       equ 1024
-; Owen's BTECH.EXE (1990-01-22): segments relative to its load segment.
+; The 1990-01-22 BTECH.EXE: segments relative to its load segment.
 INT9_SEG    equ 13f6h                   ; 1BF5 (reference) = 1C06 here
 INT9_OFF    equ 2ccbh
 POLL_OFF    equ 2ae1h                   ; the reference's 0810:2A17
