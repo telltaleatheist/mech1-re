@@ -39,6 +39,21 @@
 //   "mission_payment_base_thousands", "pilot_card": {"gunnery", "piloting",
 //   "quoted_wage"}, "settlement_payout_percent",
 //   "travel_destination_time_weight".
+//   combat.json (BTECH): locations by name (armour: COMBAT_ARMOR_*; body: the
+//   same less the rear centre torso, the order armorToBodyLocations gives),
+//   mech templates by number from 1 (as the story's combat.mech_template.N),
+//   unit kinds by name. See read_combat for the members; "start" holds
+//   "side_objective_rules" [2]. Its "mission_side_zero_rules" and
+//   "fallback_template_steps" were missing from the inventory.
+//   weapons.json  {"weapons": {"small_laser": {...}, ...}}, keyed by
+//     COMBAT_WEAPON_*: {"damage", "ammo_family" (null: none), "reload_ticks",
+//     "heat", "range_class", "ranges": {"minimum", "short", "medium", "long"},
+//     "critical_slots", "unknown_14", "missile_cluster_row" (null: none),
+//     "projectile_profile" (null: none)}
+//   combat_assets.json  frame counts and effect resource steps that describe
+//     the install's files: {"animation_prefix_counts" [9], "player_pose_frame_counts" [8],
+//     "body_damage_effect_steps" [4], "default_effect_steps" [7],
+//     "machine_gun_effect_steps" [3]}
 #pragma once
 
 #include <array>
@@ -143,12 +158,73 @@ struct Contracts {
     ContractsStart start;
 };
 
+// COMBAT_ARMOR_*, in order; the body locations are the same less the rear
+// centre torso (armorToBodyLocations maps the two centre torsos to one).
+inline constexpr std::array<std::string_view, 9> kArmourLocations = {
+    "left_arm", "right_arm", "left_leg", "right_leg", "center_torso", "rear_center_torso",
+    "left_torso", "right_torso", "head"};
+inline constexpr std::array<std::string_view, 8> kBodyLocations = {
+    "left_arm", "right_arm", "left_leg", "right_leg", "center_torso", "left_torso", "right_torso", "head"};
+// COMBAT_WEAPON_*, in order.
+inline constexpr std::array<std::string_view, 10> kWeaponKinds = {
+    "small_laser", "medium_laser", "large_laser", "machine_gun", "ppc", "ac5", "lrm5", "srm2", "srm4", "srm6"};
+inline constexpr std::size_t kTemplates = 8, kCombatMissions = 37, kStageProfiles = 9, kStagesPerProfile = 3;
+inline constexpr std::size_t kAttackArcs = 4, kHitRolls = 11, kClusterRows = 4, kClusterRolls = 12;
+inline constexpr std::size_t kProjectileProfiles = 5;
+
+struct Combat {
+    std::array<std::uint16_t, 9> body_of_armour{};               // body location index
+    std::array<std::uint16_t, 9> campaign_body_tier_of_armour{};
+    std::array<std::uint16_t, 8> critical_transfer{};            // body -> body
+    std::array<std::uint16_t, 8> damage_transfer{};              // body -> armour
+    std::array<std::uint16_t, 8> body_reference_point{};         // body -> armour
+    std::array<std::uint16_t, 4> actuator_of_limb{};
+    std::array<std::uint16_t, kMechKinds> template_of_unit_kind{};  // template index (0-based)
+    std::array<std::uint16_t, kTemplates> unit_kind_of_template{};
+    std::array<std::uint16_t, kTemplates> fallback_start_template{};
+    std::array<std::int16_t, kTemplates> fallback_template_steps{};
+    std::array<std::uint32_t, kTemplates> template_budget_costs{};
+    std::array<std::uint16_t, 4> weapon_disabled_by_tier{}, system_hits_by_tier{}, actuator_loss_by_tier{};
+    std::array<std::uint16_t, 5> actuator_integrity_by_condition{};
+    std::array<std::uint16_t, 3> system_tier_by_hits{};
+    std::array<std::uint16_t, 2> weapon_integrity_by_operational{};
+    std::array<std::uint16_t, 5> opposing_objective{};
+    std::array<std::uint16_t, kCombatMissions> mission_side_zero_rules{};
+    std::array<std::array<std::uint16_t, kStagesPerProfile>, kStageProfiles> continuation_profiles{};
+    std::array<std::uint16_t, 5> heat_aim_jitter_thresholds{}, range_hit_modifiers{};
+    std::array<std::array<std::uint16_t, kHitRolls>, kAttackArcs> hit_locations{};  // armour
+    std::array<std::array<std::uint16_t, kClusterRolls>, kClusterRows> missile_cluster_rows{};
+    std::array<std::uint16_t, 2> opposing_side_first_unit_slots{};
+    std::array<std::int16_t, 3> avoidance_heading_offsets{};
+    std::array<std::uint16_t, 2> start_side_objective_rules{};
+};
+
+inline constexpr std::uint16_t kNone = 0xFFFF;  // ammo family, cluster row, projectile profile: none
+
+struct Weapon {
+    std::uint16_t damage = 0, ammo_family = kNone, reload_ticks = 0, heat = 0, range_class = 0;
+    std::uint16_t minimum_range = 0, short_range = 0, medium_range = 0, long_range = 0;
+    std::uint16_t critical_slots = 0, unknown_14 = 0;
+    std::uint16_t missile_cluster_row = kNone, projectile_profile = kNone;
+};
+
+struct CombatAssets {
+    std::array<std::uint16_t, 9> animation_prefix_counts{};
+    std::array<std::uint16_t, 8> player_pose_frame_counts{};
+    std::array<std::uint16_t, 4> body_damage_effect_steps{};
+    std::array<std::uint16_t, 7> default_effect_steps{};
+    std::array<std::uint16_t, 3> machine_gun_effect_steps{};
+};
+
 struct Rules {
     Units units;
     Market market;
     Repair repair;
     std::array<House, kHouses.size()> houses;
     Contracts contracts;
+    Combat combat;
+    std::array<Weapon, kWeaponKinds.size()> weapons;
+    CombatAssets assets;
 };
 
 // <data_dir>/rules/*.json, read strictly. Throws RulesError naming the file.

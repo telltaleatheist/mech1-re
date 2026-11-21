@@ -93,6 +93,18 @@ public:
     std::uint16_t word(const Json& v, std::string_view what) const {
         return static_cast<std::uint16_t>(whole(v, what, 65535));
     }
+    std::int16_t signed_word(const Json& v, std::string_view what) const {
+        if (!v.is_number() || v.number() < -32768 || v.number() > 32767 || std::floor(v.number()) != v.number())
+            fail(std::string(what) + " is not a whole number from -32768 to 32767");
+        return static_cast<std::int16_t>(v.number());
+    }
+    // The index of the name `v` in `names`.
+    std::size_t name(const Json& v, std::span<const std::string_view> names, std::string_view what) const {
+        if (v.is_string())
+            for (std::size_t i = 0; i < names.size(); ++i)
+                if (names[i] == v.string()) return i;
+        fail(std::string(what) + " is not one of its names");
+    }
     // A member, as a byte or a word.
     std::uint8_t u8(const Json& object, std::string_view key) const { return byte(member(object, key), key); }
     std::uint16_t u16(const Json& object, std::string_view key) const { return word(member(object, key), key); }

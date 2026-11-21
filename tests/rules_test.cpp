@@ -159,6 +159,43 @@ void what_doesnt_fit_is_refused(const fs::path& data, const fs::path& work) {
         at(r, "system_prices") = Json{rows};
     });
     refused(load, "\"system_prices\" has 9 entries, not 10", "nine systems");
+
+    with_file("combat.json", [](Json& c) { std::get<Json::Object>(at(c, "body_of_armour").value)["tail"] = Json{std::string("head")}; });
+    refused(load, "unknown key \"tail\"", "an unknown armour location");
+    with_file("combat.json", [](Json& c) { at(at(c, "damage_transfer"), "head") = Json{std::string("cockpit")}; });
+    refused(load, "is not one of its names", "a location that isn't one");
+    with_file("combat.json", [](Json& c) { at(at(c, "critical_transfer"), "head") = Json{std::string("rear_center_torso")}; });
+    refused(load, "is not one of its names", "an armour location where a body location goes");
+    with_file("combat.json", [](Json& c) { at(at(c, "template_of_unit_kind"), "wasp") = Json{0.0}; });
+    refused(load, "a template is not a number from 1 to 8", "template 0");
+    with_file("combat.json", [](Json& c) {
+        Json::Array arcs = at(c, "hit_locations").array();
+        Json::Array arc = arcs[2].array();
+        arc.pop_back();
+        arcs[2] = Json{arc};
+        at(c, "hit_locations") = Json{arcs};
+    });
+    refused(load, "a hit location row is not a list of 11", "a short hit location row");
+    with_file("combat.json", [](Json& c) {
+        Json::Array offsets = at(c, "avoidance_heading_offsets").array();
+        offsets[1] = Json{40000.0};
+        at(c, "avoidance_heading_offsets") = Json{offsets};
+    });
+    refused(load, "from -32768 to 32767", "a heading offset out of range");
+    with_file("combat.json", [](Json& c) { std::get<Json::Object>(c.value).erase("start"); });
+    refused(load, "no \"start\"", "combat's start values missing");
+    with_file("weapons.json", [](Json& w) { std::get<Json::Object>(at(w, "weapons").value).erase("ppc"); });
+    refused(load, "no \"ppc\"", "a weapon kind missing");
+    with_file("weapons.json", [](Json& w) { at(at(at(w, "weapons"), "ac5"), "ammo_family") = Json{6.0}; });
+    refused(load, "ammo_family is not a whole number from 0 to 5", "an ammo family past the last");
+    with_file("weapons.json", [](Json& w) { std::get<Json::Object>(at(at(at(w, "weapons"), "srm2"), "ranges").value)["extreme"] = Json{9.0}; });
+    refused(load, "unknown key \"extreme\"", "an unknown range band");
+    with_file("combat_assets.json", [](Json& a) {
+        Json::Array counts = at(a, "animation_prefix_counts").array();
+        counts.pop_back();
+        at(a, "animation_prefix_counts") = Json{counts};
+    });
+    refused(load, "\"animation_prefix_counts\" has 8 entries, not 9", "eight animation counts");
     fs::remove(work / "rules" / "market.json");
     refused(load, "can't read", "a missing file");
 }

@@ -40,6 +40,24 @@ bool MwRulesCopyNative(const char *id, uint8_t *bytes, size_t size)
     return true;
 }
 
+bool MwRulesCopyWords(const char *id, uint16_t *words, size_t count, size_t at)
+{
+    const auto it = g_native.find(id);
+    if (it == g_native.end() || !mw1o::rules::find_rule_piece(id)) {
+        std::fprintf(stderr, "MechWarrior: the rules have no table \"%s\"\n", id);
+        return false;
+    }
+    const std::string &bytes = it->second;
+    if (at > bytes.size() || count > (bytes.size() - at) / 2) {
+        std::fprintf(stderr, "MechWarrior: the rule table \"%s\" ends before word %zu\n", id, at / 2 + count);
+        return false;
+    }
+    for (size_t i = 0; i < count; ++i)
+        words[i] = static_cast<uint16_t>(static_cast<uint8_t>(bytes[at + i * 2]) |
+                                         static_cast<uint8_t>(bytes[at + i * 2 + 1]) << 8);
+    return true;
+}
+
 size_t MwRulesPieceSize(const char *id)
 {
     const mw1o::rules::RulePiece *piece = mw1o::rules::find_rule_piece(id);

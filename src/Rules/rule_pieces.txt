@@ -63,3 +63,41 @@ contracts.start.mission_force_budget  MW_MAIN.EXE  1090:4B79 2
 contracts.start.mission_payment_base_thousands  MW_MAIN.EXE  1090:4B7B 2
 contracts.start.travel_destination_time_weight  MW_MAIN.EXE  1090:54DA 2
 contracts.deployment_units_by_scenario  MW_MAIN.EXE  1090:8E46 74
+# combat.json (BTECH), and its "start".
+combat.campaign_body_tier_of_armour  BTECH.EXE  304E:08AE 18
+combat.weapon_disabled_by_tier      BTECH.EXE  304E:08C0 8
+combat.system_hits_by_tier          BTECH.EXE  304E:08C8 8
+combat.actuator_loss_by_tier        BTECH.EXE  304E:08D0 8
+combat.opposing_objective           BTECH.EXE  304E:08D8 10
+combat.template_of_unit_kind        BTECH.EXE  304E:08E2 20
+combat.continuation_profiles        BTECH.EXE  304E:08F6 54
+combat.mission_side_zero_rules      BTECH.EXE  304E:092C 74
+combat.fallback_start_template      BTECH.EXE  304E:0982 16
+combat.fallback_template_steps      BTECH.EXE  304E:0992 16
+combat.template_budget_costs        BTECH.EXE  304E:09A2 32
+combat.unit_kind_of_template        BTECH.EXE  304E:09CC 16
+combat.actuator_integrity_by_condition  BTECH.EXE  304E:09DC 10
+combat.system_tier_by_hits          BTECH.EXE  304E:09E6 6
+combat.weapon_integrity_by_operational  BTECH.EXE  304E:09EC 4
+combat.critical_transfer            BTECH.EXE  304E:0E28 16
+combat.body_of_armour               BTECH.EXE  304E:0E3A 18
+combat.damage_transfer              BTECH.EXE  304E:0E4C 16
+combat.actuator_of_limb             BTECH.EXE  304E:0E5E 8
+combat.body_reference_point         BTECH.EXE  304E:0EBC 16
+combat.start.side_objective_rules   BTECH.EXE  304E:0ED0 4
+combat.opposing_side_first_unit_slots  BTECH.EXE  304E:2434 4
+combat.avoidance_heading_offsets    BTECH.EXE  304E:2438 6
+combat.missile_cluster_rows         BTECH.EXE  304E:235E 96
+combat.hit_locations                BTECH.EXE  304E:26BC 88
+combat.range_hit_modifiers          BTECH.EXE  304E:2714 10
+combat.heat_aim_jitter_thresholds   BTECH.EXE  304E:271E 10
+# weapons.json (BTECH).
+weapons.definitions                 BTECH.EXE  304E:0EEC 220
+weapons.projectile_profiles         BTECH.EXE  304E:232E 20
+weapons.missile_cluster_rows        BTECH.EXE  304E:234A 20
+# combat_assets.json (BTECH).
+assets.default_effect_steps         BTECH.EXE  304E:0E96 14
+assets.machine_gun_effect_steps     BTECH.EXE  304E:0EA4 6
+assets.body_damage_effect_steps     BTECH.EXE  304E:2342 8
+assets.animation_prefix_counts      BTECH.EXE  304E:24B4 18
+assets.player_pose_frame_counts     BTECH.EXE  304E:265E 16

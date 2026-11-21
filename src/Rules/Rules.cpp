@@ -196,6 +196,151 @@ Contracts read_contracts(const fs::path& data_dir) {
     return out;
 }
 
+template <std::size_t N>
+void signed_words(const Reader& r, const Json::Array& from, std::array<std::int16_t, N>& to, std::string_view what) {
+    for (std::size_t i = 0; i < N; ++i) to[i] = r.signed_word(from[i], what);
+}
+
+// A list inside a list, of exactly `count` entries.
+const Json::Array& row(const Reader& r, const Json& v, std::size_t count, std::string_view what) {
+    if (!v.is_array() || v.array().size() != count)
+        r.fail(std::string(what) + " is not a list of " + std::to_string(count));
+    return v.array();
+}
+
+// Each entry one of `names`, as its index.
+template <std::size_t N>
+void name_list(const Reader& r, const Json::Array& from, std::span<const std::string_view> names,
+               std::array<std::uint16_t, N>& to, std::string_view what) {
+    for (std::size_t i = 0; i < N; ++i) to[i] = static_cast<std::uint16_t>(r.name(from[i], names, what));
+}
+
+// An object keyed by exactly `keys`; each value one of `names` as its index,
+// or a word when `names` is empty.
+template <std::size_t N>
+void keyed_words(const Reader& r, const Json& file, std::string_view key, std::span<const std::string_view> keys,
+                 std::span<const std::string_view> names, std::array<std::uint16_t, N>& to) {
+    const auto members = r.keyed(file, key, keys);
+    for (std::size_t i = 0; i < N; ++i)
+        to[i] = names.empty() ? r.word(*members[i], key) : static_cast<std::uint16_t>(r.name(*members[i], names, key));
+}
+
+// A mech template by number from 1, as its index.
+std::uint16_t template_index(const Reader& r, const Json& v) {
+    if (!v.is_number() || v.number() < 1 || v.number() > kTemplates || std::floor(v.number()) != v.number())
+        r.fail("a template is not a number from 1 to " + std::to_string(kTemplates));
+    return static_cast<std::uint16_t>(v.number() - 1);
+}
+
+Combat read_combat(const fs::path& data_dir) {
+    Reader r(data_dir / "rules" / "combat.json");
+    const Json file = r.parse();
+    r.only(file, {"body_of_armour", "campaign_body_tier_of_armour", "critical_transfer", "damage_transfer",
+                  "body_reference_point", "actuator_of_limb", "template_of_unit_kind", "unit_kind_of_template",
+                  "fallback_start_template", "fallback_template_steps", "template_budget_costs", "damage_tiers",
+                  "integrity_tiers", "opposing_objective", "mission_side_zero_rules", "continuation_profiles",
+                  "heat_aim_jitter_thresholds", "range_hit_modifiers", "hit_locations", "missile_cluster_rows",
+                  "opposing_side_first_unit_slots", "avoidance_heading_offsets", "start"});
+    const std::span<const std::string_view> armour(kArmourLocations), body(kBodyLocations);
+    const std::span<const std::string_view> mech_kinds = std::span(kUnitKinds).first(kMechKinds);
+    Combat c;
+    keyed_words(r, file, "body_of_armour", armour, body, c.body_of_armour);
+    keyed_words(r, file, "campaign_body_tier_of_armour", armour, {}, c.campaign_body_tier_of_armour);
+    keyed_words(r, file, "critical_transfer", body, body, c.critical_transfer);
+    keyed_words(r, file, "damage_transfer", body, armour, c.damage_transfer);
+    keyed_words(r, file, "body_reference_point", body, armour, c.body_reference_point);
+    keyed_words(r, file, "actuator_of_limb", body.first(c.actuator_of_limb.size()), {}, c.actuator_of_limb);
+    const auto templates = r.keyed(file, "template_of_unit_kind", mech_kinds);
+    for (std::size_t i = 0; i < kMechKinds; ++i) c.template_of_unit_kind[i] = template_index(r, *templates[i]);
+    name_list(r, r.array(file, "unit_kind_of_template", kTemplates), mech_kinds, c.unit_kind_of_template, "a unit kind");
+    const Json::Array& starts = r.array(file, "fallback_start_template", kTemplates);
+    for (std::size_t i = 0; i < kTemplates; ++i) c.fallback_start_template[i] = template_index(r, starts[i]);
+    signed_words(r, r.array(file, "fallback_template_steps", kTemplates), c.fallback_template_steps, "a template step");
+    const Json::Array& costs = r.array(file, "template_budget_costs", kTemplates);
+    for (std::size_t i = 0; i < kTemplates; ++i)
+        c.template_budget_costs[i] = static_cast<std::uint32_t>(r.whole(costs[i], "a budget cost", 4294967295.0));
+    const Json& damage = r.member(file, "damage_tiers");
+    r.only(damage, {"weapon_disabled", "system_hits", "actuator_loss"});
+    words(r, r.array(damage, "weapon_disabled", 4), c.weapon_disabled_by_tier, "a damage tier entry");
+    words(r, r.array(damage, "system_hits", 4), c.system_hits_by_tier, "a damage tier entry");
+    words(r, r.array(damage, "actuator_loss", 4), c.actuator_loss_by_tier, "a damage tier entry");
+    const Json& integrity = r.member(file, "integrity_tiers");
+    r.only(integrity, {"actuator_by_condition", "system_by_hits", "weapon_by_operational"});
+    words(r, r.array(integrity, "actuator_by_condition", 5), c.actuator_integrity_by_condition, "an integrity tier");
+    words(r, r.array(integrity, "system_by_hits", 3), c.system_tier_by_hits, "an integrity tier");
+    words(r, r.array(integrity, "weapon_by_operational", 2), c.weapon_integrity_by_operational, "an integrity tier");
+    words(r, r.array(file, "opposing_objective", 5), c.opposing_objective, "an objective");
+    words(r, r.array(file, "mission_side_zero_rules", kCombatMissions), c.mission_side_zero_rules, "a mission rule");
+    const Json::Array& profiles = r.array(file, "continuation_profiles", kStageProfiles);
+    for (std::size_t i = 0; i < kStageProfiles; ++i)
+        words(r, row(r, profiles[i], kStagesPerProfile, "a continuation profile"), c.continuation_profiles[i],
+              "a mission code");
+    words(r, r.array(file, "heat_aim_jitter_thresholds", 5), c.heat_aim_jitter_thresholds, "a heat threshold");
+    words(r, r.array(file, "range_hit_modifiers", 5), c.range_hit_modifiers, "a range modifier");
+    const Json::Array& arcs = r.array(file, "hit_locations", kAttackArcs);
+    for (std::size_t i = 0; i < kAttackArcs; ++i)
+        name_list(r, row(r, arcs[i], kHitRolls, "a hit location row"), armour, c.hit_locations[i], "a hit location");
+    const Json::Array& clusters = r.array(file, "missile_cluster_rows", kClusterRows);
+    for (std::size_t i = 0; i < kClusterRows; ++i)
+        words(r, row(r, clusters[i], kClusterRolls, "a missile cluster row"), c.missile_cluster_rows[i], "a missile count");
+    words(r, r.array(file, "opposing_side_first_unit_slots", 2), c.opposing_side_first_unit_slots, "a unit slot");
+    signed_words(r, r.array(file, "avoidance_heading_offsets", 3), c.avoidance_heading_offsets, "a heading offset");
+    const Json& start = r.member(file, "start");
+    r.only(start, {"side_objective_rules"});
+    words(r, r.array(start, "side_objective_rules", 2), c.start_side_objective_rules, "a side objective rule");
+    return c;
+}
+
+std::array<Weapon, kWeaponKinds.size()> read_weapons(const fs::path& data_dir) {
+    Reader r(data_dir / "rules" / "weapons.json");
+    const Json file = r.parse();
+    r.only(file, {"weapons"});
+    const auto rows = r.keyed(file, "weapons", kWeaponKinds);
+    // null for none, else a whole number below `count`.
+    const auto optional = [&](const Json& object, std::string_view key, std::size_t count) {
+        const Json& v = r.member(object, key);
+        if (std::holds_alternative<std::nullptr_t>(v.value)) return kNone;
+        return static_cast<std::uint16_t>(r.whole(v, key, double(count - 1)));
+    };
+    std::array<Weapon, kWeaponKinds.size()> out;
+    for (std::size_t i = 0; i < out.size(); ++i) {
+        const Json& e = *rows[i];
+        r.only(e, {"damage", "ammo_family", "reload_ticks", "heat", "range_class", "ranges", "critical_slots",
+                   "unknown_14", "missile_cluster_row", "projectile_profile"});
+        Weapon& w = out[i];
+        w.damage = r.u16(e, "damage");
+        w.ammo_family = optional(e, "ammo_family", kAmmoFamilies);
+        w.reload_ticks = r.u16(e, "reload_ticks");
+        w.heat = r.u16(e, "heat");
+        w.range_class = r.u16(e, "range_class");
+        const Json& ranges = r.member(e, "ranges");
+        r.only(ranges, {"minimum", "short", "medium", "long"});
+        w.minimum_range = r.u16(ranges, "minimum");
+        w.short_range = r.u16(ranges, "short");
+        w.medium_range = r.u16(ranges, "medium");
+        w.long_range = r.u16(ranges, "long");
+        w.critical_slots = r.u16(e, "critical_slots");
+        w.unknown_14 = r.u16(e, "unknown_14");
+        w.missile_cluster_row = optional(e, "missile_cluster_row", kClusterRows);
+        w.projectile_profile = optional(e, "projectile_profile", kProjectileProfiles);
+    }
+    return out;
+}
+
+CombatAssets read_combat_assets(const fs::path& data_dir) {
+    Reader r(data_dir / "rules" / "combat_assets.json");
+    const Json file = r.parse();
+    r.only(file, {"animation_prefix_counts", "player_pose_frame_counts", "body_damage_effect_steps",
+                  "default_effect_steps", "machine_gun_effect_steps"});
+    CombatAssets a;
+    words(r, r.array(file, "animation_prefix_counts", 9), a.animation_prefix_counts, "a frame count");
+    words(r, r.array(file, "player_pose_frame_counts", 8), a.player_pose_frame_counts, "a frame count");
+    words(r, r.array(file, "body_damage_effect_steps", 4), a.body_damage_effect_steps, "an effect step");
+    words(r, r.array(file, "default_effect_steps", 7), a.default_effect_steps, "an effect step");
+    words(r, r.array(file, "machine_gun_effect_steps", 3), a.machine_gun_effect_steps, "an effect step");
+    return a;
+}
+
 void put_word(std::string& out, std::uint16_t w) {
     out += char(w & 0xFF);
     out += char(w >> 8);
@@ -211,7 +356,7 @@ std::uint16_t piece_offset(std::string_view id) {
 
 Rules load_rules(const fs::path& data_dir) {
     return {read_units(data_dir), read_market(data_dir), read_repair(data_dir), read_houses(data_dir),
-            read_contracts(data_dir)};
+            read_contracts(data_dir), read_combat(data_dir), read_weapons(data_dir), read_combat_assets(data_dir)};
 }
 
 std::map<std::string, std::string, std::less<>> native_pieces(const Rules& rules) {
@@ -328,6 +473,58 @@ std::map<std::string, std::string, std::less<>> native_pieces(const Rules& rules
     put_word(out["contracts.start.pilot_card_quoted_wage"], start.pilot_card_quoted_wage);
     put_word(out["contracts.start.settlement_payout_percent"], start.settlement_payout_percent);
     put_word(out["contracts.start.travel_destination_time_weight"], start.travel_destination_time_weight);
+
+    const auto put_words = [&](std::string_view id, const auto& values) {
+        std::string& bytes = out[std::string(id)];
+        for (auto v : values) put_word(bytes, static_cast<std::uint16_t>(v));
+    };
+    const Combat& combat = rules.combat;
+    put_words("combat.body_of_armour", combat.body_of_armour);
+    put_words("combat.campaign_body_tier_of_armour", combat.campaign_body_tier_of_armour);
+    put_words("combat.critical_transfer", combat.critical_transfer);
+    put_words("combat.damage_transfer", combat.damage_transfer);
+    put_words("combat.body_reference_point", combat.body_reference_point);
+    put_words("combat.actuator_of_limb", combat.actuator_of_limb);
+    put_words("combat.template_of_unit_kind", combat.template_of_unit_kind);
+    put_words("combat.unit_kind_of_template", combat.unit_kind_of_template);
+    put_words("combat.fallback_start_template", combat.fallback_start_template);
+    put_words("combat.fallback_template_steps", combat.fallback_template_steps);
+    std::string& costs = out["combat.template_budget_costs"];
+    for (std::uint32_t cost : combat.template_budget_costs) {
+        put_word(costs, static_cast<std::uint16_t>(cost));
+        put_word(costs, static_cast<std::uint16_t>(cost >> 16));
+    }
+    put_words("combat.weapon_disabled_by_tier", combat.weapon_disabled_by_tier);
+    put_words("combat.system_hits_by_tier", combat.system_hits_by_tier);
+    put_words("combat.actuator_loss_by_tier", combat.actuator_loss_by_tier);
+    put_words("combat.actuator_integrity_by_condition", combat.actuator_integrity_by_condition);
+    put_words("combat.system_tier_by_hits", combat.system_tier_by_hits);
+    put_words("combat.weapon_integrity_by_operational", combat.weapon_integrity_by_operational);
+    put_words("combat.opposing_objective", combat.opposing_objective);
+    put_words("combat.mission_side_zero_rules", combat.mission_side_zero_rules);
+    for (const auto& profile : combat.continuation_profiles) put_words("combat.continuation_profiles", profile);
+    put_words("combat.heat_aim_jitter_thresholds", combat.heat_aim_jitter_thresholds);
+    put_words("combat.range_hit_modifiers", combat.range_hit_modifiers);
+    for (const auto& arc : combat.hit_locations) put_words("combat.hit_locations", arc);
+    for (const auto& cluster : combat.missile_cluster_rows) put_words("combat.missile_cluster_rows", cluster);
+    put_words("combat.opposing_side_first_unit_slots", combat.opposing_side_first_unit_slots);
+    put_words("combat.avoidance_heading_offsets", combat.avoidance_heading_offsets);
+    put_words("combat.start.side_objective_rules", combat.start_side_objective_rules);
+
+    std::string& definitions = out["weapons.definitions"];
+    for (const Weapon& w : rules.weapons)
+        for (std::uint16_t v : {w.damage, w.ammo_family, w.reload_ticks, w.heat, w.range_class, w.minimum_range,
+                                w.short_range, w.medium_range, w.long_range, w.critical_slots, w.unknown_14})
+            put_word(definitions, v);
+    for (const Weapon& w : rules.weapons) put_word(out["weapons.projectile_profiles"], w.projectile_profile);
+    for (const Weapon& w : rules.weapons) put_word(out["weapons.missile_cluster_rows"], w.missile_cluster_row);
+
+    const CombatAssets& assets = rules.assets;
+    put_words("assets.animation_prefix_counts", assets.animation_prefix_counts);
+    put_words("assets.player_pose_frame_counts", assets.player_pose_frame_counts);
+    put_words("assets.body_damage_effect_steps", assets.body_damage_effect_steps);
+    put_words("assets.default_effect_steps", assets.default_effect_steps);
+    put_words("assets.machine_gun_effect_steps", assets.machine_gun_effect_steps);
     return out;
 }
 

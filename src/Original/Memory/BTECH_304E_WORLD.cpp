@@ -11,6 +11,7 @@
 #include "mechwarrior/combat_tactics.h"
 #include "mechwarrior/combat_installation.h"
 #include "mechwarrior/native_address.h"
+#include "mechwarrior/rules.h"
 #include <string.h>
 
 BtechChassisResourceBases chassisResourceBases;
@@ -112,8 +113,9 @@ bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t 
     borrowedArchiveWorkspace=NULL;
     memcpy(nullNearSegment,data,sizeof(nullNearSegment));
     memcpy(boundaryMaskByCode,data+0x0EB6,sizeof(boundaryMaskByCode));
-    for (uint16_t side=0;side<2;++side) opposingSideFirstUnitSlots[side]=MwReadNativeWord(data,0x2434+side*2);
-    for (uint16_t turn=0;turn<AVOIDANCE_TURNS;++turn) avoidanceHeadingOffsets[turn]=MwReadNativeWord(data,0x2438+turn*2);
+    /* The rule tables come from data/rules (src/Rules), laid out as the exe's. */
+    if (!MwRulesCopyWords("combat.opposing_side_first_unit_slots",opposingSideFirstUnitSlots,2,0)
+        || !MwRulesCopyWords("combat.avoidance_heading_offsets",avoidanceHeadingOffsets,AVOIDANCE_TURNS,0)) return false;
     for (uint16_t probe=0;probe<AVOIDANCE_PROBES;++probe)
     {
         avoidanceProbeSignsX[probe]=(int16_t)MwReadNativeWord(data,0x243E +probe*2);
@@ -123,19 +125,21 @@ bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t 
         avoidanceProbeComponentsX[probe]=x==0x542A?&avoidanceStepX:&avoidanceStepY;
         avoidanceProbeComponentsY[probe]=y==0x542A?&avoidanceStepX:&avoidanceStepY;
     }
-    for (uint16_t kind=0;kind<COMBAT_WEAPON_KINDS;++kind) missileClusterRowByWeapon[kind]=(int16_t)MwReadNativeWord(data,0x234A+kind*2);
+    uint16_t clusterRows[COMBAT_WEAPON_KINDS];
+    if (!MwRulesCopyWords("weapons.missile_cluster_rows",clusterRows,COMBAT_WEAPON_KINDS,0)) return false;
+    for (uint16_t kind=0;kind<COMBAT_WEAPON_KINDS;++kind) missileClusterRowByWeapon[kind]=(int16_t)clusterRows[kind];
     for (uint16_t row=0;row<COMBAT_MISSILE_CLUSTER_ROWS;++row)
-        for (uint16_t roll=0;roll<COMBAT_MISSILE_CLUSTER_ROLLS;++roll) missileClusterRows[row][roll]=MwReadNativeWord(data,0x235E +row*0x18+roll*2);
+        if (!MwRulesCopyWords("combat.missile_cluster_rows",missileClusterRows[row],COMBAT_MISSILE_CLUSTER_ROLLS,row*0x18)) return false;
     for (uint16_t arc=0;arc<ATTACK_ARCS;++arc)
-        for (uint16_t roll=0;roll<HIT_LOCATION_ROLLS;++roll) hitLocationRows[arc][roll]=MwReadNativeWord(data,0x26BC+arc*0x16+roll*2);
-    for (uint16_t band=0;band<WEAPON_RANGE_BANDS;++band) rangeHitModifiers[band]=MwReadNativeWord(data,0x2714+band*2);
+        if (!MwRulesCopyWords("combat.hit_locations",hitLocationRows[arc],HIT_LOCATION_ROLLS,arc*0x16)) return false;
+    if (!MwRulesCopyWords("combat.range_hit_modifiers",rangeHitModifiers,WEAPON_RANGE_BANDS,0)) return false;
     for (uint16_t profile=0;profile<COMBAT_PROJECTILE_PROFILES;++profile)
     {
         uint16_t at=0x0E6E +profile*8;
         projectileProfiles[profile]=BtechProjectileProfile{MwReadNativeWord(data,at),MwReadNativeWord(data,at+2),MwReadNativeWord(data,at+4),MwReadNativeWord(data,at+6)};
     }
-    for (uint16_t kind=0;kind<COMBAT_WEAPON_KINDS;++kind) projectileProfileIndicesByWeapon[kind]=MwReadNativeWord(data,0x232E +kind*2);
-    for (uint16_t location=0;location<COMBAT_BODY_LOCATIONS;++location) bodyLocationReferenceIndices[location]=MwReadNativeWord(data,0x0EBC+location*2);
+    if (!MwRulesCopyWords("weapons.projectile_profiles",projectileProfileIndicesByWeapon,COMBAT_WEAPON_KINDS,0)
+        || !MwRulesCopyWords("combat.body_reference_point",bodyLocationReferenceIndices,COMBAT_BODY_LOCATIONS,0)) return false;
     for (uint16_t location=0;location<COMBAT_BODY_LOCATIONS;++location) muzzleLateralOffsetsByBodyLocation[location]=(int16_t)MwReadNativeWord(data,0x2302+location*2);
     for (uint16_t kind=0;kind<COMBAT_WEAPON_KINDS;++kind) beamHalfWidths[kind]=MwReadNativeWord(data,0x2802+kind*2);
     memcpy(beamVerticalTriangleIndices,data+0x27C2,4);memcpy(beamHorizontalTriangleIndices,data+0x27C6,4);
@@ -163,11 +167,11 @@ bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t 
             uint16_t at=0x0FC8+chassis*0x36+location*6;
             fallenBodyReferenceBanks[chassis][location]=BtechBodyReferencePoint{(int16_t)MwReadNativeWord(data,at),(int16_t)MwReadNativeWord(data,at+2),(int16_t)MwReadNativeWord(data,at+4)};
         }
-    for (uint16_t frame=0;frame<COMBAT_BODY_EFFECT_FRAMES;++frame) bodyDamageEffectResourceDeltas[frame]=MwReadNativeWord(data,0x2342+frame*2);
+    if (!MwRulesCopyWords("assets.body_damage_effect_steps",bodyDamageEffectResourceDeltas,COMBAT_BODY_EFFECT_FRAMES,0)) return false;
     /* Authored near directory is resolved at installation IO, not every frame. */
     if (MwReadNativeWord(data,0x0EAA)!=0x0E96 || MwReadNativeWord(data,0x0EAC)!=0x0EA4) return false;
-    for (uint16_t frame=0;frame<7;++frame) defaultEffectResourceDeltas[frame]=MwReadNativeWord(data,0x0E96+frame*2);
-    for (uint16_t frame=0;frame<3;++frame) machineGunEffectResourceDeltas[frame]=MwReadNativeWord(data,0x0EA4+frame*2);
+    if (!MwRulesCopyWords("assets.default_effect_steps",defaultEffectResourceDeltas,7,0)
+        || !MwRulesCopyWords("assets.machine_gun_effect_steps",machineGunEffectResourceDeltas,3,0)) return false;
     for (uint16_t tile=0;tile<TERRAIN_TILE_COUNT;++tile)
     {
         terrainTileGridRowBases[tile]=MwReadNativeWord(data,0x07E4+tile*2);

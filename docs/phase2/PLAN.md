@@ -581,6 +581,22 @@ Each piece goes on its own branch and needs a build, the unit checks,
     inventory.
 - **3c:** `combat.json`, `weapons.json`, `combat_assets.json`, and BTECH's
   start value.
+  Done (35 more pieces, 85 in all, the same in both BTECH revisions):
+  - Locations are named by COMBAT_ARMOR_*. The code names only two body
+    locations, so the body names are the armour names less the rear
+    centre torso, the order `armorToBodyLocations` gives. Each location
+    map is keyed by its own axis, and its values are names on the other.
+  - Weapons are keyed by COMBAT_WEAPON_*, with their cluster row and
+    projectile profile beside the definition (null for none). The
+    definition's last word stays `unknown_14`.
+  - Mech templates are numbers from 1, as the story's
+    `combat.mech_template.N`; unit kinds are names.
+  - Two tables were missing from the inventory and are here:
+    `combatMissionSideZeroRules` (304E:092C, 74 bytes) and
+    `mechFallbackTemplateSteps` (304E:0992, 16 bytes, signed).
+  - `sideObjectiveRules` (304E:0ED0) is combat.json's `"start"`.
+  - The BTECH importers read through `MwRulesCopyWords`. The check that
+    the exe's effect sequence pointers name the two effect tables stays.
 - **3d:** `mechs.json` (the 8 templates, names by story id).
 - **3e:** `new_campaign.json`. New games and the per-EXEC reload fill the
   block from it, then a returning EXEC decodes the exchange over it, as

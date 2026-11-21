@@ -11,6 +11,10 @@ bool MwHostPrepareRules(const char *dataDirectory);
  * rebuilt from the rules. False (with the reason on stderr) if there is no
  * such piece or `size` isn't its length. */
 bool MwRulesCopyNative(const char *id, uint8_t *bytes, size_t size);
+/* Copies `count` words of rule piece `id` from byte `at`, read as the exe's
+ * little-endian words. False (with the reason on stderr) if there is no such
+ * piece or it ends before them. */
+bool MwRulesCopyWords(const char *id, uint16_t *words, size_t count, size_t at);
 /* The length of rule piece `id`, or 0 if there is none. */
 size_t MwRulesPieceSize(const char *id);
 #endif
