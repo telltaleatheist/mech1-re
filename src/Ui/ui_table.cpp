@@ -14,6 +14,7 @@ constexpr UiPiece kTable[] = {
     {"cockpit.landscape_camera_rows", "BTECH.EXE", 0x304E, 0x1E88, 180, "a1c8f15bac8a08ad"},
     {"cockpit.hud_colour_schemes", "BTECH.EXE", 0x304E, 0x1F3C, 200, "886bc6ae66fd47ef"},
     {"cockpit.subsystem_lamp_colours", "BTECH.EXE", 0x304E, 0x23CE, 28, "8849ad012db88597"},
+    {"orders.start.lance_panel_text_x", "BTECH.EXE", 0x304E, 0x008C, 6, "aa208b66220cf357"},
     {"orders.selection_first_rows", "BTECH.EXE", 0x304E, 0x0092, 4, "8b629f0ae492bf75"},
     {"orders.selection_last_rows", "BTECH.EXE", 0x304E, 0x0096, 4, "b5717496361a1d11"},
     {"orders.navigation_panel_deltas", "BTECH.EXE", 0x304E, 0x009A, 22, "ef7122c7086c5a4b"},

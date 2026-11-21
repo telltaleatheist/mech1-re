@@ -141,6 +141,8 @@ void what_doesnt_fit_is_refused(const fs::path& data, const fs::path& work) {
     refused(load, "\"row\" has 10 entries, not 11", "a navigation delta missing");
     with_orders([&](Json& o) { at(at(at(at(o, "condition_colours"), "system"), 0), 0) = Json{-1.0}; });
     refused(load, "system is not a whole number from 0 to 65535", "a negative colour");
+    with_orders([&](Json& o) { array(at(at(o, "start"), "lance_panel_text_x")).pop_back(); });
+    refused(load, "\"lance_panel_text_x\" has 2 entries, not 3", "an order panel's x missing");
     const auto with_options = [&](const std::function<void(Json&)>& change) { with_file("options.json", change); };
     const auto options_record = [](Json& o, std::size_t index) -> Json& { return at(at(at(at(o, "menus"), "options"), "records"), index); };
     with_options([&](Json& o) { at(options_record(o, 0), "action") = Json{std::string("continue.nowhere")}; });

@@ -8,7 +8,9 @@ The sort is by name, with OVR for the exceptions; names and offsets only.
 An item read through a door is sorted by where it comes from instead: a
 story piece (src/Import/pieces.txt) is extracted, a rule piece
 (src/Rules/rule_pieces.txt) is a rule, and a save codec field decoded from
-new_campaign.json (src/Rules/new_campaign_fields.cpp) is the new campaign.
+new_campaign.json (src/Rules/new_campaign_fields.cpp) is the new campaign,
+and a layout piece (src/Ui/ui_pieces.txt) is layout. A caption whose head is
+a layout piece stays with the UI words, since its text moves in slice 5.
 The offset shown is then the exe's, from those tables.
 """
 import collections, glob, os, re, sys
@@ -47,6 +49,8 @@ def pieces(path):
     return out
 STORY=pieces(os.path.join(ROOT,'src','Import','pieces.txt'))
 RULE=pieces(os.path.join(ROOT,'src','Rules','rule_pieces.txt'))
+UIP=pieces(os.path.join(ROOT,'src','Ui','ui_pieces.txt'))
+UISIZE={l.split()[0]:int(l.split()[3]) for l in open(os.path.join(ROOT,'src','Ui','ui_pieces.txt')) if len(l.split())>=4 and not l.startswith('#')}
 FIELDS={m.group(1):int(m.group(2),16) for m in re.finditer(r'\{"([\w.]+)", 0x([0-9A-F]{4})',
         open(os.path.join(ROOT,'src','Rules','new_campaign_fields.cpp')).read())}
 # Macros that name part of an item (combat_import.h and friends).
@@ -59,12 +63,49 @@ VIA={'mechFallbackTemplateSteps':'rule combat.fallback_template_steps','mechTemp
      'pilotDefinitionNames':'story combat.pilot.1.name','pilotDefinitionNameDirectory':'story combat.pilot.1.name',
      'pilotDefinitions':'builder MwStoryBuildPilots','unitAmmoProfileEntries':'rule units.ammo_profile_entries',
      'unitAmmoProfiles':'rule units.ammo_profiles','weaponRepairPricesByKind':'rule units.weapon_repair_price_lists',
-     **{f'eventPlanetChoicePool{i}':'builder MwStoryCopyPlanetPools' for i in range(6)}}
+     **{f'eventPlanetChoicePool{i}':'builder MwStoryCopyPlanetPools' for i in range(6)},
+     # Layout pieces read at computed offsets or through a local table.
+     'inspectionDiagramRegions':'ui cockpit.inspection_diagram_regions','targetDiagramRegions':'ui cockpit.target_diagram_regions',
+     'cockpitLayouts':'ui cockpit.layouts','hudColourSchemes':'ui cockpit.hud_colour_schemes',
+     'landscapeCameraColourRows':'ui cockpit.landscape_camera_rows','mechBodyDiagramLayouts':'ui complex.table.body_diagrams',
+     'pilotAssignmentCaptionColours':'ui crew.table.pilot_assignment_captions',
+     'reserveAmmoCompatibilityPanels':'ui dealer.table.compatibility_panels',
+     'eventTwoChoiceMenu':'ui events.menu.two_choices','eventThreeChoiceMenu':'ui events.menu.three_choices'}
 DOOR=re.compile(r'(MwStoryCopyText|MwStoryCopy\w+|ImportRule(?:Words|Bytes)|MwRulesCopy(?:Words|Bytes|Native))\(\s*"([^"]+)"\s*,\s*([^;]*)')
+# The layout door: an item it fills is its first argument after the id.
+UIDOOR=re.compile(r'(?:MwUiCopy(?:Words|Bytes|Native)|MwImportUi(?:Panel|ListPanel|Menu))\(\s*"([^"]+)"\s*,\s*([^,]*)')
+# A caption owner: {id or ids[i], &item...}; ids[] names its first id.
+CAPTION=re.compile(r'\{\s*(?:"([\w.]+)"|(\w+)\[\w+\])\s*,\s*&(\w+)')
+# BTECH's importers copy pieces into a local view at their exe offsets.
+VIEWCOPY=re.compile(r'(?:CopyLayoutPiece\(\s*\w+\s*,\s*sizeof\(\w+\)\s*,\s*"([^"]+)"\s*,\s*0x([0-9A-Fa-f]+)|MwUiCopyNative\(\s*"([^"]+)"\s*,\s*ui\s*\+\s*0x([0-9A-Fa-f]+))')
+VIEWREAD=re.compile(r'\bui\s*(?:,|\+|\[)\s*\(?0x([0-9A-Fa-f]+)')
+MENUINIT=re.compile(r'MwUiMenu\s+(\w+)\s*=\s*\{\s*(\w+)')
+def ui_source(name,lines):
+    """'ui <id>', 'ui-caption <id>' or '' for the layout door that fills `name`."""
+    text='\n'.join(lines)
+    names={name}|{m.group(1) for m in MENUINIT.finditer(text) if m.group(2)==name}
+    for l in lines:
+        for m in UIDOOR.finditer(l):
+            if any(re.search(r'\b'+n+r'\b',m.group(2)) for n in names): return 'ui '+m.group(1)
+        for m in CAPTION.finditer(l):
+            if m.group(3)!=name: continue
+            if m.group(1): return 'ui-caption '+m.group(1)
+            first=re.search(r'\b'+m.group(2)+r'\[[^\]]*\]\s*=\s*\{\s*"([\w.]+)"',text)
+            if first: return 'ui-caption '+first.group(1)
+    views=[(int(m.group(2) or m.group(4),16),m.group(1) or m.group(3)) for m in VIEWCOPY.finditer(text)]
+    for l in lines:
+        if not re.search(r'\b'+name+r'\b',l): continue
+        for m in VIEWREAD.finditer(l):
+            off=int(m.group(1),16)
+            for start,id_ in views:
+                if start<=off<start+UISIZE.get(id_,0): return 'ui '+id_
+    return ''
 BUILDER=re.compile(r'\b(MwStoryBuild\w+|MwStoryCopyAdlibInstruments|MwStoryCopyPlanetPools)\(')
 def door_source(name,lines):
     """'story <id>', 'rule <id>' or '' for the door that fills `name`."""
     if name in VIA: return VIA[name]
+    ui=ui_source(name,lines)
+    if ui: return ui
     names={name}|{a for a,root in ALIAS.items() if root==name}
     for l in lines:
         for m in DOOR.finditer(l):
@@ -95,6 +136,7 @@ def where(src):
     if kind=='story': return STORY.get(id_,'-')
     if kind=='builder': return '-'
     if kind=='rule': return RULE.get(id_,'-')
+    if kind in ('ui','ui-caption'): return UIP.get(id_,'-')
     off=FIELDS.get(id_) if id_ in FIELDS else min(v for k,v in FIELDS.items() if k.startswith(id_+'.'))
     return f'MW_MAIN 1090:{0x448+off:04X}'
 X=re.compile(r'^(intro\w+Text|contractNarrative|missionDescription\w*|afterAction(Kurita|Liao|General)(Failure|Success)|settlement\w+Text|darkWing\w*Text|deploymentUneventfulText|missionTitleText|pilotDefinition\w*|pilotIdentityStorage|planetRecord\w+|alphabeticPlanetRecordOffsets|eventPlanetChoicePool\d|campaignEventPlanetSelectors|(combat|campaign)DefaultCommanderNameBytes|mechTemplateNames|unitDisplayNames|shopUnitNames|houseContractNames|musicSequences|combatAdlibDefaultInstruments|enemyPilot\w*|newsArticle\w*|houseContractRefusalText|contractOfficePlanetGroupStorage|houseMissionPlanetTableOffsets)$')
@@ -116,12 +158,13 @@ OVR={'inspectionBitmapNames':'code','cockpitScreenNames':'code','hitLocationRows
  'graphicsColourPatterns':'code','egaFontBuffer':'code','polygonSpanStorage':'code','scenarioSelectors':'ours:rules',
  'opposingSideFirstUnitSlots':'ours:rules','avoidanceHeadingOffsets':'ours:rules','bodyDamageEffectResourceDeltas':'ours:rules',
  'defaultEffectResourceDeltas':'ours:rules','machineGunEffectResourceDeltas':'ours:rules','orderNavigationPanelDeltas':'ours:layout',
- 'orderNavigationRowDeltas':'ours:layout','orderMapPositionMask':'ours:layout','hiredTransportFrames':'ours:layout',
+ 'orderNavigationRowDeltas':'ours:layout','orderMapPositionMask':'code','hiredTransportFrames':'ours:layout',
  'dropShipTravelFrames':'ours:layout','mechComplexAnimationFrames':'ours:layout','repairJumpJetCountTemplateBytes':'ours:ui',
  'combatTemplateByCampaignUnitKind':'ours:rules','campaignUnitKindByCombatTemplate':'ours:rules','travelDestinationName':'code',
  'hubFirstNavigationProbe':'code','hubSecondNavigationProbe':'code','hubThirdNavigationProbe':'code','saveFindPattern':'code',
  'newsArticleCursor':'code','newsArticleListStart':'code','missionDescriptionMaximumIndicesByCategory':'extracted',
- 'combatAdlibDefaultInstruments':'extracted','musicSequences':'code','generateStartingJenner':'ours:rules'}
+ 'combatAdlibDefaultInstruments':'extracted','musicSequences':'code','generateStartingJenner':'ours:rules',
+ 'positionedText':'code'}
 rows=scan(sys.argv[1])
 # Slice 3's reclassifications (docs/phase2/PLAN.md 5.1, 5.6): past BTECH's file
 # data (zero in the exe, written in play), and the label-index tables, which
@@ -132,12 +175,12 @@ OVR.update({'mountedWeaponCountsByKind':'code','operationalWeaponCountsByKind':'
 # Items still read straight from the exe, with the slice that will move them
 # (docs/phase2/PLAN.md 3, 2g).
 OWNER={'missionTitleText':'story 2g, not yet moved','contractOfficePlanetGroupStorage':'story 2g, not yet moved'}
-GROUP_OF_SOURCE={'story':'extracted','builder':'extracted','rule':'ours:rules','field':'ours:start'}
+GROUP_OF_SOURCE={'story':'extracted','builder':'extracted','rule':'ours:rules','field':'ours:start','ui':'ours:layout','ui-caption':'ours:ui'}
 rows2=[]
 for f,name,off,n,src in rows:
     if src:
         c=GROUP_OF_SOURCE[src.split(' ',1)[0]]
-        rows2.append((c,f,name,where(src),src.replace('field ','new_campaign.json ').replace('builder ','story, ')))
+        rows2.append((c,f,name,where(src),src.replace('field ','new_campaign.json ').replace('builder ','story, ').replace('ui-caption ','ui, head ')))
         continue
     c=OVR.get(name) or cls(name,off,n)
     if c=='?' : c='code'
@@ -171,4 +214,12 @@ print("""
 - `musicSequences` (BTECH 304E:7D8A) was listed as story content; it lies past the file data too, and MUS:INF fills it at run time: code.
 - `actuatorConditionLabelIndices`, `engineConditionLabelIndices`, `twoHitSystemConditionLabelIndices` and `orderDisplayIndices` pick labels and move with them in slice 5: UI words.
 - Eight start values are always written before they're read, and are code, zeroed where the exe reloaded them (all eight are zero in the exe): `settlementPayoutPercent` (1090:123F), `pilotCardGunneryTier`, `pilotCardPilotingTier`, `pilotCardQuotedWageTier` (2440, 2442, 2446), `missionForceBudget` (4B79), `missionPaymentBaseThousands` (4B7B), `travelDestinationTimeWeight` (54DA, written and never read) and `sideObjectiveRules` (BTECH 304E:0ED0). The other four, `ammunitionTransactionPrices`, `generateStartingJenner`, `generatedAmmoKinds` and `generatedAmmoQuantities`, are read first on some path and stay `"start"` entries in market.json.
-- Two of the save codec's 105 fields, `pilotRosterCount` and `rosterPilotIds`, are owned in `src/Original/Campaign`, so this list (of `src/Original/Memory`) doesn't show them; new_campaign.json holds them.""")
+- Two of the save codec's 105 fields, `pilotRosterCount` and `rosterPilotIds`, are owned in `src/Original/Campaign`, so this list (of `src/Original/Memory`) doesn't show them; new_campaign.json holds them.
+
+## Reclassified in slice 4
+
+- Every item the layout door fills (`src/Ui/ui_pieces.txt`) is layout, with the piece it comes from. A caption whose head is a layout piece stays with the UI words, since its text is still read from the exe until slice 5 moves it; its row names the head's piece.
+- Nine start values are always written before they're read, and are code, zeroed where the exe reloaded them (all nine are zero in the exe): `calendarTextX`, `calendarTextY`, `calendarBackground`, `calendarForeground` (1090:117E..1183, set as the calendar is drawn), `pilotCardTextX` (243C) and `crewScreenRightEdge` (2438, set as the roster card is drawn), `contractRequestTextColour` (4B34, set by the term editor before its only reader), `afterActionRosterRowOffset` (1229, set at each after-action) and `reserveAmmoMechColours` (3F70, set on entering the shop). `lanceOrderPanelTextX` (BTECH 304E:008C) is read first after an EXEC, and is orders.json's `"start"`.
+- The font metrics (`fontAdvanceWidths`, `combatFontHeights`, `fontFirstCharacters`, `fontCharacterCounts`, BTECH 304E:2E84..2ED3) are written when a font loads into its slot, and are zero in the exe: code, zeroed where the exe reloaded them.
+- `orderMapPositionMask` (BTECH 304E:4EF0) lies past BTECH's file data and is written before it's read: code, zeroed where the exe reloaded it.
+- `positionedText` (MW_MAIN 1090:55EC) is the dealer component menu's past-end probe: code, like the other probes.""")

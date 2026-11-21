@@ -16,6 +16,7 @@ cockpit.hud_colour_schemes          BTECH.EXE 304E:1F3C 200
 cockpit.subsystem_lamp_colours      BTECH.EXE 304E:23CE 28
 
 # orders.json: the lance order panel.
+orders.start.lance_panel_text_x     BTECH.EXE 304E:008C 6
 orders.selection_first_rows         BTECH.EXE 304E:0092 4
 orders.selection_last_rows          BTECH.EXE 304E:0096 4
 orders.navigation_panel_deltas      BTECH.EXE 304E:009A 22

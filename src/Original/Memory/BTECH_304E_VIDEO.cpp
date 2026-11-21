@@ -77,8 +77,10 @@ bool BtechImportVideoInitialData(const uint8_t *data,size_t bytes)
     {
         if (MwReadNativeWord(data,0x2ED4+slot*2)) return false;
         fonts[slot]=BtechFont{};
-        fontAdvanceWidths[slot]=data[0x2E84+slot];combatFontHeights[slot]=data[0x2E98+slot];
-        fontFirstCharacters[slot]=data[0x2EAC+slot];fontCharacterCounts[slot]=data[0x2EC0+slot];
+        /* 2E84, 2E98, 2EAC, 2EC0: a slot's metrics, written when its font
+         * loads (BtechLoadFontSlot) and zero where the exe reloaded them. */
+        fontAdvanceWidths[slot]=0;combatFontHeights[slot]=0;
+        fontFirstCharacters[slot]=0;fontCharacterCounts[slot]=0;
     }
     if (MwReadNativeWord(data,0x3F38)!=0x0006 || MwReadNativeWord(data,0x3F3A)!=0x1BF5) return false;
     graphicsDrawGlyph=BtechGraphicsNoOperation;

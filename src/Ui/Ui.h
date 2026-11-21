@@ -17,7 +17,9 @@
 //     {"selection_rows": {"first": [2], "last": [2]},
 //      "navigation_deltas": {"panel": [11], "row": [11]},
 //      "condition_colours": {"engine": [2 schemes of 4],
-//        "system": [2 schemes of 4]}}
+//        "system": [2 schemes of 4]},
+//      "start": {"lance_panel_text_x": [3]}}
+//     "start" holds what play writes but a fresh EXEC reads first.
 //   MW_MAIN's screens (options, events, hub, crew, contract_office,
 //   complex, dealer, travel; each leaves out the members it has none of)
 //     {"captions": {name: {"at": [x, y], "colour": c} | {"colour": c}},

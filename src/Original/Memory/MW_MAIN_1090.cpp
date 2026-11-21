@@ -605,7 +605,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     memcpy(afterActionPaymentHeading,data+0x1202,sizeof(afterActionPaymentHeading));
     memcpy(afterActionPercentSuffix,data+0x120B,sizeof(afterActionPercentSuffix));
     memcpy(afterActionPilotStatusText,data+0x120D,sizeof(afterActionPilotStatusText));
-    afterActionRosterRowOffset=MwReadNativeWord(data,0x1229);
+    afterActionRosterRowOffset=0; /* 1229: Written before it's read; zero where the exe reloaded it. */
     if (!ImportRuleWords("units.tonnages",(uint16_t *)campaignMechTonnages,sizeof(campaignMechTonnages)/sizeof(uint16_t))) return false;
     settlementPayoutPercent=0; /* Written before it's read; zero where the exe reloaded it. */
     if (!ImportRuleWords("houses.deduction_roll_thresholds",(uint16_t *)houseDeductionRollThresholds,sizeof(houseDeductionRollThresholds)/sizeof(uint16_t))) return false;
@@ -708,10 +708,8 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     if (!MwStoryBuildPlanets(planetRecordStorage,sizeof(planetRecordStorage),PLANET_RECORDS_START,
         planetRecordOffsets,CAMPAIGN_PLANET_COUNT,alphabeticPlanetRecordOffsets,TRAVEL_PLANET_DIRECTORY_COUNT)) return false;
     if (!MwUiCopyWords("hub.table.calendar_month_name_widths",calendarMonthNameWidths,CAMPAIGN_MONTH_COUNT,0)) return false; /*11BA*/
-    calendarTextX=MwReadNativeWord(data,0x117E);
-    calendarTextY=MwReadNativeWord(data,0x1180);
-    memcpy(&calendarBackground,data+0x1182,sizeof(calendarBackground));
-    memcpy(&calendarForeground,data+0x1183,sizeof(calendarForeground));
+    /* 117E..1183: the calendar's place and colours. Written before it's read; zero where the exe reloaded it. */
+    calendarTextX=0;calendarTextY=0;calendarBackground=0;calendarForeground=0;
     memcpy(&numericLeadingDigitSeen,data+0xA136,sizeof(numericLeadingDigitSeen));
     memcpy(&numericGroupingEnabled,data+0xA137,sizeof(numericGroupingEnabled));
     memcpy(numericDecimalDigits,data+0xA138,sizeof(numericDecimalDigits));
@@ -1183,9 +1181,9 @@ static bool ImportPilotUiData(const uint8_t *data)
         || !MwImportUiMenu("crew.menu.crew",&crewMenu,owners,count)
         || !MwImportUiMenu("crew.menu.bar",&barMenu,owners,count)
         || !MwImportUiMenu("crew.menu.recruit",&recruitInterviewMenu,owners,count)) return false;
-    crewScreenRightEdge=MwReadNativeWord(data,0x2438);
+    crewScreenRightEdge=0; /* 2438: Written before it's read; zero where the exe reloaded it. */
     pilotCardRosterSlot=MwReadNativeWord(data,0x243A);
-    pilotCardTextX=MwReadNativeWord(data,0x243C);
+    pilotCardTextX=0; /* 243C: Written before it's read; zero where the exe reloaded it. */
     displayedPilotId=MwReadNativeWord(data,0x243E);
     pilotCardGunneryTier=0; /* Written before it's read; zero where the exe reloaded it. */
     pilotCardPilotingTier=0; /* Written before it's read; zero where the exe reloaded it. */
@@ -1279,7 +1277,7 @@ static bool ImportContractData(const uint8_t *data)
     negotiatingMissionOfferSlot=MwReadNativeWord(data,0x488B);
     negotiatingMissionOfferByteOffset=MwReadNativeWord(data,0x488E);
     contractRequestEditorInitialized=data[0x488D];
-    contractRequestTextColour=data[0x4B34];
+    contractRequestTextColour=0; /* 4B34: Written before it's read; zero where the exe reloaded it. */
     contractRequestTermByteOffset=MwReadNativeWord(data,0x4B32);
     contractNegotiationAttempts=MwReadNativeWord(data,0x4B7E);
     negotiationRequestsSatisfied=data[0x4B7D];
@@ -1360,7 +1358,8 @@ static bool ImportReserveAmmoUiData(const uint8_t *data)
 {
     reserveAmmoShopSelectedRow=MwReadNativeWord(data,0x4137);
     reserveAmmoPreviewSelection=MwReadNativeWord(data,0x3F6E);
-    reserveAmmoSelling=data[0x4139];memcpy(reserveAmmoMechColours,data+0x3F70,sizeof(reserveAmmoMechColours));
+    reserveAmmoSelling=data[0x4139];
+    memset(reserveAmmoMechColours,0,sizeof(reserveAmmoMechColours)); /* 3F70: Written before it's read; zero where the exe reloaded it. */
     if (!ImportInitialString(data,0x413A,reserveAmmoBuyLabel,sizeof(reserveAmmoBuyLabel))
         || !ImportInitialString(data,0x413F,reserveAmmoSellLabel,sizeof(reserveAmmoSellLabel))) return false;
     /* data/ui/dealer.json: the shop panel (4144) and menu (4268), and the six
