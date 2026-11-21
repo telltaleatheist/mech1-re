@@ -206,7 +206,8 @@ DS:0008 finds the data segment, then each piece must still match its hash.
    MW_MAIN's instruments (28BE:064E) are zero in the exe, so neither is
    imported.
 3. **Rules and the new campaign** into `data/rules/`. Traces equal (same
-   numbers). The importer's piece hashes check them against the exe.
+   numbers). The rule table's hashes check them against the exe. The plan
+   is section 5.
 4. **Layout** into `data/ui/`. Traces equal.
 5. **UI words** into `data/text/interface.json`, screen by screen, in our
    wording. Each slice re-records its snaps with the changed words listed.
@@ -227,3 +228,336 @@ time.
 - **The intro** is extracted text over the install's own pictures.
 - **Save files** keep the original's format, so old saves load and the
   DOSBox save comparison still works.
+
+## 5. Slice 3 plan: rules and the new campaign
+
+For review before any code. Sizes, offsets and readers come from the
+headers and a grep of `src/` (readers outside `Original/Memory`, file
+prefixes `BTECH_`/`MW_MAIN_` dropped). BTECH offsets are in its unpacked,
+rebased image (data segment 304E); MW_MAIN's in 1090.
+
+### 5.1 What moves
+
+Of the inventory's 90 rule items, 69 move: 68 single tables, plus the one
+row that covers both `mechTemplates` and `weaponDefinitions`. Two pointer
+tables the inventory doesn't list come with them. The other 21 are not
+rules:
+- **Code, zero at start (4).** BTECH's file data ends at 304E:4EE0 in both
+  revisions; `mountedWeaponCountsByKind`, `operationalWeaponCountsByKind`
+  (both 4F32), `selectionObjectListIndices` (6F5A) and `scenarioSelectors`
+  (7D6A) lie past it, so the exe holds zeros, and each is written in play.
+- **Start values (12).** Runtime state that play writes but that starts from
+  an exe value: `sideObjectiveRules` (BTECH), `ammunitionTransactionPrices`,
+  `generateStartingJenner`, `generatedAmmoKinds`, `generatedAmmoQuantities`,
+  `missionForceBudget`, `missionPaymentBaseThousands`, `pilotCardGunneryTier`,
+  `pilotCardPilotingTier`, `pilotCardQuotedWageTier`,
+  `settlementPayoutPercent`, `travelDestinationTimeWeight`. None is in the
+  save block. Until a trace proves one is always written before it's read,
+  each keeps its exe value as a `"start"` entry in its owner's file, applied
+  on every EXEC as the exe's reload does today.
+- **UI words (4), slice 5.** `actuatorConditionLabelIndices`,
+  `engineConditionLabelIndices`, `twoHitSystemConditionLabelIndices` and
+  `orderDisplayIndices` pick labels; they move with the labels.
+- **Dropped (1).** `unusedRepairTimeByDamageTier`: imported, never read.
+
+All 38 BTECH tables listed here that lie in file data (the templates and
+weapons included) are byte-identical in the two BTECH revisions, so one set of files serves
+both. MW_MAIN's 1090 segment is all file data.
+
+The tables, by file (`data/rules/`):
+
+**units.json**
+
+| Table | Exe SEG:OFF | Bytes | Shape | Read by |
+|---|---|---|---|---|
+| `bodyRepairBasePricesByKind` | MW_MAIN 1090:3CAB | 10 | `uint8_t[CAMPAIGN_MECH_KIND_COUNT]` | 081B_REPAIR |
+| `campaignMechTonnages` | MW_MAIN 1090:122B | 20 | `uint16_t[CAMPAIGN_MECH_KIND_COUNT]` | 081B_STARTUP |
+| `missionForceWeightByUnitKind` | MW_MAIN 1090:4B55 | 10 | `uint8_t[CAMPAIGN_MECH_KIND_COUNT]` | 081B_ECONOMY |
+| `unitAmmoGroupCounts` | MW_MAIN 1090:2EEE | 10 | `uint8_t[CAMPAIGN_MECH_KIND_COUNT]` | 081B_ECONOMY,081B_MARKET,081B_SERVICE |
+| `unitAmmoProfileEntries` | MW_MAIN 1090:2F3C | 60 | `CampaignAmmoProfileEntry[AMMO_PROFILE_ENTRY_COUNT]` | 081B_ECONOMY,081B_MARKET (through unitAmmoProfiles) |
+| `unitBasePrices` | MW_MAIN 1090:305F | 22 | `uint16_t[CAMPAIGN_UNIT_KIND_COUNT]` | 081B_MARKET,081B_REPAIR |
+| `unitConditionScoreDivisors` | MW_MAIN 1090:2B18 | 11 | `uint8_t[0x000B]` | 081B_STARTUP |
+| `unitConditionSystemFieldCounts` | MW_MAIN 1090:2AE3 | 10 | `uint8_t[0x000A]` | 081B_STARTUP |
+| `unitDisplayJumpCapacitiesMetres` | MW_MAIN 1090:2B79 | 10 | `uint8_t[0x000A]` | 081B_MARKET,081B_SERVICE |
+| `unitDisplaySpeedsKph` | MW_MAIN 1090:2B6F | 10 | `uint8_t[0x000A]` | 081B_MARKET,081B_SERVICE |
+| `unitDisplayTonnages` | MW_MAIN 1090:2B65 | 10 | `uint8_t[0x000A]` | 081B_MARKET,081B_SERVICE |
+| `unitHeatSinkCounts` | MW_MAIN 1090:368C | 10 | `uint8_t[0x000A]` | 081B_MARKET,081B_SERVICE |
+| `unitJumpJetGroupCounts` | MW_MAIN 1090:3696 | 10 | `uint8_t[CAMPAIGN_MECH_KIND_COUNT]` | 081B_ECONOMY,081B_MARKET,081B_SERVICE |
+| `unitWeaponCounts` | MW_MAIN 1090:2AED | 10 | `uint8_t[CAMPAIGN_MECH_KIND_COUNT]` | 081B_ECONOMY and 4 more |
+| `weaponRepairPrices` | MW_MAIN 1090:3C2F | 124 | `uint16_t[REPAIR_WEAPON_PRICE_WORD_COUNT]` | 081B_REPAIR (through weaponRepairPricesByKind) |
+| `unitAmmoProfiles` (pointers into the entries) | MW_MAIN 1090:2F28 | 20 | DS offsets, 10 | 081B_ECONOMY,081B_MARKET |
+| `weaponRepairPricesByKind` (pointers into the prices) | MW_MAIN 1090:3C1B | 20 | DS offsets, 10 | 081B_REPAIR |
+
+**market.json**
+
+| Table | Exe SEG:OFF | Bytes | Shape | Read by |
+|---|---|---|---|---|
+| `ammunitionBasePrices` | MW_MAIN 1090:2EF8 | 24 | `uint16_t[AMMUNITION_PRICE_COUNT]` | 081B_PLANET |
+| `generatedKindRangeMaxima` | MW_MAIN 1090:3A37 | 3 | `uint8_t[STOCK_KIND_RANGE_COUNT]` | 081B_ECONOMY |
+| `generatedKindRangeStarts` | MW_MAIN 1090:3A3A | 3 | `uint8_t[STOCK_KIND_RANGE_COUNT]` | 081B_ECONOMY |
+| `reserveAmmoFreightRates` | MW_MAIN 1090:5C94 | 12 | `uint16_t[CAMPAIGN_AMMO_FAMILY_COUNT]` | 081B_TRAVEL |
+| `unitPriceTierMultipliers` | MW_MAIN 1090:3057 | 4 | `uint8_t[UNIT_PRICE_TIER_COUNT]` | 081B_MARKET,081B_REPAIR |
+
+**repair.json**
+
+| Table | Exe SEG:OFF | Bytes | Shape | Read by |
+|---|---|---|---|---|
+| `repairAttemptFailuresByKind` | MW_MAIN 1090:3A77 | 220 | `CampaignRepairAttemptRow[REPAIR_ATTEMPT_KIND_COUNT]` | 081B_PLANET,081B_SERVICE |
+| `repairSuccessRollLimitsByMarketTier` | MW_MAIN 1090:3A6B | 4 | `uint8_t[0x0004]` | 081B_SERVICE |
+| `systemRepairBasePrices` | MW_MAIN 1090:3B53 | 200 | `CampaignSystemRepairPriceRow[CAMPAIGN_SYSTEM_COUNT]` | 081B_REPAIR |
+
+**houses.json**
+
+| Table | Exe SEG:OFF | Bytes | Shape | Read by |
+|---|---|---|---|---|
+| `defaultHouseMissionTypeLimits` | MW_MAIN 1090:5CBA | 40 | `uint8_t[0x28]` | 081B_EVENT_UI |
+| `houseAdvanceBasePercent` | MW_MAIN 1090:4B69 | 10 | `uint16_t[CAMPAIGN_HOUSE_COUNT]` | 081B_ECONOMY |
+| `houseDeductionRollThresholds` | MW_MAIN 1090:1241 | 10 | `uint16_t[CAMPAIGN_HOUSE_COUNT]` | 081B_STARTUP |
+| `houseExtraEnemyRollThresholds` | MW_MAIN 1090:4BF0 | 10 | `uint16_t[CAMPAIGN_HOUSE_COUNT]` | 081B_CONTRACTS |
+| `houseMissionPlanetPolicies` | MW_MAIN 1090:8E9A | 320 | `MwHouseMissionPlanetPolicy[CAMPAIGN_HOUSE_COUNT]` | 081B_ECONOMY |
+| `houseNegotiationAttemptBase` | MW_MAIN 1090:11A3 | 5 | `uint8_t[CAMPAIGN_HOUSE_COUNT]` | 081B_PLANET |
+| `housePaymentAdjustmentPercent` | MW_MAIN 1090:4B4B | 10 | `int16_t[CAMPAIGN_HOUSE_COUNT]` | 081B_ECONOMY |
+| `housePaymentRollBias` | MW_MAIN 1090:4B41 | 10 | `uint16_t[CAMPAIGN_HOUSE_COUNT]` | 081B_ECONOMY |
+| `housePlanetRangeCounts` | MW_MAIN 1090:6566 | 10 | `uint16_t[CAMPAIGN_HOUSE_COUNT]` | 081B_ECONOMY,081B_TRAVEL |
+| `housePlanetRangeStarts` | MW_MAIN 1090:655C | 10 | `uint16_t[CAMPAIGN_HOUSE_COUNT]` | 081B_ECONOMY,081B_TRAVEL |
+| `houseReducedPayoutPercentages` | MW_MAIN 1090:124B | 10 | `uint16_t[CAMPAIGN_HOUSE_COUNT]` | 081B_STARTUP |
+| `houseSalvageBasePercent` | MW_MAIN 1090:4B5F | 10 | `uint16_t[CAMPAIGN_HOUSE_COUNT]` | 081B_ECONOMY |
+
+**contracts.json**
+
+| Table | Exe SEG:OFF | Bytes | Shape | Read by |
+|---|---|---|---|---|
+| `missionDeploymentUnitsByScenario` | MW_MAIN 1090:8E46 | 74 | `uint16_t[DEPLOYMENT_SCENARIO_TIME_COUNT]` | 081B_STARTUP |
+| `pilotWageAmounts` | MW_MAIN 1090:2476 | 8 | `uint16_t[CAMPAIGN_ROSTER_SLOTS]` | 081B_ECONOMY,081B_PILOTS |
+
+**combat.json**
+
+| Table | Exe SEG:OFF | Bytes | Shape | Read by |
+|---|---|---|---|---|
+| `actuatorIndicesByBodyLocation` | BTECH 304E:0E5E | 8 | `uint16_t[4]` | 0810_DAMAGE,17FB_DAMAGE |
+| `actuatorIntegrityTierByCondition` | BTECH 304E:09DC | 10 | `uint16_t[5]` | 0810_RESULTS |
+| `actuatorLossByDamageTier` | BTECH 304E:08D0 | 8 | `uint16_t[4]` | 0810_IMPORT |
+| `armorToBodyLocations` | BTECH 304E:0E3A | 18 | `uint16_t[9]` | 0810_DAMAGE and 4 more |
+| `campaignBodyTierByArmorLocation` | BTECH 304E:08AE | 18 | `uint16_t[9]` | 0810_IMPORT,0810_RESULTS |
+| `campaignUnitKindByCombatTemplate` | BTECH 304E:09CC | 16 | `uint16_t[COMBAT_MECH_TEMPLATES]` | 0810_RESULTS |
+| `combatContinuationProfiles` | BTECH 304E:08F6 | 54 | `BtechCombatStageProfile[9]` | 0810_IMPORT |
+| `combatTemplateByCampaignUnitKind` | BTECH 304E:08E2 | 20 | `uint16_t[10]` | 0810_IMPORT |
+| `criticalTransferBodyLocations` | BTECH 304E:0E28 | 16 | `uint16_t[COMBAT_BODY_LOCATIONS]` | 0810_DAMAGE |
+| `damageTransferArmorLocations` | BTECH 304E:0E4C | 16 | `uint16_t[COMBAT_BODY_LOCATIONS]` | 0810_DAMAGE |
+| `heatAimJitterThresholds` | BTECH 304E:271E | 10 | `uint16_t[COMBAT_HEAT_THRESHOLDS]` | 0810_MECH_TICK |
+| `mechFallbackStartTemplates` | BTECH 304E:0982 | 16 | `uint16_t[8]` | 0810_IMPORT |
+| `mechTemplateBudgetCostsBytes` | BTECH 304E:09A2 | 32 | `uint32_t[8]` | 0810_IMPORT |
+| `opposingObjectiveRules` | BTECH 304E:08D8 | 10 | `uint16_t[5]` | 0810_IMPORT |
+| `systemDamageTierByHits` | BTECH 304E:09E6 | 6 | `uint16_t[3]` | 0810_RESULTS |
+| `systemHitsByDamageTier` | BTECH 304E:08C8 | 8 | `uint16_t[4]` | 0810_IMPORT,0810_RESULTS |
+| `weaponDisabledByDamageTier` | BTECH 304E:08C0 | 8 | `uint16_t[4]` | 0810_IMPORT,0810_RESULTS |
+| `weaponIntegrityTierByOperational` | BTECH 304E:09EC | 4 | `uint16_t[2]` | 0810_RESULTS |
+| `avoidanceHeadingOffsets` | BTECH 304E:2438 | 6 | `uint16_t[AVOIDANCE_TURNS]` | 0810_NAVIGATION |
+| `bodyLocationReferenceIndices` | BTECH 304E:0EBC | 16 | `uint16_t[COMBAT_BODY_LOCATIONS]` | 0810_AI_WEAPONS,0810_PROJECTILES |
+| `hitLocationRows` | BTECH 304E:26BC | 88 | `uint16_t[ATTACK_ARCS][HIT_LOCATION_ROLLS]` | 0810_AI_WEAPONS |
+| `missileClusterRows` | BTECH 304E:235E | 96 | `uint16_t[COMBAT_MISSILE_CLUSTER_ROWS][COMBAT_MISSILE_CLUSTER_ROLLS]` | 0810_PROJECTILES |
+| `opposingSideFirstUnitSlots` | BTECH 304E:2434 | 4 | `uint16_t[2]` | 0810_AI |
+| `rangeHitModifiers` | BTECH 304E:2714 | 10 | `uint16_t[WEAPON_RANGE_BANDS]` | 0810_AI_WEAPONS |
+
+**weapons.json**
+
+| Table | Exe SEG:OFF | Bytes | Shape | Read by |
+|---|---|---|---|---|
+| `missileClusterRowByWeapon` | BTECH 304E:234A | 20 | `int16_t[COMBAT_WEAPON_KINDS]` | 0810_PROJECTILES |
+| `projectileProfileIndicesByWeapon` | BTECH 304E:232E | 20 | `uint16_t[COMBAT_WEAPON_KINDS]` | 0810_PROJECTILES |
+| `weaponDefinitions` | BTECH 304E:0EEC | 220 | 10 rows of 0x16 | 0810_WEAPONS and 10 more |
+
+**mechs.json**
+
+| Table | Exe SEG:OFF | Bytes | Shape | Read by |
+|---|---|---|---|---|
+| `mechTemplates` | BTECH 304E:1178 | 1792 | 8 rows of 0xE0 | 0810_IMPORT and 20 more |
+
+**combat_assets.json**
+
+| Table | Exe SEG:OFF | Bytes | Shape | Read by |
+|---|---|---|---|---|
+| `animationPrefixSequenceCounts` | BTECH 304E:24B4 | 18 | `uint16_t[UNIT_ANIMATION_SEQUENCES]` | 0810_ANIMATION |
+| `playerPoseFrameCounts` | BTECH 304E:265E | 16 | `uint16_t[PLAYER_POSE_SEQUENCES]` | 0810_POSE |
+| `bodyDamageEffectResourceDeltas` | BTECH 304E:2342 | 8 | `uint16_t[COMBAT_BODY_EFFECT_FRAMES]` | 0810_EFFECTS |
+| `defaultEffectResourceDeltas` | BTECH 304E:0E96 | 14 | `uint16_t[7]` | 0810_EFFECTS (through effectResourceSequences) |
+| `machineGunEffectResourceDeltas` | BTECH 304E:0EA4 | 6 | `uint16_t[3]` | 0810_EFFECTS (through effectResourceSequences) |
+
+**start values (in their owner file)**
+
+| Table | Exe SEG:OFF | Bytes | Shape | Read by |
+|---|---|---|---|---|
+| `sideObjectiveRules` | BTECH 304E:0ED0 | 4 | `uint16_t[2]` | 0810_AI and 18 more |
+| `ammunitionTransactionPrices` | MW_MAIN 1090:2F10 | 24 | `uint16_t[AMMUNITION_PRICE_COUNT]` | 081B_MARKET,081B_PLANET |
+| `generateStartingJenner` | MW_MAIN 1090:3A6A | 1 | `uint8_t` | 081B_ECONOMY,081B_STARTUP |
+| `generatedAmmoKinds` | MW_MAIN 1090:3A5E | 6 | `uint16_t[CAMPAIGN_AMMO_GROUPS]` | 081B_ECONOMY,081B_STARTUP |
+| `generatedAmmoQuantities` | MW_MAIN 1090:3A64 | 6 | `uint16_t[CAMPAIGN_AMMO_GROUPS]` | 081B_ECONOMY,081B_STARTUP |
+| `missionForceBudget` | MW_MAIN 1090:4B79 | 2 | `uint16_t` | 081B_ECONOMY |
+| `missionPaymentBaseThousands` | MW_MAIN 1090:4B7B | 2 | `uint16_t` | 081B_ECONOMY |
+| `pilotCardGunneryTier` | MW_MAIN 1090:2440 | 2 | `uint16_t` | 081B_PILOTS |
+| `pilotCardPilotingTier` | MW_MAIN 1090:2442 | 2 | `uint16_t` | 081B_PILOTS |
+| `pilotCardQuotedWageTier` | MW_MAIN 1090:2446 | 2 | `uint16_t` | 081B_PILOTS |
+| `settlementPayoutPercent` | MW_MAIN 1090:123F | 2 | `uint16_t` | 081B_STARTUP |
+| `travelDestinationTimeWeight` | MW_MAIN 1090:54DA | 2 | `uint16_t` | 081B_TRAVEL |
+
+**not rules: code (BSS, zero at start)**
+
+| Table | Exe SEG:OFF | Bytes | Shape | Read by |
+|---|---|---|---|---|
+| `mountedWeaponCountsByKind` | BTECH 304E:4F32 | 20 | `uint16_t[COMBAT_WEAPON_KINDS]` | 17FB_PANELS |
+| `operationalWeaponCountsByKind` | BTECH 304E:4F32 | 20 | `uint16_t[COMBAT_WEAPON_KINDS]` | 17FB_PANELS |
+| `selectionObjectListIndices` | BTECH 304E:6F5A | 18 | `uint16_t[SELECTION_LIST_PREFIX]` | 0810_RENDER |
+| `scenarioSelectors` | BTECH 304E:7D6A | 16 | `BtechScenarioSelectors` | 0810_MAIN and 4 more |
+
+**not rules: UI words (slice 5, with their labels)**
+
+| Table | Exe SEG:OFF | Bytes | Shape | Read by |
+|---|---|---|---|---|
+| `actuatorConditionLabelIndices` | BTECH 304E:04E6 | 10 | `uint16_t[5]` | 0810_INSPECTION |
+| `engineConditionLabelIndices` | BTECH 304E:04DE | 8 | `uint16_t[4]` | 0810_INSPECTION |
+| `twoHitSystemConditionLabelIndices` | BTECH 304E:04D8 | 6 | `uint16_t[3]` | 0810_INSPECTION |
+| `orderDisplayIndices` | BTECH 304E:02C4 | 22 | `uint16_t[ORDER_DISPLAY_CODES]` | 17FB_PANELS |
+
+**dropped (never read)**
+
+| Table | Exe SEG:OFF | Bytes | Shape | Read by |
+|---|---|---|---|---|
+| `unusedRepairTimeByDamageTier` | MW_MAIN 1090:3A6F | 8 | `uint16_t[0x0004]` | nothing |
+
+**new_campaign.json** is MW_MAIN's save block, 1090:0448..0B5F (0x718 bytes,
+`CAMPAIGN_SAVE_BYTES`): the inventory's 99 new-campaign items plus the
+roster's pilot ids and unavailable pilots, which sit inside the block. It's
+read today by `MwImportCampaignInitialData` and written by the save codec
+(`MW_MAIN_SAVE_FORMAT.cpp`). The commander's name (0483, 10 bytes) is
+already story text (2c) and stays a text id here.
+
+### 5.2 The files
+
+Plain JSON, named fields, every length checked at load, read strictly (the
+story's `StrictReader` moves to `src/Support` and is shared). Proposed
+shape:
+
+    units.json      {"units": {"locust": {"tonnage", "base_price", "display": {"tonnage",
+                     "speed_kph", "jump_metres"}, "heat_sinks", "weapons", "ammo_groups",
+                     "jump_jet_groups", "condition_fields", "force_weight",
+                     "body_repair_price", "ammo_profile": [{"family", "quantity_maximum"}],
+                     "weapon_repair_prices": [...]}, ...}, "condition_score_divisors": [...]}
+    market.json     {"price_tier_multipliers": [4], "ammunition_prices": {family: price},
+                     "stock_kind_ranges": [{"start", "maximum"}], "freight_rates": {family: rate},
+                     "start": {...}}
+    repair.json     {"system_prices": {system: {kind: price}}, "attempt_failures": {...},
+                     "success_roll_limits": [4]}
+    houses.json     {"houses": {"kurita": {"advance_base_percent", "salvage_base_percent",
+                     "payment_roll_bias", "payment_adjustment_percent", ..., "planets":
+                     {"first", "count"}, "mission_planet_policy": [[...]],
+                     "mission_type_limits": [8]}, ...}}
+    contracts.json  {"deployment_units_by_scenario": [37], "pilot_wages": [8], "start": {...}}
+    combat.json     damage tiers, transfers, hit location and cluster rows, range
+                    modifiers, heat thresholds, objectives, continuation profiles, the
+                    template/unit-kind maps, budget costs, AI offsets, "start"
+    weapons.json    {"weapons": [{"damage", "ammo_family", "reload_ticks", "heat",
+                     "range_class", "ranges": {"minimum", "short", "medium", "long"},
+                     "critical_slots", "unknown_14", "cluster_row", "projectile_profile"}]}
+    mechs.json      {"mechs": [{"name": "combat.mech_template.1.name", "tonnage", ...,
+                     "armour": {...}, "internal": {...}, "mounts": [...], "ammo": [...],
+                     "jump_jets": [...]}]}
+    combat_assets.json  frame counts and effect resource deltas
+    new_campaign.json   the save block's fields under the codec's names
+
+- **Enumerated axes are keyed by name, not position.** House, unit kind, ammo
+  family, weapon kind and body/armour location use the enum names the code
+  already has (`CAMPAIGN_UNIT_LOCUST` → `"locust"`). The loader checks that
+  every key is present exactly once, so a typo can't silently shift a row.
+  Plain sequences (rolls, tiers, frames) stay arrays. This refines §2's
+  "arrays keep the original's order": the order still exists, it just
+  isn't load-bearing in the file.
+- **Fields the port doesn't understand yet** keep their bytes under
+  `unknown_<offset>`, and can be renamed once understood.
+- **Pointer tables become references.** `unitAmmoProfiles` and
+  `weaponRepairPricesByKind` become each unit's own list. The game rebuilds
+  the native DS offsets where code still uses them, and the hash check
+  covers the rebuilt offsets.
+
+### 5.3 What may change, and what must stay exact
+
+**In slice 3, every number keeps the exe's value**, so the traces stay equal
+and the hash check (5.4) proves it. All JSON names are ours, and renaming
+them touches neither saves nor traces. After slice 3:
+- **Tunable (rules):** prices, multipliers, percents, thresholds, weights,
+  wages, repair tables, House payment and salvage numbers, force budgets,
+  damage tiers, hit location, cluster and range rows, heat thresholds,
+  weapon stats, mech template stats, and the new campaign's values (funds,
+  date, age, standings, roster, market).
+- **Fixed by contract:**
+  - **The enumerations' members and order:** unit kinds (11), Houses (5),
+    ammo families (6), weapon kinds (10), body (8) and armour (9)
+    locations, mech templates (8). Saves, the BTECH exchange block and the
+    install's art index by them.
+  - **Maps between enumerations:** the template/unit-kind maps, armour to
+    body, the transfer tables, body reference and actuator indices, and the
+    templates' mount kinds and locations. Change one only together with
+    what it maps.
+  - **References into the story file:** each House's planet range and
+    mission-planet policy (planets.json order), and the new campaign's
+    pilot ids (pilots.json).
+  - **combat_assets.json:** it describes the install's files, so the install
+    decides those values.
+  - **new_campaign.json's shape:** it is the save block through the save
+    codec, so old saves and the DOSBox save comparison keep working.
+
+### 5.4 How the hashes check them
+
+The rules don't go in `pieces.txt`: that table's hash re-imports the story,
+and rules aren't story. They get a table of their own:
+`src/Rules/rule_pieces.txt` uses the same row format (`id EXE SEG:OFF len`)
+and is generated into `rule_table.cpp` by `make_import_table.py --rules`,
+with the same parser and the same `btech_image` path. Its hashes come from
+the 1990-01-22 exes. It has one piece per table, the pointer tables
+included, and new_campaign is split around the commander's name.
+
+- **`rules_test`** (ctest, no game files): loads `data/rules/`, encodes each
+  table back to native bytes with the same encoders the game fills its
+  owners with, and compares each table's SHA-256 prefix with the rule
+  table's. A mismatch fails, naming the table. A table tuned on purpose
+  later is marked `tuned` in `rule_pieces.txt`, keeping its row but dropping
+  its hash, so the test lists it as ours instead of failing.
+- **`rules_exe_test`** (ctest, skipped without `MW1O_GAME`, like
+  `btech_revisions`): compares every piece byte for byte with the player's
+  exes, both BTECH revisions.
+- The game itself never opens an exe for rules and checks no hash at play
+  time.
+
+### 5.5 The machinery
+
+- `data/` sits in the repo and is installed beside the program. The game
+  finds it beside the executable (`SDL_GetBasePath()`), or wherever
+  `--data DIR` points. CMake copies it beside the built binary, and the
+  vcxproj does so in a post-build step. `check.py --port` uses the build's
+  copy.
+- `src/Rules/`: typed structs, the strict loaders, encoders to native bytes,
+  and C doors in `mechwarrior/rules.h` (`MwRules*`). The `Original/Memory`
+  importers call the doors instead of reading `data+0x....`. The rules load
+  once at start and are held in memory, so the importers that run again on
+  every EXEC fill from memory, as the story doors do.
+
+### 5.6 The pieces
+
+Each piece goes on its own branch and needs a build, the unit checks,
+`rules_test`, `rules_exe_test` on the real exes, and traces 8 of 8:
+- **3a, the machinery:** `data/` lookup and install, `src/Rules/`, the rule
+  table and both tests, plus `units.json` (with the two pointer tables) and
+  `market.json`.
+- **3b:** `repair.json`, `houses.json`, `contracts.json`, and MW_MAIN's start
+  values.
+- **3c:** `combat.json`, `weapons.json`, `combat_assets.json`, and BTECH's
+  start value.
+- **3d:** `mechs.json` (the 8 templates, names by story id).
+- **3e:** `new_campaign.json`. New games and the per-EXEC reload fill the
+  block from it, then a returning EXEC decodes the exchange over it, as
+  today.
+- **3f:** the inventory regenerated with the reclassifications above, and
+  this plan turned into the slice's record.
+
+Decisions for review: keyed objects for enumerated axes (5.2); dropping
+`unusedRepairTimeByDamageTier`; moving the four label-index tables to
+slice 5; start values kept in data until a trace proves them unneeded.
