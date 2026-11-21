@@ -197,6 +197,7 @@ add_library(mechwarrior_original STATIC
     src/Rules/RulesHost.cpp
     src/Support/NativePieces.cpp
     src/Ui/ui_table.cpp
+    src/Ui/ui_actions.cpp
     src/Ui/Ui.cpp
     src/Ui/UiHost.cpp)
 target_include_directories(mechwarrior_original PUBLIC src/include)
@@ -233,7 +234,8 @@ if(MECHWARRIOR_BUILD_TESTS)
     add_test(NAME rules_exe COMMAND rules_exe_test)
     set_tests_properties(rules_exe PROPERTIES SKIP_RETURN_CODE 77)
     # data/ui against the layout table's hashes (no game files), and its strict reading.
-    add_executable(ui_test tests/ui_test.cpp src/Ui/Ui.cpp src/Ui/ui_table.cpp src/Support/Json.cpp src/Support/Sha256.cpp)
+    add_executable(ui_test tests/ui_test.cpp src/Ui/Ui.cpp src/Ui/ui_table.cpp src/Ui/ui_actions.cpp src/Support/Json.cpp src/Support/Sha256.cpp)
+    target_include_directories(ui_test PRIVATE src/include)
     add_test(NAME ui COMMAND ui_test "${CMAKE_CURRENT_SOURCE_DIR}/data")
     # The layout table against the player's exes; skipped without them.
     add_executable(ui_exe_test tests/ui_exe_test.cpp src/Ui/ui_table.cpp src/Support/BtechImage.cpp src/Support/Sha256.cpp)

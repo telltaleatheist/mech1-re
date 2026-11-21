@@ -8,6 +8,7 @@
 
 #include "../Rules/Rules.h"
 #include "../Support/StrictReader.h"
+#include "UiActions.h"
 #include "UiTable.h"
 
 namespace mw1o::ui {
@@ -208,12 +209,169 @@ void read_orders(const fs::path& data_dir, support::NativeBytes& out) {
     put_word_rows(r, out["orders.system_condition_colours"], colours, "system", kColourSchemes, 4, false);
 }
 
+// MW_MAIN's screens: captions, panels and menus (docs/phase2/PLAN.md 6.2).
+// A screen file names its own captions; its panels and menus refer to them
+// by those names. Piece ids are "<file>.caption.<name>", "<file>.panel.<name>"
+// and "<file>.menu.<name>"; a caption's piece is its 5-byte head (x, y,
+// colour), and its text follows in the exe until slice 5.
+enum class MenuCaptions { Screen, Story };
+struct PanelSpec {
+    std::string_view name;
+    std::size_t lines;
+};
+struct MenuSpec {
+    std::string_view name;
+    std::size_t records;
+    MenuCaptions captions;
+    // The exe's structure has one link one past the last record, which the
+    // original's past-end probe answers (PLAN 6.1); otherwise refused.
+    bool past_end_link;
+};
+struct ScreenSpec {
+    std::string_view file;  // "options": data/ui/options.json, pieces "options.*"
+    std::span<const std::string_view> captions;
+    std::span<const PanelSpec> panels;
+    std::span<const MenuSpec> menus;
+};
+
+constexpr std::uint8_t kNoLink = 0xFF;
+constexpr std::size_t kPanelHeaderBytes = 0x10, kMenuRecordBytes = 0x0E, kCaptionHeadBytes = 5;
+
+std::string piece_id(std::string_view file, std::string_view kind, std::string_view name) {
+    return std::string(file) + "." + std::string(kind) + "." + std::string(name);
+}
+
+// The exe offset of a caption's head (its piece), which panels and menus
+// point at.
+std::uint16_t caption_offset(const Reader& r, std::string_view file, std::string_view name) {
+    const UiPiece* piece = find_ui_piece(piece_id(file, "caption", name));
+    if (!piece) r.fail("the caption \"" + std::string(name) + "\" has no piece in the layout table");
+    return piece->offset;
+}
+
+std::string_view caption_name(const Reader& r, const Json& v, std::span<const std::string_view> names, std::string_view what) {
+    return names[r.name(v, names, what)];
+}
+
+void put_unsigned_point(const Reader& r, std::string& out, const Json& v, std::string_view what) {
+    if (!v.is_array() || v.array().size() != 2) r.fail(std::string(what) + " is not a list of 2 numbers");
+    for (const Json& n : v.array()) put_word(out, r.word(n, what));
+}
+
+std::uint16_t action_value(const Reader& r, const Json& v) {
+    if (Reader::is_null(v)) return 0;
+    if (v.is_string())
+        for (const UiAction& action : ui_actions())
+            if (action.name == v.string()) return action.value;
+    r.fail("\"action\" is not one of the campaign's actions");
+}
+
+std::uint8_t link(const Reader& r, const Json& v, const MenuSpec& menu, std::string_view what) {
+    if (Reader::is_null(v)) return kNoLink;
+    const std::size_t limit = menu.records + (menu.past_end_link ? 1 : 0);
+    const double index = r.whole(v, what, 254);
+    if (index >= double(limit))
+        r.fail("the menu \"" + std::string(menu.name) + "\"'s link " + std::string(what) + " " +
+               std::to_string(static_cast<long>(index)) + " leads out of the menu");
+    return static_cast<std::uint8_t>(index);
+}
+
+void put_menu_record(const Reader& r, std::string& out, const Json& record, const ScreenSpec& screen, const MenuSpec& menu) {
+    const bool story = menu.captions == MenuCaptions::Story;
+    if (!record.is_object()) r.fail("a record of the menu \"" + std::string(menu.name) + "\" is not an object");
+    const bool text_record = r.flag(r.member(record, "text_record"), "text_record");
+    const std::string_view reference = story ? "story_caption" : text_record ? "caption" : "picture";
+    r.only(record, {"enabled", "text_record", "at", "action", reference, "up", "down", "left", "right"});
+    out += static_cast<char>(r.flag(r.member(record, "enabled"), "enabled") ? 1 : 0);
+    out += static_cast<char>(text_record ? 1 : 0);
+    put_unsigned_point(r, out, r.member(record, "at"), "at");
+    put_word(out, action_value(r, r.member(record, "action")));
+    const Json& ref = r.member(record, reference);
+    if (story) put_word(out, Reader::is_null(ref) ? 0 : r.word(ref, reference));  // the story caption's original address
+    else if (text_record) put_word(out, static_cast<std::uint16_t>(caption_offset(r, screen.file, caption_name(r, ref, screen.captions, "caption")) + 4));
+    else put_word(out, r.word(ref, reference));
+    for (std::string_view direction : {"up", "down", "left", "right"})
+        out += static_cast<char>(link(r, r.member(record, direction), menu, direction));
+}
+
+void read_screen(const fs::path& data_dir, const ScreenSpec& screen, support::NativeBytes& out) {
+    Reader r(data_dir / "ui" / (std::string(screen.file) + ".json"));
+    const Json file = r.parse();
+    // A screen without captions or panels leaves out those members.
+    std::vector<std::string_view> members;
+    if (!screen.captions.empty()) members.push_back("captions");
+    if (!screen.panels.empty()) members.push_back("panels");
+    members.push_back("menus");
+    r.only(file, members);
+    const auto captions = screen.captions.empty() ? std::vector<const Json*>{} : r.keyed(file, "captions", screen.captions);
+    for (std::size_t i = 0; i < screen.captions.size(); ++i) {
+        const Json& c = *captions[i];
+        r.only(c, {"at", "colour"});
+        std::string head;
+        put_unsigned_point(r, head, r.member(c, "at"), "at");
+        head += static_cast<char>(r.u8(c, "colour"));
+        out[piece_id(screen.file, "caption", screen.captions[i])] = head;
+    }
+    std::vector<std::string_view> panel_names, menu_names;
+    for (const PanelSpec& p : screen.panels) panel_names.push_back(p.name);
+    for (const MenuSpec& m : screen.menus) menu_names.push_back(m.name);
+    const auto panels = screen.panels.empty() ? std::vector<const Json*>{} : r.keyed(file, "panels", panel_names);
+    for (std::size_t i = 0; i < screen.panels.size(); ++i) {
+        const PanelSpec& spec = screen.panels[i];
+        const Json& p = *panels[i];
+        r.only(p, {"at", "width", "bottom_inset", "border", "line_spacing", "background", "lines"});
+        std::string bytes;
+        put_unsigned_point(r, bytes, r.member(p, "at"), "at");
+        put_word(bytes, r.u16(p, "width"));
+        put_word(bytes, r.u16(p, "bottom_inset"));
+        const auto& lines = r.array(p, "lines", spec.lines);
+        put_word(bytes, static_cast<std::uint16_t>(lines.size()));
+        put_word(bytes, r.u16(p, "border"));
+        put_word(bytes, r.u16(p, "line_spacing"));
+        put_word(bytes, r.u16(p, "background"));
+        for (const Json& line : lines) put_word(bytes, caption_offset(r, screen.file, caption_name(r, line, screen.captions, "a line")));
+        out[piece_id(screen.file, "panel", spec.name)] = bytes;
+    }
+    const auto menus = r.keyed(file, "menus", menu_names);
+    for (std::size_t i = 0; i < screen.menus.size(); ++i) {
+        const MenuSpec& spec = screen.menus[i];
+        const Json& m = *menus[i];
+        r.only(m, {"records"});
+        std::string bytes;
+        for (const Json& record : r.array(m, "records", spec.records)) put_menu_record(r, bytes, record, screen, spec);
+        out[piece_id(screen.file, "menu", spec.name)] = bytes;
+    }
+}
+
+// options.json: the options, restore and quit/restart confirmation screens,
+// and the News Net menu.
+constexpr std::string_view kOptionsCaptions[] = {
+    "save", "restore", "sound", "detail", "restart", "quit", "continue",
+    "confirm_quit", "confirm_restart", "yes", "no",
+    "news_previous", "news_next", "news_done",
+    "restore_heading", "save_1", "save_2", "save_3", "save_4", "save_5", "save_6",
+    "save_7", "save_8", "save_9", "save_10", "save_11", "save_12", "restore_cancel"};
+constexpr PanelSpec kOptionsPanels[] = {{"options", 7}, {"restore", 14}, {"confirmation", 3}, {"news", 3}};
+constexpr MenuSpec kOptionsMenus[] = {{"options", 7, MenuCaptions::Screen, false},
+                                      {"restore", 13, MenuCaptions::Screen, false},
+                                      {"confirmation", 2, MenuCaptions::Screen, false},
+                                      {"news", 3, MenuCaptions::Screen, false}};
+// events.json: the event choice menus, whose captions are the story's
+// (story/events.json), named by the original address that file keeps.
+constexpr MenuSpec kEventMenus[] = {{"two_choices", 2, MenuCaptions::Story, false},
+                                    {"three_choices", 3, MenuCaptions::Story, false}};
+constexpr ScreenSpec kScreens[] = {
+    {"options", kOptionsCaptions, kOptionsPanels, kOptionsMenus},
+    {"events", {}, {}, kEventMenus},
+};
+
 }  // namespace
 
 support::NativeBytes load_layout(const fs::path& data_dir) {
     support::NativeBytes out;
     read_cockpit(data_dir, out);
     read_orders(data_dir, out);
+    for (const ScreenSpec& screen : kScreens) read_screen(data_dir, screen, out);
     for (const UiPiece& piece : ui_table()) {
         const auto it = out.find(piece.id);
         if (it == out.end()) throw UiError("data/ui builds no \"" + std::string(piece.id) + "\"");

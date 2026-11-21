@@ -12,6 +12,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 #include "Json.h"
@@ -98,6 +99,12 @@ public:
             fail(std::string(what) + " is not a whole number from -32768 to 32767");
         return static_cast<std::int16_t>(v.number());
     }
+    // A value already in hand, as true or false.
+    bool flag(const Json& v, std::string_view what) const {
+        if (!std::holds_alternative<bool>(v.value)) fail(std::string(what) + " is not true or false");
+        return std::get<bool>(v.value);
+    }
+    static bool is_null(const Json& v) { return std::holds_alternative<std::nullptr_t>(v.value); }
     // The index of the name `v` in `names`.
     std::size_t name(const Json& v, std::span<const std::string_view> names, std::string_view what) const {
         if (v.is_string())

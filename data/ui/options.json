@@ -1,0 +1,394 @@
+{
+  "captions": {
+    "save": {"at": [26, 8], "colour": 3},
+    "restore": {"at": [22, 20], "colour": 3},
+    "sound": {"at": [14, 30], "colour": 3},
+    "detail": {"at": [22, 40], "colour": 3},
+    "restart": {"at": [22, 50], "colour": 3},
+    "quit": {"at": [26, 60], "colour": 3},
+    "continue": {"at": [22, 70], "colour": 3},
+    "confirm_quit": {"at": [16, 8], "colour": 3},
+    "confirm_restart": {"at": [16, 8], "colour": 3},
+    "yes": {"at": [72, 30], "colour": 3},
+    "no": {"at": [76, 40], "colour": 3},
+    "news_previous": {"at": [1, 0], "colour": 3},
+    "news_next": {"at": [97, 0], "colour": 3},
+    "news_done": {"at": [175, 0], "colour": 3},
+    "restore_heading": {"at": [24, 8], "colour": 8},
+    "save_1": {"at": [60, 20], "colour": 3},
+    "save_2": {"at": [60, 30], "colour": 3},
+    "save_3": {"at": [60, 40], "colour": 3},
+    "save_4": {"at": [60, 50], "colour": 3},
+    "save_5": {"at": [60, 60], "colour": 3},
+    "save_6": {"at": [60, 70], "colour": 3},
+    "save_7": {"at": [60, 80], "colour": 3},
+    "save_8": {"at": [60, 90], "colour": 3},
+    "save_9": {"at": [60, 100], "colour": 3},
+    "save_10": {"at": [60, 110], "colour": 3},
+    "save_11": {"at": [60, 120], "colour": 3},
+    "save_12": {"at": [60, 130], "colour": 3},
+    "restore_cancel": {"at": [60, 140], "colour": 3}
+  },
+  "panels": {
+    "options": {
+      "at": [90, 80],
+      "width": 140,
+      "bottom_inset": 16,
+      "border": 1,
+      "line_spacing": 8,
+      "background": 4,
+      "lines": [
+        "save",
+        "restore",
+        "sound",
+        "detail",
+        "restart",
+        "quit",
+        "continue"
+      ]
+    },
+    "restore": {
+      "at": [52, 20],
+      "width": 216,
+      "bottom_inset": 16,
+      "border": 1,
+      "line_spacing": 8,
+      "background": 4,
+      "lines": [
+        "restore_heading",
+        "save_1",
+        "save_2",
+        "save_3",
+        "save_4",
+        "save_5",
+        "save_6",
+        "save_7",
+        "save_8",
+        "save_9",
+        "save_10",
+        "save_11",
+        "save_12",
+        "restore_cancel"
+      ]
+    },
+    "confirmation": {
+      "at": [76, 100],
+      "width": 168,
+      "bottom_inset": 26,
+      "border": 4,
+      "line_spacing": 8,
+      "background": 4,
+      "lines": [
+        "confirm_quit",
+        "yes",
+        "no"
+      ]
+    },
+    "news": {
+      "at": [46, 185],
+      "width": 200,
+      "bottom_inset": 0,
+      "border": 0,
+      "line_spacing": 0,
+      "background": 1,
+      "lines": [
+        "news_previous",
+        "news_next",
+        "news_done"
+      ]
+    }
+  },
+  "menus": {
+    "options": {
+      "records": [
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [116, 88],
+          "action": "callback.save_campaign",
+          "caption": "save",
+          "up": 6,
+          "down": 1,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [112, 100],
+          "action": "callback.open_load_menu",
+          "caption": "restore",
+          "up": 0,
+          "down": 2,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [104, 110],
+          "action": "callback.toggle_audio",
+          "caption": "sound",
+          "up": 1,
+          "down": 3,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [112, 120],
+          "action": "callback.cycle_terrain_detail",
+          "caption": "detail",
+          "up": 2,
+          "down": 4,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [112, 130],
+          "action": "continue.confirm_restart",
+          "caption": "restart",
+          "up": 3,
+          "down": 5,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [116, 140],
+          "action": "continue.confirm_quit",
+          "caption": "quit",
+          "up": 4,
+          "down": 6,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [112, 150],
+          "action": "continue.planet_hub",
+          "caption": "continue",
+          "up": 5,
+          "down": 0,
+          "left": null,
+          "right": null
+        }
+      ]
+    },
+    "restore": {
+      "records": [
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [112, 40],
+          "action": "callback.load_selected_campaign",
+          "caption": "save_1",
+          "up": 12,
+          "down": 1,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [112, 50],
+          "action": "callback.load_selected_campaign",
+          "caption": "save_2",
+          "up": 0,
+          "down": 2,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [112, 60],
+          "action": "callback.load_selected_campaign",
+          "caption": "save_3",
+          "up": 1,
+          "down": 3,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [112, 70],
+          "action": "callback.load_selected_campaign",
+          "caption": "save_4",
+          "up": 2,
+          "down": 4,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [112, 80],
+          "action": "callback.load_selected_campaign",
+          "caption": "save_5",
+          "up": 3,
+          "down": 5,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [112, 90],
+          "action": "callback.load_selected_campaign",
+          "caption": "save_6",
+          "up": 4,
+          "down": 6,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [112, 100],
+          "action": "callback.load_selected_campaign",
+          "caption": "save_7",
+          "up": 5,
+          "down": 7,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [112, 110],
+          "action": "callback.load_selected_campaign",
+          "caption": "save_8",
+          "up": 6,
+          "down": 8,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [112, 120],
+          "action": "callback.load_selected_campaign",
+          "caption": "save_9",
+          "up": 7,
+          "down": 9,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [112, 130],
+          "action": "callback.load_selected_campaign",
+          "caption": "save_10",
+          "up": 8,
+          "down": 10,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [112, 140],
+          "action": "callback.load_selected_campaign",
+          "caption": "save_11",
+          "up": 9,
+          "down": 11,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [112, 150],
+          "action": "callback.load_selected_campaign",
+          "caption": "save_12",
+          "up": 10,
+          "down": 12,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [112, 160],
+          "action": "continue.options",
+          "caption": "restore_cancel",
+          "up": 11,
+          "down": 0,
+          "left": null,
+          "right": null
+        }
+      ]
+    },
+    "confirmation": {
+      "records": [
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [148, 130],
+          "action": "continue.quit_from_options",
+          "caption": "yes",
+          "up": 1,
+          "down": 1,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [152, 140],
+          "action": "continue.options_redraw",
+          "caption": "no",
+          "up": 0,
+          "down": 0,
+          "left": null,
+          "right": null
+        }
+      ]
+    },
+    "news": {
+      "records": [
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [47, 185],
+          "action": "continue.previous_news_article",
+          "caption": "news_previous",
+          "up": null,
+          "down": null,
+          "left": null,
+          "right": 1
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [143, 185],
+          "action": "continue.next_news_article",
+          "caption": "news_next",
+          "up": null,
+          "down": null,
+          "left": 0,
+          "right": 2
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [221, 185],
+          "action": "continue.company_menu",
+          "caption": "news_done",
+          "up": null,
+          "down": null,
+          "left": 1,
+          "right": null
+        }
+      ]
+    }
+  }
+}

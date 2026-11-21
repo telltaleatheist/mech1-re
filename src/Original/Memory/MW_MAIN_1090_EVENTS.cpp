@@ -4,6 +4,7 @@
  * registry, retained executable image or additional game procedure. */
 #include "mechwarrior/campaign_events.h"
 #include "mechwarrior/story.h"
+#include "mechwarrior/ui_layout.h"
 #include <string.h>
 
 bool MwImportCampaignEventData(const uint8_t *data,size_t byteCount)
@@ -25,16 +26,20 @@ bool MwImportCampaignEventData(const uint8_t *data,size_t byteCount)
     for (uint16_t menuIndex=0;menuIndex<2;++menuIndex)
     {
         MwUiMenu *menu=menuIndex?&eventThreeChoiceMenu:&eventTwoChoiceMenu;
-        uint16_t base=menuIndex?0x5E38:0x5E1C;
+        /* The records from the layout (data/ui/events.json, src/Ui). */
+        const char *id=menuIndex?"events.menu.three_choices":"events.menu.two_choices";
+        uint8_t layout[3*CAMPAIGN_UI_RECORD_BYTES];
+        const size_t size=(size_t)menu->recordCount*CAMPAIGN_UI_RECORD_BYTES;
+        if (size>sizeof(layout) || MwUiPieceSize(id)!=size || !MwUiCopyNative(id,layout,size)) return false;
         for (uint16_t i=0;i<menu->recordCount;++i)
         {
-            uint16_t at=base+i*CAMPAIGN_UI_RECORD_BYTES;
+            uint16_t at=i*CAMPAIGN_UI_RECORD_BYTES;
             MwUiRecord *record=&menu->records[i];
-            record->enabled=data[at];record->textRecord=data[at+1];
-            record->x=MwReadNativeWord(data,at+2);record->y=MwReadNativeWord(data,at+4);
-            record->activateCodeOffset=MwReadNativeWord(data,at+6);
+            record->enabled=layout[at];record->textRecord=layout[at+1];
+            record->x=MwReadNativeWord(layout,at+2);record->y=MwReadNativeWord(layout,at+4);
+            record->activateCodeOffset=MwReadNativeWord(layout,at+6);
             record->pictureIndex=0;record->text=NULL;record->textColour=NULL;
-            uint16_t captionOffset=MwReadNativeWord(data,at+8);
+            uint16_t captionOffset=MwReadNativeWord(layout,at+8);
             for (uint16_t caption=0;caption<CAMPAIGN_EVENT_CAPTION_COUNT;++caption)
                 if (captionOffsets[caption]==captionOffset)
                 {
@@ -42,8 +47,8 @@ bool MwImportCampaignEventData(const uint8_t *data,size_t byteCount)
                     record->textColour=&eventChoiceCaptions[caption].colour;
                 }
             if (captionOffset && !record->text) return false;
-            record->upRecordIndex=data[at+10];record->downRecordIndex=data[at+11];
-            record->leftRecordIndex=data[at+12];record->rightRecordIndex=data[at+13];
+            record->upRecordIndex=layout[at+10];record->downRecordIndex=layout[at+11];
+            record->leftRecordIndex=layout[at+12];record->rightRecordIndex=layout[at+13];
         }
     }
     for (uint16_t i=0;i<3;++i) eventChoiceBranches[i]=NULL;

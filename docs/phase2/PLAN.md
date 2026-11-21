@@ -947,6 +947,29 @@ Each piece goes on its own branch and needs a build, ctest, `ui_test`,
 - **4b, the caption and panel model** on the smallest screens:
   `options.json` and `events.json`, which bring the caption ids, the line
   references and the menu actions by name.
+  Done (38 more pieces, 53 in all):
+  - The screen model in `Ui.cpp`: each screen is described in code by its
+    caption names, its panels (name, line count) and its menus (name,
+    record count, whether the exe has a past-end link). The file must name
+    exactly those, with nothing else.
+  - A text record's word is the address of its caption's colour byte (the
+    head + 4), so the file names the caption and the encoder rebuilds the
+    pointer from the caption's piece offset. Panel lines name captions the
+    same way.
+  - Actions are named from the continuation enums by
+    `tools/import/make_ui_actions.py` (`src/Ui/ui_actions.cpp`, 113 names).
+    Zero is null.
+  - Links are indices or null (FF). One must stay inside its menu; one past
+    the end is accepted only where the exe has it (the component repair
+    menu's last record, in 4d).
+  - The event menus name the story's captions by the original address
+    story/events.json keeps (`story_caption`, null when code fills it).
+  - The importers take heads, panels and menus from the layout. The caption
+    text is still read from the exe after the head. A panel's lines and a
+    text record's caption are found through the pointers, so a reordered
+    file takes effect, and a pointer that names no caption is refused.
+  - `ui_test` gained 13 refusals: unknown actions, links out of the menu,
+    unknown caption names, missing lines, records and captions.
 - **4c:** `hub.json`, `crew.json` and `contract_office.json`.
 - **4d:** `complex.json` and `dealer.json`: the largest, with the body
   diagrams and the reserve ammunition pointer tables.

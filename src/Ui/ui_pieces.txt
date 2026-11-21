@@ -22,3 +22,48 @@ orders.navigation_panel_deltas      BTECH.EXE 304E:009A 22
 orders.navigation_row_deltas        BTECH.EXE 304E:00B0 22
 orders.engine_condition_colours     BTECH.EXE 304E:030E 16
 orders.system_condition_colours     BTECH.EXE 304E:031E 16
+
+# options.json: the options, restore and confirmation screens, and the
+# News Net menu. A caption's piece is its head (x, y, colour); its text
+# follows in the exe until slice 5. A panel's is its header and line
+# pointers; a menu's, its 14-byte records.
+options.panel.options               MW_MAIN.EXE 1090:9D52 30
+options.panel.restore               MW_MAIN.EXE 1090:9E4D 44
+options.panel.confirmation          MW_MAIN.EXE 1090:9CBE 22
+options.panel.news                  MW_MAIN.EXE 1090:2500 22
+options.menu.options                MW_MAIN.EXE 1090:9DEB 98
+options.menu.restore                MW_MAIN.EXE 1090:9F7B 182
+options.menu.confirmation           MW_MAIN.EXE 1090:9D34 28
+options.menu.news                   MW_MAIN.EXE 1090:2538 42
+options.caption.save                MW_MAIN.EXE 1090:9D70 5
+options.caption.restore             MW_MAIN.EXE 1090:9D80 5
+options.caption.sound               MW_MAIN.EXE 1090:9D92 5
+options.caption.detail              MW_MAIN.EXE 1090:9DA6 5
+options.caption.restart             MW_MAIN.EXE 1090:9DB8 5
+options.caption.quit                MW_MAIN.EXE 1090:9DCA 5
+options.caption.continue            MW_MAIN.EXE 1090:9DDB 5
+options.caption.confirm_quit        MW_MAIN.EXE 1090:9CD4 5
+options.caption.confirm_restart     MW_MAIN.EXE 1090:9CFA 5
+options.caption.yes                 MW_MAIN.EXE 1090:9D23 5
+options.caption.no                  MW_MAIN.EXE 1090:9D2C 5
+options.caption.news_previous       MW_MAIN.EXE 1090:2516 5
+options.caption.news_next           MW_MAIN.EXE 1090:2524 5
+options.caption.news_done           MW_MAIN.EXE 1090:252E 5
+options.caption.restore_heading     MW_MAIN.EXE 1090:9E79 5
+options.caption.save_1              MW_MAIN.EXE 1090:9E94 5
+options.caption.save_2              MW_MAIN.EXE 1090:9EA6 5
+options.caption.save_3              MW_MAIN.EXE 1090:9EB8 5
+options.caption.save_4              MW_MAIN.EXE 1090:9ECA 5
+options.caption.save_5              MW_MAIN.EXE 1090:9EDC 5
+options.caption.save_6              MW_MAIN.EXE 1090:9EEE 5
+options.caption.save_7              MW_MAIN.EXE 1090:9F00 5
+options.caption.save_8              MW_MAIN.EXE 1090:9F12 5
+options.caption.save_9              MW_MAIN.EXE 1090:9F24 5
+options.caption.save_10             MW_MAIN.EXE 1090:9F36 5
+options.caption.save_11             MW_MAIN.EXE 1090:9F48 5
+options.caption.save_12             MW_MAIN.EXE 1090:9F5A 5
+options.caption.restore_cancel      MW_MAIN.EXE 1090:9F6C 5
+
+# events.json: the event choice menus (their captions are the story's).
+events.menu.two_choices             MW_MAIN.EXE 1090:5E1C 28
+events.menu.three_choices           MW_MAIN.EXE 1090:5E38 42

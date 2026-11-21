@@ -64,6 +64,7 @@ std::string dump(const Json& v) {
     }
     if (v.is_string()) return mw1o::support::json_quote(v.string());
     if (v.is_number()) return std::to_string(static_cast<long long>(v.number()));
+    if (std::holds_alternative<bool>(v.value)) return std::get<bool>(v.value) ? "true" : "false";
     return "null";
 }
 
@@ -140,6 +141,32 @@ void what_doesnt_fit_is_refused(const fs::path& data, const fs::path& work) {
     refused(load, "\"row\" has 10 entries, not 11", "a navigation delta missing");
     with_orders([&](Json& o) { at(at(at(at(o, "condition_colours"), "system"), 0), 0) = Json{-1.0}; });
     refused(load, "system is not a whole number from 0 to 65535", "a negative colour");
+    const auto with_options = [&](const std::function<void(Json&)>& change) { with_file("options.json", change); };
+    const auto options_record = [](Json& o, std::size_t index) -> Json& { return at(at(at(at(o, "menus"), "options"), "records"), index); };
+    with_options([&](Json& o) { at(options_record(o, 0), "action") = Json{std::string("continue.nowhere")}; });
+    refused(load, "\"action\" is not one of the campaign's actions", "an unknown action");
+    with_options([&](Json& o) { at(options_record(o, 0), "down") = Json{7.0}; });
+    refused(load, "the menu \"options\"'s link down 7 leads out of the menu", "a link one past the menu");
+    with_options([&](Json& o) { at(options_record(o, 0), "up") = Json{200.0}; });
+    refused(load, "link up 200 leads out of the menu", "a link far out of the menu");
+    with_options([&](Json& o) { at(options_record(o, 0), "caption") = Json{std::string("teleport")}; });
+    refused(load, "caption is not one of its names", "a record naming no caption");
+    with_options([&](Json& o) { at(options_record(o, 0), "enabled") = Json{1.0}; });
+    refused(load, "enabled is not true or false", "a number for a flag");
+    with_options([&](Json& o) { at(options_record(o, 0), "text_record") = Json{false}; });
+    refused(load, "unknown key \"caption\"", "a picture record naming a caption");
+    with_options([&](Json& o) { at(at(at(at(o, "panels"), "news"), "lines"), 1) = Json{std::string("nothing")}; });
+    refused(load, "a line is not one of its names", "a panel line naming no caption");
+    with_options([&](Json& o) { array(at(at(at(o, "panels"), "news"), "lines")).pop_back(); });
+    refused(load, "\"lines\" has 2 entries, not 3", "a panel with a line missing");
+    with_options([&](Json& o) { object(at(o, "captions")).erase("quit"); });
+    refused(load, "no \"quit\"", "a caption missing");
+    with_options([&](Json& o) { array(at(at(at(o, "menus"), "news"), "records")).pop_back(); });
+    refused(load, "\"records\" has 2 entries, not 3", "a menu with a record missing");
+    with_file("events.json", [&](Json& e) { object(e)["captions"] = Json{Json::Object{}}; });
+    refused(load, "unknown key \"captions\"", "captions on a screen that has none");
+    with_file("events.json", [&](Json& e) { at(at(at(at(at(e, "menus"), "two_choices"), "records"), 0), "left") = Json{2.0}; });
+    refused(load, "the menu \"two_choices\"'s link left 2 leads out of the menu", "an event link out of its menu");
     restore();
     fs::remove(work / "ui" / "orders.json");
     refused(load, "can't read", "a missing file");
