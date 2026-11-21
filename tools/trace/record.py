@@ -91,6 +91,12 @@ def label_hash(row):
     return sha(label.encode("latin-1"), 12) if label else ""
 
 
+def picture(row):
+    """A text row's picture word is where its label lives in the original's
+    data segment, not a picture: the label hash stands for it ("-")."""
+    return "-" if row.get("label") else row["picture"]
+
+
 def state_lines(status):
     """The state the rebuild must match, one fact per line."""
     c = status.get("campaign", {})
@@ -106,7 +112,7 @@ def state_lines(status):
         return lines
     for row in c.get("menu", []):
         lines.append("state menu {} enabled {} callback {:04x} picture {} links {} label {}".format(
-            row["index"], row["enabled"], row["callback"], row["picture"], " ".join(map(str, row["links"])),
+            row["index"], row["enabled"], row["callback"], picture(row), " ".join(map(str, row["links"])),
             label_hash(row) or "-"))
     return lines
 
@@ -131,7 +137,7 @@ def combat_lines(status):
 
 def menu_rows(status):
     return [{"index": row["index"], "enabled": row["enabled"], "callback": f"0x{row['callback']:04X}",
-             "picture": row["picture"], "links": row["links"], "label": label_hash(row)}
+             "picture": None if row.get("label") else row["picture"], "links": row["links"], "label": label_hash(row)}
             for row in status.get("campaign", {}).get("menu", [])]
 
 

@@ -57,7 +57,8 @@ rebuild.
       state funds F months N       C-Bills; billing months elapsed
       state row R                  the selected menu row
       state combat 0|1
-      state menu I enabled E callback XXXX picture P links U D L R label HASH   (one per row)
+      state menu I enabled E callback XXXX picture P links U D L R label HASH   (one per row;
+                                   P is "-" on a row with a label)
       state exchange HASH          the save image's SHA-256 (32 hex)
 
   In combat the menu lines give way to the battle (`tools/trace/README.md`):

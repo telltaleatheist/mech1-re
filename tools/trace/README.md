@@ -8,6 +8,7 @@ tests can run the same script and compare.
 |---|---|
 | `record.py` | Runs the port headless with a poll-fed key script (`feed.txt`, `docs/DEBUG_INPUT.md`) and writes one JSON line per `@snap`. |
 | `check.py` | Compares a candidate (a port build, the rebuild, or recorded traces) with the golden traces, snap by snap (`docs/phase0/REPLAY.md`). |
+| `state.py` | Turns MWSNAP's captures of the original under DOSBox-X (`tools/capture/`) into a trace in the same format, so `check.py --traces` compares the original with the goldens. Campaign snaps so far; combat lines are next. |
 | `repeat.py` | Records a script twice and checks the runs are byte-identical. |
 | `scripts/*.keys` | Key scripts, each from a new campaign: `campaign_contract` (an offer accepted), `company` (crew, a pilot assigned, NewsNet), `mech_complex` (component repairs, repair all, rearm, reserve ammo bought and sold, the market), `bar` (drinks, a recruit hired and one rejected), `travel` (the house browser, a trip), `options` (save, audio, terrain detail, the load menu). |
 | `traces/*.jsonl` | Recorded traces, the golden references. |
@@ -64,7 +65,9 @@ and no host speed or load changes it.
       state objective position X Y Z damage D      (when the mission has one)
 
   `callback` is the original 081B code offset the row activates. `label` is a
-  12-hex SHA-256 of the row's text: MW1's own text never enters a trace.
+  12-hex SHA-256 of the row's text: MW1's own text never enters a trace. A
+  row with a label prints `picture -`: its picture word is only where the
+  label lives in the original's data segment.
 - `menu`: the same rows as data; `screenKey`: a hash of the menu's shape.
 - `frame`: SHA-256 (32 hex) of the indexed 320x200 frame and of its palette.
   The frames are MW1 art: the recorder copies them to `--frames`, outside the
@@ -88,6 +91,19 @@ seconds.
     python3 tools/trace/handler_map.py --src . --md docs/phase0/HANDLER_MAP.md \
         --json docs/phase0/handler_map.json tools/trace/traces/*.jsonl
     python3 tools/trace/frames.py ~/mw1-frames ~/mw1-frames/png --sheet ~/mw1-frames/sheet.png
+
+## The original
+
+`state.py` reads a run of MWSNAP captures (`MW1Snnnn.BIN`, in the script's
+`@snap` order) and writes the trace the port would have written: the frame
+from the four planes and the attribute registers, and the state from
+MW_MAIN's data segment (the menu table at 03E3, the row at 03E5, the random
+words at 03F5/03F7, the 0x718-byte exchange block at 0448, which is the
+save format byte for byte). Then `check.py --traces` compares it with the goldens:
+
+    python3 tools/trace/state.py --script tools/trace/scripts/bar.keys \
+        --run ~/mwsnap/run-bar --out ~/mw1-orig/bar.jsonl
+    python3 tools/trace/check.py --traces ~/mw1-orig --only bar
 
 ## Limits
 
