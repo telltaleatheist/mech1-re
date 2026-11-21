@@ -51,9 +51,17 @@ public:
 
 private:
     [[noreturn]] void fail(const std::string& why) {
-        const std::size_t at = std::min(i_, t_.size());
-        const std::size_t line = 1 + static_cast<std::size_t>(std::count(t_.begin(), t_.begin() + at, '\n'));
-        throw JsonError("JSON at line " + std::to_string(line) + " (byte " + std::to_string(at) + "): " + why);
+        // The line and column from 1, the column counted in bytes (as Inception's).
+        std::size_t line = 1, column = 1;
+        for (std::size_t k = 0; k < i_ && k < t_.size(); ++k) {
+            if (t_[k] == '\n') {
+                ++line;
+                column = 1;
+            } else {
+                ++column;
+            }
+        }
+        throw JsonError("JSON at line " + std::to_string(line) + ", column " + std::to_string(column) + ": " + why);
     }
     void space() {
         while (i_ < t_.size() && (t_[i_] == ' ' || t_[i_] == '\t' || t_[i_] == '\n' || t_[i_] == '\r')) ++i_;
@@ -76,7 +84,10 @@ private:
     }
     // Arrays and objects: one level deeper while their members are read.
     void enter() {
-        if (++depth_ > kJsonMaxDepth) fail("nested deeper than " + std::to_string(kJsonMaxDepth));
+        if (++depth_ > kJsonMaxDepth) {
+            --i_;  // at the bracket
+            fail("nested deeper than " + std::to_string(kJsonMaxDepth));
+        }
     }
 
     Json value() {
@@ -105,7 +116,7 @@ private:
                 std::string key = string();
                 if (o.count(key)) {
                     i_ = key_at;
-                    fail("duplicate key " + json_quote(key));
+                    fail("duplicate key");
                 }
                 expect(':');
                 o.emplace(std::move(key), value());
@@ -141,7 +152,7 @@ private:
             if (c == '"') return out;
             if (static_cast<unsigned char>(c) < 0x20) {
                 --i_;
-                fail("a raw control character in a string (write it as \\u00XX)");
+                fail("control character in a string (write it as \\u00XX)");
             }
             if (c != '\\') {
                 out += c;
@@ -163,7 +174,7 @@ private:
                 int code = 0;
                 for (std::size_t k = 0; k < 4; ++k) {
                     const int d = hex_digit(t_[i_ + k]);
-                    if (d < 0) fail("bad \\u escape (four hex digits)");
+                    if (d < 0) fail("\\u needs four hex digits");
                     code = code * 16 + d;
                 }
                 if (code > 0xff) fail("characters above \\u00ff are not used in game text");
@@ -185,23 +196,38 @@ private:
         } else if (i_ < t_.size() && is_digit(t_[i_])) {
             while (i_ < t_.size() && is_digit(t_[i_])) ++i_;
         } else {
+            {
+            i_ = start;
             fail("bad number");
+        }
         }
         if (i_ < t_.size() && t_[i_] == '.') {
             ++i_;
-            if (i_ >= t_.size() || !is_digit(t_[i_])) fail("bad number");
+            if (i_ >= t_.size() || !is_digit(t_[i_])) {
+            i_ = start;
+            fail("bad number");
+        }
             while (i_ < t_.size() && is_digit(t_[i_])) ++i_;
         }
         if (i_ < t_.size() && (t_[i_] == 'e' || t_[i_] == 'E')) {
             ++i_;
             if (i_ < t_.size() && (t_[i_] == '+' || t_[i_] == '-')) ++i_;
-            if (i_ >= t_.size() || !is_digit(t_[i_])) fail("bad number");
+            if (i_ >= t_.size() || !is_digit(t_[i_])) {
+            i_ = start;
+            fail("bad number");
+        }
             while (i_ < t_.size() && is_digit(t_[i_])) ++i_;
         }
-        if (i_ < t_.size() && is_digit(t_[i_])) fail("bad number (a leading zero)");
+        if (i_ < t_.size() && is_digit(t_[i_])) {
+            i_ = start;
+            fail("a number with a leading zero");
+        }
         double d = 0;
         const auto r = std::from_chars(t_.data() + start, t_.data() + i_, d);
-        if (r.ec != std::errc() || r.ptr != t_.data() + i_) fail("bad number");
+        if (r.ec != std::errc() || r.ptr != t_.data() + i_) {
+            i_ = start;
+            fail("bad number");
+        }
         return Json{d};
     }
 

@@ -1,15 +1,16 @@
 // A small JSON reader and writer for our own data files (the story file the
-// importer writes, data/). From the Crescent Hawk's Inception rebuild,
-// src/formats/json.*, 258975d; kept in step with it, so a fix in one can be
+// importer writes, data/). Derived from the Crescent Hawk's Inception
+// rebuild, src/formats/json.*, 258975d, and checked against its d30d26c (the
+// same limits and messages); kept in step with it, so a fix in one can be
 // ported to the other. Enough of JSON for those files: objects, arrays,
 // strings, numbers, true/false/null. Strings are kept as bytes: \u0000-ÿ
 // become one byte each, so the game's control codes and its 8-bit characters
 // survive a round trip.
 //
-// Strict (added here; sent back to Inception): a duplicate key, a trailing
+// Strict (as Inception's d30d26c): a duplicate key, a trailing
 // comma, a raw control character in a string, a \u escape that isn't four
 // hex digits, a number outside JSON's grammar, and nesting deeper than
-// kJsonMaxDepth are errors, and every error names its line.
+// kJsonMaxDepth are errors, and every error names its line and column.
 #pragma once
 
 #include <cstddef>
@@ -28,7 +29,7 @@ struct JsonError : std::runtime_error {
 
 // Arrays and objects nested deeper than this are refused (a hostile or broken
 // file must not exhaust the stack).
-inline constexpr std::size_t kJsonMaxDepth = 64;
+inline constexpr std::size_t kJsonMaxDepth = 256;
 
 struct Json {
     using Array = std::vector<Json>;
@@ -48,7 +49,8 @@ struct Json {
     const Json* find(std::string_view key) const;
 };
 
-// Throws JsonError naming the line (from 1) and the byte offset of the problem.
+// Throws JsonError naming the line and column (from 1, the column in bytes)
+// of the problem: "JSON at line L, column C: why".
 Json parse_json(std::string_view text);
 
 // `bytes` as a JSON string literal, quotes included: control characters and

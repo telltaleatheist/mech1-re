@@ -29,7 +29,7 @@ void refused(const std::string& text, int line, const std::string& what) {
         parse_json(text);
         check(false, what + ": accepted");
     } catch (const JsonError& e) {
-        const std::string want = "line " + std::to_string(line) + " ";
+        const std::string want = "line " + std::to_string(line) + ", column ";
         check(std::string(e.what()).find(want) != std::string::npos,
               what + ": message \"" + e.what() + "\" doesn't name " + want);
     }
@@ -94,6 +94,24 @@ void the_strict_rules() {
     check(parse_json("{\"k\":{\"k\":2}}").find("k")->find("k")->number() == 2, "the same key at two levels");
 }
 
+// Inception's message form: "JSON at line L, column C: why", the column in bytes.
+void the_message() {
+    const auto message = [](const std::string& text) {
+        try {
+            parse_json(text);
+        } catch (const JsonError& e) {
+            return std::string(e.what());
+        }
+        return std::string("accepted");
+    };
+    check(message("{\"a\":1,\n  \"a\":2}") == "JSON at line 2, column 3: duplicate key", "duplicate key at its key");
+    check(message("[1,\n 012]") == "JSON at line 2, column 2: a number with a leading zero", "leading zero at the number");
+    check(message("\"ab\tc\"") == "JSON at line 1, column 4: control character in a string (write it as \\u00XX)",
+          "control character at itself");
+    check(message("\"\\u00g0\"") == "JSON at line 1, column 4: \\u needs four hex digits", "\\u message");
+    check(message(std::string(300, '[')) == "JSON at line 1, column 257: nested deeper than 256", "depth at the bracket");
+}
+
 void the_depth_limit() {
     const auto nested = [](std::size_t n) { return std::string(n, '[') + std::string(n, ']'); };
     accepted(nested(kJsonMaxDepth), "nesting at the limit");
@@ -111,6 +129,7 @@ void the_depth_limit() {
 int main() {
     every_byte_round_trips();
     the_strict_rules();
+    the_message();
     the_depth_limit();
     if (g_failures) {
         std::printf("json_test: %d failed\n", g_failures);
