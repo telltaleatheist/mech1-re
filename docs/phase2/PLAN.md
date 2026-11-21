@@ -532,9 +532,9 @@ included, and new_campaign is split around the commander's name.
 - `data/` sits in the repo and is installed beside the program. The game
   finds it beside the executable (`SDL_GetBasePath()`), or wherever
   `--data DIR` points. CMake copies it beside the built binary on every
-  build, and `check.py --port` uses the build's copy. The vcxproj is
-  already behind (it lists none of `src/Import`), so it is left for when
-  the Windows project is brought up to date.
+  build (Visual Studio included: it opens the folder as a CMake project,
+  and `src/Build.ps1` builds through CMake), and `check.py --port` uses
+  the build's copy. The old Visual Studio project files were retired.
 - `src/Rules/`: typed structs, the strict loaders, encoders to native bytes,
   and C doors in `mechwarrior/rules.h` (`MwRules*`). The `Original/Memory`
   importers call the doors instead of reading `data+0x....`. The rules load
