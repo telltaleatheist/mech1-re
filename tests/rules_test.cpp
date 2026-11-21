@@ -194,8 +194,8 @@ void what_doesnt_fit_is_refused(const fs::path& data, const fs::path& work) {
         at(c, "avoidance_heading_offsets") = Json{offsets};
     });
     refused(load, "from -32768 to 32767", "a heading offset out of range");
-    with_file("combat.json", [](Json& c) { std::get<Json::Object>(c.value).erase("start"); });
-    refused(load, "no \"start\"", "combat's start values missing");
+    with_file("combat.json", [](Json& c) { std::get<Json::Object>(c.value)["start"] = Json{Json::Object{}}; });
+    refused(load, "unknown key \"start\"", "a start value written before it's read");
     with_file("weapons.json", [](Json& w) { std::get<Json::Object>(at(w, "weapons").value).erase("ppc"); });
     refused(load, "no \"ppc\"", "a weapon kind missing");
     with_file("weapons.json", [](Json& w) { at(at(at(w, "weapons"), "ac5"), "ammo_family") = Json{6.0}; });

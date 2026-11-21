@@ -106,8 +106,5 @@
     [2, 2, 3, 3, 4, 4, 4, 5, 5, 6, 6, 0]
   ],
   "opposing_side_first_unit_slots": [4, 0],
-  "avoidance_heading_offsets": [0, 16380, -16380],
-  "start": {
-    "side_objective_rules": [0, 0]
-  }
+  "avoidance_heading_offsets": [0, 16380, -16380]
 }

@@ -14,6 +14,10 @@ sections 3, 4 and 7) is the brief. `INVENTORY.md` lists every item
 
 ## 1. The groups
 
+The counts as planned; after slice 3, `INVENTORY.md` lists 61 extracted, 108
+UI words, 58 layout, 78 rules, 103 new-campaign fields (two more live in
+`src/Original/Campaign`) and 1,085 code items, with each moved item's source.
+
 | Group | Items | Where it goes |
 |---|---|---|
 | Extracted: the original's creative content | 63 | the story file, in the player's data folder, written at first run |
@@ -229,9 +233,11 @@ time.
 - **Save files** keep the original's format, so old saves load and the
   DOSBox save comparison still works.
 
-## 5. Slice 3 plan: rules and the new campaign
+## 5. Slice 3: rules and the new campaign
 
-For review before any code. Sizes, offsets and readers come from the
+Done: the plan below, reviewed before any code, with each piece's record in
+5.6. 80 rule pieces in `data/rules/` stand for the exe's tables, each
+checked byte for byte against the 1990-01-22 exes. Sizes, offsets and readers come from the
 headers and a grep of `src/` (readers outside `Original/Memory`, file
 prefixes `BTECH_`/`MW_MAIN_` dropped). BTECH offsets are in its unpacked,
 rebased image (data segment 304E); MW_MAIN's in 1090.
@@ -254,7 +260,8 @@ rules:
   `settlementPayoutPercent`, `travelDestinationTimeWeight`. None is in the
   save block. Until a trace proves one is always written before it's read,
   each keeps its exe value as a `"start"` entry in its owner's file, applied
-  on every EXEC as the exe's reload does today.
+  on every EXEC as the exe's reload does today. (3f proved eight of them;
+  see 5.6.)
 - **UI words (4), slice 5.** `actuatorConditionLabelIndices`,
   `engineConditionLabelIndices`, `twoHitSystemConditionLabelIndices` and
   `orderDisplayIndices` pick labels; they move with the labels.
@@ -631,7 +638,33 @@ Each piece goes on its own branch and needs a build, the unit checks,
     same values.
 - **3f:** the inventory regenerated with the reclassifications above, and
   this plan turned into the slice's record.
+  Done (80 pieces in all):
+  - `tools/phase2/inventory.py` sorts an item read through a door by its
+    source (story piece, rule piece, or save codec field) and shows the
+    exe offset from those tables; `INVENTORY.md` is regenerated, with the
+    slice's reclassifications listed at its end.
+  - The start values. Each was read in the code for every write and read
+    after an EXEC reload, then all eight that reading found written first
+    were changed to other values in a scratch copy of `data/rules`. The
+    unchanged port ran the 8 traces with them, and all 8 matched. With the
+    other four changed as well, the two combat traces went off course, so
+    the copy did read its data.
+    - Written before read, now code, zeroed where the exe reloaded them
+      (all eight are zero in the exe): `settlementPayoutPercent` (set at
+      each after-action), the pilot card's three tiers (set before the card
+      is drawn), `missionForceBudget` and `missionPaymentBaseThousands`
+      (set at each offer), `travelDestinationTimeWeight` (written, never
+      read) and `sideObjectiveRules` (set by every combat stage's
+      preparation). contracts.json and combat.json have no `"start"`.
+    - Read first on some path, kept in market.json's `"start"`:
+      `ammunitionTransactionPrices` (only a new campaign and arrival set
+      them; after any other EXEC the market reads the start prices),
+      `generateStartingJenner` (read by the first stock generation after
+      an EXEC), `generatedAmmoKinds` and `generatedAmmoQuantities` (a unit
+      with fewer ammunition groups leaves the rest as they were, and those
+      reach the market and the starting company).
 
-Decisions for review: keyed objects for enumerated axes (5.2); dropping
+Decisions, as reviewed: keyed objects for enumerated axes (5.2); dropping
 `unusedRepairTimeByDamageTier`; moving the four label-index tables to
-slice 5; start values kept in data until a trace proves them unneeded.
+slice 5; start values kept in data until a trace proves them unneeded
+(eight were, in 3f). All were approved and carried out.

@@ -53,17 +53,10 @@ houses.planet_range_starts          MW_MAIN.EXE  1090:655C 10
 houses.planet_range_counts          MW_MAIN.EXE  1090:6566 10
 houses.mission_planet_policy_offsets  MW_MAIN.EXE  1090:8E90 10
 houses.mission_planet_policies      MW_MAIN.EXE  1090:8E9A 320
-# contracts.json, and its "start".
-contracts.start.settlement_payout_percent  MW_MAIN.EXE  1090:123F 2
-contracts.start.pilot_card_gunnery  MW_MAIN.EXE  1090:2440 2
-contracts.start.pilot_card_piloting  MW_MAIN.EXE  1090:2442 2
-contracts.start.pilot_card_quoted_wage  MW_MAIN.EXE  1090:2446 2
+# contracts.json.
 contracts.pilot_wages               MW_MAIN.EXE  1090:2476 8
-contracts.start.mission_force_budget  MW_MAIN.EXE  1090:4B79 2
-contracts.start.mission_payment_base_thousands  MW_MAIN.EXE  1090:4B7B 2
-contracts.start.travel_destination_time_weight  MW_MAIN.EXE  1090:54DA 2
 contracts.deployment_units_by_scenario  MW_MAIN.EXE  1090:8E46 74
-# combat.json (BTECH), and its "start".
+# combat.json (BTECH).
 combat.campaign_body_tier_of_armour  BTECH.EXE  304E:08AE 18
 combat.weapon_disabled_by_tier      BTECH.EXE  304E:08C0 8
 combat.system_hits_by_tier          BTECH.EXE  304E:08C8 8
@@ -84,7 +77,6 @@ combat.body_of_armour               BTECH.EXE  304E:0E3A 18
 combat.damage_transfer              BTECH.EXE  304E:0E4C 16
 combat.actuator_of_limb             BTECH.EXE  304E:0E5E 8
 combat.body_reference_point         BTECH.EXE  304E:0EBC 16
-combat.start.side_objective_rules   BTECH.EXE  304E:0ED0 4
 combat.opposing_side_first_unit_slots  BTECH.EXE  304E:2434 4
 combat.avoidance_heading_offsets    BTECH.EXE  304E:2438 6
 combat.missile_cluster_rows         BTECH.EXE  304E:235E 96

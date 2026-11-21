@@ -31,19 +31,18 @@
 //        "mission_planet_policy": [8 target columns of [8 planet ids or null]]}
 //   contracts.json  {"deployment_units_by_scenario": [37],
 //                    "pilot_wages": {"poor", "average", "good", "excellent"}}
-//   "start" (market.json, contracts.json): runtime values play overwrites,
-//   given as the exe starts them; applied again on every EXEC, as the exe's
-//   reload does. market: "ammunition_transaction_prices" {"buy", "sell"},
-//   "generate_starting_jenner", "generated_ammo_kinds" [3],
-//   "generated_ammo_quantities" [3]. contracts: "mission_force_budget",
-//   "mission_payment_base_thousands", "pilot_card": {"gunnery", "piloting",
-//   "quoted_wage"}, "settlement_payout_percent",
-//   "travel_destination_time_weight".
+//   market.json "start": runtime values play overwrites but reads first on
+//   some path, given as the exe starts them and applied again on every EXEC,
+//   as the exe's reload does: "ammunition_transaction_prices" {"buy",
+//   "sell"}, "generate_starting_jenner", "generated_ammo_kinds" [3],
+//   "generated_ammo_quantities" [3]. (The other start values are always
+//   written before they're read; they are zeroed where the exe reloaded
+//   them. docs/phase2/PLAN.md 5.6, 3f.)
 //   combat.json (BTECH): locations by name (armour: COMBAT_ARMOR_*; body: the
 //   same less the rear centre torso, the order armorToBodyLocations gives),
 //   mech templates by number from 1 (as the story's combat.mech_template.N),
-//   unit kinds by name. See read_combat for the members; "start" holds
-//   "side_objective_rules" [2]. Its "mission_side_zero_rules" and
+//   unit kinds by name. See read_combat for the members. Its
+//   "mission_side_zero_rules" and
 //   "fallback_template_steps" were missing from the inventory.
 //   weapons.json  {"weapons": {"small_laser": {...}, ...}}, keyed by
 //     COMBAT_WEAPON_*: {"damage", "ammo_family" (null: none), "reload_ticks",
@@ -160,16 +159,9 @@ struct House {
 inline constexpr std::array<std::string_view, 4> kSkillTiers = {"poor", "average", "good", "excellent"};
 inline constexpr std::size_t kDeploymentScenarios = 37;
 
-struct ContractsStart {
-    std::uint16_t mission_force_budget = 0, mission_payment_base_thousands = 0;
-    std::uint16_t pilot_card_gunnery = 0, pilot_card_piloting = 0, pilot_card_quoted_wage = 0;
-    std::uint16_t settlement_payout_percent = 0, travel_destination_time_weight = 0;
-};
-
 struct Contracts {
     std::array<std::uint16_t, kDeploymentScenarios> deployment_units_by_scenario{};
     std::array<std::uint16_t, kSkillTiers.size()> pilot_wages{};
-    ContractsStart start;
 };
 
 // COMBAT_ARMOR_* and COMBAT_BODY_* (combat_damage.h, combat_mechs.h), in order.
@@ -209,7 +201,6 @@ struct Combat {
     std::array<std::array<std::uint16_t, kClusterRolls>, kClusterRows> missile_cluster_rows{};
     std::array<std::uint16_t, 2> opposing_side_first_unit_slots{};
     std::array<std::int16_t, 3> avoidance_heading_offsets{};
-    std::array<std::uint16_t, 2> start_side_objective_rules{};
 };
 
 inline constexpr std::uint16_t kNone = 0xFFFF;  // ammo family, cluster row, projectile profile: none

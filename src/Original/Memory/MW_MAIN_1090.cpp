@@ -645,7 +645,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     memcpy(afterActionPilotStatusText,data+0x120D,sizeof(afterActionPilotStatusText));
     afterActionRosterRowOffset=MwReadNativeWord(data,0x1229);
     if (!ImportRuleWords("units.tonnages",(uint16_t *)campaignMechTonnages,sizeof(campaignMechTonnages)/sizeof(uint16_t))) return false;
-    if (!ImportRuleWords("contracts.start.settlement_payout_percent",&settlementPayoutPercent,1)) return false;
+    settlementPayoutPercent=0; /* Written before it's read; zero where the exe reloaded it. */
     if (!ImportRuleWords("houses.deduction_roll_thresholds",(uint16_t *)houseDeductionRollThresholds,sizeof(houseDeductionRollThresholds)/sizeof(uint16_t))) return false;
     if (!ImportRuleWords("houses.reduced_payout_percent",(uint16_t *)houseReducedPayoutPercentages,sizeof(houseReducedPayoutPercentages)/sizeof(uint16_t))) return false;
     if (!ImportRuleWords("contracts.deployment_units_by_scenario",(uint16_t *)missionDeploymentUnitsByScenario,sizeof(missionDeploymentUnitsByScenario)/sizeof(uint16_t))) return false;
@@ -790,7 +790,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     travelDestinationMapPositionY=MwReadNativeWord(data,0x54D2);
     travelMapDeltaX=MwReadNativeWord(data,0x54D4);
     travelMapDeltaY=MwReadNativeWord(data,0x54D6);
-    if (!ImportRuleWords("contracts.start.travel_destination_time_weight",&travelDestinationTimeWeight,1)) return false;
+    travelDestinationTimeWeight=0; /* Written before it's read; zero where the exe reloaded it. */
     travelDestinationPlanetOffset=MwReadNativeWord(data,0x5AD3);
     travelDistanceUnits=MwReadNativeWord(data,0x5AD9);
     travelQuoteCbillsLow=MwReadNativeWord(data,0x5AD5);
@@ -826,8 +826,8 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     if (!ImportRuleBytes("units.ammo_groups",unitAmmoGroupCounts,sizeof(unitAmmoGroupCounts))) return false;
     if (!ImportRuleBytes("units.jump_jet_groups",unitJumpJetGroupCounts,sizeof(unitJumpJetGroupCounts))) return false;
     generatingMissionOfferSlot=MwReadNativeWord(data,0x4B77);
-    if (!ImportRuleWords("contracts.start.mission_force_budget",&missionForceBudget,1)) return false;
-    if (!ImportRuleWords("contracts.start.mission_payment_base_thousands",&missionPaymentBaseThousands,1)) return false;
+    missionForceBudget=0; /* Written before it's read; zero where the exe reloaded it. */
+    missionPaymentBaseThousands=0; /* Written before it's read; zero where the exe reloaded it. */
     if (!ImportRuleBytes("units.force_weights",missionForceWeightByUnitKind,sizeof(missionForceWeightByUnitKind))) return false;
     if (!ImportRuleWords("houses.payment_roll_bias",(uint16_t *)housePaymentRollBias,sizeof(housePaymentRollBias)/sizeof(uint16_t))) return false;
     if (!ImportRuleWords("houses.payment_adjustment_percent",(uint16_t *)housePaymentAdjustmentPercent,sizeof(housePaymentAdjustmentPercent)/sizeof(uint16_t))) return false;
@@ -2036,10 +2036,10 @@ static bool ImportPilotUiData(const uint8_t *data)
     pilotCardRosterSlot=MwReadNativeWord(data,0x243A);
     pilotCardTextX=MwReadNativeWord(data,0x243C);
     displayedPilotId=MwReadNativeWord(data,0x243E);
-    if (!ImportRuleWords("contracts.start.pilot_card_gunnery",&pilotCardGunneryTier,1)) return false;
-    if (!ImportRuleWords("contracts.start.pilot_card_piloting",&pilotCardPilotingTier,1)) return false;
+    pilotCardGunneryTier=0; /* Written before it's read; zero where the exe reloaded it. */
+    pilotCardPilotingTier=0; /* Written before it's read; zero where the exe reloaded it. */
     pilotCardPortraitId=MwReadNativeWord(data,0x2444);
-    if (!ImportRuleWords("contracts.start.pilot_card_quoted_wage",&pilotCardQuotedWageTier,1)) return false;
+    pilotCardQuotedWageTier=0; /* Written before it's read; zero where the exe reloaded it. */
     pilotCardOwnedUnitSlot=MwReadNativeWord(data,0x2448);
     assignmentSelectedPilotSlot=MwReadNativeWord(data,0x2581);
     assignmentCandidateOwnedSlot=MwReadNativeWord(data,0x2583);

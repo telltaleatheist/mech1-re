@@ -176,24 +176,12 @@ std::array<House, kHouses.size()> read_houses(const fs::path& data_dir) {
 Contracts read_contracts(const fs::path& data_dir) {
     Reader r(data_dir / "rules" / "contracts.json");
     const Json file = r.parse();
-    r.only(file, {"deployment_units_by_scenario", "pilot_wages", "start"});
+    r.only(file, {"deployment_units_by_scenario", "pilot_wages"});
     Contracts out;
     words(r, r.array(file, "deployment_units_by_scenario", kDeploymentScenarios), out.deployment_units_by_scenario,
           "a deployment time");
     const auto wages = r.keyed(file, "pilot_wages", kSkillTiers);
     for (std::size_t tier = 0; tier < kSkillTiers.size(); ++tier) out.pilot_wages[tier] = r.word(*wages[tier], "a wage");
-    const Json& start = r.member(file, "start");
-    r.only(start, {"mission_force_budget", "mission_payment_base_thousands", "pilot_card",
-                   "settlement_payout_percent", "travel_destination_time_weight"});
-    out.start.mission_force_budget = r.u16(start, "mission_force_budget");
-    out.start.mission_payment_base_thousands = r.u16(start, "mission_payment_base_thousands");
-    const Json& card = r.member(start, "pilot_card");
-    r.only(card, {"gunnery", "piloting", "quoted_wage"});
-    out.start.pilot_card_gunnery = r.u16(card, "gunnery");
-    out.start.pilot_card_piloting = r.u16(card, "piloting");
-    out.start.pilot_card_quoted_wage = r.u16(card, "quoted_wage");
-    out.start.settlement_payout_percent = r.u16(start, "settlement_payout_percent");
-    out.start.travel_destination_time_weight = r.u16(start, "travel_destination_time_weight");
     return out;
 }
 
@@ -241,7 +229,7 @@ Combat read_combat(const fs::path& data_dir) {
                   "fallback_start_template", "fallback_template_steps", "template_budget_costs", "damage_tiers",
                   "integrity_tiers", "opposing_objective", "mission_side_zero_rules", "continuation_profiles",
                   "heat_aim_jitter_thresholds", "range_hit_modifiers", "hit_locations", "missile_cluster_rows",
-                  "opposing_side_first_unit_slots", "avoidance_heading_offsets", "start"});
+                  "opposing_side_first_unit_slots", "avoidance_heading_offsets"});
     const std::span<const std::string_view> armour(kArmourLocations), body(kBodyLocations);
     const std::span<const std::string_view> mech_kinds = std::span(kUnitKinds).first(kMechKinds);
     Combat c;
@@ -286,9 +274,6 @@ Combat read_combat(const fs::path& data_dir) {
         words(r, row(r, clusters[i], kClusterRolls, "a missile cluster row"), c.missile_cluster_rows[i], "a missile count");
     words(r, r.array(file, "opposing_side_first_unit_slots", 2), c.opposing_side_first_unit_slots, "a unit slot");
     signed_words(r, r.array(file, "avoidance_heading_offsets", 3), c.avoidance_heading_offsets, "a heading offset");
-    const Json& start = r.member(file, "start");
-    r.only(start, {"side_objective_rules"});
-    words(r, r.array(start, "side_objective_rules", 2), c.start_side_objective_rules, "a side objective rule");
     return c;
 }
 
@@ -569,14 +554,6 @@ std::map<std::string, std::string, std::less<>> native_pieces(const Rules& rules
     const Contracts& contracts = rules.contracts;
     for (std::uint16_t u : contracts.deployment_units_by_scenario) put_word(out["contracts.deployment_units_by_scenario"], u);
     for (std::uint16_t w : contracts.pilot_wages) put_word(out["contracts.pilot_wages"], w);
-    const ContractsStart& start = contracts.start;
-    put_word(out["contracts.start.mission_force_budget"], start.mission_force_budget);
-    put_word(out["contracts.start.mission_payment_base_thousands"], start.mission_payment_base_thousands);
-    put_word(out["contracts.start.pilot_card_gunnery"], start.pilot_card_gunnery);
-    put_word(out["contracts.start.pilot_card_piloting"], start.pilot_card_piloting);
-    put_word(out["contracts.start.pilot_card_quoted_wage"], start.pilot_card_quoted_wage);
-    put_word(out["contracts.start.settlement_payout_percent"], start.settlement_payout_percent);
-    put_word(out["contracts.start.travel_destination_time_weight"], start.travel_destination_time_weight);
 
     const auto put_words = [&](std::string_view id, const auto& values) {
         std::string& bytes = out[std::string(id)];
@@ -613,7 +590,6 @@ std::map<std::string, std::string, std::less<>> native_pieces(const Rules& rules
     for (const auto& cluster : combat.missile_cluster_rows) put_words("combat.missile_cluster_rows", cluster);
     put_words("combat.opposing_side_first_unit_slots", combat.opposing_side_first_unit_slots);
     put_words("combat.avoidance_heading_offsets", combat.avoidance_heading_offsets);
-    put_words("combat.start.side_objective_rules", combat.start_side_objective_rules);
 
     std::string& definitions = out["weapons.definitions"];
     for (const Weapon& w : rules.weapons)

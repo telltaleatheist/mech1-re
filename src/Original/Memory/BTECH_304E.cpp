@@ -200,8 +200,8 @@ void BtechInitializeFreshMechOwners(const uint8_t *data)
         unitControls[slot]=BtechUnitControlState{};
     specialAssaultMode=0;
     specialTargetInteractionBlocked=MwReadNativeWord(data,0x0EEA);
-    /* A start value from data/rules (combat.json "start"); the rules were read at start. */
-    (void)MwRulesCopyWords("combat.start.side_objective_rules",sideObjectiveRules,sizeof(sideObjectiveRules)/sizeof(sideObjectiveRules[0]),0);
+    /* Written before it's read (BtechPrepareCampaignCombatStage); zero where the exe reloaded it. */
+    for (uint16_t slot=0;slot<sizeof(sideObjectiveRules)/sizeof(sideObjectiveRules[0]);++slot) sideObjectiveRules[slot]=0;
     combatLandscapeIndex=MwReadNativeWord(data,0x1E86);
     /* From the story file, as the importer reads it; a missing text fails that import. */
     (void)MwStoryCopyText("combat.commander.default_name",(char *)combatDefaultCommanderNameBytes,sizeof(combatDefaultCommanderNameBytes));
