@@ -531,9 +531,10 @@ included, and new_campaign is split around the commander's name.
 
 - `data/` sits in the repo and is installed beside the program. The game
   finds it beside the executable (`SDL_GetBasePath()`), or wherever
-  `--data DIR` points. CMake copies it beside the built binary, and the
-  vcxproj does so in a post-build step. `check.py --port` uses the build's
-  copy.
+  `--data DIR` points. CMake copies it beside the built binary on every
+  build, and `check.py --port` uses the build's copy. The vcxproj is
+  already behind (it lists none of `src/Import`), so it is left for when
+  the Windows project is brought up to date.
 - `src/Rules/`: typed structs, the strict loaders, encoders to native bytes,
   and C doors in `mechwarrior/rules.h` (`MwRules*`). The `Original/Memory`
   importers call the doors instead of reading `data+0x....`. The rules load
@@ -547,6 +548,19 @@ Each piece goes on its own branch and needs a build, the unit checks,
 - **3a, the machinery:** `data/` lookup and install, `src/Rules/`, the rule
   table and both tests, plus `units.json` (with the two pointer tables) and
   `market.json`.
+  Done:
+  - `src/Rules/`: `Rules.*` reads the files strictly and lays every table
+    out as the exe does (`native_pieces`). `RulesHost.cpp` is the door,
+    `mechwarrior/rules.h` (`MwHostPrepareRules`, `MwRulesCopyNative`).
+    `rule_pieces.txt` becomes `rule_table.cpp`, 22 pieces.
+  - `StrictReader` moved to `src/Support`, templated on the error. It
+    gained `only` and `keyed`, which refuse unknown or missing keys.
+  - MW_MAIN_1090 reads the 22 tables through the door, and checks the
+    pointer tables as before.
+  - Each unit's weapon repair prices are one per row of its weapon repair
+    list (weapons + 1).
+  - Ammunition families have no names in the code yet, so they stay
+    arrays in the original's order.
 - **3b:** `repair.json`, `houses.json`, `contracts.json`, and MW_MAIN's start
   values.
 - **3c:** `combat.json`, `weapons.json`, `combat_assets.json`, and BTECH's

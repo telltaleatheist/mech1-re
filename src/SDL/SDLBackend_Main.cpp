@@ -5,6 +5,7 @@
 #include "mechwarrior/original_data.h"
 #include "mechwarrior/campaign_events.h"
 #include "mechwarrior/dos_files.h"
+#include "mechwarrior/rules.h"
 #include "mechwarrior/story.h"
 #include "mechwarrior/launcher.h"
 #include "mechwarrior/campaign_startup.h"
@@ -112,6 +113,13 @@ finished:
     if (fclose(file)!=0) loaded=false;
     return loaded;
 }
+static char dataDirectory[4096];
+bool MwSdlSetDataDirectory(const char *directory)
+{
+    if (strlen(directory)>=sizeof(dataDirectory)) return false;
+    strcpy(dataDirectory,directory);
+    return true;
+}
 bool MwSdlInitialize(const char *gameDirectory,const char *captureDirectory)
 {
     if (initialized || strlen(gameDirectory)>=sizeof(installationDirectory)) return false;
@@ -131,6 +139,12 @@ bool MwSdlInitialize(const char *gameDirectory,const char *captureDirectory)
         if (!prefPath || strlen(prefPath)>=sizeof(writeDirectory)) {SDL_free(prefPath);return false;}
         strcpy(writeDirectory,prefPath);SDL_free(prefPath);
     }
+    if (!dataDirectory[0])
+    {
+        const char *base=SDL_GetBasePath();
+        if (!base || snprintf(dataDirectory,sizeof(dataDirectory),"%sdata",base)>=(int)sizeof(dataDirectory)) return false;
+    }
+    if (!MwHostPrepareRules(dataDirectory)) return false;
     if (!MwHostSetCampaignSaveDirectory(writeDirectory) || !MwHostPrepareStory(gameDirectory,writeDirectory)) return false;
     char path[4096];
     if (!MwHostJoinGamePath(path,sizeof(path),gameDirectory,"MW_MAIN.EXE")

@@ -6,6 +6,7 @@
 #include "mechwarrior/campaign_service.h"
 #include "mechwarrior/campaign_market.h"
 #include "mechwarrior/original_data.h"
+#include "mechwarrior/rules.h"
 #include "mechwarrior/story.h"
 #include <stdio.h>
 #include "mechwarrior/campaign_startup.h"
@@ -463,6 +464,18 @@ static void ImportInitialWords(const uint8_t *data, uint16_t offset, uint16_t *w
 {
     for (size_t i=0;i<count;++i) words[i]=MwReadNativeWord(data,(uint16_t)(offset+i*2));
 }
+/* A rule table, rebuilt from data/rules (src/Rules) as the exe lays it out. */
+static bool ImportRuleBytes(const char *id, void *bytes, size_t size)
+{
+    return MwRulesCopyNative(id,(uint8_t *)bytes,size);
+}
+static bool ImportRuleWords(const char *id, uint16_t *words, size_t count)
+{
+    uint8_t bytes[0x80];
+    if (count*2>sizeof(bytes) || !MwRulesCopyNative(id,bytes,count*2)) return false;
+    ImportInitialWords(bytes,0,words,count);
+    return true;
+}
 static void ImportInitialText(const uint8_t *data, uint16_t offset, MwPanelText *line, char *text, size_t count)
 {
     line->x=MwReadNativeWord(data,offset);
@@ -622,7 +635,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     memcpy(afterActionPercentSuffix,data+0x120B,sizeof(afterActionPercentSuffix));
     memcpy(afterActionPilotStatusText,data+0x120D,sizeof(afterActionPilotStatusText));
     afterActionRosterRowOffset=MwReadNativeWord(data,0x1229);
-    ImportInitialWords(data,0x122B,(uint16_t *)campaignMechTonnages,sizeof(campaignMechTonnages)/sizeof(uint16_t));
+    if (!ImportRuleWords("units.tonnages",(uint16_t *)campaignMechTonnages,sizeof(campaignMechTonnages)/sizeof(uint16_t))) return false;
     settlementPayoutPercent=MwReadNativeWord(data,0x123F);
     ImportInitialWords(data,0x1241,(uint16_t *)houseDeductionRollThresholds,sizeof(houseDeductionRollThresholds)/sizeof(uint16_t));
     ImportInitialWords(data,0x124B,(uint16_t *)houseReducedPayoutPercentages,sizeof(houseReducedPayoutPercentages)/sizeof(uint16_t));
@@ -754,15 +767,15 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     planetMarketPremiumPercent=MwReadNativeWord(data,0x0477);
     contractNegotiationAttemptLimit=MwReadNativeWord(data,0x09E6);
     memcpy(houseNegotiationAttemptBase,data+0x11A3,sizeof(houseNegotiationAttemptBase));
-    ImportInitialWords(data,0x2EF8,(uint16_t *)ammunitionBasePrices,sizeof(ammunitionBasePrices)/sizeof(uint16_t));
+    if (!ImportRuleWords("market.ammunition_prices",(uint16_t *)ammunitionBasePrices,sizeof(ammunitionBasePrices)/sizeof(uint16_t))) return false;
     ImportInitialWords(data,0x2F10,(uint16_t *)ammunitionTransactionPrices,sizeof(ammunitionTransactionPrices)/sizeof(uint16_t));
     memcpy(repairAttemptFailuresByKind,data+0x3A77,sizeof(repairAttemptFailuresByKind));
     memcpy(ownedUnitDamage,data+0x054A,sizeof(ownedUnitDamage));
     memcpy(marketUnitDamage,data+0x07EC,sizeof(marketUnitDamage));
     memcpy(&generatedMechDamage,data+0x3A41,sizeof(generatedMechDamage));
-    memcpy(unitWeaponCounts,data+0x2AED,sizeof(unitWeaponCounts));
-    memcpy(unitPriceTierMultipliers,data+0x3057,sizeof(unitPriceTierMultipliers));
-    ImportInitialWords(data,0x305F,(uint16_t *)unitBasePrices,sizeof(unitBasePrices)/sizeof(uint16_t));
+    if (!ImportRuleBytes("units.weapons",unitWeaponCounts,sizeof(unitWeaponCounts))) return false;
+    if (!ImportRuleBytes("market.price_tier_multipliers",unitPriceTierMultipliers,sizeof(unitPriceTierMultipliers))) return false;
+    if (!ImportRuleWords("units.base_prices",(uint16_t *)unitBasePrices,sizeof(unitBasePrices)/sizeof(uint16_t))) return false;
     unitTransactionPriceLow=MwReadNativeWord(data,0x305B);
     unitTransactionPriceHigh=MwReadNativeWord(data,0x305D);
     selectedOwnedUnitKind=MwReadNativeWord(data,0x2AD5);
@@ -773,8 +786,8 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     componentRepairPriceLow=MwReadNativeWord(data,0x320C);
     componentRepairPriceHigh=MwReadNativeWord(data,0x320E);
     repairPriceCategory=MwReadNativeWord(data,0x3210);
-    ImportInitialWords(data,0x3C2F,(uint16_t *)weaponRepairPrices,sizeof(weaponRepairPrices)/sizeof(uint16_t));
-    memcpy(bodyRepairBasePricesByKind,data+0x3CAB,sizeof(bodyRepairBasePricesByKind));
+    if (!ImportRuleWords("units.weapon_repair_prices",(uint16_t *)weaponRepairPrices,sizeof(weaponRepairPrices)/sizeof(uint16_t))) return false;
+    if (!ImportRuleBytes("units.body_repair_prices",bodyRepairBasePricesByKind,sizeof(bodyRepairBasePricesByKind))) return false;
     memcpy(rosterStatus,data+0x0451,sizeof(rosterStatus));
     ImportInitialWords(data,0x04EA,(uint16_t *)rosterPayTiers,sizeof(rosterPayTiers)/sizeof(uint16_t));
     ImportInitialWords(data,0x04F2,(uint16_t *)rosterGunneryTiers,sizeof(rosterGunneryTiers)/sizeof(uint16_t));
@@ -819,16 +832,16 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     memcpy(travelLandscapeLabels,data+0x5CA6,sizeof(travelLandscapeLabels));
     memcpy(travelInsufficientFundsText,data+0x5B5A,sizeof(travelInsufficientFundsText));
     ImportInitialWords(data,0x0736,(uint16_t *)reserveAmmoQuantitiesByFamily,sizeof(reserveAmmoQuantitiesByFamily)/sizeof(uint16_t));
-    ImportInitialWords(data,0x5C94,(uint16_t *)reserveAmmoFreightRates,sizeof(reserveAmmoFreightRates)/sizeof(uint16_t));
-    memcpy(generatedKindRangeMaxima,data+0x3A37,sizeof(generatedKindRangeMaxima));
-    memcpy(generatedKindRangeStarts,data+0x3A3A,sizeof(generatedKindRangeStarts));
+    if (!ImportRuleWords("market.freight_rates",(uint16_t *)reserveAmmoFreightRates,sizeof(reserveAmmoFreightRates)/sizeof(uint16_t))) return false;
+    if (!ImportRuleBytes("market.stock_kind_range_maxima",generatedKindRangeMaxima,sizeof(generatedKindRangeMaxima))) return false;
+    if (!ImportRuleBytes("market.stock_kind_range_starts",generatedKindRangeStarts,sizeof(generatedKindRangeStarts))) return false;
     generatedDamageMaximumIndex=MwReadNativeWord(data,0x3A3D);
     generatedUnitKind=MwReadNativeWord(data,0x3A3F);
     ImportInitialWords(data,0x3A5E,(uint16_t *)generatedAmmoKinds,sizeof(generatedAmmoKinds)/sizeof(uint16_t));
     ImportInitialWords(data,0x3A64,(uint16_t *)generatedAmmoQuantities,sizeof(generatedAmmoQuantities)/sizeof(uint16_t));
     memcpy(&generateStartingJenner,data+0x3A6A,sizeof(generateStartingJenner));
-    memcpy(unitAmmoGroupCounts,data+0x2EEE,sizeof(unitAmmoGroupCounts));
-    memcpy(unitJumpJetGroupCounts,data+0x3696,sizeof(unitJumpJetGroupCounts));
+    if (!ImportRuleBytes("units.ammo_groups",unitAmmoGroupCounts,sizeof(unitAmmoGroupCounts))) return false;
+    if (!ImportRuleBytes("units.jump_jet_groups",unitJumpJetGroupCounts,sizeof(unitJumpJetGroupCounts))) return false;
     dealerUnitPurchaseLimit=MwReadNativeWord(data,0x0B56);
     unitsSoldSinceMarketRefresh=MwReadNativeWord(data,0x0B58);
     marketUnitCount=MwReadNativeWord(data,0x07D2);
@@ -845,7 +858,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     generatingMissionOfferSlot=MwReadNativeWord(data,0x4B77);
     missionForceBudget=MwReadNativeWord(data,0x4B79);
     missionPaymentBaseThousands=MwReadNativeWord(data,0x4B7B);
-    memcpy(missionForceWeightByUnitKind,data+0x4B55,sizeof(missionForceWeightByUnitKind));
+    if (!ImportRuleBytes("units.force_weights",missionForceWeightByUnitKind,sizeof(missionForceWeightByUnitKind))) return false;
     ImportInitialWords(data,0x4B41,(uint16_t *)housePaymentRollBias,sizeof(housePaymentRollBias)/sizeof(uint16_t));
     ImportInitialWords(data,0x4B4B,(uint16_t *)housePaymentAdjustmentPercent,sizeof(housePaymentAdjustmentPercent)/sizeof(uint16_t));
     ImportInitialWords(data,0x4B5F,(uint16_t *)houseSalvageBasePercent,sizeof(houseSalvageBasePercent)/sizeof(uint16_t));
@@ -896,12 +909,12 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     selectedOwnedUnitByteOffset=MwReadNativeWord(data,0x2AD3);
     ImportInitialWords(data,0x2AD7,(uint16_t *)selectedMechAmmoFamilies,sizeof(selectedMechAmmoFamilies)/sizeof(uint16_t));
     ImportInitialWords(data,0x2ADD,(uint16_t *)selectedMechAmmoQuantities,sizeof(selectedMechAmmoQuantities)/sizeof(uint16_t));
-    memcpy(unitConditionSystemFieldCounts,data+0x2AE3,sizeof(unitConditionSystemFieldCounts));
-    memcpy(unitConditionScoreDivisors,data+0x2B18,sizeof(unitConditionScoreDivisors));
+    if (!ImportRuleBytes("units.condition_fields",unitConditionSystemFieldCounts,sizeof(unitConditionSystemFieldCounts))) return false;
+    if (!ImportRuleBytes("units.condition_score_divisors",unitConditionScoreDivisors,sizeof(unitConditionScoreDivisors))) return false;
     memcpy(mechNonfunctionalTextBytes,data+0x2B55,sizeof(mechNonfunctionalTextBytes));
-    memcpy(unitDisplayTonnages,data+0x2B65,sizeof(unitDisplayTonnages));
-    memcpy(unitDisplaySpeedsKph,data+0x2B6F,sizeof(unitDisplaySpeedsKph));
-    memcpy(unitDisplayJumpCapacitiesMetres,data+0x2B79,sizeof(unitDisplayJumpCapacitiesMetres));
+    if (!ImportRuleBytes("units.display_tonnages",unitDisplayTonnages,sizeof(unitDisplayTonnages))) return false;
+    if (!ImportRuleBytes("units.display_speeds",unitDisplaySpeedsKph,sizeof(unitDisplaySpeedsKph))) return false;
+    if (!ImportRuleBytes("units.display_jumps",unitDisplayJumpCapacitiesMetres,sizeof(unitDisplayJumpCapacitiesMetres))) return false;
     ImportInitialWords(data,0x2B83,(uint16_t *)unitDetailPictureXOffsets,sizeof(unitDetailPictureXOffsets)/sizeof(uint16_t));
     ImportInitialWords(data,0x2B99,(uint16_t *)unitDetailPictureYOrigins,sizeof(unitDetailPictureYOrigins)/sizeof(uint16_t));
     memcpy(&repairWorkIncomplete,data+0x2BAF,sizeof(repairWorkIncomplete));
@@ -914,7 +927,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     ImportInitialWords(data,0x31F2,(uint16_t *)repairTitleLeadingSpacesByKind,sizeof(repairTitleLeadingSpacesByKind)/sizeof(uint16_t));
     repairSystemRowIndex=MwReadNativeWord(data,0x3208);
     repairMenuSelectedCategory=MwReadNativeWord(data,0x320A);
-    memcpy(unitHeatSinkCounts,data+0x368C,sizeof(unitHeatSinkCounts));
+    if (!ImportRuleBytes("units.heat_sinks",unitHeatSinkCounts,sizeof(unitHeatSinkCounts))) return false;
     memcpy(repairNoJumpJetsTextBytes,data+0x36A0,sizeof(repairNoJumpJetsTextBytes));
     memcpy(repairJumpJetCountTemplateBytes,data+0x36A5,sizeof(repairJumpJetCountTemplateBytes));
     memcpy(repairSuccessRollLimitsByMarketTier,data+0x3A6B,sizeof(repairSuccessRollLimitsByMarketTier));
@@ -1056,15 +1069,21 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     memcpy(pilotIdentityStorage.roster.unavailablePilots1To42,data+0x04BF,sizeof(pilotIdentityStorage.roster.unavailablePilots1To42));
     for (uint16_t row=0;row<CAMPAIGN_SYSTEM_COUNT;++row)
         ImportInitialWords(data,(uint16_t)(0x3B53+row*0x14),systemRepairBasePrices[row].basePriceByMechKind,CAMPAIGN_MECH_KIND_COUNT);
+    /* 2F3C, 2F28 and 3C1B come from the rules (data/rules/units.json). */
+    uint8_t ammoProfileEntries[AMMO_PROFILE_ENTRY_COUNT*4],ammoProfiles[CAMPAIGN_MECH_KIND_COUNT*2];
+    uint8_t weaponRepairPriceLists[CAMPAIGN_MECH_KIND_COUNT*2];
+    if (!ImportRuleBytes("units.ammo_profile_entries",ammoProfileEntries,sizeof(ammoProfileEntries))
+        || !ImportRuleBytes("units.ammo_profiles",ammoProfiles,sizeof(ammoProfiles))
+        || !ImportRuleBytes("units.weapon_repair_price_lists",weaponRepairPriceLists,sizeof(weaponRepairPriceLists))) return false;
     for (uint16_t entry=0;entry<AMMO_PROFILE_ENTRY_COUNT;++entry)
     {
-        unitAmmoProfileEntries[entry].ammoFamily=MwReadNativeWord(data,(uint16_t)(0x2F3C+entry*4));
-        unitAmmoProfileEntries[entry].quantityMaximum=MwReadNativeWord(data,(uint16_t)(0x2F3E +entry*4));
+        unitAmmoProfileEntries[entry].ammoFamily=MwReadNativeWord(ammoProfileEntries,(uint16_t)(entry*4));
+        unitAmmoProfileEntries[entry].quantityMaximum=MwReadNativeWord(ammoProfileEntries,(uint16_t)(entry*4+2));
     }
     for (uint16_t kind=0;kind<CAMPAIGN_MECH_KIND_COUNT;++kind)
     {
-        uint16_t profile=MwReadNativeWord(data,(uint16_t)(0x2F28+kind*2));
-        uint16_t prices=MwReadNativeWord(data,(uint16_t)(0x3C1B+kind*2));
+        uint16_t profile=MwReadNativeWord(ammoProfiles,(uint16_t)(kind*2));
+        uint16_t prices=MwReadNativeWord(weaponRepairPriceLists,(uint16_t)(kind*2));
         uint16_t layout=MwReadNativeWord(data,(uint16_t)(0x3CDA+kind*2));
         if (profile<0x2F3C || profile>=0x2F78 || (profile-0x2F3C)%4
             || prices<0x3C2F || prices>=0x3CAB || (prices-0x3C2F)%2

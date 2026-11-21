@@ -1,0 +1,152 @@
+// src/Rules: data/rules rebuilds every table of the rule table byte for byte
+// (its SHA-256 prefix, from the 1990-01-22 exes; no game files), and the
+// strict reading refuses what doesn't fit, on made-up copies of the files.
+//
+//   rules_test <data dir>
+// Prints ids and counts only.
+#include "../src/Rules/RuleTable.h"
+#include "../src/Rules/Rules.h"
+#include "../src/Support/Json.h"
+#include "../src/Support/Sha256.h"
+
+#include <cstdio>
+#include <fstream>
+#include <functional>
+#include <iterator>
+#include <string>
+
+namespace fs = std::filesystem;
+using namespace mw1o::rules;
+using mw1o::support::Json;
+
+namespace {
+
+int g_failures = 0;
+
+void check(bool ok, const std::string& what) {
+    if (!ok) {
+        ++g_failures;
+        std::printf("FAIL %s\n", what.c_str());
+    }
+}
+
+void refused(const std::function<void()>& run, const std::string& want, const std::string& what) {
+    try {
+        run();
+        check(false, what + ": accepted");
+    } catch (const RulesError& e) {
+        check(std::string(e.what()).find(want) != std::string::npos,
+              what + ": \"" + e.what() + "\" doesn't say \"" + want + "\"");
+    }
+}
+
+std::string read(const fs::path& path) {
+    std::ifstream in(path, std::ios::binary);
+    return {std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
+}
+
+void write(const fs::path& path, const std::string& text) {
+    fs::create_directories(path.parent_path());
+    std::ofstream(path, std::ios::binary) << text;
+}
+
+// A Json value written back (numbers are whole in these files).
+std::string dump(const Json& v) {
+    if (v.is_object()) {
+        std::string out = "{";
+        for (const auto& [key, member] : v.object()) out += (out.size() > 1 ? "," : "") + mw1o::support::json_quote(key) + ":" + dump(member);
+        return out + "}";
+    }
+    if (v.is_array()) {
+        std::string out = "[";
+        for (const Json& e : v.array()) out += (out.size() > 1 ? "," : "") + dump(e);
+        return out + "]";
+    }
+    if (v.is_string()) return mw1o::support::json_quote(v.string());
+    if (v.is_number()) return std::to_string(static_cast<long long>(v.number()));
+    return "null";
+}
+
+Json& at(Json& v, const std::string& key) { return std::get<Json::Object>(v.value).at(key); }
+
+void the_rules_rebuild_the_exes_tables(const fs::path& data) {
+    const auto pieces = native_pieces(load_rules(data));
+    int exact = 0, tuned = 0;
+    for (const RulePiece& piece : rule_table()) {
+        const auto it = pieces.find(piece.id);
+        if (it == pieces.end()) {
+            check(false, std::string(piece.id) + ": the rules don't make it");
+            continue;
+        }
+        check(it->second.size() == piece.length, std::string(piece.id) + ": " + std::to_string(it->second.size()) +
+                                                     " bytes, the table's " + std::to_string(piece.length));
+        if (piece.sha16.empty()) {
+            ++tuned;
+            continue;
+        }
+        const auto* bytes = reinterpret_cast<const std::uint8_t*>(it->second.data());
+        const bool same = mw1o::support::sha256_hex({bytes, it->second.size()}).substr(0, 16) == piece.sha16;
+        check(same, std::string(piece.id) + " differs from the exe's");
+        exact += same;
+    }
+    for (const auto& [id, bytes] : pieces) check(find_rule_piece(id) != nullptr, id + ": not in the rule table");
+    std::printf("%zu rule tables: %d as the exe's, %d tuned\n", rule_table().size(), exact, tuned);
+}
+
+void what_doesnt_fit_is_refused(const fs::path& data, const fs::path& work) {
+    const Json units = mw1o::support::parse_json(read(data / "rules" / "units.json"));
+    const std::string market = read(data / "rules" / "market.json");
+    const auto with_units = [&](const std::function<void(Json&)>& change) {
+        Json copy = units;
+        change(copy);
+        write(work / "rules" / "units.json", dump(copy));
+        write(work / "rules" / "market.json", market);
+    };
+    const auto load = [&] { native_pieces(load_rules(work)); };
+
+    with_units([](Json& u) { std::get<Json::Object>(at(u, "units").value).erase("wasp"); });
+    refused(load, "no \"wasp\"", "a unit kind missing");
+    with_units([](Json& u) { std::get<Json::Object>(at(u, "units").value)["jaguar"] = at(at(u, "units"), "wasp"); });
+    refused(load, "unknown key \"jaguar\"", "an unknown unit kind");
+    with_units([](Json& u) { std::get<Json::Object>(at(at(u, "units"), "locust").value)["armour"] = Json{1.0}; });
+    refused(load, "unknown key \"armour\"", "an unknown field");
+    with_units([](Json& u) { std::get<Json::Object>(at(at(u, "units"), "dropship").value)["tonnage"] = Json{1.0}; });
+    refused(load, "unknown key \"tonnage\"", "a mech field on the DropShip");
+    with_units([](Json& u) { at(at(at(u, "units"), "locust"), "heat_sinks") = Json{256.0}; });
+    refused(load, "heat_sinks is not a whole number from 0 to 255", "a byte past 255");
+    with_units([](Json& u) { at(at(at(u, "units"), "locust"), "weapons") = Json{4.0}; });
+    refused(load, "\"weapon_repair_prices\" has 4 entries, not 5", "repair prices not one per repair row");
+    with_units([](Json& u) {
+        Json& locust = at(at(u, "units"), "locust");
+        Json::Array profile(15, at(locust, "ammo_profile").array()[0]);
+        at(locust, "ammo_profile") = Json{profile};
+        at(locust, "ammo_groups") = Json{15.0};
+    });
+    refused(load, "more than 15 entries", "ammo profiles past the exe's storage");
+
+    write(work / "rules" / "units.json", dump(units));
+    write(work / "rules" / "market.json", market.substr(0, market.rfind(']')) + ", 1]\n}\n");
+    refused(load, "\"freight_rates\" has 7 entries, not 6", "a seventh freight rate");
+    fs::remove(work / "rules" / "market.json");
+    refused(load, "can't read", "a missing file");
+}
+
+}  // namespace
+
+int main(int argc, char** argv) {
+    if (argc != 2) {
+        std::printf("usage: rules_test <data dir>\n");
+        return 2;
+    }
+    const fs::path work = fs::current_path() / "rules_test_work";
+    fs::remove_all(work);
+    try {
+        the_rules_rebuild_the_exes_tables(argv[1]);
+        what_doesnt_fit_is_refused(argv[1], work);
+    } catch (const std::exception& e) {
+        check(false, std::string("unexpected: ") + e.what());
+    }
+    fs::remove_all(work);
+    std::printf("%s\n", g_failures ? "FAILED" : "ok");
+    return g_failures ? 1 : 0;
+}

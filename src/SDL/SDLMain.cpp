@@ -76,11 +76,20 @@ int main(int argc,char **argv)
     signal(SIGABRT,ReportFatalAbort);
 #endif
     const char *pilotDirectory=NULL;
+    /* --data DIR, anywhere: where our data/ folder is. */
+    for (int index=1;index<argc;++index)
+    {
+        if (strcmp(argv[index],"--data")) continue;
+        if (index+1>=argc || !MwSdlSetDataDirectory(argv[index+1]))
+        {fprintf(stderr,"--data needs a folder.\n");return 2;}
+        for (int rest=index;rest+2<=argc;++rest) argv[rest]=argv[rest+2];
+        argc-=2;break;
+    }
     if(argc>=3 && !strcmp(argv[argc-2],"--support-pilot"))
     {pilotDirectory=argv[argc-1];argc-=2;}
     else if(argc>=2 && !strcmp(argv[argc-1],"--no-support-pilot"))--argc;
     if (argc<2 || argc>3)
-    {fprintf(stderr,"Usage: mechwarrior <private game directory> [existing capture directory] [--support-pilot DIRECTORY | --no-support-pilot]\nEGA; sound device from MechWarrior.ini; arrows and Enter; Ctrl+Escape quits; F12 captures; F11 stops Support pilot.\n");return 2;}
+    {fprintf(stderr,"Usage: mechwarrior <private game directory> [existing capture directory] [--support-pilot DIRECTORY | --no-support-pilot] [--data DIRECTORY]\nEGA; sound device from MechWarrior.ini; arrows and Enter; Ctrl+Escape quits; F12 captures; F11 stops Support pilot.\n");return 2;}
     SDL_SetMainReady();
     if(!MwSdlConfigureSupportPilot(pilotDirectory))
     {fprintf(stderr,"Cannot open Support pilot directory.\n");return 2;}

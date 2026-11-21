@@ -190,7 +190,10 @@ add_library(mechwarrior_original STATIC
     src/Import/Records.cpp
     src/Import/Events.cpp
     src/Import/Music.cpp
-    src/Import/StoryHost.cpp)
+    src/Import/StoryHost.cpp
+    src/Rules/rule_table.cpp
+    src/Rules/Rules.cpp
+    src/Rules/RulesHost.cpp)
 target_include_directories(mechwarrior_original PUBLIC src/include)
 set_target_properties(mechwarrior_original PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
@@ -214,6 +217,16 @@ if(MECHWARRIOR_BUILD_TESTS)
     target_include_directories(btech_revisions_test PRIVATE src/include)
     add_test(NAME btech_revisions COMMAND btech_revisions_test)
     set_tests_properties(btech_revisions PROPERTIES SKIP_RETURN_CODE 77)
+    # data/rules against the rule table's hashes (no game files), and the
+    # rules' strict reading on made-up files.
+    add_executable(rules_test tests/rules_test.cpp src/Rules/Rules.cpp src/Rules/rule_table.cpp src/Support/Json.cpp
+        src/Support/Sha256.cpp)
+    add_test(NAME rules COMMAND rules_test "${CMAKE_CURRENT_SOURCE_DIR}/data")
+    # The rule table against the player's exes (MW1O_GAME, optionally MW1O_BTECH_REFERENCE); skipped without them.
+    add_executable(rules_exe_test tests/rules_exe_test.cpp src/Rules/rule_table.cpp src/Support/BtechImage.cpp src/Support/Sha256.cpp)
+    target_include_directories(rules_exe_test PRIVATE src/include)
+    add_test(NAME rules_exe COMMAND rules_exe_test)
+    set_tests_properties(rules_exe PROPERTIES SKIP_RETURN_CODE 77)
 endif()
 
 # BTECH.EXE's unpacked image on stdout, for tools/import/make_import_table.py.
@@ -250,6 +263,11 @@ if(MECHWARRIOR_BUILD_SDL)
     target_include_directories(mechwarrior_sdl PRIVATE src/SDL)
     add_executable(mechwarrior src/SDL/SDLMain.cpp)
     target_link_libraries(mechwarrior PRIVATE mechwarrior_sdl)
+    # Our data/ (the rules) beside the program, where the game looks for it;
+    # copied on every build so an edited file is picked up.
+    add_custom_target(mechwarrior_data ALL
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/data" "$<TARGET_FILE_DIR:mechwarrior>/data")
+    add_dependencies(mechwarrior mechwarrior_data)
     add_custom_command(TARGET mechwarrior POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "$<TARGET_FILE:mt32emu>" "$<TARGET_FILE_DIR:mechwarrior>"
