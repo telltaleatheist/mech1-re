@@ -22,11 +22,6 @@ typedef struct MwSaveListRow
         char text[13];
     } caption;
 } MwSaveListRow;
-typedef struct MwSaveDiskPrompt
-{
-    uint8_t beforeDrive[0x1E],driveLetter,afterDrive[2];
-} MwSaveDiskPrompt;
-static_assert(sizeof(MwSaveDiskPrompt)==0x21,"Native save-disk prompt endsA134, before numeric flags");
 extern MwPanelDescriptor optionsPanel,restorePanel,confirmationPanel,newsMenuPanel;
 extern MwServiceCaption optionsLabels[CAMPAIGN_OPTIONS_ROWS],confirmationLabels[4],newsMenuLabels[3];
 extern MwServiceCaption restoreHeading,restoreCancel;
@@ -39,7 +34,6 @@ extern char selectedSaveFilename[CAMPAIGN_SAVE_FILENAME_BYTES],saveFindPattern[6
 extern uint8_t saveNamePrompt[0x1B];
 extern char audioOptionLabels[2][4],terrainDetailLabels[3][5];
 extern uint8_t saveDiskFullText[0x2B],saveDiskErrorText[0x30],loadDiskErrorText[0x31];
-extern MwSaveDiskPrompt saveDiskPrompt;
 extern uint8_t newsAtStart,newsAtEnd;
 extern uint16_t newsLastArticleId;
 extern char newsBoundaryText[0x1B];

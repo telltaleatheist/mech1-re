@@ -9,8 +9,8 @@ enum MwCampaignContinuation
 {
     CAMPAIGN_CONTINUE_CLEANUP = 0x015F, /* Shared MwRunCampaign shutdown tail. */
     CAMPAIGN_CONTINUE_UI = 0x089B, /* MwCampaignUiEventLoop: resume menu input. */
-    CAMPAIGN_CONTINUE_COPY_PROTECTION = 0x166D, /* Protection/new-campaign setup entry. */
-    CAMPAIGN_CONTINUE_INITIALIZE_COMPANY = 0x181A, /* Same setup body, after protection. */
+    CAMPAIGN_CONTINUE_NEW_CAMPAIGN = 0x166D, /* New-campaign setup entry (its copy protection dropped). */
+    CAMPAIGN_CONTINUE_INITIALIZE_COMPANY = 0x181A, /* The company setup (new campaigns arrive here directly). */
     CAMPAIGN_CONTINUE_PLANET_HUB = 0x1909, /* Enter hub and process arrival/events. */
     CAMPAIGN_CONTINUE_HUB_MENU = 0x1A0D, /* Hub menu after event dispatch; no re-entry work. */
     CAMPAIGN_CONTINUE_CANCEL_CONTRACT = 0x1B87, /* Deployment-refusal cancellation. */

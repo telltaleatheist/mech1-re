@@ -1,5 +1,5 @@
 # Travel through the house browser to the first planet of the first house.
-Return Escape Return @snap:hub
+Return Return @snap:hub
 Down Down Down @snap:travel_sel  # hub row 3 OPEN_TRAVEL_SCREEN
 Return   @snap:travel
 Down Down @snap:houses_sel       # row 2 OPEN_HOUSE_BROWSER

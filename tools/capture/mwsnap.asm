@@ -47,6 +47,17 @@
 ; 1990-01-22 revision (174,533 bytes, the poll at image 2AE1h) is patched; on
 ; any other bytes MWSNAP writes NOPATCH.TXT and feeds no combat.
 ;
+; The rebuild has no copy protection, so MW_MAIN's is skipped in memory too:
+; at the campaign's clock read (int 1Ah AH=00 returning to 081B:0C0E, each
+; time MW_MAIN starts) MWSNAP checks the bytes at 081B:16A4 (the protection,
+; after the launch music) and 081B:181A (the company setup) and writes a near
+; jump from the one to the other. The patch is gated on those bytes (they
+; are the 137,871-byte MW_MAIN.EXE's), not on the file's size; on other
+; bytes, or when the clock read never came, MWSNAP writes NOPATCH.TXT. The
+; skipped range holds two MwRandomUpTo draws (calls to 0C17), so the
+; campaign's random words differ from an unpatched original's from there on;
+; the rebuild drops the same two.
+;
 ; A capture: 'MW1S' (4) version 2 (1) video mode (1) CRTC start (2), the
 ; attribute registers 0-15 (16), the overscan colour (attribute register 11h,
 ; 1; version 2 on), the DAC 256 x RGB (768); in mode 0Dh the
@@ -81,6 +92,10 @@ LOG_N       equ 1024
 INT9_SEG    equ 13f6h                   ; 1BF5 (reference) = 1C06 here
 INT9_OFF    equ 2ccbh
 POLL_OFF    equ 2ae1h                   ; the reference's 0810:2A17
+; MW_MAIN.EXE, segment 081B (the caller's CS at the clock read).
+CLOCK_RET   equ 0c0eh                   ; after 081B:0C0C int 1Ah
+PROTECT_OFF equ 16a4h                   ; the copy protection
+COMPANY_OFF equ 181ah                   ; the company setup after it
 RANDOM0     equ 03f5h                   ; MW_MAIN's random words
 RANDOM1     equ 03f7h
 
@@ -100,6 +115,8 @@ btech_base  dw 0
 btech_int9  dd 0                        ; BTECH's own int 9 handler
 irq_seen    db 0
 btech_ds    dw 0                        ; BTECH's DS, at its last input poll
+main_cs     dw 0                        ; MW_MAIN's 081B, at its clock read
+main_patched db 0
 pin_lo      dw 0
 pin_hi      dw 1
 key_pos     dw 0
@@ -115,6 +132,10 @@ nopatch     db 'NOPATCH.TXT', 0
 keyfail     db 'KEYFAIL.TXT', 0
 itemfail    db 'ITEMFAIL.TXT', 0
 poll_bytes  db 55h, 8bh, 0ech, 83h, 0ech, 0ch, 9ah, 58h, 2fh
+protect_bytes db 0b8h, 07h, 00h, 0e8h, 6dh, 0f5h   ; mov ax,7 / call 0C17
+company_bytes db 0b8h, 07h, 00h, 0e8h, 0f7h, 0f3h  ; mov ax,7 / call 0C17
+protect_jump db 0e9h
+            dw COMPANY_OFF - (PROTECT_OFF + 3)
 header      db 'MW1S', 2
 h_mode      db 0
 h_start     dw 0
@@ -366,6 +387,10 @@ finished:
         mov byte [feeding], 0
         mov dx, end_name
         call touch
+        cmp byte [main_patched], 0
+        jne .out
+        mov dx, nopatch                 ; MW_MAIN's protection was never skipped
+        call touch
 .out:
         ret
 
@@ -451,12 +476,51 @@ int1a:
         jne .chain
         cmp byte [cs:busy], 0           ; DOS stamping a capture file: not the game
         jne .chain
+        push bp
+        mov bp, sp                      ; [bp+2] the caller's IP, [bp+4] its CS
+        cmp word [bp + 2], CLOCK_RET
+        jne .pin
+        cmp word [bp + 4], 0c000h       ; the BIOS's own: not MW_MAIN
+        jae .pin
+        push bx
+        mov bx, [bp + 4]
+        mov [cs:main_cs], bx
+        mov bx, patch_main
+        call on_own_stack
+        pop bx
+.pin:
+        pop bp
         mov cx, [cs:pin_hi]
         mov dx, [cs:pin_lo]
         xor al, al
         iret
 .chain:
         jmp far [cs:old1a]
+
+; On MWSNAP's stack (DS = CS): skips MW_MAIN's copy protection (see the top).
+patch_main:
+        mov es, [main_cs]
+        cld
+        mov si, protect_bytes
+        mov di, PROTECT_OFF
+        mov cx, 6
+        repe cmpsb
+        jne .refuse
+        mov si, company_bytes
+        mov di, COMPANY_OFF
+        mov cx, 6
+        repe cmpsb
+        jne .refuse
+        mov si, protect_jump
+        mov di, PROTECT_OFF
+        mov cx, 3
+        rep movsb
+        mov byte [main_patched], 1
+        ret
+.refuse:
+        mov dx, nopatch
+        call touch
+        ret
 
 ; ---- combat: BTECH's input poll, patched to call here ----
 

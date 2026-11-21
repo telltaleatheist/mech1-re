@@ -7,13 +7,7 @@
 
 enum { CAMPAIGN_SALVAGE_SLOTS=4, DEPLOYMENT_BYPASS_LAST_SCENARIO=0x0A,
     DEPLOYMENT_NO_BYPASS_SCENARIO=9, DEPLOYMENT_BYPASS_ROLL_LIMIT=0x0F };
-typedef struct MwCombatDiskPrompt
-{
-    uint8_t beforeDrive[0x1E],driveLetter,afterDrive[0x4E];
-} MwCombatDiskPrompt;
-static_assert(sizeof(MwCombatDiskPrompt)==0x6D,"Simulator disk prompt before picture decoder state");
 extern char combatExecutableFilename[10];
-extern MwCombatDiskPrompt combatDiskPrompt;
 extern uint8_t deploymentResolvedWithoutCombat;
 extern char afterActionCrewHeading[0x0D],afterActionMechHeading[0x0D];
 extern char afterActionSalvageHeading[9],afterActionPaymentHeading[9];

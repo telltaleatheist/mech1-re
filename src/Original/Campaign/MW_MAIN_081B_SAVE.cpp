@@ -10,9 +10,9 @@
 enum { SAVE_NAME_BOX_X=0x0028,SAVE_NAME_BOX_Y=0x0064,SAVE_NAME_BOX_WIDTH=0x00F0,SAVE_NAME_BOX_HEIGHT=0x0038,
     SAVE_NAME_LABEL_X=0x0038,SAVE_NAME_LABEL_Y=0x0074,SAVE_NAME_LABEL_COLOUR=Campaign_Pal_EGA_White,
     SAVE_NAME_FIELD_X=0x007C,SAVE_NAME_FIELD_Y=0x0084,SAVE_NAME_FIELD_COLOUR=Campaign_Pal_EGA_Red,SAVE_PANEL_BACKGROUND=Campaign_Pal_EGA_DarkGrey,
-    SAVE_MESSAGE_INSET=0x0010,SAVE_MESSAGE_COLUMNS=0x001B,SAVE_MESSAGE_ROWS=6,DOS_LAST_FLOPPY_DRIVE=1 };
+    SAVE_MESSAGE_INSET=0x0010,SAVE_MESSAGE_COLUMNS=0x001B,SAVE_MESSAGE_ROWS=6 };
 /* Text cursors in the original campaign data; not drawing colours. */
-enum { SAVE_NAME_TEXT_OFFSET=0xA031, SAVE_DISK_TEXT_OFFSET=0xA114,
+enum { SAVE_NAME_TEXT_OFFSET=0xA031,
     SAVE_ERROR_TEXT_OFFSET=0xA0B3, SAVE_FULL_TEXT_OFFSET=0xA088,
     LOAD_ERROR_TEXT_OFFSET=0xA0E3 };
 
@@ -53,16 +53,7 @@ readName:
         ++nameLength;
     }
     memcpy(campaignTextInputBuffer+nameLength,".GAM",sizeof(".GAM"));
-    if (!mwCampaignInput.currentDefaultDrive) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.currentDefaultDrive");
-    uint8_t drive=mwCampaignInput.currentDefaultDrive();
-    if (drive<=DOS_LAST_FLOPPY_DRIVE)
-    {
-        saveDiskPrompt.driveLetter=(uint8_t)(drive+'A');
-        MwIndexedPictureCloseHook();
-        EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
-        MwNativeByteView text={(const uint8_t *)&saveDiskPrompt,SAVE_DISK_TEXT_OFFSET,sizeof(saveDiskPrompt)};
-        (void)MwShowMonospaceTextPanel(SAVE_MESSAGE_INSET,SAVE_MESSAGE_INSET,SAVE_MESSAGE_COLUMNS,SAVE_MESSAGE_ROWS,&text,text.nativeBase);
-    }
+    /* The original asked for a save disk on drives A and B ; dropped. */
     uint16_t handleOrError;
     if (MwDosCreateSaveFile((const char *)campaignTextInputBuffer+leadingSpaces,&handleOrError))
     {

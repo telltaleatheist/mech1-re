@@ -1,7 +1,7 @@
 # The mech complex: the owned mech (component repairs, repair all, rearm),
 # the reserve ammo shop (buy, sell) and the market (a purchase refused, the
 # component inspection).
-Return Escape Return @snap:hub
+Return Return @snap:hub
 Down     @snap:complex_sel       # hub row 1 MECH_COMPLEX
 Return   @snap:complex
 Return   @snap:owned             # row 0 OWNED_MECH_LIST

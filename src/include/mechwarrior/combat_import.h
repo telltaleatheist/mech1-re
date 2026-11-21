@@ -31,7 +31,7 @@ typedef struct BtechCampaignImport
 } BtechCampaignImport;
 void BtechDecodeCampaignImport(const uint8_t bytes[CAMPAIGN_EXCHANGE_BYTES],BtechCampaignImport *company);
 
-extern uint16_t resourceDiskPromptNumber,combatContinuationStage;
+extern uint16_t combatContinuationStage;
 extern uint16_t salvageEntryCount;
 extern uint16_t campaignUnitKindByCombatTemplate[COMBAT_MECH_TEMPLATES];
 extern uint16_t actuatorIntegrityTierByCondition[5],systemDamageTierByHits[3],weaponIntegrityTierByOperational[2];

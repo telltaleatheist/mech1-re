@@ -6,19 +6,19 @@ callback carries them. Names and notes are the port's
 (`campaign_continuations.h`); the handler is the port function that
 `MwCampaignUiEventLoop` (`MW_MAIN_081B_UI.c`) runs for the offset.
 
-113 offsets: 105 dispatched by the menu loop, 59 seen on a traced menu, 43 activated by a trace.
+113 offsets: 105 dispatched by the menu loop, 59 seen on a traced menu, 44 activated by a trace.
 
-Traces: `bar.jsonl`, `campaign_contract.jsonl`, `company.jsonl`, `mech_complex.jsonl`, `options.jsonl`, `travel.jsonl`.
+Traces: `bar.jsonl`, `campaign_contract.jsonl`, `combat_cockpit.jsonl`, `combat_retreat.jsonl`, `company.jsonl`, `mech_complex.jsonl`, `options.jsonl`, `travel.jsonl`.
 
 | Offset | Port name | Port handler | Used in | Screens | Activated | Note |
 |---|---|---|---|---:|---:|---|
 | 081B:015F | CONTINUE_CLEANUP | `(returns to MwRunCampaign)` | MW_MAIN_081B_CONTRACTS.cpp, MW_MAIN_081B_DEPLOYMENT.cpp, MW_MAIN_081B_EVENT_UI.cpp, MW_MAIN_081B_INPUT.cpp, MW_MAIN_081B_OPTIONS.cpp, MW_MAIN_081B_PILOTS.cpp, MW_MAIN_081B_STARTUP.cpp, MW_MAIN_081B_TRAVEL.cpp, MW_MAIN_081B_UI.cpp |  |  | Shared MwRunCampaign shutdown tail. |
 | 081B:089B | CONTINUE_UI | — | MW_MAIN_081B_CONTRACTS.cpp, MW_MAIN_081B_EVENT_UI.cpp, MW_MAIN_081B_MARKET.cpp, MW_MAIN_081B_NEWS.cpp, MW_MAIN_081B_OPTIONS.cpp, MW_MAIN_081B_PILOTS.cpp, MW_MAIN_081B_PLANET.cpp, MW_MAIN_081B_SAVE.cpp, MW_MAIN_081B_SERVICE.cpp, MW_MAIN_081B_STARTUP.cpp, MW_MAIN_081B_TRAVEL.cpp, MW_MAIN_081B_UI.cpp |  |  | MwCampaignUiEventLoop: resume menu input. |
-| 081B:166D | CONTINUE_COPY_PROTECTION | — | MW_MAIN_081B_STARTUP.cpp |  |  | Protection/new-campaign setup entry. |
-| 081B:181A | CONTINUE_INITIALIZE_COMPANY | `MwRunCopyProtectionAndInitializeCampaign` | MW_MAIN_081B_EVENT_UI.cpp, MW_MAIN_081B_STARTUP.cpp, MW_MAIN_081B_UI.cpp |  |  | Same setup body, after protection. |
-| 081B:1909 | CONTINUE_PLANET_HUB | `MwEnterCampaignPlanetHub` | MW_MAIN_081B_CONTRACTS.cpp, MW_MAIN_081B_PLANET.cpp, MW_MAIN_081B_SAVE.cpp, MW_MAIN_081B_STARTUP.cpp, MW_MAIN_081B_TRAVEL.cpp, MW_MAIN_081B_UI.cpp | 8 | 4 | Enter hub and process arrival/events. |
+| 081B:166D | CONTINUE_NEW_CAMPAIGN | — | MW_MAIN_081B_STARTUP.cpp |  |  | New-campaign setup entry (its copy protection dropped). |
+| 081B:181A | CONTINUE_INITIALIZE_COMPANY | `MwStartNewCampaign` | MW_MAIN_081B_EVENT_UI.cpp, MW_MAIN_081B_STARTUP.cpp, MW_MAIN_081B_UI.cpp |  |  | The company setup (new campaigns arrive here directly). |
+| 081B:1909 | CONTINUE_PLANET_HUB | `MwEnterCampaignPlanetHub` | MW_MAIN_081B_CONTRACTS.cpp, MW_MAIN_081B_PLANET.cpp, MW_MAIN_081B_SAVE.cpp, MW_MAIN_081B_STARTUP.cpp, MW_MAIN_081B_TRAVEL.cpp, MW_MAIN_081B_UI.cpp | 9 | 4 | Enter hub and process arrival/events. |
 | 081B:1A0D | CONTINUE_HUB_MENU | `MwEnterCampaignPlanetHub` | MW_MAIN_081B_PLANET.cpp, MW_MAIN_081B_STARTUP.cpp, MW_MAIN_081B_UI.cpp |  |  | Hub menu after event dispatch; no re-entry work. |
-| 081B:1B55 | CONTINUE_ATTEMPT_DEPLOYMENT | `MwAttemptContractDeployment` | MW_MAIN_081B_UI.cpp | 1 |  |  |
+| 081B:1B55 | CONTINUE_ATTEMPT_DEPLOYMENT | `MwAttemptContractDeployment` | MW_MAIN_081B_UI.cpp | 1 | 4 |  |
 | 081B:1B5A | CONTINUE_CHECK_DEPLOYMENT_READINESS | `MwCheckAssignedMechDeploymentReadiness` | MW_MAIN_081B_UI.cpp |  |  |  |
 | 081B:1B87 | CONTINUE_CANCEL_CONTRACT | `MwCancelContractAfterDeploymentRefusalsContinuation` | MW_MAIN_081B_CONTRACTS.cpp, MW_MAIN_081B_UI.cpp |  |  | Deployment-refusal cancellation. |
 | 081B:1C3E | CONTINUE_DEPLOYMENT | `MwResolveDeploymentOrExportCombatExchangeContinuation` | MW_MAIN_081B_CONTRACTS.cpp, MW_MAIN_081B_UI.cpp |  |  | Resolve deployment or export combat exchange. |
@@ -85,13 +85,13 @@ Traces: `bar.jsonl`, `campaign_contract.jsonl`, `company.jsonl`, `mech_complex.j
 | 081B:569F | CONTINUE_SELECT_TRAVEL_DESTINATION | `MwSelectTravelDestinationContinuation` | MW_MAIN_081B_TRAVEL.cpp, MW_MAIN_081B_UI.cpp |  |  | Select planet and quote travel. |
 | 081B:56E7 | CONTINUE_TRAVEL_MAP | `MwEnterTravelMapMenuContinuation` | MW_MAIN_081B_TRAVEL.cpp, MW_MAIN_081B_UI.cpp |  |  | Resume map menu without saving the marker again. |
 | 081B:598A | CALLBACK_SELECT_TRAVEL_MAP_PLANET | — | MW_MAIN_081B_TRAVEL.cpp, MW_MAIN_081B_UI.cpp |  |  |  |
-| 081B:5C5D | CONTINUE_SEARCH_PLANET | `MwSearchTravelPlanetContinuation` | MW_MAIN_081B_UI.cpp | 1 |  |  |
-| 081B:5CF2 | CONTINUE_OPEN_HOUSE_BROWSER | `MwOpenTravelHouseBrowserContinuation` | MW_MAIN_081B_UI.cpp | 1 | 1 |  |
+| 081B:5C5D | CONTINUE_SEARCH_PLANET | `MwSearchTravelPlanetContinuation` | MW_MAIN_081B_UI.cpp | 2 |  |  |
+| 081B:5CF2 | CONTINUE_OPEN_HOUSE_BROWSER | `MwOpenTravelHouseBrowserContinuation` | MW_MAIN_081B_UI.cpp | 2 | 1 |  |
 | 081B:5D21 | CONTINUE_CLOSE_HOUSE_BROWSER | `MwCloseTravelHouseBrowserContinuation` | MW_MAIN_081B_UI.cpp | 1 |  |  |
 | 081B:5D45 | CONTINUE_HOUSE_PLANET_LIST | `MwOpenSelectedHousePlanetListContinuation` | MW_MAIN_081B_UI.cpp | 1 | 1 |  |
 | 081B:5E26 | CONTINUE_RETURN_TO_HOUSE_BROWSER | `MwReturnToTravelHouseBrowserContinuation` | MW_MAIN_081B_UI.cpp | 1 |  |  |
 | 081B:5E41 | CONTINUE_SELECT_HOUSE_PLANET | `MwSelectHousePlanetContinuation` | MW_MAIN_081B_UI.cpp | 1 | 1 |  |
-| 081B:5E5D | CONTINUE_CONFIRM_TRAVEL | `MwConfirmPlanetTravelContinuation` | MW_MAIN_081B_UI.cpp | 1 | 2 |  |
+| 081B:5E5D | CONTINUE_CONFIRM_TRAVEL | `MwConfirmPlanetTravelContinuation` | MW_MAIN_081B_UI.cpp | 2 | 2 |  |
 | 081B:5EA0 | CONTINUE_PAID_TRAVEL | `MwAdvancePaidTravelAndJoinPlanetArrivalContinuation` | MW_MAIN_081B_TRAVEL.cpp, MW_MAIN_081B_UI.cpp |  |  | Charge travel and advance the campaign calendar. |
 | 081B:5F15 | CONTINUE_PLANET_ARRIVAL | `MwFinishPlanetArrivalContinuation` | MW_MAIN_081B_TRAVEL.cpp, MW_MAIN_081B_UI.cpp |  |  | Finish transport and publish the arrival. |
 | 081B:6236 | CALL_DISPATCH_EVENTS | — | MW_MAIN_081B_CONTRACTS.cpp, MW_MAIN_081B_EVENTS.cpp, MW_MAIN_081B_MARKET.cpp, MW_MAIN_081B_PILOTS.cpp, MW_MAIN_081B_PLANET.cpp, MW_MAIN_081B_STARTUP.cpp |  |  |  |

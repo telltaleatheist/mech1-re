@@ -89,18 +89,6 @@ extern uint16_t notificationTextInsetX[4], notificationTextInsetY[4];
 extern uint16_t notificationColumns[4], notificationRows[4];
 extern uint16_t notificationTextOffsets[4];
 extern uint8_t notificationTextStorage[NOTIFICATION_TEXT_END - NOTIFICATION_TEXT_START];
-typedef struct MwChangeDiskPrompt
-{
-    uint8_t textBeforeDrive[0x001C], driveLetter, textAfterDrive[0x0048];
-} MwChangeDiskPrompt;
-typedef struct MwInsertDiskPrompt
-{
-    uint8_t textBeforeDrive[0x001B], driveLetter, textAfterDrive[2];
-} MwInsertDiskPrompt;
-static_assert(sizeof(MwChangeDiskPrompt) == 0x0065, "Native disk prompt extent");
-static_assert(sizeof(MwInsertDiskPrompt) == 0x001E, "Native disk-one prompt extent");
-extern MwChangeDiskPrompt changeDiskPrompt;
-extern MwInsertDiskPrompt insertDiskOnePrompt;
 void MwShowPendingNotifications(void);
 /* Original CALL AX/BX transport. Bind native offsets to actual converted
  * callees. Unbound nonzero offsets fail; they are never success stubs. */

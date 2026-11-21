@@ -1,5 +1,5 @@
 # The company screen: the crew (a pilot assigned to a slot) and NewsNet.
-Return Escape Return @snap:hub
+Return Return @snap:hub
 Return   @snap:company           # hub row 0 COMPANY_MENU
 Return   @snap:crew              # row 0 CREW_MENU
 Right    @snap:slot0_sel         # row 1 ASSIGN_PILOT_SLOT_ZERO

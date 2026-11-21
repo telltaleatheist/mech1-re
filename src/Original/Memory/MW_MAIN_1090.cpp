@@ -21,7 +21,6 @@ static_assert(sizeof(uint8_t) == 1, "Native BYTE width");
 static_assert(sizeof(uint16_t) == 2, "Native WORD width");
 uint8_t campaignTimerInhibited, campaignTimerByte;
 char combatExecutableFilename[10];
-MwCombatDiskPrompt combatDiskPrompt;
 uint8_t deploymentResolvedWithoutCombat;
 char darkWingVictoryText[0x185];
 char afterActionCrewHeading[0x0D],afterActionMechHeading[0x0D];
@@ -83,8 +82,6 @@ uint16_t notificationTextInsetX[4], notificationTextInsetY[4];
 uint16_t notificationColumns[4], notificationRows[4];
 uint16_t notificationTextOffsets[4];
 uint8_t notificationTextStorage[NOTIFICATION_TEXT_END - NOTIFICATION_TEXT_START];
-MwChangeDiskPrompt changeDiskPrompt;
-MwInsertDiskPrompt insertDiskOnePrompt;
 
 /* Original 1090:016D. The allocator/loader assigns this selector later. */
 uint16_t compressedPictureBufferSelector;
@@ -393,10 +390,8 @@ uint16_t mechComplexAnimationFrames[MECH_COMPLEX_ANIMATION_FRAMES];
 
 uint16_t campaignMusicBufferSelector, graphicsOverlaySelector;
 uint16_t launcherMemoryTier;
-uint8_t launcherExitCode, tandyGraphicsSelected, savedVideoMode;
+uint8_t launcherExitCode, savedVideoMode;
 uint8_t keyboardInterruptState;
-char startupErrorText[0x0120];
-const char *startupErrorMessages[7];
 uint16_t musicFileHandle;
 char introNarrationLines[10][0x50];
 MwIntroPositionedText introFirstLeftText,introFirstRightText;
@@ -406,11 +401,6 @@ MwIntroPositionedText introFourthLeftText,introFourthRightText;
 MwIntroPositionedText introFifthLeftText,introFifthRightText;
 MwIntroPositionedText introSixthLeftText,introSixthRightText;
 MwIntroPositionedText introSeventhLeftText,introSeventhRightText;
-uint16_t copyProtectionSelection;
-uint16_t copyProtectionPictureIndices[COPY_PROTECTION_MECH_COUNT];
-char copyProtectionCallsigns[COPY_PROTECTION_QUESTION_COUNT][COPY_PROTECTION_TEXT_CAPACITY];
-char copyProtectionAnswers[COPY_PROTECTION_QUESTION_COUNT][COPY_PROTECTION_TEXT_CAPACITY];
-char copyProtectionPrompt[0x85],copyProtectionAcceptedText[0x33];
 uint8_t campaignTextInputBuffer[0x29];
 uint16_t textInputCursorX,textInputCursorY,textInputMaximumIndex;
 uint8_t textInputForeground,textInputBackground,textInputLastPhase;
@@ -615,7 +605,6 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     memcpy(&campaignTimerInhibited,data+0x0007,sizeof(campaignTimerInhibited));
     memcpy(&campaignTimerByte,data+0x0008,sizeof(campaignTimerByte));
     memcpy(combatExecutableFilename,data+0x0EF6,sizeof(combatExecutableFilename));
-    memcpy(&combatDiskPrompt,data+0x0F00,sizeof(combatDiskPrompt));
     memcpy(&deploymentResolvedWithoutCombat,data+0x140C,sizeof(deploymentResolvedWithoutCombat));
     memcpy(darkWingVictoryText,data+0x1A37,sizeof(darkWingVictoryText));
     memcpy(afterActionCrewHeading,data+0x11DF,sizeof(afterActionCrewHeading));
@@ -703,8 +692,6 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     ImportInitialWords(data,0x5ECB,(uint16_t *)notificationRows,sizeof(notificationRows)/sizeof(uint16_t));
     ImportInitialWords(data,0x5ED3,(uint16_t *)notificationTextOffsets,sizeof(notificationTextOffsets)/sizeof(uint16_t));
     memcpy(notificationTextStorage,data+0x5EDB,sizeof(notificationTextStorage));
-    memcpy(&changeDiskPrompt,data+0x0E71,sizeof(changeDiskPrompt));
-    memcpy(&insertDiskOnePrompt,data+0x0ED6,sizeof(insertDiskOnePrompt));
     compressedPictureBufferSelector=MwReadNativeWord(data,0x016D);
     randomStateWord0=MwReadNativeWord(data,0x03F5);
     randomStateWord1=MwReadNativeWord(data,0x03F7);
@@ -946,15 +933,9 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     graphicsOverlaySelector=MwReadNativeWord(data,0x002E);
     launcherMemoryTier=MwReadNativeWord(data,0x0B5D);
     memcpy(&launcherExitCode,data+0x0006,sizeof(launcherExitCode));
-    memcpy(&tandyGraphicsSelected,data+0x03A4,sizeof(tandyGraphicsSelected));
     memcpy(&savedVideoMode,data+0x0B5F,sizeof(savedVideoMode));
     memcpy(&keyboardInterruptState,data+0x02AB,sizeof(keyboardInterruptState));
-    memcpy(startupErrorText,data+0x018B,sizeof(startupErrorText));
     musicFileHandle=MwReadNativeWord(data,0x0E39);
-    copyProtectionSelection=MwReadNativeWord(data,0x1F1A);
-    ImportInitialWords(data,0x1FA1,(uint16_t *)copyProtectionPictureIndices,sizeof(copyProtectionPictureIndices)/sizeof(uint16_t));
-    memcpy(copyProtectionPrompt,data+0x1F1C,sizeof(copyProtectionPrompt));
-    memcpy(copyProtectionAcceptedText,data+0x2153,sizeof(copyProtectionAcceptedText));
     memcpy(campaignTextInputBuffer,data+0x03A5,sizeof(campaignTextInputBuffer));
     textInputCursorX=MwReadNativeWord(data,0x03CE);
     textInputCursorY=MwReadNativeWord(data,0x03D0);
@@ -1023,11 +1004,6 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     barMenuSelectedRow=MwReadNativeWord(data,0x8FF4);
     optionsMenuSelection=MwReadNativeWord(data,0x9D50);
     pilotRosterCount=MwReadNativeWord(data,0x04B5);
-    for (uint16_t question=0;question<COPY_PROTECTION_QUESTION_COUNT;++question)
-    {
-        if (!ImportInitialString(data,MwReadNativeWord(data,(uint16_t)(0x0F8F+question*2)),copyProtectionCallsigns[question],COPY_PROTECTION_TEXT_CAPACITY)
-            || !ImportInitialString(data,MwReadNativeWord(data,(uint16_t)(0x163A+question*2)),copyProtectionAnswers[question],COPY_PROTECTION_TEXT_CAPACITY)) return false;
-    }
     uint16_t narrationOffset=0x129C;
     for (uint16_t line=0;line<10;++line)
     {
@@ -1062,12 +1038,6 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     if (!ImportInitialString(data,0x1E44,introSeventhLeftText.text,sizeof(introSeventhLeftText.text))) return false;
     introSeventhRightText.x=MwReadNativeWord(data,0x1EB8);introSeventhRightText.y=MwReadNativeWord(data,0x1EBA);
     if (!ImportInitialString(data,0x1EBC,introSeventhRightText.text,sizeof(introSeventhRightText.text))) return false;
-    for (uint16_t error=0;error<7;++error)
-    {
-        uint16_t text=MwReadNativeWord(data,(uint16_t)(0x017D+error*2));
-        if (text<0x018B || text>=0x02AB || !memchr(data+text,'$',0x02AB-text)) return false;
-        startupErrorMessages[error]=startupErrorText+text-0x018B;
-    }
     ImportInitialWords(data,0x04B7,rosterPilotIds,CAMPAIGN_ROSTER_SLOTS);
     memcpy(pilotIdentityStorage.roster.unavailablePilots1To42,data+0x04BF,sizeof(pilotIdentityStorage.roster.unavailablePilots1To42));
     for (uint16_t row=0;row<CAMPAIGN_SYSTEM_COUNT;++row)

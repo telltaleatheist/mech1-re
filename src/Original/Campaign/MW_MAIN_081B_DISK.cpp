@@ -1,26 +1,14 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/campaign_ui.h"
 #include "mechwarrior/campaign_input.h"
+#include <stdio.h>
 
-/* Original text cursors, not EGA palette indices. */
-enum { CHANGE_DISK_TEXT_OFFSET=0x0E71, INSERT_DISK_ONE_TEXT_OFFSET=0x0ED6,
-    DISK_PROMPT_INSET=16, CHANGE_DISK_COLUMNS=34, CHANGE_DISK_ROWS=8,
-    INSERT_DISK_ONE_COLUMNS=32, INSERT_DISK_ONE_ROWS=5 };
-
-/* MW_MAIN081B:1280..129B.129B is a plain RET: mode1's discarded return
- * bypasses just that RET, reaching the same caller without further work. */
-void MwPromptChangeCurrentDriveDisk(void)
+/* MW_MAIN081B:1280..129B (change disk) and129C..12B7 (insert disk one): the
+ * original asked for a floppy and retried. A game file that cannot be read is
+ * a fatal error naming it; there are no disks to swap. */
+void MwFailGameFileRead(const char *filename)
 {
-    if (mwCampaignInput.currentDefaultDrive == NULL) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mwCampaignInput.currentDefaultDrive == NULL");
-    changeDiskPrompt.driveLetter = (uint8_t)(mwCampaignInput.currentDefaultDrive() + 'A');
-    MwNativeByteView text = { (const uint8_t *)&changeDiskPrompt, CHANGE_DISK_TEXT_OFFSET, sizeof(changeDiskPrompt) };
-    (void)MwShowMonospaceTextPanel(DISK_PROMPT_INSET,DISK_PROMPT_INSET,CHANGE_DISK_COLUMNS,CHANGE_DISK_ROWS,&text,text.nativeBase);
-}
-/* MW_MAIN081B:129C..12B7. Same RET-only continuation rule as1280. */
-void MwPromptInsertDiskOne(void)
-{
-    if (mwCampaignInput.currentDefaultDrive == NULL) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mwCampaignInput.currentDefaultDrive == NULL");
-    insertDiskOnePrompt.driveLetter = (uint8_t)(mwCampaignInput.currentDefaultDrive() + 'A');
-    MwNativeByteView text = { (const uint8_t *)&insertDiskOnePrompt, INSERT_DISK_ONE_TEXT_OFFSET, sizeof(insertDiskOnePrompt) };
-    (void)MwShowMonospaceTextPanel(DISK_PROMPT_INSET,DISK_PROMPT_INSET,INSERT_DISK_ONE_COLUMNS,INSERT_DISK_ONE_ROWS,&text,text.nativeBase);
+    char reason[96];
+    snprintf(reason,sizeof(reason),"cannot read the game file %s",filename?filename:"(unknown)");
+    MwAbortWithReason("game file",reason,__FILE__,__LINE__,__func__);
 }

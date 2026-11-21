@@ -43,16 +43,7 @@ static bool ExecuteChild(const char *filename,const MwCampaignLaunch *launch,uin
     ReleaseChildResources();
     return false;
 }
-static bool ResizeResident(uint16_t paragraphs)
-{
-    /* Host launcher owns named static data, not a DOS MCB. This genuine INT21
-     * shrink has no competing allocation/failure on the supported host path. */
-    return paragraphs!=LAUNCHER_RESIDENT_PARAGRAPHS;
-}
-static void *AllocateLauncherProbe(uint16_t paragraphs) {return malloc((size_t)paragraphs*0x10);}
-static uint16_t DetectConfiguredAdapter(void) {return LAUNCHER_ADAPTER_EGA;}
 static void ClearLauncherText(void) {MwSdlSetVideoMode(3);}
-static void WriteLauncherChar(uint8_t character) {fputc(character,stderr);fflush(stderr);}
 
 [[noreturn]] void MwSdlFail(const char *operation)
 {
@@ -152,17 +143,14 @@ bool MwSdlInitialize(const char *gameDirectory,const char *captureDirectory)
         MwSdlReadBiosTicks,ResetMouse,DosString};
     campaignStartMusic=MwStartMidiTrackFar;campaignStopMusic=MwStopMidiTrackFar;
     campaignNearCallback=UnsupportedCampaignCall;
-    mwLauncherSystem=MwLauncherSystemCalls{ResizeResident,AllocateLauncherProbe,free,DetectConfiguredAdapter,
-        ClearLauncherText,ExecuteChild,DosString,WriteLauncherChar};
+    mwLauncherSystem=MwLauncherSystemCalls{ClearLauncherText,ExecuteChild};
     return true;
 }
 int MwSdlRunCampaign(void)
 {
     if (!initialized) MwSdlFail("Host not initialized");
-    /* Keep MW.EXE's original graphics/audio command-tail selection. */
-    const uint8_t commandTail[]={'1',(uint8_t)(mwSdlSoundSystem==MW_SOUND_MT32?'R':mwSdlSoundSystem==MW_SOUND_ADLIB?'A':'S')};
-    MwLauncherCommandLine commandLine={commandTail,sizeof(commandTail)};
-    return MwLauncherMain(&commandLine);
+    /* MW.EXE's audio letters: R (MT-32), A (AdLib), S (speaker). */
+    return MwLauncherMain((uint8_t)(mwSdlSoundSystem==MW_SOUND_MT32?'R':mwSdlSoundSystem==MW_SOUND_ADLIB?'A':'S'));
 }
 void MwSdlPump(void)
 {MwSdlPollEvents();MwSdlPumpTimer();MwSdlPresentVideo(false);}
