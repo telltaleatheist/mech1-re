@@ -101,10 +101,12 @@ def read_traces(paths):
             keys = [k for k in after.get("keys", []) if not k.startswith(("idle:", "random:"))]
             row = selected_row(before)
             menu = {r["index"]: r for r in before.get("menu", [])}
-            if keys and keys[0] in RETURN_KEYS and row in menu:
+            if keys and keys[0] in RETURN_KEYS and row in menu and int(menu[row]["callback"], 16):
                 seen[int(menu[row]["callback"], 16)]["activated"] += 1
         for record in records:
             for row in record.get("menu", []):
+                if int(row["callback"], 16) == 0:
+                    continue  # an empty row: no handler
                 entry = seen[int(row["callback"], 16)]
                 entry["screens"].add(record["screenKey"])
                 entry["records"] += 1

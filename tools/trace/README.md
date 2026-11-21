@@ -8,7 +8,7 @@ tests can run the same script and compare.
 |---|---|
 | `record.py` | Runs the port headless with a poll-fed key script (`feed.txt`, `docs/DEBUG_INPUT.md`) and writes one JSON line per `@snap`. |
 | `repeat.py` | Records a script twice and checks the runs are byte-identical. |
-| `scripts/*.keys` | Key scripts. |
+| `scripts/*.keys` | Key scripts, each from a new campaign: `campaign_contract` (an offer accepted), `company` (crew, a pilot assigned, NewsNet), `mech_complex` (component repairs, repair all, rearm, reserve ammo bought and sold, the market), `bar` (drinks, a recruit hired and one rejected), `travel` (the house browser, a trip), `options` (save, audio, terrain detail, the load menu). |
 | `traces/*.jsonl` | Recorded traces, the golden references. |
 | `handler_map.py` | The menu-handler map: every original 081B code offset a menu row can carry, the port's name and handler for it, and which traces cover it. Writes `docs/phase0/HANDLER_MAP.md`. |
 | `frames.py` | Turns recorded frames into PNGs for a person to look at. |

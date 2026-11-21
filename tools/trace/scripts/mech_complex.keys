@@ -1,0 +1,40 @@
+# The mech complex: the owned mech (component repairs, repair all, rearm),
+# the reserve ammo shop (buy, sell) and the market (a purchase refused, the
+# component inspection).
+Return Escape Return @snap:hub
+Down     @snap:complex_sel       # hub row 1 MECH_COMPLEX
+Return   @snap:complex
+Return   @snap:owned             # row 0 OWNED_MECH_LIST
+Return   @snap:mech              # row 0 SELECT_OWNED_MECH
+Return   @snap:components        # row 0 COMPONENT_REPAIR_MENU
+Return   @snap:component_0       # row 0 REPAIR_MECH_COMPONENT
+Up       @snap:components_done_sel  # row 16 RETURN_TO_OWNED_MECH
+Return   @snap:mech_again
+Down     @snap:repair_all_sel    # row 1 REPAIR_ALL_COMPONENTS
+Return   @snap:repair_all
+Return   @snap:repair_all_after
+Down     @snap:rearm_sel         # row 2 QUOTE_MECH_REARM
+Return   @snap:rearm_quote
+Return   @snap:rearm             # row 0 REARM_MECH
+Down Down @snap:owned_sel        # row 4 OWNED_MECH_LIST
+Return   @snap:owned_again
+Down     @snap:owned_done_sel    # row 1 MECH_COMPLEX
+Return   @snap:complex_again
+Down     @snap:ammo_sel          # row 1 RESERVE_AMMO_SHOP
+Return   @snap:ammo
+Return   @snap:ammo_buy_1        # row 0 BUY_RESERVE_AMMO
+Return   @snap:ammo_buy_2
+Right    @snap:ammo_sell_sel     # row 6 SELL_RESERVE_AMMO
+Return   @snap:ammo_sell
+Up       @snap:ammo_done_sel     # row 12 MECH_COMPLEX
+Return   @snap:complex_3         # back on row 1
+Down     @snap:market_sel        # row 2 MARKET_MECH_LIST
+Return   @snap:market
+Return   @snap:market_mech       # row 0 SELECT_MARKET_MECH
+Return   @snap:purchase          # row 0 PURCHASE_MECH (refused: funds)
+Return   @snap:purchase_after
+Down     @snap:inspect_sel       # row 1 INSPECT_MARKET_COMPONENTS
+Return   @snap:inspect
+Return   @snap:inspect_done
+Up       @snap:market_done_sel   # back on row 0; row 2 MECH_PURCHASE_FINISHED
+Return   @snap:market_done
