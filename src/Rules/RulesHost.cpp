@@ -39,3 +39,9 @@ bool MwRulesCopyNative(const char *id, uint8_t *bytes, size_t size)
     std::memcpy(bytes, it->second.data(), size);
     return true;
 }
+
+size_t MwRulesPieceSize(const char *id)
+{
+    const mw1o::rules::RulePiece *piece = mw1o::rules::find_rule_piece(id);
+    return piece ? piece->length : 0;
+}

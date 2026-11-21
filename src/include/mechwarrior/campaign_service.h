@@ -148,7 +148,6 @@ extern uint8_t unitHeatSinkCounts[0x000A];
 extern uint8_t repairNoJumpJetsTextBytes[0x0005];
 extern uint8_t repairJumpJetCountTemplateBytes[0x0009];
 extern uint8_t repairSuccessRollLimitsByMarketTier[0x0004];
-extern uint16_t unusedRepairTimeByDamageTier[0x0004];
 extern uint16_t mechDiagramUnitKind;
 extern uint16_t bodyDamageTierFillColours[0x0004];
 extern MwMechBodyDiagramLayout mechBodyDiagramLayouts[0x0008];

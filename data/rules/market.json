@@ -9,5 +9,14 @@
     {"start": 3, "maximum": 2},
     {"start": 6, "maximum": 3}
   ],
-  "freight_rates": [11, 62, 27, 54, 90, 1]
+  "freight_rates": [11, 62, 27, 54, 90, 1],
+  "start": {
+    "ammunition_transaction_prices": {
+      "buy": [225, 1250, 540, 1080, 1800, 5],
+      "sell": [210, 1180, 510, 1020, 1700, 4]
+    },
+    "generate_starting_jenner": 0,
+    "generated_ammo_kinds": [0, 0, 0],
+    "generated_ammo_quantities": [0, 0, 0]
+  }
 }

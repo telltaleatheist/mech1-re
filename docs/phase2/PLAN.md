@@ -563,6 +563,22 @@ Each piece goes on its own branch and needs a build, the unit checks,
     arrays in the original's order.
 - **3b:** `repair.json`, `houses.json`, `contracts.json`, and MW_MAIN's start
   values.
+  Done (28 more pieces, 50 in all):
+  - Houses are keyed by HOUSE_*. Each House's planet range is in story
+    planet ids (from 1), and its mission-planet policy is 8 rows of 8
+    planet ids or null (0xFF).
+  - The exe's policy pointer table (`houseMissionPlanetTableOffsets`,
+    1090:8E90) points House *i* at policy *i*, so it is rebuilt from House
+    order. The inventory listed it as story content by mistake; it moved
+    here.
+  - Pilot wages are keyed by CampaignPilotSkillTier.
+  - The 11 MW_MAIN start values are `"start"` entries in market.json and
+    contracts.json.
+  - `repairAttemptFailuresByKind` (1090:3A77, 220 bytes) is zero in the
+    exe and written in play, so it is not a rule. It is zeroed where the
+    exe reloaded it.
+  - `unusedRepairTimeByDamageTier` (1090:3A6F) is gone. 3f notes it in the
+    inventory.
 - **3c:** `combat.json`, `weapons.json`, `combat_assets.json`, and BTECH's
   start value.
 - **3d:** `mechs.json` (the 8 templates, names by story id).

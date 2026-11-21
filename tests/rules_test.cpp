@@ -94,14 +94,18 @@ void the_rules_rebuild_the_exes_tables(const fs::path& data) {
 }
 
 void what_doesnt_fit_is_refused(const fs::path& data, const fs::path& work) {
-    const Json units = mw1o::support::parse_json(read(data / "rules" / "units.json"));
-    const std::string market = read(data / "rules" / "market.json");
-    const auto with_units = [&](const std::function<void(Json&)>& change) {
-        Json copy = units;
-        change(copy);
-        write(work / "rules" / "units.json", dump(copy));
-        write(work / "rules" / "market.json", market);
+    const auto restore = [&] {
+        fs::create_directories(work / "rules");
+        for (const auto& entry : fs::directory_iterator(data / "rules"))
+            fs::copy_file(entry.path(), work / "rules" / entry.path().filename(), fs::copy_options::overwrite_existing);
     };
+    const auto with_file = [&](const std::string& name, const std::function<void(Json&)>& change) {
+        restore();
+        Json copy = mw1o::support::parse_json(read(data / "rules" / name));
+        change(copy);
+        write(work / "rules" / name, dump(copy));
+    };
+    const auto with_units = [&](const std::function<void(Json&)>& change) { with_file("units.json", change); };
     const auto load = [&] { native_pieces(load_rules(work)); };
 
     with_units([](Json& u) { std::get<Json::Object>(at(u, "units").value).erase("wasp"); });
@@ -124,9 +128,37 @@ void what_doesnt_fit_is_refused(const fs::path& data, const fs::path& work) {
     });
     refused(load, "more than 15 entries", "ammo profiles past the exe's storage");
 
-    write(work / "rules" / "units.json", dump(units));
-    write(work / "rules" / "market.json", market.substr(0, market.rfind(']')) + ", 1]\n}\n");
+    with_file("market.json", [](Json& m) {
+        Json::Array rates = at(m, "freight_rates").array();
+        rates.push_back(Json{1.0});
+        at(m, "freight_rates") = Json{rates};
+    });
     refused(load, "\"freight_rates\" has 7 entries, not 6", "a seventh freight rate");
+    with_file("market.json", [](Json& m) { std::get<Json::Object>(m.value).erase("start"); });
+    refused(load, "no \"start\"", "the market's start values missing");
+    with_file("houses.json", [](Json& h) { std::get<Json::Object>(at(h, "houses").value).erase("liao"); });
+    refused(load, "no \"liao\"", "a House missing");
+    with_file("houses.json", [](Json& h) { at(at(at(h, "houses"), "marik"), "payment_adjustment_percent") = Json{-40000.0}; });
+    refused(load, "from -32768 to 32767", "a signed word out of range");
+    with_file("houses.json", [](Json& h) {
+        Json& policy = at(at(at(h, "houses"), "davion"), "mission_planet_policy");
+        Json::Array rows = policy.array();
+        Json::Array row = rows[1].array();
+        row[0] = Json{0.0};
+        rows[1] = Json{row};
+        policy = Json{rows};
+    });
+    refused(load, "not a planet id from 1 to 254", "a policy planet 0");
+    with_file("houses.json", [](Json& h) { at(at(at(at(h, "houses"), "kurita"), "planets"), "first") = Json{0.0}; });
+    refused(load, "first planet is not a planet id", "a House's first planet 0");
+    with_file("contracts.json", [](Json& c) { std::get<Json::Object>(at(c, "pilot_wages").value)["elite"] = Json{1.0}; });
+    refused(load, "unknown key \"elite\"", "an unknown skill tier");
+    with_file("repair.json", [](Json& r) {
+        Json::Array rows = at(r, "system_prices").array();
+        rows.pop_back();
+        at(r, "system_prices") = Json{rows};
+    });
+    refused(load, "\"system_prices\" has 9 entries, not 10", "nine systems");
     fs::remove(work / "rules" / "market.json");
     refused(load, "can't read", "a missing file");
 }

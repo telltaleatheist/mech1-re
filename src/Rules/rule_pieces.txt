@@ -31,3 +31,35 @@ market.price_tier_multipliers       MW_MAIN.EXE  1090:3057 4
 market.stock_kind_range_maxima      MW_MAIN.EXE  1090:3A37 3
 market.stock_kind_range_starts      MW_MAIN.EXE  1090:3A3A 3
 market.freight_rates                MW_MAIN.EXE  1090:5C94 12
+# market.json "start": runtime values, as the exe starts them.
+market.start.ammunition_transaction_prices  MW_MAIN.EXE  1090:2F10 24
+market.start.generated_ammo_kinds   MW_MAIN.EXE  1090:3A5E 6
+market.start.generated_ammo_quantities  MW_MAIN.EXE  1090:3A64 6
+market.start.generate_starting_jenner  MW_MAIN.EXE  1090:3A6A 1
+# repair.json
+repair.success_roll_limits          MW_MAIN.EXE  1090:3A6B 4
+repair.system_prices                MW_MAIN.EXE  1090:3B53 200
+# houses.json: per House (HOUSE_* order).
+houses.negotiation_attempt_base     MW_MAIN.EXE  1090:11A3 5
+houses.deduction_roll_thresholds    MW_MAIN.EXE  1090:1241 10
+houses.reduced_payout_percent       MW_MAIN.EXE  1090:124B 10
+houses.payment_roll_bias            MW_MAIN.EXE  1090:4B41 10
+houses.payment_adjustment_percent   MW_MAIN.EXE  1090:4B4B 10
+houses.salvage_base_percent         MW_MAIN.EXE  1090:4B5F 10
+houses.advance_base_percent         MW_MAIN.EXE  1090:4B69 10
+houses.extra_enemy_roll_thresholds  MW_MAIN.EXE  1090:4BF0 10
+houses.mission_type_limits          MW_MAIN.EXE  1090:5CBA 40
+houses.planet_range_starts          MW_MAIN.EXE  1090:655C 10
+houses.planet_range_counts          MW_MAIN.EXE  1090:6566 10
+houses.mission_planet_policy_offsets  MW_MAIN.EXE  1090:8E90 10
+houses.mission_planet_policies      MW_MAIN.EXE  1090:8E9A 320
+# contracts.json, and its "start".
+contracts.start.settlement_payout_percent  MW_MAIN.EXE  1090:123F 2
+contracts.start.pilot_card_gunnery  MW_MAIN.EXE  1090:2440 2
+contracts.start.pilot_card_piloting  MW_MAIN.EXE  1090:2442 2
+contracts.start.pilot_card_quoted_wage  MW_MAIN.EXE  1090:2446 2
+contracts.pilot_wages               MW_MAIN.EXE  1090:2476 8
+contracts.start.mission_force_budget  MW_MAIN.EXE  1090:4B79 2
+contracts.start.mission_payment_base_thousands  MW_MAIN.EXE  1090:4B7B 2
+contracts.start.travel_destination_time_weight  MW_MAIN.EXE  1090:54DA 2
+contracts.deployment_units_by_scenario  MW_MAIN.EXE  1090:8E46 74

@@ -18,6 +18,27 @@
 //                 "freight_rates": [6]}
 //     Ammunition families have no names in the code yet, so they stay in
 //     the original's order.
+//   repair.json  {"system_prices": [{"locust": price, ...}, x10 systems],
+//                 "success_roll_limits": [4, by market tier]}
+//   houses.json  {"houses": {"kurita": {...}, "steiner", "marik", "liao",
+//                 "davion"}}, keyed by HOUSE_*. A House:
+//       {"advance_base_percent", "salvage_base_percent", "payment_roll_bias",
+//        "payment_adjustment_percent" (signed), "deduction_roll_threshold",
+//        "reduced_payout_percent", "extra_enemy_roll_threshold",
+//        "negotiation_attempt_base",
+//        "planets": {"first", "count"}  (story planet ids, from 1),
+//        "mission_type_limits": [8, by target column],
+//        "mission_planet_policy": [8 target columns of [8 planet ids or null]]}
+//   contracts.json  {"deployment_units_by_scenario": [37],
+//                    "pilot_wages": {"poor", "average", "good", "excellent"}}
+//   "start" (market.json, contracts.json): runtime values play overwrites,
+//   given as the exe starts them; applied again on every EXEC, as the exe's
+//   reload does. market: "ammunition_transaction_prices" {"buy", "sell"},
+//   "generate_starting_jenner", "generated_ammo_kinds" [3],
+//   "generated_ammo_quantities" [3]. contracts: "mission_force_budget",
+//   "mission_payment_base_thousands", "pilot_card": {"gunnery", "piloting",
+//   "quoted_wage"}, "settlement_payout_percent",
+//   "travel_destination_time_weight".
 #pragma once
 
 #include <array>
@@ -69,16 +90,65 @@ struct StockKindRange {
     std::uint8_t start = 0, maximum = 0;
 };
 
+struct MarketStart {
+    std::array<std::uint16_t, kAmmoFamilies> ammunition_buy{}, ammunition_sell{};
+    std::uint8_t generate_starting_jenner = 0;
+    std::array<std::uint16_t, 3> generated_ammo_kinds{}, generated_ammo_quantities{};
+};
+
 struct Market {
     std::array<std::uint8_t, 4> price_tier_multipliers{};
     std::array<std::uint16_t, kAmmoFamilies> ammunition_buy{}, ammunition_sell{};
     std::array<StockKindRange, 3> stock_kind_ranges{};
     std::array<std::uint16_t, kAmmoFamilies> freight_rates{};
+    MarketStart start;
+};
+
+inline constexpr std::size_t kSystems = 10;
+
+struct Repair {
+    std::array<std::array<std::uint16_t, kMechKinds>, kSystems> system_prices{};
+    std::array<std::uint8_t, 4> success_roll_limits{};
+};
+
+// HOUSE_*, in order.
+inline constexpr std::array<std::string_view, 5> kHouses = {"kurita", "steiner", "marik", "liao", "davion"};
+inline constexpr std::size_t kTargetColumns = 8, kPlanetChoices = 8;
+inline constexpr std::uint8_t kNoPlanet = 0xFF;  // MISSION_PLANET_SELECTOR_NONE
+
+struct House {
+    std::uint16_t advance_base_percent = 0, salvage_base_percent = 0, payment_roll_bias = 0;
+    std::int16_t payment_adjustment_percent = 0;
+    std::uint16_t deduction_roll_threshold = 0, reduced_payout_percent = 0, extra_enemy_roll_threshold = 0;
+    std::uint8_t negotiation_attempt_base = 0;
+    std::uint16_t first_planet = 1, planet_count = 0;  // story planet ids, from 1
+    std::array<std::uint8_t, kTargetColumns> mission_type_limits{};
+    // Planet ids from 1, or kNoPlanet.
+    std::array<std::array<std::uint8_t, kPlanetChoices>, kTargetColumns> mission_planet_policy{};
+};
+
+// CampaignPilotSkillTier, in order.
+inline constexpr std::array<std::string_view, 4> kSkillTiers = {"poor", "average", "good", "excellent"};
+inline constexpr std::size_t kDeploymentScenarios = 37;
+
+struct ContractsStart {
+    std::uint16_t mission_force_budget = 0, mission_payment_base_thousands = 0;
+    std::uint16_t pilot_card_gunnery = 0, pilot_card_piloting = 0, pilot_card_quoted_wage = 0;
+    std::uint16_t settlement_payout_percent = 0, travel_destination_time_weight = 0;
+};
+
+struct Contracts {
+    std::array<std::uint16_t, kDeploymentScenarios> deployment_units_by_scenario{};
+    std::array<std::uint16_t, kSkillTiers.size()> pilot_wages{};
+    ContractsStart start;
 };
 
 struct Rules {
     Units units;
     Market market;
+    Repair repair;
+    std::array<House, kHouses.size()> houses;
+    Contracts contracts;
 };
 
 // <data_dir>/rules/*.json, read strictly. Throws RulesError naming the file.

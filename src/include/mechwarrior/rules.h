@@ -11,4 +11,6 @@ bool MwHostPrepareRules(const char *dataDirectory);
  * rebuilt from the rules. False (with the reason on stderr) if there is no
  * such piece or `size` isn't its length. */
 bool MwRulesCopyNative(const char *id, uint8_t *bytes, size_t size);
+/* The length of rule piece `id`, or 0 if there is none. */
+size_t MwRulesPieceSize(const char *id);
 #endif
