@@ -7,6 +7,66 @@
 #include "mechwarrior/combat_tactics.h"
 #include <stdlib.h>
 
+/* An empty lance panel's control pointer is zero. The original never tests
+ * it on these paths: it reads and writes the unit control at DS:0000, the
+ * C runtime's null segment (nullNearSegment). This view decodes the 0x55
+ * native bytes into a control while a procedure uses it, and writes them
+ * back as it leaves, so a later read (here or the radar's DS:0008) sees what
+ * the original would. */
+namespace {
+struct NativeField {uint16_t offset;uint8_t bytes;};
+BtechUnitControlState nullControl;
+unsigned nullControlUsers;
+template<typename T> void Field(bool load,uint16_t offset,T &value)
+{
+    if (load)
+    {
+        uint32_t v=0;
+        for (unsigned i=0;i<sizeof(T);++i) v|=(uint32_t)nullNearSegment[offset+i]<<(8*i);
+        value=(T)v;
+    }
+    else for (unsigned i=0;i<sizeof(T);++i) nullNearSegment[offset+i]=(uint8_t)((uint32_t)value>>(8*i));
+}
+void TransferNullControl(bool load)
+{
+    BtechUnitControlState &c=nullControl;
+    static_assert(NULL_NEAR_SEGMENT_BYTES>=0x55,"native unit control");
+    Field(load,0x00,c.commandCode);
+    for (unsigned axis=0;axis<3;++axis) Field(load,(uint16_t)(0x02 + axis*4),c.orderDestinationPosition[axis]);
+    Field(load,0x0E,c.trackedUnitOrSpecialSlot);Field(load,0x10,c.sideIndex);Field(load,0x12,c.unitSlot);
+    Field(load,0x14,c.targetUnitSlot);Field(load,0x16,c.conditionScoreOrExitCode);
+    Field(load,0x18,c.lastAiFiringTargetSlot);Field(load,0x1A,c.lastDirectHitUnitSlot);
+    Field(load,0x1C,c.targetSelectionCount);Field(load,0x1E,c.navigationReferenceSlot);
+    for (unsigned axis=0;axis<3;++axis) Field(load,(uint16_t)(0x20 + axis*4),c.trackedPosition[axis]);
+    Field(load,0x2C,c.positionKnowledgeCode);
+    for (unsigned axis=0;axis<3;++axis) Field(load,(uint16_t)(0x2E + axis*4),c.lastVisiblePosition[axis]);
+    Field(load,0x3A,c.avoidanceReverseFlag);Field(load,0x3C,c.avoidanceTurnIndex);
+    Field(load,0x3E,c.maneuverFlags);Field(load,0x3F,c.unidentifiedField14);
+    Field(load,0x40,c.twiceReadyWeaponRange);Field(load,0x42,c.readyWeaponRangeMinusMargin);
+    Field(load,0x44,c.quarterReadyWeaponRange);Field(load,0x46,c.tacticalState);Field(load,0x48,c.decisionCountdown);
+    Field(load,0x4A,c.unidentifiedField16[0]);Field(load,0x4B,c.unidentifiedField16[1]);
+    Field(load,0x4C,c.animationSequence);Field(load,0x4E,c.biasedHeadingSnapshot);
+    Field(load,0x50,c.animationRequestFlags);Field(load,0x51,c.movementMode);Field(load,0x53,c.animationFrame);
+}
+/* Held for one order procedure; Get() follows the selected panel as it
+ * changes, and nested users share the decoded view. */
+struct SelectedOrderControl
+{
+    bool usingNull=false;
+    BtechUnitControlState *Get()
+    {
+        if (selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS");
+        if (BtechUnitControlState *control=lanceOrderControls[selectedLanceOrderPanel]) return control;
+        if (!usingNull) {usingNull=true;if (!nullControlUsers++) TransferNullControl(true);}
+        return &nullControl;
+    }
+    SelectedOrderControl()=default;
+    ~SelectedOrderControl() {if (usingNull && !--nullControlUsers) TransferNullControl(false);}
+    SelectedOrderControl(const SelectedOrderControl &)=delete;
+    SelectedOrderControl &operator=(const SelectedOrderControl &)=delete;
+};
+}
+
 /*17FB:1927. Genuine FAR three-WORD DWORD/shift entry. Signed nonpositive
  * counts leave the value unchanged; the native loop does not mask CL. */
 uint32_t BtechShiftDwordLeftPair(uint32_t value,uint16_t shiftCount)
@@ -115,8 +175,8 @@ uint16_t BtechClassifyOrderSelection(uint16_t commandCode)
  * then first known non-disabled enemy. No range/visibility recomputation. */
 void BtechSeedSelectedOrderTracking(void)
 {
-    if (selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS || !lanceOrderControls[selectedLanceOrderPanel]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS || !lanceOrderControls[selectedLanceOrderPanel]");
-    BtechUnitControlState *control=lanceOrderControls[selectedLanceOrderPanel];
+    SelectedOrderControl selected;
+    BtechUnitControlState *control=selected.Get();
     if (control->trackedUnitOrSpecialSlot==-1)
     {
         if (control->targetUnitSlot!=-1) control->trackedUnitOrSpecialSlot=control->targetUnitSlot;
@@ -137,6 +197,7 @@ void BtechSeedSelectedOrderTracking(void)
 void BtechEditSelectedUnitOrders(void)
 {
     uint16_t scan=combatInputScanCode;
+    SelectedOrderControl selected;
     switch (scan)
     {
     case COMBAT_KEY_Q:
@@ -158,23 +219,20 @@ void BtechEditSelectedUnitOrders(void)
     if (scan!=COMBAT_KEY_ENTER && !combatInputButton1State && !combatInputButton0State)
     {
         if (orderPanelMode==ORDER_PANEL_SUMMARY || (int16_t)orderPanelMode>=ORDER_PANEL_DAMAGE) goto navigation;
-        if (selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS || !lanceOrderControls[selectedLanceOrderPanel]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS || !lanceOrderControls[selectedLanceOrderPanel]");
-        if (lanceOrderControls[selectedLanceOrderPanel]->conditionScoreOrExitCode>=COMBAT_CONDITION_SCORE_MINIMUM) goto navigation;
+        if (selected.Get()->conditionScoreOrExitCode>=COMBAT_CONDITION_SCORE_MINIMUM) goto navigation;
     }
     if (orderPanelMode==ORDER_PANEL_SUMMARY)
     {
         switch (orderActionSelection)
         {
         case ORDER_ACTION_COMMAND:
-            if (selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS || !lanceOrderControls[selectedLanceOrderPanel]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS || !lanceOrderControls[selectedLanceOrderPanel]");
-            control=lanceOrderControls[selectedLanceOrderPanel];
+            control=selected.Get();
             if (control->conditionScoreOrExitCode<=COMBAT_CONDITION_SCORE_MINIMUM) goto navigation;
             orderPanelMode=ORDER_PANEL_COMMAND;pendingOrderCommand=control->commandCode;
             selectedOrderPanelRow=control->commandCode+orderSelectionFirstRows[1];
             break;
         case ORDER_ACTION_REFERENCE:
-            if (selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS || !lanceOrderControls[selectedLanceOrderPanel]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS || !lanceOrderControls[selectedLanceOrderPanel]");
-            control=lanceOrderControls[selectedLanceOrderPanel];
+            control=selected.Get();
             if (control->conditionScoreOrExitCode<=COMBAT_CONDITION_SCORE_MINIMUM) goto navigation;
             if (control->commandCode==COMBAT_ORDER_ACT_ON_OWN)
             {
@@ -201,8 +259,7 @@ void BtechEditSelectedUnitOrders(void)
     {
         if (orderPanelMode==ORDER_PANEL_COMMAND)
         {
-            if (selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS || !lanceOrderControls[selectedLanceOrderPanel]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS || !lanceOrderControls[selectedLanceOrderPanel]");
-            control=lanceOrderControls[selectedLanceOrderPanel];
+            control=selected.Get();
             if (pendingOrderCommand!=COMBAT_ORDER_ACT_ON_OWN && control->commandCode==COMBAT_ORDER_ACT_ON_OWN)
             {
                 control->trackedUnitOrSpecialSlot=-1;
@@ -255,8 +312,7 @@ navigation:
         }
         else if (orderPanelMode==ORDER_PANEL_TARGET)
         {
-            if (selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS || !lanceOrderControls[selectedLanceOrderPanel]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS || !lanceOrderControls[selectedLanceOrderPanel]");
-            control=lanceOrderControls[selectedLanceOrderPanel];
+            control=selected.Get();
             int16_t step=orderNavigationPanelDeltas[direction]+orderNavigationRowDeltas[direction];
             int16_t candidate=control->trackedUnitOrSpecialSlot,target=-1;
             if (candidate==-1) candidate=control->targetUnitSlot>=0?control->targetUnitSlot:COMBAT_LANCE_SLOTS;
@@ -287,8 +343,8 @@ navigation:
                 else repeatShift=ORDER_DESTINATION_REPEAT_SHIFT;
             }
             else orderDestinationRepeatCountdown=ORDER_DESTINATION_REPEAT_TICKS;
-            if (selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS || !lanceOrderControls[selectedLanceOrderPanel] || orderMapScaleIndex>=ORDER_MAP_SCALE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS || !lanceOrderControls[selectedLanceOrderPanel] || orderMapScaleIndex>=ORDER_MAP_SCALE_COUNT");
-            control=lanceOrderControls[selectedLanceOrderPanel];
+            if (orderMapScaleIndex>=ORDER_MAP_SCALE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: orderMapScaleIndex>=ORDER_MAP_SCALE_COUNT");
+            control=selected.Get();
             uint8_t shift=orderMapScaleShifts[orderMapScaleIndex]+repeatShift-ORDER_MAP_PROJECTION_BASE_SHIFT;
             int16_t deltaX=shift<16?(int16_t)((uint32_t)(uint16_t)orderNavigationPanelDeltas[direction]<<shift):0;
             int16_t deltaY=shift<16?(int16_t)((uint32_t)(uint16_t)orderNavigationRowDeltas[direction]<<shift):0;

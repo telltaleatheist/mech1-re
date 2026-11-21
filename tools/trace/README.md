@@ -92,11 +92,7 @@ seconds.
 ## Limits
 
 - Combat runs with Owen's 1990-01-22 BTECH.EXE (174,533 bytes), which the
-  port loads since upstream 621961a. On Linux the game folder needs
-  lower-case names too (combat opens `desert.pal`); the port has no
-  case-insensitive opens on main yet.
-- Two port gaps stop a script: the heading radar (`T`) and the orders screen
-  (`C`) with empty lance slots hit port failsafes, so the combat script leaves
-  them out until they are fixed.
+  port loads since upstream 621961a. Game files are found whatever their
+  case, as DOS finds them, so an upper-case install works on Linux too.
 - A key script is fixed: if a screen gains or loses rows, the script needs
   editing. Check `state row` and `screenKey` in a fresh recording.
