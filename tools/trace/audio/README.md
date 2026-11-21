@@ -66,3 +66,24 @@ PCM hashes aren't goldens in the repo. Floating-point synthesis (`sin`,
 `fmod`) can differ between C libraries, so a hash is only comparable on one
 machine. The level 2 metrics (onsets, pitch, envelopes) are what cross
 platforms.
+
+## The original under DOSBox-X (level 3, slice 3: work in progress)
+
+`tools/capture/run_audio_wsl.sh NAME KEYS.BIN A|R|S [LIMIT [HOLD]]` runs a
+script against the original headless and captures what it sends: AdLib as
+DROv2 (`DX-CAPTURE /O`; no mapper key needed), Roland MIDI through DOSBox-X's
+OSS handler into a plain file, the speaker as WAV. `compare_original.py`
+compares a capture with a golden section by section (key-ons channel-free
+with onset timing for AdLib; bytes for MIDI).
+
+First results (music, `original/music.keys`, hold 36 s):
+
+- AdLib: the bar tune's 659 key-ons match in order, onset gaps median 0 ms,
+  at most 21 ms; the title's first 25 match before the original moves on.
+- MIDI: the bar's 4,730 bytes match in order; the title's first 732 match.
+- Combat: the original sends no MIDI and keys no OPL note, as the plan
+  assumes (the port's combat logs: 0 key-ons; only MPU commands).
+
+Still to do: a time-based wait in MWSNAP (polls can't hold a screen on the
+original), the speaker by WAV onsets, and an original-only quirk to check in
+the port: leaving the title before its tune starts stalls the bar tune.
