@@ -9,6 +9,7 @@ tests can run the same script and compare.
 | `record.py` | Runs the port headless with a poll-fed key script (`feed.txt`, `docs/DEBUG_INPUT.md`) and writes one JSON line per `@snap`. |
 | `check.py` | Compares a candidate (a port build, the rebuild, or recorded traces) with the golden traces, snap by snap (`docs/phase0/REPLAY.md`). |
 | `state.py` | Turns MWSNAP's captures of the original under DOSBox-X (`tools/capture/`) into a trace in the same format, so `check.py --traces` compares the original with the goldens. |
+| `run.py` | Runs the golden scripts against the original under DOSBox-X (`tools/capture/`: keys.py, MWSNAP, run_wsl.sh), turns the captures into traces with `state.py`, and compares them with `check.py --traces`. |
 | `repeat.py` | Records a script twice and checks the runs are byte-identical. |
 | `scripts/*.keys` | Key scripts, each from a new campaign: `campaign_contract` (an offer accepted), `company` (crew, a pilot assigned, NewsNet), `mech_complex` (component repairs, repair all, rearm, reserve ammo bought and sold, the market), `bar` (drinks, a recruit hired and one rejected), `travel` (the house browser, a trip), `options` (save, audio, terrain detail, the load menu). |
 | `traces/*.jsonl` | Recorded traces, the golden references. |
@@ -108,6 +109,11 @@ for BTECH; the random words and row are those MW_MAIN left. Then
     python3 tools/trace/state.py --script tools/trace/scripts/bar.keys \
         --run ~/mwsnap/run-bar --out ~/mw1-orig/bar.jsonl
     python3 tools/trace/check.py --traces ~/mw1-orig --only bar
+
+or all of it in one command, on Linux or WSL with DOSBox-X and nasm, and a
+copy of the game in `~/mwsnap/game`:
+
+    python3 tools/trace/run.py --home ~/mwsnap --out ~/mw1-orig
 
 ## Limits
 

@@ -23,10 +23,9 @@ The original stores no row count, so a menu's rows are counted by its
 record table (MENU_ROWS, from the port's imports); an unknown table is
 reported, never guessed.
 
-The palette's 17th byte (the overscan register, attribute register 11h) is
-not in a version 1 capture; it is written as 0. BTECH sets it during the
-briefing (2A36 BtechEgaSetOverscanColour), so that frame's palette differs
-until the capture carries it. Frames are MW1 art: --frames
+The palette's 17th byte is the overscan colour (attribute register 11h),
+which BTECH sets during the briefing (2A36 BtechEgaSetOverscanColour). A
+version 2 capture holds it; a version 1 capture does not, and reads as 0. Frames are MW1 art: --frames
 writes them outside the repo, in the recorder's .indices/.palette form.
 """
 import argparse, json, os, struct, sys
@@ -35,7 +34,6 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import record  # noqa: E402  (state_lines, menu_rows, read_script, sha)
 
-HEADER = 8 + 16 + 768
 PLANE = 8000
 MEMORY = 640 * 1024
 # MWSNAP.COM's resident fields (tools/capture/mwsnap.asm, nasm listing + 100h).
@@ -70,11 +68,14 @@ MENU_ROWS = {
 class Capture:
     def __init__(self, path):
         d = open(path, "rb").read()
-        if d[:4] != b"MW1S" or d[4] != 1:
-            raise ValueError(f"{path}: not an MWSNAP capture (version 1)")
+        if d[:4] != b"MW1S" or d[4] not in (1, 2):
+            raise ValueError(f"{path}: not an MWSNAP capture (version 1 or 2)")
         self.mode, self.start = d[5], struct.unpack_from("<H", d, 6)[0]
-        self.attr, self.dac = d[8:24], d[24:HEADER]
-        at = HEADER
+        # Version 2 adds the overscan colour (attribute register 11h) at 24.
+        at = 24 if d[4] == 1 else 25
+        self.attr, self.overscan = d[8:24], (d[24] if d[4] == 2 else 0)
+        self.dac = d[at:at + 768]
+        at += 768
         self.planes = None
         if self.mode == 0x0D:
             self.planes = [d[at + p * PLANE: at + (p + 1) * PLANE] for p in range(4)]
@@ -125,7 +126,7 @@ class Capture:
         return bytes(out)
 
     def palette(self):
-        return bytes(self.attr) + b"\0"
+        return bytes(self.attr) + bytes([self.overscan])
 
 
 def cstring(cap, ds, off, limit=96):
