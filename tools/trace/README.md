@@ -115,6 +115,19 @@ copy of the game in `~/mwsnap/game`:
 
     python3 tools/trace/run.py --home ~/mwsnap --out ~/mw1-orig
 
+## How to check against the original
+
+On Linux or WSL, with DOSBox-X, nasm and a copy of the game (1990-01-22
+BTECH.EXE) in `~/mwsnap/game`:
+
+    python3 tools/trace/run.py --home ~/mwsnap --out ~/mw1-orig
+
+It runs every golden script against the original, headless and one run at a
+time (about 3.5 minutes for all seven), and prints check.py's verdict; exit 0
+means every frame and state line matches. `--dosbox-x PATH` names an unpacked
+DOSBox-X (set `LD_LIBRARY_PATH` to its library folder). Last run (main
+3b226e8): 7 of 7, no MWSNAP flags.
+
 ## Limits
 
 - Combat runs with the 1990-01-22 BTECH.EXE (174,533 bytes), which the
