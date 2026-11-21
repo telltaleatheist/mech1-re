@@ -52,3 +52,39 @@ dark_wing.attack_failed        MW_MAIN.EXE 1090:1BBC z
 # The contract office.
 contract.narrative             MW_MAIN.EXE 1090:4890 z
 contract.refusal.house         MW_MAIN.EXE 1090:4C87 z
+
+# The houses' names in the contract office (1090:4A69, a table of offsets;
+# in HOUSE_* order).
+house.kurita.name              MW_MAIN.EXE 1090:4A73 z
+house.steiner.name             MW_MAIN.EXE 1090:4A7A z
+house.marik.name               MW_MAIN.EXE 1090:4A82 z
+house.liao.name                MW_MAIN.EXE 1090:4A88 z
+house.davion.name              MW_MAIN.EXE 1090:4A8D z
+
+# The units' names: in the shop (1090:2DB5, a table of offsets) and
+# elsewhere (1090:2E70); in CampaignUnitKind order.
+unit.locust.shop_name          MW_MAIN.EXE 1090:2DCB z
+unit.wasp.shop_name            MW_MAIN.EXE 1090:2DDA z
+unit.jenner.shop_name          MW_MAIN.EXE 1090:2DE9 z
+unit.phoenix_hawk.shop_name    MW_MAIN.EXE 1090:2DF8 z
+unit.shadow_hawk.shop_name     MW_MAIN.EXE 1090:2E07 z
+unit.wolverine.shop_name       MW_MAIN.EXE 1090:2E16 z
+unit.rifleman.shop_name        MW_MAIN.EXE 1090:2E25 z
+unit.warhammer.shop_name       MW_MAIN.EXE 1090:2E34 z
+unit.marauder.shop_name        MW_MAIN.EXE 1090:2E43 z
+unit.battlemaster.shop_name    MW_MAIN.EXE 1090:2E52 z
+unit.dropship.shop_name        MW_MAIN.EXE 1090:2E61 z
+unit.locust.name               MW_MAIN.EXE 1090:2E86 z
+unit.wasp.name                 MW_MAIN.EXE 1090:2E8D z
+unit.jenner.name               MW_MAIN.EXE 1090:2E92 z
+unit.phoenix_hawk.name         MW_MAIN.EXE 1090:2E99 z
+unit.shadow_hawk.name          MW_MAIN.EXE 1090:2EA6 z
+unit.wolverine.name            MW_MAIN.EXE 1090:2EB2 z
+unit.rifleman.name             MW_MAIN.EXE 1090:2EBC z
+unit.warhammer.name            MW_MAIN.EXE 1090:2EC5 z
+unit.marauder.name             MW_MAIN.EXE 1090:2ECF z
+unit.battlemaster.name         MW_MAIN.EXE 1090:2ED8 z
+unit.dropship.name             MW_MAIN.EXE 1090:2EE5 z
+
+# The commander's name in a new campaign.
+commander.default_name         MW_MAIN.EXE 1090:5CE2 z

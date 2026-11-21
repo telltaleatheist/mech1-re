@@ -153,6 +153,12 @@ DS:0008 finds the data segment, then each piece must still match its hash.
    refusal (25 pieces; each buffer is filled whole, the rest zeroed, as the
    exe holds it). The mission descriptions (1090:8A69) mix rule headers with
    their text and saves keep offsets into them; they wait for 2d.
+   2c: MW_MAIN's names (the houses' in the contract office, the units' in
+   the shop and elsewhere, the new campaign's commander; 28 pieces), keyed
+   by HOUSE_* and CampaignUnitKind. BTECH's names (the mech templates, the
+   pilots, the default commander) need BTECH.EXE unpacked first (EXEPACK,
+   `BtechDecodeInstallationImage`); they come with the importer's BTECH
+   support.
 3. **Rules and the new campaign** into `data/rules/`. Traces equal (same
    numbers). The importer's piece hashes check them against the exe.
 4. **Layout** into `data/ui/`. Traces equal.

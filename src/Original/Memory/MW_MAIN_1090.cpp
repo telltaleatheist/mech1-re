@@ -470,6 +470,12 @@ static void ImportInitialText(const uint8_t *data, uint16_t offset, MwPanelText 
     line->colour=data[(uint16_t)(offset+4)];
     memcpy(text,data+offset+5,count);line->text=text;
 }
+/* The story file's keys for the unit kinds (CampaignUnitKind order) and the
+ * houses (HOUSE_* order), as src/Import/pieces.txt names them. */
+static const char *const storyUnitKeys[CAMPAIGN_UNIT_KIND_COUNT]={"locust","wasp","jenner","phoenix_hawk",
+    "shadow_hawk","wolverine","rifleman","warhammer","marauder","battlemaster","dropship"};
+static const char *const storyHouseKeys[CAMPAIGN_HOUSE_COUNT]={"kurita","steiner","marik","liao","davion"};
+static_assert(CAMPAIGN_UNIT_DROPSHIP==10 && HOUSE_DAVION==4,"the story keys follow the enums");
 static bool ImportInitialString(const uint8_t *data, uint16_t offset, char *text, size_t capacity)
 {
     if ((size_t)offset+capacity>NATIVE_SEGMENT_BYTE_COUNT) return false;
@@ -1001,7 +1007,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     acceptedContractTargetHouseIndex=MwReadNativeWord(data,0x0B53);
     playerSkillProgress=MwReadNativeWord(data,0x0B5A);
     memcpy(defaultHouseMissionTypeLimits,data+0x5CBA,sizeof(defaultHouseMissionTypeLimits));
-    memcpy(campaignDefaultCommanderNameBytes,data+0x5CE2,sizeof(campaignDefaultCommanderNameBytes));
+    if (!MwStoryCopyText("commander.default_name",(char *)campaignDefaultCommanderNameBytes,sizeof(campaignDefaultCommanderNameBytes))) return false;
     companyMenuSelectedRow=MwReadNativeWord(data,0x21CC);
     barMenuSelectedRow=MwReadNativeWord(data,0x8FF4);
     optionsMenuSelection=MwReadNativeWord(data,0x9D50);
@@ -1068,10 +1074,14 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
         }
         repairWeaponLabels[kind][label]=NULL;
     }
-    for (uint16_t i=0;i<0x0B;++i)
-        if (!ImportInitialString(data,MwReadNativeWord(data,(uint16_t)(0x2DB5+i*2)),shopUnitNames[i],sizeof(shopUnitNames[i]))) return false;
-    for (uint16_t i=0;i<0x0B;++i)
-        if (!ImportInitialString(data,MwReadNativeWord(data,(uint16_t)(0x2E70+i*2)),unitDisplayNames[i],sizeof(unitDisplayNames[i]))) return false;
+    for (uint16_t i=0;i<CAMPAIGN_UNIT_KIND_COUNT;++i)
+    {
+        char id[40];
+        snprintf(id,sizeof(id),"unit.%s.shop_name",storyUnitKeys[i]);
+        if (!MwStoryCopyText(id,shopUnitNames[i],sizeof(shopUnitNames[i]))) return false;
+        snprintf(id,sizeof(id),"unit.%s.name",storyUnitKeys[i]);
+        if (!MwStoryCopyText(id,unitDisplayNames[i],sizeof(unitDisplayNames[i]))) return false;
+    }
     if (!ImportReserveAmmoUiData(data)) return false;
     for (uint16_t i=0;i<0x06;++i)
         if (!ImportInitialString(data,MwReadNativeWord(data,(uint16_t)(0x2F78+i*2)),ammoFamilyDisplayNames[i],sizeof(ammoFamilyDisplayNames[i]))) return false;
@@ -2193,7 +2203,8 @@ static bool ImportContractData(const uint8_t *data)
     memcpy(contractOfficePlanetGroupStorage,data+0x4B8A,sizeof(contractOfficePlanetGroupStorage));
     for (uint16_t house=0;house<CAMPAIGN_HOUSE_COUNT;++house)
     {
-        if (!ImportInitialString(data,MwReadNativeWord(data,0x4A69+house*2),houseContractNames[house],8)) return false;
+        char id[24];snprintf(id,sizeof(id),"house.%s.name",storyHouseKeys[house]);
+        if (!MwStoryCopyText(id,houseContractNames[house],sizeof(houseContractNames[house]))) return false;
         uint16_t group=MwReadNativeWord(data,0x4B80+house*2);
         if (group<0x4B8A || group>=0x4BF0 || !memchr(data+group,CONTRACT_REGION_END,0x4BF0-group)) return false;
         contractOfficePlanetGroups[house]=contractOfficePlanetGroupStorage+group-0x4B8A;
