@@ -1,8 +1,8 @@
-# mw1-original (private)
+# mw1-original
 
-This is a private fork of **Elthial's MechWarrior SDL port**, the readable reconstruction of MechWarrior (1989) whose
+This is a fork of **Elthial's MechWarrior SDL port**, the readable reconstruction of MechWarrior (1989) whose
 README follows below. It keeps Elthial's full history (the fork point is `e119a72a`), their `LICENSE`, the MIT text and
-the [rights notice](docs/NOTICE.md). The original port is at https://github.com/Elthial/MechWarrior and is the
+the [rights notice](docs/NOTICE.md). The original port is at https://github.com/Elthial/Mechwarrior-sdl-port and is the
 `upstream` remote here (fetch only).
 
 **What we're doing with it:** rebuilding the 1989 game as modern C++ for *MechWarrior 1: Critical Hit* (FIXES 130 in
@@ -11,7 +11,7 @@ and code organized by what it does, each function keeping the original's address
 comes only from the player's own copy of the game. Every step is checked against golden traces recorded from the port
 (`tools/trace`): the rebuilt game must replay each script exactly as the original logic does.
 
-**It stays private for now.** Don't publish it, mirror it or open pull requests upstream from it without Owen's word.
+Fixes that belong in the port itself are offered to Elthial upstream separately; this fork doesn't publish releases.
 
 **Credit:** the reconstruction, its research and its tools are Elthial's work. Their licence terms (MIT for the host
 code under `src/SDL` and `src/Support`; see `docs/LICENSES/README.md` for the rest) apply to everything taken from it.
