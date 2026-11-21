@@ -13,7 +13,6 @@
  * No fake PSP, source arguments or alternative startup loop is introduced. */
 void BtechInitializeCombatRuntime(void)
 {
-    resourceDiskPromptNumber=3;
     BtechInstallDosCriticalErrorHandler();
     combatContinuationStage=UINT16_MAX;
     BtechResetCombatState();

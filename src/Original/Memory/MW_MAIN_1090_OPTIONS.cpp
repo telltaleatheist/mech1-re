@@ -15,7 +15,6 @@ char selectedSaveFilename[CAMPAIGN_SAVE_FILENAME_BYTES],saveFindPattern[6];
 uint8_t saveNamePrompt[0x1B];
 char audioOptionLabels[2][4],terrainDetailLabels[3][5];
 uint8_t saveDiskFullText[0x2B],saveDiskErrorText[0x30],loadDiskErrorText[0x31];
-MwSaveDiskPrompt saveDiskPrompt;
 uint8_t newsAtStart,newsAtEnd;
 uint16_t newsLastArticleId;
 char newsBoundaryText[0x1B];
@@ -114,7 +113,6 @@ bool MwImportCampaignOptionsData(const uint8_t *data,size_t byteCount)
     memcpy(saveDiskFullText,data+0xA088,sizeof(saveDiskFullText));
     memcpy(saveDiskErrorText,data+0xA0B3,sizeof(saveDiskErrorText));
     memcpy(loadDiskErrorText,data+0xA0E3,sizeof(loadDiskErrorText));
-    memcpy(&saveDiskPrompt,data+0xA114,sizeof(saveDiskPrompt));
     newsAtStart=data[0x257F];newsAtEnd=data[0x2580];newsLastArticleId=MwReadNativeWord(data,0x2562);
     memcpy(newsBoundaryText,data+0x2564,sizeof(newsBoundaryText));
     newsArticleCursor=NULL;newsArticleListStart=NULL;

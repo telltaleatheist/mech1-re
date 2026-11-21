@@ -158,7 +158,6 @@ void BtechExportCombatResultsAndTransition(uint16_t resultCode)
         BtechRefreshCockpitViewportAndGauges();
         return;
     }
-    resourceDiskPromptNumber=1;
     /*CC6F's existing host stdio representation: E206 read-stream close is
      * collapsed here at IO, not an invented game helper or numeric FILE cast. */
     BtechCloseStreamFile(BtechOpenStreamWithRetry("mw.exe","rb"));

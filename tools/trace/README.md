@@ -22,7 +22,7 @@ The same approach as crescent-hawks-rebuild's reference rig (its
 `docs/reference.md`), so both rebuilds replay the same way:
 
     @snap:title
-    Return   @snap:opening     # a key, then the screen the game next waits on
+    Return   @snap:arrival     # a key, then the screen the game next waits on
     idle:20  Down @snap:x      # 20 more empty polls before the key
 
 Tokens: SDL key names, `idle:N`, `@snap:NAME`, `random:WWWWWWWW` (sets the two

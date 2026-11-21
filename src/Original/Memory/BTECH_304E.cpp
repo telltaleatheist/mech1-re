@@ -5,7 +5,7 @@
 #include "mechwarrior/combat_damage.h"
 #include <string.h>
 
-uint16_t resourceDiskPromptNumber,combatContinuationStage;
+uint16_t combatContinuationStage;
 uint16_t salvageEntryCount;
 uint16_t campaignUnitKindByCombatTemplate[COMBAT_MECH_TEMPLATES];
 uint16_t actuatorIntegrityTierByCondition[5],systemDamageTierByHits[3],weaponIntegrityTierByOperational[2];
@@ -79,7 +79,6 @@ bool BtechImportCombatStageInitialData(const uint8_t *data,size_t byteCount)
         mechFallbackTemplateSteps[i]=(int16_t)(step<0x8000?step:(int32_t)step-0x10000);
         mechTemplateBudgetCostsBytes[i]=(uint32_t)MwReadNativeWord(data,0x09A2+i*4)|((uint32_t)MwReadNativeWord(data,0x09A4+i*4)<<16);
     }
-    resourceDiskPromptNumber=MwReadNativeWord(data,0xCFD6);
     combatContinuationStage=MwReadNativeWord(data,0xC35A);
     combatContinuationProfileIndex=MwReadNativeWord(data,0x0974);
     combatMissionDefinitionIndex=MwReadNativeWord(data,0xC96E);
@@ -175,7 +174,6 @@ bool BtechImportMechInitialData(const uint8_t *data,size_t byteCount)
  * scalars separately. Host bindings and campaign owners are untouched. */
 void BtechInitializeFreshMechOwners(const uint8_t *data)
 {
-    resourceDiskPromptNumber=0;
     combatContinuationStage=0;
     reducedMemoryMode=0;
     combatTerrainDetailLevel=0;
