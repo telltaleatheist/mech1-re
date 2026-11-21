@@ -2,6 +2,7 @@
 // bytes for the importers in Original/Memory, which run again on every EXEC.
 #include "mechwarrior/rules.h"
 
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 
@@ -40,22 +41,38 @@ bool MwRulesCopyNative(const char *id, uint8_t *bytes, size_t size)
     return true;
 }
 
-bool MwRulesCopyWords(const char *id, uint16_t *words, size_t count, size_t at)
+namespace {
+// The bytes [at, at + count) of rule piece `id`, or null (with the reason on stderr).
+const char *piece_range(const char *id, size_t count, size_t at)
 {
     const auto it = g_native.find(id);
     if (it == g_native.end() || !mw1o::rules::find_rule_piece(id)) {
         std::fprintf(stderr, "MechWarrior: the rules have no table \"%s\"\n", id);
-        return false;
+        return nullptr;
     }
     const std::string &bytes = it->second;
-    if (at > bytes.size() || count > (bytes.size() - at) / 2) {
-        std::fprintf(stderr, "MechWarrior: the rule table \"%s\" ends before word %zu\n", id, at / 2 + count);
-        return false;
+    if (at > bytes.size() || count > bytes.size() - at) {
+        std::fprintf(stderr, "MechWarrior: the rule table \"%s\" ends before byte %zu\n", id, at + count);
+        return nullptr;
     }
-    for (size_t i = 0; i < count; ++i)
-        words[i] = static_cast<uint16_t>(static_cast<uint8_t>(bytes[at + i * 2]) |
-                                         static_cast<uint8_t>(bytes[at + i * 2 + 1]) << 8);
-    return true;
+    return bytes.data() + at;
+}
+}  // namespace
+
+bool MwRulesCopyBytes(const char *id, uint8_t *bytes, size_t count, size_t at)
+{
+    const char *from = piece_range(id, count, at);
+    if (from) std::memcpy(bytes, from, count);
+    return from != nullptr;
+}
+
+bool MwRulesCopyWords(const char *id, uint16_t *words, size_t count, size_t at)
+{
+    if (count > SIZE_MAX / 2) return false;
+    const char *from = piece_range(id, count * 2, at);
+    for (size_t i = 0; from && i < count; ++i)
+        words[i] = static_cast<uint16_t>(static_cast<uint8_t>(from[i * 2]) | static_cast<uint8_t>(from[i * 2 + 1]) << 8);
+    return from != nullptr;
 }
 
 size_t MwRulesPieceSize(const char *id)

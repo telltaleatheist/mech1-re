@@ -113,7 +113,10 @@ bool BtechImportMechInitialData(const uint8_t *data,size_t byteCount)
     }
     for (uint16_t index=0;index<COMBAT_MECH_TEMPLATES;++index)
     {
-        const uint8_t *bytes=data+0x1178+index*0x00E0;
+        /* Each template is a 0xE0-byte row of the rule table (mechs.json),
+         * laid out as the exe's, read here at the exe's offsets. */
+        uint8_t bytes[0xE0];
+        if (!MwRulesCopyBytes("mechs.templates",bytes,sizeof(bytes),index*0x00E0)) return false;
         BtechMechTemplate *mech=&mechTemplates[index];
         mech->tonnage=MwReadNativeWord(bytes,0);
         mech->displayScale=MwReadNativeWord(bytes,2);

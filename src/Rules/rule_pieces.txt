@@ -101,3 +101,5 @@ assets.machine_gun_effect_steps     BTECH.EXE  304E:0EA4 6
 assets.body_damage_effect_steps     BTECH.EXE  304E:2342 8
 assets.animation_prefix_counts      BTECH.EXE  304E:24B4 18
 assets.player_pose_frame_counts     BTECH.EXE  304E:265E 16
+# mechs.json (BTECH): the 8 templates, 0xE0 bytes each.
+mechs.templates                     BTECH.EXE  304E:1178 1792

@@ -598,6 +598,18 @@ Each piece goes on its own branch and needs a build, the unit checks,
   - The BTECH importers read through `MwRulesCopyWords`. The check that
     the exe's effect sequence pointers name the two effect tables stays.
 - **3d:** `mechs.json` (the 8 templates, names by story id).
+  Done (1 more piece, 86 in all):
+  - The 8 templates in order, each naming its story text id
+    (`combat.mech_template.N.name`, checked: the cockpit finds the name by
+    template number). Locations are named (COMBAT_ARMOR_*, COMBAT_BODY_*,
+    now all eight in combat_mechs.h), mount weapons by COMBAT_WEAPON_*.
+  - Mounts and jump jet groups list only those used; the exe's counts are
+    the lists' lengths, and its unused slots hold its filler (no weapon or
+    location, zeros). Ammunition stays 6 rows by family, since a family
+    can have a location and no salvos.
+  - Unnamed words keep their offset: `unknown_0e`, the mounts'
+    `unknown_4` and `unknown_6`.
+  - The importer reads each 0xE0-byte row through `MwRulesCopyBytes`.
 - **3e:** `new_campaign.json`. New games and the per-EXEC reload fill the
   block from it, then a returning EXEC decodes the exchange over it, as
   today.

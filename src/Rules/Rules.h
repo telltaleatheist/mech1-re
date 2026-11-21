@@ -54,6 +54,15 @@
 //     the install's files: {"animation_prefix_counts" [9], "player_pose_frame_counts" [8],
 //     "body_damage_effect_steps" [4], "default_effect_steps" [7],
 //     "machine_gun_effect_steps" [3]}
+//   mechs.json  {"mechs": [8 templates, in order]}, each {"name" (its story
+//     text id, combat.mech_template.N.name), "tonnage", "display_scale",
+//     "firing_movement_threshold", "maximum_speed_scale", "jump_acceleration",
+//     "jump_speed_limit", "unknown_0e", "heat_sinks", "reference_points"
+//     {armour: [3 signed]}, "armour" {armour: n}, "internal" {body: n},
+//     "mounts" [up to 10 {"weapon", "location" (body), "unknown_4",
+//     "unknown_6"}], "ammo" [6, by ammo family: {"location" (body or null),
+//     "salvos"}], "jump_jets" [up to 3 {"location" (body), "critical_slots"}]}.
+//     The mount and jet counts are the lists' lengths.
 #pragma once
 
 #include <array>
@@ -215,6 +224,22 @@ struct CombatAssets {
     std::array<std::uint16_t, 3> machine_gun_effect_steps{};
 };
 
+inline constexpr std::size_t kMounts = 10, kJetGroups = 3;
+
+struct MechTemplate {
+    std::uint16_t tonnage = 0, display_scale = 0, firing_movement_threshold = 0, maximum_speed_scale = 0;
+    std::uint16_t jump_acceleration = 0, jump_speed_limit = 0, unknown_0e = 0, heat_sinks = 0;
+    std::array<std::array<std::int16_t, 3>, 9> reference_points{};  // by armour location
+    std::array<std::uint16_t, 9> armour{};
+    std::array<std::uint16_t, 8> internal{};
+    struct Mount { std::uint16_t weapon = 0, location = 0, unknown_4 = 0, unknown_6 = 0; };
+    std::vector<Mount> mounts;                                 // at most kMounts
+    std::array<std::uint16_t, kAmmoFamilies> ammo_location{};  // body location, or kNone
+    std::array<std::uint16_t, kAmmoFamilies> ammo_salvos{};
+    struct JumpJets { std::uint16_t location = 0, critical_slots = 0; };
+    std::vector<JumpJets> jump_jets;                           // at most kJetGroups
+};
+
 struct Rules {
     Units units;
     Market market;
@@ -224,6 +249,7 @@ struct Rules {
     Combat combat;
     std::array<Weapon, kWeaponKinds.size()> weapons;
     CombatAssets assets;
+    std::array<MechTemplate, kTemplates> mechs;
 };
 
 // <data_dir>/rules/*.json, read strictly. Throws RulesError naming the file.

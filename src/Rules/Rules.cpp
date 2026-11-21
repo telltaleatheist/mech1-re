@@ -341,6 +341,64 @@ CombatAssets read_combat_assets(const fs::path& data_dir) {
     return a;
 }
 
+std::array<MechTemplate, kTemplates> read_mechs(const fs::path& data_dir) {
+    Reader r(data_dir / "rules" / "mechs.json");
+    const Json file = r.parse();
+    r.only(file, {"mechs"});
+    const Json::Array& mechs = r.array(file, "mechs", kTemplates);
+    const std::span<const std::string_view> armour(kArmourLocations), body(kBodyLocations), weapons(kWeaponKinds);
+    // A body location by name, or null for none (when `none` is allowed).
+    const auto location = [&](const Json& object, bool none) {
+        const Json& v = r.member(object, "location");
+        if (none && std::holds_alternative<std::nullptr_t>(v.value)) return kNone;
+        return static_cast<std::uint16_t>(r.name(v, body, "a location"));
+    };
+    std::array<MechTemplate, kTemplates> out;
+    for (std::size_t i = 0; i < kTemplates; ++i) {
+        const Json& m = mechs[i];
+        r.only(m, {"name", "tonnage", "display_scale", "firing_movement_threshold", "maximum_speed_scale",
+                   "jump_acceleration", "jump_speed_limit", "unknown_0e", "heat_sinks", "reference_points", "armour",
+                   "internal", "mounts", "ammo", "jump_jets"});
+        // The name is the story's; the cockpit finds it by template number.
+        const std::string name = "combat.mech_template." + std::to_string(i + 1) + ".name";
+        if (r.text(m, "name") != name) r.fail("template " + std::to_string(i + 1) + "'s name is not \"" + name + "\"");
+        MechTemplate& t = out[i];
+        t.tonnage = r.u16(m, "tonnage");
+        t.display_scale = r.u16(m, "display_scale");
+        t.firing_movement_threshold = r.u16(m, "firing_movement_threshold");
+        t.maximum_speed_scale = r.u16(m, "maximum_speed_scale");
+        t.jump_acceleration = r.u16(m, "jump_acceleration");
+        t.jump_speed_limit = r.u16(m, "jump_speed_limit");
+        t.unknown_0e = r.u16(m, "unknown_0e");
+        t.heat_sinks = r.u16(m, "heat_sinks");
+        const auto points = r.keyed(m, "reference_points", armour);
+        for (std::size_t l = 0; l < armour.size(); ++l)
+            signed_words(r, row(r, *points[l], 3, "a reference point"), t.reference_points[l], "a reference component");
+        keyed_words(r, m, "armour", armour, {}, t.armour);
+        keyed_words(r, m, "internal", body, {}, t.internal);
+        const Json::Array& mounts = r.array(m, "mounts");
+        if (mounts.size() > kMounts) r.fail("a template has more than " + std::to_string(kMounts) + " mounts");
+        for (const Json& e : mounts) {
+            r.only(e, {"weapon", "location", "unknown_4", "unknown_6"});
+            t.mounts.push_back({static_cast<std::uint16_t>(r.name(r.member(e, "weapon"), weapons, "a weapon")),
+                                location(e, false), r.u16(e, "unknown_4"), r.u16(e, "unknown_6")});
+        }
+        const Json::Array& ammo = r.array(m, "ammo", kAmmoFamilies);
+        for (std::size_t f = 0; f < kAmmoFamilies; ++f) {
+            r.only(ammo[f], {"location", "salvos"});
+            t.ammo_location[f] = location(ammo[f], true);
+            t.ammo_salvos[f] = r.u16(ammo[f], "salvos");
+        }
+        const Json::Array& jets = r.array(m, "jump_jets");
+        if (jets.size() > kJetGroups) r.fail("a template has more than " + std::to_string(kJetGroups) + " jump jet groups");
+        for (const Json& e : jets) {
+            r.only(e, {"location", "critical_slots"});
+            t.jump_jets.push_back({location(e, false), r.u16(e, "critical_slots")});
+        }
+    }
+    return out;
+}
+
 void put_word(std::string& out, std::uint16_t w) {
     out += char(w & 0xFF);
     out += char(w >> 8);
@@ -356,7 +414,8 @@ std::uint16_t piece_offset(std::string_view id) {
 
 Rules load_rules(const fs::path& data_dir) {
     return {read_units(data_dir), read_market(data_dir), read_repair(data_dir), read_houses(data_dir),
-            read_contracts(data_dir), read_combat(data_dir), read_weapons(data_dir), read_combat_assets(data_dir)};
+            read_contracts(data_dir), read_combat(data_dir), read_weapons(data_dir), read_combat_assets(data_dir),
+            read_mechs(data_dir)};
 }
 
 std::map<std::string, std::string, std::less<>> native_pieces(const Rules& rules) {
@@ -525,6 +584,32 @@ std::map<std::string, std::string, std::less<>> native_pieces(const Rules& rules
     put_words("assets.body_damage_effect_steps", assets.body_damage_effect_steps);
     put_words("assets.default_effect_steps", assets.default_effect_steps);
     put_words("assets.machine_gun_effect_steps", assets.machine_gun_effect_steps);
+
+    // Each template as the exe's 0xE0-byte row; unused mounts and jump jet
+    // groups hold the exe's filler (no weapon, no location).
+    std::string& templates = out["mechs.templates"];
+    for (const MechTemplate& t : rules.mechs) {
+        for (std::uint16_t v : {t.tonnage, t.display_scale, t.firing_movement_threshold, t.maximum_speed_scale,
+                                static_cast<std::uint16_t>(t.jump_jets.size()), t.jump_acceleration,
+                                t.jump_speed_limit, t.unknown_0e, t.heat_sinks,
+                                static_cast<std::uint16_t>(t.mounts.size())})
+            put_word(templates, v);
+        for (const auto& point : t.reference_points)
+            for (std::int16_t c : point) put_word(templates, static_cast<std::uint16_t>(c));
+        for (std::size_t i = 0; i < kMounts; ++i) {
+            const MechTemplate::Mount m = i < t.mounts.size() ? t.mounts[i] : MechTemplate::Mount{kNone, kNone, 0, 0};
+            for (std::uint16_t v : {m.weapon, m.location, m.unknown_4, m.unknown_6}) put_word(templates, v);
+        }
+        for (std::uint16_t l : t.ammo_location) put_word(templates, l);
+        for (std::size_t i = 0; i < kJetGroups; ++i) {
+            const MechTemplate::JumpJets j = i < t.jump_jets.size() ? t.jump_jets[i] : MechTemplate::JumpJets{kNone, 0};
+            put_word(templates, j.location);
+            put_word(templates, j.critical_slots);
+        }
+        for (std::uint16_t a : t.armour) put_word(templates, a);
+        for (std::uint16_t s : t.internal) put_word(templates, s);
+        for (std::uint16_t s : t.ammo_salvos) put_word(templates, s);
+    }
     return out;
 }
 

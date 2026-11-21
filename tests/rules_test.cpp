@@ -196,6 +196,37 @@ void what_doesnt_fit_is_refused(const fs::path& data, const fs::path& work) {
         at(a, "animation_prefix_counts") = Json{counts};
     });
     refused(load, "\"animation_prefix_counts\" has 8 entries, not 9", "eight animation counts");
+    const auto with_mech = [&](std::size_t index, const std::function<void(Json&)>& change) {
+        with_file("mechs.json", [&](Json& file) {
+            Json::Array mechs = at(file, "mechs").array();
+            change(mechs[index]);
+            at(file, "mechs") = Json{mechs};
+        });
+    };
+    with_mech(2, [](Json& m) { at(m, "name") = Json{std::string("combat.mech_template.4.name")}; });
+    refused(load, "template 3's name is not", "a template named for another");
+    with_mech(7, [](Json& m) {
+        Json::Array mounts = at(m, "mounts").array();
+        mounts.push_back(mounts[0]);
+        at(m, "mounts") = Json{mounts};
+    });
+    refused(load, "more than 10 mounts", "an eleventh mount");
+    with_mech(0, [](Json& m) {
+        Json::Array mounts = at(m, "mounts").array();
+        at(mounts[0], "weapon") = Json{std::string("flamer")};
+        at(m, "mounts") = Json{mounts};
+    });
+    refused(load, "a weapon is not one of its names", "a weapon that isn't one");
+    with_mech(1, [](Json& m) {
+        Json::Array jets = at(m, "jump_jets").array();
+        at(jets[0], "location") = Json{nullptr};
+        at(m, "jump_jets") = Json{jets};
+    });
+    refused(load, "a location is not one of its names", "a jump jet group without a location");
+    with_mech(4, [](Json& m) { std::get<Json::Object>(at(m, "internal").value).erase("head"); });
+    refused(load, "no \"head\"", "an internal structure location missing");
+    with_mech(5, [](Json& m) { std::get<Json::Object>(at(m, "armour").value)["rear_left_torso"] = Json{1.0}; });
+    refused(load, "unknown key \"rear_left_torso\"", "an armour location that isn't one");
     fs::remove(work / "rules" / "market.json");
     refused(load, "can't read", "a missing file");
 }
