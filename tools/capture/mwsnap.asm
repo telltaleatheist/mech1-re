@@ -8,9 +8,12 @@
 ;
 ; Usage: MWSNAP K [Thhhhhhhh]
 ;   K: play the key script in KEYS.BIN (tools/capture/keys.py writes it).
-;   T: pin the BIOS clock the campaign's one startup read sees (081B:0C0A,
-;      int 1Ah AH=00, mixed into both random words), hex ticks; the port's
-;      MECHWARRIOR_DEBUG_BIOS_TICKS. Default 00010000 (the port's default).
+;   T: pin the BIOS clock the campaign's startup read sees (081B:0C0A,
+;      int 1Ah AH=00, mixed into both random words; it runs again each time
+;      MW_MAIN restarts after a battle), hex ticks; the port's
+;      MECHWARRIOR_DEBUG_BIOS_TICKS, which answers every read the same.
+;      Default 00010000 (the port's default). The game makes no other AH=00
+;      reads; DOS's own, while MWSNAP writes a capture, see the real clock.
 ;
 ; KEYS.BIN: a word count, then that many words. Items:
 ;   0FFFFh          @snap: capture now (MW1Snnnn.BIN, numbered from 0)
@@ -93,10 +96,11 @@ c_polls     dw 0
 c_wait      dw 0
 game_ds     dw 0                        ; the campaign's, at its last int 16h call
 btech_base  dw 0
+btech_int9  dd 0                        ; BTECH's own int 9 handler
+irq_seen    db 0
 btech_ds    dw 0                        ; BTECH's DS, at its last input poll
 pin_lo      dw 0
 pin_hi      dw 1
-pin_used    db 0
 key_pos     dw 0
 key_count   dw 0
 count       dw 0
@@ -388,8 +392,27 @@ int21:
         mov bx, patch_btech
         call on_own_stack               ; DS there is ours: the caller's is saved
         pop bx
+        ; Install int9_wrap in BTECH's place, so send_scan knows when BTECH's
+        ; handler has run. The caller's DS:DX are kept.
+        mov [cs:btech_int9], dx
+        mov [cs:btech_int9 + 2], ds
+        push ds
+        push dx
+        push cs
+        pop ds
+        mov dx, int9_wrap
+        pushf
+        call far [cs:old21]
+        pop dx
+        pop ds
+        iret
 .chain:
         jmp far [cs:old21]
+
+; BTECH's int 9 handler, wrapped: notes that it ran (irq_seen), then runs it.
+int9_wrap:
+        mov byte [cs:irq_seen], 1
+        jmp far [cs:btech_int9]
 
 ; On MWSNAP's stack (see on_own_stack): the caller's DS is 3 words above the return.
 patch_btech:
@@ -426,9 +449,6 @@ int1a:
         jne .chain
         cmp byte [cs:busy], 0           ; DOS stamping a capture file: not the game
         jne .chain
-        cmp byte [cs:pin_used], 0
-        jne .chain
-        mov byte [cs:pin_used], 1
         mov cx, [cs:pin_hi]
         mov dx, [cs:pin_lo]
         xor al, al
@@ -443,6 +463,7 @@ int1a:
 ; sub sp,0Ch on BTECH's stack and goes on at the nop.
 combat_hook:
         mov [cs:btech_ds], ds
+        call log_poll
         push bx
         mov bx, combat_items
         call on_own_stack
@@ -453,6 +474,49 @@ combat_hook:
         mov bp, sp
         sub sp, 0ch
         jmp far [cs:ret_ip]
+
+; Logs a combat poll in the int 16h log: IP 0FFFFh, CS the polls since the
+; last item, AX the items done (key_pos), empty the BIOS buffer's head, then
+; its tail, BTECH's DS:C9ACh (the last poll's scan code) and the BIOS tick.
+log_poll:
+        push ax
+        push bx
+        push di
+        push es
+        mov bx, [cs:log_pos]
+        and bx, LOG_N - 1
+        mov di, bx
+        shl di, 1
+        shl di, 1
+        shl di, 1
+        sub di, bx
+        shl di, 1
+        add di, call_log
+        push cs
+        pop es
+        mov word [es:di], 0ffffh
+        mov ax, [cs:c_polls]
+        mov [es:di + 2], ax
+        mov ax, [cs:key_pos]
+        mov [es:di + 4], ax
+        mov ax, [ds:0c9ach]
+        mov [es:di + 10], ax
+        push ds
+        mov ax, 40h
+        mov ds, ax
+        mov ax, [1ah]
+        mov [es:di + 6], ax
+        mov ax, [1ch]
+        mov [es:di + 8], ax
+        mov ax, [6ch]
+        mov [es:di + 12], ax
+        pop ds
+        inc word [cs:log_pos]
+        pop es
+        pop di
+        pop bx
+        pop ax
+        ret
 
 combat_items:
         inc word [c_polls]
@@ -544,21 +608,91 @@ send_scan:
         out 64h, al
         call kbc_ready
         jc .fail
+        mov byte [irq_seen], 0
         mov al, ah
         out 60h, al
         sti                             ; IRQ1 may run now, on our stack
-        mov cx, 0ffffh
+        ; Under DOSBox-X the IRQ comes after the 8042 already reads empty, so
+        ; wait for BTECH's handler itself (int9_wrap), at most 3 timer ticks:
+        ; otherwise a key's break overwrites its make before it is read.
+        push es
+        push bx
+        push dx
+        mov bx, 40h
+        mov es, bx
+        mov dx, [es:6ch]
+        mov cx, 3
 .taken:
-        in al, 64h
-        test al, 1
-        jz .done
+        cmp byte [irq_seen], 0
+        jne .seen
+        cmp dx, [es:6ch]
+        je .taken
+        mov dx, [es:6ch]
         loop .taken
+        pop dx
+        pop bx
+        pop es
+        jmp .fail
+.seen:
+        pop dx
+        pop bx
+        pop es
+        jmp .done
 .fail:
+        push ax
         mov dx, keyfail
         call touch
+        pop ax
 .done:
         cli
+        call log_send
         pop cx
+        ret
+
+; Logs a sent scan in the int 16h log: IP 0FFFEh, CS the scan (AH), AX the
+; 8042 status after (AL), then the BIOS buffer's head and tail, BTECH's held
+; byte for the scan (DS:4374h + scan) and the BIOS tick. DS = CS here.
+log_send:
+        push ax
+        push bx
+        push di
+        push es
+        push ds
+        mov bx, [log_pos]
+        and bx, LOG_N - 1
+        mov di, bx
+        shl di, 1
+        shl di, 1
+        shl di, 1
+        sub di, bx
+        shl di, 1
+        add di, call_log
+        push cs
+        pop es
+        mov word [es:di], 0fffeh
+        mov bl, ah
+        and bx, 7fh
+        mov [es:di + 2], bx
+        xor ah, ah
+        mov [es:di + 4], ax
+        mov ds, [btech_ds]
+        mov al, [bx + 4374h]
+        xor ah, ah
+        mov [es:di + 10], ax
+        mov ax, 40h
+        mov ds, ax
+        mov ax, [1ah]
+        mov [es:di + 6], ax
+        mov ax, [1ch]
+        mov [es:di + 8], ax
+        mov ax, [6ch]
+        mov [es:di + 12], ax
+        pop ds
+        inc word [log_pos]
+        pop es
+        pop di
+        pop bx
+        pop ax
         ret
 
 ; ---- a capture (SNAP's, the DS chosen by the phase) ----
