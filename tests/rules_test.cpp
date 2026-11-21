@@ -4,6 +4,7 @@
 //
 //   rules_test <data dir>
 // Prints ids and counts only.
+#include "../src/Rules/NewCampaignFields.h"
 #include "../src/Rules/RuleTable.h"
 #include "../src/Rules/Rules.h"
 #include "../src/Support/Json.h"
@@ -91,6 +92,17 @@ void the_rules_rebuild_the_exes_tables(const fs::path& data) {
     }
     for (const auto& [id, bytes] : pieces) check(find_rule_piece(id) != nullptr, id + ": not in the rule table");
     std::printf("%zu rule tables: %d as the exe's, %d tuned\n", rule_table().size(), exact, tuned);
+}
+
+// The save codec's fields, as new_campaign.json names them, cover the save
+// block once each, end to end.
+void the_new_campaign_fields_tile_the_save_block() {
+    std::size_t at = 0;
+    for (const NewCampaignField& field : new_campaign_fields()) {
+        check(field.offset == at, std::string(field.name) + " is not where the field before it ends");
+        at = std::size_t(field.offset) + field.length;
+    }
+    check(at == kSaveBlockBytes, "the fields end at " + std::to_string(at) + ", not the block's end");
 }
 
 void what_doesnt_fit_is_refused(const fs::path& data, const fs::path& work) {
@@ -227,6 +239,20 @@ void what_doesnt_fit_is_refused(const fs::path& data, const fs::path& work) {
     refused(load, "no \"head\"", "an internal structure location missing");
     with_mech(5, [](Json& m) { std::get<Json::Object>(at(m, "armour").value)["rear_left_torso"] = Json{1.0}; });
     refused(load, "unknown key \"rear_left_torso\"", "an armour location that isn't one");
+    with_file("new_campaign.json", [](Json& n) { at(n, "commanderNameBytes") = Json{std::string("commander.name")}; });
+    refused(load, "\"commanderNameBytes\" is not \"commander.default_name\"", "the commander's name not its text id");
+    with_file("new_campaign.json", [](Json& n) { std::get<Json::Object>(n.value).erase("calendarYear"); });
+    refused(load, "no \"calendarYear\"", "a save block field missing");
+    with_file("new_campaign.json", [](Json& n) { std::get<Json::Object>(n.value)["campaignFunds"] = Json{1.0}; });
+    refused(load, "unknown key \"campaignFunds\"", "a field the codec doesn't have");
+    with_file("new_campaign.json", [](Json& n) { at(n, "commanderAgeYears") = Json{70000.0}; });
+    refused(load, "commanderAgeYears is not a whole number from 0 to 65535", "a word past 65535");
+    with_file("new_campaign.json", [](Json& n) {
+        Json::Array ids = at(n, "rosterPilotIds").array();
+        ids.pop_back();
+        at(n, "rosterPilotIds") = Json{ids};
+    });
+    refused(load, "\"rosterPilotIds\" has 3 entries, not 4", "a short word list");
     fs::remove(work / "rules" / "market.json");
     refused(load, "can't read", "a missing file");
 }
@@ -242,6 +268,7 @@ int main(int argc, char** argv) {
     fs::remove_all(work);
     try {
         the_rules_rebuild_the_exes_tables(argv[1]);
+        the_new_campaign_fields_tile_the_save_block();
         what_doesnt_fit_is_refused(argv[1], work);
     } catch (const std::exception& e) {
         check(false, std::string("unexpected: ") + e.what());

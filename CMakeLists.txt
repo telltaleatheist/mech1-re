@@ -192,6 +192,7 @@ add_library(mechwarrior_original STATIC
     src/Import/Music.cpp
     src/Import/StoryHost.cpp
     src/Rules/rule_table.cpp
+    src/Rules/new_campaign_fields.cpp
     src/Rules/Rules.cpp
     src/Rules/RulesHost.cpp)
 target_include_directories(mechwarrior_original PUBLIC src/include)
@@ -219,7 +220,7 @@ if(MECHWARRIOR_BUILD_TESTS)
     set_tests_properties(btech_revisions PROPERTIES SKIP_RETURN_CODE 77)
     # data/rules against the rule table's hashes (no game files), and the
     # rules' strict reading on made-up files.
-    add_executable(rules_test tests/rules_test.cpp src/Rules/Rules.cpp src/Rules/rule_table.cpp src/Support/Json.cpp
+    add_executable(rules_test tests/rules_test.cpp src/Rules/Rules.cpp src/Rules/rule_table.cpp src/Rules/new_campaign_fields.cpp src/Support/Json.cpp
         src/Support/Sha256.cpp)
     add_test(NAME rules COMMAND rules_test "${CMAKE_CURRENT_SOURCE_DIR}/data")
     # The rule table against the player's exes (MW1O_GAME, optionally MW1O_BTECH_REFERENCE); skipped without them.

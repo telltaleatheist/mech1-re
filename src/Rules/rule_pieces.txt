@@ -103,3 +103,7 @@ assets.animation_prefix_counts      BTECH.EXE  304E:24B4 18
 assets.player_pose_frame_counts     BTECH.EXE  304E:265E 16
 # mechs.json (BTECH): the 8 templates, 0xE0 bytes each.
 mechs.templates                     BTECH.EXE  304E:1178 1792
+# new_campaign.json: MW_MAIN's save block, split around the commander's name
+# (1090:0483, 10 bytes, story text commander.default_name).
+new_campaign.before_name            MW_MAIN.EXE  1090:0448 59
+new_campaign.after_name             MW_MAIN.EXE  1090:048D 1747

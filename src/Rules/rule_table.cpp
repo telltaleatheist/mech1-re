@@ -91,6 +91,8 @@ constexpr RulePiece kTable[] = {
     {"assets.animation_prefix_counts", "BTECH.EXE", 0x304E, 0x24B4, 18, "642e5e4396c7f75c"},
     {"assets.player_pose_frame_counts", "BTECH.EXE", 0x304E, 0x265E, 16, "606339329a7c95b3"},
     {"mechs.templates", "BTECH.EXE", 0x304E, 0x1178, 1792, "9e28e72ebf0c97f3"},
+    {"new_campaign.before_name", "MW_MAIN.EXE", 0x1090, 0x0448, 59, "38f07395507471eb"},
+    {"new_campaign.after_name", "MW_MAIN.EXE", 0x1090, 0x048D, 1747, "4cf86081b89e4d52"},
 };
 }  // namespace
 

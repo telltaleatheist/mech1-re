@@ -63,6 +63,11 @@
 //     "unknown_6"}], "ammo" [6, by ammo family: {"location" (body or null),
 //     "salvos"}], "jump_jets" [up to 3 {"location" (body), "critical_slots"}]}.
 //     The mount and jet counts are the lists' lengths.
+//   new_campaign.json  MW_MAIN's save block at the start of a new campaign,
+//     keyed by the save codec's field names (NewCampaignFields.h): a byte or
+//     word field is a number, a word list a list of numbers, any other field
+//     a list of its bytes. "commanderNameBytes" is its story text id,
+//     "commander.default_name", which the importer fills.
 #pragma once
 
 #include <array>
@@ -240,6 +245,14 @@ struct MechTemplate {
     std::vector<JumpJets> jump_jets;                           // at most kJetGroups
 };
 
+inline constexpr std::size_t kSaveBlockBytes = 0x718;
+inline constexpr std::string_view kCommanderNameField = "commanderNameBytes";
+inline constexpr std::string_view kCommanderNameText = "commander.default_name";
+
+struct NewCampaign {
+    std::array<std::uint8_t, kSaveBlockBytes> block{};  // the commander's name left zero
+};
+
 struct Rules {
     Units units;
     Market market;
@@ -250,6 +263,7 @@ struct Rules {
     std::array<Weapon, kWeaponKinds.size()> weapons;
     CombatAssets assets;
     std::array<MechTemplate, kTemplates> mechs;
+    NewCampaign new_campaign;
 };
 
 // <data_dir>/rules/*.json, read strictly. Throws RulesError naming the file.

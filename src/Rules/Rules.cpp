@@ -5,6 +5,7 @@
 #include <variant>
 
 #include "../Support/StrictReader.h"
+#include "NewCampaignFields.h"
 #include "RuleTable.h"
 
 namespace mw1o::rules {
@@ -399,6 +400,50 @@ std::array<MechTemplate, kTemplates> read_mechs(const fs::path& data_dir) {
     return out;
 }
 
+NewCampaign read_new_campaign(const fs::path& data_dir) {
+    Reader r(data_dir / "rules" / "new_campaign.json");
+    const Json file = r.parse();
+    std::vector<std::string_view> names;
+    for (const NewCampaignField& field : new_campaign_fields()) names.push_back(field.name);
+    r.only(file, names);
+    NewCampaign out;
+    for (const NewCampaignField& field : new_campaign_fields()) {
+        const Json& v = r.member(file, field.name);
+        std::uint8_t* at = out.block.data() + field.offset;
+        if (field.name == kCommanderNameField) {
+            if (r.text(file, field.name) != kCommanderNameText)
+                r.fail("\"" + std::string(field.name) + "\" is not \"" + std::string(kCommanderNameText) + "\"");
+            continue;
+        }
+        switch (field.kind) {
+        case NewCampaignField::Kind::Byte:
+            at[0] = r.byte(v, field.name);
+            break;
+        case NewCampaignField::Kind::Word: {
+            const std::uint16_t w = r.word(v, field.name);
+            at[0] = std::uint8_t(w);
+            at[1] = std::uint8_t(w >> 8);
+            break;
+        }
+        case NewCampaignField::Kind::Words: {
+            const Json::Array& list = r.array(file, field.name, field.length / 2);
+            for (std::size_t i = 0; i < list.size(); ++i) {
+                const std::uint16_t w = r.word(list[i], field.name);
+                at[i * 2] = std::uint8_t(w);
+                at[i * 2 + 1] = std::uint8_t(w >> 8);
+            }
+            break;
+        }
+        case NewCampaignField::Kind::Bytes: {
+            const Json::Array& list = r.array(file, field.name, field.length);
+            for (std::size_t i = 0; i < list.size(); ++i) at[i] = r.byte(list[i], field.name);
+            break;
+        }
+        }
+    }
+    return out;
+}
+
 void put_word(std::string& out, std::uint16_t w) {
     out += char(w & 0xFF);
     out += char(w >> 8);
@@ -415,7 +460,7 @@ std::uint16_t piece_offset(std::string_view id) {
 Rules load_rules(const fs::path& data_dir) {
     return {read_units(data_dir), read_market(data_dir), read_repair(data_dir), read_houses(data_dir),
             read_contracts(data_dir), read_combat(data_dir), read_weapons(data_dir), read_combat_assets(data_dir),
-            read_mechs(data_dir)};
+            read_mechs(data_dir), read_new_campaign(data_dir)};
 }
 
 std::map<std::string, std::string, std::less<>> native_pieces(const Rules& rules) {
@@ -610,6 +655,16 @@ std::map<std::string, std::string, std::less<>> native_pieces(const Rules& rules
         for (std::uint16_t s : t.internal) put_word(templates, s);
         for (std::uint16_t s : t.ammo_salvos) put_word(templates, s);
     }
+
+    // The save block, split around the commander's name (story text).
+    const NewCampaignField* name = nullptr;
+    for (const NewCampaignField& field : new_campaign_fields())
+        if (field.name == kCommanderNameField) name = &field;
+    if (!name) throw RulesError("the save codec has no " + std::string(kCommanderNameField));
+    const auto* block = reinterpret_cast<const char*>(rules.new_campaign.block.data());
+    out["new_campaign.before_name"].assign(block, name->offset);
+    out["new_campaign.after_name"].assign(block + name->offset + name->length,
+                                          kSaveBlockBytes - name->offset - name->length);
     return out;
 }
 

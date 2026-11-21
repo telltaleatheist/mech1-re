@@ -613,6 +613,22 @@ Each piece goes on its own branch and needs a build, the unit checks,
 - **3e:** `new_campaign.json`. New games and the per-EXEC reload fill the
   block from it, then a returning EXEC decodes the exchange over it, as
   today.
+  Done (2 more pieces, 88 in all):
+  - Keyed by the save codec's field names, all 105 of them. A byte or
+    word field is a number, a word list a list of numbers, any other
+    field a list of its bytes. `tools/import/make_new_campaign_fields.py`
+    writes the field table (`src/Rules/new_campaign_fields.cpp`) from
+    `MW_MAIN_SAVE_FORMAT.cpp` and refuses a codec that doesn't cover the
+    block exactly; `rules_test` checks the same.
+  - The block is two pieces split around the commander's name (0483, 10
+    bytes). The exe's bytes there are the story's
+    `commander.default_name`, so the file names that text id and the
+    importer fills it from the story.
+  - `MwImportCampaignInitialData` builds the block and decodes it with
+    `MwDecodeCampaignExchange`, in place of its 105 reads of the block.
+    Each of those reads set a codec owner, and the old importer's owners
+    re-encoded to the exe's block byte for byte, so the decode sets the
+    same values.
 - **3f:** the inventory regenerated with the reclassifications above, and
   this plan turned into the slice's record.
 

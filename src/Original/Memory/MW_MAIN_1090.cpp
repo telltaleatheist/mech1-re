@@ -624,6 +624,14 @@ static bool ImportContractData(const uint8_t *data);
 bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
 {
     if (!data || byteCount<NATIVE_SEGMENT_BYTE_COUNT) return false; /* Transient file image, not live storage. */
+    /* The save block (1090:0448..0B5F, CAMPAIGN_SAVE_BYTES) from data/rules
+     * (new_campaign.json), the commander's name from the story file, decoded
+     * by the save codec as a loaded game's would be. */
+    uint8_t newCampaign[CAMPAIGN_SAVE_BYTES];
+    if (!ImportRuleBytes("new_campaign.before_name",newCampaign,0x003B)
+        || !MwStoryCopyText("commander.default_name",(char *)newCampaign+0x003B,0x000A)
+        || !ImportRuleBytes("new_campaign.after_name",newCampaign+0x0045,CAMPAIGN_SAVE_BYTES-0x0045)) return false;
+    MwDecodeCampaignExchange(newCampaign);
     memcpy(&campaignTimerInhibited,data+0x0007,sizeof(campaignTimerInhibited));
     memcpy(&campaignTimerByte,data+0x0008,sizeof(campaignTimerByte));
     memcpy(combatExecutableFilename,data+0x0EF6,sizeof(combatExecutableFilename));
@@ -695,9 +703,6 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     panelHeight=MwReadNativeWord(data,0x03F1);
     panelBorderPictureBase=MwReadNativeWord(data,0x0444);
     panelBorderEnabled=MwReadNativeWord(data,0x03F3);
-    memcpy(commanderNameBytes,data+0x0483,sizeof(commanderNameBytes));
-    ImportInitialWords(data,0x0742,(uint16_t *)ownedAmmoKindsByGroup,sizeof(ownedAmmoKindsByGroup)/sizeof(uint16_t));
-    ImportInitialWords(data,0x06A6,(uint16_t *)ownedAmmoQuantitiesByGroup,sizeof(ownedAmmoQuantitiesByGroup)/sizeof(uint16_t));
     textPanelInsetX=MwReadNativeWord(data,0x0432);
     textPanelInsetY=MwReadNativeWord(data,0x0434);
     textPanelOriginX=MwReadNativeWord(data,0x0436);
@@ -740,8 +745,6 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     if (!MwStoryBuildPlanets(planetRecordStorage,sizeof(planetRecordStorage),PLANET_RECORDS_START,
         planetRecordOffsets,CAMPAIGN_PLANET_COUNT,alphabeticPlanetRecordOffsets,TRAVEL_PLANET_DIRECTORY_COUNT)) return false;
     ImportInitialWords(data,0x11BA,(uint16_t *)calendarMonthNameWidths,sizeof(calendarMonthNameWidths)/sizeof(uint16_t));
-    calendarMonthIndex=MwReadNativeWord(data,0x047B);
-    calendarYear=MwReadNativeWord(data,0x047D);
     calendarTextX=MwReadNativeWord(data,0x117E);
     calendarTextY=MwReadNativeWord(data,0x1180);
     memcpy(&calendarBackground,data+0x1182,sizeof(calendarBackground));
@@ -758,22 +761,11 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     numericCursorY=MwReadNativeWord(data,0xA14C);
     memcpy(&numericBackgroundColour,data+0xA14E,sizeof(numericBackgroundColour));
     memcpy(&numericForegroundColour,data+0xA14F,sizeof(numericForegroundColour));
-    currentPlanetIndex=MwReadNativeWord(data,0x0469);
-    currentPlanetLandscapeIndex=MwReadNativeWord(data,0x046B);
-    currentPlanetHouseIndex=MwReadNativeWord(data,0x046D);
-    currentPlanetMarketTier=MwReadNativeWord(data,0x046F);
-    currentPlanetFacilityDisplayFlag=MwReadNativeWord(data,0x0471);
-    currentPlanetMapPositionX=MwReadNativeWord(data,0x0473);
-    currentPlanetMapPositionY=MwReadNativeWord(data,0x0475);
-    planetMarketPremiumPercent=MwReadNativeWord(data,0x0477);
-    contractNegotiationAttemptLimit=MwReadNativeWord(data,0x09E6);
     if (!ImportRuleBytes("houses.negotiation_attempt_base",houseNegotiationAttemptBase,sizeof(houseNegotiationAttemptBase))) return false;
     if (!ImportRuleWords("market.ammunition_prices",(uint16_t *)ammunitionBasePrices,sizeof(ammunitionBasePrices)/sizeof(uint16_t))) return false;
     if (!ImportRuleWords("market.start.ammunition_transaction_prices",(uint16_t *)ammunitionTransactionPrices,sizeof(ammunitionTransactionPrices)/sizeof(uint16_t))) return false;
     /* 3A77: zero in the exe, written in play; not a rule (docs/phase2/PLAN.md 5.1). */
     memset(repairAttemptFailuresByKind,0,sizeof(repairAttemptFailuresByKind));
-    memcpy(ownedUnitDamage,data+0x054A,sizeof(ownedUnitDamage));
-    memcpy(marketUnitDamage,data+0x07EC,sizeof(marketUnitDamage));
     memcpy(&generatedMechDamage,data+0x3A41,sizeof(generatedMechDamage));
     if (!ImportRuleBytes("units.weapons",unitWeaponCounts,sizeof(unitWeaponCounts))) return false;
     if (!ImportRuleBytes("market.price_tier_multipliers",unitPriceTierMultipliers,sizeof(unitPriceTierMultipliers))) return false;
@@ -790,16 +782,6 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     repairPriceCategory=MwReadNativeWord(data,0x3210);
     if (!ImportRuleWords("units.weapon_repair_prices",(uint16_t *)weaponRepairPrices,sizeof(weaponRepairPrices)/sizeof(uint16_t))) return false;
     if (!ImportRuleBytes("units.body_repair_prices",bodyRepairBasePricesByKind,sizeof(bodyRepairBasePricesByKind))) return false;
-    memcpy(rosterStatus,data+0x0451,sizeof(rosterStatus));
-    ImportInitialWords(data,0x04EA,(uint16_t *)rosterPayTiers,sizeof(rosterPayTiers)/sizeof(uint16_t));
-    ImportInitialWords(data,0x04F2,(uint16_t *)rosterGunneryTiers,sizeof(rosterGunneryTiers)/sizeof(uint16_t));
-    ImportInitialWords(data,0x04FA,(uint16_t *)rosterPilotingTiers,sizeof(rosterPilotingTiers)/sizeof(uint16_t));
-    ImportInitialWords(data,0x0502,(uint16_t *)rosterUnknownWords,sizeof(rosterUnknownWords)/sizeof(uint16_t));
-    ImportInitialWords(data,0x050A,(uint16_t *)rosterMechAssignments,sizeof(rosterMechAssignments)/sizeof(uint16_t));
-    ImportInitialWords(data,0x0512,(uint16_t *)rosterPortraitIds,sizeof(rosterPortraitIds)/sizeof(uint16_t));
-    memcpy(pilotGunneryTiers,data+0x0A37,sizeof(pilotGunneryTiers));
-    memcpy(pilotPilotingTiers,data+0x0A62,sizeof(pilotPilotingTiers));
-    memcpy(pilotExperienceCounts,data+0x0A8D,sizeof(pilotExperienceCounts));
     /* The pilots from story/pilots.json (offsets at 9121, storage 9177..). */
     if (!MwStoryBuildPilots(pilotDefinitionStorage,sizeof(pilotDefinitionStorage),PILOT_DEFINITIONS_START,
         pilotDefinitionOffsets,CAMPAIGN_PILOT_ID_COUNT)) return false;
@@ -833,7 +815,6 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     memcpy(travelPopulationSuffix,data+0x5B83,sizeof(travelPopulationSuffix));
     memcpy(travelLandscapeLabels,data+0x5CA6,sizeof(travelLandscapeLabels));
     memcpy(travelInsufficientFundsText,data+0x5B5A,sizeof(travelInsufficientFundsText));
-    ImportInitialWords(data,0x0736,(uint16_t *)reserveAmmoQuantitiesByFamily,sizeof(reserveAmmoQuantitiesByFamily)/sizeof(uint16_t));
     if (!ImportRuleWords("market.freight_rates",(uint16_t *)reserveAmmoFreightRates,sizeof(reserveAmmoFreightRates)/sizeof(uint16_t))) return false;
     if (!ImportRuleBytes("market.stock_kind_range_maxima",generatedKindRangeMaxima,sizeof(generatedKindRangeMaxima))) return false;
     if (!ImportRuleBytes("market.stock_kind_range_starts",generatedKindRangeStarts,sizeof(generatedKindRangeStarts))) return false;
@@ -844,19 +825,6 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     if (!ImportRuleBytes("market.start.generate_starting_jenner",&generateStartingJenner,sizeof(generateStartingJenner))) return false;
     if (!ImportRuleBytes("units.ammo_groups",unitAmmoGroupCounts,sizeof(unitAmmoGroupCounts))) return false;
     if (!ImportRuleBytes("units.jump_jet_groups",unitJumpJetGroupCounts,sizeof(unitJumpJetGroupCounts))) return false;
-    dealerUnitPurchaseLimit=MwReadNativeWord(data,0x0B56);
-    unitsSoldSinceMarketRefresh=MwReadNativeWord(data,0x0B58);
-    marketUnitCount=MwReadNativeWord(data,0x07D2);
-    ImportInitialWords(data,0x07D4,(uint16_t *)marketUnitKinds,sizeof(marketUnitKinds)/sizeof(uint16_t));
-    ImportInitialWords(data,0x078A,(uint16_t *)marketAmmoKindsByGroup,sizeof(marketAmmoKindsByGroup)/sizeof(uint16_t));
-    ImportInitialWords(data,0x06EE,(uint16_t *)marketAmmoQuantitiesByGroup,sizeof(marketAmmoQuantitiesByGroup)/sizeof(uint16_t));
-    availableRecruitCount=MwReadNativeWord(data,0x051E);
-    ImportInitialWords(data,0x0520,(uint16_t *)availableRecruitIds,sizeof(availableRecruitIds)/sizeof(uint16_t));
-    ownedUnitCount=MwReadNativeWord(data,0x0530);
-    ImportInitialWords(data,0x0532,(uint16_t *)ownedUnitKinds,sizeof(ownedUnitKinds)/sizeof(uint16_t));
-    ImportInitialWords(data,0x049F,(uint16_t *)houseFavorPoints,sizeof(houseFavorPoints)/sizeof(uint16_t));
-    ImportInitialWords(data,0x04A9,(uint16_t *)houseGrievancePoints,sizeof(houseGrievancePoints)/sizeof(uint16_t));
-    playerCombatCredit=MwReadNativeWord(data,0x04B3);
     generatingMissionOfferSlot=MwReadNativeWord(data,0x4B77);
     if (!ImportRuleWords("contracts.start.mission_force_budget",&missionForceBudget,1)) return false;
     if (!ImportRuleWords("contracts.start.mission_payment_base_thousands",&missionPaymentBaseThousands,1)) return false;
@@ -865,22 +833,6 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     if (!ImportRuleWords("houses.payment_adjustment_percent",(uint16_t *)housePaymentAdjustmentPercent,sizeof(housePaymentAdjustmentPercent)/sizeof(uint16_t))) return false;
     if (!ImportRuleWords("houses.salvage_base_percent",(uint16_t *)houseSalvageBasePercent,sizeof(houseSalvageBasePercent)/sizeof(uint16_t))) return false;
     if (!ImportRuleWords("houses.advance_base_percent",(uint16_t *)houseAdvanceBasePercent,sizeof(houseAdvanceBasePercent)/sizeof(uint16_t))) return false;
-    memcpy(houseMissionTypeLimits,data+0x0A02,sizeof(houseMissionTypeLimits));
-    memcpy(&majorCampaignMissionRollThreshold,data+0x0B52,sizeof(majorCampaignMissionRollThreshold));
-    ImportInitialWords(data,0x094A,(uint16_t *)missionDescriptionOffsets,sizeof(missionDescriptionOffsets)/sizeof(uint16_t));
-    ImportInitialWords(data,0x0956,(uint16_t *)missionPlanetRecordIndices,sizeof(missionPlanetRecordIndices)/sizeof(uint16_t));
-    ImportInitialWords(data,0x0962,(uint16_t *)missionTargetHouseIndices,sizeof(missionTargetHouseIndices)/sizeof(uint16_t));
-    ImportInitialWords(data,0x096E,(uint16_t *)missionTypeCodes,sizeof(missionTypeCodes)/sizeof(uint16_t));
-    ImportInitialWords(data,0x097A,(uint16_t *)missionEnemyHeavyCounts,sizeof(missionEnemyHeavyCounts)/sizeof(uint16_t));
-    ImportInitialWords(data,0x0986,(uint16_t *)missionEnemyMediumCounts,sizeof(missionEnemyMediumCounts)/sizeof(uint16_t));
-    ImportInitialWords(data,0x0992,(uint16_t *)missionEnemyLightCounts,sizeof(missionEnemyLightCounts)/sizeof(uint16_t));
-    ImportInitialWords(data,0x099E,(uint16_t *)missionPaymentThousands,sizeof(missionPaymentThousands)/sizeof(uint16_t));
-    ImportInitialWords(data,0x09AA,(uint16_t *)missionSalvagePercentages,sizeof(missionSalvagePercentages)/sizeof(uint16_t));
-    ImportInitialWords(data,0x09B6,(uint16_t *)missionAdvancePercentages,sizeof(missionAdvancePercentages)/sizeof(uint16_t));
-    ImportInitialWords(data,0x09C2,(uint16_t *)missionPaymentCeilingsThousands,sizeof(missionPaymentCeilingsThousands)/sizeof(uint16_t));
-    ImportInitialWords(data,0x09CE,(uint16_t *)missionSalvagePercentageCeilings,sizeof(missionSalvagePercentageCeilings)/sizeof(uint16_t));
-    ImportInitialWords(data,0x09DA,(uint16_t *)missionAdvancePercentageCeilings,sizeof(missionAdvancePercentageCeilings)/sizeof(uint16_t));
-    ImportInitialWords(data,0x0A2B,(uint16_t *)missionScenarioCodes,sizeof(missionScenarioCodes)/sizeof(uint16_t));
     if (!ImportRuleWords("houses.planet_range_starts",(uint16_t *)housePlanetRangeStarts,sizeof(housePlanetRangeStarts)/sizeof(uint16_t))) return false;
     if (!ImportRuleWords("houses.planet_range_counts",(uint16_t *)housePlanetRangeCounts,sizeof(housePlanetRangeCounts)/sizeof(uint16_t))) return false;
     /* The mission descriptions from story/missions.json: the category tables
@@ -892,16 +844,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
         missionDescriptionListEntries,MISSION_DESCRIPTION_LIST_WORDS,MISSION_DESCRIPTION_LIST_START)) return false;
     if (!ImportRuleWords("houses.mission_planet_policy_offsets",(uint16_t *)houseMissionPlanetTableOffsets,sizeof(houseMissionPlanetTableOffsets)/sizeof(uint16_t))) return false;
     if (!ImportRuleBytes("houses.mission_planet_policies",houseMissionPlanetPolicies,sizeof(houseMissionPlanetPolicies))) return false;
-    calendarSubmonthUnits=MwReadNativeWord(data,0x0479);
-    missionOfferCount=MwReadNativeWord(data,0x0948);
-    marketRefreshUnits=MwReadNativeWord(data,0x047F);
-    elapsedBillingMonths=MwReadNativeWord(data,0x0481);
-    campaignFundsLow=MwReadNativeWord(data,0x0491);
-    campaignFundsHigh=MwReadNativeWord(data,0x0493);
-    dropShipMissedUpkeepPayments=MwReadNativeWord(data,0x051A);
-    unpaidPilotWageMarker=MwReadNativeWord(data,0x051C);
     if (!ImportRuleWords("contracts.pilot_wages",(uint16_t *)pilotWageAmounts,sizeof(pilotWageAmounts)/sizeof(uint16_t))) return false;
-    memcpy(&pilotDepartureFlagTail,data+0x04E9,sizeof(pilotDepartureFlagTail));
     memcpy(notificationPending,data+0x5EAE,sizeof(notificationPending));
     unitInspectionContextCode=MwReadNativeWord(data,0x25BD);
     ownedUnitListSelectedRow=MwReadNativeWord(data,0x25BF);
@@ -958,9 +901,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     ImportInitialWords(data,0x318D,(uint16_t *)mechComplexAnimationFrames,sizeof(mechComplexAnimationFrames)/sizeof(uint16_t));
     campaignMusicBufferSelector=MwReadNativeWord(data,0x016F);
     graphicsOverlaySelector=MwReadNativeWord(data,0x002E);
-    launcherMemoryTier=MwReadNativeWord(data,0x0B5D);
     memcpy(&launcherExitCode,data+0x0006,sizeof(launcherExitCode));
-    memcpy(&savedVideoMode,data+0x0B5F,sizeof(savedVideoMode));
     memcpy(&keyboardInterruptState,data+0x02AB,sizeof(keyboardInterruptState));
     musicFileHandle=MwReadNativeWord(data,0x0E39);
     memcpy(campaignTextInputBuffer,data+0x03A5,sizeof(campaignTextInputBuffer));
@@ -971,7 +912,6 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     memcpy(&textInputBackground,data+0x03D5,sizeof(textInputBackground));
     memcpy(&textInputLastPhase,data+0x03D8,sizeof(textInputLastPhase));
     textInputLength=MwReadNativeWord(data,0x03D6);
-    ImportInitialWords(data,0x0B46,(uint16_t *)campaignEventPlanetSelectors,sizeof(campaignEventPlanetSelectors)/sizeof(uint16_t));
     {
         /* The story-planet pools from story/events.json (1090:8FDA..8FF3). */
         uint8_t *const pools[6]={eventPlanetChoicePool0,eventPlanetChoicePool1,eventPlanetChoicePool2,
@@ -980,59 +920,24 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
             sizeof(eventPlanetChoicePool3),sizeof(eventPlanetChoicePool4),sizeof(eventPlanetChoicePool5)};
         if (!MwStoryCopyPlanetPools(pools,sizes,6)) return false;
     }
-    eventDirectoryIndex=MwReadNativeWord(data,0x0AB8);
     campaignEventClass=MwReadNativeWord(data,0x5E62);
     currentEventId=MwReadNativeWord(data,0x5E64);
     dispatchedEventCount=MwReadNativeWord(data,0x5E68);
-    memcpy(eventSeenFlags,data+0x0ABA,sizeof(eventSeenFlags));
     memcpy(&eventConditionResult,data+0x5E70,sizeof(eventConditionResult));
     memcpy(&eventCombineWithAnd,data+0x5E71,sizeof(eventCombineWithAnd));
     eventScheduledMonthScratch=MwReadNativeWord(data,0x5E72);
     eventExpirySubmonthScratch=MwReadNativeWord(data,0x5E74);
     eventScheduledYearScratch=MwReadNativeWord(data,0x5E76);
     memcpy(&planetArrivalEventsPending,data+0x1082,sizeof(planetArrivalEventsPending));
-    memcpy(&darkWingBaseVictoryRecorded,data+0x0B5C,sizeof(darkWingBaseVictoryRecorded));
     memcpy(&campaignRestartPending,data+0x5EB2,sizeof(campaignRestartPending));
     memcpy(&eventChoiceCount,data+0x5CEC,sizeof(eventChoiceCount));
     memcpy(&eventTextRowCount,data+0x5CED,sizeof(eventTextRowCount));
     eventChoiceSavedFontIndex=MwReadNativeWord(data,0x5E66);
-    memcpy(&unidentifiedField18,data+0x0448,sizeof(unidentifiedField18));
-    memcpy(&missionCategoryOrMemoryTier,data+0x0449,sizeof(missionCategoryOrMemoryTier));
-    memcpy(&deploymentLandscapeIndex,data+0x044A,sizeof(deploymentLandscapeIndex));
-    memcpy(&combatEnemyHeavyCount,data+0x044B,sizeof(combatEnemyHeavyCount));
-    memcpy(&combatEnemyMediumCount,data+0x044C,sizeof(combatEnemyMediumCount));
-    memcpy(&combatEnemyLightCount,data+0x044D,sizeof(combatEnemyLightCount));
-    memcpy(&combatPlanetSelector,data+0x044E,sizeof(combatPlanetSelector));
-    memcpy(&combatScenarioCode,data+0x044F,sizeof(combatScenarioCode));
-    memcpy(&deploymentTerrainDetailLevel,data+0x0450,sizeof(deploymentTerrainDetailLevel));
-    memcpy(salvageEntries,data+0x0455,sizeof(salvageEntries));
-    returnedDisabledEnemyCount=MwReadNativeWord(data,0x0465);
-    memcpy(&combatTransitionResult,data+0x0467,sizeof(combatTransitionResult));
-    memcpy(&acceptedContractActive,data+0x0468,sizeof(acceptedContractActive));
-    memcpy(unidentifiedField19,data+0x048D,sizeof(unidentifiedField19));
-    commanderAgeYears=MwReadNativeWord(data,0x048F);
-    ImportInitialWords(data,0x0495,(uint16_t *)houseNetStandings,sizeof(houseNetStandings)/sizeof(uint16_t));
-    requestedContractPaymentThousands=MwReadNativeWord(data,0x09E8);
-    requestedContractSalvagePercent=MwReadNativeWord(data,0x09EA);
-    requestedContractAdvancePercent=MwReadNativeWord(data,0x09EC);
-    requestContractPaymentEnabled=MwReadNativeWord(data,0x09EE);
-    requestContractSalvageEnabled=MwReadNativeWord(data,0x09F0);
-    requestContractAdvanceEnabled=MwReadNativeWord(data,0x09F2);
-    memcpy(unidentifiedField20,data+0x09F4,sizeof(unidentifiedField20));
-    acceptedContractPaymentThousands=MwReadNativeWord(data,0x09FA);
-    acceptedContractSalvagePercent=MwReadNativeWord(data,0x09FC);
-    acceptedContractAdvancePercent=MwReadNativeWord(data,0x09FE);
-    remainingContractPaymentThousands=MwReadNativeWord(data,0x0A00);
-    memcpy(&audioOptionLabelIndex,data+0x0A2A,sizeof(audioOptionLabelIndex));
-    memcpy(&campaignTerrainDetailLevel,data+0x0B55,sizeof(campaignTerrainDetailLevel));
-    acceptedContractTargetHouseIndex=MwReadNativeWord(data,0x0B53);
-    playerSkillProgress=MwReadNativeWord(data,0x0B5A);
     if (!ImportRuleBytes("houses.mission_type_limits",defaultHouseMissionTypeLimits,sizeof(defaultHouseMissionTypeLimits))) return false;
     if (!MwStoryCopyText("commander.default_name",(char *)campaignDefaultCommanderNameBytes,sizeof(campaignDefaultCommanderNameBytes))) return false;
     companyMenuSelectedRow=MwReadNativeWord(data,0x21CC);
     barMenuSelectedRow=MwReadNativeWord(data,0x8FF4);
     optionsMenuSelection=MwReadNativeWord(data,0x9D50);
-    pilotRosterCount=MwReadNativeWord(data,0x04B5);
     for (unsigned line=0;line<10;++line)
     {
         char id[24];snprintf(id,sizeof(id),"intro.narration.%u",line+1);
@@ -1066,8 +971,6 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     if (!MwStoryCopyText("intro.caption.7.left",introSeventhLeftText.text,sizeof(introSeventhLeftText.text))) return false;
     introSeventhRightText.x=MwReadNativeWord(data,0x1EB8);introSeventhRightText.y=MwReadNativeWord(data,0x1EBA);
     if (!MwStoryCopyText("intro.caption.7.right",introSeventhRightText.text,sizeof(introSeventhRightText.text))) return false;
-    ImportInitialWords(data,0x04B7,rosterPilotIds,CAMPAIGN_ROSTER_SLOTS);
-    memcpy(pilotIdentityStorage.roster.unavailablePilots1To42,data+0x04BF,sizeof(pilotIdentityStorage.roster.unavailablePilots1To42));
     for (uint16_t row=0;row<CAMPAIGN_SYSTEM_COUNT;++row)
         if (!ImportRuleWords("repair.system_prices",systemRepairBasePrices[row].basePriceByMechKind,CAMPAIGN_MECH_KIND_COUNT,row*0x14)) return false;
     /* 2F3C, 2F28 and 3C1B come from the rules (data/rules/units.json). */
