@@ -128,7 +128,15 @@ DS:0008 finds the data segment, then each piece must still match its hash.
 ## 3. The order (slices, each on its own branch, traces 7 of 7 or noted)
 
 1. **Dropped.** Copy protection, disk prompts, the DOS launcher path. The
-   original's run.py check covers the screens around them. (Started.)
+   original's run.py check covers the screens around them. Done: 19 of the
+   26 are gone. MWSNAP skips the original's protection in memory (081B:16A4
+   jumps to 181A), so both start a campaign alike; dropping it moves the
+   random sequence, and the goldens were re-recorded. Seven stay for now:
+   the launcher's file names and identity bytes and `combatExecutableFilename`
+   (slice 6), `launcherMemoryTier` and `launcherExitCode` (the four-pilot
+   roster, the save format and the combat hand-off read them), and
+   `herculesDisplayRowOffsets` (the EGA span code reads past its own row
+   table into it).
 2. **The story file.** `Original/Memory` becomes the importer: it reads the
    exes once, writes `story/`, and the game's importers read `story/`
    instead. Traces equal (same content, new route).

@@ -1,8 +1,7 @@
 # A new campaign to an accepted contract. Each @snap records the screen the
 # game then waits on. Handler names: campaign_continuations.h.
 @snap:title
-Return   @snap:opening        # the opening scene
-Escape   @snap:arrival        # skip it: the arrival message over the hub
+Return   @snap:arrival        # the arrival message over the hub
 Return   @snap:hub            # the planet hub
 Return   @snap:company        # row 0 COMPANY_MENU
 Up       @snap:company_done   # row 2 PLANET_HUB

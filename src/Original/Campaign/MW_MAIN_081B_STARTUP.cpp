@@ -7,16 +7,12 @@
 #include "mechwarrior/campaign_handoff.h"
 #include "mechwarrior/campaign_pilots.h"
 #include "mechwarrior/campaign_events.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-enum { PROTECTION_PANEL_Y=0x0074, PROTECTION_PANEL_HEIGHT=0x0054,
-    PROTECTION_PROMPT_X=0x000C, PROTECTION_PROMPT_Y=0x0080,
-    PROTECTION_MECH_PICTURE_X=0x00F0, PROTECTION_MECH_PICTURE_Y=0x007C,
-    PROTECTION_CALLSIGN_X=0x0054, PROTECTION_CALLSIGN_Y=0x00AA };
 
 /* The unconverted Tandy branch uses its16-colour register codes. */
-enum { TANDY_PALETTE_DARK_GREY=0x08, TANDY_PALETTE_WHITE=0x0F };
 
 MwCampaignPlatformCalls mwCampaignPlatform;
 void (*campaignStopMusic)(void);
@@ -33,7 +29,6 @@ uint8_t MwRunCampaign(const MwCampaignLaunch *launch)
 {
     uint16_t continuation;
     launcherMemoryTier=launch->memoryTier;
-    tandyGraphicsSelected=launch->graphicsCode=='T';
     if (MwReadNativeViewByte(&launch->resident,(uint16_t)(launch->transferOffset+0x07D0))!='M'
         || MwReadNativeViewByte(&launch->resident,(uint16_t)(launch->transferOffset+0x07D4))!='W'
         || MwReadNativeViewByte(&launch->resident,(uint16_t)(launch->transferOffset+0x07DA))!='R')
@@ -68,9 +63,8 @@ uint8_t MwRunCampaign(const MwCampaignLaunch *launch)
     if (mwCampaignPlatform.allocateParagraphs(0x0177,&selectorOrError))
     {errorIndex=0;goto allocationFailed;}
     graphicsOverlaySelector=selectorOrError;
-    if (mwCampaignPlatform.loadGraphicsOverlay(tandyGraphicsSelected?"MW_TANDY.EXE":"MW_EGA.EXE",graphicsOverlaySelector))
+    if (mwCampaignPlatform.loadGraphicsOverlay("MW_EGA.EXE",graphicsOverlaySelector)) /* Tandy dropped. */
     {errorIndex=1;goto allocationFailed;}
-    if (tandyGraphicsSelected) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: tandyGraphicsSelected"); /* Tandy conversion outside this EGA slice. */
     EgaBuildScanlineOffsets();
     if (EgaLoadFonts()) {errorIndex=5;goto allocationFailed;}
     if (MwLoadGeneralPictureBank()) {errorIndex=6;goto allocationFailed;}
@@ -108,11 +102,11 @@ uint8_t MwRunCampaign(const MwCampaignLaunch *launch)
     EgaSelectFont(0);
     MwSetIntroTextPaletteColour(EGA_PALETTE_BLACK);
     MwDrawIntroNarrationLines(2);
-    MwSetIntroTextPaletteColour(tandyGraphicsSelected?TANDY_PALETTE_DARK_GREY:EGA_PALETTE_DARK_GREY);
+    MwSetIntroTextPaletteColour(EGA_PALETTE_DARK_GREY);
     (void)MwWaitTicksOrInputInterruption(2);
     MwSetIntroTextPaletteColour(EGA_PALETTE_LIGHT_GREY);
     (void)MwWaitTicksOrInputInterruption(2);
-    MwSetIntroTextPaletteColour(tandyGraphicsSelected?TANDY_PALETTE_WHITE:EGA_PALETTE_WHITE);
+    MwSetIntroTextPaletteColour(EGA_PALETTE_WHITE);
     if (MwWaitTicksOrInputInterruption(0x0024)) goto initializeCampaign;
     if (!campaignStartMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStartMusic");
     campaignStartMusic(campaignMusicBufferSelector,0);
@@ -129,7 +123,7 @@ uint8_t MwRunCampaign(const MwCampaignLaunch *launch)
     if (MwDrawTimedPictureAndTextTransition(0x00CC,&introSeventhLeftText,&introSeventhRightText)) goto initializeCampaign;
     (void)MwWaitTicksOrInputInterruption(0x006C);
 initializeCampaign:
-    continuation=MwRunCopyProtectionAndInitializeCampaign(CAMPAIGN_CONTINUE_COPY_PROTECTION);
+    continuation=MwStartNewCampaign(CAMPAIGN_CONTINUE_NEW_CAMPAIGN);
 resumeCampaign:
     if (continuation==CAMPAIGN_CONTINUE_PLANET_HUB || continuation==CAMPAIGN_CONTINUE_HUB_MENU)
         continuation=MwEnterCampaignPlanetHub(continuation);
@@ -486,11 +480,14 @@ campaignExit:
     if (mwCampaignInput.keyboardAvailable()) (void)mwCampaignInput.readKeyboard(); /* ONE pending BIOS key, not a drain. */
     goto finish;
 allocationFailed:
-    /* Native does NOT unwind successful allocations or restore IRQs here. */
+    /* The original printed one of seven DOS messages (DS:017D) and waited for
+     * a key. Here a startup failure stops the program with its reason. */
     MwRestoreSavedVideoMode();
-    if (!mwCampaignPlatform.displayDosString || !mwCampaignInput.readKeyboard) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignPlatform.displayDosString || !mwCampaignInput.readKeyboard");
-    mwCampaignPlatform.displayDosString(startupErrorMessages[errorIndex]);
-    (void)mwCampaignInput.readKeyboard();
+    {
+        char reason[64];
+        snprintf(reason,sizeof(reason),"the campaign could not start (startup step %u)",(unsigned)errorIndex);
+        MwAbortWithReason("startup",reason,__FILE__,__LINE__,__func__);
+    }
 finish:
     if (!campaignStopMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStopMusic");
     campaignStopMusic();
@@ -648,7 +645,7 @@ uint16_t MwDrawTimedPictureAndTextTransition(uint16_t delayTicks,
 {
     MwDrawPositionedIntroText(leftText);
     MwDrawPositionedIntroText(rightText);
-    if (MwWaitTicksOrInputInterruption(delayTicks)) return CAMPAIGN_CONTINUE_COPY_PROTECTION;
+    if (MwWaitTicksOrInputInterruption(delayTicks)) return CAMPAIGN_CONTINUE_NEW_CAMPAIGN;
     EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
     return 0;
 }
@@ -674,49 +671,23 @@ bool MwLoadBarDeathAndLaunchMusic(void)
     return false;
 }
 
-/* MW_MAIN081B:166D..1908, including shared company entry181A.
- * This shipped build NOPs the answer-input CALL and JMPs over comparison,
- * retry/failure and PFJS bonus code. Those dead paths are retained as native
- * annotation evidence, not restored or presented as selectable game features. */
-uint16_t MwRunCopyProtectionAndInitializeCampaign(uint16_t entryOffset)
+/* MW_MAIN081B:166D..1908, with the shared company entry181A. From166D the
+ * new campaign draws picture2, loads the primary picture bank and swaps to
+ * the launch music. The original's copy protection (16A4..1819: a mech
+ * picture, a callsign question and an accepted panel) is dropped; the company
+ * is set up as from181A. */
+uint16_t MwStartNewCampaign(uint16_t entryOffset)
 {
-    if (entryOffset==CAMPAIGN_CONTINUE_INITIALIZE_COMPANY) goto initializeCompany;
-    if (entryOffset!=CAMPAIGN_CONTINUE_COPY_PROTECTION) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: entryOffset!=CAMPAIGN_CONTINUE_COPY_PROTECTION"); /* Only the two proven shared entries. */
-    MwDrawActivePicture(0,0,EGA_DRAW_PAGE,2);
-    EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
-    (void)MwLoadPrimaryPictureBank();
-    if (!campaignStopMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStopMusic");
-    campaignStopMusic();
-    (void)MwLoadBarDeathAndLaunchMusic();
-    copyProtectionSelection=MwRandomUpTo(COPY_PROTECTION_MECH_COUNT-1);
-    uint16_t pictureSelector;pictureSelector=MwLoadIndexedPicture(copyProtectionPictureIndices[copyProtectionSelection]);
-    EgaFillDisplayPageRectangle(0,PROTECTION_PANEL_Y,EGA_COLUMNS,PROTECTION_PANEL_HEIGHT,Campaign_Pal_EGA_DarkGrey);
-    MwDrawPicturePanelBorder(0,PROTECTION_PANEL_Y,EGA_COLUMNS,PROTECTION_PANEL_HEIGHT);
-    EgaSelectFont(0);
-    MwNativeByteView prompt;prompt=MwNativeByteView{(const uint8_t *)copyProtectionPrompt,0,sizeof(copyProtectionPrompt)};
-    (void)EgaDrawTransparentText(PROTECTION_PROMPT_X,PROTECTION_PROMPT_Y,Campaign_Pal_EGA_LightRed,&prompt,0);
-    (void)EgaDrawPackedSprite(PROTECTION_MECH_PICTURE_X,PROTECTION_MECH_PICTURE_Y,EGA_DISPLAY_PAGE,0,pictureSelector);
-    /* Native stores BYTE displacement into two parallel WORD directories. */
-    uint16_t callsignRowByteOffset;callsignRowByteOffset=copyProtectionSelection*COPY_PROTECTION_CALLSIGNS_PER_MECH*sizeof(uint16_t);
-    copyProtectionSelection=callsignRowByteOffset+MwRandomUpTo(COPY_PROTECTION_CALLSIGNS_PER_MECH-1)*sizeof(uint16_t);
-    uint16_t question;question=copyProtectionSelection/sizeof(uint16_t);
-    MwNativeByteView callsign;callsign=MwNativeByteView{(const uint8_t *)copyProtectionCallsigns[question],0,COPY_PROTECTION_TEXT_CAPACITY};
-    (void)EgaDrawTransparentText(PROTECTION_CALLSIGN_X,PROTECTION_CALLSIGN_Y,Campaign_Pal_EGA_LightGrey,&callsign,0);
-    /*174A..174C NOP: there is intentionally no keyboard answer-entry call. */
-    EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
-    uint16_t answerIndex;answerIndex=0;
-    while (campaignTextInputBuffer[answerIndex]==' ')
+    if (entryOffset==CAMPAIGN_CONTINUE_NEW_CAMPAIGN)
     {
-        ++answerIndex;
-        if (answerIndex==sizeof(campaignTextInputBuffer)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: answerIndex==sizeof(campaignTextInputBuffer)"); /* Unrepresented adjacent-text-input aliases, not native validation. */
+        MwDrawActivePicture(0,0,EGA_DRAW_PAGE,2);
+        EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
+        (void)MwLoadPrimaryPictureBank();
+        if (!campaignStopMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStopMusic");
+        campaignStopMusic();
+        (void)MwLoadBarDeathAndLaunchMusic();
     }
-    (void)copyProtectionAnswers[question][0]; /*177E read;1781 ignores flags. */
-    textPanelYOverride=0x0064;
-    MwNativeByteView accepted;accepted=MwNativeByteView{(const uint8_t *)copyProtectionAcceptedText,0x2153,sizeof(copyProtectionAcceptedText)};
-    MwTextPanelReturn shown;shown=MwShowCompactTextPanel(0x000C,0x000B,0x001C,6,&accepted,0x2153);
-    if (shown.discardReturnWord) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: shown.discardReturnWord"); /* Native frame-dependent tail, not ordinary company initialization. */
-initializeCompany:
-    /*181A remains a label in this body, not an invented initialization API. */
+    else if (entryOffset!=CAMPAIGN_CONTINUE_INITIALIZE_COMPANY) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: entryOffset is neither new-campaign entry"); /* Only the two proven shared entries. */
     campaignEventPlanetSelectors[0]=eventPlanetChoicePool0[MwRandomUpTo(7)];
     currentPlanetIndex=campaignEventPlanetSelectors[0]-1;
     MwApplyCurrentPlanetState();

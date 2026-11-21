@@ -9,8 +9,8 @@ Generated from `src/Original/Memory` (every file-scope item, with the first nati
 | Ours: screen layout, panels and menus (data/ui/*.json) | 58 |
 | Ours: rules and constants (data/rules/*.json) | 90 |
 | Ours: the new campaign's starting state (data/rules/new_campaign.json) | 99 |
-| Dropped | 26 |
-| Code: runtime state and renderer tables (no file) | 1086 |
+| Dropped | 7 |
+| Code: runtime state and renderer tables (no file) | 1079 |
 
 ## Extracted: the original's creative content (the story file, first run)
 
@@ -455,33 +455,14 @@ Generated from `src/Original/Memory` (every file-scope item, with the first nati
 
 | File | Item | Native offset |
 |---|---|---|
-| BTECH_304E.cpp | `resourceDiskPromptNumber` | 0xCFD6 |
 | BTECH_304E_VIDEO.cpp | `herculesDisplayRowOffsets` | 0x34DE |
-| MW_0806_STATE.cpp | `launcherCampaignDiskPrompt` | 0x0871 |
 | MW_0806_STATE.cpp | `launcherCampaignFilename` | 0x07E3 |
-| MW_0806_STATE.cpp | `launcherCombatDiskPrompt` | 0x088D |
 | MW_0806_STATE.cpp | `launcherCombatFilename` | 0x07EF |
-| MW_0806_STATE.cpp | `launcherDiskSuffix` | 0x09B1 |
-| MW_0806_STATE.cpp | `launcherGraphicsPrompt` | 0x08CA |
 | MW_0806_STATE.cpp | `launcherIdentity` | 0x07D4 |
-| MW_0806_STATE.cpp | `launcherMemoryError` | 0x08A9 |
-| MW_0806_STATE.cpp | `launcherReleaseError` | 0x085A |
-| MW_MAIN_1090.cpp | `changeDiskPrompt` | 0x0E71 |
-| MW_MAIN_1090.cpp | `combatDiskPrompt` | 0x0F00 |
 | MW_MAIN_1090.cpp | `combatExecutableFilename` | 0x0EF6 |
-| MW_MAIN_1090.cpp | `copyProtectionAcceptedText` | 0x2153 |
-| MW_MAIN_1090.cpp | `copyProtectionAnswers` | 0x163A |
-| MW_MAIN_1090.cpp | `copyProtectionCallsigns` | 0x0F8F |
-| MW_MAIN_1090.cpp | `copyProtectionPictureIndices` | 0x1FA1 |
-| MW_MAIN_1090.cpp | `copyProtectionPrompt` | 0x1F1C |
-| MW_MAIN_1090.cpp | `copyProtectionSelection` | 0x1F1A |
-| MW_MAIN_1090.cpp | `insertDiskOnePrompt` | 0x0ED6 |
 | MW_MAIN_1090.cpp | `launcherExitCode` | 0x0006 |
 | MW_MAIN_1090.cpp | `launcherMemoryTier` | 0x0B5D |
-| MW_MAIN_1090.cpp | `startupErrorText` | 0x018B |
-| MW_MAIN_1090.cpp | `tandyGraphicsSelected` | 0x03A4 |
-| MW_MAIN_1090_OPTIONS.cpp | `saveDiskPrompt` | 0xA114 |
 
 ## Code: runtime state and renderer tables (no file)
 
-Not listed one by one: BTECH_0810_STATE.cpp 1, BTECH_1ADF_STATE.cpp 2, BTECH_1BF5_STATE.cpp 5, BTECH_22B6_DATA.cpp 15, BTECH_2FEB.cpp 24, BTECH_304E.cpp 38, BTECH_304E_ADLIB.cpp 25, BTECH_304E_COCKPIT.cpp 45, BTECH_304E_MPU.cpp 10, BTECH_304E_ORDERS.cpp 33, BTECH_304E_POLYGONS.cpp 24, BTECH_304E_POSE.cpp 16, BTECH_304E_RENDER.cpp 61, BTECH_304E_RUNTIME.cpp 17, BTECH_304E_SCENE.cpp 8, BTECH_304E_SOUND.cpp 42, BTECH_304E_STARTUP.cpp 59, BTECH_304E_VIDEO.cpp 87, BTECH_304E_WORLD.cpp 110, MW_0806_STATE.cpp 7, MW_EGA_0800_STATE.cpp 66, MW_MAIN_0F41_STATE.cpp 5, MW_MAIN_1090.cpp 324, MW_MAIN_1090_OPTIONS.cpp 21, MW_MAIN_1AA5.cpp 2, MW_MAIN_28BE.cpp 39.
+Not listed one by one: BTECH_0810_STATE.cpp 1, BTECH_1ADF_STATE.cpp 2, BTECH_1BF5_STATE.cpp 5, BTECH_22B6_DATA.cpp 15, BTECH_2FEB.cpp 24, BTECH_304E.cpp 38, BTECH_304E_ADLIB.cpp 25, BTECH_304E_COCKPIT.cpp 45, BTECH_304E_MPU.cpp 10, BTECH_304E_ORDERS.cpp 33, BTECH_304E_POLYGONS.cpp 24, BTECH_304E_POSE.cpp 16, BTECH_304E_RENDER.cpp 61, BTECH_304E_RUNTIME.cpp 17, BTECH_304E_SCENE.cpp 8, BTECH_304E_SOUND.cpp 42, BTECH_304E_STARTUP.cpp 59, BTECH_304E_VIDEO.cpp 87, BTECH_304E_WORLD.cpp 110, MW_0806_STATE.cpp 1, MW_EGA_0800_STATE.cpp 66, MW_MAIN_0F41_STATE.cpp 5, MW_MAIN_1090.cpp 323, MW_MAIN_1090_OPTIONS.cpp 21, MW_MAIN_1AA5.cpp 2, MW_MAIN_28BE.cpp 39.

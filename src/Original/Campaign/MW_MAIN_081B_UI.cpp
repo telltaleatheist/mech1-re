@@ -115,7 +115,7 @@ uint16_t MwCampaignUiEventLoop(void)
                 case CAMPAIGN_CONTINUE_EVENT_QUIT:codeOffset=MwQuitFromEventContinuation();break;
                 case CAMPAIGN_CONTINUE_RESTART:codeOffset=MwRestartCampaignContinuation();break;
                 case CAMPAIGN_CONTINUE_EVENT_COMBAT:codeOffset=MwPrepareEventSpecialCombatContinuation();break;
-                case CAMPAIGN_CONTINUE_INITIALIZE_COMPANY:codeOffset=MwRunCopyProtectionAndInitializeCampaign(codeOffset);break;
+                case CAMPAIGN_CONTINUE_INITIALIZE_COMPANY:codeOffset=MwStartNewCampaign(codeOffset);break;
                 case CAMPAIGN_CONTINUE_EVENT_COMBAT_RETURN: /* STC/RET; the mapped6236 caller ignores CF. */
                     if (campaignEventReturnContinuation!=CAMPAIGN_CONTINUE_NEXT_EVENT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: campaignEventReturnContinuation!=CAMPAIGN_CONTINUE_NEXT_EVENT");
                     codeOffset=campaignEventReturnContinuation;break;

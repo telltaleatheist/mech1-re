@@ -289,7 +289,6 @@ void BtechLoadScenarioAndWorld(uint16_t scenarioIndex)
         binding->leftArm=BtechAllocatePooledWorldObject(UINT16_MAX,NULL);
         binding->head=BtechAllocatePooledWorldObject(UINT16_MAX,NULL);
     }
-    resourceDiskPromptNumber=4;
     BtechLoadCombatChassisResourceBanks();BtechInitializePlayerCameras();
     stream=BtechOpenStreamWithRetry("snario.dat","rb");
     int16_t specialTerrain=-1;

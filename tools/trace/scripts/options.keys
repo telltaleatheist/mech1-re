@@ -1,5 +1,5 @@
 # Options: save, audio, terrain detail, the load menu.
-Return Escape Return @snap:hub
+Return Return @snap:hub
 Up       @snap:options_sel       # hub row 5 OPTIONS
 Return   @snap:options
 Return T 1 Return @snap:saved   # row 0 SAVE_CAMPAIGN, the name "T1", saved

@@ -14,7 +14,6 @@ void BtechPrepareCampaignCombatStage(uint16_t inheritedSoundStreamIdentity)
 {
     BtechCampaignImport company;
     BtechDecodeCampaignImport(campaignCombatExchange,&company);
-    resourceDiskPromptNumber=3;
     if (combatContinuationStage&0x8000)
     {
         for (uint16_t character=0;character<8;++character)

@@ -16,24 +16,24 @@ bool MwDosSeekAbsolute(uint32_t fileOffset, uint16_t fileHandle)
 
 /* MW_MAIN 081B:108C..113C. Directory read success does NOT require 600 bytes;
  * indexed record decode uses its STORED size, not the successful read count.
- * Retry prompts remain original dependencies, not host replacement dialogs. */
+ * A failed open, read or seek is fatal (MwFailGameFileRead): no disk prompts. */
 uint16_t MwLoadIndexedPicture(uint16_t pictureIndex)
 {
     uint16_t handleOrError, bytesReadOrError;
     if (indexedPictureDirectoryLoaded == 0)
     {
         while (MwDosOpenResourceReadWrite(indexedPictureFilename, &handleOrError))
-            MwPromptChangeCurrentDriveDisk();
+            MwFailGameFileRead(indexedPictureFilename);
         indexedPictureFileHandle = handleOrError;
         while (MwDosReadFile(indexedPictureDirectory, INDEXED_PICTURE_DIRECTORY_BYTES,
-            indexedPictureFileHandle, &bytesReadOrError)) MwPromptChangeCurrentDriveDisk();
+            indexedPictureFileHandle, &bytesReadOrError)) MwFailGameFileRead(indexedPictureFilename);
         indexedPictureDirectoryLoaded++;
     }
     else
     {
         if (pictureIndex == indexedPictureCachedIndex) return indexedPictureOutputSelector;
         while (MwDosOpenResourceReadWrite(indexedPictureFilename, &handleOrError))
-            MwPromptChangeCurrentDriveDisk();
+            MwFailGameFileRead(indexedPictureFilename);
         indexedPictureFileHandle = handleOrError;
     }
     indexedPictureCachedIndex = pictureIndex;
@@ -46,7 +46,7 @@ uint16_t MwLoadIndexedPicture(uint16_t pictureIndex)
         uint32_t fileOffset = ((uint32_t)MwReadNativeWord(indexedPictureDirectory, offsetEntry) << NATIVE_WORD_BITS)
             | MwReadNativeWord(indexedPictureDirectory, (uint16_t)(offsetEntry + PICTURE_BANK_LOW_OFFSET_WORD));
         if (!MwDosSeekAbsolute(fileOffset, indexedPictureFileHandle)) break;
-        MwPromptChangeCurrentDriveDisk();
+        MwFailGameFileRead(indexedPictureFilename);
     }
     for (;;)
     {
@@ -55,7 +55,7 @@ uint16_t MwLoadIndexedPicture(uint16_t pictureIndex)
         indexedPictureStoredBytes = MwReadNativeWord(indexedPictureDirectory, sizeEntry);
         if (!MwDosReadFile(MwResolveNativeSegment(compressedPictureBufferSelector),
             indexedPictureStoredBytes, indexedPictureFileHandle, &bytesReadOrError)) break;
-        MwPromptChangeCurrentDriveDisk();
+        MwFailGameFileRead(indexedPictureFilename);
     }
     MwCloseIndexedPictureBank();
     MwDecodePictureBank(indexedPictureStoredBytes, indexedPictureOutputSelector);
@@ -69,7 +69,7 @@ void MwCloseIndexedPictureBank(void)
 {
     if (indexedPictureFileHandle == 0) return;
     if (!MwDosCloseFile(indexedPictureFileHandle)) return;
-    MwPromptChangeCurrentDriveDisk();
+    MwFailGameFileRead(indexedPictureFilename);
     MwIndexedPictureCloseHook(); /* Native shared RET tail. */
 }
 /* MW_MAIN 081B:1153..1188. Read failure leaks the handle; close failure is ignored. */
@@ -100,14 +100,13 @@ bool MwLoadCockpitPictureBank(void)
 bool MwLoadPrimaryPictureBank(void) { return MwSelectAndLoadPictureBank(primaryPictureFilename); }
 bool MwSelectAndLoadPictureBank(const char *filename)
 { selectedPictureFilename = filename; return MwLoadSelectedPictureBank(); }
-/* MW_MAIN 081B:11C6..120D. Filename identity determines the retry prompt. */
+/* MW_MAIN 081B:11C6..120D. */
 bool MwLoadSelectedPictureBank(void)
 {
     uint16_t fileHandleOrError, bytesReadOrError;
     while (MwDosOpenResourceReadWrite(selectedPictureFilename, &fileHandleOrError))
     {
-        if (selectedPictureFilename == fPictureFilename) MwPromptChangeCurrentDriveDisk();
-        else MwPromptInsertDiskOne();
+        MwFailGameFileRead(selectedPictureFilename);
     }
     selectedPictureFileHandle = fileHandleOrError;
     if (MwDosReadFile(MwResolveNativeSegment(compressedPictureBufferSelector),
