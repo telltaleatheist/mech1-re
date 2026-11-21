@@ -208,7 +208,7 @@ bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t 
     for (uint16_t axis=0;axis<5;++axis)
         for (uint16_t word=0;word<GEOMETRY_CACHE_VERTICES*2;++word)
             coordinateCaches[axis]->words[word]=MwReadNativeWord(segment22B6,0x322B+axis*0x3FC+word*2);
-    memcpy(&scenarioSelectors,data+0x7D6A,sizeof(scenarioSelectors));
+    scenarioSelectors=BtechScenarioSelectors{}; /* 7D6A, past the file data. */
     return true;
 }
 

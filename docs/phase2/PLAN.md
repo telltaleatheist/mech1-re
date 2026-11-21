@@ -209,6 +209,14 @@ DS:0008 finds the data segment, then each piece must still match its hash.
    sequence table (304E:7D8A) is uninitialised data filled from MUS:INF, and
    MW_MAIN's instruments (28BE:064E) are zero in the exe, so neither is
    imported.
+   2g, left over: two story items are still read straight from the exe.
+   `missionTitleText` (BTECH 304E:09F0..0D8B, the briefing's mission titles,
+   reached through the offset table at 0DD2) becomes text ids and a list of
+   titles; `contractOfficePlanetGroupStorage` (MW_MAIN 1090:4B8A..4BF0, each
+   House's contract-office planets as planet selectors, FF between groups and
+   FE at the end, reached through 4B80) becomes lists of planet ids in
+   `planets.json`, like the story-planet pools in 2e. Both are the story's
+   content, not layout or words, so 2g moves them before slice 6.
 3. **Rules and the new campaign** into `data/rules/`. Traces equal (same
    numbers). The rule table's hashes check them against the exe. The plan
    is section 5.
@@ -252,6 +260,9 @@ rules:
   revisions; `mountedWeaponCountsByKind`, `operationalWeaponCountsByKind`
   (both 4F32), `selectionObjectListIndices` (6F5A) and `scenarioSelectors`
   (7D6A) lie past it, so the exe holds zeros, and each is written in play.
+  After slice 3 they are zeroed in code where the exe reloaded them, as is
+  `musicSequences` (7D8A, filled from MUS:INF; see 2f), and none is read
+  from the image.
 - **Start values (12).** Runtime state that play writes but that starts from
   an exe value: `sideObjectiveRules` (BTECH), `ammunitionTransactionPrices`,
   `generateStartingJenner`, `generatedAmmoKinds`, `generatedAmmoQuantities`,

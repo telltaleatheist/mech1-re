@@ -76,7 +76,7 @@ bool BtechImportRenderInitialData(const uint8_t *data,size_t bytes)
     selectionMarkerPixels=MwReadNativeWord(data,0x2816)|((uint32_t)MwReadNativeWord(data,0x2818)<<16);
     selectionCapturedPixels=MwReadNativeWord(data,0x6F6C)|((uint32_t)MwReadNativeWord(data,0x6F6E)<<16);
     selectionPointBackground=MwReadNativeWord(data,0x6F70)|((uint32_t)MwReadNativeWord(data,0x6F72)<<16);
-    for (uint16_t i=0;i<SELECTION_LIST_PREFIX;++i) selectionObjectListIndices[i]=MwReadNativeWord(data,0x6F5A+i*2);
+    memset(selectionObjectListIndices,0,sizeof(selectionObjectListIndices)); /* 6F5A, past the file data. */
     for (uint16_t i=0;i<4;++i) {horizonPolygonX[i]=(int16_t)MwReadNativeWord(data,0x2E18+i*2);horizonPolygonY[i]=(int16_t)MwReadNativeWord(data,0x2E20+i*2);}
     return true;
 }

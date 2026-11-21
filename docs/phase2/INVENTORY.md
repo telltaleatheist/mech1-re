@@ -1,16 +1,16 @@
 # Phase 2 inventory
 
-Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-scope item). An item read through a door shows where it now comes from: a story piece, a rule piece, or a save codec field of `new_campaign.json`, with the exe offset those tables give. Any other item shows the first native offset its importer reads, or `-` for runtime state with no import. The groups follow `docs/phase2/PLAN.md`. Names and offsets only: no MW1 text.
+Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-scope item). An item read through a door shows where it now comes from: a story piece, a rule piece, or a save codec field of `new_campaign.json`, with the exe offset those tables give. Any other item shows the first native offset its importer reads, or `-` for runtime state with no import; its group names the slice that moves it, and the two story items not yet moved name theirs. The groups follow `docs/phase2/PLAN.md`. Names and offsets only: no MW1 text.
 
 | Group | Items |
 |---|---|
-| Extracted: the original's creative content (the story file, first run) | 61 |
+| Extracted: the original's creative content (the story file, first run) | 60 |
 | Ours: UI words and system messages (data/text/interface.json) | 108 |
 | Ours: screen layout, panels and menus (data/ui/*.json) | 58 |
 | Ours: rules and constants (data/rules/*.json) | 78 |
 | Ours: the new campaign's starting state (data/rules/new_campaign.json) | 103 |
 | Dropped | 6 |
-| Code: runtime state and renderer tables (no file) | 1085 |
+| Code: runtime state and renderer tables (no file) | 1086 |
 
 ## Extracted: the original's creative content (the story file, first run)
 
@@ -19,10 +19,9 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 | BTECH_304E.cpp | `combatDefaultCommanderNameBytes` | BTECH 304E:0978 | story combat.commander.default_name |
 | BTECH_304E_ADLIB.cpp | `combatAdlibDefaultInstruments` | - | story, MwStoryCopyAdlibInstruments |
 | BTECH_304E_COCKPIT.cpp | `mechTemplateNames` | BTECH 304E:2045 | story combat.mech_template.1.name |
-| BTECH_304E_COCKPIT.cpp | `missionTitleText` | 0x09F0 | - |
+| BTECH_304E_COCKPIT.cpp | `missionTitleText` | 0x09F0 | story 2g, not yet moved |
 | BTECH_304E_COCKPIT.cpp | `pilotDefinitionNameDirectory` | BTECH 304E:20AD | story combat.pilot.1.name |
 | BTECH_304E_COCKPIT.cpp | `pilotDefinitionNames` | BTECH 304E:20AD | story combat.pilot.1.name |
-| BTECH_304E_SOUND.cpp | `musicSequences` | 0x7D8A | - |
 | MW_MAIN_1090.cpp | `afterActionGeneralFailure` | MW_MAIN 1090:159B | story after_action.failure.general |
 | MW_MAIN_1090.cpp | `afterActionGeneralSuccess` | MW_MAIN 1090:1742 | story after_action.success.general |
 | MW_MAIN_1090.cpp | `afterActionKuritaFailure` | MW_MAIN 1090:149B | story after_action.failure.kurita |
@@ -32,7 +31,7 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 | MW_MAIN_1090.cpp | `alphabeticPlanetRecordOffsets` | - | story, MwStoryBuildPlanets |
 | MW_MAIN_1090.cpp | `campaignDefaultCommanderNameBytes` | MW_MAIN 1090:5CE2 | story commander.default_name |
 | MW_MAIN_1090.cpp | `contractNarrative` | MW_MAIN 1090:4890 | story contract.narrative |
-| MW_MAIN_1090.cpp | `contractOfficePlanetGroupStorage` | 0x4B8A | - |
+| MW_MAIN_1090.cpp | `contractOfficePlanetGroupStorage` | 0x4B8A | story 2g, not yet moved |
 | MW_MAIN_1090.cpp | `darkWingAttackFailedText` | MW_MAIN 1090:1BBC | story dark_wing.attack_failed |
 | MW_MAIN_1090.cpp | `darkWingVictoryText` | MW_MAIN 1090:1A37 | story dark_wing.victory |
 | MW_MAIN_1090.cpp | `deploymentUneventfulText` | MW_MAIN 1090:140D | story deployment.uneventful |
@@ -458,7 +457,7 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 
 ## Code: runtime state and renderer tables (no file)
 
-Not listed one by one: BTECH_0810_STATE.cpp 1, BTECH_1ADF_STATE.cpp 2, BTECH_1BF5_STATE.cpp 5, BTECH_22B6_DATA.cpp 15, BTECH_2FEB.cpp 24, BTECH_304E.cpp 35, BTECH_304E_ADLIB.cpp 25, BTECH_304E_COCKPIT.cpp 45, BTECH_304E_MPU.cpp 10, BTECH_304E_ORDERS.cpp 35, BTECH_304E_POLYGONS.cpp 24, BTECH_304E_POSE.cpp 16, BTECH_304E_RENDER.cpp 62, BTECH_304E_RUNTIME.cpp 17, BTECH_304E_SCENE.cpp 8, BTECH_304E_SOUND.cpp 42, BTECH_304E_STARTUP.cpp 59, BTECH_304E_VIDEO.cpp 87, BTECH_304E_WORLD.cpp 111, MW_0806_STATE.cpp 1, MW_EGA_0800_STATE.cpp 66, MW_MAIN_0F41_STATE.cpp 5, MW_MAIN_1090.cpp 329, MW_MAIN_1090_OPTIONS.cpp 21, MW_MAIN_1AA5.cpp 1, MW_MAIN_28BE.cpp 39.
+Not listed one by one: BTECH_0810_STATE.cpp 1, BTECH_1ADF_STATE.cpp 2, BTECH_1BF5_STATE.cpp 5, BTECH_22B6_DATA.cpp 15, BTECH_2FEB.cpp 24, BTECH_304E.cpp 35, BTECH_304E_ADLIB.cpp 25, BTECH_304E_COCKPIT.cpp 45, BTECH_304E_MPU.cpp 10, BTECH_304E_ORDERS.cpp 35, BTECH_304E_POLYGONS.cpp 24, BTECH_304E_POSE.cpp 16, BTECH_304E_RENDER.cpp 62, BTECH_304E_RUNTIME.cpp 17, BTECH_304E_SCENE.cpp 8, BTECH_304E_SOUND.cpp 43, BTECH_304E_STARTUP.cpp 59, BTECH_304E_VIDEO.cpp 87, BTECH_304E_WORLD.cpp 111, MW_0806_STATE.cpp 1, MW_EGA_0800_STATE.cpp 66, MW_MAIN_0F41_STATE.cpp 5, MW_MAIN_1090.cpp 329, MW_MAIN_1090_OPTIONS.cpp 21, MW_MAIN_1AA5.cpp 1, MW_MAIN_28BE.cpp 39.
 
 ## Reclassified or removed in slice 3
 
@@ -467,6 +466,7 @@ Not listed one by one: BTECH_0810_STATE.cpp 1, BTECH_1ADF_STATE.cpp 2, BTECH_1BF
 - `unusedRepairTimeByDamageTier` (MW_MAIN 1090:3A6F, 8 bytes) was listed as a rule; it was imported and never read, and is gone.
 - `combatMissionSideZeroRules` (BTECH 304E:092C, 74 bytes; an alias into `missionRules`) and `mechFallbackTemplateSteps` (BTECH 304E:0992, 16 bytes) were missing; both are rules.
 - `mountedWeaponCountsByKind`, `operationalWeaponCountsByKind` (both BTECH 304E:4F32), `selectionObjectListIndices` (6F5A) and `scenarioSelectors` (7D6A) lie past BTECH's file data (304E:4EE0), so the exe holds zeros and play writes them: code.
+- `musicSequences` (BTECH 304E:7D8A) was listed as story content; it lies past the file data too, and MUS:INF fills it at run time: code.
 - `actuatorConditionLabelIndices`, `engineConditionLabelIndices`, `twoHitSystemConditionLabelIndices` and `orderDisplayIndices` pick labels and move with them in slice 5: UI words.
 - Eight start values are always written before they're read, and are code, zeroed where the exe reloaded them (all eight are zero in the exe): `settlementPayoutPercent` (1090:123F), `pilotCardGunneryTier`, `pilotCardPilotingTier`, `pilotCardQuotedWageTier` (2440, 2442, 2446), `missionForceBudget` (4B79), `missionPaymentBaseThousands` (4B7B), `travelDestinationTimeWeight` (54DA, written and never read) and `sideObjectiveRules` (BTECH 304E:0ED0). The other four, `ammunitionTransactionPrices`, `generateStartingJenner`, `generatedAmmoKinds` and `generatedAmmoQuantities`, are read first on some path and stay `"start"` entries in market.json.
 - Two of the save codec's 105 fields, `pilotRosterCount` and `rosterPilotIds`, are owned in `src/Original/Campaign`, so this list (of `src/Original/Memory`) doesn't show them; new_campaign.json holds them.

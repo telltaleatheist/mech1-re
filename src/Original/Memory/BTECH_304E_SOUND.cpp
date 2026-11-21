@@ -80,9 +80,8 @@ bool BtechImportSoundInitialData(const uint8_t *data,size_t bytes)
     midiMessageDataLength=data[0x2CA3];midiChannel=data[0x2CA4];
     midiTempoHighBytes=MwReadNativeWord(data,0x2CA5);
     activeMusicBankIndex=MwReadNativeWord(data,0x2B4E);
-    for (uint16_t bank=0;bank<COMBAT_MUSIC_SEQUENCE_ROWS;++bank)
-        for (uint16_t index=0;index<COMBAT_MUSIC_SEQUENCE_WORDS;++index)
-            musicSequences[bank][index]=(int16_t)MwReadNativeWord(data,0x7D8A+bank*0x14+index*2);
+    /* 7D8A lies past the file data; MUS:INF fills it at run time. */
+    memset(musicSequences,0,sizeof(musicSequences));
     mpuProbeDataPort=MwReadNativeWord(data,0x2CA8);
     mpuProbeStatusPort=MwReadNativeWord(data,0x2CAA);mpuProbeCommandPort=MwReadNativeWord(data,0x2CAC);
     mpuProbePreviousIrq=MwReadNativeWord(data,0x2CAE)|((uint32_t)MwReadNativeWord(data,0x2CB0)<<16);

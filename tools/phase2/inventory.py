@@ -121,7 +121,7 @@ OVR={'inspectionBitmapNames':'code','cockpitScreenNames':'code','hitLocationRows
  'combatTemplateByCampaignUnitKind':'ours:rules','campaignUnitKindByCombatTemplate':'ours:rules','travelDestinationName':'code',
  'hubFirstNavigationProbe':'code','hubSecondNavigationProbe':'code','hubThirdNavigationProbe':'code','saveFindPattern':'code',
  'newsArticleCursor':'code','newsArticleListStart':'code','missionDescriptionMaximumIndicesByCategory':'extracted',
- 'combatAdlibDefaultInstruments':'extracted','musicSequences':'extracted','generateStartingJenner':'ours:rules'}
+ 'combatAdlibDefaultInstruments':'extracted','musicSequences':'code','generateStartingJenner':'ours:rules'}
 rows=scan(sys.argv[1])
 # Slice 3's reclassifications (docs/phase2/PLAN.md 5.1, 5.6): past BTECH's file
 # data (zero in the exe, written in play), and the label-index tables, which
@@ -129,6 +129,9 @@ rows=scan(sys.argv[1])
 OVR.update({'mountedWeaponCountsByKind':'code','operationalWeaponCountsByKind':'code','selectionObjectListIndices':'code',
             'scenarioSelectors':'code','actuatorConditionLabelIndices':'ours:ui','engineConditionLabelIndices':'ours:ui',
             'twoHitSystemConditionLabelIndices':'ours:ui','orderDisplayIndices':'ours:ui'})
+# Items still read straight from the exe, with the slice that will move them
+# (docs/phase2/PLAN.md 3, 2g).
+OWNER={'missionTitleText':'story 2g, not yet moved','contractOfficePlanetGroupStorage':'story 2g, not yet moved'}
 GROUP_OF_SOURCE={'story':'extracted','builder':'extracted','rule':'ours:rules','field':'ours:start'}
 rows2=[]
 for f,name,off,n,src in rows:
@@ -139,7 +142,7 @@ for f,name,off,n,src in rows:
     c=OVR.get(name) or cls(name,off,n)
     if c=='?' : c='code'
     if c=='code:state': c='code'
-    rows2.append((c,f,name,off,'-'))
+    rows2.append((c,f,name,off,OWNER.get(name,'-')))
 # items the file-scope scan misses
 rows2+= [('extracted','MW_MAIN_1AA5.cpp','eventTextStorage / eventTextRecords','-','story, MwStoryBuildEventText'),
          ('extracted','MW_MAIN_1090_EVENTS.cpp','the event script (records, conditions, actions)','-','story, MwStoryBuildCampaignEvents')]
@@ -147,7 +150,7 @@ G=[('extracted','Extracted: the original\'s creative content (the story file, fi
    ('ours:layout','Ours: screen layout, panels and menus (data/ui/*.json)'),('ours:rules','Ours: rules and constants (data/rules/*.json)'),
    ('ours:start','Ours: the new campaign\'s starting state (data/rules/new_campaign.json)'),('dropped','Dropped'),('code','Code: runtime state and renderer tables (no file)')]
 cnt=collections.Counter(r[0] for r in rows2)
-print('# Phase 2 inventory\n\nGenerated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-scope item). An item read through a door shows where it now comes from: a story piece, a rule piece, or a save codec field of `new_campaign.json`, with the exe offset those tables give. Any other item shows the first native offset its importer reads, or `-` for runtime state with no import. The groups follow `docs/phase2/PLAN.md`. Names and offsets only: no MW1 text.\n')
+print('# Phase 2 inventory\n\nGenerated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-scope item). An item read through a door shows where it now comes from: a story piece, a rule piece, or a save codec field of `new_campaign.json`, with the exe offset those tables give. Any other item shows the first native offset its importer reads, or `-` for runtime state with no import; its group names the slice that moves it, and the two story items not yet moved name theirs. The groups follow `docs/phase2/PLAN.md`. Names and offsets only: no MW1 text.\n')
 print('| Group | Items |\n|---|---|')
 for k,t in G: print(f'| {t} | {cnt[k]} |')
 for k,t in G:
@@ -165,6 +168,7 @@ print("""
 - `unusedRepairTimeByDamageTier` (MW_MAIN 1090:3A6F, 8 bytes) was listed as a rule; it was imported and never read, and is gone.
 - `combatMissionSideZeroRules` (BTECH 304E:092C, 74 bytes; an alias into `missionRules`) and `mechFallbackTemplateSteps` (BTECH 304E:0992, 16 bytes) were missing; both are rules.
 - `mountedWeaponCountsByKind`, `operationalWeaponCountsByKind` (both BTECH 304E:4F32), `selectionObjectListIndices` (6F5A) and `scenarioSelectors` (7D6A) lie past BTECH's file data (304E:4EE0), so the exe holds zeros and play writes them: code.
+- `musicSequences` (BTECH 304E:7D8A) was listed as story content; it lies past the file data too, and MUS:INF fills it at run time: code.
 - `actuatorConditionLabelIndices`, `engineConditionLabelIndices`, `twoHitSystemConditionLabelIndices` and `orderDisplayIndices` pick labels and move with them in slice 5: UI words.
 - Eight start values are always written before they're read, and are code, zeroed where the exe reloaded them (all eight are zero in the exe): `settlementPayoutPercent` (1090:123F), `pilotCardGunneryTier`, `pilotCardPilotingTier`, `pilotCardQuotedWageTier` (2440, 2442, 2446), `missionForceBudget` (4B79), `missionPaymentBaseThousands` (4B7B), `travelDestinationTimeWeight` (54DA, written and never read) and `sideObjectiveRules` (BTECH 304E:0ED0). The other four, `ammunitionTransactionPrices`, `generateStartingJenner`, `generatedAmmoKinds` and `generatedAmmoQuantities`, are read first on some path and stay `"start"` entries in market.json.
 - Two of the save codec's 105 fields, `pilotRosterCount` and `rosterPilotIds`, are owned in `src/Original/Campaign`, so this list (of `src/Original/Memory`) doesn't show them; new_campaign.json holds them.""")

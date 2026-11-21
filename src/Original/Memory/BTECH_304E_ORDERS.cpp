@@ -60,8 +60,9 @@ bool BtechImportOrderInitialData(const uint8_t *data,size_t bytes)
             orderEngineConditionColours[scheme][condition]=MwReadNativeWord(data,0x030E +scheme*8+condition*2);
             orderSystemConditionColours[scheme][condition]=MwReadNativeWord(data,0x031E +scheme*8+condition*2);
         }
-    for (uint16_t kind=0;kind<COMBAT_WEAPON_KINDS;++kind)
-    {mountedWeaponCountsByKind[kind]=MwReadNativeWord(data,0x4F32+kind*2);operationalWeaponCountsByKind[kind]=MwReadNativeWord(data,0x4F46+kind*2);}
+    /* 4F32 and 4F46 lie past BTECH's file data: zero where the exe reloaded them. */
+    memset(mountedWeaponCountsByKind,0,sizeof(mountedWeaponCountsByKind));
+    memset(operationalWeaponCountsByKind,0,sizeof(operationalWeaponCountsByKind));
     orderPanelCaptureBuffer=BtechResourceAllocation{};
     for (uint16_t selection=0;selection<ORDER_SELECTION_CLASSES;++selection)
     {
