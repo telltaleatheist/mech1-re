@@ -47,7 +47,8 @@
 ; A capture: 'MW1S' (4) version 1 (1) video mode (1) CRTC start (2), the
 ; attribute registers 0-15 (16), the DAC 256 x RGB (768); in mode 0Dh the
 ; four planes (8000 bytes each, from the CRTC start), then 'MEMS' (4), the
-; game's DS (2: MW_MAIN's in the campaign, BTECH's in combat), and the first
+; game's DS (2: MW_MAIN's at its last int 16h call in the campaign, BTECH's at
+; its last input poll in combat), and the first
 ; 640K of memory. The same layout as SNAP's but the magic.
 ;
 ; Files it writes in the current directory: MW1Snnnn.BIN, MWSNAPEN.TXT when
@@ -66,7 +67,6 @@ MAX_KEYS    equ 16384
 INT9_SEG    equ 13f6h                   ; 1BF5 (reference) = 1C06 here
 INT9_OFF    equ 2ccbh
 POLL_OFF    equ 2ae1h                   ; the reference's 0810:2A17
-BTECH_DS    equ 284fh                   ; DGROUP (304E reference)
 RANDOM0     equ 03f5h                   ; MW_MAIN's random words
 RANDOM1     equ 03f7h
 
@@ -83,6 +83,7 @@ c_polls     dw 0
 c_wait      dw 0
 game_ds     dw 0                        ; the campaign's, at its last int 16h call
 btech_base  dw 0
+btech_ds    dw 0                        ; BTECH's DS, at its last input poll
 pin_lo      dw 0
 pin_hi      dw 1
 pin_used    db 0
@@ -360,6 +361,7 @@ int1a:
 ; the nop after it). Feeds, then does the replaced push bp / mov bp,sp /
 ; sub sp,0Ch on BTECH's stack and goes on at the nop.
 combat_hook:
+        mov [cs:btech_ds], ds
         push bx
         mov bx, combat_items
         call on_own_stack
@@ -621,8 +623,7 @@ capture:
         mov ax, [game_ds]
         cmp byte [in_combat], 0
         je .ds
-        mov ax, [btech_base]
-        add ax, BTECH_DS
+        mov ax, [btech_ds]
 .ds:
         mov [mem_ds], ax
         mov cx, 6
