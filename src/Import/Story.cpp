@@ -1,5 +1,7 @@
 #include "Story.h"
 
+#include "Records.h"
+
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -22,6 +24,8 @@ namespace {
 
 fs::path manifest_path(const fs::path& write_dir) { return story_dir(write_dir) / "import.json"; }
 fs::path text_path(const fs::path& write_dir) { return story_dir(write_dir) / "text.json"; }
+// The typed records (Records.h), beside the text.
+constexpr const char* kRecordFiles[] = {"pilots.json", "planets.json", "missions.json"};
 
 std::vector<std::uint8_t> read_file(const fs::path& path) {
     std::ifstream in(path, std::ios::binary);
@@ -121,6 +125,8 @@ StoryState story_state(const fs::path& write_dir, std::span<const ImportPiece> t
     std::error_code ec;
     if (!fs::exists(manifest_path(write_dir), ec) || !fs::exists(text_path(write_dir), ec))
         return StoryState::Missing;
+    for (const char* name : kRecordFiles)
+        if (!fs::exists(story_dir(write_dir) / name, ec)) return StoryState::Missing;
     try {
         const auto bytes = read_file(manifest_path(write_dir));
         const auto manifest = parse_json(bytes_view(bytes, 0, bytes.size()));
@@ -138,6 +144,7 @@ void import_story(const fs::path& game_dir, const fs::path& write_dir, std::span
     std::map<std::string, Exe, std::less<>> exes;
     std::vector<std::string> refused;
     std::string texts;
+    PieceMap pieces;
     for (const auto& piece : table) {
         auto it = exes.find(piece.exe);
         if (it == exes.end())
@@ -151,6 +158,7 @@ void import_story(const fs::path& game_dir, const fs::path& write_dir, std::span
             refused.push_back(std::string(piece.id) + " (" + std::string(piece.exe) + " " + piece_address(piece) + ")");
             continue;
         }
+        pieces[std::string(piece.id)] = PieceBytes{piece.offset, std::string(bytes)};
         if (piece.kind != ImportPiece::Kind::String) continue;
         if (!texts.empty()) texts += ",\n";
         texts += "    {\"id\": " + json_quote(piece.id) + ", \"address\": " + json_quote(piece_address(piece)) +
@@ -168,6 +176,9 @@ void import_story(const fs::path& game_dir, const fs::path& write_dir, std::span
     std::error_code ec;
     fs::remove(manifest_path(write_dir), ec);
     write_file(text_path(write_dir), "{\n  \"texts\": [\n" + texts + "\n  ]\n}\n");
+    write_file(story_dir(write_dir) / kRecordFiles[0], pilots_json(pieces));
+    write_file(story_dir(write_dir) / kRecordFiles[1], planets_json(pieces));
+    write_file(story_dir(write_dir) / kRecordFiles[2], missions_json(pieces));
     std::string sources;
     for (const auto& [name, exe] : exes) {
         if (!sources.empty()) sources += ", ";

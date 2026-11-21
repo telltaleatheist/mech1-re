@@ -2,6 +2,8 @@
 // player's own exes into the player's data folder (docs/phase2/PLAN.md):
 //
 //   <write dir>/story/text.json     {"texts": [{"id", "address", "text"}, ...]}
+//   <write dir>/story/pilots.json, planets.json, missions.json
+//                                   typed records (Records.h)
 //   <write dir>/story/import.json   what was imported: the import version, the
 //                                   exes' SHA-256, the revision, the table's hash
 //

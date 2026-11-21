@@ -104,8 +104,8 @@ it meant in the exe; each array's length is checked at load.
                            actions), not bytes
     story/names.json       planets, pilots, mech display names, House contract names
     story/pilots.json      pilot definitions: portrait id, starting skills, text ids
-    story/planets.json     planet records: house, tier, position, text ids; the
-                           story-planet pools
+    story/planets.json     planet records: house, tier, position, text ids
+    story/missions.json    mission descriptions: scenario, text id; the categories
     story/music.json       the sequence table and the AdLib instruments
 
 `import.json` is written last, so an interrupted import counts as missing.
@@ -166,6 +166,19 @@ DS:0008 finds the data segment, then each piece must still match its hash.
    the 43 pilots (each written at its directory offset in its own record)
    and the default commander. `btech_revisions_test` imports both revisions
    and compares their texts (skipped without the player's files).
+   2d: `story/pilots.json`, `planets.json` and `missions.json`
+   (`src/Import/Records.*`): typed records whose texts are text ids. The
+   importer writes them from Bytes pieces (the headers, and the offset
+   tables turned into ids); the game rebuilds the original's storage and
+   offset tables from them, laid out as the exe lays them out (on the
+   1990-01-22 copy every byte and offset is equal). 42 pilots (portrait,
+   gunnery, piloting, name, dialogue), 146 planets (the 10-byte header, name,
+   description; the travel screen's alphabetical order), 34 mission
+   descriptions (scenario, a second byte, text; the five categories as runs
+   of ids). Saves keep mission description offsets, so a story whose texts
+   change length moves them; the save format should keep ids (slice 6).
+   The story-planet pools (`eventPlanetChoicePool*`,
+   `campaignEventPlanetSelectors`) go with the events in 2e.
 3. **Rules and the new campaign** into `data/rules/`. Traces equal (same
    numbers). The importer's piece hashes check them against the exe.
 4. **Layout** into `data/ui/`. Traces equal.

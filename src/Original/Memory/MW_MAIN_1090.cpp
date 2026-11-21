@@ -721,8 +721,10 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     indexedPictureFileHandle=MwReadNativeWord(data,0x0DBF);
     generalPictureFileHandle=MwReadNativeWord(data,0x0DDA);
     selectedPictureFileHandle=MwReadNativeWord(data,0x0DE9);
-    ImportInitialWords(data,0x6570,(uint16_t *)planetRecordOffsets,sizeof(planetRecordOffsets)/sizeof(uint16_t));
-    memcpy(planetRecordStorage,data+0x67B6,sizeof(planetRecordStorage));
+    /* The planets from story/planets.json, laid out as the exe holds them
+     * (offsets at 6570, storage 67B6.., the alphabetical table at 6694). */
+    if (!MwStoryBuildPlanets(planetRecordStorage,sizeof(planetRecordStorage),PLANET_RECORDS_START,
+        planetRecordOffsets,CAMPAIGN_PLANET_COUNT,alphabeticPlanetRecordOffsets,TRAVEL_PLANET_DIRECTORY_COUNT)) return false;
     ImportInitialWords(data,0x11BA,(uint16_t *)calendarMonthNameWidths,sizeof(calendarMonthNameWidths)/sizeof(uint16_t));
     calendarMonthIndex=MwReadNativeWord(data,0x047B);
     calendarYear=MwReadNativeWord(data,0x047D);
@@ -783,8 +785,9 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     memcpy(pilotGunneryTiers,data+0x0A37,sizeof(pilotGunneryTiers));
     memcpy(pilotPilotingTiers,data+0x0A62,sizeof(pilotPilotingTiers));
     memcpy(pilotExperienceCounts,data+0x0A8D,sizeof(pilotExperienceCounts));
-    ImportInitialWords(data,0x9121,(uint16_t *)pilotDefinitionOffsets,sizeof(pilotDefinitionOffsets)/sizeof(uint16_t));
-    memcpy(pilotDefinitionStorage,data+0x9177,sizeof(pilotDefinitionStorage));
+    /* The pilots from story/pilots.json (offsets at 9121, storage 9177..). */
+    if (!MwStoryBuildPilots(pilotDefinitionStorage,sizeof(pilotDefinitionStorage),PILOT_DEFINITIONS_START,
+        pilotDefinitionOffsets,CAMPAIGN_PILOT_ID_COUNT)) return false;
     ImportInitialWords(data,0x4CE6,(uint16_t *)travelSquareRootValues,sizeof(travelSquareRootValues)/sizeof(uint16_t));
     travelDestinationMapPositionX=MwReadNativeWord(data,0x54D0);
     travelDestinationMapPositionY=MwReadNativeWord(data,0x54D2);
@@ -808,7 +811,6 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     ImportInitialWords(data,0x5AEA,(uint16_t *)hiredTransportFrames,sizeof(hiredTransportFrames)/sizeof(uint16_t));
     ImportInitialWords(data,0x5B2E,(uint16_t *)dropShipTravelFrames,sizeof(dropShipTravelFrames)/sizeof(uint16_t));
     memcpy(travelDestinationName,data+0x5C4E,sizeof(travelDestinationName));
-    ImportInitialWords(data,0x6694,(uint16_t *)alphabeticPlanetRecordOffsets,sizeof(alphabeticPlanetRecordOffsets)/sizeof(uint16_t));
     travelSelectedHouseByteOffset=MwReadNativeWord(data,0x54DC);
     travelHousePlanetStart=MwReadNativeWord(data,0x54DE);
     travelHousePlanetCount=MwReadNativeWord(data,0x54E2);
@@ -866,10 +868,13 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     ImportInitialWords(data,0x0A2B,(uint16_t *)missionScenarioCodes,sizeof(missionScenarioCodes)/sizeof(uint16_t));
     ImportInitialWords(data,0x655C,(uint16_t *)housePlanetRangeStarts,sizeof(housePlanetRangeStarts)/sizeof(uint16_t));
     ImportInitialWords(data,0x6566,(uint16_t *)housePlanetRangeCounts,sizeof(housePlanetRangeCounts)/sizeof(uint16_t));
-    memcpy(missionDescriptionMaximumIndicesByCategory,data+0x8A16,sizeof(missionDescriptionMaximumIndicesByCategory));
-    ImportInitialWords(data,0x8A1B,(uint16_t *)missionDescriptionListOffsetsByCategory,sizeof(missionDescriptionListOffsetsByCategory)/sizeof(uint16_t));
-    ImportInitialWords(data,0x8A25,(uint16_t *)missionDescriptionListEntries,sizeof(missionDescriptionListEntries)/sizeof(uint16_t));
-    memcpy(missionDescriptionStorage,data+0x8A69,sizeof(missionDescriptionStorage));
+    /* The mission descriptions from story/missions.json: the category tables
+     * (8A16 maximum indices, 8A1B list offsets, 8A25 entries) and the storage
+     * (8A69..). Saves keep entry offsets, so the original's text gives the
+     * original's offsets. */
+    if (!MwStoryBuildMissions(missionDescriptionStorage,sizeof(missionDescriptionStorage),MISSION_DESCRIPTION_STORAGE_START,
+        missionDescriptionMaximumIndicesByCategory,missionDescriptionListOffsetsByCategory,MISSION_CATEGORY_COUNT,
+        missionDescriptionListEntries,MISSION_DESCRIPTION_LIST_WORDS,MISSION_DESCRIPTION_LIST_START)) return false;
     ImportInitialWords(data,0x8E90,(uint16_t *)houseMissionPlanetTableOffsets,sizeof(houseMissionPlanetTableOffsets)/sizeof(uint16_t));
     memcpy(houseMissionPlanetPolicies,data+0x8E9A,sizeof(houseMissionPlanetPolicies));
     calendarSubmonthUnits=MwReadNativeWord(data,0x0479);
