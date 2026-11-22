@@ -113,6 +113,20 @@ void what_doesnt_fit_is_refused(const fs::path& data, const fs::path& work) {
     const auto first_template = [](Json& c) -> Json& { return at(at(c, "templates"), 0); };
     const auto first_layout = [](Json& c) -> Json& { return at(at(c, "layouts"), 0); };
 
+    // Slice 5a: the pointer tables name words; the condition and order indices name labels.
+    with_cockpit([&](Json& c) { at(at(at(c, "word_refs"), "weapon_labels"), 0) = Json{std::string("weapon.11")}; });
+    refused(load, "\"cockpit.word.weapon.11\" names no word", "a weapon label naming no word");
+    with_cockpit([&](Json& c) { at(at(c, "word_refs"), "energy_ammo") = Json{2.0}; });
+    refused(load, "a word reference is not a word's name", "a word reference that is a number");
+    with_cockpit([&](Json& c) { array(at(at(c, "word_refs"), "radar_ranges")).pop_back(); });
+    refused(load, "\"radar_ranges\" has 3 entries, not 4", "a radar range missing");
+    with_cockpit([&](Json& c) { at(at(at(c, "condition_labels"), "engine"), 3) = Json{6.0}; });
+    refused(load, "\"engine\" names label 6 of 6", "an engine condition past the labels");
+    with_orders([&](Json& o) { at(at(at(o, "word_refs"), "tactical"), 0) = Json{std::string("order.1x")}; });
+    refused(load, "\"orders.word.order.1x\" names no word", "an order list naming no word");
+    with_orders([&](Json& o) { at(at(o, "display_indices"), 0) = Json{7.0}; });
+    refused(load, "\"display_indices\" names label 7 of 7", "an order code past the order labels");
+
     with_cockpit([&](Json& c) { at(first_template(c), "cockpit_layout") = Json{3.0}; });
     refused(load, "\"cockpit_layout\" 3 names no layout", "a template naming a layout past the last");
     with_cockpit([&](Json& c) { array(at(c, "templates")).pop_back(); });

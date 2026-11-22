@@ -6,6 +6,7 @@
 #include <string_view>
 #include <vector>
 
+#include "../Import/ImportTable.h"
 #include "../Rules/Rules.h"
 #include "../Support/StrictReader.h"
 #include "UiActions.h"
@@ -14,6 +15,7 @@
 namespace mw1o::ui {
 
 namespace fs = std::filesystem;
+namespace import = mw1o::import;
 using support::Json;
 using Reader = support::StrictReader<UiError>;
 
@@ -147,10 +149,39 @@ void put_diagram(const Reader& r, std::string& points, std::string& regions, con
         put_signed_list(r, regions, *rects[armour], 4, kArmour[armour]);
 }
 
+// The data-segment offset of word `prefix` + `name` (src/Import/word_pieces.txt),
+// as the exe's pointer tables hold it; a name that is no word is refused.
+std::uint16_t word_offset(const Reader& r, std::string_view prefix, const Json& name) {
+    if (!name.is_string() || name.string().empty()) r.fail("a word reference is not a word's name");
+    const std::string id = std::string(prefix) + name.string();
+    for (const auto& piece : import::import_table())
+        if (import::is_word(piece.kind) && piece.id == id) return piece.offset;
+    r.fail("\"" + id + "\" names no word");
+}
+
+// A list of word names as their offsets, `count` long.
+std::string word_refs(const Reader& r, const Json& object, std::string_view key, std::string_view prefix, std::size_t count) {
+    std::string out;
+    for (const Json& name : r.array(object, key, count)) put_word(out, word_offset(r, prefix, name));
+    return out;
+}
+
+// A list of indices into a list of `limit` labels, `count` long.
+std::string label_indices(const Reader& r, const Json& object, std::string_view key, std::size_t count, std::size_t limit) {
+    std::string out;
+    for (const Json& v : r.array(object, key, count)) {
+        const std::uint16_t index = r.word(v, key);
+        if (index >= limit) r.fail("\"" + std::string(key) + "\" names label " + std::to_string(index) + " of " + std::to_string(limit));
+        put_word(out, index);
+    }
+    return out;
+}
+
 void read_cockpit(const fs::path& data_dir, support::NativeBytes& out) {
     Reader r(data_dir / "ui" / "cockpit.json");
     const Json file = r.parse();
-    r.only(file, {"templates", "layouts", "landscape_camera_rows", "hud_colour_schemes", "subsystem_lamp_colours"});
+    r.only(file, {"templates", "layouts", "landscape_camera_rows", "hud_colour_schemes", "subsystem_lamp_colours",
+                  "word_refs", "condition_labels"});
     std::string origins, inspection, anchors, target, layout_indices;
     for (const Json& t : r.array(file, "templates", kTemplates)) {
         r.only(t, {"cockpit_layout", "inspection_diagram", "target_diagram"});
@@ -184,12 +215,26 @@ void read_cockpit(const fs::path& data_dir, support::NativeBytes& out) {
     out["cockpit.landscape_camera_rows"] = camera;
     out["cockpit.hud_colour_schemes"] = schemes;
     out["cockpit.subsystem_lamp_colours"] = lamp_words;
+    const Json& refs = r.member(file, "word_refs");
+    r.only(refs, {"legends", "weapon_labels", "radar_ranges", "range_classes", "energy_ammo"});
+    constexpr std::string_view words = "cockpit.word.";
+    out["cockpit.word_refs.legends"] = word_refs(r, refs, "legends", words, 2);
+    out["cockpit.word_refs.weapon_labels"] = word_refs(r, refs, "weapon_labels", words, 10);
+    out["cockpit.word_refs.radar_ranges"] = word_refs(r, refs, "radar_ranges", words, 4);
+    out["cockpit.word_refs.range_classes"] = word_refs(r, refs, "range_classes", words, 4);
+    put_word(out["cockpit.word_refs.energy_ammo"], word_offset(r, words, r.member(refs, "energy_ammo")));
+    // The inspection's condition label (one of its 6) for each hit count.
+    const Json& conditions = r.member(file, "condition_labels");
+    r.only(conditions, {"two_hit", "engine", "actuator"});
+    out["cockpit.condition_labels.two_hit"] = label_indices(r, conditions, "two_hit", 3, 6);
+    out["cockpit.condition_labels.engine"] = label_indices(r, conditions, "engine", 4, 6);
+    out["cockpit.condition_labels.actuator"] = label_indices(r, conditions, "actuator", 5, 6);
 }
 
 void read_orders(const fs::path& data_dir, support::NativeBytes& out) {
     Reader r(data_dir / "ui" / "orders.json");
     const Json file = r.parse();
-    r.only(file, {"selection_rows", "navigation_deltas", "condition_colours", "start"});
+    r.only(file, {"selection_rows", "navigation_deltas", "condition_colours", "start", "word_refs", "display_indices"});
     const auto signed_list = [&](const Json& object, std::string_view key, std::size_t count) {
         std::string bytes;
         for (const Json& v : r.array(object, key, count)) put_signed(r, bytes, v, key);
@@ -213,6 +258,15 @@ void read_orders(const fs::path& data_dir, support::NativeBytes& out) {
     r.only(start, {"lance_panel_text_x"});
     std::string& text_x = out["orders.start.lance_panel_text_x"];
     for (const Json& v : r.array(start, "lance_panel_text_x", 3)) put_word(text_x, r.word(v, "lance_panel_text_x"));
+    const Json& refs = r.member(file, "word_refs");
+    r.only(refs, {"orders", "tactical", "damage", "weapons"});
+    constexpr std::string_view words = "orders.word.";
+    out["orders.word_refs.orders"] = word_refs(r, refs, "orders", words, 7);
+    out["orders.word_refs.tactical"] = word_refs(r, refs, "tactical", words, 9);
+    out["orders.word_refs.damage"] = word_refs(r, refs, "damage", words, 7);
+    out["orders.word_refs.weapons"] = word_refs(r, refs, "weapons", words, 10);
+    // The order label (one of the 7) each order code shows.
+    out["orders.display_indices"] = label_indices(r, file, "display_indices", 11, 7);
 }
 
 // MW_MAIN's screens: captions, panels, menus and tables (docs/phase2/PLAN.md

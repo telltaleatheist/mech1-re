@@ -1,4 +1,3 @@
 # Hits of tools/phase2/text_audit.py reviewed and kept, until the piece named
 # moves them: a path (or * for any), the exe, the string's SEG:OFF in the
 # trace layout, and the reason, in our own words. Never the string itself.
-src/Original/Combat/BTECH_0810_BRIEFING.cpp BTECH.EXE 304E:0D96 a briefing label the code draws; it becomes a word piece in slice 5a

@@ -103,6 +103,7 @@ int main() {
     // In the directory ctest runs it from (the build), removed at the end.
     const fs::path work = fs::current_path() / "btech_revisions_work";
     StoryText texts[2];
+    Words words[2];
     std::string music[2];  // BTECH's one Bytes piece, music.adlib_instruments, imports to music.json
     const fs::path exes[2] = {reference, build1990};
     for (int r = 0; r < 2; ++r) {
@@ -111,6 +112,7 @@ int main() {
         try {
             import_story(folder, write, import_table());
             texts[r] = load_story_text(write);
+            words[r] = load_words(write);
             std::ifstream in(story_dir(write) / "music.json", std::ios::binary);
             music[r].assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
         } catch (const ImportError& e) {
@@ -129,6 +131,13 @@ int main() {
         int same = 0;
         for (const auto& piece : import_table()) {
             if (piece.exe != kBtechExe || differ.count(std::string(piece.id))) continue;
+            if (is_word(piece.kind)) {  // the words, from words.json
+                const auto x = words[0].find(piece.id), y = words[1].find(piece.id);
+                check(x != words[0].end() && y != words[1].end() && x->second == y->second,
+                      std::string(piece.id) + " imports differently");
+                ++same;
+                continue;
+            }
             if (piece.kind == ImportPiece::Kind::Bytes) {
                 check(!music[0].empty() && music[0] == music[1], std::string(piece.id) + " imports differently");
                 ++same;

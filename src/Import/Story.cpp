@@ -11,6 +11,7 @@
 #include <set>
 #include <vector>
 
+#include "../Support/Hmac.h"
 #include "../Support/Json.h"
 #include "../Support/Sha256.h"
 #include "mechwarrior/combat_installation.h"
@@ -26,6 +27,7 @@ namespace {
 
 fs::path manifest_path(const fs::path& write_dir) { return story_dir(write_dir) / "import.json"; }
 fs::path text_path(const fs::path& write_dir) { return story_dir(write_dir) / "text.json"; }
+fs::path words_path(const fs::path& write_dir) { return story_dir(write_dir) / "words.json"; }
 // The typed records (Records.h), beside the text.
 constexpr const char* kRecordFiles[] = {"pilots.json", "planets.json", "missions.json", "event_text.json",
                                         "events.json", "music.json"};
@@ -100,6 +102,28 @@ std::string sha256_of(std::string_view bytes) {
     return sha256_hex({reinterpret_cast<const std::uint8_t*>(bytes.data()), bytes.size()});
 }
 
+std::span<const std::uint8_t> span_of(std::string_view bytes) {
+    return {reinterpret_cast<const std::uint8_t*>(bytes.data()), bytes.size()};
+}
+
+// The key of `exe`'s word hashes: the SHA-256 of its key region, or empty if
+// the image is too short to hold it (then no word matches).
+std::string word_key(const Exe& exe, std::string_view name) {
+    const KeyRegion region = key_region(name);
+    const std::uint16_t base = load_segment(name);
+    const std::size_t at = std::size_t(region.segment - base) * 16 + region.offset;
+    if (region.segment < base || at + region.length > exe.image.size()) return {};
+    const support::Digest key = support::sha256_digest(span_of(bytes_view(exe.image, at, region.length)));
+    return std::string(reinterpret_cast<const char*>(key.data()), key.size());
+}
+
+// A piece's hash as the table keeps it: SHA-256, or a word's keyed hash.
+std::string piece_hash(const ImportPiece& piece, std::string_view bytes, const std::string& key) {
+    if (!is_word(piece.kind)) return sha256_of(bytes);
+    if (key.empty()) return {};
+    return support::hmac_sha256_hex(span_of(key), span_of(bytes));
+}
+
 }  // namespace
 
 std::string piece_address(const ImportPiece& piece) {
@@ -126,7 +150,8 @@ fs::path story_dir(const fs::path& write_dir) { return write_dir / "story"; }
 
 StoryState story_state(const fs::path& write_dir, std::span<const ImportPiece> table) {
     std::error_code ec;
-    if (!fs::exists(manifest_path(write_dir), ec) || !fs::exists(text_path(write_dir), ec))
+    if (!fs::exists(manifest_path(write_dir), ec) || !fs::exists(text_path(write_dir), ec) ||
+        !fs::exists(words_path(write_dir), ec))
         return StoryState::Missing;
     for (const char* name : kRecordFiles)
         if (!fs::exists(story_dir(write_dir) / name, ec)) return StoryState::Missing;
@@ -145,20 +170,30 @@ StoryState story_state(const fs::path& write_dir, std::span<const ImportPiece> t
 
 void import_story(const fs::path& game_dir, const fs::path& write_dir, std::span<const ImportPiece> table) {
     std::map<std::string, Exe, std::less<>> exes;
+    std::map<std::string, std::string, std::less<>> keys;
     std::vector<std::string> refused;
-    std::string texts;
+    std::string texts, words;
     PieceMap pieces;
     for (const auto& piece : table) {
         auto it = exes.find(piece.exe);
         if (it == exes.end())
             it = exes.emplace(std::string(piece.exe), load_exe(find_game_file(game_dir, piece.exe), piece.exe)).first;
         const Exe& exe = it->second;
+        auto key = keys.find(piece.exe);
+        if (key == keys.end()) key = keys.emplace(std::string(piece.exe), word_key(exe, piece.exe)).first;
         const std::uint16_t base = load_segment(piece.exe);
         const std::size_t at = std::size_t(piece.segment - base) * 16 + piece.offset;
         const bool inside = piece.segment >= base && at + piece.length <= exe.image.size();
         const std::string_view bytes = inside ? bytes_view(exe.image, at, piece.length) : std::string_view();
-        if (!inside || sha256_of(bytes).substr(0, 16) != piece.sha16) {
+        const std::string hash = inside ? piece_hash(piece, bytes, key->second) : std::string();
+        if (!inside || hash.size() < 16 || hash.substr(0, 16) != piece.sha16) {
             refused.push_back(std::string(piece.id) + " (" + std::string(piece.exe) + " " + piece_address(piece) + ")");
+            continue;
+        }
+        if (is_word(piece.kind)) {  // a string's text without its NUL; a block whole, its NULs as \u0000
+            if (!words.empty()) words += ",\n";
+            words += "    {\"id\": " + json_quote(piece.id) + ", \"address\": " + json_quote(piece_address(piece)) +
+                     ", \"text\": " + json_quote(is_string(piece.kind) ? bytes.substr(0, bytes.size() - 1) : bytes) + "}";
             continue;
         }
         pieces[std::string(piece.id)] = PieceBytes{piece.offset, std::string(bytes)};
@@ -179,6 +214,7 @@ void import_story(const fs::path& game_dir, const fs::path& write_dir, std::span
     std::error_code ec;
     fs::remove(manifest_path(write_dir), ec);
     write_file(text_path(write_dir), "{\n  \"texts\": [\n" + texts + "\n  ]\n}\n");
+    write_file(words_path(write_dir), "{\n  \"words\": [\n" + words + "\n  ]\n}\n");
     write_file(story_dir(write_dir) / kRecordFiles[0], pilots_json(pieces));
     write_file(story_dir(write_dir) / kRecordFiles[1], planets_json(pieces));
     write_file(story_dir(write_dir) / kRecordFiles[2], missions_json(pieces));
@@ -207,6 +243,41 @@ bool ensure_story(const fs::path& game_dir, const fs::path& write_dir, std::span
                           ", and importing it from your copy of the game failed: " + e.what());
     }
     return true;
+}
+
+Words load_words(const fs::path& write_dir, std::span<const ImportPiece> table) {
+    const fs::path path = words_path(write_dir);
+    try {
+        const auto bytes = read_file(path);
+        const auto file = parse_json(bytes_view(bytes, 0, bytes.size()));
+        if (file.object().size() != 1 || !file.find("words")) throw ImportError("it is not {\"words\": [...]}");
+        Words out;
+        for (const auto& entry : file.find("words")->array()) {
+            const auto* id = entry.find("id");
+            const auto* text = entry.find("text");
+            if (!id || !text) throw ImportError("a word without an \"id\" or a \"text\"");
+            const ImportPiece* piece = nullptr;
+            for (const auto& p : table)
+                if (is_word(p.kind) && p.id == id->string()) piece = &p;
+            if (!piece) throw ImportError("the word " + json_quote(id->string()) + " is not one the game has");
+            std::string word = text->string();
+            if (is_string(piece->kind)) {
+                if (word.find('\0') != std::string::npos)
+                    throw ImportError("the word " + json_quote(id->string()) + " holds a NUL");
+                word += '\0';
+            }
+            if (word.size() != piece->length)
+                throw ImportError("the word " + json_quote(id->string()) + " is " + std::to_string(word.size()) +
+                                  " bytes, not " + std::to_string(piece->length));
+            if (!out.emplace(id->string(), std::move(word)).second)
+                throw ImportError("the word " + json_quote(id->string()) + " twice");
+        }
+        for (const auto& p : table)
+            if (is_word(p.kind) && !out.count(p.id)) throw ImportError("the word " + json_quote(p.id) + " is missing");
+        return out;
+    } catch (const std::exception& e) {
+        throw ImportError(path.string() + ": " + e.what());
+    }
 }
 
 StoryText load_story_text(const fs::path& write_dir) {

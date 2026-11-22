@@ -15,6 +15,17 @@ cockpit.landscape_camera_rows       BTECH.EXE 304E:1E88 180
 cockpit.hud_colour_schemes          BTECH.EXE 304E:1F3C 200
 cockpit.subsystem_lamp_colours      BTECH.EXE 304E:23CE 28
 
+# cockpit.json, slice 5a: the pointer tables into the cockpit's words, by word
+# id (src/Import/word_pieces.txt), and the condition label each hit count shows.
+cockpit.word_refs.legends           BTECH.EXE 304E:04F4 4
+cockpit.word_refs.weapon_labels     BTECH.EXE 304E:2286 20
+cockpit.word_refs.radar_ranges      BTECH.EXE 304E:2406 8
+cockpit.word_refs.range_classes     BTECH.EXE 304E:241C 8
+cockpit.word_refs.energy_ammo       BTECH.EXE 304E:2424 2
+cockpit.condition_labels.two_hit    BTECH.EXE 304E:04D8 6
+cockpit.condition_labels.engine     BTECH.EXE 304E:04DE 8
+cockpit.condition_labels.actuator   BTECH.EXE 304E:04E6 10
+
 # orders.json: the lance order panel.
 orders.start.lance_panel_text_x     BTECH.EXE 304E:008C 6
 orders.selection_first_rows         BTECH.EXE 304E:0092 4
@@ -23,6 +34,14 @@ orders.navigation_panel_deltas      BTECH.EXE 304E:009A 22
 orders.navigation_row_deltas        BTECH.EXE 304E:00B0 22
 orders.engine_condition_colours     BTECH.EXE 304E:030E 16
 orders.system_condition_colours     BTECH.EXE 304E:031E 16
+
+# orders.json, slice 5a: the pointer tables into the order panel's words, and
+# the order label each order code shows.
+orders.word_refs.orders             BTECH.EXE 304E:02B6 14
+orders.display_indices              BTECH.EXE 304E:02C4 22
+orders.word_refs.tactical           BTECH.EXE 304E:02DA 18
+orders.word_refs.damage             BTECH.EXE 304E:02EC 14
+orders.word_refs.weapons            BTECH.EXE 304E:02FA 20
 
 # options.json: the options, restore and confirmation screens, and the
 # News Net menu. A caption's piece is its head (x, y, colour); its text

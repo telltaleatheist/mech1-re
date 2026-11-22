@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-"""Writes src/Import/import_table.cpp from src/Import/pieces.txt and the
-player's exes: each piece's id, exe, SEG:OFF, length and the first 16 hex
-digits of its SHA-256. Prints nothing from the exes but lengths and hashes.
+"""Writes src/Import/import_table.cpp from src/Import/pieces.txt,
+src/Import/word_pieces.txt and the player's exes: each piece's id, exe,
+SEG:OFF, length and the first 16 hex digits of its SHA-256. A word's hash is
+keyed (HMAC-SHA-256 under the SHA-256 of its exe's key region, as
+src/Import/ImportTable.h's key_region), so a short word can't be found from
+it. Prints nothing from the exes but lengths and hashes.
 
     tools/import/make_import_table.py [--rules | --ui] GAME_DIR [BTECH_IMAGE_TOOL]
 
@@ -17,6 +20,7 @@ btech_image, from tools/import/btech_image.cpp); it is needed only when
 pieces.txt names BTECH.EXE.
 """
 import hashlib
+import hmac
 import os
 import subprocess
 import sys
@@ -24,6 +28,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 PIECES = os.path.join(ROOT, "src", "Import", "pieces.txt")
+WORD_PIECES = os.path.join(ROOT, "src", "Import", "word_pieces.txt")
 OUT = os.path.join(ROOT, "src", "Import", "import_table.cpp")
 RULE_PIECES = os.path.join(ROOT, "src", "Rules", "rule_pieces.txt")
 RULE_OUT = os.path.join(ROOT, "src", "Rules", "rule_table.cpp")
@@ -37,6 +42,8 @@ OWN = {
 LOAD_SEGMENT = 0x0800  # where DOS put the image in the traces (the table's addresses)
 BTECH_EXE = "BTECH.EXE"
 BTECH_LOAD_SEGMENT = 0x0810  # the unpacked image, as src/Import/ImportTable.h
+# Each exe's key region (segment, offset, length), as ImportTable.h's key_region.
+KEY_REGIONS = {BTECH_EXE: (0x2C53, 0x0010, 0x1400), "MW_MAIN.EXE": (0x081B, 0x0100, 0x2000)}
 
 
 def find(game_dir, name):
@@ -77,47 +84,58 @@ def main():
         sys.exit(__doc__)
     game_dir = args[0]
     tool = args[1] if len(args) == 2 else None
-    source, out = (own[0], own[1]) if rules else (PIECES, OUT)
-    name = os.path.basename(source)
+    sources = [own[0]] if rules else [PIECES, WORD_PIECES]
+    out = own[1] if rules else OUT
     images = {}
+    keys = {}
     rows = []
-    with open(source, encoding="utf-8") as f:
-        for number, line in enumerate(f, 1):
-            line = line.split("#", 1)[0].strip()
-            if not line:
-                continue
-            fields = line.split()
-            tuned = rules and len(fields) == 5 and fields[4] == "tuned"
-            if len(fields) != (5 if tuned else 4):
-                sys.exit(f"{name}:{number}: expected id, exe, SEG:OFF and length")
-            piece_id, exe, address, length = fields[:4]
-            if rules and length == "z":
-                sys.exit(f"{name}:{number}: a {own[6]} piece has a byte count")
-            segment, offset = (int(part, 16) for part in address.split(":"))
-            if exe not in images:
-                images[exe] = btech_image(tool, find(game_dir, exe)) if exe == BTECH_EXE else image(find(game_dir, exe))
-            at = (segment - (BTECH_LOAD_SEGMENT if exe == BTECH_EXE else LOAD_SEGMENT)) * 16 + offset
-            data = images[exe]
-            if length == "z":
-                end = data.find(b"\0", at)
-                if end < 0:
-                    sys.exit(f"{name}:{number}: {piece_id} has no NUL")
-                size = end + 1 - at
-            else:
-                size = int(length, 0)
-            piece = data[at:at + size]
-            if len(piece) != size:
-                sys.exit(f"{name}:{number}: {piece_id} runs past the end of {exe}")
-            digest = hashlib.sha256(piece).hexdigest()[:16]
-            if rules:
-                kept = "" if tuned else digest
-                rows.append(f'    {{"{piece_id}", "{exe}", 0x{segment:04X}, 0x{offset:04X}, {size}, "{kept}"}},')
-                print(f"{piece_id:32} {exe} {segment:04X}:{offset:04X} {size:5} {digest}{' (tuned)' if tuned else ''}")
-                continue
-            kind = "String" if length == "z" else "Bytes"
-            rows.append(f'    {{ImportPiece::Kind::{kind}, "{piece_id}", "{exe}", 0x{segment:04X}, 0x{offset:04X}, '
-                        f'{size}, "{digest}"}},')
-            print(f"{piece_id:24} {exe} {segment:04X}:{offset:04X} {size:5} {digest}")
+    for source in sources:
+        name = os.path.basename(source)
+        word = source == WORD_PIECES
+        with open(source, encoding="utf-8") as f:
+            for number, line in enumerate(f, 1):
+                line = line.split("#", 1)[0].strip()
+                if not line:
+                    continue
+                fields = line.split()
+                tuned = rules and len(fields) == 5 and fields[4] == "tuned"
+                if len(fields) != (5 if tuned else 4):
+                    sys.exit(f"{name}:{number}: expected id, exe, SEG:OFF and length")
+                piece_id, exe, address, length = fields[:4]
+                if rules and length == "z":
+                    sys.exit(f"{name}:{number}: a {own[6]} piece has a byte count")
+                segment, offset = (int(part, 16) for part in address.split(":"))
+                if exe not in images:
+                    images[exe] = btech_image(tool, find(game_dir, exe)) if exe == BTECH_EXE else image(find(game_dir, exe))
+                at = (segment - (BTECH_LOAD_SEGMENT if exe == BTECH_EXE else LOAD_SEGMENT)) * 16 + offset
+                data = images[exe]
+                if length == "z":
+                    end = data.find(b"\0", at)
+                    if end < 0:
+                        sys.exit(f"{name}:{number}: {piece_id} has no NUL")
+                    size = end + 1 - at
+                else:
+                    size = int(length, 0)
+                piece = data[at:at + size]
+                if len(piece) != size:
+                    sys.exit(f"{name}:{number}: {piece_id} runs past the end of {exe}")
+                if word:
+                    if exe not in keys:
+                        k_segment, k_offset, k_length = KEY_REGIONS[exe]
+                        k_at = (k_segment - (BTECH_LOAD_SEGMENT if exe == BTECH_EXE else LOAD_SEGMENT)) * 16 + k_offset
+                        keys[exe] = hashlib.sha256(data[k_at:k_at + k_length]).digest()
+                    digest = hmac.new(keys[exe], piece, hashlib.sha256).hexdigest()[:16]
+                else:
+                    digest = hashlib.sha256(piece).hexdigest()[:16]
+                if rules:
+                    kept = "" if tuned else digest
+                    rows.append(f'    {{"{piece_id}", "{exe}", 0x{segment:04X}, 0x{offset:04X}, {size}, "{kept}"}},')
+                    print(f"{piece_id:32} {exe} {segment:04X}:{offset:04X} {size:5} {digest}{' (tuned)' if tuned else ''}")
+                    continue
+                kind = ("Word" if length == "z" else "WordBytes") if word else ("String" if length == "z" else "Bytes")
+                rows.append(f'    {{ImportPiece::Kind::{kind}, "{piece_id}", "{exe}", 0x{segment:04X}, 0x{offset:04X}, '
+                            f'{size}, "{digest}"}},')
+                print(f"{piece_id:24} {exe} {segment:04X}:{offset:04X} {size:5} {digest}")
     if rules:
         space, piece_type, function, header, what = own[2:]
         with open(out, "w", encoding="utf-8", newline="\n") as f:
@@ -134,7 +152,7 @@ def main():
         print(f"{len(rows)} {what} pieces -> {os.path.relpath(out, ROOT)}")
         return
     with open(OUT, "w", encoding="utf-8", newline="\n") as f:
-        f.write("// Written by tools/import/make_import_table.py from pieces.txt; don't edit.\n"
+        f.write("// Written by tools/import/make_import_table.py from pieces.txt and word_pieces.txt; don't edit.\n"
                 "#include \"ImportTable.h\"\n\n"
                 "namespace mw1o::import {\n\n"
                 "namespace {\n"

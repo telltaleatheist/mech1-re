@@ -4,6 +4,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <string_view>
 
 #include "Events.h"
 #include "Music.h"
@@ -13,6 +14,7 @@
 
 namespace {
 mw1o::import::StoryText g_story;
+mw1o::import::Words g_words;
 std::vector<mw1o::import::PilotRecord> g_pilots;
 mw1o::import::Planets g_planets;
 mw1o::import::Missions g_missions;
@@ -41,6 +43,7 @@ bool MwHostPrepareStory(const char *gameDirectory, const char *writeDirectory)
             std::fprintf(stderr, "MechWarrior: imported the story file into %s\n",
                          mw1o::import::story_dir(writeDirectory).string().c_str());
         g_story = mw1o::import::load_story_text(writeDirectory);
+        g_words = mw1o::import::load_words(writeDirectory);
         g_pilots = mw1o::import::load_pilots(writeDirectory);
         g_planets = mw1o::import::load_planets(writeDirectory);
         g_missions = mw1o::import::load_missions(writeDirectory);
@@ -70,6 +73,65 @@ bool MwStoryCopyText(const char *id, char *text, size_t capacity)
     std::memcpy(text, found.c_str(), found.size());
     std::memset(text + found.size(), 0, capacity - found.size());  // the whole buffer, as the exe holds it
     return true;
+}
+
+// The word piece `id` (ImportTable.h), or null with the reason on stderr.
+static const mw1o::import::ImportPiece *find_word(const char *id)
+{
+    for (const auto &piece : mw1o::import::import_table())
+        if (mw1o::import::is_word(piece.kind) && piece.id == id) return &piece;
+    std::fprintf(stderr, "MechWarrior: the game has no word \"%s\"\n", id);
+    return nullptr;
+}
+
+bool MwWordsCopyText(const char *id, char *text, size_t capacity)
+{
+    const auto *piece = find_word(id);
+    const auto it = g_words.find(id);
+    if (!piece || it == g_words.end() || !mw1o::import::is_string(piece->kind)) {
+        if (piece) std::fprintf(stderr, "MechWarrior: the word \"%s\" is not a string\n", id);
+        return false;
+    }
+    const std::string &word = it->second;  // with its NUL
+    if (word.size() > capacity) {
+        std::fprintf(stderr, "MechWarrior: the word \"%s\" is longer than %zu characters\n", id, capacity - 1);
+        return false;
+    }
+    std::memcpy(text, word.data(), word.size());
+    std::memset(text + word.size(), 0, capacity - word.size());  // the whole buffer, as the exe holds it
+    return true;
+}
+
+bool MwWordsCopyBlock(const char *id, uint8_t *bytes, size_t size)
+{
+    const auto *piece = find_word(id);
+    const auto it = g_words.find(id);
+    if (!piece || it == g_words.end()) return false;
+    if (it->second.size() != size) {
+        std::fprintf(stderr, "MechWarrior: the word \"%s\" is %zu bytes, the game's %zu\n", id, it->second.size(), size);
+        return false;
+    }
+    std::memcpy(bytes, it->second.data(), size);
+    return true;
+}
+
+bool MwWordsCopyInto(const char *prefix, uint8_t *view, size_t viewBytes)
+{
+    const std::string_view wanted(prefix);
+    size_t copied = 0;
+    for (const auto &piece : mw1o::import::import_table()) {
+        if (!mw1o::import::is_word(piece.kind) || piece.id.substr(0, wanted.size()) != wanted) continue;
+        const auto it = g_words.find(piece.id);
+        if (it == g_words.end() || piece.offset > viewBytes || it->second.size() > viewBytes - piece.offset) {
+            std::fprintf(stderr, "MechWarrior: the word \"%.*s\" doesn't fit its place\n", int(piece.id.size()),
+                         piece.id.data());
+            return false;
+        }
+        std::memcpy(view + piece.offset, it->second.data(), it->second.size());
+        ++copied;
+    }
+    if (!copied) std::fprintf(stderr, "MechWarrior: the game has no words \"%s*\"\n", prefix);
+    return copied != 0;
 }
 
 bool MwStoryBuildPilots(uint8_t *storage, size_t capacity, uint16_t base, uint16_t *offsets, size_t offsetCount)

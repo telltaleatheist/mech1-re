@@ -1,4 +1,5 @@
 #include "mechwarrior/combat_orders.h"
+#include "mechwarrior/story.h"
 #include "mechwarrior/native_address.h"
 #include "mechwarrior/ui_layout.h"
 #include <string.h>
@@ -37,18 +38,26 @@ static bool CopyLayoutPiece(uint8_t *view,size_t viewBytes,const char *id,uint16
 }
 bool BtechImportOrderInitialData(const uint8_t *data,size_t bytes)
 {
-    /* The layout's pieces, at their native offsets (304E:0092..032E). */
-    uint8_t ui[0x032E];
-    memset(ui,0,sizeof(ui));
+    /* The layout's pieces, at their native offsets (304E:008C..032E), and the
+     * order panel's words (story/words.json, orders.word.*) at theirs
+     * (304E:010C..02B6), so the reads below keep the exe's addresses. */
+    uint8_t ui[0x032E],words[ORDER_PANEL_TEXT_END];
+    memset(ui,0,sizeof(ui));memset(words,0,sizeof(words));
+    if (!MwWordsCopyInto("orders.word.",words,sizeof(words))) return false;
     if (!CopyLayoutPiece(ui,sizeof(ui),"orders.start.lance_panel_text_x",0x008C)
         || !CopyLayoutPiece(ui,sizeof(ui),"orders.selection_first_rows",0x0092)
         || !CopyLayoutPiece(ui,sizeof(ui),"orders.selection_last_rows",0x0096)
         || !CopyLayoutPiece(ui,sizeof(ui),"orders.navigation_panel_deltas",0x009A)
         || !CopyLayoutPiece(ui,sizeof(ui),"orders.navigation_row_deltas",0x00B0)
         || !CopyLayoutPiece(ui,sizeof(ui),"orders.engine_condition_colours",0x030E)
-        || !CopyLayoutPiece(ui,sizeof(ui),"orders.system_condition_colours",0x031E)) return false;
+        || !CopyLayoutPiece(ui,sizeof(ui),"orders.system_condition_colours",0x031E)
+        || !CopyLayoutPiece(ui,sizeof(ui),"orders.word_refs.orders",0x02B6)
+        || !CopyLayoutPiece(ui,sizeof(ui),"orders.display_indices",0x02C4)
+        || !CopyLayoutPiece(ui,sizeof(ui),"orders.word_refs.tactical",0x02DA)
+        || !CopyLayoutPiece(ui,sizeof(ui),"orders.word_refs.damage",0x02EC)
+        || !CopyLayoutPiece(ui,sizeof(ui),"orders.word_refs.weapons",0x02FA)) return false;
     if (!data || bytes<0x4F5A || MwReadNativeWord(data,0x4F2E) || MwReadNativeWord(data,0x4F30)) return false;
-    memcpy(orderPanelText,data+ORDER_PANEL_TEXT_START,sizeof(orderPanelText));
+    memcpy(orderPanelText,words+ORDER_PANEL_TEXT_START,sizeof(orderPanelText));
     /* Authored string directories are decoded once at executable IO. Runtime
      * panels use the references below, never native-address accessors. */
     for (uint16_t directory=0;directory<4;++directory)
@@ -58,8 +67,8 @@ bool BtechImportOrderInitialData(const uint8_t *data,size_t bytes)
         const char **destinations[]={orderLabels,tacticalOrderLabels,orderDamageLabels,orderEquipmentWeaponLabels};
         for (uint16_t entry=0;entry<counts[directory];++entry)
         {
-            uint16_t offset=MwReadNativeWord(data,bases[directory]+entry*2);
-            if (offset<ORDER_PANEL_TEXT_START || offset>=ORDER_PANEL_TEXT_END || !memchr(data+offset,0,ORDER_PANEL_TEXT_END-offset)) return false;
+            uint16_t offset=MwReadNativeWord(ui,bases[directory]+entry*2);
+            if (offset<ORDER_PANEL_TEXT_START || offset>=ORDER_PANEL_TEXT_END || !memchr(words+offset,0,ORDER_PANEL_TEXT_END-offset)) return false;
             destinations[directory][entry]=orderPanelText+offset-ORDER_PANEL_TEXT_START;
         }
     }
@@ -71,7 +80,7 @@ bool BtechImportOrderInitialData(const uint8_t *data,size_t bytes)
     orderBaseText=orderPanelText+0x029A-ORDER_PANEL_TEXT_START;
     orderDamageText=orderPanelText+0x02A7-ORDER_PANEL_TEXT_START;
     orderWeaponsText=orderPanelText+0x02AE -ORDER_PANEL_TEXT_START;
-    for (uint16_t code=0;code<ORDER_DISPLAY_CODES;++code) orderDisplayIndices[code]=MwReadNativeWord(data,0x02C4+code*2);
+    for (uint16_t code=0;code<ORDER_DISPLAY_CODES;++code) orderDisplayIndices[code]=MwReadNativeWord(ui,0x02C4+code*2);
     for (uint16_t scheme=0;scheme<2;++scheme)
         for (uint16_t condition=0;condition<4;++condition)
         {

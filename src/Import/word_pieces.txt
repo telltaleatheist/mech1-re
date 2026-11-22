@@ -1,0 +1,130 @@
+# The UI words the importer takes from the player's exes (docs/phase2/PLAN.md
+# section 7), into story/words.json. One per line, as pieces.txt: id, exe,
+# SEG:OFF (BTECH in its unpacked image, loaded at 0810), and `z` for a string
+# read up to and including its NUL, or a byte count for a block kept whole.
+# tools/import/make_import_table.py adds them to import_table.cpp with a keyed
+# hash (ImportTable.h). Ids and places only: never the words.
+
+# BTECH's cockpit (304E:0052..0088, five buffers back to back).
+cockpit.word.zoom                    BTECH.EXE 304E:0052 7
+cockpit.word.automatic_weapons       BTECH.EXE 304E:0059 4
+cockpit.word.reactor_shutdown        BTECH.EXE 304E:005D 25
+cockpit.word.simulation              BTECH.EXE 304E:0076 11
+cockpit.word.paused                  BTECH.EXE 304E:0081 7
+
+# The lance order panel's words (304E:010C..02B6, strings back to back): the
+# four lists its pointer tables name (orders.json "word_refs"), then the
+# headings the code reaches by fixed offsets.
+orders.word.order.1                  BTECH.EXE 304E:010C z
+orders.word.order.2                  BTECH.EXE 304E:011A z
+orders.word.order.3                  BTECH.EXE 304E:0128 z
+orders.word.order.4                  BTECH.EXE 304E:0136 z
+orders.word.order.5                  BTECH.EXE 304E:0144 z
+orders.word.order.6                  BTECH.EXE 304E:0152 z
+orders.word.order.7                  BTECH.EXE 304E:0160 z
+orders.word.tactical.1               BTECH.EXE 304E:016E z
+orders.word.tactical.2               BTECH.EXE 304E:017C z
+orders.word.tactical.3               BTECH.EXE 304E:018A z
+orders.word.tactical.4               BTECH.EXE 304E:0198 z
+orders.word.tactical.5               BTECH.EXE 304E:01A6 z
+orders.word.tactical.6               BTECH.EXE 304E:01B4 z
+orders.word.tactical.7               BTECH.EXE 304E:01C2 z
+orders.word.tactical.8               BTECH.EXE 304E:01D0 z
+orders.word.tactical.9               BTECH.EXE 304E:01DE z
+orders.word.damage.1                 BTECH.EXE 304E:01EC z
+orders.word.damage.2                 BTECH.EXE 304E:01FA z
+orders.word.damage.3                 BTECH.EXE 304E:0205 z
+orders.word.damage.4                 BTECH.EXE 304E:0210 z
+orders.word.damage.5                 BTECH.EXE 304E:021A z
+orders.word.damage.6                 BTECH.EXE 304E:0223 z
+orders.word.damage.7                 BTECH.EXE 304E:022E z
+orders.word.weapon.1                 BTECH.EXE 304E:023A z
+orders.word.weapon.2                 BTECH.EXE 304E:023F z
+orders.word.weapon.3                 BTECH.EXE 304E:0244 z
+orders.word.weapon.4                 BTECH.EXE 304E:0249 z
+orders.word.weapon.5                 BTECH.EXE 304E:024E z
+orders.word.weapon.6                 BTECH.EXE 304E:0253 z
+orders.word.weapon.7                 BTECH.EXE 304E:0258 z
+orders.word.weapon.8                 BTECH.EXE 304E:025D z
+orders.word.weapon.9                 BTECH.EXE 304E:0262 z
+orders.word.weapon.10                BTECH.EXE 304E:0267 z
+orders.word.weapon_heading           BTECH.EXE 304E:026C z
+orders.word.of                       BTECH.EXE 304E:027A z
+orders.word.colon                    BTECH.EXE 304E:027D z
+orders.word.selection_heading        BTECH.EXE 304E:027F z
+orders.word.location                 BTECH.EXE 304E:028D z
+orders.word.base                     BTECH.EXE 304E:029A z
+orders.word.damage_heading           BTECH.EXE 304E:02A7 z
+orders.word.weapons                  BTECH.EXE 304E:02AE z
+
+# The inspection screen: the body locations and condition labels (304E:038E,
+# rows of 3 and 11), the legends (reached through 04F4), the actuator rows
+# (046C, 14 each), the subsystem rows (0520, 14 each) and the rest to 059F.
+cockpit.word.body_location.1         BTECH.EXE 304E:038E 3
+cockpit.word.body_location.2         BTECH.EXE 304E:0391 3
+cockpit.word.body_location.3         BTECH.EXE 304E:0394 3
+cockpit.word.body_location.4         BTECH.EXE 304E:0397 3
+cockpit.word.body_location.5         BTECH.EXE 304E:039A 3
+cockpit.word.body_location.6         BTECH.EXE 304E:039D 3
+cockpit.word.body_location.7         BTECH.EXE 304E:03A0 3
+cockpit.word.body_location.8         BTECH.EXE 304E:03A3 3
+cockpit.word.condition.1             BTECH.EXE 304E:03A6 11
+cockpit.word.condition.2             BTECH.EXE 304E:03B1 11
+cockpit.word.condition.3             BTECH.EXE 304E:03BC 11
+cockpit.word.condition.4             BTECH.EXE 304E:03C7 11
+cockpit.word.condition.5             BTECH.EXE 304E:03D2 11
+cockpit.word.condition.6             BTECH.EXE 304E:03DD 11
+cockpit.word.legend.1                BTECH.EXE 304E:041A z
+cockpit.word.legend.2                BTECH.EXE 304E:0433 z
+cockpit.word.actuator.1              BTECH.EXE 304E:046C 14
+cockpit.word.actuator.2              BTECH.EXE 304E:047A 14
+cockpit.word.actuator.3              BTECH.EXE 304E:0488 14
+cockpit.word.actuator.4              BTECH.EXE 304E:0496 14
+cockpit.word.subsystem.1             BTECH.EXE 304E:0520 14
+cockpit.word.subsystem.2             BTECH.EXE 304E:052E 14
+cockpit.word.subsystem.3             BTECH.EXE 304E:053C 14
+cockpit.word.subsystem.4             BTECH.EXE 304E:054A 14
+cockpit.word.subsystem.5             BTECH.EXE 304E:0558 14
+cockpit.word.heat_sinks_of           BTECH.EXE 304E:0566 3
+cockpit.word.jump_jets               BTECH.EXE 304E:0569 14
+cockpit.word.jump_jets_of            BTECH.EXE 304E:0577 3
+cockpit.word.weapon_heading          BTECH.EXE 304E:057A 22
+cockpit.word.blank_weapon_row        BTECH.EXE 304E:0590 15
+
+# The retreat question and its choice line (304E:082F, 083E).
+cockpit.word.retreat_question        BTECH.EXE 304E:082F 15
+cockpit.word.retreat_choice          BTECH.EXE 304E:083E 14
+
+# The briefing's three labels (304E:0D96..0DC3).
+briefing.word.mission                BTECH.EXE 304E:0D96 z
+briefing.word.crew                   BTECH.EXE 304E:0DA9 z
+briefing.word.mechs                  BTECH.EXE 304E:0DB6 z
+
+# The cockpit's weapon labels (304E:2004, through 2286), the subsystem lamp
+# letters (23BE, rows of 2), the radar ranges (23EA, through 2406), and the
+# weapon range classes and energy ammo placeholder (2410, through 241C and
+# 2424; the block's last byte is a NUL of its own).
+cockpit.word.weapon.1                BTECH.EXE 304E:2004 z
+cockpit.word.weapon.2                BTECH.EXE 304E:200A z
+cockpit.word.weapon.3                BTECH.EXE 304E:2010 z
+cockpit.word.weapon.4                BTECH.EXE 304E:2016 z
+cockpit.word.weapon.5                BTECH.EXE 304E:201C z
+cockpit.word.weapon.6                BTECH.EXE 304E:2022 z
+cockpit.word.weapon.7                BTECH.EXE 304E:2028 z
+cockpit.word.weapon.8                BTECH.EXE 304E:202E z
+cockpit.word.weapon.9                BTECH.EXE 304E:2034 z
+cockpit.word.weapon.10               BTECH.EXE 304E:203A z
+cockpit.word.lamp.1                  BTECH.EXE 304E:23BE 2
+cockpit.word.lamp.2                  BTECH.EXE 304E:23C0 2
+cockpit.word.lamp.3                  BTECH.EXE 304E:23C2 2
+cockpit.word.lamp.4                  BTECH.EXE 304E:23C4 2
+cockpit.word.radar_range.1           BTECH.EXE 304E:23EA z
+cockpit.word.radar_range.2           BTECH.EXE 304E:23F1 z
+cockpit.word.radar_range.3           BTECH.EXE 304E:23F8 z
+cockpit.word.radar_range.4           BTECH.EXE 304E:23FF z
+cockpit.word.range_class.1           BTECH.EXE 304E:2410 z
+cockpit.word.range_class.2           BTECH.EXE 304E:2411 z
+cockpit.word.range_class.3           BTECH.EXE 304E:2413 z
+cockpit.word.range_class.4           BTECH.EXE 304E:2415 z
+cockpit.word.energy_ammo             BTECH.EXE 304E:2417 z
+cockpit.word.range_text_end          BTECH.EXE 304E:241B 1

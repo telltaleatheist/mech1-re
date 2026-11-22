@@ -1363,6 +1363,22 @@ Each piece goes on its own branch, with the gate above:
   - the two revisions measured.
 
   The combat traces (combat_cockpit, combat_retreat) are the proof.
+
+  Done (branch `phase2-words-a`). BTECH's words are 105 rows of
+  `src/Import/word_pieces.txt` (each label of a list its own row, so the
+  22 groups above become 105 words), imported into `story/words.json` and
+  hashed with HMAC-SHA-256 keyed by the SHA-256 of BTECH 2C53:0010 (0x1400
+  bytes of video code; MW_MAIN's words will use 081B:0100, 0x2000 bytes).
+  Both regions, and every word, are byte-identical in the two BTECH
+  revisions. The cockpit and order importers fill a local view of the words
+  at their native offsets through `MwWordsCopyInto`; the briefing's three
+  labels are drawn from the words, so the audit's one allow entry is gone.
+  The five pointer tables and four index tables are 13 layout pieces in
+  `cockpit.json` and `orders.json`, the pointers as word names. Break
+  checks: 0xEE over every word's bytes in the exe data keeps the traces 8 of
+  8; 0xEE over the loaded words fails combat_cockpit and combat_retreat on
+  pixels only. Moved to 5b: the generator's caption rows, since the
+  fixed-width byte counts live with the captions' owners there.
 - **5b, options, news and events:** the 28 option captions and the
   options screen's free words. These are the smallest campaign screens, and
   they prove the caption route.

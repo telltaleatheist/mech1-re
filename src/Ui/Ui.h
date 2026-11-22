@@ -12,14 +12,24 @@
 //        "arctic"}, BtechLandscapeCameraColourRow's members],
 //      "hud_colour_schemes": [2, BtechHudColourScheme's members],
 //      "subsystem_lamp_colours": {"subsystem": [2 schemes of 3],
-//        "engine": [2 schemes of 4]}}
+//        "engine": [2 schemes of 4]},
+//      "word_refs": {"legends": [2], "weapon_labels": [10],
+//        "radar_ranges": [4], "range_classes": [4], "energy_ammo": word},
+//      "condition_labels": {"two_hit": [3], "engine": [4], "actuator": [5]}}
+//     A word is a name after "cockpit.word." in src/Import/word_pieces.txt,
+//     laid out as that word's offset; a condition label is an index into the
+//     inspection's 6 condition words.
 //   orders.json (BTECH, the lance order panel)
 //     {"selection_rows": {"first": [2], "last": [2]},
 //      "navigation_deltas": {"panel": [11], "row": [11]},
 //      "condition_colours": {"engine": [2 schemes of 4],
 //        "system": [2 schemes of 4]},
-//      "start": {"lance_panel_text_x": [3]}}
-//     "start" holds what play writes but a fresh EXEC reads first.
+//      "start": {"lance_panel_text_x": [3]},
+//      "word_refs": {"orders": [7], "tactical": [9], "damage": [7],
+//        "weapons": [10]},
+//      "display_indices": [11]}
+//     A word is a name after "orders.word."; each display index names one of
+//     the 7 order words for an order code. "start" holds what play writes but a fresh EXEC reads first.
 //   MW_MAIN's screens (options, events, hub, crew, contract_office,
 //   complex, dealer, travel; each leaves out the members it has none of)
 //     {"captions": {name: {"at": [x, y], "colour": c} | {"colour": c}},

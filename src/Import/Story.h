@@ -2,6 +2,9 @@
 // player's own exes into the player's data folder (docs/phase2/PLAN.md):
 //
 //   <write dir>/story/text.json     {"texts": [{"id", "address", "text"}, ...]}
+//   <write dir>/story/words.json    the UI words (PLAN.md section 7), {"words":
+//                                   [{"id", "address", "text"}, ...]}: a
+//                                   string without its NUL, a block whole
 //   <write dir>/story/pilots.json, planets.json, missions.json
 //                                   typed records (Records.h)
 //   <write dir>/story/import.json   what was imported: the import version, the
@@ -49,5 +52,13 @@ using StoryText = std::map<std::string, std::string, std::less<>>;
 // story/text.json, id -> text. Throws ImportError (naming the file) if it
 // can't be read, isn't the story file's shape, or names an id twice.
 StoryText load_story_text(const std::filesystem::path& write_dir);
+
+using Words = std::map<std::string, std::string, std::less<>>;
+
+// story/words.json, id -> the word's bytes as the exe holds them (a string
+// with its NUL). Every word piece of `table` must be there once, at its
+// table length, and nothing else. Throws ImportError naming the file and the
+// word.
+Words load_words(const std::filesystem::path& write_dir, std::span<const ImportPiece> table = import_table());
 
 }  // namespace mw1o::import

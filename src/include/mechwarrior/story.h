@@ -12,6 +12,16 @@ bool MwHostPrepareStory(const char *gameDirectory, const char *writeDirectory);
 /* Copies the story text `id` into `text` and zeroes the rest of the buffer.
  * False (with the reason on stderr) if there is no such text or it doesn't fit. */
 bool MwStoryCopyText(const char *id, char *text, size_t capacity);
+/* The UI words (docs/phase2/PLAN.md section 7), from story/words.json, as
+ * the exe holds them. MwWordsCopyText copies a string word into `text` and
+ * zeroes the rest of the buffer; MwWordsCopyBlock copies a block word, whose
+ * length must be `size`. MwWordsCopyInto copies every word whose id starts
+ * with `prefix` into `view` at its data-segment offset, so an importer's
+ * reads keep the exe's addresses. False (with the reason on stderr) if there
+ * is no such word or it doesn't fit. */
+bool MwWordsCopyText(const char *id, char *text, size_t capacity);
+bool MwWordsCopyBlock(const char *id, uint8_t *bytes, size_t size);
+bool MwWordsCopyInto(const char *prefix, uint8_t *view, size_t viewBytes);
 /* The original's record storage, rebuilt from story/pilots.json,
  * planets.json and missions.json (src/Import/Records.h) as the exe lays it
  * out: `base` is the storage's data-segment offset, and the offsets written

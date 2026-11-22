@@ -74,6 +74,8 @@ extern char mechTemplateNames[COMBAT_MECH_TEMPLATES][13],pilotDefinitionNames[CO
 extern const char *mechTemplateNameDirectory[COMBAT_MECH_TEMPLATES],*pilotDefinitionNameDirectory[COMBAT_PILOT_NAMES];
 extern const char *inspectionDamageBitmapFilenames[COMBAT_MECH_TEMPLATES];
 extern char bodyLocationLabels[COMBAT_BODY_LOCATIONS][3],inspectionConditionLabels[6][11];
+/* The briefing's three labels (304E:0D96, 0DA9, 0DB6), from story/words.json. */
+extern char briefingMissionLabel[19],briefingCrewLabel[13],briefingMechLabel[13];
 extern char inspectionLegendText[2][25],actuatorLabels[COMBAT_ACTUATORS][14];
 extern char inspectionSubsystemLabels[5][14],heatSinksOfText[3],jumpJetsText[14];
 extern char jumpJetsOfText[3],inspectionWeaponHeading[22],inspectionBlankWeaponRow[15];
