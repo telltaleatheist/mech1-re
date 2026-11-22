@@ -8,13 +8,13 @@
 #include <string.h>
 
 /* MW_MAIN081B:1423..144D. The original asked for the combat disk until the
- * combat program opened; a missing one is now a fatal error naming it. The
- * successful close result is ignored. */
+ * combat program (BTECH.EXE) opened, then closed it unread. The combat
+ * program is ours (slice 6d) and play opens no exe (slice 6f, the guard in
+ * MwHostJoinGamePath), so there is no disk to wait for: the open and close
+ * are dropped, an intended difference (docs/phase2/PLAN.md 8.5, 6f). The
+ * handle was closed at once, so nothing after it sees the difference. */
 void MwWaitForRequiredResourceFile(void)
 {
-    uint16_t fileHandle;
-    if (MwDosOpenResourceReadWrite(combatExecutableFilename,&fileHandle)) MwFailGameFileRead(combatExecutableFilename);
-    (void)MwDosCloseFile(fileHandle);
 }
 
 /* MW_MAIN081B:1C3E..1CCB. Readiness falls here; POP AX discards the callback

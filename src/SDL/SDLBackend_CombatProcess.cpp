@@ -115,7 +115,7 @@ static FILE *OpenStream(const char *filename,const char *mode)
      * working directory or let a native filename escape the installation. */
     if (!filename[0] || strpbrk(filename,"/\\:")) return NULL;
     char path[4096];
-    if (!MwHostJoinGamePath(path,sizeof(path),gameDirectory,filename)) return NULL;
+    if (!MwHostJoinGamePath(path,sizeof(path),gameDirectory,filename,__func__)) return NULL;
     return fopen(path,mode);
 }
 static int16_t CloseHandle(uint16_t handle)

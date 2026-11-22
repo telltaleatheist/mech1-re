@@ -8,6 +8,7 @@ tests can run the same script and compare.
 |---|---|
 | `record.py` | Runs the port headless with a poll-fed key script (`feed.txt`, `docs/DEBUG_INPUT.md`) and writes one JSON line per `@snap`. |
 | `check.py` | Compares a candidate (a port build, the rebuild, or recorded traces) with the golden traces, snap by snap (`docs/phase0/REPLAY.md`). |
+| `exe_free.py` | Runs the traces on a copy of the game folder with its exes, then with every `*.EXE` deleted, and checks the two runs are the same snap by snap (ctest `exe_free`; `docs/phase2/PLAN.md` 8.5, 6f). |
 | `state.py` | Turns MWSNAP's captures of the original under DOSBox-X (`tools/capture/`) into a trace in the same format, so `check.py --traces` compares the original with the goldens. |
 | `run.py` | Runs the golden scripts against the original under DOSBox-X (`tools/capture/`: keys.py, MWSNAP, run_wsl.sh), turns the captures into traces with `state.py`, and compares them with `check.py --traces`. |
 | `repeat.py` | Records a script twice and checks the runs are byte-identical. |
@@ -80,6 +81,23 @@ and no host speed or load changes it.
 
 The rebuild's test runs the same script, prints the same `state` lines and
 frame hashes at each snap, and compares.
+
+## Without the exes (the gate's step, slice 6f)
+
+`exe_free.py` runs the 8 traces on a copy of a game folder with its exes,
+deletes every `*.EXE` and `*.COM` from the copy, runs them again from the
+first run's story and compares the two runs snap by snap; it fails, naming
+the file and the opener, if play opens a program. It is opt-in
+(`MW1O_EXE_FREE=1`, minutes rather than seconds) and the gate runs it once
+per folder, from the repository root after a build in `build-fresh`, with
+`GAME` the game folder and `WORK` a scratch directory outside the repo:
+
+    MW1O_EXE_FREE=1 MW1O_HIDDEN=1 nice -n 10 python3 -I tools/trace/exe_free.py \
+        --port build-fresh/mechwarrior --game "$GAME" --work "$WORK/exe_free"
+
+It ends with `exe-free: 8 of 8 traces as with the exes`. ctest's `exe_free`
+runs the same with `MW1O_EXE_FREE=1` and `MW1O_GAME` set
+(`MW1O_EXE_FREE=1 MW1O_GAME="$GAME" ctest -R exe_free`).
 
 ## Running
 

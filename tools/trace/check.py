@@ -12,6 +12,10 @@ difference (known/<trace>.json) is reported, not failed, so each one is
 fixed on purpose. The style follows crescent-hawks-rebuild's
 tools/reference/check.py.
 
+--story and --label-game pass to record.py (a folder without the exes:
+tools/trace/exe_free.py); --strict ignores known/, for a comparison with a
+recording of the same build rather than the goldens.
+
 Exit status: 0 all match, 1 a mismatch, 77 skipped (no candidate or game).
 """
 import argparse, json, os, subprocess, sys
@@ -34,9 +38,9 @@ def load_known(name):
         return json.load(f)
 
 
-def compare(name, golden, ours, say):
-    """True when every snap matches, known differences aside."""
-    known = load_known(name)
+def compare(name, golden, ours, say, strict=False):
+    """True when every snap matches, known differences aside (none if `strict`)."""
+    known = {} if strict else load_known(name)
     ok = True
     by_snap = {r["snap"]: r for r in ours}
     for ref in golden:
@@ -84,6 +88,8 @@ def run_candidate(a, name, out):
         cmd = [sys.executable, os.path.join(HERE, "record.py"), "--exe", a.port, "--game", a.game,
                "--script", script, "--out", out, "--frames", os.path.join(work, "frames"),
                "--work", os.path.join(work, "run")]
+        cmd += ["--story", a.story] if a.story else []
+        cmd += ["--label-game", a.label_game] if a.label_game else []
     else:
         cmd = [a.rebuild, "--game-dir", a.game, "--save-dir", os.path.join(work, "saves"),
                "--keys", script, "--trace", out]
@@ -102,6 +108,9 @@ def main():
     ap.add_argument("--golden", default=os.path.join(HERE, "traces"))
     ap.add_argument("--only", nargs="*", help="trace names (default: all)")
     ap.add_argument("--quiet", action="store_true", help="print only failures and the summary")
+    ap.add_argument("--story", help="with --port: a story folder each run plays from (record.py)")
+    ap.add_argument("--label-game", help="with --port: the folder whose MW_MAIN.EXE keys the labels")
+    ap.add_argument("--strict", action="store_true", help="ignore known/ differences")
     a = ap.parse_args()
 
     names = a.only or sorted(f[:-6] for f in os.listdir(a.golden) if f.endswith(".jsonl"))
@@ -120,6 +129,8 @@ def main():
             out = os.path.join(a.traces, name + ".jsonl")
         else:
             out = os.path.join(a.work, name + ".jsonl")
+            if os.path.exists(out):
+                os.remove(out)  # an earlier run's trace never stands in for this one
             if not run_candidate(a, name, out):
                 print(f"== {name}\n  FAIL the candidate did not finish the script")
                 failed.append(name)
@@ -129,7 +140,7 @@ def main():
             failed.append(name)
             continue
         report = []
-        if not compare(name, golden, load(out), report.append):
+        if not compare(name, golden, load(out), report.append, a.strict):
             failed.append(name)
         groups, group = [], []
         for line in report:

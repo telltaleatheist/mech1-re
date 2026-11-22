@@ -158,8 +158,10 @@ void BtechExportCombatResultsAndTransition(uint16_t resultCode)
         BtechRefreshCockpitViewportAndGauges();
         return;
     }
-    /*CC6F's existing host stdio representation: E206 read-stream close is
-     * collapsed here at IO, not an invented game helper or numeric FILE cast. */
-    BtechCloseStreamFile(BtechOpenStreamWithRetry("mw.exe","rb"));
+    /* CC6F opened the launcher's program (MW.EXE) for reading and closed it
+     * unread: the original's wait for the campaign disk before returning.
+     * The launcher is ours and play opens no exe (slice 6f, the guard in
+     * MwHostJoinGamePath), so the open and close are dropped, an intended
+     * difference (docs/phase2/PLAN.md 8.5, 6f); nothing read the stream. */
     BtechTerminateToLauncher(0);
 }

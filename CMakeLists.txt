@@ -333,6 +333,18 @@ if(MECHWARRIOR_BUILD_SDL)
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 "$<TARGET_FILE:SDL3::SDL3-shared>" "$<TARGET_FILE_DIR:mechwarrior>")
     endif()
+    # Play without the game's programs (docs/phase2/PLAN.md 8.5, 6f): the
+    # traces on a copy of MW1O_GAME with its exes, then with every *.EXE and
+    # *.COM deleted, each the same. Minutes, not seconds: skipped unless
+    # MW1O_EXE_FREE=1 (and MW1O_GAME) is set; the gate runs it as its own step.
+    if(MECHWARRIOR_BUILD_TESTS)
+        find_package(Python3 COMPONENTS Interpreter)
+        if(Python3_FOUND)
+            add_test(NAME exe_free COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tools/trace/exe_free.py"
+                --port $<TARGET_FILE:mechwarrior> --work "${CMAKE_CURRENT_BINARY_DIR}/exe_free_work")
+            set_tests_properties(exe_free PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 3600)
+        endif()
+    endif()
     if(MSVC)
         target_link_libraries(mechwarrior PRIVATE dbghelp)
         # Retain source locations in optimized builds for user crash reports.

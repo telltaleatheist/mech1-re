@@ -1619,7 +1619,9 @@ BTECH at EXEC, so the layout choice stays.
    migration test.
 4. The 1989 folder's gate is a start-to-hub smoke plus one combat EXEC
    (launch, then return to the hub), since BTECH is where the copies differ.
-   1989 goldens can come later.
+   1989 goldens can come later. (Slice 6f replaces the smoke with a
+   stricter check: all 8 traces without the exes, snap by snap against the
+   same build's run with them.)
 5. The guard matters most: an exe opened outside the importer fails loudly,
    naming the file and the caller.
 
@@ -1948,16 +1950,53 @@ mingw check.
     setups; traces 8 of 8; mingw clean on the changed files;
     `start_exe_test`: 65,536 of 65,536 overlay bytes as the exe's (2,156 of
     them the zeroed ranges).
-- **6f, the test, the guard and the docs.** `exe_free_test` in ctest,
-  skipped without `MW1O_GAME`: copy the game folder to scratch, import with
-  the exes present, delete every `*.EXE` from the copy, then run
-  `check.py --port` on the copy: 8 of 8. The host's file layer fails on any
-  exe opened outside the importer, naming the file and the caller; a break
-  check re-adds one read and the test must fail, naming it. The 1989 folder
-  runs the smoke in decision 4.
-  - The trace recorder on the 1989 folder: its combat traces never match
-    the goldens (they are the 1990 build's), and in 6d's poison proof the
-    6c build's recorded snapshots came out the same poisoned and clean
-    though its poisoned run failed to read BTECH.EXE; only the run logs
-    told the builds apart. Find why the recorder misses that, so the
-    final guard has teeth on both folders.
+- **6f, the test, the guard and the docs.**
+  - **The guard.** `MwHostJoinGamePath` joins every game file play opens
+    (the campaign's DOS open and create, combat's streams); a program's
+    name (ending in .EXE or .COM, in any case) stops the program, naming
+    the file and the opener (`__func__`). Only the import reads the exes,
+    and it never comes there.
+  - **What the guard caught.** Two opens of a program at play, each opened
+    and closed unread, which the poison proofs could not see (a poisoned
+    file still opens): the campaign's wait for the combat disk before a
+    deployment (MW_MAIN 081B:1423, BTECH.EXE, `MwWaitForRequiredResourceFile`)
+    and combat's wait for the campaign disk before it returns (BTECH
+    0810:CC6F, MW.EXE). Both programs are ours, so there is no disk to wait
+    for: the opens are dropped, an intended difference; the traces are
+    unchanged (8 of 8).
+  - **`exe_free`** (`tools/trace/exe_free.py`; in ctest, but opt-in with
+    `MW1O_EXE_FREE=1` since it takes minutes; the gate runs it as its own
+    step, once per folder, with the command in `tools/trace/README.md`):
+    the game folder is copied to scratch and the 8 traces run
+    on the copy with its exes, which imports the story and records each
+    trace; every `*.EXE` and `*.COM` is deleted from the copy and the traces run again
+    from that story, compared snap by snap with the first run's recordings
+    (`check.py --golden <first run> --strict`). It fails if a trace doesn't
+    finish in either run, differs without the exes, or has a battle that
+    doesn't reach its return in both runs. The goldens stay the gate's
+    trace step, so on the 1990 folder the two together say 8 of 8 without
+    the exes; on the 1989 folder, whose combat traces aren't the goldens',
+    the comparison with its own recording replaces decision 4's smoke and
+    covers all 8 traces, both combat EXECs among them.
+  - **The recorder.** `record.py` takes `--story` (a story folder to play
+    from) and `--label-game` (the folder whose MW_MAIN.EXE keys the labels);
+    `check.py` passes them on. A run that doesn't finish now writes no trace.
+  - **The 1989 oddity, found.** In 6d's poison proof the 6c build's
+    poisoned runs failed (its log: "cannot read the game file BTECH.EXE"),
+    and `check.py` failed them, but the recorder writes `--out` only when a
+    run finishes, so the clean run's trace in the same work folder stood in
+    for the poisoned one when the clean and poisoned traces were compared by
+    hand. `record.py` and `check.py` now delete the trace before the run.
+  - **The break check.** A scratch patch re-adds one exe open at play; the
+    guard must stop it and `exe_free` must fail, naming the file and the
+    opener. Done with MW_EGA.EXE re-joined in `LoadOverlay` on `company`
+    and `options`: both runs stop at the overlay load ("play opened the
+    game's program MW_EGA.EXE (in LoadOverlay)"), and `exe_free` fails,
+    printing that line for each trace.
+  - **Results.** 1990: 8 of 8 with the exes (the goldens), 7 programs
+    deleted, 8 of 8 without them against that run. 1989: 6 of 8 with the
+    exes (the two combat traces, as ever), 6 programs deleted, 8 of 8
+    without them against that run; both battles return in both runs.
+  - **Gate.** Fresh Release build, 0 warnings; ctest 13 of 13 in both
+    setups (`exe_free` skipped there, as it is opt-in); traces 8 of 8;
+    `exe_free` 8 of 8 on both folders; mingw clean on the changed files.

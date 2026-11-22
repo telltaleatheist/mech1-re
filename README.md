@@ -85,8 +85,10 @@ Dependencies are not silently downloaded.
 
 Alternatively place private files in ignored `assets/original-game`. Saves and
 F12 captures go to ignored local directories, not into the original installation.
-The runtime reads original executable-authored tables as well as resource files;
-copying just the TBL/BMP assets is insufficient. Keep SDL3.dll next to the built
+On the first run the importer reads the game's exes once into a story file in
+the save directory; from then on play opens only resource files, never an exe
+(the program stops if anything tries). Copying just the TBL/BMP assets is
+still insufficient for that first run. Keep SDL3.dll next to the built
 executable. Visual Studio opens the repository folder as a CMake project
 (File > Open > Folder) for source navigation and debugging.
 The [reviewed executable hashes](docs/SUPPORTED_VERSIONS.md) identify the tested revision.

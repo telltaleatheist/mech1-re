@@ -34,6 +34,12 @@ the save format encodes it (0x718 bytes, NAME.exchange beside the frames).
 
 Frames are MW1 art: the recorder copies them to --frames, outside the repo.
 
+A run that doesn't finish writes no trace: --out is deleted before the run,
+so an earlier run's trace can't stand in for it. --story copies a story
+folder (an earlier run's saves/story) into the run, so a folder without the
+game's exes plays without importing; --label-game names the folder whose
+MW_MAIN.EXE keys the labels (default --game).
+
     python3 record.py --exe build/mechwarrior --game ~/MECHWAR \\
         --script scripts/campaign_contract.keys --out traces/campaign_contract.jsonl \\
         --frames /tmp/frames
@@ -172,15 +178,23 @@ def main():
     ap.add_argument("--bios-ticks", default="0x10000", help="the pinned startup clock")
     ap.add_argument("--work", help="control/save/capture dir (default: a fresh temp dir)")
     ap.add_argument("--timeout", type=float, default=300.0)
+    ap.add_argument("--story", help="a story folder to play from (an earlier run's saves/story)")
+    ap.add_argument("--label-game", help="the folder whose MW_MAIN.EXE keys the labels (default --game)")
     args = ap.parse_args()
 
     tokens, snaps = read_script(args.script)
-    key = label_key(args.game)
+    if os.path.exists(args.out):
+        os.remove(args.out)
+    key = label_key(args.label_game or args.game)
     work = args.work or tempfile.mkdtemp(prefix="mw1trace-")
     ctl, saves, caps = (os.path.join(work, d) for d in ("ctl", "saves", "caps"))
     for d in (ctl, saves, caps):
         shutil.rmtree(d, ignore_errors=True)
         os.makedirs(d, mode=0o700)
+    if args.story:
+        if not os.path.isfile(os.path.join(args.story, "import.json")):
+            sys.exit(f"{args.story} is not a story folder (no import.json)")
+        shutil.copytree(args.story, os.path.join(saves, "story"))
     os.makedirs(args.frames, exist_ok=True)
 
     # No window on screen: SDL's offscreen video on Linux and Windows; macOS's

@@ -28,7 +28,9 @@ exe in either revision below. Nothing else differs in what it imports:
 - BTECH.EXE: every region the importer reads is byte-identical in both.
 - MW_MAIN.EXE: the two differ in 11 bytes, all in the copy protection's code
   (081B:174A..1782), which the port drops; its data segment is identical.
-- MW.EXE, MW_EGA.EXE and MW_TANDY.EXE are the same in both releases.
+- MW.EXE, MW_EGA.EXE and MW_TANDY.EXE are the same in both releases. The
+  importer reads MW_EGA.EXE too (one 2-byte span); MW.EXE and MW_TANDY.EXE
+  it doesn't need. After the import, play opens no exe.
 - PHAPCK.TBL (the Phoenix Hawk's model bank) differs between the releases
   (18,235 of its 24,673 bytes, from 0x166D). Nothing imports it: the game
   reads it from the player's folder when it shows the 'Mech, so each player

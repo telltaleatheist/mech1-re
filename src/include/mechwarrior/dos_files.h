@@ -27,7 +27,12 @@ bool MwHostSetCampaignSaveDirectory(const char *directory);
  * if it exists, else the one entry whose name matches ignoring case (an
  * install copied with lower- or mixed-case names on a case-sensitive file
  * system), else the exact name, so a missing file fails as before. False
- * only if the path does not fit. */
-bool MwHostJoinGamePath(char *path,size_t pathBytes,const char *directory,const char *name);
+ * only if the path does not fit.
+ * The guard (docs/phase2/PLAN.md 8.4, decision 5): every game file play
+ * opens is joined here, and a program's name (ending in .EXE or .COM, in any
+ * case) stops the program, naming the file and `caller` (the opener's
+ * __func__). Only the import (src/Import) reads the game's programs, and it
+ * never comes here. */
+bool MwHostJoinGamePath(char *path,size_t pathBytes,const char *directory,const char *name,const char *caller);
 void MwHostCloseProcessFiles(void);
 #endif

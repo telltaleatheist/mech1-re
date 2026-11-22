@@ -22,8 +22,34 @@ enum { DOS_FIRST_FILE_HANDLE = 5, DOS_FILE_HANDLE_COUNT = 20, HOST_PATH_BYTES = 
     DOS_ERROR_TOO_MANY_FILES = 4, DOS_ERROR_ACCESS_DENIED = 5,
     DOS_ERROR_INVALID_HANDLE = 6 };
 static FILE *fileStreams[DOS_FILE_HANDLE_COUNT];
-bool MwHostJoinGamePath(char *path,size_t pathBytes,const char *directory,const char *name)
+/* A DOS program's name: ending in .EXE or .COM, ignoring ASCII case. */
+static bool HostIsProgramName(const char *name)
 {
+    static const char *const suffixes[]={".EXE",".COM"};
+    enum { SUFFIX_BYTES=4 };
+    size_t length=strlen(name);
+    if (length<SUFFIX_BYTES) return false;
+    for (size_t kind=0;kind<sizeof(suffixes)/sizeof(suffixes[0]);++kind)
+    {
+        bool same=true;
+        for (size_t index=0;index<SUFFIX_BYTES && same;++index)
+        {
+            char c=name[length-SUFFIX_BYTES+index];
+            if (c>='a' && c<='z') c=(char)(c-'a'+'A');
+            same=c==suffixes[kind][index];
+        }
+        if (same) return true;
+    }
+    return false;
+}
+bool MwHostJoinGamePath(char *path,size_t pathBytes,const char *directory,const char *name,const char *caller)
+{
+    if (HostIsProgramName(name))
+    {
+        fprintf(stderr,"MechWarrior: play opened the game's program %s (in %s); only the import reads the exes\n",
+            name,caller);
+        /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("A game program opened at play (docs/phase2/PLAN.md 8.4, decision 5)");
+    }
     const char *separator=directory[0]?"/":"";
     if (snprintf(path,pathBytes,"%s%s%s",directory,separator,name)>=(int)pathBytes) return false;
 #if !defined(_WIN32)
@@ -77,7 +103,7 @@ static bool HostOpenFileReadWrite(const char *filename, uint16_t *handleOrError)
     const char *directory=saveFile?campaignSaveDirectory:originalGameDirectory;
     if (saveFile && (!directory[0] || strpbrk(filename,"/\\:")))
     {*handleOrError=DOS_ERROR_ACCESS_DENIED;return true;} /* Confined host DOS save mount. */
-    if (!MwHostJoinGamePath(path,sizeof(path),directory,filename))
+    if (!MwHostJoinGamePath(path,sizeof(path),directory,filename,__func__))
     { *handleOrError = DOS_ERROR_PATH_NOT_FOUND; return true; }
     for (uint16_t handle = DOS_FIRST_FILE_HANDLE; handle < DOS_FILE_HANDLE_COUNT; ++handle)
     {
@@ -126,7 +152,7 @@ static bool HostCreateFile(const char *filename,uint16_t *handleOrError)
     char path[HOST_PATH_BYTES];
     if (!campaignSaveDirectory[0] || strpbrk(filename,"/\\:"))
     {*handleOrError=DOS_ERROR_ACCESS_DENIED;return true;}
-    if (!MwHostJoinGamePath(path,sizeof(path),campaignSaveDirectory,filename))
+    if (!MwHostJoinGamePath(path,sizeof(path),campaignSaveDirectory,filename,__func__))
     {*handleOrError=DOS_ERROR_PATH_NOT_FOUND;return true;}
     for (uint16_t handle=DOS_FIRST_FILE_HANDLE;handle<DOS_FILE_HANDLE_COUNT;++handle)
     {
