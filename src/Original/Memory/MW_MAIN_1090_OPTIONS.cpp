@@ -54,7 +54,7 @@ bool MwImportCampaignOptionsData(const uint8_t *data,size_t byteCount)
     owners[count++]={"options.caption.restore_cancel",&restoreCancel.display,restoreCancel.text,sizeof(restoreCancel.text),0};
     for (uint16_t row=0;row<CAMPAIGN_SAVE_ROWS;++row)
         owners[count++]={saveIds[row],&saveListRows[row].display,saveListRows[row].caption.text,sizeof(saveListRows[row].caption.text),0};
-    if (!MwImportUiCaptions(data,owners,count)
+    if (!MwImportUiCaptions(owners,count)
         || !MwImportUiPanel("options.panel.options",&optionsPanel,7,owners,count)
         || !MwImportUiPanel("options.panel.restore",&restorePanel,14,owners,count)
         || !MwImportUiPanel("options.panel.confirmation",&confirmationPanel,3,owners,count)

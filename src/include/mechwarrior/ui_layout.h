@@ -18,9 +18,10 @@ bool MwUiCopyWords(const char *id, uint16_t *words, size_t count, size_t at);
 bool MwUiCopyBytes(const char *id, uint8_t *bytes, size_t count, size_t at);
 /* The length of layout piece `id`, or 0 if there is none. */
 size_t MwUiPieceSize(const char *id);
-/* Where caption piece `id` sits in MW_MAIN's data segment (its head; its text
- * follows), or 0 if there is no such caption. The importers read the text
- * there until slice 5. */
+/* Where caption piece `id` (its head) sits in MW_MAIN's data segment, or 0 if
+ * there is no such caption: what the exe's panels, menus and pointer tables
+ * hold, which the importers match to rebuild them from names. The caption's
+ * text is a word (story/words.json), not read here. */
 uint16_t MwUiCaptionOffset(const char *id);
 /* Where layout piece `id` sits in its exe's data segment, or 0 if there is
  * none: what the exe's pointer tables hold, which the layout rebuilds from

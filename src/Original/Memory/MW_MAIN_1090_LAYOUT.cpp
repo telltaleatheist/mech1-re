@@ -8,30 +8,24 @@
 
 enum { UI_CAPTION_HEAD_BYTES = 5, UI_PANEL_HEADER_BYTES = 0x10, UI_MENU_MAX_RECORDS = 0x20 };
 
-bool MwImportUiCaptions(const uint8_t *data,UiCaptionOwner *owners,size_t count)
+bool MwImportUiCaptions(UiCaptionOwner *owners,size_t count)
 {
     for (size_t i=0;i<count;++i)
     {
         UiCaptionOwner &owner=owners[i];
         uint8_t head[UI_CAPTION_HEAD_BYTES];
         owner.offset=MwUiCaptionOffset(owner.id);
-        if (!owner.offset || (size_t)owner.offset+UI_CAPTION_HEAD_BYTES+owner.capacity>NATIVE_SEGMENT_BYTE_COUNT
-            || !MwUiCopyNative(owner.id,head,sizeof(head))) return false;
+        if (!owner.offset || !MwUiCopyNative(owner.id,head,sizeof(head))) return false;
         if (owner.bytes>owner.capacity) return false;
         char word[96];
         snprintf(word,sizeof(word),"%s.text",owner.id);
-        if (MwWordsKnown(word))
+        if (!MwWordsKnown(word))
         {
-            if (owner.bytes?!MwWordsCopyBlock(word,reinterpret_cast<uint8_t *>(owner.text),owner.bytes)
-                           :!MwWordsCopyText(word,owner.text,owner.capacity)) return false;
+            fprintf(stderr,"MechWarrior: the caption \"%s\" has no word \"%s\"\n",owner.id,word);
+            return false;
         }
-        else
-        {
-            const uint8_t *text=data+owner.offset+UI_CAPTION_HEAD_BYTES;
-            const uint8_t *end=owner.bytes?text+owner.bytes-1:static_cast<const uint8_t *>(memchr(text,0,owner.capacity));
-            if (!end) return false;
-            memcpy(owner.text,text,(size_t)(end-text)+1);
-        }
+        if (owner.bytes?!MwWordsCopyBlock(word,reinterpret_cast<uint8_t *>(owner.text),owner.bytes)
+                       :!MwWordsCopyText(word,owner.text,owner.capacity)) return false;
         owner.display->x=MwReadNativeWord(head,0);owner.display->y=MwReadNativeWord(head,2);
         owner.display->colour=head[4];owner.display->text=owner.text;
     }

@@ -1,16 +1,16 @@
 # Phase 2 inventory
 
-Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-scope item). An item read through a door shows where it now comes from: a story piece, a rule piece, or a save codec field of `new_campaign.json`, with the exe offset those tables give. Any other item shows the first native offset its importer reads, or `-` for runtime state with no import; its group names the slice that moves it, and the two story items not yet moved name theirs. The groups follow `docs/phase2/PLAN.md`. Names and offsets only: no MW1 text.
+Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-scope item). An item read through a door shows where it now comes from: a story piece, a rule piece, a layout piece, a UI word, or a save codec field of `new_campaign.json`, with the exe offset those tables give. Any other item shows the first native offset its importer reads, or `-` for runtime state with no import; its group names the slice that moves it, and the two story items not yet moved name theirs. The groups follow `docs/phase2/PLAN.md`. Names and offsets only: no MW1 text.
 
 | Group | Items |
 |---|---|
 | Extracted: the original's creative content (the story file, first run) | 60 |
-| Ours: UI words and system messages (data/text/interface.json) | 125 |
-| Ours: screen layout, panels and menus (data/ui/*.json) | 120 |
+| Ours: UI words and system messages (story/words.json, imported) | 142 |
+| Ours: screen layout, panels and menus (data/ui/*.json) | 125 |
 | Ours: rules and constants (data/rules/*.json) | 78 |
 | Ours: the new campaign's starting state (data/rules/new_campaign.json) | 103 |
 | Dropped | 6 |
-| Code: runtime state and renderer tables (no file) | 1007 |
+| Code: runtime state and renderer tables (no file) | 989 |
 
 ## Extracted: the original's creative content (the story file, first run)
 
@@ -77,141 +77,160 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 | MW_MAIN_1AA5.cpp | `eventTextStorage` | - | story, MwStoryBuildEventText |
 | MW_MAIN_1AA5.cpp | `eventTextStorage / eventTextRecords` | - | story, MwStoryBuildEventText |
 
-## Ours: UI words and system messages (data/text/interface.json)
+## Ours: UI words and system messages (story/words.json, imported)
 
 | File | Item | Offset | From |
 |---|---|---|---|
-| BTECH_304E_COCKPIT.cpp | `actuatorConditionLabelIndices` | 0x04E6 | - |
-| BTECH_304E_COCKPIT.cpp | `actuatorLabels` | 0x046C | - |
-| BTECH_304E_COCKPIT.cpp | `automaticWeaponsLabel` | 0x0059 | - |
-| BTECH_304E_COCKPIT.cpp | `bodyLocationLabels` | 0x038E | - |
-| BTECH_304E_COCKPIT.cpp | `engineConditionLabelIndices` | 0x04DE | - |
-| BTECH_304E_COCKPIT.cpp | `heatSinksOfText` | 0x0566 | - |
-| BTECH_304E_COCKPIT.cpp | `inspectionConditionLabels` | 0x03A6 | - |
-| BTECH_304E_COCKPIT.cpp | `inspectionSubsystemLabels` | 0x0520 | - |
-| BTECH_304E_COCKPIT.cpp | `inspectionWeaponHeading` | 0x057A | - |
-| BTECH_304E_COCKPIT.cpp | `jumpJetsOfText` | 0x0577 | - |
-| BTECH_304E_COCKPIT.cpp | `jumpJetsText` | 0x0569 | - |
-| BTECH_304E_COCKPIT.cpp | `pausedText` | 0x0081 | - |
-| BTECH_304E_COCKPIT.cpp | `radarRangeText` | 0x23EA | - |
-| BTECH_304E_COCKPIT.cpp | `reactorShutdownText` | 0x005D | - |
-| BTECH_304E_COCKPIT.cpp | `retreatChoiceText` | 0x083E | - |
-| BTECH_304E_COCKPIT.cpp | `retreatQuestionText` | 0x082F | - |
-| BTECH_304E_COCKPIT.cpp | `simulationText` | 0x0076 | - |
-| BTECH_304E_COCKPIT.cpp | `subsystemLampLabels` | 0x23BE | - |
-| BTECH_304E_COCKPIT.cpp | `twoHitSystemConditionLabelIndices` | 0x04D8 | - |
-| BTECH_304E_COCKPIT.cpp | `weaponLabelText` | 0x2004 | - |
-| BTECH_304E_COCKPIT.cpp | `weaponRangeAndAmmoText` | 0x2410 | - |
-| BTECH_304E_COCKPIT.cpp | `zoomLabel` | 0x0052 | - |
-| BTECH_304E_ORDERS.cpp | `orderDisplayIndices` | 0x02C4 | - |
-| MW_MAIN_1090.cpp | `acceptContractCaption` | 0x4B35 | - |
-| MW_MAIN_1090.cpp | `afterActionCrewHeading` | 0x11DF | - |
-| MW_MAIN_1090.cpp | `afterActionMechHeading` | 0x11EC | - |
-| MW_MAIN_1090.cpp | `afterActionPaymentHeading` | 0x1202 | - |
-| MW_MAIN_1090.cpp | `afterActionPercentSuffix` | 0x120B | - |
-| MW_MAIN_1090.cpp | `afterActionPilotStatusText` | 0x120D | - |
-| MW_MAIN_1090.cpp | `afterActionSalvageHeading` | 0x11F9 | - |
-| MW_MAIN_1090.cpp | `ammoBayFullText` | 0x315B | - |
-| MW_MAIN_1090.cpp | `ammoFamilyDisplayNames` | 0x2F78 | - |
-| MW_MAIN_1090.cpp | `assignedMechUnreadyText` | 0x0FF7 | - |
-| MW_MAIN_1090.cpp | `barMenuLabels` | MW_MAIN 1090:900E | ui, head crew.caption.bar_title |
-| MW_MAIN_1090.cpp | `calendarMonthText` | 0x4AAC | - |
-| MW_MAIN_1090.cpp | `campaignDamageTierLabels` | 0x2B23 | - |
-| MW_MAIN_1090.cpp | `cannotAffordRepairText` | 0x2BB0 | - |
-| MW_MAIN_1090.cpp | `commanderNeedsMechText` | 0x0FC0 | - |
-| MW_MAIN_1090.cpp | `commanderProfileLabels` | MW_MAIN 1090:227E | ui, head crew.caption.profile_1 |
-| MW_MAIN_1090.cpp | `commanderProfileName` | 0x21C2 | - |
-| MW_MAIN_1090.cpp | `commanderReputationLabels` | 0x23D0 | - |
-| MW_MAIN_1090.cpp | `companyMenuLabels` | MW_MAIN 1090:21E6 | ui, head crew.caption.company_title |
-| MW_MAIN_1090.cpp | `contractAcceptedText` | 0x4C6C | - |
-| MW_MAIN_1090.cpp | `contractActionLabels` | MW_MAIN 1090:49F4 | ui, head contract_office.caption.negotiate |
-| MW_MAIN_1090.cpp | `contractCancelledText` | 0x1031 | - |
-| MW_MAIN_1090.cpp | `contractOfficeLabels` | MW_MAIN 1090:484A | ui, head contract_office.caption.request_offer |
-| MW_MAIN_1090.cpp | `crewLabels` | MW_MAIN 1090:2343 | ui, head crew.caption.crew_1 |
-| MW_MAIN_1090.cpp | `dealerPurchaseLimitText` | 0x258A | - |
-| MW_MAIN_1090.cpp | `dropShipStatusLabels` | MW_MAIN 1090:2D1C | ui, head complex.caption.dropship_status |
-| MW_MAIN_1090.cpp | `fullFourPilotRosterText` | 0x9C5A | - |
-| MW_MAIN_1090.cpp | `fullThreePilotRosterText` | 0x9C8D | - |
-| MW_MAIN_1090.cpp | `marketBodyCondition` | MW_MAIN 1090:4685 | ui, head dealer.caption.component_body |
-| MW_MAIN_1090.cpp | `marketComponentDone` | MW_MAIN 1090:47F0 | ui, head dealer.caption.component_done |
-| MW_MAIN_1090.cpp | `marketComponentTitle` | MW_MAIN 1090:4531 | ui, head dealer.caption.component_title |
-| MW_MAIN_1090.cpp | `marketDropShipStatusLabels` | MW_MAIN 1090:4454 | ui, head dealer.caption.dropship_title |
-| MW_MAIN_1090.cpp | `marketListDoneText` | 0x3049 | - |
-| MW_MAIN_1090.cpp | `marketListHeading` | MW_MAIN 1090:291D | ui, head dealer.caption.market_heading |
-| MW_MAIN_1090.cpp | `marketMechStatusLabels` | MW_MAIN 1090:4396 | ui, head dealer.caption.mech_title |
-| MW_MAIN_1090.cpp | `marketSystemConditionRows` | MW_MAIN 1090:454F | ui, head dealer.caption.component_system_1 |
-| MW_MAIN_1090.cpp | `marketUnitListRows` | MW_MAIN 1090:2931 | ui, head dealer.caption.market_1 |
-| MW_MAIN_1090.cpp | `marketWeaponConditionRows` | MW_MAIN 1090:46BA | ui, head dealer.caption.component_weapon_1 |
-| MW_MAIN_1090.cpp | `marketWeaponHeading` | MW_MAIN 1090:469D | ui, head dealer.caption.component_weapon_heading |
-| MW_MAIN_1090.cpp | `mechComplexLabels` | MW_MAIN 1090:25DF | ui, head complex.caption.complex_title |
-| MW_MAIN_1090.cpp | `mechNonfunctionalTextBytes` | 0x2B55 | - |
-| MW_MAIN_1090.cpp | `mechStatusLabels` | MW_MAIN 1090:2C5B | ui, head complex.caption.mech_status |
-| MW_MAIN_1090.cpp | `negotiationTerminatedText` | 0x4C25 | - |
-| MW_MAIN_1090.cpp | `noAvailableRecruitsText` | 0x9C39 | - |
-| MW_MAIN_1090.cpp | `noContractsText` | 0x4BFA | - |
-| MW_MAIN_1090.cpp | `noMarketMechsText` | 0x31BB | - |
-| MW_MAIN_1090.cpp | `noRepairWorkText` | 0x2BE7 | - |
-| MW_MAIN_1090.cpp | `ownedListDoneText` | 0x302F | - |
-| MW_MAIN_1090.cpp | `ownedMechCapacityText` | 0x4347 | - |
-| MW_MAIN_1090.cpp | `ownedUnitListHeading` | MW_MAIN 1090:2696 | ui, head complex.caption.owned_heading |
-| MW_MAIN_1090.cpp | `ownedUnitListRows` | MW_MAIN 1090:26B5 | ui, head complex.caption.owned_1 |
-| MW_MAIN_1090.cpp | `pilotSkillLabels` | 0x2452 | - |
-| MW_MAIN_1090.cpp | `purchaseInsufficientFundsText` | 0x4330 | - |
-| MW_MAIN_1090.cpp | `rearmConfirmationLabels` | MW_MAIN 1090:3126 | ui, head complex.caption.rearm_prompt |
-| MW_MAIN_1090.cpp | `recruitInterviewLabels` | MW_MAIN 1090:908C | ui, head crew.caption.recruit_prompt |
-| MW_MAIN_1090.cpp | `recruitStatLabels` | 0x9106 | - |
-| MW_MAIN_1090.cpp | `repairBodyCondition` | MW_MAIN 1090:33A8 | ui, head complex.caption.repair_body |
-| MW_MAIN_1090.cpp | `repairCompleteText` | 0x2C01 | - |
-| MW_MAIN_1090.cpp | `repairFailedText` | 0x3CB5 | - |
-| MW_MAIN_1090.cpp | `repairFooter` | MW_MAIN 1090:33C0 | ui, head complex.caption.repair_footer |
-| MW_MAIN_1090.cpp | `repairIncompleteText` | 0x2C21 | - |
-| MW_MAIN_1090.cpp | `repairJumpJetCountTemplateBytes` | 0x36A5 | - |
-| MW_MAIN_1090.cpp | `repairNoJumpJetsTextBytes` | 0x36A0 | - |
-| MW_MAIN_1090.cpp | `repairSystemConditionRows` | MW_MAIN 1090:3272 | ui, head complex.caption.repair_system_1 |
-| MW_MAIN_1090.cpp | `repairTitle` | MW_MAIN 1090:3254 | ui, head complex.caption.repair_title |
-| MW_MAIN_1090.cpp | `repairWeaponConditionRows` | MW_MAIN 1090:3403 | ui, head complex.caption.repair_weapon_1 |
-| MW_MAIN_1090.cpp | `reserveAmmoBuyLabel` | 0x413A | - |
-| MW_MAIN_1090.cpp | `reserveAmmoCompatibilityHeadings` | MW_MAIN 1090:3FD5 | ui, head dealer.caption.compatibility_1 |
-| MW_MAIN_1090.cpp | `reserveAmmoDoneLabel` | MW_MAIN 1090:425E | ui, head dealer.caption.ammo_done |
-| MW_MAIN_1090.cpp | `reserveAmmoFamilyLabels` | MW_MAIN 1090:41C4 | ui, head dealer.caption.ammo_family_1 |
-| MW_MAIN_1090.cpp | `reserveAmmoQuantityRows` | MW_MAIN 1090:421C | ui, head dealer.caption.ammo_quantity_1 |
-| MW_MAIN_1090.cpp | `reserveAmmoSellLabel` | 0x413F | - |
-| MW_MAIN_1090.cpp | `reserveAmmoShopHeading` | MW_MAIN 1090:4170 | ui, head dealer.caption.ammo_heading |
-| MW_MAIN_1090.cpp | `saleConfirmationLabels` | MW_MAIN 1090:308B | ui, head complex.caption.sale_prompt |
-| MW_MAIN_1090.cpp | `submitContractCaption` | 0x4B35 | - |
-| MW_MAIN_1090.cpp | `travelBrowseLabel` | MW_MAIN 1090:5C87 | ui, head travel.caption.browse_houses |
-| MW_MAIN_1090.cpp | `travelConfirmLabel` | MW_MAIN 1090:5C29 | ui, head travel.caption.leave |
-| MW_MAIN_1090.cpp | `travelCostLabel` | MW_MAIN 1090:5C0B | ui, head travel.caption.confirm_travel |
-| MW_MAIN_1090.cpp | `travelDestinationHeaderLabels` | MW_MAIN 1090:5C49 | ui, head travel.caption.destination_name |
-| MW_MAIN_1090.cpp | `travelHouseBrowserLabels` | MW_MAIN 1090:5A2B | ui, head travel.caption.browser_title |
-| MW_MAIN_1090.cpp | `travelHousePlanetCancelLabel` | MW_MAIN 1090:57FD | ui, head travel.caption.planets_back |
-| MW_MAIN_1090.cpp | `travelHousePlanetRows` | MW_MAIN 1090:554B | ui, head travel.caption.planet_1 |
-| MW_MAIN_1090.cpp | `travelHouseSearchCaption` | MW_MAIN 1090:5534 | ui, head travel.caption.search |
-| MW_MAIN_1090.cpp | `travelInsufficientFundsText` | 0x5B5A | - |
-| MW_MAIN_1090.cpp | `travelLandscapeLabels` | 0x5CA6 | - |
-| MW_MAIN_1090.cpp | `travelPopulationSuffix` | 0x5B83 | - |
-| MW_MAIN_1090.cpp | `unassignedMechWarriorText` | 0x3024 | - |
-| MW_MAIN_1090_OPTIONS.cpp | `audioOptionLabels` | 0xA071 | - |
-| MW_MAIN_1090_OPTIONS.cpp | `confirmationLabels` | MW_MAIN 1090:9CD4 | ui, head options.caption.confirm_quit |
-| MW_MAIN_1090_OPTIONS.cpp | `loadDiskErrorText` | 0xA0E3 | - |
-| MW_MAIN_1090_OPTIONS.cpp | `newsAtEnd` | 0x2562 | - |
-| MW_MAIN_1090_OPTIONS.cpp | `newsAtStart` | 0x2562 | - |
-| MW_MAIN_1090_OPTIONS.cpp | `newsBoundaryText` | 0x2564 | - |
-| MW_MAIN_1090_OPTIONS.cpp | `newsMenuLabels` | MW_MAIN 1090:2516 | ui, head options.caption.news_previous |
-| MW_MAIN_1090_OPTIONS.cpp | `optionsLabels` | MW_MAIN 1090:9D70 | ui, head options.caption.save |
-| MW_MAIN_1090_OPTIONS.cpp | `restoreCancel` | MW_MAIN 1090:9F6C | ui, head options.caption.restore_cancel |
-| MW_MAIN_1090_OPTIONS.cpp | `restoreHeading` | MW_MAIN 1090:9E79 | ui, head options.caption.restore_heading |
-| MW_MAIN_1090_OPTIONS.cpp | `saveDiskErrorText` | 0xA0B3 | - |
-| MW_MAIN_1090_OPTIONS.cpp | `saveDiskFullText` | 0xA088 | - |
-| MW_MAIN_1090_OPTIONS.cpp | `saveListRows` | MW_MAIN 1090:9E94 | ui, head options.caption.save_1 |
-| MW_MAIN_1090_OPTIONS.cpp | `saveNamePrompt` | 0xA031 | - |
-| MW_MAIN_1090_OPTIONS.cpp | `terrainDetailLabels` | 0xA079 | - |
+| BTECH_304E_COCKPIT.cpp | `actuatorLabels` | BTECH 304E:046C | words, cockpit.word.actuator.1 |
+| BTECH_304E_COCKPIT.cpp | `automaticWeaponsLabel` | BTECH 304E:0059 | words, cockpit.word.automatic_weapons |
+| BTECH_304E_COCKPIT.cpp | `bodyLocationLabels` | BTECH 304E:038E | words, cockpit.word.body_location.1 |
+| BTECH_304E_COCKPIT.cpp | `briefingCrewLabel` | BTECH 304E:0DA9 | words, briefing.word.crew |
+| BTECH_304E_COCKPIT.cpp | `briefingMechLabel` | BTECH 304E:0DB6 | words, briefing.word.mechs |
+| BTECH_304E_COCKPIT.cpp | `briefingMissionLabel` | BTECH 304E:0D96 | words, briefing.word.mission |
+| BTECH_304E_COCKPIT.cpp | `energyAmmoPlaceholder` | BTECH 304E:2410 | words, cockpit.word.range_class.1 |
+| BTECH_304E_COCKPIT.cpp | `heatSinksOfText` | BTECH 304E:0566 | words, cockpit.word.heat_sinks_of |
+| BTECH_304E_COCKPIT.cpp | `inspectionBlankWeaponRow` | BTECH 304E:0590 | words, cockpit.word.blank_weapon_row |
+| BTECH_304E_COCKPIT.cpp | `inspectionConditionLabels` | BTECH 304E:03A6 | words, cockpit.word.condition.1 |
+| BTECH_304E_COCKPIT.cpp | `inspectionSubsystemLabels` | BTECH 304E:0520 | words, cockpit.word.subsystem.1 |
+| BTECH_304E_COCKPIT.cpp | `inspectionWeaponHeading` | BTECH 304E:057A | words, cockpit.word.weapon_heading |
+| BTECH_304E_COCKPIT.cpp | `jumpJetsOfText` | BTECH 304E:0577 | words, cockpit.word.jump_jets_of |
+| BTECH_304E_COCKPIT.cpp | `jumpJetsText` | BTECH 304E:0569 | words, cockpit.word.jump_jets |
+| BTECH_304E_COCKPIT.cpp | `pausedText` | BTECH 304E:0081 | words, cockpit.word.paused |
+| BTECH_304E_COCKPIT.cpp | `radarRangeLabels` | BTECH 304E:23EA | words, cockpit.word.radar_range.1 |
+| BTECH_304E_COCKPIT.cpp | `radarRangeText` | BTECH 304E:23EA | words, cockpit.word.radar_range.1 |
+| BTECH_304E_COCKPIT.cpp | `reactorShutdownText` | BTECH 304E:005D | words, cockpit.word.reactor_shutdown |
+| BTECH_304E_COCKPIT.cpp | `retreatChoiceText` | BTECH 304E:083E | words, cockpit.word.retreat_choice |
+| BTECH_304E_COCKPIT.cpp | `retreatQuestionText` | BTECH 304E:082F | words, cockpit.word.retreat_question |
+| BTECH_304E_COCKPIT.cpp | `simulationText` | BTECH 304E:0076 | words, cockpit.word.simulation |
+| BTECH_304E_COCKPIT.cpp | `subsystemLampLabels` | BTECH 304E:23BE | words, cockpit.word.lamp.1 |
+| BTECH_304E_COCKPIT.cpp | `weaponLabelText` | BTECH 304E:2004 | words, cockpit.word.weapon.1 |
+| BTECH_304E_COCKPIT.cpp | `weaponLabels` | BTECH 304E:2004 | words, cockpit.word.weapon.1 |
+| BTECH_304E_COCKPIT.cpp | `weaponRangeAndAmmoText` | BTECH 304E:2410 | words, cockpit.word.range_class.1 |
+| BTECH_304E_COCKPIT.cpp | `weaponRangeClassLabels` | BTECH 304E:2410 | words, cockpit.word.range_class.1 |
+| BTECH_304E_COCKPIT.cpp | `zoomLabel` | BTECH 304E:0052 | words, cockpit.word.zoom |
+| BTECH_304E_ORDERS.cpp | `orderBaseText` | BTECH 304E:010C | words, orders.word.order.1 |
+| BTECH_304E_ORDERS.cpp | `orderColon` | BTECH 304E:010C | words, orders.word.order.1 |
+| BTECH_304E_ORDERS.cpp | `orderDamageText` | BTECH 304E:010C | words, orders.word.order.1 |
+| BTECH_304E_ORDERS.cpp | `orderLocationText` | BTECH 304E:010C | words, orders.word.order.1 |
+| BTECH_304E_ORDERS.cpp | `orderOfText` | BTECH 304E:010C | words, orders.word.order.1 |
+| BTECH_304E_ORDERS.cpp | `orderPanelText` | BTECH 304E:010C | words, orders.word.order.1 |
+| BTECH_304E_ORDERS.cpp | `orderSelectionHeading` | BTECH 304E:010C | words, orders.word.order.1 |
+| BTECH_304E_ORDERS.cpp | `orderWeaponHeading` | BTECH 304E:010C | words, orders.word.order.1 |
+| BTECH_304E_ORDERS.cpp | `orderWeaponsText` | BTECH 304E:010C | words, orders.word.order.1 |
+| MW_MAIN_1090.cpp | `acceptContractCaption` | MW_MAIN 1090:4B35 | words, contract_office.word.submit |
+| MW_MAIN_1090.cpp | `afterActionCrewHeading` | MW_MAIN 1090:11DF | words, hub.word.after_action.crew_heading |
+| MW_MAIN_1090.cpp | `afterActionMechHeading` | MW_MAIN 1090:11EC | words, hub.word.after_action.mech_heading |
+| MW_MAIN_1090.cpp | `afterActionPaymentHeading` | MW_MAIN 1090:1202 | words, hub.word.after_action.payment_heading |
+| MW_MAIN_1090.cpp | `afterActionPercentSuffix` | MW_MAIN 1090:120B | words, hub.word.after_action.percent |
+| MW_MAIN_1090.cpp | `afterActionPilotStatusText` | MW_MAIN 1090:120D | words, hub.word.after_action.pilot_status |
+| MW_MAIN_1090.cpp | `afterActionSalvageHeading` | MW_MAIN 1090:11F9 | words, hub.word.after_action.salvage_heading |
+| MW_MAIN_1090.cpp | `ammoBayFullText` | MW_MAIN 1090:315B | words, complex.word.ammo_bay_full |
+| MW_MAIN_1090.cpp | `ammoFamilyDisplayNames` | MW_MAIN 1090:2F91 | words, complex.word.ammo_family.1 |
+| MW_MAIN_1090.cpp | `assignedMechUnreadyText` | MW_MAIN 1090:0FF7 | words, contract_office.word.mech_unready |
+| MW_MAIN_1090.cpp | `barMenuLabels` | MW_MAIN 1090:9013 | words, crew.caption.bar_title.text |
+| MW_MAIN_1090.cpp | `calendarMonthNames` | MW_MAIN 1090:4AAC | words, hub.word.month.1 |
+| MW_MAIN_1090.cpp | `calendarMonthText` | MW_MAIN 1090:4AAC | words, hub.word.month.1 |
+| MW_MAIN_1090.cpp | `campaignDamageTierLabels` | MW_MAIN 1090:2B2B | words, complex.word.damage_tier.1 |
+| MW_MAIN_1090.cpp | `cannotAffordRepairText` | MW_MAIN 1090:2BB0 | words, complex.word.cannot_afford_repair |
+| MW_MAIN_1090.cpp | `commanderNeedsMechText` | MW_MAIN 1090:0FC0 | words, contract_office.word.commander_needs_mech |
+| MW_MAIN_1090.cpp | `commanderProfileLabels` | MW_MAIN 1090:2283 | words, crew.caption.profile_1.text |
+| MW_MAIN_1090.cpp | `commanderProfileName` | MW_MAIN 1090:21C2 | words, crew.word.commander_name |
+| MW_MAIN_1090.cpp | `commanderReputationLabels` | MW_MAIN 1090:23D8 | words, crew.word.reputation.1 |
+| MW_MAIN_1090.cpp | `companyMenuLabels` | MW_MAIN 1090:21EB | words, crew.caption.company_title.text |
+| MW_MAIN_1090.cpp | `contractAcceptedText` | MW_MAIN 1090:4C6C | words, contract_office.word.accepted |
+| MW_MAIN_1090.cpp | `contractActionLabels` | MW_MAIN 1090:49F9 | words, contract_office.caption.negotiate.text |
+| MW_MAIN_1090.cpp | `contractCancelledText` | MW_MAIN 1090:1031 | words, contract_office.word.cancelled |
+| MW_MAIN_1090.cpp | `contractOfficeLabels` | MW_MAIN 1090:484F | words, contract_office.caption.request_offer.text |
+| MW_MAIN_1090.cpp | `crewLabels` | MW_MAIN 1090:2348 | words, crew.caption.crew_1.text |
+| MW_MAIN_1090.cpp | `dealerPurchaseLimitText` | MW_MAIN 1090:258A | words, dealer.word.purchase_limit |
+| MW_MAIN_1090.cpp | `dropShipStatusLabels` | MW_MAIN 1090:2D21 | words, complex.caption.dropship_status.text |
+| MW_MAIN_1090.cpp | `fullFourPilotRosterText` | MW_MAIN 1090:9C5A | words, crew.word.roster_full_four |
+| MW_MAIN_1090.cpp | `fullThreePilotRosterText` | MW_MAIN 1090:9C8D | words, crew.word.roster_full_three |
+| MW_MAIN_1090.cpp | `marketBodyCondition` | MW_MAIN 1090:468A | words, dealer.caption.component_body.text |
+| MW_MAIN_1090.cpp | `marketComponentDone` | MW_MAIN 1090:47F5 | words, dealer.caption.component_done.text |
+| MW_MAIN_1090.cpp | `marketComponentTitle` | MW_MAIN 1090:4536 | words, dealer.caption.component_title.text |
+| MW_MAIN_1090.cpp | `marketDropShipStatusLabels` | MW_MAIN 1090:4459 | words, dealer.caption.dropship_title.text |
+| MW_MAIN_1090.cpp | `marketListDoneText` | MW_MAIN 1090:3049 | words, dealer.word.market_list_done |
+| MW_MAIN_1090.cpp | `marketListHeading` | MW_MAIN 1090:2922 | words, dealer.caption.market_heading.text |
+| MW_MAIN_1090.cpp | `marketMechStatusLabels` | MW_MAIN 1090:439B | words, dealer.caption.mech_title.text |
+| MW_MAIN_1090.cpp | `marketSystemConditionRows` | MW_MAIN 1090:4554 | words, dealer.caption.component_system_1.text |
+| MW_MAIN_1090.cpp | `marketUnitListRows` | MW_MAIN 1090:2936 | words, dealer.caption.market_1.text |
+| MW_MAIN_1090.cpp | `marketWeaponConditionRows` | MW_MAIN 1090:46BF | words, dealer.caption.component_weapon_1.text |
+| MW_MAIN_1090.cpp | `marketWeaponHeading` | MW_MAIN 1090:46A2 | words, dealer.caption.component_weapon_heading.text |
+| MW_MAIN_1090.cpp | `mechComplexLabels` | MW_MAIN 1090:25E4 | words, complex.caption.complex_title.text |
+| MW_MAIN_1090.cpp | `mechNonfunctionalTextBytes` | MW_MAIN 1090:2B55 | words, complex.word.mech_nonfunctional |
+| MW_MAIN_1090.cpp | `mechStatusLabels` | MW_MAIN 1090:2C60 | words, complex.caption.mech_status.text |
+| MW_MAIN_1090.cpp | `negotiationTerminatedText` | MW_MAIN 1090:4C25 | words, contract_office.word.negotiation_ended |
+| MW_MAIN_1090.cpp | `noAvailableRecruitsText` | MW_MAIN 1090:9C39 | words, crew.word.no_recruits |
+| MW_MAIN_1090.cpp | `noContractsText` | MW_MAIN 1090:4BFA | words, contract_office.word.no_contracts |
+| MW_MAIN_1090.cpp | `noMarketMechsText` | MW_MAIN 1090:31BB | words, dealer.word.no_market_mechs |
+| MW_MAIN_1090.cpp | `noRepairWorkText` | MW_MAIN 1090:2BE7 | words, complex.word.no_repair_work |
+| MW_MAIN_1090.cpp | `notificationTextStorage` | MW_MAIN 1090:5EDB | words, hub.word.notification.1 |
+| MW_MAIN_1090.cpp | `ownedListDoneText` | MW_MAIN 1090:302F | words, complex.word.owned_list_done |
+| MW_MAIN_1090.cpp | `ownedMechCapacityText` | MW_MAIN 1090:4347 | words, dealer.word.owned_capacity |
+| MW_MAIN_1090.cpp | `ownedUnitListHeading` | MW_MAIN 1090:269B | words, complex.caption.owned_heading.text |
+| MW_MAIN_1090.cpp | `ownedUnitListRows` | MW_MAIN 1090:26BA | words, complex.caption.owned_1.text |
+| MW_MAIN_1090.cpp | `pilotSkillLabels` | MW_MAIN 1090:245A | words, crew.word.skill.1 |
+| MW_MAIN_1090.cpp | `positionedText` | MW_MAIN 1090:55F1 | words, travel.caption.planet_8.text |
+| MW_MAIN_1090.cpp | `purchaseInsufficientFundsText` | MW_MAIN 1090:4330 | words, dealer.word.insufficient_funds |
+| MW_MAIN_1090.cpp | `rearmConfirmationLabels` | MW_MAIN 1090:312B | words, complex.caption.rearm_prompt.text |
+| MW_MAIN_1090.cpp | `recruitInterviewLabels` | MW_MAIN 1090:9091 | words, crew.caption.recruit_prompt.text |
+| MW_MAIN_1090.cpp | `recruitStatLabels` | MW_MAIN 1090:9106 | words, crew.word.recruit_stats |
+| MW_MAIN_1090.cpp | `repairBodyCondition` | MW_MAIN 1090:33AD | words, complex.caption.repair_body.text |
+| MW_MAIN_1090.cpp | `repairCompleteText` | MW_MAIN 1090:2C01 | words, complex.word.repair_complete |
+| MW_MAIN_1090.cpp | `repairFailedText` | MW_MAIN 1090:3CB5 | words, complex.word.repair_failed |
+| MW_MAIN_1090.cpp | `repairFooter` | MW_MAIN 1090:33C5 | words, complex.caption.repair_footer.text |
+| MW_MAIN_1090.cpp | `repairIncompleteText` | MW_MAIN 1090:2C21 | words, complex.word.repair_incomplete |
+| MW_MAIN_1090.cpp | `repairJumpJetCountTemplateBytes` | MW_MAIN 1090:36A5 | words, complex.word.jump_jet_count |
+| MW_MAIN_1090.cpp | `repairNoJumpJetsTextBytes` | MW_MAIN 1090:36A0 | words, complex.word.no_jump_jets |
+| MW_MAIN_1090.cpp | `repairSystemConditionRows` | MW_MAIN 1090:3277 | words, complex.caption.repair_system_1.text |
+| MW_MAIN_1090.cpp | `repairTitle` | MW_MAIN 1090:3259 | words, complex.caption.repair_title.text |
+| MW_MAIN_1090.cpp | `repairWeaponConditionRows` | MW_MAIN 1090:3408 | words, complex.caption.repair_weapon_1.text |
+| MW_MAIN_1090.cpp | `repairWeaponLabelStorage` | MW_MAIN 1090:36C2 | words, complex.word.repair_weapons.1 |
+| MW_MAIN_1090.cpp | `reserveAmmoBuyLabel` | MW_MAIN 1090:413A | words, dealer.word.ammo_buy |
+| MW_MAIN_1090.cpp | `reserveAmmoCompatibilityHeadings` | MW_MAIN 1090:3FDA | words, dealer.caption.compatibility_1.text |
+| MW_MAIN_1090.cpp | `reserveAmmoDoneLabel` | MW_MAIN 1090:4263 | words, dealer.caption.ammo_done.text |
+| MW_MAIN_1090.cpp | `reserveAmmoFamilyLabels` | MW_MAIN 1090:41C9 | words, dealer.caption.ammo_family_1.text |
+| MW_MAIN_1090.cpp | `reserveAmmoQuantityRows` | MW_MAIN 1090:4221 | words, dealer.caption.ammo_quantity_1.text |
+| MW_MAIN_1090.cpp | `reserveAmmoSellLabel` | MW_MAIN 1090:413F | words, dealer.word.ammo_sell |
+| MW_MAIN_1090.cpp | `reserveAmmoShopHeading` | MW_MAIN 1090:4175 | words, dealer.caption.ammo_heading.text |
+| MW_MAIN_1090.cpp | `saleConfirmationLabels` | MW_MAIN 1090:3090 | words, complex.caption.sale_prompt.text |
+| MW_MAIN_1090.cpp | `submitContractCaption` | MW_MAIN 1090:4B35 | words, contract_office.word.submit |
+| MW_MAIN_1090.cpp | `travelBrowseLabel` | MW_MAIN 1090:5C8C | words, travel.caption.browse_houses.text |
+| MW_MAIN_1090.cpp | `travelConfirmLabel` | MW_MAIN 1090:5C2E | words, travel.caption.leave.text |
+| MW_MAIN_1090.cpp | `travelCostLabel` | MW_MAIN 1090:5C10 | words, travel.caption.confirm_travel.text |
+| MW_MAIN_1090.cpp | `travelDestinationHeaderLabels` | MW_MAIN 1090:5C4E | words, travel.caption.destination_name.text |
+| MW_MAIN_1090.cpp | `travelDestinationName` | MW_MAIN 1090:5C4E | words, travel.caption.destination_name.text |
+| MW_MAIN_1090.cpp | `travelHouseBrowserLabels` | MW_MAIN 1090:5A30 | words, travel.caption.browser_title.text |
+| MW_MAIN_1090.cpp | `travelHousePlanetCancelLabel` | MW_MAIN 1090:5802 | words, travel.caption.planets_back.text |
+| MW_MAIN_1090.cpp | `travelHousePlanetRows` | MW_MAIN 1090:5550 | words, travel.caption.planet_1.text |
+| MW_MAIN_1090.cpp | `travelHouseSearchCaption` | MW_MAIN 1090:5539 | words, travel.caption.search.text |
+| MW_MAIN_1090.cpp | `travelHouseSearchNames` | MW_MAIN 1090:59C5 | words, travel.word.house_search.1 |
+| MW_MAIN_1090.cpp | `travelInsufficientFundsText` | MW_MAIN 1090:5B5A | words, travel.word.insufficient_funds |
+| MW_MAIN_1090.cpp | `travelLandscapeLabels` | MW_MAIN 1090:5CA6 | words, travel.word.landscape.1 |
+| MW_MAIN_1090.cpp | `travelPopulationSuffix` | MW_MAIN 1090:5B83 | words, travel.word.population_suffix |
+| MW_MAIN_1090.cpp | `unassignedMechWarriorText` | MW_MAIN 1090:3024 | words, complex.word.unassigned |
+| MW_MAIN_1090_OPTIONS.cpp | `audioOptionLabels` | MW_MAIN 1090:A071 | words, options.word.audio_labels |
+| MW_MAIN_1090_OPTIONS.cpp | `confirmationLabels` | MW_MAIN 1090:9CD9 | words, options.caption.confirm_quit.text |
+| MW_MAIN_1090_OPTIONS.cpp | `loadDiskErrorText` | MW_MAIN 1090:A0E3 | words, options.word.load_disk_error |
+| MW_MAIN_1090_OPTIONS.cpp | `newsBoundaryText` | MW_MAIN 1090:2564 | words, options.word.news_boundary |
+| MW_MAIN_1090_OPTIONS.cpp | `newsMenuLabels` | MW_MAIN 1090:251B | words, options.caption.news_previous.text |
+| MW_MAIN_1090_OPTIONS.cpp | `optionsLabels` | MW_MAIN 1090:9D75 | words, options.caption.save.text |
+| MW_MAIN_1090_OPTIONS.cpp | `restoreCancel` | MW_MAIN 1090:9F71 | words, options.caption.restore_cancel.text |
+| MW_MAIN_1090_OPTIONS.cpp | `restoreHeading` | MW_MAIN 1090:9E7E | words, options.caption.restore_heading.text |
+| MW_MAIN_1090_OPTIONS.cpp | `saveDiskErrorText` | MW_MAIN 1090:A0B3 | words, options.word.save_disk_error |
+| MW_MAIN_1090_OPTIONS.cpp | `saveDiskFullText` | MW_MAIN 1090:A088 | words, options.word.disk_full |
+| MW_MAIN_1090_OPTIONS.cpp | `saveListRows` | MW_MAIN 1090:9E99 | words, options.caption.save_1.text |
+| MW_MAIN_1090_OPTIONS.cpp | `saveNamePrompt` | MW_MAIN 1090:A031 | words, options.word.save_prompt |
+| MW_MAIN_1090_OPTIONS.cpp | `terrainDetailLabels` | MW_MAIN 1090:A079 | words, options.word.terrain_labels |
 
 ## Ours: screen layout, panels and menus (data/ui/*.json)
 
 | File | Item | Offset | From |
 |---|---|---|---|
+| BTECH_304E_COCKPIT.cpp | `actuatorConditionLabelIndices` | BTECH 304E:04E6 | ui cockpit.condition_labels.actuator |
 | BTECH_304E_COCKPIT.cpp | `cockpitLayouts` | BTECH 304E:1D48 | ui cockpit.layouts |
+| BTECH_304E_COCKPIT.cpp | `engineConditionLabelIndices` | BTECH 304E:04DE | ui cockpit.condition_labels.engine |
 | BTECH_304E_COCKPIT.cpp | `hudColourSchemes` | BTECH 304E:1F3C | ui cockpit.hud_colour_schemes |
 | BTECH_304E_COCKPIT.cpp | `inspectionDiagramOrigins` | BTECH 304E:1878 | ui cockpit.inspection_diagram_origins |
 | BTECH_304E_COCKPIT.cpp | `inspectionDiagramRegions` | BTECH 304E:1898 | ui cockpit.inspection_diagram_regions |
@@ -219,7 +238,9 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 | BTECH_304E_COCKPIT.cpp | `subsystemLampColourTables` | BTECH 304E:23CE | ui cockpit.subsystem_lamp_colours |
 | BTECH_304E_COCKPIT.cpp | `targetDiagramAnchors` | BTECH 304E:1AD8 | ui cockpit.target_diagram_anchors |
 | BTECH_304E_COCKPIT.cpp | `targetDiagramRegions` | BTECH 304E:1AF8 | ui cockpit.target_diagram_regions |
+| BTECH_304E_COCKPIT.cpp | `twoHitSystemConditionLabelIndices` | BTECH 304E:04D8 | ui cockpit.condition_labels.two_hit |
 | BTECH_304E_ORDERS.cpp | `lanceOrderPanelTextX` | BTECH 304E:008C | ui orders.start.lance_panel_text_x |
+| BTECH_304E_ORDERS.cpp | `orderDisplayIndices` | BTECH 304E:02C4 | ui orders.display_indices |
 | BTECH_304E_ORDERS.cpp | `orderEngineConditionColours` | BTECH 304E:030E | ui orders.engine_condition_colours |
 | BTECH_304E_ORDERS.cpp | `orderNavigationPanelDeltas` | BTECH 304E:009A | ui orders.navigation_panel_deltas |
 | BTECH_304E_ORDERS.cpp | `orderNavigationRowDeltas` | BTECH 304E:00B0 | ui orders.navigation_row_deltas |
@@ -282,6 +303,7 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 | MW_MAIN_1090.cpp | `notificationRows` | MW_MAIN 1090:5EB3 | ui hub.table.notification_boxes |
 | MW_MAIN_1090.cpp | `notificationTextInsetX` | MW_MAIN 1090:5EB3 | ui hub.table.notification_boxes |
 | MW_MAIN_1090.cpp | `notificationTextInsetY` | MW_MAIN 1090:5EB3 | ui hub.table.notification_boxes |
+| MW_MAIN_1090.cpp | `notificationTextOffsets` | MW_MAIN 1090:5ED3 | ui hub.table.notification_words |
 | MW_MAIN_1090.cpp | `ownedUnitListMenu` | MW_MAIN 1090:283B | ui complex.menu.owned |
 | MW_MAIN_1090.cpp | `ownedUnitListPanel` | MW_MAIN 1090:266A | ui complex.panel.owned |
 | MW_MAIN_1090.cpp | `ownedUnitListUiRecords` | MW_MAIN 1090:283B | ui complex.menu.owned |
@@ -536,7 +558,7 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 
 ## Code: runtime state and renderer tables (no file)
 
-Not listed one by one: BTECH_0810_STATE.cpp 1, BTECH_1ADF_STATE.cpp 2, BTECH_1BF5_STATE.cpp 5, BTECH_22B6_DATA.cpp 15, BTECH_2FEB.cpp 24, BTECH_304E.cpp 35, BTECH_304E_ADLIB.cpp 25, BTECH_304E_COCKPIT.cpp 41, BTECH_304E_MPU.cpp 10, BTECH_304E_ORDERS.cpp 35, BTECH_304E_POLYGONS.cpp 24, BTECH_304E_POSE.cpp 16, BTECH_304E_RENDER.cpp 62, BTECH_304E_RUNTIME.cpp 17, BTECH_304E_SCENE.cpp 8, BTECH_304E_SOUND.cpp 43, BTECH_304E_STARTUP.cpp 59, BTECH_304E_VIDEO.cpp 86, BTECH_304E_WORLD.cpp 111, MW_0806_STATE.cpp 1, MW_EGA_0800_STATE.cpp 66, MW_MAIN_0F41_STATE.cpp 5, MW_MAIN_1090.cpp 263, MW_MAIN_1090_OPTIONS.cpp 13, MW_MAIN_1AA5.cpp 1, MW_MAIN_28BE.cpp 39.
+Not listed one by one: BTECH_0810_STATE.cpp 1, BTECH_1ADF_STATE.cpp 2, BTECH_1BF5_STATE.cpp 5, BTECH_22B6_DATA.cpp 15, BTECH_2FEB.cpp 24, BTECH_304E.cpp 35, BTECH_304E_ADLIB.cpp 25, BTECH_304E_COCKPIT.cpp 36, BTECH_304E_MPU.cpp 10, BTECH_304E_ORDERS.cpp 26, BTECH_304E_POLYGONS.cpp 24, BTECH_304E_POSE.cpp 16, BTECH_304E_RENDER.cpp 62, BTECH_304E_RUNTIME.cpp 17, BTECH_304E_SCENE.cpp 8, BTECH_304E_SOUND.cpp 43, BTECH_304E_STARTUP.cpp 59, BTECH_304E_VIDEO.cpp 86, BTECH_304E_WORLD.cpp 111, MW_0806_STATE.cpp 1, MW_EGA_0800_STATE.cpp 66, MW_MAIN_0F41_STATE.cpp 5, MW_MAIN_1090.cpp 257, MW_MAIN_1090_OPTIONS.cpp 15, MW_MAIN_1AA5.cpp 1, MW_MAIN_28BE.cpp 39.
 
 ## Reclassified or removed in slice 3
 
@@ -557,3 +579,11 @@ Not listed one by one: BTECH_0810_STATE.cpp 1, BTECH_1ADF_STATE.cpp 2, BTECH_1BF
 - The font metrics (`fontAdvanceWidths`, `combatFontHeights`, `fontFirstCharacters`, `fontCharacterCounts`, BTECH 304E:2E84..2ED3) are written when a font loads into its slot, and are zero in the exe: code, zeroed where the exe reloaded them.
 - `orderMapPositionMask` (BTECH 304E:4EF0) lies past BTECH's file data and is written before it's read: code, zeroed where the exe reloaded it.
 - `positionedText` (MW_MAIN 1090:55EC) is the dealer component menu's past-end probe: code, like the other probes.
+
+## Reclassified in slice 5
+
+- Every item the words fill (`src/Import/word_pieces.txt`, through `MwWordsCopyText`, `MwWordsCopyBlock` or an importer's view of the words) is a UI word, with the word it comes from; a caption's row names its text's word (`<caption>.text`). None is read from the exe.
+- `positionedText` (1090:55EC) and `travelDestinationName` (5C4E) are now filled from the eighth planet row's and the destination header's caption texts: UI words.
+- The pointers into word blocks (`calendarMonthNames`, `weaponLabels`, `weaponRangeClassLabels`, `radarRangeLabels`, `energyAmmoPlaceholder`) show the block they point into.
+- The four index tables (`actuatorConditionLabelIndices`, `engineConditionLabelIndices`, `twoHitSystemConditionLabelIndices`, `orderDisplayIndices`) and `notificationTextOffsets` are layout pieces: layout.
+- `newsAtStart` and `newsAtEnd` (1090:257F, 2580) are the news screen's flags, zero in the exe and reset as the screen opens: code (their names had sorted them with the words).

@@ -545,7 +545,7 @@ static bool ImportTravelUiData(const uint8_t *data)
     owners[count++]={"travel.caption.confirm_travel",&travelCostLabel.display,travelCostLabel.text,sizeof(travelCostLabel.text),0,0};
     owners[count++]={"travel.caption.leave",&travelConfirmLabel.display,travelConfirmLabel.text,sizeof(travelConfirmLabel.text),0,0};
     owners[count++]={"travel.caption.browse_houses",&travelBrowseLabel.display,travelBrowseLabel.text,sizeof(travelBrowseLabel.text),0,0};
-    if (!MwImportUiCaptions(data,owners,count)) return false;
+    if (!MwImportUiCaptions(owners,count)) return false;
     /* DS:5C4E is one buffer in the original: 081B:5FEF copies the destination
      * name into it, the header panel's first caption draws it (5C49, colour at
      * 5C4D) and travel record 0 points at it, so the selection redraws the
@@ -600,6 +600,7 @@ MwUiMenu recruitInterviewMenu={recruitInterviewRecords,2,NULL,&saveListRows[4].d
 static bool ImportPilotUiData(const uint8_t *data);
 static bool ImportReserveAmmoUiData(const uint8_t *data);
 static bool ImportContractData(const uint8_t *data);
+static bool CheckTextBoundTables(void);
 bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
 {
     if (!data || byteCount<NATIVE_SEGMENT_BYTE_COUNT) return false; /* Transient file image, not live storage. */
@@ -1086,7 +1087,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
         {"complex.caption.repair_weapon_10",&repairWeaponConditionRows[9].display,repairWeaponConditionRows[9].caption.text,sizeof(repairWeaponConditionRows[9].caption.text),0,26},
         {"complex.caption.repair_weapon_11",&repairWeaponConditionRows[10].display,repairWeaponConditionRows[10].caption.text,sizeof(repairWeaponConditionRows[10].caption.text),0,26}};
     const size_t complexCount=sizeof(complexOwners)/sizeof(complexOwners[0]);
-    if (!MwImportUiCaptions(data,complexOwners,complexCount)
+    if (!MwImportUiCaptions(complexOwners,complexCount)
         || !MwImportUiPanel("complex.panel.complex",&mechComplexPanel,5,complexOwners,complexCount)
         || !MwImportUiListPanel("complex.panel.owned",&ownedUnitListPanel,14,complexOwners,complexCount)
         || !MwImportUiPanel("complex.panel.mech_status",&mechStatusPanel,6,complexOwners,complexCount)
@@ -1151,7 +1152,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
         {"dealer.caption.component_weapon_10",&marketWeaponConditionRows[9].display,marketWeaponConditionRows[9].caption.text,sizeof(marketWeaponConditionRows[9].caption.text),0,26},
         {"dealer.caption.component_done",&marketComponentDone.display,marketComponentDone.text,sizeof(marketComponentDone.text),0,0}};
     const size_t dealerCount=sizeof(dealerOwners)/sizeof(dealerOwners[0]);
-    if (!MwImportUiCaptions(data,dealerOwners,dealerCount)
+    if (!MwImportUiCaptions(dealerOwners,dealerCount)
         || !MwImportUiListPanel("dealer.panel.market",&marketUnitListPanel,14,dealerOwners,dealerCount)
         || !MwImportUiPanel("dealer.panel.mech",&marketMechStatusPanel,4,dealerOwners,dealerCount)
         || !MwImportUiPanel("dealer.panel.dropship",&marketDropShipStatusPanel,3,dealerOwners,dealerCount)
@@ -1177,7 +1178,8 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     repairQuoteDamage=NULL;componentRepairDamage=NULL;
     mechDiagramBodyDamage=NULL;mechDiagramRectangle=NULL;uiMenu=NULL;
     return ImportPilotUiData(data) && ImportTravelUiData(data) && MwImportCampaignEventData(data,byteCount)
-        && MwImportCampaignOptionsData(data,byteCount) && MwImportCampaignHandoffData(data,byteCount);
+        && MwImportCampaignOptionsData(data,byteCount) && MwImportCampaignHandoffData(data,byteCount)
+        && CheckTextBoundTables();
 }
 /* Installation decoder, not an added native gameplay procedure. */
 static bool ImportPilotUiData(const uint8_t *data)
@@ -1202,7 +1204,7 @@ static bool ImportPilotUiData(const uint8_t *data)
     for (uint16_t i=0;i<3;++i) owners[count++]={recruitIds[i],&recruitInterviewLabels[i].display,recruitInterviewLabels[i].text,sizeof(recruitInterviewLabels[i].text),0};
     /* The crew menu's pilot rows (1..4) have no caption: 273E/28B2 assigns
      * them before any pilot record is selected. */
-    if (!MwImportUiCaptions(data,owners,count)
+    if (!MwImportUiCaptions(owners,count)
         || !MwImportUiPanel("crew.panel.company",&companyMenuPanel,4,owners,count)
         || !MwImportUiPanel("crew.panel.commander_profile",&commanderProfilePanel,11,owners,count)
         || !MwImportUiPanel("crew.panel.crew",&crewLabelsPanel,7,owners,count)
@@ -1348,7 +1350,7 @@ static bool ImportContractData(const uint8_t *data)
         {"contract_office.caption.next_offer",&contractActionLabels[1].display,contractActionLabels[1].text,sizeof(contractActionLabels[1].text),0},
         {"contract_office.caption.back_to_office",&contractActionLabels[2].display,contractActionLabels[2].text,sizeof(contractActionLabels[2].text),0}};
     const size_t count=sizeof(owners)/sizeof(owners[0]);
-    if (!MwImportUiCaptions(data,owners,count)
+    if (!MwImportUiCaptions(owners,count)
         || !MwImportUiPanel("contract_office.panel.office",&contractOfficePanel,2,owners,count)
         || !MwImportUiPanel("contract_office.panel.actions",&contractActionsPanel,3,owners,count)
         || !MwImportUiMenu("contract_office.menu.office",&contractOfficeMenu,owners,count)
@@ -1422,7 +1424,7 @@ static bool ImportReserveAmmoUiData(const uint8_t *data)
     for (uint16_t i=0;i<CAMPAIGN_AMMO_FAMILY_COUNT;++i)
         owners[count++]={compatibilityIds[i],&reserveAmmoCompatibilityHeadings[i].display,reserveAmmoCompatibilityHeadings[i].text,
             sizeof(reserveAmmoCompatibilityHeadings[i].text),0,0};
-    if (!MwImportUiCaptions(data,owners,count)
+    if (!MwImportUiCaptions(owners,count)
         || !MwImportUiPanel("dealer.panel.ammo",&reserveAmmoShopPanel,14,owners,count)
         || !MwImportUiMenu("dealer.menu.ammo",&reserveAmmoShopMenu,owners,count)) return false;
     uint16_t compatibilityPanels[CAMPAIGN_AMMO_FAMILY_COUNT];
@@ -1443,5 +1445,30 @@ static bool ImportReserveAmmoUiData(const uint8_t *data)
             if (kind>=CAMPAIGN_MECH_KIND_COUNT) return false;
         } while (true);
     }
+    return true;
+}
+/* The three layout tables that measure words (docs/phase2/PLAN.md 7.3). While
+ * the words are the exe's they stay exact in data/ui, and are checked here
+ * against the words they measure, so an edit that no longer fits is refused:
+ * - a month's calendar width (hub.json) is its name's width in the 6-pixel
+ *   campaign font, and its contract year offset (contract_office.json) the
+ *   same in the 8-pixel contract font, both without the name's final space;
+ * - a 'Mech kind's repair title padding (complex.json) centres its name in
+ *   the name buffer's twelve columns, the odd space on the left. */
+static bool CheckTextBoundTables(void)
+{
+    enum { CONTRACT_GLYPH_ADVANCE = 8 };
+    for (uint16_t month=0;month<CAMPAIGN_MONTH_COUNT;++month)
+    {
+        const size_t length=strlen((const char *)calendarMonthNames[month]);
+        if (!length || calendarMonthNameWidths[month]!=(length-1)*CAMPAIGN_GLYPH_ADVANCE)
+            return fprintf(stderr,"MechWarrior: hub.json's calendar_month_name_widths doesn't fit month %u's name\n",month+1),false;
+        if (contractDateYearXOffsets[month]!=(length-1)*CONTRACT_GLYPH_ADVANCE)
+            return fprintf(stderr,"MechWarrior: contract_office.json's date_year_x_offsets doesn't fit month %u's name\n",month+1),false;
+    }
+    static_assert(sizeof(repairTitleLeadingSpacesByKind)/sizeof(repairTitleLeadingSpacesByKind[0])==CAMPAIGN_UNIT_KIND_COUNT,"one padding per kind");
+    for (uint16_t kind=0;kind<CAMPAIGN_UNIT_KIND_COUNT;++kind)
+        if (repairTitleLeadingSpacesByKind[kind]!=(sizeof(unitDisplayNames[kind])-strlen(unitDisplayNames[kind]))/2)
+            return fprintf(stderr,"MechWarrior: complex.json's repair_title_leading_spaces doesn't fit the %s's name\n",storyUnitKeys[kind]),false;
     return true;
 }

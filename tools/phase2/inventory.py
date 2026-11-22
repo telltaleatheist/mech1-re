@@ -9,9 +9,13 @@ An item read through a door is sorted by where it comes from instead: a
 story piece (src/Import/pieces.txt) is extracted, a rule piece
 (src/Rules/rule_pieces.txt) is a rule, and a save codec field decoded from
 new_campaign.json (src/Rules/new_campaign_fields.cpp) is the new campaign,
-and a layout piece (src/Ui/ui_pieces.txt) is layout. A caption whose head is
-a layout piece stays with the UI words, since its text moves in slice 5.
-The offset shown is then the exe's, from those tables.
+a layout piece (src/Ui/ui_pieces.txt) is layout, and a UI word
+(src/Import/word_pieces.txt, as src/Import/import_table.cpp lists them with
+the captions' texts) is a word: one a words door fills (MwWordsCopyText,
+MwWordsCopyBlock), one read from an importer's view of the words (`words`,
+`mainWords`) at an offset a word covers, directly, through a pointer table
+or past a range check, a pointer into such an item, or a caption whose text
+is a word. The offset shown is then the exe's, from those tables.
 """
 import collections, glob, os, re, sys
 
@@ -24,6 +28,7 @@ def scan(memory_dir):
     for path in sorted(glob.glob(os.path.join(memory_dir,'*.cpp'))):
         f=os.path.basename(path);lines=open(path).read().split('\n');depth=0;names=[]
         for l in lines:
+            l=l.replace('(int)','')  # a cast in an array bound
             if depth==0 and not l.startswith((' ','#','/','}','{','\t','static_assert','typedef','enum','extern','namespace','using')) and '(' not in l.split('=')[0]:
                 m=decl.match(l)
                 if m:
@@ -36,7 +41,7 @@ def scan(memory_dir):
             offs=[]
             for l in lines:
                 if re.search(r'\b'+n+r'\b',l): offs+=re.findall(r'(?:data\s*[+,]\s*\(?(?:uint16_t\)\()?)(0x[0-9A-Fa-f]{3,4})',l)
-            rows.append((f,n,offs[0] if offs else '-',len(offs),door_source(n,lines)))
+            rows.append((f,n,offs[0] if offs else '-',len(offs),word_source(n,lines,f) or door_source(n,lines)))
     return rows
 
 ROOT=os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -50,6 +55,16 @@ def pieces(path):
 STORY=pieces(os.path.join(ROOT,'src','Import','pieces.txt'))
 RULE=pieces(os.path.join(ROOT,'src','Rules','rule_pieces.txt'))
 UIP=pieces(os.path.join(ROOT,'src','Ui','ui_pieces.txt'))
+# The words, captions' texts included: id -> (exe, segment, offset, length).
+WORD={m.group(1):(m.group(2).replace('.EXE',''),int(m.group(3),16),int(m.group(4),16),int(m.group(5)))
+      for m in re.finditer(r'Kind::Word(?:Bytes)?, "([\w.]+)", "(\w+\.EXE)", 0x([0-9A-F]+), 0x([0-9A-F]+), (\d+)',
+                           open(os.path.join(ROOT,'src','Import','import_table.cpp')).read())}
+ENUMS={m.group(1):int(m.group(2),16) for p in glob.glob(os.path.join(ROOT,'src','include','mechwarrior','*.h'))
+       for m in re.finditer(r'\b([A-Z][A-Z0-9_]+)\s*=\s*0x([0-9A-Fa-f]+)',open(p).read())}
+UIJSON={}
+for p in glob.glob(os.path.join(ROOT,'data','ui','*.json')):
+    import json
+    UIJSON[os.path.basename(p)[:-5]]=json.load(open(p)).get('tables',{})
 UISIZE={l.split()[0]:int(l.split()[3]) for l in open(os.path.join(ROOT,'src','Ui','ui_pieces.txt')) if len(l.split())>=4 and not l.startswith('#')}
 FIELDS={m.group(1):int(m.group(2),16) for m in re.finditer(r'\{"([\w.]+)", 0x([0-9A-F]{4})',
         open(os.path.join(ROOT,'src','Rules','new_campaign_fields.cpp')).read())}
@@ -100,6 +115,43 @@ def ui_source(name,lines):
             for start,id_ in views:
                 if start<=off<start+UISIZE.get(id_,0): return 'ui '+id_
     return ''
+WORDDOOR=re.compile(r'MwWordsCopy(?:Text|Block)\(\s*"([\w.]+)"\s*,\s*(?:\([^)]*\)\s*)?([^,;]*)')
+VIEWOFF=re.compile(r'\b(?:mainWords|words)\s*(?:\+|,)\s*(0x[0-9A-Fa-f]+|\w+(?:\[\w+\])?)')
+def covering(exe,off):
+    """The word whose bytes hold offset `off` of `exe`'s data segment."""
+    return next((k for k,(e,_,o,n) in sorted(WORD.items(),key=lambda kv:kv[1][2]) if e==exe and o<=off<o+n),None)
+def table_word(text,var):
+    """The first word of the pointer table a layout door copies into `var`."""
+    m=re.search(r'MwUiCopyWords\(\s*"(\w+)\.table\.(\w+)"\s*,\s*'+var+r'\b',text)
+    entries=UIJSON.get(m.group(1),{}).get(m.group(2)) if m else None
+    return f'{m.group(1)}.word.{entries[0]}' if entries and isinstance(entries,list) and isinstance(entries[0],str) else None
+def word_source(name,lines,f):
+    """'word <id>' or '' for the words door or words view that fills `name`."""
+    if name in ('words','mainWords'): return ''  # the views themselves
+    exe='BTECH' if f.startswith('BTECH') else 'MW_MAIN'
+    text='\n'.join(lines);hit=lambda l:re.search(r'\b'+name+r'\b',l)
+    for i,l in enumerate(lines):
+        if not hit(l): continue
+        for m in WORDDOOR.finditer(l):
+            if re.search(r'\b'+name+r'\b',m.group(2)) and m.group(1) in WORD: return 'word '+m.group(1)
+        for m in VIEWOFF.finditer(l):
+            at=m.group(1);var=at.split('[')[0];word=None
+            if at.startswith('0x'): word=covering(exe,int(at,16))
+            elif var in ENUMS: word=covering(exe,ENUMS[var])
+            else:
+                word=table_word(text,var)
+                assigned=re.search(r'\b'+var+r'\s*=\s*(\w+)\[',text)
+                if not word and assigned: word=table_word(text,assigned.group(1))
+                for back in lines[max(0,i-3):i+1][::-1]:
+                    bound=re.search(r'\b'+var+r'\s*<\s*(0x[0-9A-Fa-f]+|[A-Z_][A-Z0-9_]+)',back)
+                    if not word and bound: word=covering(exe,int(bound.group(1),16) if bound.group(1).startswith('0x') else ENUMS.get(bound.group(1),-1))
+            if word: return 'word '+word
+        # A pointer into an item the words fill: name[...]=item+...
+        m=re.search(r'\b'+name+r'\b(?:\[[^\]]*\])*\s*=\s*(?:\([^)]*\))?\s*(\w+)\s*\+',l)
+        if m and m.group(1)!=name:
+            via=word_source(m.group(1),lines,f)
+            if via: return via
+    return ''
 BUILDER=re.compile(r'\b(MwStoryBuild\w+|MwStoryCopyAdlibInstruments|MwStoryCopyPlanetPools)\(')
 def door_source(name,lines):
     """'story <id>', 'rule <id>' or '' for the door that fills `name`."""
@@ -137,6 +189,8 @@ def where(src):
     if kind=='builder': return '-'
     if kind=='rule': return RULE.get(id_,'-')
     if kind in ('ui','ui-caption'): return UIP.get(id_,'-')
+    if kind=='word':
+        e,seg,off,_=WORD[id_]; return f'{e} {seg:04X}:{off:04X}'
     off=FIELDS.get(id_) if id_ in FIELDS else min(v for k,v in FIELDS.items() if k.startswith(id_+'.'))
     return f'MW_MAIN 1090:{0x448+off:04X}'
 X=re.compile(r'^(intro\w+Text|contractNarrative|missionDescription\w*|afterAction(Kurita|Liao|General)(Failure|Success)|settlement\w+Text|darkWing\w*Text|deploymentUneventfulText|missionTitleText|pilotDefinition\w*|pilotIdentityStorage|planetRecord\w+|alphabeticPlanetRecordOffsets|eventPlanetChoicePool\d|campaignEventPlanetSelectors|(combat|campaign)DefaultCommanderNameBytes|mechTemplateNames|unitDisplayNames|shopUnitNames|houseContractNames|musicSequences|combatAdlibDefaultInstruments|enemyPilot\w*|newsArticle\w*|houseContractRefusalText|contractOfficePlanetGroupStorage|houseMissionPlanetTableOffsets)$')
@@ -164,7 +218,7 @@ OVR={'inspectionBitmapNames':'code','cockpitScreenNames':'code','hitLocationRows
  'hubFirstNavigationProbe':'code','hubSecondNavigationProbe':'code','hubThirdNavigationProbe':'code','saveFindPattern':'code',
  'newsArticleCursor':'code','newsArticleListStart':'code','missionDescriptionMaximumIndicesByCategory':'extracted',
  'combatAdlibDefaultInstruments':'extracted','musicSequences':'code','generateStartingJenner':'ours:rules',
- 'positionedText':'code'}
+ 'positionedText':'code','newsAtStart':'code','newsAtEnd':'code'}
 rows=scan(sys.argv[1])
 # Slice 3's reclassifications (docs/phase2/PLAN.md 5.1, 5.6): past BTECH's file
 # data (zero in the exe, written in play), and the label-index tables, which
@@ -175,12 +229,13 @@ OVR.update({'mountedWeaponCountsByKind':'code','operationalWeaponCountsByKind':'
 # Items still read straight from the exe, with the slice that will move them
 # (docs/phase2/PLAN.md 3, 2g).
 OWNER={'missionTitleText':'story 2g, not yet moved','contractOfficePlanetGroupStorage':'story 2g, not yet moved'}
-GROUP_OF_SOURCE={'story':'extracted','builder':'extracted','rule':'ours:rules','field':'ours:start','ui':'ours:layout','ui-caption':'ours:ui'}
+GROUP_OF_SOURCE={'story':'extracted','builder':'extracted','rule':'ours:rules','field':'ours:start','ui':'ours:layout','ui-caption':'ours:ui','word':'ours:ui'}
 rows2=[]
 for f,name,off,n,src in rows:
+    if src.startswith('ui-caption ') and src.split(' ',1)[1]+'.text' in WORD: src='word '+src.split(' ',1)[1]+'.text'
     if src:
         c=GROUP_OF_SOURCE[src.split(' ',1)[0]]
-        rows2.append((c,f,name,where(src),src.replace('field ','new_campaign.json ').replace('builder ','story, ').replace('ui-caption ','ui, head ')))
+        rows2.append((c,f,name,where(src),src.replace('field ','new_campaign.json ').replace('builder ','story, ').replace('ui-caption ','ui, head ').replace('word ','words, ')))
         continue
     c=OVR.get(name) or cls(name,off,n)
     if c=='?' : c='code'
@@ -189,11 +244,11 @@ for f,name,off,n,src in rows:
 # items the file-scope scan misses
 rows2+= [('extracted','MW_MAIN_1AA5.cpp','eventTextStorage / eventTextRecords','-','story, MwStoryBuildEventText'),
          ('extracted','MW_MAIN_1090_EVENTS.cpp','the event script (records, conditions, actions)','-','story, MwStoryBuildCampaignEvents')]
-G=[('extracted','Extracted: the original\'s creative content (the story file, first run)'),('ours:ui','Ours: UI words and system messages (data/text/interface.json)'),
+G=[('extracted','Extracted: the original\'s creative content (the story file, first run)'),('ours:ui','Ours: UI words and system messages (story/words.json, imported)'),
    ('ours:layout','Ours: screen layout, panels and menus (data/ui/*.json)'),('ours:rules','Ours: rules and constants (data/rules/*.json)'),
    ('ours:start','Ours: the new campaign\'s starting state (data/rules/new_campaign.json)'),('dropped','Dropped'),('code','Code: runtime state and renderer tables (no file)')]
 cnt=collections.Counter(r[0] for r in rows2)
-print('# Phase 2 inventory\n\nGenerated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-scope item). An item read through a door shows where it now comes from: a story piece, a rule piece, or a save codec field of `new_campaign.json`, with the exe offset those tables give. Any other item shows the first native offset its importer reads, or `-` for runtime state with no import; its group names the slice that moves it, and the two story items not yet moved name theirs. The groups follow `docs/phase2/PLAN.md`. Names and offsets only: no MW1 text.\n')
+print('# Phase 2 inventory\n\nGenerated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-scope item). An item read through a door shows where it now comes from: a story piece, a rule piece, a layout piece, a UI word, or a save codec field of `new_campaign.json`, with the exe offset those tables give. Any other item shows the first native offset its importer reads, or `-` for runtime state with no import; its group names the slice that moves it, and the two story items not yet moved name theirs. The groups follow `docs/phase2/PLAN.md`. Names and offsets only: no MW1 text.\n')
 print('| Group | Items |\n|---|---|')
 for k,t in G: print(f'| {t} | {cnt[k]} |')
 for k,t in G:
@@ -222,4 +277,12 @@ print("""
 - Nine start values are always written before they're read, and are code, zeroed where the exe reloaded them (all nine are zero in the exe): `calendarTextX`, `calendarTextY`, `calendarBackground`, `calendarForeground` (1090:117E..1183, set as the calendar is drawn), `pilotCardTextX` (243C) and `crewScreenRightEdge` (2438, set as the roster card is drawn), `contractRequestTextColour` (4B34, set by the term editor before its only reader), `afterActionRosterRowOffset` (1229, set at each after-action) and `reserveAmmoMechColours` (3F70, set on entering the shop). `lanceOrderPanelTextX` (BTECH 304E:008C) is read first after an EXEC, and is orders.json's `"start"`.
 - The font metrics (`fontAdvanceWidths`, `combatFontHeights`, `fontFirstCharacters`, `fontCharacterCounts`, BTECH 304E:2E84..2ED3) are written when a font loads into its slot, and are zero in the exe: code, zeroed where the exe reloaded them.
 - `orderMapPositionMask` (BTECH 304E:4EF0) lies past BTECH's file data and is written before it's read: code, zeroed where the exe reloaded it.
-- `positionedText` (MW_MAIN 1090:55EC) is the dealer component menu's past-end probe: code, like the other probes.""")
+- `positionedText` (MW_MAIN 1090:55EC) is the dealer component menu's past-end probe: code, like the other probes.
+
+## Reclassified in slice 5
+
+- Every item the words fill (`src/Import/word_pieces.txt`, through `MwWordsCopyText`, `MwWordsCopyBlock` or an importer's view of the words) is a UI word, with the word it comes from; a caption's row names its text's word (`<caption>.text`). None is read from the exe.
+- `positionedText` (1090:55EC) and `travelDestinationName` (5C4E) are now filled from the eighth planet row's and the destination header's caption texts: UI words.
+- The pointers into word blocks (`calendarMonthNames`, `weaponLabels`, `weaponRangeClassLabels`, `radarRangeLabels`, `energyAmmoPlaceholder`) show the block they point into.
+- The four index tables (`actuatorConditionLabelIndices`, `engineConditionLabelIndices`, `twoHitSystemConditionLabelIndices`, `orderDisplayIndices`) and `notificationTextOffsets` are layout pieces: layout.
+- `newsAtStart` and `newsAtEnd` (1090:257F, 2580) are the news screen's flags, zero in the exe and reset as the screen opens: code (their names had sorted them with the words).""")

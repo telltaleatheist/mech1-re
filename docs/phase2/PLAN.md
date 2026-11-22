@@ -1474,6 +1474,35 @@ Each piece goes on its own branch, with the gate above:
     the exe;
   - the record here.
 
+  Done (branch `phase2-words-f`).
+  - **The text-bound tables' checks.** All three are exact functions of
+    the words they measure, for every entry: a month's calendar width is
+    6 × (its name's length − 1) and its contract year offset 8 × (the same),
+    the name's final space left out (the campaign and contract fonts'
+    advances); a 'Mech kind's repair title padding is (13 − its name's
+    length) / 2, which centres the name in the name buffer's twelve
+    columns with the odd space on the left. `CheckTextBoundTables`, the
+    last step of `MwImportCampaignInitialData`, checks each table against
+    the loaded words and story names and refuses a mismatch, naming the
+    table and the entry (never the word). Break checks: one entry off by
+    one in each table refuses the start (0 of 8 traces), with that table's
+    message. Deriving the tables waits for `--text`, as decided.
+  - **No caption text from the exe.** Every screen with captions has its
+    `captions` line, so `MwImportUiCaptions` loses its exe branch and its
+    `data` argument: a caption with no word is refused, naming it.
+    `MwUiCaptionOffset`'s comment now says it serves the panels', menus'
+    and pointer tables' rebuilds only.
+  - **The inventory.** `inventory.py` learns the words door: an item a
+    `MwWordsCopy*` call fills, one read from an importer's view of the
+    words at an offset a word covers (directly, through a pointer table or
+    past a range check), a pointer into such an item, and a caption whose
+    text is a word. Each shows the word and its exe address. The UI words
+    group has 142 items and none is left on the exe; its heading names
+    `story/words.json`, since `interface.json` is not made. The scan also
+    reads past the `(int)` casts in five array bounds, which had hidden
+    those arrays, and `newsAtStart`/`newsAtEnd` move to code (the news
+    screen's flags; their names had sorted them with the words).
+
 Decisions for review:
 1. The words are imported into `story/words.json` with the story, rather than
    read from the exe at every start. That keeps slice 6's goal: only the

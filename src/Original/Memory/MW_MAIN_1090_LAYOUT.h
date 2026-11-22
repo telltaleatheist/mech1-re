@@ -9,12 +9,12 @@
 #include <stdint.h>
 
 /* A caption: its head (x, y, colour) from the layout piece `id`, and its
- * text through its NUL, or exactly `bytes` bytes where the row is a
- * fixed-width template the code fills in. The text is the word `<id>.text`
- * (story/words.json) when the game's table has one (slice 5 moves the
- * screens one by one: `captions <screen>` in src/Import/word_pieces.txt),
- * and otherwise still the exe's, after the head.
- * `offset` is the piece's place in the exe, filled in by MwImportUiCaptions. */
+ * text, the word `<id>.text` (story/words.json; `captions <screen>` in
+ * src/Import/word_pieces.txt), through its NUL, or exactly `bytes` bytes
+ * where the row is a fixed-width template the code fills in. A caption with
+ * no word is refused.
+ * `offset` is the piece's place in the exe, filled in by MwImportUiCaptions
+ * for the panels and menus that name captions by it. */
 struct UiCaptionOwner
 {
     const char *id;
@@ -24,7 +24,7 @@ struct UiCaptionOwner
     uint16_t offset;
     size_t bytes;
 };
-bool MwImportUiCaptions(const uint8_t *data,UiCaptionOwner *owners,size_t count);
+bool MwImportUiCaptions(UiCaptionOwner *owners,size_t count);
 /* A panel: its header, and its lines through the native line pointers the
  * layout rebuilds from its caption names. A pointer naming none is refused. */
 bool MwImportUiPanel(const char *id,MwPanelDescriptor *panel,uint16_t lineCount,const UiCaptionOwner *owners,size_t count);
