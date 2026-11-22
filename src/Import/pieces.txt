@@ -1191,3 +1191,9 @@ runtime.prefix            BTECH.EXE 304E:0000 96 native
 # The runtime's error messages (304E:4E0A..4EDB), by code: read by
 # BtechImportRuntimeInitialData (runtimeMessages).
 runtime.messages          BTECH.EXE 304E:4E0A 210 native
+
+# MW_EGA's one span play reads (slice 6e): the word an unchecked row-200
+# scanline lookup reads past the scanline table, the first two bytes of the
+# overlay's palette code. Read by EgaLoadStartStoryBytes (MW_EGA_0800_STATE.cpp)
+# into the overlay; the rest of the overlay's code starts zero.
+ega.row_200_offset        MW_EGA.EXE 0800:0233 2 native

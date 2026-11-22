@@ -65,6 +65,7 @@ int check_revision(const fs::path& work, const fs::path& game, const fs::path& b
     fs::create_directories(folder);
     const fs::path main_path = main_exe.empty() ? find_file(game, "MW_MAIN.EXE") : main_exe;
     fs::copy_file(main_path, folder / "MW_MAIN.EXE");
+    fs::copy_file(find_file(game, "MW_EGA.EXE"), folder / "MW_EGA.EXE");
     fs::copy_file(btech, folder / "BTECH.EXE");
     const auto packed = read(btech);
     std::uint8_t* decoded = nullptr;

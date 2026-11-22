@@ -4,16 +4,19 @@
 // row's bytes, as the code makes them, must be the exe's at the row's
 // address, in each BTECH revision given. A generated table must also keep
 // every computed entry clear of an integer before rounding down, so another
-// libm cannot round it differently. A row that differs is named by id; the
-// game's bytes are never printed.
+// libm cannot round it differently. MW_EGA's start state (ega_campaign.h,
+// slice 6e) is compared byte by byte with MW_EGA.EXE, but for the ranges it
+// leaves zero on purpose. A row that differs is named by id; the game's bytes
+// are never printed.
 //
 // Needs the player's files, so ctest skips it (77) unless this is set:
-//   MW1O_GAME             a game folder (MW_MAIN.EXE, MW.EXE, BTECH.EXE)
+//   MW1O_GAME             a game folder (MW_MAIN.EXE, MW.EXE, BTECH.EXE, MW_EGA.EXE)
 //   MW1O_BTECH_REFERENCE  optional: another BTECH.EXE revision, checked too
 //   MW1O_BTECH_1990       optional: the same
 #include "native_exe.h"
 #include "mechwarrior/btech_start_image.h"
 #include "mechwarrior/combat_installation.h"
+#include "mechwarrior/ega_campaign.h"
 #include "mechwarrior/native_start.h"
 
 #include <cstring>
@@ -108,6 +111,31 @@ int main() {
     for (const char* other : {"MW1O_BTECH_REFERENCE", "MW1O_BTECH_1990"})
         if (const char* path = std::getenv(other)) btechs.insert(fs::weakly_canonical(path));
     for (const fs::path& path : btechs) check_btech(path);
+
+    // MW_EGA's start state against the exe's image; the rest of the overlay's
+    // 64K, past the file, starts zero (the exe's loader zero-filled it).
+    const std::vector<std::uint8_t> ega = load_image(find_file(game, "MW_EGA.EXE"));
+    check(!ega.empty() && ega.size() <= 0x10000, "MW_EGA.EXE is not a DOS program");
+    if (!ega.empty() && ega.size() <= 0x10000) {
+        EgaLoadStartState();
+        std::size_t same = 0, zeroed = 0;
+        for (std::uint32_t at = 0; at < 0x10000; ++at) {
+            bool skipped = false;
+            for (std::size_t i = 0; i < egaStartZeroedRangeCount; ++i)
+                skipped |= at >= egaStartZeroedRanges[i].offset &&
+                           at < std::uint32_t(egaStartZeroedRanges[i].offset) + egaStartZeroedRanges[i].byteCount;
+            const std::uint8_t expected = skipped || at >= ega.size() ? 0 : ega[at];
+            if (EgaReadOverlayByte(std::uint16_t(at)) == expected) {
+                ++same;
+                zeroed += skipped;
+            } else {
+                char what[64];
+                std::snprintf(what, sizeof what, "MW_EGA overlay byte %04X differs", unsigned(at));
+                check(false, what);
+            }
+        }
+        std::printf("%zu of 65536 MW_EGA overlay bytes as the exe's (%zu left zero on purpose)\n", same, zeroed);
+    }
     std::printf("%s\n", g_failures ? "FAILED" : "ok");
     return g_failures ? 1 : 0;
 }

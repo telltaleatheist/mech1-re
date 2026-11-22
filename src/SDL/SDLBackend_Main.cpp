@@ -31,13 +31,10 @@ static void ReleaseChildResources(void)
 }
 static bool ExecuteChild(const char *filename,const MwCampaignLaunch *launch,uint8_t audioCode,uint8_t *exitCode)
 {
-    char path[4096];
-    if (!MwHostJoinGamePath(path,sizeof(path),installationDirectory,filename)) return true;
-    FILE *file=fopen(path,"rb");
-    if (!file) return true;
-    if (fclose(file)!=0) return true;
+    /* The children's programs are ours: no exe is opened, or probed, at
+     * play (slice 6e). */
     ReleaseChildResources();
-    if (!strcmp(filename,"BTECH.EXE")) return MwSdlExecuteCombatChild(path,launch,audioCode,exitCode);
+    if (!strcmp(filename,"BTECH.EXE")) return MwSdlExecuteCombatChild(launch,audioCode,exitCode);
     if (strcmp(filename,"MW_MAIN.EXE")) MwSdlFail("Unknown launcher child executable");
     /* Fresh DOS child image on EACH execution, then0002 decides new/resume.
      * Keep input/ticks, physical video and resident exchange alive across EXEC. */
@@ -86,9 +83,7 @@ static bool LoadOverlay(const char *filename,uint16_t selector)
 {
     (void)selector;
     if (strcmp(filename,"MW_EGA.EXE")) MwSdlFail("Only the native EGA overlay is converted");
-    char path[4096];
-    if (!MwHostJoinGamePath(path,sizeof(path),installationDirectory,filename)) return true;
-    return !MwHostLoadEgaInitialData(path);
+    return !MwHostLoadEgaInitialData();
 }
 static uint16_t ResetMouse(void) {return UINT16_MAX;} /* SDL supplies the INT33-equivalent boundary. */
 static void DosString(const char *text)

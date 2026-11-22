@@ -1,6 +1,7 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/ega_campaign.h"
 #include "mechwarrior/dos_files.h"
+#include <stdio.h>
 #include <stdlib.h>
 
 /* Logical hardware state owned by the EGA adapter, not additional CS/DS bytes.
@@ -12,6 +13,28 @@ void (*egaPresentPage)(uint16_t displayPage);
 void (*egaSetVideoMode)(uint8_t mode);
 void (*egaSetPaletteRegister)(uint8_t index,uint8_t paletteCode);
 void (*egaSetPaletteTable)(const uint8_t *paletteCodes);
+
+/* The unchecked paths: a row past 200, a column past 320, a font index past
+ * 5, a glyph outside the font storage, a font name at another offset. The
+ * exe reads its neighbouring bytes there, machine code among them, which
+ * the start state leaves zero (slice 6e, an intended difference). Each path
+ * says so once on stderr, so a game that reaches one is seen, not drawn
+ * silently from zeros. Host diagnostics only: the read itself is unchanged. */
+enum { EGA_UNCHECKED_ROW, EGA_UNCHECKED_COLUMN, EGA_UNCHECKED_FONT, EGA_UNCHECKED_GLYPH, EGA_UNCHECKED_NAME,
+    EGA_UNCHECKED_PATHS };
+static bool egaUncheckedPathSeen[EGA_UNCHECKED_PATHS];
+static void EgaNoteUncheckedPath(int path, uint16_t offset)
+{
+    static const char *const names[EGA_UNCHECKED_PATHS] = {"row", "column", "font index", "glyph", "font name"};
+    if (egaUncheckedPathSeen[path]) return;
+    egaUncheckedPathSeen[path] = true;
+    fprintf(stderr, "MechWarrior: the EGA overlay's unchecked %s path read overlay offset %04X (MW_EGA.EXE's code bytes start zero here)\n",
+        names[path], (unsigned)offset);
+}
+static uint8_t EgaUncheckedByte(int path, uint16_t offset)
+{ EgaNoteUncheckedPath(path, offset); return EgaReadOverlayByte(offset); }
+static uint16_t EgaUncheckedWord(int path, uint16_t offset)
+{ EgaNoteUncheckedPath(path, offset); return EgaReadOverlayWord(offset); }
 
 /* MW_EGA0800:003D..0057. Scanline generation is a separate ordinal01. */
 void EgaInitializeGraphics(void)
@@ -74,7 +97,7 @@ bool EgaDosOpenFontFile(uint16_t filenameOffset, uint16_t *handleOrError)
     uint32_t filenameBytes = 0;
     do
     {
-        filename[filenameBytes] = (char)EgaReadOverlayByte((uint16_t)(filenameOffset + filenameBytes));
+        filename[filenameBytes] = (char)EgaUncheckedByte(EGA_UNCHECKED_NAME, (uint16_t)(filenameOffset + filenameBytes));
     } while (filename[filenameBytes++] != 0 && filenameBytes < EGA_DATA_BYTE_COUNT);
     if (filename[filenameBytes - 1] != 0) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: filename[filenameBytes - 1] != 0"); /* Unsupported unterminated DOS name. */
     return mwDosFiles.openReadWrite(filename, handleOrError);
@@ -130,9 +153,9 @@ void EgaSelectFont(uint16_t fontIndex)
     {
         /* Native has no bounds check. Invalid indices read adjacent live
          * objects in this order; this fallback is not a new clamp. */
-        selectedFontHeight = EgaReadOverlayWord((uint16_t)(EGA_FONT_HEIGHTS + tableByteOffset));
-        selectedGlyphAdvance = EgaReadOverlayWord((uint16_t)(EGA_FONT_ADVANCES + tableByteOffset));
-        selectedFontBitmapOffset = EgaReadOverlayWord((uint16_t)(EGA_FONT_BITMAPS + tableByteOffset));
+        selectedFontHeight = EgaUncheckedWord(EGA_UNCHECKED_FONT, (uint16_t)(EGA_FONT_HEIGHTS + tableByteOffset));
+        selectedGlyphAdvance = EgaUncheckedWord(EGA_UNCHECKED_FONT, (uint16_t)(EGA_FONT_ADVANCES + tableByteOffset));
+        selectedFontBitmapOffset = EgaUncheckedWord(EGA_UNCHECKED_FONT, (uint16_t)(EGA_FONT_BITMAPS + tableByteOffset));
     }
 }
 /* MW_EGA 0800:110B..110E. */
@@ -151,7 +174,7 @@ void EgaFillRectangleOnPage(uint16_t x, uint16_t y, uint16_t width, uint16_t hei
     rectangleX = x; rectangleY = y;
     rectangleWidth = width; rectangleHeight = height; rectangleColour = colour;
     uint16_t rowOffset = (y < EGA_ROWS ? scanlineOffsets[y]
-        : EgaReadOverlayWord((uint16_t)(EGA_SCANLINE_OFFSETS + (uint16_t)(y * 2)))) + (x >> 3);
+        : EgaUncheckedWord(EGA_UNCHECKED_ROW, (uint16_t)(EGA_SCANLINE_OFFSETS + (uint16_t)(y * 2)))) + (x >> 3);
     firstByteMask = rectangleLeadingMasks[x & 7];
     firstByteWidth = 8 - (x & 7);
     lastByteWidth = (uint16_t)(width - firstByteWidth) & 7;
@@ -190,7 +213,7 @@ void EgaCopyDrawPageToDisplay(uint16_t x, uint16_t y, uint16_t width, uint16_t h
     copyRectangleX = x; copyRectangleY = y;
     copyRectangleWidth = width; copyRectangleHeight = height;
     uint16_t rowOffset = (y < EGA_ROWS ? scanlineOffsets[y]
-        : EgaReadOverlayWord((uint16_t)(EGA_SCANLINE_OFFSETS + (uint16_t)(y * 2)))) + (x >> 3);
+        : EgaUncheckedWord(EGA_UNCHECKED_ROW, (uint16_t)(EGA_SCANLINE_OFFSETS + (uint16_t)(y * 2)))) + (x >> 3);
     uint8_t rowsRemaining = height;
     uint32_t sourcePage = (uint32_t)(uint16_t)(egaDrawPage - EGA_FIRST_PAGE_SELECTOR) * EGA_SELECTOR_PARAGRAPH_BYTES;
     uint32_t destinationPage = (uint32_t)(uint16_t)(egaDisplayPage - EGA_FIRST_PAGE_SELECTOR) * EGA_SELECTOR_PARAGRAPH_BYTES;
@@ -220,7 +243,7 @@ void EgaCopyDisplayToDrawPage(uint16_t x, uint16_t y, uint16_t width, uint16_t h
     copyRectangleX = x; copyRectangleY = y;
     copyRectangleWidth = width; copyRectangleHeight = height;
     uint16_t rowOffset = (y < EGA_ROWS ? scanlineOffsets[y]
-        : EgaReadOverlayWord((uint16_t)(EGA_SCANLINE_OFFSETS + (uint16_t)(y * 2)))) + (x >> 3);
+        : EgaUncheckedWord(EGA_UNCHECKED_ROW, (uint16_t)(EGA_SCANLINE_OFFSETS + (uint16_t)(y * 2)))) + (x >> 3);
     uint8_t rowsRemaining = height;
     uint32_t sourcePage = (uint32_t)(uint16_t)(egaDisplayPage - EGA_FIRST_PAGE_SELECTOR) * EGA_SELECTOR_PARAGRAPH_BYTES;
     uint32_t destinationPage = (uint32_t)(uint16_t)(egaDrawPage - EGA_FIRST_PAGE_SELECTOR) * EGA_SELECTOR_PARAGRAPH_BYTES;
@@ -249,11 +272,11 @@ uint16_t EgaDrawPackedSprite(uint16_t x, uint16_t y, uint8_t targetPage,
     uint16_t pictureOffset, uint16_t pictureBufferSelector)
 {
     uint16_t rowStartOffset = y < EGA_ROWS ? scanlineOffsets[y]
-        : EgaReadOverlayWord((uint16_t)(EGA_SCANLINE_OFFSETS + y * EGA_WORD_BYTES));
+        : EgaUncheckedWord(EGA_UNCHECKED_ROW, (uint16_t)(EGA_SCANLINE_OFFSETS + y * EGA_WORD_BYTES));
     uint8_t initialMask = (x < sizeof(xPixelMasks) ? xPixelMasks[x]
-        : EgaReadOverlayByte((uint16_t)(EGA_PIXEL_MASKS + x)));
+        : EgaUncheckedByte(EGA_UNCHECKED_COLUMN, (uint16_t)(EGA_PIXEL_MASKS + x)));
     rowStartOffset += x < EGA_COLUMNS ? xByteOffsets[x]
-        : EgaReadOverlayWord((uint16_t)(EGA_PIXEL_BYTE_OFFSETS + x * EGA_WORD_BYTES));
+        : EgaUncheckedWord(EGA_UNCHECKED_COLUMN, (uint16_t)(EGA_PIXEL_BYTE_OFFSETS + x * EGA_WORD_BYTES));
     const uint8_t *pictureData = MwResolveNativeSegment(pictureBufferSelector);
     if (pictureOffset <= NATIVE_SEGMENT_BYTE_COUNT - sizeof(PackedPictureHeader))
     {
@@ -330,7 +353,7 @@ uint16_t EgaDrawCharacter(uint16_t x, uint16_t *y, uint8_t character,
     glyphBackground = background;
     glyphBitOffset = glyphX & EGA_BYTE_LAST_BIT;
     uint16_t destinationOffset = glyphY < EGA_ROWS ? scanlineOffsets[glyphY]
-        : EgaReadOverlayWord((uint16_t)(EGA_SCANLINE_OFFSETS + glyphY * EGA_WORD_BYTES));
+        : EgaUncheckedWord(EGA_UNCHECKED_ROW, (uint16_t)(EGA_SCANLINE_OFFSETS + glyphY * EGA_WORD_BYTES));
     destinationOffset += glyphX >> EGA_PIXEL_BYTE_SHIFT;
     uint16_t glyphOffset = (uint8_t)(characterCode - EGA_FIRST_CHARACTER) * (uint8_t)selectedFontHeight + EGA_FONT_HEADER_BYTES
         + selectedFontBitmapOffset;
@@ -339,7 +362,7 @@ uint16_t EgaDrawCharacter(uint16_t x, uint16_t *y, uint8_t character,
     do
     {
         uint16_t shiftedGlyphBits = (uint16_t)(glyphOffset >= EGA_SMALL_FONT_BITMAP && glyphOffset < EGA_FONT_DATA_END
-            ? fontBitmapStorage[glyphOffset - EGA_SMALL_FONT_BITMAP] : EgaReadOverlayByte(glyphOffset)) << EGA_BYTE_BITS;
+            ? fontBitmapStorage[glyphOffset - EGA_SMALL_FONT_BITMAP] : EgaUncheckedByte(EGA_UNCHECKED_GLYPH, glyphOffset)) << EGA_BYTE_BITS;
         glyphOffset++;
         shiftedGlyphBits >>= glyphBitOffset;
         uint16_t glyphCoverageMask = EGA_GLYPH_COVERAGE_WORD >> glyphBitOffset;
@@ -394,7 +417,7 @@ setup:
     egaTextColour = color;
     glyphBitOffset = (uint8_t)(x & EGA_BYTE_LAST_BIT);
     uint16_t destinationOffset = y < EGA_ROWS ? scanlineOffsets[y]
-        : EgaReadOverlayWord((uint16_t)(EGA_SCANLINE_OFFSETS + y * EGA_WORD_BYTES));
+        : EgaUncheckedWord(EGA_UNCHECKED_ROW, (uint16_t)(EGA_SCANLINE_OFFSETS + y * EGA_WORD_BYTES));
     destinationOffset += x >> EGA_PIXEL_BYTE_SHIFT;
     for (;;)
     {
@@ -426,7 +449,7 @@ uint16_t EgaDrawTransparentCharacter(uint8_t character, uint16_t destinationOffs
     do
     {
         uint16_t shiftedGlyphBits = (uint16_t)(glyphOffset >= EGA_SMALL_FONT_BITMAP && glyphOffset < EGA_FONT_DATA_END
-            ? fontBitmapStorage[glyphOffset - EGA_SMALL_FONT_BITMAP] : EgaReadOverlayByte(glyphOffset)) << EGA_BYTE_BITS;
+            ? fontBitmapStorage[glyphOffset - EGA_SMALL_FONT_BITMAP] : EgaUncheckedByte(EGA_UNCHECKED_GLYPH, glyphOffset)) << EGA_BYTE_BITS;
         glyphOffset++;
         shiftedGlyphBits = glyphBitOffset < EGA_BYTE_BITS * EGA_WORD_BYTES
             ? (uint16_t)(shiftedGlyphBits >> glyphBitOffset) : 0;
@@ -487,11 +510,11 @@ void EgaClearDrawPage(uint8_t colour)
 void EgaDrawPixel(uint16_t x,uint16_t y,uint8_t targetPage,uint8_t colour)
 {
     uint16_t offset=y<EGA_ROWS?scanlineOffsets[y]:
-        EgaReadOverlayWord((uint16_t)(EGA_SCANLINE_OFFSETS+(uint16_t)(y*EGA_WORD_BYTES)));
+        EgaUncheckedWord(EGA_UNCHECKED_ROW, (uint16_t)(EGA_SCANLINE_OFFSETS+(uint16_t)(y*EGA_WORD_BYTES)));
     uint8_t mask=x<sizeof(xPixelMasks)?xPixelMasks[x]:
-        EgaReadOverlayByte((uint16_t)(EGA_PIXEL_MASKS+x));
+        EgaUncheckedByte(EGA_UNCHECKED_COLUMN, (uint16_t)(EGA_PIXEL_MASKS+x));
     offset+=x<EGA_COLUMNS?xByteOffsets[x]:
-        EgaReadOverlayWord((uint16_t)(EGA_PIXEL_BYTE_OFFSETS+(uint16_t)(x*EGA_WORD_BYTES)));
+        EgaUncheckedWord(EGA_UNCHECKED_COLUMN, (uint16_t)(EGA_PIXEL_BYTE_OFFSETS+(uint16_t)(x*EGA_WORD_BYTES)));
     uint16_t page=targetPage==EGA_DISPLAY_PAGE?egaDisplayPage:egaDrawPage;
     uint32_t aperture=(uint32_t)(uint16_t)(page-EGA_FIRST_PAGE_SELECTOR)*EGA_SELECTOR_PARAGRAPH_BYTES+offset;
     if (aperture>=EGA_DATA_BYTE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: aperture>=EGA_DATA_BYTE_COUNT");

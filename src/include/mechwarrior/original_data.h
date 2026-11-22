@@ -11,6 +11,7 @@
  * read (6a). A constant followed by an offset is set from native_start.h. */
 bool MwImportCampaignInitialData(void);
 bool MwImportCampaignMusicData(void);
-/* The EGA overlay, still read from MW_EGA.EXE until slice 6e. */
-bool MwHostLoadEgaInitialData(const char *executablePath);
+/* The EGA overlay's start state, set without MW_EGA.EXE (slice 6e,
+ * EgaLoadStartState). */
+bool MwHostLoadEgaInitialData(void);
 #endif

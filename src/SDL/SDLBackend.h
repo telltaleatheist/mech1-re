@@ -93,7 +93,7 @@ uint32_t MwSdlBiosTicksValue(void);
 void MwSdlInitializeCombatHardware(void);
 void MwSdlResetCombatHardware(void);
 bool MwSdlInitializeCombatProcess(const char *directory);
-bool MwSdlExecuteCombatChild(const char *path,const MwCampaignLaunch *launch,uint8_t audioCode,uint8_t *exitCode);
+bool MwSdlExecuteCombatChild(const MwCampaignLaunch *launch,uint8_t audioCode,uint8_t *exitCode);
 bool MwSdlCombatKeyboardPending(void);
 uint16_t MwSdlCombatDosAllocationCount(void);
 void MwSdlDeliverCombatKeyboardInterrupt(void);

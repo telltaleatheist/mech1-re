@@ -211,29 +211,11 @@ void MwHostCloseProcessFiles(void)
 MwDosFileCalls mwDosFiles = { HostOpenFileReadWrite, HostReadFile, HostCloseFile, HostSeekFile,HostCreateFile,HostWriteFile,
     HostGetDtaFilename,HostFindFirstSave,HostFindNextSave };
 
-bool MwHostLoadEgaInitialData(const char *executablePath)
+bool MwHostLoadEgaInitialData(void)
 {
-    uint8_t header[0x001C];
-    FILE *file=fopen(executablePath,"rb");
-    if (!file) return false;
-    uint8_t *data=NULL;
-    bool loaded=false;
-    if (fread(header,1,sizeof(header),file)!=sizeof(header)
-        || header[0]!='M' || header[1]!='Z') goto finished;
-    uint16_t headerParagraphs;headerParagraphs=(uint16_t)(header[8]|((uint16_t)header[9]<<8));
-    if ((uint32_t)headerParagraphs*0x10<sizeof(header)
-        || fseek(file,(long)headerParagraphs*0x10,SEEK_SET)!=0) goto finished;
-    data=static_cast<uint8_t *>(calloc(EGA_DATA_BYTE_COUNT,1));
-    if (!data) goto finished;
-    if (fread(data,1,EGA_DATA_BYTE_COUNT,file)<0x13DF || ferror(file)) goto finished;
-    /* Representation decoding only: the named overlay objects and unavoidable
-     * unchecked/font-code aliases all see the same original initial bytes. */
-    for (uint32_t at=0;at<EGA_DATA_BYTE_COUNT;++at)
-        EgaWriteOverlayByte((uint16_t)at,data[at]);
-    loaded=true;
-finished:
-    free(data);
-    if (fclose(file)!=0) loaded=false;
-    return loaded;
+    /* Play never opens MW_EGA.EXE: the overlay's owners start as the exe
+     * holds them, from code (slice 6e). */
+    EgaLoadStartState();
+    return EgaLoadStartStoryBytes();
 }
 

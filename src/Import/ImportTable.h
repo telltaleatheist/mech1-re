@@ -65,6 +65,9 @@ inline constexpr std::uint16_t kLoadSegment = 0x0800;
 inline constexpr std::string_view kBtechExe = "BTECH.EXE";
 inline constexpr std::uint16_t kBtechLoadSegment = 0x0810;
 
+// MW_EGA.EXE, the campaign's EGA overlay, loaded at 0800 (slice 6e).
+inline constexpr std::string_view kEgaExe = "MW_EGA.EXE";
+
 // The segment `exe`'s image is loaded at.
 constexpr std::uint16_t load_segment(std::string_view exe) {
     return exe == kBtechExe ? kBtechLoadSegment : kLoadSegment;
@@ -79,6 +82,7 @@ struct KeyRegion {
 };
 constexpr KeyRegion key_region(std::string_view exe) {
     return exe == kBtechExe ? KeyRegion{0x2C53, 0x0010, 0x1400}   // in the video code (2A36)
+         : exe == kEgaExe   ? KeyRegion{0x0800, 0x0641, 0x0490}   // the overlay's pixel, sprite and text code
                             : KeyRegion{0x081B, 0x0100, 0x1400};  // in MW_MAIN's campaign code
 }
 

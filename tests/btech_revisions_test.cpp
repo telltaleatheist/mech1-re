@@ -61,12 +61,13 @@ fs::path find_file(const fs::path& dir, const std::string& upper_name) {
     return {};
 }
 
-// A game folder with MW_MAIN.EXE and the given BTECH.EXE (copies: links need
-// privileges on Windows).
+// A game folder with MW_MAIN.EXE, MW_EGA.EXE and the given BTECH.EXE (copies:
+// links need privileges on Windows).
 fs::path game_folder(const fs::path& root, const fs::path& game, const fs::path& btech) {
     fs::remove_all(root);
     fs::create_directories(root);
     fs::copy_file(find_file(game, "MW_MAIN.EXE"), root / "MW_MAIN.EXE");
+    fs::copy_file(find_file(game, "MW_EGA.EXE"), root / "MW_EGA.EXE");
     fs::copy_file(btech, root / "BTECH.EXE");
     return root;
 }

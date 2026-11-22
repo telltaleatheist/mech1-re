@@ -1,7 +1,9 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/ega_campaign.h"
+#include "mechwarrior/story.h"
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 
 /* MW_EGA CS/DS 0800 owns these recovered globals and tables. Ordinary game
  * access uses their names, not a synthetic segment pointer or WORD adapter. */
@@ -134,6 +136,81 @@ static const EgaOverlayByteSpan overlayByteSpans[] =
     { 0x13BD, EGA_PALETTE_ENTRIES, alternatePaletteCodes, NULL },
     { 0x13CE, 0xEC32, egaTailCodeBytes, NULL },
 };
+
+/* MW_EGA's start state (docs/phase2/PLAN.md 8.5, slice 6e): every overlay
+ * owner as the exe holds it when the overlay loads, set without reading the
+ * exe. MW_EGA.EXE has one revision (both game copies hold the same file).
+ * - The pixel tables are generated (x>>3, 0x80>>(x&7)), the rectangle edge
+ *   masks too; the scanline table is zero (startup's ordinal 01 builds it).
+ * - The pages, the selected font, the font table and the two palettes are
+ *   code constants (decision 1, platform tables); the font file names are
+ *   file names (class E). The exe's bytes after each name's NUL are never
+ *   read (the open copies up to the NUL) and start zero here.
+ * - The machine-code spans are zero. An unchecked read reaches them only
+ *   past a table; over the 8 traces play reads one word there, the row-200
+ *   scanline lookup's (0233), which EgaLoadStartStoryBytes takes from the
+ *   story (measured, PLAN 8.5). The exe holds an offset past the page there;
+ *   zero would draw on row 0.
+ * - Everything else is zero in the exe and zero here.
+ * start_exe_test compares every byte with MW_EGA.EXE but the code spans and
+ * the name tails. Names and numbers only: no MW1 text. */
+static const char kSmallFontFilename[8]="\x36\x58\x36\x2E\x46\x4E\x54";
+static const char kLargeFontFilename[10]="\x46\x4F\x58\x38\x38\x2E\x46\x4E\x54";
+static const uint16_t kFontHeights[5]={0x0006,0x0008,0x0008,0x0008,0x0008};
+static const uint16_t kFontAdvances[5]={0x0006,0x0008,0x0008,0x0008,0x0008};
+static const uint16_t kFontBitmapOffsets[5]={0x0B03,0x0D5B,0x0D5C,0x0D5D,0x107D};
+static const uint8_t kDefaultPaletteCodes[EGA_PALETTE_ENTRIES]={0x05,0x00,0x17,0x07,0x10,0x13,0x11,0x01,0x14,0x04,0x12,0x03,0x02,0x16,0x06,0x15,0x00};
+static const uint8_t kAlternatePaletteCodes[EGA_PALETTE_ENTRIES]={0x00,0x10,0x17,0x03,0x15,0x05,0x07,0x13,0x07,0x07,0x13,0x17,0x07,0x07,0x07,0x07,0x00};
+
+void EgaLoadStartState(void)
+{
+    for (size_t spanIndex = 0; spanIndex < sizeof(overlayByteSpans) / sizeof(overlayByteSpans[0]); ++spanIndex)
+    {
+        const EgaOverlayByteSpan *span = &overlayByteSpans[spanIndex];
+        if (span->words != NULL) memset(span->words, 0, span->byteCount);
+        else memset(span->bytes, 0, span->byteCount);
+    }
+    egaDisplayPage = EGA_FIRST_PAGE_SELECTOR;
+    egaDrawPage = EGA_SECOND_PAGE_SELECTOR;
+    for (uint16_t x = 0; x < EGA_COLUMNS; ++x)
+    {
+        xByteOffsets[x] = (uint16_t)(x >> EGA_PIXEL_BYTE_SHIFT);
+        xPixelMasks[x] = (uint8_t)(EGA_BYTE_HIGH_BIT >> (x & EGA_BYTE_LAST_BIT));
+    }
+    for (uint16_t bit = 0; bit < EGA_PIXELS_PER_BYTE; ++bit)
+    {
+        rectangleLeadingMasks[bit] = (uint8_t)(0xFF >> bit);
+        rectangleTrailingMasks[bit] = (uint8_t)(0xFF00 >> bit);
+    }
+    selectedFontHeight = kFontHeights[0];
+    selectedGlyphAdvance = kFontAdvances[0];
+    selectedFontBitmapOffset = kFontBitmapOffsets[0];
+    memcpy(smallFontFilename, kSmallFontFilename, sizeof(kSmallFontFilename));
+    memcpy(largeFontFilename, kLargeFontFilename, sizeof(kLargeFontFilename));
+    memcpy(egaFontHeights, kFontHeights, sizeof(kFontHeights));
+    memcpy(fontAdvances, kFontAdvances, sizeof(kFontAdvances));
+    memcpy(fontBitmapOffsets, kFontBitmapOffsets, sizeof(kFontBitmapOffsets));
+    memcpy(defaultPaletteCodes, kDefaultPaletteCodes, sizeof(kDefaultPaletteCodes));
+    memcpy(alternatePaletteCodes, kAlternatePaletteCodes, sizeof(kAlternatePaletteCodes));
+}
+/* The row-200 word from the story (ega.row_200_offset, story/native.json):
+ * the bytes past the scanline table, which play reads. False if the story
+ * has no such span. */
+bool EgaLoadStartStoryBytes(void)
+{
+    return MwStoryCopyBytes("ega.row_200_offset", egaPaletteCodeBytes, EGA_WORD_BYTES);
+}
+/* The overlay's machine-code spans and the font names' unread tails, which
+ * the start state leaves zero (start_exe_test skips them; the row-200 word
+ * at 0233 is the story's, filled after it). */
+const EgaOverlayRange egaStartZeroedRanges[] =
+{
+    { 0x0000, 0x0058 }, { 0x005C, 0x0047 }, { 0x0233, 0x004E }, { 0x0641, 0x0070 }, { 0x06B5, 0x00C3 },
+    { 0x077E, 0x0004 }, { 0x078B, 0x0113 }, { 0x08BF, 0x00FC }, { 0x09C2, 0x010E },
+    { 0x0AD4 + 8, 0x001A - 8 }, { 0x0AEE + 10, 0x0015 - 10 },
+    { 0x107E, 0x0051 }, { 0x10EF, 0x0025 }, { 0x111C, 0x00EA }, { 0x120F, 0x019D }, { 0x13CE, 0x0011 },
+};
+const size_t egaStartZeroedRangeCount = sizeof(egaStartZeroedRanges) / sizeof(egaStartZeroedRanges[0]);
 
 uint8_t EgaReadOverlayByte(uint16_t offset)
 {

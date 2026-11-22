@@ -161,10 +161,9 @@ bool MwSdlInitializeCombatProcess(const char *directory)
     btechHostCloseHandle=CloseHandle;btechHostWriteHandle=WriteHandle;btechHostTerminateChild=TerminateChild;
     return true;
 }
-bool MwSdlExecuteCombatChild(const char *path,const MwCampaignLaunch *launch,uint8_t audioCode,uint8_t *exitCode)
+bool MwSdlExecuteCombatChild(const MwCampaignLaunch *launch,uint8_t audioCode,uint8_t *exitCode)
 {
     if (childActive) MwSdlFail("Nested BTECH EXEC");
-    (void)path; /* BTECH.EXE itself is never opened at play (slice 6d). */
     if (!BtechHostLoadInitialData()) return true;
     MwSdlResetCombatHardware();mwSdlCombatActive=true;
     MwSdlUpdateWindowTitle();

@@ -4,13 +4,13 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 
 | Group | Items |
 |---|---|
-| Extracted: the original's creative content (the story file, first run) | 89 |
+| Extracted: the original's creative content (the story file, first run) | 90 |
 | Ours: UI words and system messages (story/words.json, imported) | 142 |
 | Ours: screen layout, panels and menus (data/ui/*.json) | 127 |
 | Ours: rules and constants (data/rules/*.json) | 102 |
 | Ours: the new campaign's starting state (data/rules/new_campaign.json) | 103 |
 | Dropped | 6 |
-| Code: runtime state and renderer tables (no file) | 943 |
+| Code: runtime state and renderer tables (no file) | 949 |
 
 ## Extracted: the original's creative content (the story file, first run)
 
@@ -23,6 +23,7 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 | BTECH_304E_COCKPIT.cpp | `missionTitleText` | BTECH 304E:09F0 | story combat.mission.1.title |
 | BTECH_304E_COCKPIT.cpp | `pilotDefinitionNameDirectory` | BTECH 304E:20AD | story combat.pilot.1.name |
 | BTECH_304E_COCKPIT.cpp | `pilotDefinitionNames` | BTECH 304E:20AD | story combat.pilot.1.name |
+| MW_EGA_0800_STATE.cpp | `egaPaletteCodeBytes` | MW_EGA 0800:0233 | story ega.row_200_offset |
 | MW_MAIN_1090.cpp | `afterActionGeneralFailure` | MW_MAIN 1090:159B | story after_action.failure.general |
 | MW_MAIN_1090.cpp | `afterActionGeneralSuccess` | MW_MAIN 1090:1742 | story after_action.success.general |
 | MW_MAIN_1090.cpp | `afterActionKuritaFailure` | MW_MAIN 1090:149B | story after_action.failure.kurita |
@@ -613,7 +614,7 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 
 ## Code: runtime state and renderer tables (no file)
 
-Not listed one by one: BTECH_0810_STATE.cpp 1, BTECH_1ADF_STATE.cpp 2, BTECH_1BF5_STATE.cpp 5, BTECH_22B6_DATA.cpp 15, BTECH_2FEB.cpp 24, BTECH_304E.cpp 31, BTECH_304E_ADLIB.cpp 25, BTECH_304E_COCKPIT.cpp 36, BTECH_304E_MPU.cpp 10, BTECH_304E_ORDERS.cpp 24, BTECH_304E_POLYGONS.cpp 24, BTECH_304E_POSE.cpp 12, BTECH_304E_RENDER.cpp 62, BTECH_304E_RUNTIME.cpp 17, BTECH_304E_SCENE.cpp 8, BTECH_304E_SOUND.cpp 43, BTECH_304E_STARTUP.cpp 51, BTECH_304E_VIDEO.cpp 86, BTECH_304E_WORLD.cpp 105, BtechStartImage.cpp 4, MW_0806_STATE.cpp 1, MW_EGA_0800_STATE.cpp 66, MW_MAIN_0F41_STATE.cpp 5, MW_MAIN_1090.cpp 250, MW_MAIN_1090_OPTIONS.cpp 11, MW_MAIN_1AA5.cpp 1, MW_MAIN_28BE.cpp 19, NativeStart.cpp 5.
+Not listed one by one: BTECH_0810_STATE.cpp 1, BTECH_1ADF_STATE.cpp 2, BTECH_1BF5_STATE.cpp 5, BTECH_22B6_DATA.cpp 15, BTECH_2FEB.cpp 24, BTECH_304E.cpp 31, BTECH_304E_ADLIB.cpp 25, BTECH_304E_COCKPIT.cpp 36, BTECH_304E_MPU.cpp 10, BTECH_304E_ORDERS.cpp 24, BTECH_304E_POLYGONS.cpp 24, BTECH_304E_POSE.cpp 12, BTECH_304E_RENDER.cpp 62, BTECH_304E_RUNTIME.cpp 17, BTECH_304E_SCENE.cpp 8, BTECH_304E_SOUND.cpp 43, BTECH_304E_STARTUP.cpp 51, BTECH_304E_VIDEO.cpp 86, BTECH_304E_WORLD.cpp 105, BtechStartImage.cpp 4, MW_0806_STATE.cpp 1, MW_EGA_0800_STATE.cpp 72, MW_MAIN_0F41_STATE.cpp 5, MW_MAIN_1090.cpp 250, MW_MAIN_1090_OPTIONS.cpp 11, MW_MAIN_1AA5.cpp 1, MW_MAIN_28BE.cpp 19, NativeStart.cpp 5.
 
 Still read from the exe (slice 6 moves them): none.
 

@@ -12,7 +12,8 @@
 //                         folder's other exes)
 //   MW1O_MAIN_1989        optional: the 1989-11-03 MW_MAIN.EXE, imported as well
 //                         (the story and MW_MAIN's importers, from a scratch
-//                         folder holding it and the game folder's BTECH.EXE)
+//                         folder holding it and the game folder's BTECH.EXE
+//                         and MW_EGA.EXE)
 // Arguments: <data dir> <scratch dir>. Prints steps only, never game bytes.
 #include <cctype>
 #include <cstdio>
@@ -102,6 +103,7 @@ int main(int argc, char** argv) {
         fs::create_directories(folder);
         fs::create_directories(write);
         fs::copy_file(main1989, folder / "MW_MAIN.EXE");
+        fs::copy_file(find_file(game, "MW_EGA.EXE"), folder / "MW_EGA.EXE");
         fs::copy_file(btech_exe, folder / "BTECH.EXE");
         step(MwHostPrepareStory(folder.string().c_str(), write.string().c_str()), "story, the 1989 MW_MAIN");
         if (!g_failed) {

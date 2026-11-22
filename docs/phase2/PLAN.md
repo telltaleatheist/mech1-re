@@ -1901,8 +1901,53 @@ mingw check.
   - **Gate.** Fresh Release build; ctest 13 of 13 in both setups; traces
     8 of 8; mingw clean on the changed files. The inventory has no item
     still read from the exe.
-- **6e, MW_EGA.** Which overlay spans are ever read, then imported or zeroed.
-  `LoadOverlay` stops opening MW_EGA.EXE; `ExecuteChild`'s existence probes go.
+- **6e, MW_EGA: no exe at play.**
+
+  Done (branch `phase2-noexe-e`).
+  - **The start state.** MW_EGA.EXE has one revision (the same file in both
+    folders): a 0x13DF-byte image, the rest of its 64K overlay zero.
+    `EgaLoadStartState` (MW_EGA_0800_STATE.cpp) sets every overlay owner as
+    the exe holds it at load, from code: the pixel byte offsets and masks
+    and the rectangle edge masks are generated (x>>3, 0x80>>(x&7), 0xFF>>i
+    and 0xFF00>>i); the pages, the selected font, the five fonts' heights,
+    advances and bitmap offsets and the two 17-entry palettes are code
+    constants (decision 1, platform tables, like 6c's colours); the two font
+    names are file names; the scanline table and everything else are zero,
+    as in the exe (startup's ordinal 01 builds the scanlines).
+    `start_exe_test` compares all 65,536 overlay bytes with MW_EGA.EXE but
+    the ranges below.
+  - **The code bytes.** The overlay's machine code (15 spans) and the bytes
+    after each font name's NUL start zero: an intended difference. Play
+    reaches them only through the unchecked paths (a row past 200, a column
+    past 320, a font index past 5, a glyph outside the font storage, a font
+    name at another offset). Measured over the 8 traces with a read tracker
+    (every overlay byte read before anything wrote it): one word is read,
+    the row-200 scanline lookup's at 0233 (in `company`), and that word is a
+    story native span, `ega.row_200_offset`, filled after the start state
+    (the exe holds an offset past the page there; zero would draw on row 0).
+    Nothing else in the zeroed ranges is read. Each unchecked path says so
+    once on stderr (`EgaNoteUncheckedPath`), so a game that reaches one is
+    seen in the log rather than drawn silently from zeros; the read is
+    unchanged.
+  - **No exe opened at play.** `MwHostLoadEgaInitialData` takes no path and
+    opens nothing; `ExecuteChild` no longer probes the child's exe before
+    the EXEC, and `MwSdlExecuteCombatChild` takes no path. The import reads
+    MW_EGA.EXE for its one span (key region 0800:0641, 0x490 bytes: the
+    pixel, sprite and text code); the tests that build partial game folders
+    copy it.
+  - **The proof.** The read tracker above. Probe builds of 6d and 6e on
+    `company`, every global compared after each loader, on both folders:
+    the EGA load introduces exactly the code-byte arrays and the names'
+    tails, no other owner; no other loader introduces a difference. Then
+    MW_EGA.EXE overwritten with 0xEE after the import: on the 1990 folder 6e
+    gives 8 of 8 traces and 6d 0 of 8 (every run stops at the overlay load);
+    on the 1989 folder 6e gives what it gives clean (6 of 8: the two combat
+    traces never match the goldens there; both combats return) and 6d 0 of
+    8, stopping the same way.
+  - **Gate.** Fresh Release build, 0 warnings; ctest 13 of 13 in both
+    setups; traces 8 of 8; mingw clean on the changed files;
+    `start_exe_test`: 65,536 of 65,536 overlay bytes as the exe's (2,156 of
+    them the zeroed ranges).
 - **6f, the test, the guard and the docs.** `exe_free_test` in ctest,
   skipped without `MW1O_GAME`: copy the game folder to scratch, import with
   the exes present, delete every `*.EXE` from the copy, then run
@@ -1910,3 +1955,9 @@ mingw check.
   exe opened outside the importer, naming the file and the caller; a break
   check re-adds one read and the test must fail, naming it. The 1989 folder
   runs the smoke in decision 4.
+  - The trace recorder on the 1989 folder: its combat traces never match
+    the goldens (they are the 1990 build's), and in 6d's poison proof the
+    6c build's recorded snapshots came out the same poisoned and clean
+    though its poisoned run failed to read BTECH.EXE; only the run logs
+    told the builds apart. Find why the recorder misses that, so the
+    final guard has teeth on both folders.

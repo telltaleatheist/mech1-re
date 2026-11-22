@@ -114,6 +114,16 @@ extern uint16_t fontBitmapOffsets[0x0005];
 uint8_t EgaReadOverlayByte(uint16_t offset);
 void EgaWriteOverlayByte(uint16_t offset, uint8_t value);
 uint16_t EgaReadOverlayWord(uint16_t offset);
+/* Sets every overlay owner as MW_EGA.EXE holds it when the overlay loads,
+ * without the exe (slice 6e, Memory/MW_EGA_0800_STATE.cpp). The ranges are
+ * the exe's bytes it leaves zero: machine code and the font names' unread
+ * tails. */
+void EgaLoadStartState(void);
+/* Then the one span of the overlay's code play reads, from the story. */
+bool EgaLoadStartStoryBytes(void);
+typedef struct EgaOverlayRange { uint16_t offset, byteCount; } EgaOverlayRange;
+extern const EgaOverlayRange egaStartZeroedRanges[];
+extern const size_t egaStartZeroedRangeCount;
 /* Logical aperture/controller projection owned by Video/MW_EGA_0800.c,
  * not additional serialized overlay fields. */
 extern uint8_t egaVideoPixels[EGA_VIDEO_PIXEL_COUNT];
