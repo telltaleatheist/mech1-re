@@ -94,6 +94,11 @@ inline constexpr std::size_t kAmmoFamilies = 6;
 // REPAIR_WEAPON_PRICE_WORD_COUNT): the lists, in unit order, must fit.
 inline constexpr std::size_t kAmmoProfileEntries = 15;
 inline constexpr std::size_t kWeaponRepairPrices = 62;
+// The exe's storage for the mechs each ammo family fits (1090:3F9F, each list
+// ended by 0xFFFF) and the Houses' contract planet groups (1090:4B8A).
+inline constexpr std::size_t kAmmoFamilyMechBytes = 36;
+inline constexpr std::size_t kContractPlanetGroupBytes = 0x66;
+inline constexpr std::uint8_t kPlanetGroupEnd = 0xFF, kHouseGroupsEnd = 0xFE;
 
 struct AmmoProfileEntry {
     std::uint16_t family = 0, quantity_maximum = 0;
@@ -112,6 +117,8 @@ struct Units {
     std::array<Mech, kMechKinds> mechs;
     std::array<std::uint16_t, kUnitKinds.size()> base_prices{};
     std::array<std::uint8_t, kUnitKinds.size()> condition_score_divisors{};
+    // Per ammo family, the mech kinds (kUnitKinds indices) its ammunition fits.
+    std::array<std::vector<std::uint8_t>, kAmmoFamilies> ammo_family_mechs;
 };
 
 struct StockKindRange {
@@ -153,6 +160,8 @@ struct House {
     std::array<std::uint8_t, kTargetColumns> mission_type_limits{};
     // Planet ids from 1, or kNoPlanet.
     std::array<std::array<std::uint8_t, kPlanetChoices>, kTargetColumns> mission_planet_policy{};
+    // The contract office's planet groups: planet ids from 1 (not 0xFE, 0xFF).
+    std::vector<std::vector<std::uint8_t>> contract_planet_groups;
 };
 
 // CampaignPilotSkillTier, in order.
@@ -242,6 +251,8 @@ inline constexpr std::string_view kCommanderNameText = "commander.default_name";
 
 struct NewCampaign {
     std::array<std::uint8_t, kSaveBlockBytes> block{};  // the commander's name left zero
+    // "start": the random generator's two words as a fresh EXEC starts them.
+    std::array<std::uint16_t, 2> random_seed{};
 };
 
 struct Rules {

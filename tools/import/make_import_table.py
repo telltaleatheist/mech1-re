@@ -3,8 +3,9 @@
 src/Import/word_pieces.txt and the player's exes: each piece's id, exe,
 SEG:OFF, length and the first 16 hex digits of its keyed hash (HMAC-SHA-256
 under the SHA-256 of its exe's key region, as src/Import/ImportTable.h's
-key_region), so a short piece can't be found from its hash. Prints nothing
-from the exes but lengths and hashes.
+key_region), so a short piece can't be found from its hash. In pieces.txt a
+fifth column "native" marks a native span (a byte count, written to
+story/native.json). Prints nothing from the exes but lengths and hashes.
 
     tools/import/make_import_table.py [--rules | --ui] GAME_DIR [BTECH_IMAGE_TOOL]
 
@@ -135,11 +136,12 @@ def main():
         word = source == WORD_PIECES
         for number, fields in rows_of(source):
             tuned = rules and len(fields) == 5 and fields[4] == "tuned"
-            if len(fields) != (5 if tuned else 4):
+            native = not rules and not word and len(fields) == 5 and fields[4] == "native"
+            if len(fields) != (5 if tuned or native else 4):
                 sys.exit(f"{name}:{number}: expected id, exe, SEG:OFF and length")
             piece_id, exe, address, length = fields[:4]
-            if rules and length == "z":
-                sys.exit(f"{name}:{number}: a {own[6]} piece has a byte count")
+            if (rules or native) and length == "z":
+                sys.exit(f"{name}:{number}: a {own[6] if rules else 'native'} piece has a byte count")
             segment, offset = (int(part, 16) for part in address.split(":"))
             if exe not in images:
                 images[exe] = btech_image(tool, find(game_dir, exe)) if exe == BTECH_EXE else image(find(game_dir, exe))
@@ -168,7 +170,8 @@ def main():
                 rows.append(f'    {{"{piece_id}", "{exe}", 0x{segment:04X}, 0x{offset:04X}, {size}, "{kept}"}},')
                 print(f"{piece_id:32} {exe} {segment:04X}:{offset:04X} {size:5} {digest}{' (tuned)' if tuned else ''}")
                 continue
-            kind = ("Word" if length == "z" else "WordBytes") if word else ("String" if length == "z" else "Bytes")
+            kind = ("Word" if length == "z" else "WordBytes") if word else \
+                "Native" if native else ("String" if length == "z" else "Bytes")
             rows.append(f'    {{ImportPiece::Kind::{kind}, "{piece_id}", "{exe}", 0x{segment:04X}, 0x{offset:04X}, '
                         f'{size}, "{digest}"}},')
             print(f"{piece_id:24} {exe} {segment:04X}:{offset:04X} {size:5} {digest}")

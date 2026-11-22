@@ -4,6 +4,7 @@
 #include "mechwarrior/campaign_pilots.h"
 #include "MW_MAIN_1090_LAYOUT.h"
 #include "mechwarrior/story.h"
+#include "mechwarrior/native_start.h"
 #include <string.h>
 
 MwPanelDescriptor optionsPanel,restorePanel,confirmationPanel,newsMenuPanel;
@@ -30,9 +31,8 @@ MwUiMenu restoreMenu={restoreRecords,CAMPAIGN_SAVE_ROWS+1,&restoreNavigationProb
 MwUiMenu confirmationMenu={confirmationRecords,2,&confirmationNavigationProbe};
 MwUiMenu newsMenu={newsRecords,CAMPAIGN_NEWS_ROWS,&newsNavigationProbe};
 
-bool MwImportCampaignOptionsData(const uint8_t *data,size_t byteCount)
+bool MwImportCampaignOptionsData(void)
 {
-    if (!data || byteCount<NATIVE_SEGMENT_BYTE_COUNT) return false;
     static const char *const optionIds[CAMPAIGN_OPTIONS_ROWS]={"options.caption.save","options.caption.restore",
         "options.caption.sound","options.caption.detail","options.caption.restart","options.caption.quit","options.caption.continue"};
     static const char *const confirmationIds[4]={"options.caption.confirm_quit","options.caption.confirm_restart",
@@ -64,11 +64,14 @@ bool MwImportCampaignOptionsData(const uint8_t *data,size_t byteCount)
         || !MwImportUiMenu("options.menu.confirmation",&confirmationMenu,owners,count)
         || !MwImportUiMenu("options.menu.news",&newsMenu,owners,count)) return false;
     barMenu.sentinelEnabled=&optionsMenu.records[5].rightRecordIndex; /*1090:9E3E*/
-    optionsNavigationProbe=data[0xABDD];restoreNavigationProbe=data[0xAD6D];
-    confirmationNavigationProbe=data[0xAB26];newsNavigationProbe=data[0x332A];
+    /* The menus' past-end probes (story/native.json, src/Import/pieces.txt). */
+    if (!MwStoryCopyBytes("probe.options",&optionsNavigationProbe,1)
+        || !MwStoryCopyBytes("probe.restore",&restoreNavigationProbe,1)
+        || !MwStoryCopyBytes("probe.confirmation",&confirmationNavigationProbe,1)
+        || !MwStoryCopyBytes("probe.news",&newsNavigationProbe,1)) return false;
     saveFileHandle=0; /*A04C*/saveFileCount=0; /*A04E*/
     memset(selectedSaveFilename,0,sizeof(selectedSaveFilename)); /*A064*/
-    memcpy(saveFindPattern,data+0xA056,sizeof(saveFindPattern));
+    memcpy(saveFindPattern,mwSaveFindPattern,sizeof(saveFindPattern)); /*A056*/
     /* The screen's words, from story/words.json (options.word.*), as the exe holds them. */
     if (!MwWordsCopyBlock("options.word.save_prompt",saveNamePrompt,sizeof(saveNamePrompt))
         || !MwWordsCopyBlock("options.word.audio_labels",reinterpret_cast<uint8_t *>(audioOptionLabels),sizeof(audioOptionLabels))

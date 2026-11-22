@@ -72,7 +72,8 @@ FIELDS={m.group(1):int(m.group(2),16) for m in re.finditer(r'\{"([\w.]+)", 0x([0
 ALIAS={m.group(1):m.group(2) for p in glob.glob(os.path.join(ROOT,'src','include','mechwarrior','*.h'))
        for m in re.finditer(r'#define\s+(\w+)\s+(\w+)\.',open(p).read())}
 # Items a door fills through a local copy (signed words, double words, rows).
-VIA={'mechFallbackTemplateSteps':'rule combat.fallback_template_steps','mechTemplateBudgetCostsBytes':'rule combat.template_budget_costs',
+VIA={'randomStateWord0':'rule new_campaign.start.random_seed','randomStateWord1':'rule new_campaign.start.random_seed',
+     'mechFallbackTemplateSteps':'rule combat.fallback_template_steps','mechTemplateBudgetCostsBytes':'rule combat.template_budget_costs',
      'missileClusterRowByWeapon':'rule weapons.missile_cluster_rows','weaponDefinitions':'rule weapons.definitions',
      'mechTemplates':'rule mechs.templates','mechTemplateNames':'story combat.mech_template.1.name',
      'pilotDefinitionNames':'story combat.pilot.1.name','pilotDefinitionNameDirectory':'story combat.pilot.1.name',
@@ -228,7 +229,10 @@ OVR.update({'mountedWeaponCountsByKind':'code','operationalWeaponCountsByKind':'
             'twoHitSystemConditionLabelIndices':'ours:ui','orderDisplayIndices':'ours:ui'})
 # Items still read straight from the exe, with the slice that will move them
 # (docs/phase2/PLAN.md 3, 2g).
-OWNER={'missionTitleText':'story 2g, not yet moved','contractOfficePlanetGroupStorage':'story 2g, not yet moved'}
+OWNER={'missionTitleText':'story 2g, not yet moved'}
+# Importers that decode a native span of the story (story/native.json) rather
+# than the exe: an item they read is extracted, at the span's exe offset.
+SPANS={'MW_MAIN_28BE.cpp':('music.driver','MW_MAIN 28BE')}
 GROUP_OF_SOURCE={'story':'extracted','builder':'extracted','rule':'ours:rules','field':'ours:start','ui':'ours:layout','ui-caption':'ours:ui','word':'ours:ui'}
 rows2=[]
 for f,name,off,n,src in rows:
@@ -236,6 +240,10 @@ for f,name,off,n,src in rows:
     if src:
         c=GROUP_OF_SOURCE[src.split(' ',1)[0]]
         rows2.append((c,f,name,where(src),src.replace('field ','new_campaign.json ').replace('builder ','story, ').replace('ui-caption ','ui, head ').replace('word ','words, ')))
+        continue
+    if f in SPANS and off!='-':
+        span,base=SPANS[f]
+        rows2.append(('extracted',f,name,f'{base}:{off[2:]}',f'story, {span} (native span)'))
         continue
     c=OVR.get(name) or cls(name,off,n)
     if c=='?' : c='code'
@@ -248,7 +256,7 @@ G=[('extracted','Extracted: the original\'s creative content (the story file, fi
    ('ours:layout','Ours: screen layout, panels and menus (data/ui/*.json)'),('ours:rules','Ours: rules and constants (data/rules/*.json)'),
    ('ours:start','Ours: the new campaign\'s starting state (data/rules/new_campaign.json)'),('dropped','Dropped'),('code','Code: runtime state and renderer tables (no file)')]
 cnt=collections.Counter(r[0] for r in rows2)
-print('# Phase 2 inventory\n\nGenerated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-scope item). An item read through a door shows where it now comes from: a story piece, a rule piece, a layout piece, a UI word, or a save codec field of `new_campaign.json`, with the exe offset those tables give. Any other item shows the first native offset its importer reads, or `-` for runtime state with no import; its group names the slice that moves it, and the two story items not yet moved name theirs. The groups follow `docs/phase2/PLAN.md`. Names and offsets only: no MW1 text.\n')
+print('# Phase 2 inventory\n\nGenerated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-scope item). An item read through a door shows where it now comes from: a story piece, a rule piece, a layout piece, a UI word, or a save codec field of `new_campaign.json`, with the exe offset those tables give. Any other item shows the first native offset its importer reads, or `-` for runtime state with no import; its group names the slice that moves it, and the story item not yet moved names its slice. An item an importer decodes from a native span of the story (`story/native.json`) shows the span and the exe offset it holds. The groups follow `docs/phase2/PLAN.md`. Names and offsets only: no MW1 text.\n')
 print('| Group | Items |\n|---|---|')
 for k,t in G: print(f'| {t} | {cnt[k]} |')
 for k,t in G:

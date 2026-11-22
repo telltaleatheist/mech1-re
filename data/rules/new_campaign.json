@@ -103,5 +103,6 @@
   "playerSkillProgress": 0,
   "darkWingBaseVictoryRecorded": 0,
   "launcherMemoryTier": 0,
-  "savedVideoMode": 0
+  "savedVideoMode": 0,
+  "start": {"random_seed": [1557, 6536]}
 }

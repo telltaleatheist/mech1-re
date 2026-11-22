@@ -12,6 +12,10 @@ bool MwHostPrepareStory(const char *gameDirectory, const char *writeDirectory);
 /* Copies the story text `id` into `text` and zeroes the rest of the buffer.
  * False (with the reason on stderr) if there is no such text or it doesn't fit. */
 bool MwStoryCopyText(const char *id, char *text, size_t capacity);
+/* Copies the native span `id` (story/native.json, docs/phase2/PLAN.md 8.3),
+ * whose length must be `size`. False (with the reason on stderr) if there is
+ * no such span or its length differs. */
+bool MwStoryCopyBytes(const char *id, uint8_t *bytes, size_t size);
 /* The UI words (docs/phase2/PLAN.md section 7), from story/words.json, as
  * the exe holds them. MwWordsCopyText copies a string word into `text` and
  * zeroes the rest of the buffer; MwWordsCopyBlock copies a block word, whose

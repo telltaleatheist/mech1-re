@@ -20,7 +20,8 @@
         [null, null, null, null, null, null, null, null],
         [3, 4, 5, 30, 3, 4, 5, 30],
         [3, 4, 5, 30, 3, 4, 5, 30]
-      ]
+      ],
+      "contract_planet_groups": [[2, 15, 13], [1, 4, 14, 23], [24, 10, 26], [6, 11, 28], [12, 17, 21]]
     },
     "steiner": {
       "advance_base_percent": 10,
@@ -42,7 +43,8 @@
         [35, 57, 36, 35, 57, 36, 35, 57],
         [50, 51, 50, 51, 50, 51, 50, 51],
         [null, null, null, null, null, null, null, null]
-      ]
+      ],
+      "contract_planet_groups": [[31, 40, 43, 58], [32, 46, 54], [34, 47, 56], [37, 49, 55], [42, 52, 59]]
     },
     "marik": {
       "advance_base_percent": 15,
@@ -64,7 +66,8 @@
         [64, 73, 86, 64, 73, 86, 64, 73],
         [null, null, null, null, null, null, null, null],
         [null, null, null, null, null, null, null, null]
-      ]
+      ],
+      "contract_planet_groups": [[62, 67, 77, 86, 65, 65, 70, 79, 88, 71, 61, 69, 80, 89, 83, 63, 74, 81, 90]]
     },
     "liao": {
       "advance_base_percent": 20,
@@ -86,7 +89,8 @@
         [null, null, null, null, null, null, null, null],
         [null, null, null, null, null, null, null, null],
         [null, null, null, null, null, null, null, null]
-      ]
+      ],
+      "contract_planet_groups": [[97, 102, 112], [94, 104, 110], [98, 95], [92, 100, 115], [91, 101, 105]]
     },
     "davion": {
       "advance_base_percent": 25,
@@ -108,7 +112,8 @@
         [null, null, null, null, null, null, null, null],
         [null, null, null, null, null, null, null, null],
         [124, 132, 137, 124, 132, 137, 124, 132]
-      ]
+      ],
+      "contract_planet_groups": [[117, 121, 133], [118, 123, 136], [119, 126, 139], [120, 129, 140], [116, 131, 142, 143]]
     }
   }
 }

@@ -28,6 +28,17 @@ namespace {
 fs::path manifest_path(const fs::path& write_dir) { return story_dir(write_dir) / "import.json"; }
 fs::path text_path(const fs::path& write_dir) { return story_dir(write_dir) / "text.json"; }
 fs::path words_path(const fs::path& write_dir) { return story_dir(write_dir) / "words.json"; }
+fs::path native_path(const fs::path& write_dir) { return story_dir(write_dir) / "native.json"; }
+
+std::string hex_of(std::string_view bytes) {
+    static const char digits[] = "0123456789abcdef";
+    std::string out;
+    for (unsigned char c : bytes) {
+        out += digits[c >> 4];
+        out += digits[c & 15];
+    }
+    return out;
+}
 // The typed records (Records.h), beside the text.
 constexpr const char* kRecordFiles[] = {"pilots.json", "planets.json", "missions.json", "event_text.json",
                                         "events.json", "music.json"};
@@ -150,7 +161,7 @@ fs::path story_dir(const fs::path& write_dir) { return write_dir / "story"; }
 StoryState story_state(const fs::path& write_dir, std::span<const ImportPiece> table) {
     std::error_code ec;
     if (!fs::exists(manifest_path(write_dir), ec) || !fs::exists(text_path(write_dir), ec) ||
-        !fs::exists(words_path(write_dir), ec))
+        !fs::exists(words_path(write_dir), ec) || !fs::exists(native_path(write_dir), ec))
         return StoryState::Missing;
     for (const char* name : kRecordFiles)
         if (!fs::exists(story_dir(write_dir) / name, ec)) return StoryState::Missing;
@@ -171,7 +182,7 @@ void import_story(const fs::path& game_dir, const fs::path& write_dir, std::span
     std::map<std::string, Exe, std::less<>> exes;
     std::map<std::string, std::string, std::less<>> keys;
     std::vector<std::string> refused;
-    std::string texts, words;
+    std::string texts, words, natives;
     PieceMap pieces;
     for (const auto& piece : table) {
         auto it = exes.find(piece.exe);
@@ -195,6 +206,12 @@ void import_story(const fs::path& game_dir, const fs::path& write_dir, std::span
                      ", \"text\": " + json_quote(is_string(piece.kind) ? bytes.substr(0, bytes.size() - 1) : bytes) + "}";
             continue;
         }
+        if (is_native(piece.kind)) {
+            if (!natives.empty()) natives += ",\n";
+            natives += "    {\"id\": " + json_quote(piece.id) + ", \"address\": " + json_quote(piece_address(piece)) +
+                       ", \"bytes\": " + json_quote(hex_of(bytes)) + "}";
+            continue;
+        }
         pieces[std::string(piece.id)] = PieceBytes{piece.offset, std::string(bytes)};
         if (piece.kind != ImportPiece::Kind::String) continue;
         if (!texts.empty()) texts += ",\n";
@@ -214,6 +231,7 @@ void import_story(const fs::path& game_dir, const fs::path& write_dir, std::span
     fs::remove(manifest_path(write_dir), ec);
     write_file(text_path(write_dir), "{\n  \"texts\": [\n" + texts + "\n  ]\n}\n");
     write_file(words_path(write_dir), "{\n  \"words\": [\n" + words + "\n  ]\n}\n");
+    write_file(native_path(write_dir), "{\n  \"native\": [\n" + natives + "\n  ]\n}\n");
     write_file(story_dir(write_dir) / kRecordFiles[0], pilots_json(pieces));
     write_file(story_dir(write_dir) / kRecordFiles[1], planets_json(pieces));
     write_file(story_dir(write_dir) / kRecordFiles[2], missions_json(pieces));
@@ -273,6 +291,43 @@ Words load_words(const fs::path& write_dir, std::span<const ImportPiece> table) 
         }
         for (const auto& p : table)
             if (is_word(p.kind) && !out.count(p.id)) throw ImportError("the word " + json_quote(p.id) + " is missing");
+        return out;
+    } catch (const std::exception& e) {
+        throw ImportError(path.string() + ": " + e.what());
+    }
+}
+
+Native load_native(const fs::path& write_dir, std::span<const ImportPiece> table) {
+    const fs::path path = native_path(write_dir);
+    try {
+        const auto bytes = read_file(path);
+        const auto file = parse_json(bytes_view(bytes, 0, bytes.size()));
+        if (file.object().size() != 1 || !file.find("native")) throw ImportError("it is not {\"native\": [...]}");
+        Native out;
+        for (const auto& entry : file.find("native")->array()) {
+            const auto* id = entry.find("id");
+            const auto* hex = entry.find("bytes");
+            if (!id || !hex) throw ImportError("a span without an \"id\" or \"bytes\"");
+            const ImportPiece* piece = nullptr;
+            for (const auto& p : table)
+                if (is_native(p.kind) && p.id == id->string()) piece = &p;
+            if (!piece) throw ImportError("the span " + json_quote(id->string()) + " is not one the game has");
+            const std::string& digits = hex->string();
+            const auto value = [&](char c) -> int {
+                if (c >= '0' && c <= '9') return c - '0';
+                if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+                throw ImportError("the span " + json_quote(id->string()) + " is not lower-case hex");
+            };
+            if (digits.size() != std::size_t(piece->length) * 2)
+                throw ImportError("the span " + json_quote(id->string()) + " is " + std::to_string(digits.size() / 2) +
+                                  " bytes, not " + std::to_string(piece->length));
+            std::string span;
+            for (std::size_t i = 0; i < digits.size(); i += 2) span += char(value(digits[i]) << 4 | value(digits[i + 1]));
+            if (!out.emplace(id->string(), std::move(span)).second)
+                throw ImportError("the span " + json_quote(id->string()) + " twice");
+        }
+        for (const auto& p : table)
+            if (is_native(p.kind) && !out.count(p.id)) throw ImportError("the span " + json_quote(p.id) + " is missing");
         return out;
     } catch (const std::exception& e) {
         throw ImportError(path.string() + ": " + e.what());

@@ -17,7 +17,7 @@ typedef struct MwLauncherSystemCalls
 extern MwLauncherSystemCalls mwLauncherSystem;
 extern uint8_t launcherIdentity[11];
 extern char launcherCampaignFilename[12],launcherCombatFilename[10];
-bool MwImportLauncherInitialData(const uint8_t *data,size_t byteCount);
+void MwImportLauncherInitialData(void);
 /* audioCode is MW.EXE's S/T/A/R; the result is the native terminate code. */
 uint8_t MwLauncherMain(uint8_t audioCode);
 #endif

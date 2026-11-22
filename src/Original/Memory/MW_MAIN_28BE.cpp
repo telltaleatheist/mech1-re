@@ -2,6 +2,7 @@
 #include "mechwarrior/campaign_music.h"
 #include "mechwarrior/original_data.h"
 #include "mechwarrior/native_address.h"
+#include "mechwarrior/story.h"
 
 uint16_t midiTickDenominator,midiTickNumerator,midiTickRemainder;
 uint16_t midiBeatDivision,midiBarDivision;
@@ -29,9 +30,10 @@ uint8_t musicRuntimeHeader[0x42];
 uint16_t midiByteHandlerDisplacement,midiDispatchChannel,midiFirstDataByte,midiControllerValue;
 uint16_t midiByteHandlers[14];
 
-/* EXE-loader boundary only. These are authored runtime values, not blanket
- * host defaults; the borrowed binary storage is not retained by game code. */
-bool MwImportCampaignMusicData(const uint8_t *data,size_t byteCount)
+/* The driver segment's start values, decoded from its bytes: the story's
+ * music.driver span (28BE:0000..0A11, story/native.json), not the exe. The
+ * borrowed bytes are not retained by game code. */
+static bool DecodeMusicDriver(const uint8_t *data,size_t byteCount)
 {
     uint16_t hostEndian=1;
     if (!data || byteCount<0x0A12 || *(uint8_t *)&hostEndian!=1) return false;
@@ -86,4 +88,9 @@ bool MwImportCampaignMusicData(const uint8_t *data,size_t byteCount)
     selectedAudioBackend=backendOffset==MIDI_MPU_BACKEND_OFFSET?&mpuBackend
         :backendOffset==MIDI_ADLIB_BACKEND_OFFSET?&adlibBackend:backendOffset?&speakerBackend:NULL;
     return true;
+}
+bool MwImportCampaignMusicData(void)
+{
+    uint8_t driver[0x0A12];
+    return MwStoryCopyBytes("music.driver",driver,sizeof(driver)) && DecodeMusicDriver(driver,sizeof(driver));
 }

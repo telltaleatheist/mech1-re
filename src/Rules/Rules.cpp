@@ -55,9 +55,17 @@ Mech read_mech(const Reader& r, const Json& m) {
 Units read_units(const fs::path& data_dir) {
     Reader r(data_dir / "rules" / "units.json");
     const Json file = r.parse();
-    r.only(file, {"units"});
+    r.only(file, {"units", "ammo_family_mechs"});
     const auto units = r.keyed(file, "units", kUnitKinds);
     Units out;
+    const auto& families = r.array(file, "ammo_family_mechs", kAmmoFamilies);
+    for (std::size_t family = 0; family < kAmmoFamilies; ++family) {
+        if (!families[family].is_array() || families[family].array().empty())
+            r.fail("an ammo family's mechs are not a list of mech kinds");
+        for (const Json& name : families[family].array())
+            out.ammo_family_mechs[family].push_back(
+                std::uint8_t(r.name(name, std::span(kUnitKinds).first(kMechKinds), "an ammo family's mech")));
+    }
     for (std::size_t kind = 0; kind < kUnitKinds.size(); ++kind) {
         const Json& u = *units[kind];
         if (kind < kMechKinds) out.mechs[kind] = read_mech(r, u);
@@ -124,7 +132,7 @@ Repair read_repair(const fs::path& data_dir) {
 constexpr std::string_view kHouseKeys[] = {
     "advance_base_percent", "salvage_base_percent", "payment_roll_bias", "payment_adjustment_percent",
     "deduction_roll_threshold", "reduced_payout_percent", "extra_enemy_roll_threshold",
-    "negotiation_attempt_base", "planets", "mission_type_limits", "mission_planet_policy"};
+    "negotiation_attempt_base", "planets", "mission_type_limits", "mission_planet_policy", "contract_planet_groups"};
 
 std::array<House, kHouses.size()> read_houses(const fs::path& data_dir) {
     Reader r(data_dir / "rules" / "houses.json");
@@ -168,6 +176,19 @@ std::array<House, kHouses.size()> read_houses(const fs::path& data_dir) {
                 }
                 house.mission_planet_policy[c][choice] = id;
             }
+        }
+        const Json& groups = r.member(h, "contract_planet_groups");
+        if (!groups.is_array() || groups.array().empty()) r.fail("contract_planet_groups is not a list of planet lists");
+        for (const Json& group : groups.array()) {
+            if (!group.is_array() || group.array().empty()) r.fail("a contract planet group is not a list of planet ids");
+            std::vector<std::uint8_t> ids;
+            for (const Json& planet : group.array()) {
+                const std::uint8_t id = r.byte(planet, "a contract planet");
+                if (id < 1 || id == kPlanetGroupEnd || id == kHouseGroupsEnd)
+                    r.fail("a contract planet is not a planet id from 1 to 253");
+                ids.push_back(id);
+            }
+            house.contract_planet_groups.push_back(std::move(ids));
         }
     }
     return out;
@@ -390,8 +411,13 @@ NewCampaign read_new_campaign(const fs::path& data_dir) {
     const Json file = r.parse();
     std::vector<std::string_view> names;
     for (const NewCampaignField& field : new_campaign_fields()) names.push_back(field.name);
+    names.push_back("start");
     r.only(file, names);
     NewCampaign out;
+    const Json& start = r.member(file, "start");
+    r.only(start, {"random_seed"});
+    const auto& seed = r.array(start, "random_seed", 2);
+    for (std::size_t i = 0; i < 2; ++i) out.random_seed[i] = r.word(seed[i], "random_seed");
     for (const NewCampaignField& field : new_campaign_fields()) {
         const Json& v = r.member(file, field.name);
         std::uint8_t* at = out.block.data() + field.offset;
@@ -471,6 +497,18 @@ std::map<std::string, std::string, std::less<>> native_pieces(const Rules& rules
     for (std::uint8_t d : rules.units.condition_score_divisors) divisors += char(d);
     std::string& prices = out["units.base_prices"];
     for (std::uint16_t p : rules.units.base_prices) put_word(prices, p);
+    // Each ammo family's mech list, end to end with its 0xFFFF, and its pointer.
+    const std::uint16_t family_mechs_at = piece_offset("units.ammo_family_mechs");
+    std::string& family_mechs = out["units.ammo_family_mechs"];
+    std::string& family_lists = out["units.ammo_family_mech_lists"];
+    for (const auto& mechs_of_family : rules.units.ammo_family_mechs) {
+        put_word(family_lists, std::uint16_t(family_mechs_at + family_mechs.size()));
+        for (std::uint8_t kind : mechs_of_family) put_word(family_mechs, kind);
+        put_word(family_mechs, 0xFFFF);
+    }
+    if (family_mechs.size() > kAmmoFamilyMechBytes)
+        throw RulesError("the ammo families' mech lists are more than " + std::to_string(kAmmoFamilyMechBytes) + " bytes");
+    family_mechs.resize(kAmmoFamilyMechBytes, '\0');
 
     // The per-unit lists, laid end to end in unit order as the exe stores
     // them, each unit's pointer the native offset of its first entry.
@@ -550,6 +588,22 @@ std::map<std::string, std::string, std::less<>> native_pieces(const Rules& rules
         for (const auto& row : h.mission_planet_policy)
             for (std::uint8_t planet : row) policies += char(planet);
     }
+
+    // Each House's contract planet groups, FF between groups and FE after its
+    // last, end to end in House order, and its pointer.
+    const std::uint16_t groups_at = piece_offset("houses.contract_planet_groups");
+    std::string& groups = out["houses.contract_planet_groups"];
+    std::string& group_offsets = out["houses.contract_planet_group_offsets"];
+    for (const House& h : rules.houses) {
+        put_word(group_offsets, std::uint16_t(groups_at + groups.size()));
+        for (std::size_t g = 0; g < h.contract_planet_groups.size(); ++g) {
+            for (std::uint8_t id : h.contract_planet_groups[g]) groups += char(id);
+            groups += char(g + 1 < h.contract_planet_groups.size() ? kPlanetGroupEnd : kHouseGroupsEnd);
+        }
+    }
+    if (groups.size() > kContractPlanetGroupBytes)
+        throw RulesError("the Houses' contract planet groups are more than " + std::to_string(kContractPlanetGroupBytes) + " bytes");
+    groups.resize(kContractPlanetGroupBytes, '\0');
 
     const Contracts& contracts = rules.contracts;
     for (std::uint16_t u : contracts.deployment_units_by_scenario) put_word(out["contracts.deployment_units_by_scenario"], u);
@@ -641,6 +695,7 @@ std::map<std::string, std::string, std::less<>> native_pieces(const Rules& rules
     out["new_campaign.before_name"].assign(block, name->offset);
     out["new_campaign.after_name"].assign(block + name->offset + name->length,
                                           kSaveBlockBytes - name->offset - name->length);
+    for (std::uint16_t w : rules.new_campaign.random_seed) put_word(out["new_campaign.start.random_seed"], w);
     return out;
 }
 

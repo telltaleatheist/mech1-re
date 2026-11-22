@@ -1,16 +1,16 @@
 # Phase 2 inventory
 
-Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-scope item). An item read through a door shows where it now comes from: a story piece, a rule piece, a layout piece, a UI word, or a save codec field of `new_campaign.json`, with the exe offset those tables give. Any other item shows the first native offset its importer reads, or `-` for runtime state with no import; its group names the slice that moves it, and the two story items not yet moved name theirs. The groups follow `docs/phase2/PLAN.md`. Names and offsets only: no MW1 text.
+Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-scope item). An item read through a door shows where it now comes from: a story piece, a rule piece, a layout piece, a UI word, or a save codec field of `new_campaign.json`, with the exe offset those tables give. Any other item shows the first native offset its importer reads, or `-` for runtime state with no import; its group names the slice that moves it, and the story item not yet moved names its slice. An item an importer decodes from a native span of the story (`story/native.json`) shows the span and the exe offset it holds. The groups follow `docs/phase2/PLAN.md`. Names and offsets only: no MW1 text.
 
 | Group | Items |
 |---|---|
-| Extracted: the original's creative content (the story file, first run) | 60 |
+| Extracted: the original's creative content (the story file, first run) | 88 |
 | Ours: UI words and system messages (story/words.json, imported) | 142 |
 | Ours: screen layout, panels and menus (data/ui/*.json) | 126 |
-| Ours: rules and constants (data/rules/*.json) | 80 |
+| Ours: rules and constants (data/rules/*.json) | 83 |
 | Ours: the new campaign's starting state (data/rules/new_campaign.json) | 103 |
 | Dropped | 6 |
-| Code: runtime state and renderer tables (no file) | 986 |
+| Code: runtime state and renderer tables (no file) | 960 |
 
 ## Extracted: the original's creative content (the story file, first run)
 
@@ -30,8 +30,9 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 | MW_MAIN_1090.cpp | `afterActionLiaoSuccess` | MW_MAIN 1090:16D6 | story after_action.success.liao |
 | MW_MAIN_1090.cpp | `alphabeticPlanetRecordOffsets` | - | story, MwStoryBuildPlanets |
 | MW_MAIN_1090.cpp | `campaignDefaultCommanderNameBytes` | MW_MAIN 1090:5CE2 | story commander.default_name |
+| MW_MAIN_1090.cpp | `contractActionsNavigationProbe` | MW_MAIN 1090:5807 | story probe.contract_actions |
 | MW_MAIN_1090.cpp | `contractNarrative` | MW_MAIN 1090:4890 | story contract.narrative |
-| MW_MAIN_1090.cpp | `contractOfficePlanetGroupStorage` | 0x4B8A | story 2g, not yet moved |
+| MW_MAIN_1090.cpp | `contractOfficeNavigationProbe` | MW_MAIN 1090:5661 | story probe.contract_office |
 | MW_MAIN_1090.cpp | `darkWingAttackFailedText` | MW_MAIN 1090:1BBC | story dark_wing.attack_failed |
 | MW_MAIN_1090.cpp | `darkWingVictoryText` | MW_MAIN 1090:1A37 | story dark_wing.victory |
 | MW_MAIN_1090.cpp | `deploymentUneventfulText` | MW_MAIN 1090:140D | story deployment.uneventful |
@@ -43,6 +44,9 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 | MW_MAIN_1090.cpp | `eventPlanetChoicePool5` | - | story, MwStoryCopyPlanetPools |
 | MW_MAIN_1090.cpp | `houseContractNames` | MW_MAIN 1090:4A73 | story house.kurita.name |
 | MW_MAIN_1090.cpp | `houseContractRefusalText` | MW_MAIN 1090:4C87 | story contract.refusal.house |
+| MW_MAIN_1090.cpp | `hubFirstNavigationProbe` | MW_MAIN 1090:1E75 | story probe.hub_planet |
+| MW_MAIN_1090.cpp | `hubSecondNavigationProbe` | MW_MAIN 1090:1EC9 | story probe.hub_contract |
+| MW_MAIN_1090.cpp | `hubThirdNavigationProbe` | MW_MAIN 1090:1EF3 | story probe.hub_remote_planet |
 | MW_MAIN_1090.cpp | `introFifthLeftText` | MW_MAIN 1090:1D92 | story intro.caption.5.left |
 | MW_MAIN_1090.cpp | `introFifthRightText` | MW_MAIN 1090:1DDC | story intro.caption.5.right |
 | MW_MAIN_1090.cpp | `introFirstLeftText` | MW_MAIN 1090:1C37 | story intro.caption.1.left |
@@ -74,8 +78,32 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 | MW_MAIN_1090.cpp | `shopUnitNames` | MW_MAIN 1090:2DCB | story unit.locust.shop_name |
 | MW_MAIN_1090.cpp | `unitDisplayNames` | MW_MAIN 1090:2E86 | story unit.locust.name |
 | MW_MAIN_1090_EVENTS.cpp | `the event script (records, conditions, actions)` | - | story, MwStoryBuildCampaignEvents |
+| MW_MAIN_1090_OPTIONS.cpp | `confirmationNavigationProbe` | MW_MAIN 1090:AB26 | story probe.confirmation |
+| MW_MAIN_1090_OPTIONS.cpp | `newsNavigationProbe` | MW_MAIN 1090:332A | story probe.news |
+| MW_MAIN_1090_OPTIONS.cpp | `optionsNavigationProbe` | MW_MAIN 1090:ABDD | story probe.options |
+| MW_MAIN_1090_OPTIONS.cpp | `restoreNavigationProbe` | MW_MAIN 1090:AD6D | story probe.restore |
 | MW_MAIN_1AA5.cpp | `eventTextStorage` | - | story, MwStoryBuildEventText |
 | MW_MAIN_1AA5.cpp | `eventTextStorage / eventTextRecords` | - | story, MwStoryBuildEventText |
+| MW_MAIN_28BE.cpp | `adlibAddressDelayReads` | MW_MAIN 28BE:00E0 | story, music.driver (native span) |
+| MW_MAIN_28BE.cpp | `adlibDataDelayReads` | MW_MAIN 28BE:00E2 | story, music.driver (native span) |
+| MW_MAIN_28BE.cpp | `adlibPackedNoteFrequencies` | MW_MAIN 28BE:00E6 | story, music.driver (native span) |
+| MW_MAIN_28BE.cpp | `adlibRhythmRegister` | MW_MAIN 28BE:00E4 | story, music.driver (native span) |
+| MW_MAIN_28BE.cpp | `adlibVoiceRoutes` | MW_MAIN 28BE:01CC | story, music.driver (native span) |
+| MW_MAIN_28BE.cpp | `audioChannels` | MW_MAIN 28BE:04C6 | story, music.driver (native span) |
+| MW_MAIN_28BE.cpp | `audioDummyChannel` | MW_MAIN 28BE:0646 | story, music.driver (native span) |
+| MW_MAIN_28BE.cpp | `midiBarDivision` | MW_MAIN 28BE:004A | story, music.driver (native span) |
+| MW_MAIN_28BE.cpp | `midiBeatDivision` | MW_MAIN 28BE:0048 | story, music.driver (native span) |
+| MW_MAIN_28BE.cpp | `midiByteHandlerDisplacement` | MW_MAIN 28BE:00A8 | story, music.driver (native span) |
+| MW_MAIN_28BE.cpp | `midiByteHandlers` | MW_MAIN 28BE:008C | story, music.driver (native span) |
+| MW_MAIN_28BE.cpp | `midiStateUpdateInProgress` | MW_MAIN 28BE:005A | story, music.driver (native span) |
+| MW_MAIN_28BE.cpp | `midiSysex` | MW_MAIN 28BE:07CE | story, music.driver (native span) |
+| MW_MAIN_28BE.cpp | `midiTickDenominator` | MW_MAIN 28BE:0042 | story, music.driver (native span) |
+| MW_MAIN_28BE.cpp | `midiTickInProgress` | MW_MAIN 28BE:005B | story, music.driver (native span) |
+| MW_MAIN_28BE.cpp | `midiTickNumerator` | MW_MAIN 28BE:0044 | story, music.driver (native span) |
+| MW_MAIN_28BE.cpp | `midiTrackChannelHandlers` | MW_MAIN 28BE:005D | story, music.driver (native span) |
+| MW_MAIN_28BE.cpp | `midiTrackRunningStatus` | MW_MAIN 28BE:005C | story, music.driver (native span) |
+| MW_MAIN_28BE.cpp | `midiTrackSystemHandlers` | MW_MAIN 28BE:006B | story, music.driver (native span) |
+| MW_MAIN_28BE.cpp | `mpuTransmitQueue` | MW_MAIN 28BE:0224 | story, music.driver (native span) |
 
 ## Ours: UI words and system messages (story/words.json, imported)
 
@@ -400,6 +428,7 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 | MW_MAIN_1090.cpp | `ammunitionTransactionPrices` | MW_MAIN 1090:2F10 | rule market.start.ammunition_transaction_prices |
 | MW_MAIN_1090.cpp | `bodyRepairBasePricesByKind` | MW_MAIN 1090:3CAB | rule units.body_repair_prices |
 | MW_MAIN_1090.cpp | `campaignMechTonnages` | MW_MAIN 1090:122B | rule units.tonnages |
+| MW_MAIN_1090.cpp | `contractOfficePlanetGroupStorage` | MW_MAIN 1090:4B8A | rule houses.contract_planet_groups |
 | MW_MAIN_1090.cpp | `defaultHouseMissionTypeLimits` | MW_MAIN 1090:5CBA | rule houses.mission_type_limits |
 | MW_MAIN_1090.cpp | `generateStartingJenner` | MW_MAIN 1090:3A6A | rule market.start.generate_starting_jenner |
 | MW_MAIN_1090.cpp | `generatedAmmoKinds` | MW_MAIN 1090:3A5E | rule market.start.generated_ammo_kinds |
@@ -421,6 +450,8 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 | MW_MAIN_1090.cpp | `missionDeploymentUnitsByScenario` | MW_MAIN 1090:8E46 | rule contracts.deployment_units_by_scenario |
 | MW_MAIN_1090.cpp | `missionForceWeightByUnitKind` | MW_MAIN 1090:4B55 | rule units.force_weights |
 | MW_MAIN_1090.cpp | `pilotWageAmounts` | MW_MAIN 1090:2476 | rule contracts.pilot_wages |
+| MW_MAIN_1090.cpp | `randomStateWord0` | MW_MAIN 1090:03F5 | rule new_campaign.start.random_seed |
+| MW_MAIN_1090.cpp | `randomStateWord1` | MW_MAIN 1090:03F5 | rule new_campaign.start.random_seed |
 | MW_MAIN_1090.cpp | `repairSuccessRollLimitsByMarketTier` | MW_MAIN 1090:3A6B | rule repair.success_roll_limits |
 | MW_MAIN_1090.cpp | `reserveAmmoFreightRates` | MW_MAIN 1090:5C94 | rule market.freight_rates |
 | MW_MAIN_1090.cpp | `systemRepairBasePrices` | MW_MAIN 1090:3B53 | rule repair.system_prices |
@@ -553,17 +584,17 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 | File | Item | Offset | From |
 |---|---|---|---|
 | BTECH_304E_VIDEO.cpp | `herculesDisplayRowOffsets` | - | - |
-| MW_0806_STATE.cpp | `launcherCampaignFilename` | 0x07E3 | - |
-| MW_0806_STATE.cpp | `launcherCombatFilename` | 0x07EF | - |
-| MW_0806_STATE.cpp | `launcherIdentity` | 0x07D4 | - |
-| MW_MAIN_1090.cpp | `combatExecutableFilename` | 0x0EF6 | - |
+| MW_0806_STATE.cpp | `launcherCampaignFilename` | - | - |
+| MW_0806_STATE.cpp | `launcherCombatFilename` | - | - |
+| MW_0806_STATE.cpp | `launcherIdentity` | - | - |
+| MW_MAIN_1090.cpp | `combatExecutableFilename` | - | - |
 | MW_MAIN_1090.cpp | `launcherExitCode` | - | - |
 
 ## Code: runtime state and renderer tables (no file)
 
-Not listed one by one: BTECH_0810_STATE.cpp 1, BTECH_1ADF_STATE.cpp 2, BTECH_1BF5_STATE.cpp 5, BTECH_22B6_DATA.cpp 15, BTECH_2FEB.cpp 24, BTECH_304E.cpp 35, BTECH_304E_ADLIB.cpp 25, BTECH_304E_COCKPIT.cpp 36, BTECH_304E_MPU.cpp 10, BTECH_304E_ORDERS.cpp 26, BTECH_304E_POLYGONS.cpp 24, BTECH_304E_POSE.cpp 14, BTECH_304E_RENDER.cpp 62, BTECH_304E_RUNTIME.cpp 17, BTECH_304E_SCENE.cpp 8, BTECH_304E_SOUND.cpp 43, BTECH_304E_STARTUP.cpp 59, BTECH_304E_VIDEO.cpp 85, BTECH_304E_WORLD.cpp 111, MW_0806_STATE.cpp 1, MW_EGA_0800_STATE.cpp 66, MW_MAIN_0F41_STATE.cpp 5, MW_MAIN_1090.cpp 257, MW_MAIN_1090_OPTIONS.cpp 15, MW_MAIN_1AA5.cpp 1, MW_MAIN_28BE.cpp 39.
+Not listed one by one: BTECH_0810_STATE.cpp 1, BTECH_1ADF_STATE.cpp 2, BTECH_1BF5_STATE.cpp 5, BTECH_22B6_DATA.cpp 15, BTECH_2FEB.cpp 24, BTECH_304E.cpp 35, BTECH_304E_ADLIB.cpp 25, BTECH_304E_COCKPIT.cpp 36, BTECH_304E_MPU.cpp 10, BTECH_304E_ORDERS.cpp 26, BTECH_304E_POLYGONS.cpp 24, BTECH_304E_POSE.cpp 14, BTECH_304E_RENDER.cpp 62, BTECH_304E_RUNTIME.cpp 17, BTECH_304E_SCENE.cpp 8, BTECH_304E_SOUND.cpp 43, BTECH_304E_STARTUP.cpp 59, BTECH_304E_VIDEO.cpp 85, BTECH_304E_WORLD.cpp 111, MW_0806_STATE.cpp 1, MW_EGA_0800_STATE.cpp 66, MW_MAIN_0F41_STATE.cpp 5, MW_MAIN_1090.cpp 250, MW_MAIN_1090_OPTIONS.cpp 11, MW_MAIN_1AA5.cpp 1, MW_MAIN_28BE.cpp 19, NativeStart.cpp 5.
 
-Still read from the exe (slice 6 moves them): BTECH_304E.cpp 4, BTECH_304E_ADLIB.cpp 8, BTECH_304E_COCKPIT.cpp 4, BTECH_304E_MPU.cpp 6, BTECH_304E_ORDERS.cpp 3, BTECH_304E_POLYGONS.cpp 2, BTECH_304E_POSE.cpp 2, BTECH_304E_RENDER.cpp 9, BTECH_304E_RUNTIME.cpp 5, BTECH_304E_SOUND.cpp 19, BTECH_304E_STARTUP.cpp 23, BTECH_304E_VIDEO.cpp 27, BTECH_304E_WORLD.cpp 14, MW_MAIN_1090.cpp 20, MW_MAIN_1090_OPTIONS.cpp 5, MW_MAIN_28BE.cpp 20.
+Still read from the exe (slice 6 moves them): BTECH_304E.cpp 4, BTECH_304E_ADLIB.cpp 8, BTECH_304E_COCKPIT.cpp 4, BTECH_304E_MPU.cpp 6, BTECH_304E_ORDERS.cpp 3, BTECH_304E_POLYGONS.cpp 2, BTECH_304E_POSE.cpp 2, BTECH_304E_RENDER.cpp 9, BTECH_304E_RUNTIME.cpp 5, BTECH_304E_SOUND.cpp 19, BTECH_304E_STARTUP.cpp 23, BTECH_304E_VIDEO.cpp 27, BTECH_304E_WORLD.cpp 14.
 
 ## Reclassified or removed in slice 3
 

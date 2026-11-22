@@ -10,7 +10,9 @@
 // checked, so copies that differ only there are accepted.
 //
 // The UI words (docs/phase2/PLAN.md section 7) are pieces of the same table,
-// of the two Word kinds, written to story/words.json.
+// of the two Word kinds, written to story/words.json. Native pieces (PLAN.md
+// 8.3) are spans of the original's data that a converted reader takes whole,
+// as bytes, written to story/native.json.
 //
 // Every piece's hash is keyed (HMAC-SHA-256, src/Support/Hmac.h) by the
 // SHA-256 of a region of the same exe's code (key_region), which the repo
@@ -33,7 +35,8 @@ struct ImportPiece {
     // String: text read up to and including its NUL (the length counts the
     // NUL; the story file keeps the text without it). Bytes: a fixed length.
     // Word and WordBytes: a UI word, as String and Bytes, in story/words.json.
-    enum class Kind { String, Bytes, Word, WordBytes };
+    // Native: a span of bytes one reader takes whole, in story/native.json.
+    enum class Kind { String, Bytes, Word, WordBytes, Native };
     Kind kind;
     std::string_view id;
     std::string_view exe;  // the file in the game folder, e.g. "MW_MAIN.EXE"
@@ -46,6 +49,7 @@ struct ImportPiece {
 constexpr bool is_word(ImportPiece::Kind kind) {
     return kind == ImportPiece::Kind::Word || kind == ImportPiece::Kind::WordBytes;
 }
+constexpr bool is_native(ImportPiece::Kind kind) { return kind == ImportPiece::Kind::Native; }
 constexpr bool is_string(ImportPiece::Kind kind) {
     return kind == ImportPiece::Kind::String || kind == ImportPiece::Kind::Word;
 }
@@ -80,8 +84,8 @@ constexpr KeyRegion key_region(std::string_view exe) {
 
 // The shape of the story file. A data folder written by another version, or
 // with another table (import_table_hash), is imported again. Version 2: every
-// piece's hash keyed (version 1 keyed the words only).
-inline constexpr int kImportVersion = 2;
+// piece's hash keyed (version 1 keyed the words only). Version 3: native.json.
+inline constexpr int kImportVersion = 3;
 
 // The revision the table's hashes come from.
 inline constexpr std::string_view kRevision = "1990-01-22";

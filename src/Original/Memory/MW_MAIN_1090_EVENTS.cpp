@@ -7,9 +7,8 @@
 #include "mechwarrior/ui_layout.h"
 #include <string.h>
 
-bool MwImportCampaignEventData(const uint8_t *data,size_t byteCount)
+bool MwImportCampaignEventData(void)
 {
-    if (!data || byteCount<NATIVE_SEGMENT_BYTE_COUNT) return false;
     /* The dispatch topology (1090:5E78 conditions, 5E8C actions) is native
      * code, not editable scenario rules: the import table's check pieces
      * (src/Import/pieces.txt) refuse an installation whose tables differ. */

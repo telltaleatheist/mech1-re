@@ -5,6 +5,9 @@
 //   <write dir>/story/words.json    the UI words (PLAN.md section 7), {"words":
 //                                   [{"id", "address", "text"}, ...]}: a
 //                                   string without its NUL, a block whole
+//   <write dir>/story/native.json   native spans (PLAN.md 8.3), {"native":
+//                                   [{"id", "address", "bytes"}, ...]}, the
+//                                   bytes in hex
 //   <write dir>/story/pilots.json, planets.json, missions.json
 //                                   typed records (Records.h)
 //   <write dir>/story/import.json   what was imported: the import version, the
@@ -60,5 +63,10 @@ using Words = std::map<std::string, std::string, std::less<>>;
 // table length, and nothing else. Throws ImportError naming the file and the
 // word.
 Words load_words(const std::filesystem::path& write_dir, std::span<const ImportPiece> table = import_table());
+using Native = std::map<std::string, std::string, std::less<>>;
+// story/native.json, id -> the span's bytes. Every native piece of `table`
+// must be there once, at its table length, and nothing else. Throws
+// ImportError naming the file and the piece.
+Native load_native(const std::filesystem::path& write_dir, std::span<const ImportPiece> table = import_table());
 
 }  // namespace mw1o::import

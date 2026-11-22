@@ -211,39 +211,6 @@ void MwHostCloseProcessFiles(void)
 MwDosFileCalls mwDosFiles = { HostOpenFileReadWrite, HostReadFile, HostCloseFile, HostSeekFile,HostCreateFile,HostWriteFile,
     HostGetDtaFilename,HostFindFirstSave,HostFindNextSave };
 
-/* The original operating-system loader supplied executable-authored data.
- * Read the private installation at that boundary, decode named objects once,
- * then release the bytes. This is not a replacement campaign bootstrap. */
-bool MwHostLoadCampaignInitialData(const char *executablePath)
-{
-    enum { MZ_HEADER_BYTES=0x001C, MZ_PARAGRAPH_BYTES=0x0010,
-        ORIGINAL_LOAD_SEGMENT=0x0800, CAMPAIGN_DATA_SEGMENT=0x1090,
-        CAMPAIGN_DATA_BYTES=0x10000 };
-    uint8_t header[MZ_HEADER_BYTES];
-    FILE *file=fopen(executablePath,"rb");
-    if (!file) return false;
-    bool loaded=false;
-    uint8_t *data=NULL;
-    if (fread(header,1,sizeof(header),file)!=sizeof(header)
-        || header[0]!='M' || header[1]!='Z') goto finished;
-    uint16_t headerParagraphs;headerParagraphs=(uint16_t)(header[8]|((uint16_t)header[9]<<8));
-    if ((uint32_t)headerParagraphs*MZ_PARAGRAPH_BYTES<sizeof(header)) goto finished;
-    long dataPosition;dataPosition=(long)headerParagraphs*MZ_PARAGRAPH_BYTES
-        +(CAMPAIGN_DATA_SEGMENT-ORIGINAL_LOAD_SEGMENT)*MZ_PARAGRAPH_BYTES;
-    if (fseek(file,dataPosition,SEEK_SET)!=0) goto finished;
-    data=static_cast<uint8_t *>(calloc(CAMPAIGN_DATA_BYTES,1));
-    if (!data) goto finished;
-    size_t bytesRead;bytesRead=fread(data,1,CAMPAIGN_DATA_BYTES,file);
-    /* Named initial data ends at A150. Later image bytes belong to other
-     * linked segments; the importer retains none of this temporary storage. */
-    if (bytesRead<0xA150 || ferror(file)) goto finished;
-    loaded=MwImportCampaignInitialData(data,CAMPAIGN_DATA_BYTES);
-finished:
-    free(data);
-    if (fclose(file)!=0) loaded=false;
-    return loaded;
-}
-
 bool MwHostLoadEgaInitialData(const char *executablePath)
 {
     uint8_t header[0x001C];
@@ -270,19 +237,3 @@ finished:
     return loaded;
 }
 
-bool MwHostLoadCampaignMusicData(const char *executablePath)
-{
-    uint8_t header[0x1C],data[0x0A12];
-    FILE *file=fopen(executablePath,"rb");
-    if (!file) return false;
-    bool loaded=false;
-    if (fread(header,1,sizeof(header),file)!=sizeof(header) || header[0]!='M' || header[1]!='Z') goto finished;
-    uint16_t paragraphs;paragraphs=(uint16_t)(header[8]|((uint16_t)header[9]<<8));
-    long position;position=(long)paragraphs*0x10+(0x28BE -0x0800)*0x10;
-    if ((uint32_t)paragraphs*0x10<sizeof(header) || fseek(file,position,SEEK_SET)!=0) goto finished;
-    if (fread(data,1,sizeof(data),file)!=sizeof(data) || ferror(file)) goto finished;
-    loaded=MwImportCampaignMusicData(data,sizeof(data));
-finished:
-    if (fclose(file)!=0) loaded=false;
-    return loaded;
-}

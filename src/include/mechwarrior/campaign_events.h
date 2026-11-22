@@ -76,7 +76,7 @@ extern uint8_t eventConditionResult,eventCombineWithAnd;
 extern uint16_t eventScheduledMonthScratch,eventExpirySubmonthScratch,eventScheduledYearScratch;
 extern uint8_t planetArrivalEventsPending,darkWingBaseVictoryRecorded,campaignRestartPending;
 extern const MwEventCommand *eventOperandCursor;
-bool MwImportCampaignEventData(const uint8_t *data,size_t byteCount);
+bool MwImportCampaignEventData(void);
 
 /* Original class table, with C references instead of native near code offsets.
  * The result transports the live text-panel registers, not a native struct ABI. */

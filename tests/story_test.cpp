@@ -103,7 +103,8 @@ int main() {
     check(text.count("test.first") && text.at("test.first") == every, "bytes 01..FF survive, without the NUL");
     check(text.count("test.second") && text.at("test.second") == "second\x02text", "a control code survives");
     const std::string manifest = read(story_dir(home) / "import.json");
-    check(manifest.find("\"import_version\": 2") != std::string::npos, "import.json has the version");
+    const std::string version = "\"import_version\": " + std::to_string(kImportVersion);
+    check(manifest.find(version) != std::string::npos, "import.json has the version");
     check(manifest.find(mw1o::support::sha256_hex({reinterpret_cast<const std::uint8_t*>(exe.data()), exe.size()})) !=
               std::string::npos,
           "import.json has the exe's SHA-256");
@@ -124,7 +125,7 @@ int main() {
     // A story folder written before every piece was keyed: import version 1
     // and the plain table's hash. Outdated, and ensure_story imports it again.
     std::string before = manifest;
-    before.replace(before.find("\"import_version\": 2"), 19, "\"import_version\": 1");
+    before.replace(before.find(version), version.size(), "\"import_version\": 1");
     before.replace(before.find(import_table_hash(table)), import_table_hash(table).size(), import_table_hash(plain));
     write(story_dir(home) / "import.json", before);
     check(story_state(home, table) == StoryState::Outdated, "an old-format story folder: outdated");
@@ -143,9 +144,41 @@ int main() {
     check(story_state(home, longer) == StoryState::Current, "re-imported: current");
     check(!ensure_story(game, home, longer), "ensure_story leaves a current file alone");
 
+    // A native span (story/native.json): its bytes, whole, by id.
+    std::vector<ImportPiece> native = table;
+    native.push_back({ImportPiece::Kind::Native, "test.native", "MW_MAIN.EXE", 0x0801, second_at, 4, bytes_hash});
+    check(thrown([&] { import_story(game, home, native); }).empty(), "a table with a native span imports");
+    Native spans;
+    check(thrown([&] { spans = load_native(home, native); }).empty(), "native.json loads");
+    check(spans.size() == 1 && spans.count("test.native") && spans.at("test.native") == second.substr(0, 4),
+          "the native span's bytes, whole");
+    check(load_story_text(home).count("test.native") == 0, "a native span is not a text");
+    const std::string native_json = read(story_dir(home) / "native.json");
+    const auto native_refused = [&](const std::string& contents, const std::string& why, const std::string& what) {
+        write(story_dir(home) / "native.json", contents);
+        const std::string got = thrown([&] { load_native(home, native); });
+        check(got.find("native.json") != std::string::npos && got.find(why) != std::string::npos, what + ": " + got);
+    };
+    native_refused("{\"native\": []}", "\"test.native\" is missing", "a missing span is refused");
+    native_refused("{\"native\": [{\"id\": \"test.native\", \"bytes\": \"0011\"}]}", "is 2 bytes, not 4",
+                   "a span of another length is refused");
+    native_refused("{\"native\": [{\"id\": \"test.other\", \"bytes\": \"00112233\"}]}", "not one the game has",
+                   "an unknown span is refused");
+    native_refused("{\"native\": [{\"id\": \"test.native\", \"bytes\": \"0011223G\"}]}", "not lower-case hex",
+                   "a span that isn't hex is refused");
+    write(story_dir(home) / "native.json", native_json);
+    // A folder from before native.json (import version 2): missing, so imported again.
+    fs::remove(story_dir(home) / "native.json");
+    check(story_state(home, native) == StoryState::Missing, "no native.json: missing");
+    check(thrown([&] { check(ensure_story(game, home, native), "ensure_story imports it"); }).empty(),
+          "ensure_story writes native.json");
+    check(read(story_dir(home) / "native.json") == native_json, "native.json as a fresh import's");
+    check(thrown([&] { check(ensure_story(game, home, longer), "back to the longer table"); }).empty(),
+          "ensure_story with the longer table again");
+
     // Another import version: outdated.
     std::string old = read(story_dir(home) / "import.json");
-    old.replace(old.find("\"import_version\": 2"), 19, "\"import_version\": 0");
+    old.replace(old.find(version), version.size(), "\"import_version\": 0");
     write(story_dir(home) / "import.json", old);
     check(story_state(home, longer) == StoryState::Outdated, "another import version: outdated");
 

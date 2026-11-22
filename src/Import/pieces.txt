@@ -1,8 +1,11 @@
 # The pieces the importer takes from the player's exes (docs/phase2/PLAN.md,
 # "The import table"). One per line: id, exe, SEG:OFF (MW_MAIN's load
 # segment is 0800), and the length: `z` for a string read up to and including
-# its NUL, or a byte count. tools/import/make_import_table.py turns this and
-# the player's exes into import_table.cpp (lengths and hashes, never bytes).
+# its NUL, or a byte count. A fifth column `native` marks a native span: bytes
+# one converted reader takes whole, written to story/native.json (PLAN.md 8.5, 6b);
+# each is listed with its reader, and only spans the code reads are listed.
+# tools/import/make_import_table.py turns this and the player's exes into
+# import_table.cpp (lengths and hashes, never bytes).
 
 # The intro's captions (MW_MAIN 1090:1C33.., each x, y, then the text).
 intro.caption.1.left   MW_MAIN.EXE 1090:1C37 z
@@ -1122,3 +1125,20 @@ check.event_actions                MW_MAIN.EXE 1090:5E8C 20
 check.after_action_failures        MW_MAIN.EXE 1090:1491 10
 check.after_action_successes       MW_MAIN.EXE 1090:166A 10
 check.settlement_deductions        MW_MAIN.EXE 1090:1786 6
+
+# Native spans (docs/phase2/PLAN.md 8.5, slice 6b).
+# The menus' past-end probes: the byte one past a menu's records, which the
+# converted menu code reads as the original did (MwUiMenu's probe). Read by
+# the MW_MAIN_1090*.cpp importers into each menu's probe byte.
+probe.hub_planet          MW_MAIN.EXE 1090:1E75 1 native  # planetHubMenu: in intro.caption.7.left
+probe.hub_contract        MW_MAIN.EXE 1090:1EC9 1 native  # contractHubMenu: in intro.caption.7.right
+probe.hub_remote_planet   MW_MAIN.EXE 1090:1EF3 1 native  # remotePlanetHubMenu: in intro.caption.7.right
+probe.contract_office     MW_MAIN.EXE 1090:5661 1 native  # contractOfficeMenu: in travel.caption.planet_13's head
+probe.contract_actions    MW_MAIN.EXE 1090:5807 1 native  # contractActionsMenu: in travel.caption.planets_back.text
+probe.news                MW_MAIN.EXE 1090:332A 1 native  # newsMenu: in complex.caption.repair_system_6.text
+probe.confirmation        MW_MAIN.EXE 1090:AB26 1 native  # confirmationMenu: past 1090's named data (A150), in a later segment's text
+probe.options             MW_MAIN.EXE 1090:ABDD 1 native  # optionsMenu: the same
+probe.restore             MW_MAIN.EXE 1090:AD6D 1 native  # restoreMenu: the same
+# The music driver's data segment, 28BE:0000..0A11, whole (its layout is in
+# PLAN.md 8.5, 6b). Read by MwImportCampaignMusicData (MW_MAIN_28BE.cpp).
+music.driver              MW_MAIN.EXE 28BE:0000 2578 native

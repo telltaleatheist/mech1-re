@@ -38,7 +38,7 @@ extern uint8_t newsAtStart,newsAtEnd;
 extern uint16_t newsLastArticleId;
 extern char newsBoundaryText[0x1B];
 extern MwCampaignEvent **newsArticleCursor,**newsArticleListStart;
-bool MwImportCampaignOptionsData(const uint8_t *data,size_t byteCount);
+bool MwImportCampaignOptionsData(void);
 uint16_t MwEnterOptionsMenuContinuation(uint16_t entryOffset);
 void MwUpdateAudioOptionLabel(void);
 void MwUpdateTerrainDetailOptionLabel(void);

@@ -15,6 +15,7 @@
 namespace {
 mw1o::import::StoryText g_story;
 mw1o::import::Words g_words;
+mw1o::import::Native g_native;
 std::vector<mw1o::import::PilotRecord> g_pilots;
 mw1o::import::Planets g_planets;
 mw1o::import::Missions g_missions;
@@ -44,6 +45,7 @@ bool MwHostPrepareStory(const char *gameDirectory, const char *writeDirectory)
                          mw1o::import::story_dir(writeDirectory).string().c_str());
         g_story = mw1o::import::load_story_text(writeDirectory);
         g_words = mw1o::import::load_words(writeDirectory);
+        g_native = mw1o::import::load_native(writeDirectory);
         g_pilots = mw1o::import::load_pilots(writeDirectory);
         g_planets = mw1o::import::load_planets(writeDirectory);
         g_missions = mw1o::import::load_missions(writeDirectory);
@@ -82,6 +84,21 @@ static const mw1o::import::ImportPiece *find_word(const char *id)
         if (mw1o::import::is_word(piece.kind) && piece.id == id) return &piece;
     std::fprintf(stderr, "MechWarrior: the game has no word \"%s\"\n", id);
     return nullptr;
+}
+
+bool MwStoryCopyBytes(const char *id, uint8_t *bytes, size_t size)
+{
+    const auto it = g_native.find(id);
+    if (it == g_native.end()) {
+        std::fprintf(stderr, "MechWarrior: the story file has no native span \"%s\"\n", id);
+        return false;
+    }
+    if (it->second.size() != size) {
+        std::fprintf(stderr, "MechWarrior: the native span \"%s\" is %zu bytes, the game's %zu\n", id, it->second.size(), size);
+        return false;
+    }
+    std::memcpy(bytes, it->second.data(), size);
+    return true;
 }
 
 bool MwWordsKnown(const char *id)

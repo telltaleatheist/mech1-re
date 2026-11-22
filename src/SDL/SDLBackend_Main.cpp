@@ -41,8 +41,8 @@ static bool ExecuteChild(const char *filename,const MwCampaignLaunch *launch,uin
     if (strcmp(filename,"MW_MAIN.EXE")) MwSdlFail("Unknown launcher child executable");
     /* Fresh DOS child image on EACH execution, then0002 decides new/resume.
      * Keep input/ticks, physical video and resident exchange alive across EXEC. */
-    if (!MwHostLoadCampaignInitialData(path) || !MwImportCampaignEventText()
-        || !MwHostLoadCampaignMusicData(path)) return true;
+    if (!MwImportCampaignInitialData() || !MwImportCampaignEventText()
+        || !MwImportCampaignMusicData()) return true;
     *exitCode=(uint8_t)MwRunCampaignProgram(launch,audioCode);
     ReleaseChildResources();
     return false;
@@ -100,20 +100,6 @@ static void UnsupportedCampaignCall(uint16_t codeOffset)
      * slot may still contain an unrelated device-probe diagnostic. */
     SDL_ClearError();MwSdlFail("Unconverted campaign callback");
 }
-static bool LoadResidentLauncher(const char *path)
-{
-    uint8_t header[0x1C],data[0x09EE];FILE *file=fopen(path,"rb");if (!file) return false;
-    bool loaded=false;
-    if (fread(header,1,sizeof(header),file)!=sizeof(header) || header[0]!='M' || header[1]!='Z') goto finished;
-    uint16_t paragraphs;paragraphs=(uint16_t)(header[8]|((uint16_t)header[9]<<8));
-    /* MW.EXE load0800, resident data0806, real transfer offset0004. */
-    if (fseek(file,(long)paragraphs*0x10+0x60,SEEK_SET)!=0) goto finished;
-    if (fread(data,1,sizeof(data),file)!=sizeof(data) || ferror(file)) goto finished;
-    loaded=MwImportLauncherInitialData(data,sizeof(data));
-finished:
-    if (fclose(file)!=0) loaded=false;
-    return loaded;
-}
 static char dataDirectory[4096];
 bool MwSdlSetDataDirectory(const char *directory)
 {
@@ -147,11 +133,9 @@ bool MwSdlInitialize(const char *gameDirectory,const char *captureDirectory)
     }
     if (!MwHostPrepareRules(dataDirectory) || !MwHostPrepareUi(dataDirectory)) return false;
     if (!MwHostSetCampaignSaveDirectory(writeDirectory) || !MwHostPrepareStory(gameDirectory,writeDirectory)) return false;
-    char path[4096];
-    if (!MwHostJoinGamePath(path,sizeof(path),gameDirectory,"MW_MAIN.EXE")
-        || !MwHostLoadCampaignInitialData(path) || !MwImportCampaignEventText()
-        || !MwHostLoadCampaignMusicData(path) || !MwHostSetOriginalGameDirectory(gameDirectory)) return false;
-    if (!MwHostJoinGamePath(path,sizeof(path),gameDirectory,"MW.EXE") || !LoadResidentLauncher(path)) return false;
+    if (!MwImportCampaignInitialData() || !MwImportCampaignEventText()
+        || !MwImportCampaignMusicData() || !MwHostSetOriginalGameDirectory(gameDirectory)) return false;
+    MwImportLauncherInitialData();
     if (!SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_EVENTS)) return false;
     initialized=true;
     if (!MwSdlInitializeVideo(captureDirectory) || !MwSdlInitializeAudio()) {MwSdlShutdown();return false;}

@@ -39,6 +39,7 @@ add_library(mechwarrior_original STATIC
     src/Original/Memory/MW_MAIN_1090_OPTIONS.cpp
     src/Original/Memory/MW_MAIN_1090_LAYOUT.cpp
     src/Original/Memory/MW_0806_STATE.cpp
+    src/Original/Memory/NativeStart.cpp
     src/Original/Launcher/MW_0806.cpp
     src/Original/Combat/BTECH_0810.cpp
     src/Original/Combat/BTECH_0810_IMPORT.cpp
@@ -257,6 +258,11 @@ if(MECHWARRIOR_BUILD_TESTS)
     set_tests_properties(ui_exe PROPERTIES SKIP_RETURN_CODE 77)
     # The whole import at start (story, rules, ui, MW_MAIN's and BTECH's
     # importers) on the player's files; any refusal fails. Skipped without them.
+    # The program's start constants and file names against the player's exes; skipped without them.
+    add_executable(start_exe_test tests/start_exe_test.cpp src/Original/Memory/NativeStart.cpp src/Support/BtechImage.cpp src/Support/Sha256.cpp)
+    target_include_directories(start_exe_test PRIVATE src/include)
+    add_test(NAME start_exe COMMAND start_exe_test)
+    set_tests_properties(start_exe PROPERTIES SKIP_RETURN_CODE 77)
     add_executable(import_exe_test tests/import_exe_test.cpp)
     target_link_libraries(import_exe_test PRIVATE mechwarrior_original)
     add_test(NAME import_exe COMMAND import_exe_test "${CMAKE_CURRENT_SOURCE_DIR}/data" "${CMAKE_CURRENT_BINARY_DIR}/import_exe_work")

@@ -4,14 +4,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* Installation-file decoding, not native game procedures or a live DS image.
- * Input storage is borrowed only for the duration of each call. In the
- * importers, a zero (`name=0;` or a memset) followed by a bare offset in a
- * comment is a value the exe holds as zero at that offset (of 1090, or of
- * 28BE for the music): it is set, not read (docs/phase2/PLAN.md 8, 6a). */
-bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount);
-bool MwHostLoadCampaignInitialData(const char *executablePath);
+/* MW_MAIN's start values on every EXEC, from story/, data/ and code; no exe is
+ * read (docs/phase2/PLAN.md 8, slice 6b). In the importers, a zero (`name=0;`
+ * or a memset) followed by a bare offset in a comment is a value the exe holds
+ * as zero at that offset (of 1090, or of 28BE for the music): it is set, not
+ * read (6a). A constant followed by an offset is set from native_start.h. */
+bool MwImportCampaignInitialData(void);
+bool MwImportCampaignMusicData(void);
+/* The EGA overlay, still read from MW_EGA.EXE until slice 6d. */
 bool MwHostLoadEgaInitialData(const char *executablePath);
-bool MwImportCampaignMusicData(const uint8_t *data,size_t byteCount);
-bool MwHostLoadCampaignMusicData(const char *executablePath);
 #endif

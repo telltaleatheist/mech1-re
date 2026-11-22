@@ -18,6 +18,7 @@
 #include "mechwarrior/campaign_options.h"
 #include "mechwarrior/campaign_handoff.h"
 #include "mechwarrior/ui_layout.h"
+#include "mechwarrior/native_start.h"
 #include "MW_MAIN_1090_LAYOUT.h"
 #include <stdlib.h>
 #include <string.h>
@@ -461,9 +462,9 @@ uint16_t companyMenuSelectedRow,barMenuSelectedRow,optionsMenuSelection;
  * native game methods. Pointer topology is the reviewed shipped revision. */
 /* Month strings end at4B19.4B1A onward belongs to contract date/editor data. */
 static uint8_t calendarMonthText[0x6E];
-static void ImportInitialWords(const uint8_t *data, uint16_t offset, uint16_t *words, size_t count)
+static void ImportInitialWords(const uint8_t *bytes, uint16_t offset, uint16_t *words, size_t count)
 {
-    for (size_t i=0;i<count;++i) words[i]=MwReadNativeWord(data,(uint16_t)(offset+i*2));
+    for (size_t i=0;i<count;++i) words[i]=MwReadNativeWord(bytes,(uint16_t)(offset+i*2));
 }
 /* A rule table, rebuilt from data/rules (src/Rules) as the exe lays it out. */
 static bool ImportRuleBytes(const char *id, void *bytes, size_t size)
@@ -479,12 +480,13 @@ static bool ImportRuleWords(const char *id, uint16_t *words, size_t count, size_
     ImportInitialWords(bytes,(uint16_t)at,words,count);
     return true;
 }
-static void ImportInitialText(const uint8_t *data, uint16_t offset, MwPanelText *line, char *text, size_t count)
+/* An intro caption's x and y (data/ui/intro.json), which the exe keeps before its text. */
+static bool ImportIntroCaptionAt(const char *id, MwIntroPositionedText *caption)
 {
-    line->x=MwReadNativeWord(data,offset);
-    line->y=MwReadNativeWord(data,(uint16_t)(offset+2));
-    line->colour=data[(uint16_t)(offset+4)];
-    memcpy(text,data+offset+5,count);line->text=text;
+    uint16_t at[2];
+    if (!MwUiCopyWords(id,at,2,0)) return false;
+    caption->x=at[0];caption->y=at[1];
+    return true;
 }
 /* The story file's keys for the unit kinds (CampaignUnitKind order) and the
  * houses (HOUSE_* order), as src/Import/pieces.txt names them. */
@@ -509,14 +511,14 @@ static bool ImportMainWords(void)
         && MwWordsCopyInto("dealer.word.",mainWords,sizeof(mainWords))
         && MwWordsCopyInto("travel.word.",mainWords,sizeof(mainWords));
 }
-static bool ImportInitialString(const uint8_t *data, uint16_t offset, char *text, size_t capacity)
+static bool ImportInitialString(const uint8_t *view, uint16_t offset, char *text, size_t capacity)
 {
     if ((size_t)offset+capacity>NATIVE_SEGMENT_BYTE_COUNT) return false;
-    const uint8_t *end=static_cast<const uint8_t *>(memchr(data+offset,0,capacity));
+    const uint8_t *end=static_cast<const uint8_t *>(memchr(view+offset,0,capacity));
     if (!end) return false;
-    memcpy(text,data+offset,(size_t)(end-(data+offset))+1);return true;
+    memcpy(text,view+offset,(size_t)(end-(view+offset))+1);return true;
 }
-static bool ImportTravelUiData(const uint8_t *data)
+static bool ImportTravelUiData(void)
 {
     /* data/ui/travel.json: the house's planet list (panel 54E4, menu 5809),
      * the house browser (5A0D, 5A7B) and the travel map (5BF9, 5C17, 5C35,
@@ -597,13 +599,12 @@ MwUiMenu companyMenu={companyRecords,3,&companyNavigationPadding};
 MwUiMenu crewMenu={crewRecords,5,&rearmConfirmationRecords[1].textRecord};
 MwUiMenu barMenu={barRecords,3,NULL};
 MwUiMenu recruitInterviewMenu={recruitInterviewRecords,2,NULL,&saveListRows[4].display.x,0};
-static bool ImportPilotUiData(const uint8_t *data);
-static bool ImportReserveAmmoUiData(const uint8_t *data);
-static bool ImportContractData(const uint8_t *data);
+static bool ImportPilotUiData(void);
+static bool ImportReserveAmmoUiData(void);
+static bool ImportContractData(void);
 static bool CheckTextBoundTables(void);
-bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
+bool MwImportCampaignInitialData(void)
 {
-    if (!data || byteCount<NATIVE_SEGMENT_BYTE_COUNT) return false; /* Transient file image, not live storage. */
     if (!ImportMainWords()) return false;
     /* The save block (1090:0448..0B5F, CAMPAIGN_SAVE_BYTES) from data/rules
      * (new_campaign.json), the commander's name from the story file, decoded
@@ -615,7 +616,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     MwDecodeCampaignExchange(newCampaign);
     memset(&campaignTimerInhibited,0,sizeof(campaignTimerInhibited)); /*0007*/
     memset(&campaignTimerByte,0,sizeof(campaignTimerByte)); /*0008*/
-    memcpy(combatExecutableFilename,data+0x0EF6,sizeof(combatExecutableFilename));
+    memcpy(combatExecutableFilename,mwCombatExecutableFilename,sizeof(combatExecutableFilename)); /*0EF6*/
     memset(&deploymentResolvedWithoutCombat,0,sizeof(deploymentResolvedWithoutCombat)); /*140C*/
     if (!MwStoryCopyText("dark_wing.victory",darkWingVictoryText,sizeof(darkWingVictoryText))) return false;
     memcpy(afterActionCrewHeading,mainWords+0x11DF,sizeof(afterActionCrewHeading));
@@ -651,15 +652,15 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     joystickDirection=0; /*02E6*/
     joystickButtonOnePressed=0; /*02E8*/
     joystickButtonTwoPressed=0; /*02EA*/
-    memcpy(&joystickPreviousButtons,data+0x02EC,sizeof(joystickPreviousButtons));
+    joystickPreviousButtons=MW_JOYSTICK_PREVIOUS_BUTTONS_START;
     joystickXCount=0; /*02ED*/
     joystickYCount=0; /*02EF*/
-    joystickDeflection=MwReadNativeWord(data,0x02F1);
+    joystickDeflection=MW_JOYSTICK_DEFLECTION_START;
     mouseMotionX=0; /*03DA*/
     mouseMotionY=0; /*03DC*/
     memset(&joystickRepeatActive,0,sizeof(joystickRepeatActive)); /*02F3*/
     joystickRepeatDeadline=0; /*02F4*/
-    ImportInitialWords(data,0x02F6,(uint16_t *)joystickNavigationKeys,sizeof(joystickNavigationKeys)/sizeof(uint16_t));
+    memcpy(joystickNavigationKeys,mwJoystickNavigationKeysStart,sizeof(joystickNavigationKeys)); /*02F6*/
     joystickCentreX=0; /*0308*/
     joystickCentreY=0; /*030A*/
     joystickXDeflectionStep=0; /*031C*/
@@ -675,9 +676,10 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     selectedUiRecordIndex=0; /*03E5*/
     uiSelectionChangedCodeOffset=0; /*03E7*/
     uiIdleCodeOffset=0; /*03E9*/
-    memcpy(&hubFirstNavigationProbe,data+0x1E75,sizeof(hubFirstNavigationProbe));
-    memcpy(&hubSecondNavigationProbe,data+0x1EC9,sizeof(hubSecondNavigationProbe));
-    memcpy(&hubThirdNavigationProbe,data+0x1EF3,sizeof(hubThirdNavigationProbe));
+    /* The hub menus' past-end probes (story/native.json, src/Import/pieces.txt). */
+    if (!MwStoryCopyBytes("probe.hub_planet",&hubFirstNavigationProbe,1)
+        || !MwStoryCopyBytes("probe.hub_contract",&hubSecondNavigationProbe,1)
+        || !MwStoryCopyBytes("probe.hub_remote_planet",&hubThirdNavigationProbe,1)) return false;
     panelOriginX=0; /*03EB*/
     panelOriginY=0; /*03ED*/
     panelWidth=0; /*03EF*/
@@ -703,8 +705,10 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     if (!MwUiCopyWords("hub.table.notification_words",notificationTextOffsets,4,0)) return false; /*5ED3*/
     memcpy(notificationTextStorage,mainWords+0x5EDB,sizeof(notificationTextStorage));
     compressedPictureBufferSelector=0; /*016D*/
-    randomStateWord0=MwReadNativeWord(data,0x03F5);
-    randomStateWord1=MwReadNativeWord(data,0x03F7);
+    /* 03F5, 03F7: the random generator's words as an EXEC starts them (data/rules/new_campaign.json "start"). */
+    uint16_t randomSeed[2];
+    if (!ImportRuleWords("new_campaign.start.random_seed",randomSeed,2)) return false;
+    randomStateWord0=randomSeed[0];randomStateWord1=randomSeed[1];
     pictureCompressedByteCount=0; /*0F6D*/
     pictureOutputSelector=0; /*0F6F*/
     memset(&pictureReadHighNibbleNext,0,sizeof(pictureReadHighNibbleNext)); /*0F71*/
@@ -717,7 +721,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     activePictureBankSelector=0; /*0167*/
     secondaryPictureBankSelector=0; /*0169*/
     memset(&indexedPictureDirectoryLoaded,0,sizeof(indexedPictureDirectoryLoaded)); /*0B62*/
-    indexedPictureCachedIndex=MwReadNativeWord(data,0x0B63);
+    indexedPictureCachedIndex=MW_INDEXED_PICTURE_NO_CACHED_INDEX;
     indexedPictureStoredBytes=0; /*0B65*/
     memset(indexedPictureDirectory,0,sizeof(indexedPictureDirectory)); /*0B67*/
     indexedPictureFileHandle=0; /*0DBF*/
@@ -766,7 +770,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     /* The pilots from story/pilots.json (offsets at 9121, storage 9177..). */
     if (!MwStoryBuildPilots(pilotDefinitionStorage,sizeof(pilotDefinitionStorage),PILOT_DEFINITIONS_START,
         pilotDefinitionOffsets,CAMPAIGN_PILOT_ID_COUNT)) return false;
-    ImportInitialWords(data,0x4CE6,(uint16_t *)travelSquareRootValues,sizeof(travelSquareRootValues)/sizeof(uint16_t));
+    MwBuildTravelSquareRoots(travelSquareRootValues,TRAVEL_ROOT_TABLE_COUNT); /*4CE6*/
     travelDestinationMapPositionX=0; /*54D0*/
     travelDestinationMapPositionY=0; /*54D2*/
     travelMapDeltaX=0; /*54D4*/
@@ -785,7 +789,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     travelJoystickLastTick=0; /*5AE3*/
     travelAnimationFrameStep=0; /*5AE6*/
     memset(&travelDropShipSelected,0,sizeof(travelDropShipSelected)); /*5AE5*/
-    hiredTransportReverseTerminator=MwReadNativeWord(data,0x5AE8);
+    hiredTransportReverseTerminator=MW_HIRED_TRANSPORT_REVERSE_END;
     if (!MwUiCopyWords("travel.table.hired_transport_frames",(uint16_t *)hiredTransportFrames,sizeof(hiredTransportFrames)/sizeof(uint16_t),0) /*5AEA*/
         || !MwUiCopyWords("travel.table.dropship_frames",(uint16_t *)dropShipTravelFrames,sizeof(dropShipTravelFrames)/sizeof(uint16_t),0)) return false; /*5B2E*/
     /* DS:5C4E: the destination header's caption text (the original's buffer runs past it into the next caption's head, bytes after the NUL that nothing draws). */
@@ -925,33 +929,33 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
         char id[24];snprintf(id,sizeof(id),"intro.narration.%u",line+1);
         if (!MwStoryCopyText(id,introNarrationLines[line],sizeof(introNarrationLines[line]))) return false;
     }
-    introFirstLeftText.x=MwReadNativeWord(data,0x1C33);introFirstLeftText.y=MwReadNativeWord(data,0x1C35);
+    if (!ImportIntroCaptionAt("intro.caption.1.left.at",&introFirstLeftText)) return false;
     if (!MwStoryCopyText("intro.caption.1.left",introFirstLeftText.text,sizeof(introFirstLeftText.text))) return false;
-    introFirstRightText.x=MwReadNativeWord(data,0x1C57);introFirstRightText.y=MwReadNativeWord(data,0x1C59);
+    if (!ImportIntroCaptionAt("intro.caption.1.right.at",&introFirstRightText)) return false;
     if (!MwStoryCopyText("intro.caption.1.right",introFirstRightText.text,sizeof(introFirstRightText.text))) return false;
-    introSecondLeftText.x=MwReadNativeWord(data,0x1C80);introSecondLeftText.y=MwReadNativeWord(data,0x1C82);
+    if (!ImportIntroCaptionAt("intro.caption.2.left.at",&introSecondLeftText)) return false;
     if (!MwStoryCopyText("intro.caption.2.left",introSecondLeftText.text,sizeof(introSecondLeftText.text))) return false;
-    introSecondRightText.x=MwReadNativeWord(data,0x1CA9);introSecondRightText.y=MwReadNativeWord(data,0x1CAB);
+    if (!ImportIntroCaptionAt("intro.caption.2.right.at",&introSecondRightText)) return false;
     if (!MwStoryCopyText("intro.caption.2.right",introSecondRightText.text,sizeof(introSecondRightText.text))) return false;
-    introThirdLeftText.x=MwReadNativeWord(data,0x1CCF);introThirdLeftText.y=MwReadNativeWord(data,0x1CD1);
+    if (!ImportIntroCaptionAt("intro.caption.3.left.at",&introThirdLeftText)) return false;
     if (!MwStoryCopyText("intro.caption.3.left",introThirdLeftText.text,sizeof(introThirdLeftText.text))) return false;
-    introThirdRightText.x=MwReadNativeWord(data,0x1D1F);introThirdRightText.y=MwReadNativeWord(data,0x1D21);
+    if (!ImportIntroCaptionAt("intro.caption.3.right.at",&introThirdRightText)) return false;
     if (!MwStoryCopyText("intro.caption.3.right",introThirdRightText.text,sizeof(introThirdRightText.text))) return false;
-    introFourthLeftText.x=MwReadNativeWord(data,0x1D53);introFourthLeftText.y=MwReadNativeWord(data,0x1D55);
+    if (!ImportIntroCaptionAt("intro.caption.4.left.at",&introFourthLeftText)) return false;
     if (!MwStoryCopyText("intro.caption.4.left",introFourthLeftText.text,sizeof(introFourthLeftText.text))) return false;
-    introFourthRightText.x=MwReadNativeWord(data,0x1D6F);introFourthRightText.y=MwReadNativeWord(data,0x1D71);
+    if (!ImportIntroCaptionAt("intro.caption.4.right.at",&introFourthRightText)) return false;
     if (!MwStoryCopyText("intro.caption.4.right",introFourthRightText.text,sizeof(introFourthRightText.text))) return false;
-    introFifthLeftText.x=MwReadNativeWord(data,0x1D8E);introFifthLeftText.y=MwReadNativeWord(data,0x1D90);
+    if (!ImportIntroCaptionAt("intro.caption.5.left.at",&introFifthLeftText)) return false;
     if (!MwStoryCopyText("intro.caption.5.left",introFifthLeftText.text,sizeof(introFifthLeftText.text))) return false;
-    introFifthRightText.x=MwReadNativeWord(data,0x1DD8);introFifthRightText.y=MwReadNativeWord(data,0x1DDA);
+    if (!ImportIntroCaptionAt("intro.caption.5.right.at",&introFifthRightText)) return false;
     if (!MwStoryCopyText("intro.caption.5.right",introFifthRightText.text,sizeof(introFifthRightText.text))) return false;
-    introSixthLeftText.x=MwReadNativeWord(data,0x1DF7);introSixthLeftText.y=MwReadNativeWord(data,0x1DF9);
+    if (!ImportIntroCaptionAt("intro.caption.6.left.at",&introSixthLeftText)) return false;
     if (!MwStoryCopyText("intro.caption.6.left",introSixthLeftText.text,sizeof(introSixthLeftText.text))) return false;
-    introSixthRightText.x=MwReadNativeWord(data,0x1E18);introSixthRightText.y=MwReadNativeWord(data,0x1E1A);
+    if (!ImportIntroCaptionAt("intro.caption.6.right.at",&introSixthRightText)) return false;
     if (!MwStoryCopyText("intro.caption.6.right",introSixthRightText.text,sizeof(introSixthRightText.text))) return false;
-    introSeventhLeftText.x=MwReadNativeWord(data,0x1E40);introSeventhLeftText.y=MwReadNativeWord(data,0x1E42);
+    if (!ImportIntroCaptionAt("intro.caption.7.left.at",&introSeventhLeftText)) return false;
     if (!MwStoryCopyText("intro.caption.7.left",introSeventhLeftText.text,sizeof(introSeventhLeftText.text))) return false;
-    introSeventhRightText.x=MwReadNativeWord(data,0x1EB8);introSeventhRightText.y=MwReadNativeWord(data,0x1EBA);
+    if (!ImportIntroCaptionAt("intro.caption.7.right.at",&introSeventhRightText)) return false;
     if (!MwStoryCopyText("intro.caption.7.right",introSeventhRightText.text,sizeof(introSeventhRightText.text))) return false;
     for (uint16_t row=0;row<CAMPAIGN_SYSTEM_COUNT;++row)
         if (!ImportRuleWords("repair.system_prices",systemRepairBasePrices[row].basePriceByMechKind,CAMPAIGN_MECH_KIND_COUNT,row*0x14)) return false;
@@ -1001,7 +1005,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
         snprintf(id,sizeof(id),"unit.%s.name",storyUnitKeys[i]);
         if (!MwStoryCopyText(id,unitDisplayNames[i],sizeof(unitDisplayNames[i]))) return false;
     }
-    if (!ImportReserveAmmoUiData(data)) return false;
+    if (!ImportReserveAmmoUiData()) return false;
     /* The ammo family names and damage tier labels (complex.word.*), by complex.json's ammo_family_words (2F78) and damage_tier_words (2B23). */
     uint16_t ammoFamilyWords[0x06],damageTierWords[0x04];
     if (!MwUiCopyWords("complex.table.ammo_family_words",ammoFamilyWords,0x06,0)
@@ -1021,7 +1025,11 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
         calendarMonthNames[month]=calendarMonthText+text-0x4AAC;
     }
     /* The eighth planet row's caption (travel.caption.planet_8, 55EC): its head from the layout bytes, its 18-byte text from the words. */
-    ImportInitialText(data,0x55EC,&positionedText.display,positionedText.text,18);
+    uint16_t positionedAt[2];
+    if (!MwUiCopyWords("travel.caption.planet_8",positionedAt,2,0)
+        || !MwUiCopyBytes("travel.caption.planet_8",&positionedText.display.colour,1,4)) return false;
+    positionedText.display.x=positionedAt[0];positionedText.display.y=positionedAt[1];
+    positionedText.display.text=positionedText.text;
     if (!MwWordsCopyBlock("travel.caption.planet_8.text",(uint8_t *)positionedText.text,18)) return false;
     /* data/ui/complex.json: the Mech Complex (panel 25C5, menu 2632), the owned
      * list (266A, 283B), 'Mech and DropShip service (2C3F, 2D53; 2D06, 2D99),
@@ -1177,12 +1185,12 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     /* These initial near values have no live object until their callers set them. */
     repairQuoteDamage=NULL;componentRepairDamage=NULL;
     mechDiagramBodyDamage=NULL;mechDiagramRectangle=NULL;uiMenu=NULL;
-    return ImportPilotUiData(data) && ImportTravelUiData(data) && MwImportCampaignEventData(data,byteCount)
-        && MwImportCampaignOptionsData(data,byteCount)
+    return ImportPilotUiData() && ImportTravelUiData() && MwImportCampaignEventData()
+        && MwImportCampaignOptionsData()
         && CheckTextBoundTables();
 }
 /* Installation decoder, not an added native gameplay procedure. */
-static bool ImportPilotUiData(const uint8_t *data)
+static bool ImportPilotUiData(void)
 {
     /* data/ui/crew.json: company 21CE, commander profile 2258, crew 2325,
      * bar 8FF6 and recruit 9076, with their menus 222E, 238A, 904C, 90EA. */
@@ -1229,7 +1237,7 @@ static bool ImportPilotUiData(const uint8_t *data)
     assignmentConflictingOwnedSlot=0; /*2588*/
     recruitOfferSlot=0; /*911D*/
     selectedRecruitPilotId=0; /*911F*/
-    assignmentConflictHighlighted=data[0x2585];
+    assignmentConflictHighlighted=0; /*2585*/
     if (!MwUiCopyWords("crew.table.pilot_card_column_origins",pilotCardColumnOrigins,PILOT_CARD_COUNT,0)) return false; /*244A*/
     /* The crew's words (crew.word.*), through the pointer tables crew.json
      * names them by: reputation 23D0, skill 2452 and attitude 23FB. */
@@ -1276,17 +1284,18 @@ static bool ImportPilotUiData(const uint8_t *data)
     {
         uint16_t offset=pilotDefinitionOffsets[pilotId];
         if (offset<PILOT_DEFINITIONS_START || (uint32_t)offset+sizeof(MwPilotDefinitionPrefix)>=PILOT_DEFINITIONS_END) return false;
-        if (!memchr(data+offset+3,0,0x0B) || !memchr(data+offset+0x0E,0,PILOT_DEFINITIONS_END-offset-0x0E)) return false;
+        const uint8_t *record=&pilotDefinitionStorage[offset-PILOT_DEFINITIONS_START];
+        if (!memchr(record+3,0,0x0B) || !memchr(record+0x0E,0,PILOT_DEFINITIONS_END-offset-0x0E)) return false;
         pilotDefinitions[pilotId]=(const MwPilotDefinitionPrefix *)&pilotDefinitionStorage[offset-PILOT_DEFINITIONS_START];
         pilotDialogue[pilotId]=(const char *)(pilotDefinitions[pilotId]+1);
     }
-    companyNavigationPadding=data[0x3020];
+    companyNavigationPadding=0; /*3020*/
     if (!ImportInitialString(mainWords,0x21C2,commanderProfileName,sizeof(commanderProfileName))) return false;
     if (!ImportInitialString(mainWords,0x9106,recruitStatLabels,sizeof(recruitStatLabels))) return false;
     if (!ImportInitialString(mainWords,0x9C39,noAvailableRecruitsText,sizeof(noAvailableRecruitsText))) return false;
     if (!ImportInitialString(mainWords,0x9C5A,fullFourPilotRosterText,sizeof(fullFourPilotRosterText))) return false;
     if (!ImportInitialString(mainWords,0x9C8D,fullThreePilotRosterText,sizeof(fullThreePilotRosterText))) return false;
-    return ImportContractData(data);
+    return ImportContractData();
 }
 
 MwPanelDescriptor contractOfficePanel,contractActionsPanel;
@@ -1313,18 +1322,18 @@ uint8_t deploymentRefusalCount,deploymentPenaltySuppressed;
 char commanderNeedsMechText[0x37],assignedMechUnreadyText[0x3A],contractCancelledText[0x4F];
 
 /* Actual EXE import boundary: no runtime segment registry or copied live DS. */
-static bool ImportContractData(const uint8_t *data)
+static bool ImportContractData(void)
 {
     negotiatingMissionOfferSlot=0; /*488B*/
     negotiatingMissionOfferByteOffset=0; /*488E*/
-    contractRequestEditorInitialized=data[0x488D];
+    contractRequestEditorInitialized=0; /*488D*/
     contractRequestTextColour=0; /* 4B34: Written before it's read; zero where the exe reloaded it. */
     contractRequestTermByteOffset=0; /*4B32*/
     contractNegotiationAttempts=0; /*4B7E*/
-    negotiationRequestsSatisfied=data[0x4B7D];
+    negotiationRequestsSatisfied=0; /*4B7D*/
     acceptedContractAdvanceCbillsLow=0; /*4B73*/
     acceptedContractAdvanceCbillsHigh=0; /*4B75*/
-    deploymentRefusalCount=data[0x0FBF];deploymentPenaltySuppressed=data[0x140B];
+    deploymentRefusalCount=0; /*0FBF*/deploymentPenaltySuppressed=0; /*140B*/
     /* data/ui/contract_office.json: the year offsets (4B1A), and the requested
      * terms' x, then y, then digit counts (49CC). */
     if (!MwUiCopyWords("contract_office.table.date_year_x_offsets",contractDateYearXOffsets,CAMPAIGN_MONTH_COUNT,0)
@@ -1333,13 +1342,17 @@ static bool ImportContractData(const uint8_t *data)
         || !MwUiCopyWords("contract_office.table.requested_terms",requestedTermDigits,3,12)) return false;
     if (!ImportRuleWords("houses.extra_enemy_roll_thresholds",(uint16_t *)houseExtraEnemyRollThresholds,CAMPAIGN_HOUSE_COUNT)) return false;
     memcpy(submitContractCaption,mainWords+0x4B35,6);memcpy(acceptContractCaption,mainWords+0x4B3B,6);
-    memcpy(contractOfficePlanetGroupStorage,data+0x4B8A,sizeof(contractOfficePlanetGroupStorage));
+    /* The planet groups (4B8A) and each House's pointer (4B80), from data/rules/houses.json. */
+    uint16_t planetGroupOffsets[CAMPAIGN_HOUSE_COUNT];
+    if (!ImportRuleBytes("houses.contract_planet_groups",contractOfficePlanetGroupStorage,sizeof(contractOfficePlanetGroupStorage))
+        || !ImportRuleWords("houses.contract_planet_group_offsets",planetGroupOffsets,CAMPAIGN_HOUSE_COUNT)) return false;
     for (uint16_t house=0;house<CAMPAIGN_HOUSE_COUNT;++house)
     {
         char id[24];snprintf(id,sizeof(id),"house.%s.name",storyHouseKeys[house]);
         if (!MwStoryCopyText(id,houseContractNames[house],sizeof(houseContractNames[house]))) return false;
-        uint16_t group=MwReadNativeWord(data,0x4B80+house*2);
-        if (group<0x4B8A || group>=0x4BF0 || !memchr(data+group,CONTRACT_REGION_END,0x4BF0-group)) return false;
+        uint16_t group=planetGroupOffsets[house];
+        if (group<0x4B8A || group>=0x4BF0
+            || !memchr(contractOfficePlanetGroupStorage+group-0x4B8A,CONTRACT_REGION_END,0x4BF0-group)) return false;
         contractOfficePlanetGroups[house]=contractOfficePlanetGroupStorage+group-0x4B8A;
     }
     /* The office (panel 4822, menu 486F) and the offer's actions (49DE, 4A15). */
@@ -1355,7 +1368,8 @@ static bool ImportContractData(const uint8_t *data)
         || !MwImportUiPanel("contract_office.panel.actions",&contractActionsPanel,3,owners,count)
         || !MwImportUiMenu("contract_office.menu.office",&contractOfficeMenu,owners,count)
         || !MwImportUiMenu("contract_office.menu.actions",&contractActionsMenu,owners,count)) return false;
-    contractOfficeNavigationProbe=data[0x5661];contractActionsNavigationProbe=data[0x5807];
+    if (!MwStoryCopyBytes("probe.contract_office",&contractOfficeNavigationProbe,1)
+        || !MwStoryCopyBytes("probe.contract_actions",&contractActionsNavigationProbe,1)) return false;
     return MwStoryCopyText("contract.narrative",contractNarrative,sizeof(contractNarrative))
         && ImportInitialString(mainWords,0x4BFA,noContractsText,sizeof(noContractsText))
         && ImportInitialString(mainWords,0x4C25,negotiationTerminatedText,sizeof(negotiationTerminatedText))
@@ -1384,11 +1398,11 @@ MwUiRecord reserveAmmoShopRecords[RESERVE_AMMO_MENU_ROWS];
 /* Native FF-neighbour probe is 1090:505A, the existing travel table WORD. */
 MwUiMenu reserveAmmoShopMenu={reserveAmmoShopRecords,RESERVE_AMMO_MENU_ROWS,NULL,&travelSquareRootValues[0x1BA],0};
 
-static bool ImportReserveAmmoUiData(const uint8_t *data)
+static bool ImportReserveAmmoUiData(void)
 {
     reserveAmmoShopSelectedRow=0; /*4137*/
     reserveAmmoPreviewSelection=0; /*3F6E*/
-    reserveAmmoSelling=data[0x4139];
+    reserveAmmoSelling=0; /*4139*/
     memset(reserveAmmoMechColours,0,sizeof(reserveAmmoMechColours)); /* 3F70: Written before it's read; zero where the exe reloaded it. */
     if (!ImportInitialString(mainWords,0x413A,reserveAmmoBuyLabel,sizeof(reserveAmmoBuyLabel))
         || !ImportInitialString(mainWords,0x413F,reserveAmmoSellLabel,sizeof(reserveAmmoSellLabel))) return false;
@@ -1416,6 +1430,12 @@ static bool ImportReserveAmmoUiData(const uint8_t *data)
     if (!MwImportUiCaptions(owners,count)
         || !MwImportUiPanel("dealer.panel.ammo",&reserveAmmoShopPanel,14,owners,count)
         || !MwImportUiMenu("dealer.menu.ammo",&reserveAmmoShopMenu,owners,count)) return false;
+    /* The mechs each family fits (data/rules/units.json): a pointer per family
+     * (3F87) into the lists at 3F9F, each ended by FFFF. */
+    enum { AMMO_FAMILY_MECHS_START=0x3F9F, AMMO_FAMILY_MECH_WORDS=18 };
+    uint16_t familyMechLists[CAMPAIGN_AMMO_FAMILY_COUNT],familyMechs[AMMO_FAMILY_MECH_WORDS];
+    if (!ImportRuleWords("units.ammo_family_mech_lists",familyMechLists,CAMPAIGN_AMMO_FAMILY_COUNT)
+        || !ImportRuleWords("units.ammo_family_mechs",familyMechs,AMMO_FAMILY_MECH_WORDS)) return false;
     uint16_t compatibilityPanels[CAMPAIGN_AMMO_FAMILY_COUNT];
     if (!MwUiCopyWords("dealer.table.compatibility_panels",compatibilityPanels,CAMPAIGN_AMMO_FAMILY_COUNT,0)) return false;
     for (uint16_t family=0;family<CAMPAIGN_AMMO_FAMILY_COUNT;++family)
@@ -1424,11 +1444,13 @@ static bool ImportReserveAmmoUiData(const uint8_t *data)
         while (panel<CAMPAIGN_AMMO_FAMILY_COUNT && MwUiPieceOffset(compatibilityPanelIds[panel])!=compatibilityPanels[family]) ++panel;
         if (panel==CAMPAIGN_AMMO_FAMILY_COUNT
             || !MwImportUiPanel(compatibilityPanelIds[panel],&reserveAmmoCompatibilityPanels[family],1,owners,count)) return false;
-        uint16_t kinds=MwReadNativeWord(data,0x3F87+family*2),index=0;
+        uint16_t kinds=familyMechLists[family],index=0;
+        if (kinds<AMMO_FAMILY_MECHS_START || (kinds-AMMO_FAMILY_MECHS_START)%2) return false;
         do
         {
-            if (index>=6) return false;
-            uint16_t kind=MwReadNativeWord(data,kinds+index*2);
+            const uint16_t word=(uint16_t)((kinds-AMMO_FAMILY_MECHS_START)/2+index);
+            if (index>=6 || word>=AMMO_FAMILY_MECH_WORDS) return false;
+            uint16_t kind=familyMechs[word];
             reserveAmmoCompatibleMechs[family][index++]=kind;
             if (kind==UINT16_MAX) break;
             if (kind>=CAMPAIGN_MECH_KIND_COUNT) return false;

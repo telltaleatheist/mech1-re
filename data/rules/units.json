@@ -176,5 +176,13 @@
       "weapon_repair_prices": [200, 40, 40, 40, 5, 5, 80, 40, 40, 40, 0]
     },
     "dropship": {"base_price": 60000, "condition_score_divisor": 100}
-  }
+  },
+  "ammo_family_mechs": [
+    ["shadow_hawk", "rifleman", "marauder"],
+    ["shadow_hawk"],
+    ["shadow_hawk"],
+    ["jenner"],
+    ["warhammer", "battlemaster"],
+    ["locust", "phoenix_hawk", "warhammer", "battlemaster"]
+  ]
 }

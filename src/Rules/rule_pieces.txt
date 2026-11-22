@@ -25,6 +25,10 @@ units.weapon_repair_price_lists     MW_MAIN.EXE  1090:3C1B 20
 units.weapon_repair_prices          MW_MAIN.EXE  1090:3C2F 124
 units.body_repair_prices            MW_MAIN.EXE  1090:3CAB 10
 units.force_weights                 MW_MAIN.EXE  1090:4B55 10
+# units.json "ammo_family_mechs": per ammo family, its mech list's pointer,
+# then the lists end to end, each ended by FFFF (slice 6b).
+units.ammo_family_mech_lists        MW_MAIN.EXE  1090:3F87 12
+units.ammo_family_mechs             MW_MAIN.EXE  1090:3F9F 36
 # market.json
 market.ammunition_prices            MW_MAIN.EXE  1090:2EF8 24
 market.price_tier_multipliers       MW_MAIN.EXE  1090:3057 4
@@ -52,6 +56,10 @@ houses.mission_type_limits          MW_MAIN.EXE  1090:5CBA 40
 houses.planet_range_starts          MW_MAIN.EXE  1090:655C 10
 houses.planet_range_counts          MW_MAIN.EXE  1090:6566 10
 houses.mission_planet_policy_offsets  MW_MAIN.EXE  1090:8E90 10
+# The contract office's planet groups (slice 6b): per House its pointer, then
+# the groups end to end, FF between a House's groups and FE after its last.
+houses.contract_planet_group_offsets  MW_MAIN.EXE  1090:4B80 10
+houses.contract_planet_groups       MW_MAIN.EXE  1090:4B8A 102
 houses.mission_planet_policies      MW_MAIN.EXE  1090:8E9A 320
 # contracts.json.
 contracts.pilot_wages               MW_MAIN.EXE  1090:2476 8
@@ -99,3 +107,5 @@ mechs.templates                     BTECH.EXE  304E:1178 1792
 # (1090:0483, 10 bytes, story text commander.default_name).
 new_campaign.before_name            MW_MAIN.EXE  1090:0448 59
 new_campaign.after_name             MW_MAIN.EXE  1090:048D 1747
+# new_campaign.json "start": the random generator's two words (slice 6b).
+new_campaign.start.random_seed      MW_MAIN.EXE  1090:03F5 4

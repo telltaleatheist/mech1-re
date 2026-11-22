@@ -30,6 +30,8 @@
 //      "display_indices": [11]}
 //     A word is a name after "orders.word."; each display index names one of
 //     the 7 order words for an order code. "start" holds what play writes but a fresh EXEC reads first.
+//   intro.json (MW_MAIN, the intro's captions; the text is the story's)
+//     {"captions": [7 of {"left": [x, y], "right": [x, y]}]}
 //   MW_MAIN's screens (options, events, hub, crew, contract_office,
 //   complex, dealer, travel; each leaves out the members it has none of)
 //     {"captions": {name: {"at": [x, y], "colour": c} | {"colour": c}},

@@ -26,6 +26,23 @@ cockpit.condition_labels.two_hit    BTECH.EXE 304E:04D8 6
 cockpit.condition_labels.engine     BTECH.EXE 304E:04DE 8
 cockpit.condition_labels.actuator   BTECH.EXE 304E:04E6 10
 
+# intro.json: the intro's captions, each one's x and y before its text (the
+# story's intro.caption.N.left and .right), slice 6b.
+intro.caption.1.left.at             MW_MAIN.EXE 1090:1C33 4
+intro.caption.1.right.at            MW_MAIN.EXE 1090:1C57 4
+intro.caption.2.left.at             MW_MAIN.EXE 1090:1C80 4
+intro.caption.2.right.at            MW_MAIN.EXE 1090:1CA9 4
+intro.caption.3.left.at             MW_MAIN.EXE 1090:1CCF 4
+intro.caption.3.right.at            MW_MAIN.EXE 1090:1D1F 4
+intro.caption.4.left.at             MW_MAIN.EXE 1090:1D53 4
+intro.caption.4.right.at            MW_MAIN.EXE 1090:1D6F 4
+intro.caption.5.left.at             MW_MAIN.EXE 1090:1D8E 4
+intro.caption.5.right.at            MW_MAIN.EXE 1090:1DD8 4
+intro.caption.6.left.at             MW_MAIN.EXE 1090:1DF7 4
+intro.caption.6.right.at            MW_MAIN.EXE 1090:1E18 4
+intro.caption.7.left.at             MW_MAIN.EXE 1090:1E40 4
+intro.caption.7.right.at            MW_MAIN.EXE 1090:1EB8 4
+
 # orders.json: the lance order panel.
 orders.start.lance_panel_text_x     BTECH.EXE 304E:008C 6
 orders.selection_first_rows         BTECH.EXE 304E:0092 4

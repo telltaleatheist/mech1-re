@@ -22,6 +22,8 @@ constexpr RulePiece kTable[] = {
     {"units.weapon_repair_prices", "MW_MAIN.EXE", 0x1090, 0x3C2F, 124, "360960cc8d5ccbca"},
     {"units.body_repair_prices", "MW_MAIN.EXE", 0x1090, 0x3CAB, 10, "96b7c6adbdafbb2e"},
     {"units.force_weights", "MW_MAIN.EXE", 0x1090, 0x4B55, 10, "4bcab9d750596f5e"},
+    {"units.ammo_family_mech_lists", "MW_MAIN.EXE", 0x1090, 0x3F87, 12, "2d9df64e8cd893e6"},
+    {"units.ammo_family_mechs", "MW_MAIN.EXE", 0x1090, 0x3F9F, 36, "0e19d1d644572565"},
     {"market.ammunition_prices", "MW_MAIN.EXE", 0x1090, 0x2EF8, 24, "51c8e71f02806e76"},
     {"market.price_tier_multipliers", "MW_MAIN.EXE", 0x1090, 0x3057, 4, "a3cb794e52a64e65"},
     {"market.stock_kind_range_maxima", "MW_MAIN.EXE", 0x1090, 0x3A37, 3, "f63893d26c31b9b1"},
@@ -45,6 +47,8 @@ constexpr RulePiece kTable[] = {
     {"houses.planet_range_starts", "MW_MAIN.EXE", 0x1090, 0x655C, 10, "a05a1cec153db22f"},
     {"houses.planet_range_counts", "MW_MAIN.EXE", 0x1090, 0x6566, 10, "1ac306ce2b30b457"},
     {"houses.mission_planet_policy_offsets", "MW_MAIN.EXE", 0x1090, 0x8E90, 10, "0e922fc2171ca124"},
+    {"houses.contract_planet_group_offsets", "MW_MAIN.EXE", 0x1090, 0x4B80, 10, "3f3511dd92850bc9"},
+    {"houses.contract_planet_groups", "MW_MAIN.EXE", 0x1090, 0x4B8A, 102, "8e966b04c1b8b94e"},
     {"houses.mission_planet_policies", "MW_MAIN.EXE", 0x1090, 0x8E9A, 320, "3511276f6ff4132f"},
     {"contracts.pilot_wages", "MW_MAIN.EXE", 0x1090, 0x2476, 8, "619e7bd045f78bca"},
     {"contracts.deployment_units_by_scenario", "MW_MAIN.EXE", 0x1090, 0x8E46, 74, "787a4b9fa40e8783"},
@@ -85,6 +89,7 @@ constexpr RulePiece kTable[] = {
     {"mechs.templates", "BTECH.EXE", 0x304E, 0x1178, 1792, "9e28e72ebf0c97f3"},
     {"new_campaign.before_name", "MW_MAIN.EXE", 0x1090, 0x0448, 59, "38f07395507471eb"},
     {"new_campaign.after_name", "MW_MAIN.EXE", 0x1090, 0x048D, 1747, "4cf86081b89e4d52"},
+    {"new_campaign.start.random_seed", "MW_MAIN.EXE", 0x1090, 0x03F5, 4, "c72c44af959db96f"},
 };
 }  // namespace
 

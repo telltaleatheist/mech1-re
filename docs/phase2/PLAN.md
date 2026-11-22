@@ -1562,6 +1562,8 @@ The goal of section 3's sixth slice: the game starts from `story/` and
    2FEB (tone and music tables).
 6. `ExecuteChild` opens each exe only to check that it exists.
 
+Slice 6b removed 1 to 3: MW_MAIN.EXE and MW.EXE are read only by the import.
+
 ### 8.2 How the sweep was measured
 
 A scratch probe build (not committed) writes the program's data segment
@@ -1672,6 +1674,88 @@ mingw check.
 - **6b, MW_MAIN and MW.EXE.** MW_MAIN's class B and C (1090 and 28BE),
   MW.EXE and the F items, the random seed words among them. The host stops
   opening MW_MAIN.EXE and MW.EXE at play; an EXEC resets from `data/` and code.
+
+  Done (branch `phase2-noexe-b`). `MwImportCampaignInitialData`,
+  `MwImportCampaignMusicData`, `MwImportLauncherInitialData` and the
+  sub-importers take no exe bytes any more, so the compiler proves they read
+  none; `MwHostLoadCampaignInitialData`, `MwHostLoadCampaignMusicData` and
+  `LoadResidentLauncher` are gone.
+  - **A.** Seven class-A zeros 6a's sweep missed (1090:0FBF, 140B, 2585,
+    3020, 4139, 488D, 4B7D), and MW.EXE's exchange area (0806:0004..07D3),
+    all zero in the exe.
+  - **B, game state in `data/`.** The random generator's words (1090:03F5,
+    03F7) are `new_campaign.json`'s `start.random_seed`. Each House's
+    contract planet groups (4B80 pointers, 4B8A groups) are `houses.json`'s
+    `contract_planet_groups`, and the mechs each ammo family fits (3F87
+    pointers, 3F9F lists) are `units.json`'s `ammo_family_mechs`; both are
+    built back into the exe's bytes and hash-checked by `rules_exe_test`. The
+    intro captions' x and y (14 pairs, 1C33..1EB8) are `data/ui/intro.json`,
+    checked by `ui_exe_test`; the travel caption that was read through the
+    exe (55EC) now takes its x, y and colour from its layout piece
+    `travel.caption.planet_8`.
+  - **B, code constants.** `native_start.h` and `NativeStart.cpp`: the
+    joystick start values (02EC, 02F1, 02F6), the picture cache's "none"
+    (0B63) and the hired-transport list end (5AE8). Each row names its exe
+    address; `start_exe_test` compares every row's bytes with the exe, in
+    both copies.
+  - **C, `travelSquareRootValues`** (1090:4CE6, 1000 words). Entry i is
+    round(sqrt(10 i)) capped at 99, computed as (isqrt(40 i) + 1) / 2 with an
+    integer square root. That matches 998 of the 1000; entries 991 and 992
+    hold 98 where the formula gives 99. No natural generator matched all
+    1000: Newton and bitwise integer roots of 10 i, floor or round, capped
+    at 99, the best Newton variant 40 entries off. So the formula is kept
+    with a two-entry exception list, commented as measured from the exe, and
+    `start_exe_test` compares all 1000 entries.
+  - **E and F.** File names are code: `combatExecutableFilename` (0EF6), the
+    save search pattern (A056) and the launcher's two child names (MW.EXE
+    0806:07E3, 07EF), all checked by `start_exe_test`. `launcherIdentity`
+    (0806:07D4, 11 bytes) is built from the three bytes MW_MAIN's start tests
+    (`MwRunCampaign`, 081B: 07D4, 07D8, 07DE); the other eight, never read,
+    are zero. That is the one intended difference in the proof.
+  - **Story.** `story/native.json` (import version 3) holds native spans:
+    raw bytes the converted code reads as they are, by id, through
+    `MwStoryCopyBytes`. A span is a `native` row of `src/Import/pieces.txt`,
+    keyed and hash-checked like any piece, and the rule for adding one is:
+    only a span the code reads, one id per span, each listed with its
+    reader, so the file never becomes a dump of the exe. The loader refuses
+    a span missing, of another length, not hex or unknown. 6b's spans:
+    - Nine menu probes (`probe.*`): the byte one past each menu's records,
+      which the menu code reads. Six fall in text the story already holds
+      (the comment on each row says which); three lie past 1090's named
+      data, in a later segment's strings.
+    - `music.driver` (28BE:0000, 0xA12 bytes), decoded as before by the
+      music importer, on the AdLib instruments' precedent. Its layout, so a
+      later slice can lift the bank and the frequencies into real data
+      without deriving it again: the runtime header 0000..0041; the MIDI
+      tick fields 0042..004B; the stream state 004C..0059; flags 005A..005C;
+      the track handlers 005D..006A (channel) and 006B..008A (system); the
+      byte handlers 008C..00A7, their displacement 00A8 and 00AA..00AF; the
+      AdLib backend record 00B0..00DF; the AdLib delays 00E0, 00E2 and
+      rhythm register 00E4; the note frequencies 00E6..01CB (115 words); the
+      AdLib voice routes 01CC..01ED; the MPU backend record 01EE..021F, its
+      previous IRQ 0220; the MPU transmit queue 0224..0323 and its indices
+      0324..0329; the backend selector 03F8; the voice-pool list 03FA..03FF,
+      the voices 0400..04C5, the channels 04C6..0645 and the dummy channel
+      0646..064D; the FM instrument bank 064E..07CD (32 of 12 bytes); the
+      sysex workspace 07CE..0A11, which holds the speaker backend record
+      (07FC) and the speaker's name.
+  - **Checks.** The pilot records' NUL check reads the story-built pilot
+    storage, not the exe. The planet-group and ammo-family checks run on the
+    rule bytes.
+  - **The proof.** Probe builds of the base and of 6b on combat_cockpit,
+    every global compared after each loader, as in 6a, on the 1990 and the
+    1989 folders: no MW_MAIN loader (start or EXEC), EGA or BTECH load
+    introduces a difference; the launcher load introduces only
+    `launcherIdentity`'s eight untested bytes. Then the import was run with
+    the real exes, and MW_MAIN.EXE and MW.EXE in the game folder replaced by
+    files of the same size, all 0xEE, keeping the imported story: 6b gives 8
+    of 8 traces, and the base 0 of 8 (its start refused).
+  - **The inventory.** `inventory.py` lists the random words as their rule
+    piece and the music importer's items as the `music.driver` span; the
+    exe reads left are BTECH's.
+  - **Gate.** Fresh Release build; ctest 13 of 13 (with `start_exe`) on the
+    1990 folder with the 1989 MW_MAIN, none skipped, and 13 of 13 on the
+    1989 folder; traces 8 of 8; mingw clean on the changed files.
 - **6c, BTECH.** The data segment's B and C, the code-segment reads, the
   layout checks with their loads, and the revision from the story. The combat
   EXEC stops decoding BTECH.EXE.

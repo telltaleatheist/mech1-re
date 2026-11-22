@@ -1,6 +1,6 @@
 // The whole import, as the game runs it at start: the story (imported into a
-// scratch write dir), the rules, the layout, then MW_MAIN's and BTECH's
-// importers over the player's exes. Any refusal fails, so a piece the
+// scratch write dir), the rules, the layout, then MW_MAIN's importers (from
+// those alone; slice 6b) and BTECH's over its exe. Any refusal fails, so a piece the
 // importers can't take (a wrong record count, a missing name) fails here
 // and not only in the traces.
 //
@@ -53,16 +53,15 @@ int main(int argc, char** argv) {
     fs::remove_all(scratch, ec);
     fs::create_directories(scratch);
 
-    const std::string main_exe = find_file(game, "MW_MAIN.EXE").string();
     const std::string btech_exe = find_file(game, "BTECH.EXE").string();
     step(MwHostSetCampaignSaveDirectory(scratch.string().c_str()), "save directory");
     step(MwHostPrepareStory(game, scratch.string().c_str()), "story");
     step(MwHostPrepareRules(data.string().c_str()), "rules");
     step(MwHostPrepareUi(data.string().c_str()), "ui");
     if (!g_failed) {
-        step(MwHostLoadCampaignInitialData(main_exe.c_str()), "MW_MAIN's importers");
+        step(MwImportCampaignInitialData(), "MW_MAIN's importers");
         step(MwImportCampaignEventText(), "MW_MAIN's event text");
-        step(MwHostLoadCampaignMusicData(main_exe.c_str()), "MW_MAIN's music");
+        step(MwImportCampaignMusicData(), "MW_MAIN's music");
         step(BtechHostLoadInitialData(btech_exe.c_str()), "BTECH's importers");
         if (const char* reference = std::getenv("MW1O_BTECH_REFERENCE"))
             step(BtechHostLoadInitialData(reference), "BTECH's importers, the reference revision");
@@ -73,12 +72,11 @@ int main(int argc, char** argv) {
         fs::create_directories(write);
         fs::copy_file(main1989, folder / "MW_MAIN.EXE");
         fs::copy_file(btech_exe, folder / "BTECH.EXE");
-        const std::string copy = (folder / "MW_MAIN.EXE").string();
         step(MwHostPrepareStory(folder.string().c_str(), write.string().c_str()), "story, the 1989 MW_MAIN");
         if (!g_failed) {
-            step(MwHostLoadCampaignInitialData(copy.c_str()), "MW_MAIN's importers, the 1989 MW_MAIN");
+            step(MwImportCampaignInitialData(), "MW_MAIN's importers, the 1989 MW_MAIN");
             step(MwImportCampaignEventText(), "MW_MAIN's event text, the 1989 MW_MAIN");
-            step(MwHostLoadCampaignMusicData(copy.c_str()), "MW_MAIN's music, the 1989 MW_MAIN");
+            step(MwImportCampaignMusicData(), "MW_MAIN's music, the 1989 MW_MAIN");
         }
     }
     fs::remove_all(scratch, ec);

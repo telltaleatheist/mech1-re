@@ -704,12 +704,31 @@ constexpr ScreenSpec kScreens[] = {
     {"travel", kTravelCaptions, {}, kTravelPanels, kTravelMenus, kTravelTables},
 };
 
+// The intro's seven caption pairs: each caption's x and y, which the exe keeps
+// right before its text (story/text.json's intro.caption.N.left and .right).
+void read_intro(const fs::path& data_dir, support::NativeBytes& out) {
+    Reader r(data_dir / "ui" / "intro.json");
+    const Json file = r.parse();
+    r.only(file, {"captions"});
+    const auto& captions = r.array(file, "captions", 7);
+    for (std::size_t i = 0; i < captions.size(); ++i) {
+        r.only(captions[i], {"left", "right"});
+        for (std::string_view side : {"left", "right"}) {
+            const auto& at = r.array(captions[i], side, 2);
+            std::string& bytes = out["intro.caption." + std::to_string(i + 1) + "." + std::string(side) + ".at"];
+            put_word(bytes, r.word(at[0], "an intro caption's x"));
+            put_word(bytes, r.word(at[1], "an intro caption's y"));
+        }
+    }
+}
+
 }  // namespace
 
 support::NativeBytes load_layout(const fs::path& data_dir) {
     support::NativeBytes out;
     read_cockpit(data_dir, out);
     read_orders(data_dir, out);
+    read_intro(data_dir, out);
     for (const ScreenSpec& screen : kScreens) read_screen(data_dir, screen, out);
     for (const UiPiece& piece : ui_table()) {
         const auto it = out.find(piece.id);
