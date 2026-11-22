@@ -57,10 +57,10 @@ bool BtechImportSoundInitialData(const uint8_t *data,size_t bytes)
         runtimeStreams[slot].flags=data[COMBAT_STREAM_TABLE+slot*COMBAT_STREAM_STRIDE+6];
         runtimeStreams[slot].dosHandle=data[COMBAT_STREAM_TABLE+slot*COMBAT_STREAM_STRIDE+7];
     }
-    streamSetupCounter=MwReadNativeWord(data,0x4DEA);
-    selectedAudioBackendMask=MwReadNativeWord(data,0x28D4);
+    streamSetupCounter=0; /*4DEA*/
+    selectedAudioBackendMask=0; /*28D4*/
     savedMusicTimerDivisor=MwReadNativeWord(data,0x28D6);
-    savedMusicTimerVector=MwReadNativeWord(data,0x28D8)|((uint32_t)MwReadNativeWord(data,0x28DA)<<16);
+    savedMusicTimerVector=0; /*28D8*/
     musicTimerInstalled=data[0x28DC];musicTimerCallback=BtechAudioTimerNoOp;
     soundEffectsEnableMask=data[0x28DD];
     /* These are the actual authored pairs, not a replacement empty tick. */
@@ -68,27 +68,27 @@ bool BtechImportSoundInitialData(const uint8_t *data,size_t bytes)
         || MwReadNativeWord(data,0x2C9F)!=0x0051 || MwReadNativeWord(data,0x2CA1)!=0x229C) return false;
     audioMusicCallback=BtechMusicMessageNoOperation;
     audioTickCallback=BtechTickSoftwareMusic;
-    softwareMusicRateShift=data[0x2C80];midiTrackIndex=MwReadNativeWord(data,0x2C81);
+    softwareMusicRateShift=0; /*2C80*/midiTrackIndex=0; /*2C81*/
     musicSequenceIndex=MwReadNativeWord(data,0x2C83);softwareMusicDivisionScale=data[0x2C85];
     mpuTempoInterval=MwReadNativeWord(data,0x2C86);
-    combatMidiStreamOffset=MwReadNativeWord(data,0x2C88);
+    combatMidiStreamOffset=0; /*2C88*/
     if (combatMidiStreamOffset || MwReadNativeWord(data,0x2C8A)) return false;
     midiStreamData=MwNativeByteView{};midiStreamSelectorPresent=false;
-    queuedMidiDeltaTicks=MwReadNativeWord(data,0x2C8C);midiRunningStatus=data[0x2C8E];
+    queuedMidiDeltaTicks=0; /*2C8C*/midiRunningStatus=0; /*2C8E*/
     midiMessageData[0]=data[0x2C8F];midiMessageData[1]=data[0x2C90];
     softwareMusicDelayTicks=MwReadNativeWord(data,0x2C91);
     for (uint16_t index=0;index<8;++index) midiMessageLengths[index]=data[0x2C93+index];
     midiMessageDataLength=data[0x2CA3];midiChannel=data[0x2CA4];
-    midiTempoHighBytes=MwReadNativeWord(data,0x2CA5);
+    midiTempoHighBytes=0; /*2CA5*/
     activeMusicBankIndex=MwReadNativeWord(data,0x2B4E);
     /* 7D8A lies past the file data; MUS:INF fills it at run time. */
     memset(musicSequences,0,sizeof(musicSequences));
     mpuProbeDataPort=MwReadNativeWord(data,0x2CA8);
     mpuProbeStatusPort=MwReadNativeWord(data,0x2CAA);mpuProbeCommandPort=MwReadNativeWord(data,0x2CAC);
-    mpuProbePreviousIrq=MwReadNativeWord(data,0x2CAE)|((uint32_t)MwReadNativeWord(data,0x2CB0)<<16);
-    mpuProbeReceivedByteCount=MwReadNativeWord(data,0x2CB2);
+    mpuProbePreviousIrq=0; /*2CAE*/
+    mpuProbeReceivedByteCount=0; /*2CB2*/
     adlibProbeInitialStatus=data[0x2CB4];
     activeSoundBankIndex=MwReadNativeWord(data,0x2B4C);
-    soundAllocationError=MwReadNativeWord(data,0x2B56);
+    soundAllocationError=0; /*2B56*/
     return true;
 }

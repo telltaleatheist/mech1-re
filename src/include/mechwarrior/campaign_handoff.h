@@ -34,7 +34,6 @@ extern char settlementTransportDeductionText[0x98],settlementNoPaymentText[0x95]
 extern const char *afterActionFailureMessages[CAMPAIGN_HOUSE_COUNT];
 extern const char *afterActionSuccessMessages[CAMPAIGN_HOUSE_COUNT];
 extern const char *settlementDeductionMessages[3];
-bool MwImportCampaignHandoffData(const uint8_t *data,size_t byteCount);
 extern char darkWingVictoryText[0x185];
 enum { VICTORY_TRANSITION_PICTURE=0x004D,VICTORY_TRANSITION_TICKS=5,VICTORY_ANIMATION_CYCLES=0x14 };
 void MwDrawVictoryTransitionPictureAndWait(void);

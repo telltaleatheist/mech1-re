@@ -10,13 +10,9 @@
 bool MwImportCampaignEventData(const uint8_t *data,size_t byteCount)
 {
     if (!data || byteCount<NATIVE_SEGMENT_BYTE_COUNT) return false;
-    /* The dispatch topology is native code, not editable scenario rules. Reject
-     * an unsupported installation here rather than execute the wrong C handler. */
-    const uint16_t conditions[10]={0x6425,0x643D,0x64BB,0x64ED,0x6503,0x652F,0x6561,0,0x6562,0x66CC};
-    const uint16_t actions[10]={0x6587,0x6588,0x65B1,0x662C,0x662D,0x665B,0x6661,0x6667,0x6668,0x66CC};
-    for (uint16_t i=0;i<10;++i)
-        if (MwReadNativeWord(data,(uint16_t)(0x5E78+i*2))!=conditions[i]
-            || MwReadNativeWord(data,(uint16_t)(0x5E8C+i*2))!=actions[i]) return false;
+    /* The dispatch topology (1090:5E78 conditions, 5E8C actions) is native
+     * code, not editable scenario rules: the import table's check pieces
+     * (src/Import/pieces.txt) refuse an installation whose tables differ. */
     /* The captions, records, commands, lists and fixed event come from
      * story/events.json (src/Import/Events.h), in the original importer's
      * order; captionOffsets are the captions' original addresses, which the

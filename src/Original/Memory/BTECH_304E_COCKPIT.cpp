@@ -131,11 +131,11 @@ bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
     memcpy(briefingMechLabel,words+0x0DB6,sizeof(briefingMechLabel));
     if (briefingMissionLabel[sizeof(briefingMissionLabel)-1] || briefingCrewLabel[sizeof(briefingCrewLabel)-1]
         || briefingMechLabel[sizeof(briefingMechLabel)-1]) return false;
-    savedLineColour=MwReadNativeWord(data,0x4F7E);savedFillColour=MwReadNativeWord(data,0x4F80);
-    savedCopySourcePage=MwReadNativeWord(data,0x4F82);savedDrawPage=MwReadNativeWord(data,0x4F84);
-    savedTextBackground=MwReadNativeWord(data,0x4F86);savedTextForeground=MwReadNativeWord(data,0x4F88);
-    savedPolygonFilled=MwReadNativeWord(data,0x4F8A);savedPolygonClip=MwReadNativeWord(data,0x4F8C);
-    rememberedSensorTargetSlot=MwReadNativeWord(data,0x4EDC);
+    savedLineColour=0; /*4F7E*/savedFillColour=0; /*4F80*/
+    savedCopySourcePage=0; /*4F82*/savedDrawPage=0; /*4F84*/
+    savedTextBackground=0; /*4F86*/savedTextForeground=0; /*4F88*/
+    savedPolygonFilled=0; /*4F8A*/savedPolygonClip=0; /*4F8C*/
+    rememberedSensorTargetSlot=0; /*4EDC*/
     radarPreviousTick=MwReadNativeWord(data,0x240E);
     memcpy(weaponLabelText,words+0x2004,sizeof(weaponLabelText));
     memcpy(weaponRangeAndAmmoText,words+0x2410,sizeof(weaponRangeAndAmmoText));
@@ -263,8 +263,8 @@ bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
         for (uint16_t placement=0;placement<COMBAT_COCKPIT_PLACEMENTS;++placement)
             layout->bitmapPlacements[placement]=BtechCockpitBitmapPlacement{MwReadNativeWord(ui,offset+0x46+placement*6),(int16_t)MwReadNativeWord(ui,offset+0x48+placement*6),(int16_t)MwReadNativeWord(ui,offset+0x4A+placement*6)};
     }
-    cachedJumpChargeGaugeLevel=MwReadNativeWord(data,0x5338);
-    cachedHeatGaugeLevel=MwReadNativeWord(data,0x533A);unidentifiedField25=MwReadNativeWord(data,0x533C);
+    cachedJumpChargeGaugeLevel=0; /*5338*/
+    cachedHeatGaugeLevel=0; /*533A*/unidentifiedField25=0; /*533C*/
     cockpitFullRedrawPending=data[0x7754];
     return true;
 }

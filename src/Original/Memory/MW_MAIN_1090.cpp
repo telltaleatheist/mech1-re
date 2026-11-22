@@ -613,10 +613,10 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
         || !MwStoryCopyText("commander.default_name",(char *)newCampaign+0x003B,0x000A)
         || !ImportRuleBytes("new_campaign.after_name",newCampaign+0x0045,CAMPAIGN_SAVE_BYTES-0x0045)) return false;
     MwDecodeCampaignExchange(newCampaign);
-    memcpy(&campaignTimerInhibited,data+0x0007,sizeof(campaignTimerInhibited));
-    memcpy(&campaignTimerByte,data+0x0008,sizeof(campaignTimerByte));
+    memset(&campaignTimerInhibited,0,sizeof(campaignTimerInhibited)); /*0007*/
+    memset(&campaignTimerByte,0,sizeof(campaignTimerByte)); /*0008*/
     memcpy(combatExecutableFilename,data+0x0EF6,sizeof(combatExecutableFilename));
-    memcpy(&deploymentResolvedWithoutCombat,data+0x140C,sizeof(deploymentResolvedWithoutCombat));
+    memset(&deploymentResolvedWithoutCombat,0,sizeof(deploymentResolvedWithoutCombat)); /*140C*/
     if (!MwStoryCopyText("dark_wing.victory",darkWingVictoryText,sizeof(darkWingVictoryText))) return false;
     memcpy(afterActionCrewHeading,mainWords+0x11DF,sizeof(afterActionCrewHeading));
     memcpy(afterActionMechHeading,mainWords+0x11EC,sizeof(afterActionMechHeading));
@@ -642,58 +642,58 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     if (!MwStoryCopyText("settlement.deduction.transport",settlementTransportDeductionText,sizeof(settlementTransportDeductionText))) return false;
     if (!MwStoryCopyText("settlement.no_payment",settlementNoPaymentText,sizeof(settlementNoPaymentText))) return false;
     if (!MwStoryCopyText("dark_wing.attack_failed",darkWingAttackFailedText,sizeof(darkWingAttackFailedText))) return false;
-    campaignTimerTicks=MwReadNativeWord(data,0x000C);
-    memcpy(&campaignTimerAlternatingPhase,data+0x000E,sizeof(campaignTimerAlternatingPhase));
-    memcpy(&campaignTimerPhaseTicks,data+0x000F,sizeof(campaignTimerPhaseTicks));
-    memcpy(&mouseInstalled,data+0x02AC,sizeof(mouseInstalled));
-    memcpy(&joystickInstalled,data+0x02AD,sizeof(joystickInstalled));
-    memcpy(&inputSinglePoll,data+0x03E2,sizeof(inputSinglePoll));
-    joystickDirection=MwReadNativeWord(data,0x02E6);
-    joystickButtonOnePressed=MwReadNativeWord(data,0x02E8);
-    joystickButtonTwoPressed=MwReadNativeWord(data,0x02EA);
+    campaignTimerTicks=0; /*000C*/
+    memset(&campaignTimerAlternatingPhase,0,sizeof(campaignTimerAlternatingPhase)); /*000E*/
+    memset(&campaignTimerPhaseTicks,0,sizeof(campaignTimerPhaseTicks)); /*000F*/
+    memset(&mouseInstalled,0,sizeof(mouseInstalled)); /*02AC*/
+    memset(&joystickInstalled,0,sizeof(joystickInstalled)); /*02AD*/
+    memset(&inputSinglePoll,0,sizeof(inputSinglePoll)); /*03E2*/
+    joystickDirection=0; /*02E6*/
+    joystickButtonOnePressed=0; /*02E8*/
+    joystickButtonTwoPressed=0; /*02EA*/
     memcpy(&joystickPreviousButtons,data+0x02EC,sizeof(joystickPreviousButtons));
-    joystickXCount=MwReadNativeWord(data,0x02ED);
-    joystickYCount=MwReadNativeWord(data,0x02EF);
+    joystickXCount=0; /*02ED*/
+    joystickYCount=0; /*02EF*/
     joystickDeflection=MwReadNativeWord(data,0x02F1);
-    mouseMotionX=MwReadNativeWord(data,0x03DA);
-    mouseMotionY=MwReadNativeWord(data,0x03DC);
-    memcpy(&joystickRepeatActive,data+0x02F3,sizeof(joystickRepeatActive));
-    joystickRepeatDeadline=MwReadNativeWord(data,0x02F4);
+    mouseMotionX=0; /*03DA*/
+    mouseMotionY=0; /*03DC*/
+    memset(&joystickRepeatActive,0,sizeof(joystickRepeatActive)); /*02F3*/
+    joystickRepeatDeadline=0; /*02F4*/
     ImportInitialWords(data,0x02F6,(uint16_t *)joystickNavigationKeys,sizeof(joystickNavigationKeys)/sizeof(uint16_t));
-    joystickCentreX=MwReadNativeWord(data,0x0308);
-    joystickCentreY=MwReadNativeWord(data,0x030A);
-    joystickXDeflectionStep=MwReadNativeWord(data,0x031C);
-    joystickYDeflectionStep=MwReadNativeWord(data,0x031E);
-    joystickXLow=MwReadNativeWord(data,0x030C);
-    joystickXHigh=MwReadNativeWord(data,0x030E);
-    joystickYLow=MwReadNativeWord(data,0x0310);
-    joystickYHigh=MwReadNativeWord(data,0x0312);
-    joystickXFarLow=MwReadNativeWord(data,0x0314);
-    joystickXFarHigh=MwReadNativeWord(data,0x0316);
-    joystickYFarLow=MwReadNativeWord(data,0x0318);
-    joystickYFarHigh=MwReadNativeWord(data,0x031A);
-    selectedUiRecordIndex=MwReadNativeWord(data,0x03E5);
-    uiSelectionChangedCodeOffset=MwReadNativeWord(data,0x03E7);
-    uiIdleCodeOffset=MwReadNativeWord(data,0x03E9);
+    joystickCentreX=0; /*0308*/
+    joystickCentreY=0; /*030A*/
+    joystickXDeflectionStep=0; /*031C*/
+    joystickYDeflectionStep=0; /*031E*/
+    joystickXLow=0; /*030C*/
+    joystickXHigh=0; /*030E*/
+    joystickYLow=0; /*0310*/
+    joystickYHigh=0; /*0312*/
+    joystickXFarLow=0; /*0314*/
+    joystickXFarHigh=0; /*0316*/
+    joystickYFarLow=0; /*0318*/
+    joystickYFarHigh=0; /*031A*/
+    selectedUiRecordIndex=0; /*03E5*/
+    uiSelectionChangedCodeOffset=0; /*03E7*/
+    uiIdleCodeOffset=0; /*03E9*/
     memcpy(&hubFirstNavigationProbe,data+0x1E75,sizeof(hubFirstNavigationProbe));
     memcpy(&hubSecondNavigationProbe,data+0x1EC9,sizeof(hubSecondNavigationProbe));
     memcpy(&hubThirdNavigationProbe,data+0x1EF3,sizeof(hubThirdNavigationProbe));
-    panelOriginX=MwReadNativeWord(data,0x03EB);
-    panelOriginY=MwReadNativeWord(data,0x03ED);
-    panelWidth=MwReadNativeWord(data,0x03EF);
-    panelHeight=MwReadNativeWord(data,0x03F1);
-    panelBorderPictureBase=MwReadNativeWord(data,0x0444);
-    panelBorderEnabled=MwReadNativeWord(data,0x03F3);
-    textPanelInsetX=MwReadNativeWord(data,0x0432);
-    textPanelInsetY=MwReadNativeWord(data,0x0434);
-    textPanelOriginX=MwReadNativeWord(data,0x0436);
-    textPanelOriginY=MwReadNativeWord(data,0x0438);
-    textPanelWidthPixels=MwReadNativeWord(data,0x043A);
-    textPanelHeightPixels=MwReadNativeWord(data,0x043C);
-    textPanelPreviousFont=MwReadNativeWord(data,0x043E);
-    textPanelFont=MwReadNativeWord(data,0x0440);
-    textPanelContinuationMode=MwReadNativeWord(data,0x0442);
-    textPanelYOverride=MwReadNativeWord(data,0x0446);
+    panelOriginX=0; /*03EB*/
+    panelOriginY=0; /*03ED*/
+    panelWidth=0; /*03EF*/
+    panelHeight=0; /*03F1*/
+    panelBorderPictureBase=0; /*0444*/
+    panelBorderEnabled=0; /*03F3*/
+    textPanelInsetX=0; /*0432*/
+    textPanelInsetY=0; /*0434*/
+    textPanelOriginX=0; /*0436*/
+    textPanelOriginY=0; /*0438*/
+    textPanelWidthPixels=0; /*043A*/
+    textPanelHeightPixels=0; /*043C*/
+    textPanelPreviousFont=0; /*043E*/
+    textPanelFont=0; /*0440*/
+    textPanelContinuationMode=0; /*0442*/
+    textPanelYOverride=0; /*0446*/
     /* The notification boxes (data/ui/hub.json): all insets x, then y, columns, rows (5EB3). */
     if (!MwUiCopyWords("hub.table.notification_boxes",notificationTextInsetX,4,0)
         || !MwUiCopyWords("hub.table.notification_boxes",notificationTextInsetY,4,8)
@@ -702,27 +702,27 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     /* The notification texts (hub.word.notification.*) and the pointers to them (hub.json's notification_words). */
     if (!MwUiCopyWords("hub.table.notification_words",notificationTextOffsets,4,0)) return false; /*5ED3*/
     memcpy(notificationTextStorage,mainWords+0x5EDB,sizeof(notificationTextStorage));
-    compressedPictureBufferSelector=MwReadNativeWord(data,0x016D);
+    compressedPictureBufferSelector=0; /*016D*/
     randomStateWord0=MwReadNativeWord(data,0x03F5);
     randomStateWord1=MwReadNativeWord(data,0x03F7);
-    pictureCompressedByteCount=MwReadNativeWord(data,0x0F6D);
-    pictureOutputSelector=MwReadNativeWord(data,0x0F6F);
-    memcpy(&pictureReadHighNibbleNext,data+0x0F71,sizeof(pictureReadHighNibbleNext));
-    pictureReadByteOffset=MwReadNativeWord(data,0x0F72);
-    memcpy(&pictureWriteLowNibbleNext,data+0x0F74,sizeof(pictureWriteLowNibbleNext));
-    pictureWriteByteOffset=MwReadNativeWord(data,0x0F75);
-    indexedPictureOutputSelector=MwReadNativeWord(data,0x0161);
-    generalPictureBankSelector=MwReadNativeWord(data,0x0163);
-    cockpitPictureBankSelector=MwReadNativeWord(data,0x0165);
-    activePictureBankSelector=MwReadNativeWord(data,0x0167);
-    secondaryPictureBankSelector=MwReadNativeWord(data,0x0169);
-    memcpy(&indexedPictureDirectoryLoaded,data+0x0B62,sizeof(indexedPictureDirectoryLoaded));
+    pictureCompressedByteCount=0; /*0F6D*/
+    pictureOutputSelector=0; /*0F6F*/
+    memset(&pictureReadHighNibbleNext,0,sizeof(pictureReadHighNibbleNext)); /*0F71*/
+    pictureReadByteOffset=0; /*0F72*/
+    memset(&pictureWriteLowNibbleNext,0,sizeof(pictureWriteLowNibbleNext)); /*0F74*/
+    pictureWriteByteOffset=0; /*0F75*/
+    indexedPictureOutputSelector=0; /*0161*/
+    generalPictureBankSelector=0; /*0163*/
+    cockpitPictureBankSelector=0; /*0165*/
+    activePictureBankSelector=0; /*0167*/
+    secondaryPictureBankSelector=0; /*0169*/
+    memset(&indexedPictureDirectoryLoaded,0,sizeof(indexedPictureDirectoryLoaded)); /*0B62*/
     indexedPictureCachedIndex=MwReadNativeWord(data,0x0B63);
-    indexedPictureStoredBytes=MwReadNativeWord(data,0x0B65);
-    memcpy(indexedPictureDirectory,data+0x0B67,sizeof(indexedPictureDirectory));
-    indexedPictureFileHandle=MwReadNativeWord(data,0x0DBF);
-    generalPictureFileHandle=MwReadNativeWord(data,0x0DDA);
-    selectedPictureFileHandle=MwReadNativeWord(data,0x0DE9);
+    indexedPictureStoredBytes=0; /*0B65*/
+    memset(indexedPictureDirectory,0,sizeof(indexedPictureDirectory)); /*0B67*/
+    indexedPictureFileHandle=0; /*0DBF*/
+    generalPictureFileHandle=0; /*0DDA*/
+    selectedPictureFileHandle=0; /*0DE9*/
     /* The planets from story/planets.json, laid out as the exe holds them
      * (offsets at 6570, storage 67B6.., the alphabetical table at 6694). */
     if (!MwStoryBuildPlanets(planetRecordStorage,sizeof(planetRecordStorage),PLANET_RECORDS_START,
@@ -730,84 +730,84 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     if (!MwUiCopyWords("hub.table.calendar_month_name_widths",calendarMonthNameWidths,CAMPAIGN_MONTH_COUNT,0)) return false; /*11BA*/
     /* 117E..1183: the calendar's place and colours. Written before it's read; zero where the exe reloaded it. */
     calendarTextX=0;calendarTextY=0;calendarBackground=0;calendarForeground=0;
-    memcpy(&numericLeadingDigitSeen,data+0xA136,sizeof(numericLeadingDigitSeen));
-    memcpy(&numericGroupingEnabled,data+0xA137,sizeof(numericGroupingEnabled));
-    memcpy(numericDecimalDigits,data+0xA138,sizeof(numericDecimalDigits));
-    numericRemainderHigh=MwReadNativeWord(data,0xA142);
-    numericRemainderLow=MwReadNativeWord(data,0xA144);
-    memcpy(&numericSuppressLeadingZeros,data+0xA146,sizeof(numericSuppressLeadingZeros));
-    memcpy(&numericNegativeSign,data+0xA149,sizeof(numericNegativeSign));
-    numericFieldDigitCount=MwReadNativeWord(data,0xA147);
-    numericCursorX=MwReadNativeWord(data,0xA14A);
-    numericCursorY=MwReadNativeWord(data,0xA14C);
-    memcpy(&numericBackgroundColour,data+0xA14E,sizeof(numericBackgroundColour));
-    memcpy(&numericForegroundColour,data+0xA14F,sizeof(numericForegroundColour));
+    memset(&numericLeadingDigitSeen,0,sizeof(numericLeadingDigitSeen)); /*A136*/
+    memset(&numericGroupingEnabled,0,sizeof(numericGroupingEnabled)); /*A137*/
+    memset(numericDecimalDigits,0,sizeof(numericDecimalDigits)); /*A138*/
+    numericRemainderHigh=0; /*A142*/
+    numericRemainderLow=0; /*A144*/
+    memset(&numericSuppressLeadingZeros,0,sizeof(numericSuppressLeadingZeros)); /*A146*/
+    memset(&numericNegativeSign,0,sizeof(numericNegativeSign)); /*A149*/
+    numericFieldDigitCount=0; /*A147*/
+    numericCursorX=0; /*A14A*/
+    numericCursorY=0; /*A14C*/
+    memset(&numericBackgroundColour,0,sizeof(numericBackgroundColour)); /*A14E*/
+    memset(&numericForegroundColour,0,sizeof(numericForegroundColour)); /*A14F*/
     if (!ImportRuleBytes("houses.negotiation_attempt_base",houseNegotiationAttemptBase,sizeof(houseNegotiationAttemptBase))) return false;
     if (!ImportRuleWords("market.ammunition_prices",(uint16_t *)ammunitionBasePrices,sizeof(ammunitionBasePrices)/sizeof(uint16_t))) return false;
     if (!ImportRuleWords("market.start.ammunition_transaction_prices",(uint16_t *)ammunitionTransactionPrices,sizeof(ammunitionTransactionPrices)/sizeof(uint16_t))) return false;
     /* 3A77: zero in the exe, written in play; not a rule (docs/phase2/PLAN.md 5.1). */
     memset(repairAttemptFailuresByKind,0,sizeof(repairAttemptFailuresByKind));
-    memcpy(&generatedMechDamage,data+0x3A41,sizeof(generatedMechDamage));
+    memset(&generatedMechDamage,0,sizeof(generatedMechDamage)); /*3A41*/
     if (!ImportRuleBytes("units.weapons",unitWeaponCounts,sizeof(unitWeaponCounts))) return false;
     if (!ImportRuleBytes("market.price_tier_multipliers",unitPriceTierMultipliers,sizeof(unitPriceTierMultipliers))) return false;
     if (!ImportRuleWords("units.base_prices",(uint16_t *)unitBasePrices,sizeof(unitBasePrices)/sizeof(uint16_t))) return false;
-    unitTransactionPriceLow=MwReadNativeWord(data,0x305B);
-    unitTransactionPriceHigh=MwReadNativeWord(data,0x305D);
-    selectedOwnedUnitKind=MwReadNativeWord(data,0x2AD5);
-    selectedMarketUnitKind=MwReadNativeWord(data,0x4322);
-    unitRepairQuoteLow=MwReadNativeWord(data,0x31E9);
-    unitRepairQuoteHigh=MwReadNativeWord(data,0x31EB);
-    repairQuoteMechKind=MwReadNativeWord(data,0x31ED);
-    componentRepairPriceLow=MwReadNativeWord(data,0x320C);
-    componentRepairPriceHigh=MwReadNativeWord(data,0x320E);
-    repairPriceCategory=MwReadNativeWord(data,0x3210);
+    unitTransactionPriceLow=0; /*305B*/
+    unitTransactionPriceHigh=0; /*305D*/
+    selectedOwnedUnitKind=0; /*2AD5*/
+    selectedMarketUnitKind=0; /*4322*/
+    unitRepairQuoteLow=0; /*31E9*/
+    unitRepairQuoteHigh=0; /*31EB*/
+    repairQuoteMechKind=0; /*31ED*/
+    componentRepairPriceLow=0; /*320C*/
+    componentRepairPriceHigh=0; /*320E*/
+    repairPriceCategory=0; /*3210*/
     if (!ImportRuleWords("units.weapon_repair_prices",(uint16_t *)weaponRepairPrices,sizeof(weaponRepairPrices)/sizeof(uint16_t))) return false;
     if (!ImportRuleBytes("units.body_repair_prices",bodyRepairBasePricesByKind,sizeof(bodyRepairBasePricesByKind))) return false;
     /* The pilots from story/pilots.json (offsets at 9121, storage 9177..). */
     if (!MwStoryBuildPilots(pilotDefinitionStorage,sizeof(pilotDefinitionStorage),PILOT_DEFINITIONS_START,
         pilotDefinitionOffsets,CAMPAIGN_PILOT_ID_COUNT)) return false;
     ImportInitialWords(data,0x4CE6,(uint16_t *)travelSquareRootValues,sizeof(travelSquareRootValues)/sizeof(uint16_t));
-    travelDestinationMapPositionX=MwReadNativeWord(data,0x54D0);
-    travelDestinationMapPositionY=MwReadNativeWord(data,0x54D2);
-    travelMapDeltaX=MwReadNativeWord(data,0x54D4);
-    travelMapDeltaY=MwReadNativeWord(data,0x54D6);
+    travelDestinationMapPositionX=0; /*54D0*/
+    travelDestinationMapPositionY=0; /*54D2*/
+    travelMapDeltaX=0; /*54D4*/
+    travelMapDeltaY=0; /*54D6*/
     travelDestinationTimeWeight=0; /* Written before it's read; zero where the exe reloaded it. */
-    travelDestinationPlanetOffset=MwReadNativeWord(data,0x5AD3);
-    travelDistanceUnits=MwReadNativeWord(data,0x5AD9);
-    travelQuoteCbillsLow=MwReadNativeWord(data,0x5AD5);
-    travelQuoteCbillsHigh=MwReadNativeWord(data,0x5AD7);
-    travelMapSelection=MwReadNativeWord(data,0x5ACF);
-    travelDestinationPlanetIndex=MwReadNativeWord(data,0x5AD1);
-    travelMarkerX=MwReadNativeWord(data,0x5ADB);
-    travelMarkerY=MwReadNativeWord(data,0x5ADD);
-    travelSavedMarkerX=MwReadNativeWord(data,0x5ADF);
-    travelSavedMarkerY=MwReadNativeWord(data,0x5AE1);
-    travelJoystickLastTick=MwReadNativeWord(data,0x5AE3);
-    travelAnimationFrameStep=MwReadNativeWord(data,0x5AE6);
-    memcpy(&travelDropShipSelected,data+0x5AE5,sizeof(travelDropShipSelected));
+    travelDestinationPlanetOffset=0; /*5AD3*/
+    travelDistanceUnits=0; /*5AD9*/
+    travelQuoteCbillsLow=0; /*5AD5*/
+    travelQuoteCbillsHigh=0; /*5AD7*/
+    travelMapSelection=0; /*5ACF*/
+    travelDestinationPlanetIndex=0; /*5AD1*/
+    travelMarkerX=0; /*5ADB*/
+    travelMarkerY=0; /*5ADD*/
+    travelSavedMarkerX=0; /*5ADF*/
+    travelSavedMarkerY=0; /*5AE1*/
+    travelJoystickLastTick=0; /*5AE3*/
+    travelAnimationFrameStep=0; /*5AE6*/
+    memset(&travelDropShipSelected,0,sizeof(travelDropShipSelected)); /*5AE5*/
     hiredTransportReverseTerminator=MwReadNativeWord(data,0x5AE8);
     if (!MwUiCopyWords("travel.table.hired_transport_frames",(uint16_t *)hiredTransportFrames,sizeof(hiredTransportFrames)/sizeof(uint16_t),0) /*5AEA*/
         || !MwUiCopyWords("travel.table.dropship_frames",(uint16_t *)dropShipTravelFrames,sizeof(dropShipTravelFrames)/sizeof(uint16_t),0)) return false; /*5B2E*/
     /* DS:5C4E: the destination header's caption text (the original's buffer runs past it into the next caption's head, bytes after the NUL that nothing draws). */
     if (!MwWordsCopyText("travel.caption.destination_name.text",travelDestinationName,sizeof(travelDestinationName))) return false;
-    travelSelectedHouseByteOffset=MwReadNativeWord(data,0x54DC);
-    travelHousePlanetStart=MwReadNativeWord(data,0x54DE);
-    travelHousePlanetCount=MwReadNativeWord(data,0x54E2);
-    travelSelectedHouseRow=MwReadNativeWord(data,0x5A0B);
+    travelSelectedHouseByteOffset=0; /*54DC*/
+    travelHousePlanetStart=0; /*54DE*/
+    travelHousePlanetCount=0; /*54E2*/
+    travelSelectedHouseRow=0; /*5A0B*/
     memcpy(travelPopulationSuffix,mainWords+0x5B83,sizeof(travelPopulationSuffix));
     memcpy(travelLandscapeLabels,mainWords+0x5CA6,sizeof(travelLandscapeLabels));
     memcpy(travelInsufficientFundsText,mainWords+0x5B5A,sizeof(travelInsufficientFundsText));
     if (!ImportRuleWords("market.freight_rates",(uint16_t *)reserveAmmoFreightRates,sizeof(reserveAmmoFreightRates)/sizeof(uint16_t))) return false;
     if (!ImportRuleBytes("market.stock_kind_range_maxima",generatedKindRangeMaxima,sizeof(generatedKindRangeMaxima))) return false;
     if (!ImportRuleBytes("market.stock_kind_range_starts",generatedKindRangeStarts,sizeof(generatedKindRangeStarts))) return false;
-    generatedDamageMaximumIndex=MwReadNativeWord(data,0x3A3D);
-    generatedUnitKind=MwReadNativeWord(data,0x3A3F);
+    generatedDamageMaximumIndex=0; /*3A3D*/
+    generatedUnitKind=0; /*3A3F*/
     if (!ImportRuleWords("market.start.generated_ammo_kinds",(uint16_t *)generatedAmmoKinds,sizeof(generatedAmmoKinds)/sizeof(uint16_t))) return false;
     if (!ImportRuleWords("market.start.generated_ammo_quantities",(uint16_t *)generatedAmmoQuantities,sizeof(generatedAmmoQuantities)/sizeof(uint16_t))) return false;
     if (!ImportRuleBytes("market.start.generate_starting_jenner",&generateStartingJenner,sizeof(generateStartingJenner))) return false;
     if (!ImportRuleBytes("units.ammo_groups",unitAmmoGroupCounts,sizeof(unitAmmoGroupCounts))) return false;
     if (!ImportRuleBytes("units.jump_jet_groups",unitJumpJetGroupCounts,sizeof(unitJumpJetGroupCounts))) return false;
-    generatingMissionOfferSlot=MwReadNativeWord(data,0x4B77);
+    generatingMissionOfferSlot=0; /*4B77*/
     missionForceBudget=0; /* Written before it's read; zero where the exe reloaded it. */
     missionPaymentBaseThousands=0; /* Written before it's read; zero where the exe reloaded it. */
     if (!ImportRuleBytes("units.force_weights",missionForceWeightByUnitKind,sizeof(missionForceWeightByUnitKind))) return false;
@@ -827,15 +827,15 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     if (!ImportRuleWords("houses.mission_planet_policy_offsets",(uint16_t *)houseMissionPlanetTableOffsets,sizeof(houseMissionPlanetTableOffsets)/sizeof(uint16_t))) return false;
     if (!ImportRuleBytes("houses.mission_planet_policies",houseMissionPlanetPolicies,sizeof(houseMissionPlanetPolicies))) return false;
     if (!ImportRuleWords("contracts.pilot_wages",(uint16_t *)pilotWageAmounts,sizeof(pilotWageAmounts)/sizeof(uint16_t))) return false;
-    memcpy(notificationPending,data+0x5EAE,sizeof(notificationPending));
-    unitInspectionContextCode=MwReadNativeWord(data,0x25BD);
-    ownedUnitListSelectedRow=MwReadNativeWord(data,0x25BF);
-    marketUnitListSelectedRow=MwReadNativeWord(data,0x25C1);
-    mechServiceMenuSelectedRow=MwReadNativeWord(data,0x25C3);
-    selectedOwnedUnitSlot=MwReadNativeWord(data,0x2AD1);
-    selectedOwnedUnitByteOffset=MwReadNativeWord(data,0x2AD3);
-    ImportInitialWords(data,0x2AD7,(uint16_t *)selectedMechAmmoFamilies,sizeof(selectedMechAmmoFamilies)/sizeof(uint16_t));
-    ImportInitialWords(data,0x2ADD,(uint16_t *)selectedMechAmmoQuantities,sizeof(selectedMechAmmoQuantities)/sizeof(uint16_t));
+    memset(notificationPending,0,sizeof(notificationPending)); /*5EAE*/
+    unitInspectionContextCode=0; /*25BD*/
+    ownedUnitListSelectedRow=0; /*25BF*/
+    marketUnitListSelectedRow=0; /*25C1*/
+    mechServiceMenuSelectedRow=0; /*25C3*/
+    selectedOwnedUnitSlot=0; /*2AD1*/
+    selectedOwnedUnitByteOffset=0; /*2AD3*/
+    memset(selectedMechAmmoFamilies,0,sizeof(selectedMechAmmoFamilies)); /*2AD7*/
+    memset(selectedMechAmmoQuantities,0,sizeof(selectedMechAmmoQuantities)); /*2ADD*/
     if (!ImportRuleBytes("units.condition_fields",unitConditionSystemFieldCounts,sizeof(unitConditionSystemFieldCounts))) return false;
     if (!ImportRuleBytes("units.condition_score_divisors",unitConditionScoreDivisors,sizeof(unitConditionScoreDivisors))) return false;
     memcpy(mechNonfunctionalTextBytes,mainWords+0x2B55,sizeof(mechNonfunctionalTextBytes));
@@ -844,21 +844,21 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     if (!ImportRuleBytes("units.display_jumps",unitDisplayJumpCapacitiesMetres,sizeof(unitDisplayJumpCapacitiesMetres))) return false;
     if (!MwUiCopyWords("complex.table.detail_picture_x_offsets",(uint16_t *)unitDetailPictureXOffsets,sizeof(unitDetailPictureXOffsets)/sizeof(uint16_t),0) /*2B83*/
         || !MwUiCopyWords("complex.table.detail_picture_y_origins",(uint16_t *)unitDetailPictureYOrigins,sizeof(unitDetailPictureYOrigins)/sizeof(uint16_t),0)) return false; /*2B99*/
-    memcpy(&repairWorkIncomplete,data+0x2BAF,sizeof(repairWorkIncomplete));
-    ownedListRowUnitByteOffset=MwReadNativeWord(data,0x3022);
-    saleMarketSlotByteOffset=MwReadNativeWord(data,0x3055);
-    selectedMechRearmQuoteLow=MwReadNativeWord(data,0x310C);
-    selectedMechRearmQuoteHigh=MwReadNativeWord(data,0x310E);
-    mechServiceNextAnimationTick=MwReadNativeWord(data,0x3189);
-    mechServiceAnimationByteOffset=MwReadNativeWord(data,0x318B);
+    memset(&repairWorkIncomplete,0,sizeof(repairWorkIncomplete)); /*2BAF*/
+    ownedListRowUnitByteOffset=0; /*3022*/
+    saleMarketSlotByteOffset=0; /*3055*/
+    selectedMechRearmQuoteLow=0; /*310C*/
+    selectedMechRearmQuoteHigh=0; /*310E*/
+    mechServiceNextAnimationTick=0; /*3189*/
+    mechServiceAnimationByteOffset=0; /*318B*/
     if (!MwUiCopyWords("complex.table.repair_title_leading_spaces",(uint16_t *)repairTitleLeadingSpacesByKind,sizeof(repairTitleLeadingSpacesByKind)/sizeof(uint16_t),0)) return false; /*31F2*/
-    repairSystemRowIndex=MwReadNativeWord(data,0x3208);
-    repairMenuSelectedCategory=MwReadNativeWord(data,0x320A);
+    repairSystemRowIndex=0; /*3208*/
+    repairMenuSelectedCategory=0; /*320A*/
     if (!ImportRuleBytes("units.heat_sinks",unitHeatSinkCounts,sizeof(unitHeatSinkCounts))) return false;
     memcpy(repairNoJumpJetsTextBytes,mainWords+0x36A0,sizeof(repairNoJumpJetsTextBytes));
     memcpy(repairJumpJetCountTemplateBytes,mainWords+0x36A5,sizeof(repairJumpJetCountTemplateBytes));
     if (!ImportRuleBytes("repair.success_roll_limits",repairSuccessRollLimitsByMarketTier,sizeof(repairSuccessRollLimitsByMarketTier))) return false;
-    mechDiagramUnitKind=MwReadNativeWord(data,0x3CCC);
+    mechDiagramUnitKind=0; /*3CCC*/
     if (!MwUiCopyWords("complex.table.body_damage_fill_colours",(uint16_t *)bodyDamageTierFillColours,sizeof(bodyDamageTierFillColours)/sizeof(uint16_t),0)) return false; /*3CD2*/
     memcpy(unassignedMechWarriorText,mainWords+0x3024,sizeof(unassignedMechWarriorText));
     memcpy(ownedListDoneText,mainWords+0x302F,sizeof(ownedListDoneText));
@@ -867,33 +867,33 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     memcpy(repairCompleteText,mainWords+0x2C01,sizeof(repairCompleteText));
     memcpy(repairIncompleteText,mainWords+0x2C21,sizeof(repairIncompleteText));
     memcpy(repairFailedText,mainWords+0x3CB5,sizeof(repairFailedText));
-    hubSelectedRecordIndex=MwReadNativeWord(data,0x1080);
+    hubSelectedRecordIndex=0; /*1080*/
     memcpy(ammoBayFullText,mainWords+0x315B,sizeof(ammoBayFullText));
     memcpy(noMarketMechsText,mainWords+0x31BB,sizeof(noMarketMechsText));
     memcpy(dealerPurchaseLimitText,mainWords+0x258A,sizeof(dealerPurchaseLimitText));
     memcpy(purchaseInsufficientFundsText,mainWords+0x4330,sizeof(purchaseInsufficientFundsText));
     memcpy(ownedMechCapacityText,mainWords+0x4347,sizeof(ownedMechCapacityText));
     memcpy(marketListDoneText,mainWords+0x3049,sizeof(marketListDoneText));
-    selectedMarketUnitSlot=MwReadNativeWord(data,0x431E);
-    selectedMarketUnitByteOffset=MwReadNativeWord(data,0x4320);
-    ImportInitialWords(data,0x4324,(uint16_t *)selectedMarketAmmoFamilies,sizeof(selectedMarketAmmoFamilies)/sizeof(uint16_t));
-    ImportInitialWords(data,0x432A,(uint16_t *)selectedMarketAmmoQuantities,sizeof(selectedMarketAmmoQuantities)/sizeof(uint16_t));
-    marketSystemRowIndex=MwReadNativeWord(data,0x44EF);
-    purchaseOwnedSlotByteOffset=MwReadNativeWord(data,0x481D);
+    selectedMarketUnitSlot=0; /*431E*/
+    selectedMarketUnitByteOffset=0; /*4320*/
+    memset(selectedMarketAmmoFamilies,0,sizeof(selectedMarketAmmoFamilies)); /*4324*/
+    memset(selectedMarketAmmoQuantities,0,sizeof(selectedMarketAmmoQuantities)); /*432A*/
+    marketSystemRowIndex=0; /*44EF*/
+    purchaseOwnedSlotByteOffset=0; /*481D*/
     if (!MwUiCopyWords("complex.table.animation_frames",(uint16_t *)mechComplexAnimationFrames,sizeof(mechComplexAnimationFrames)/sizeof(uint16_t),0)) return false; /*318D*/
-    campaignMusicBufferSelector=MwReadNativeWord(data,0x016F);
-    graphicsOverlaySelector=MwReadNativeWord(data,0x002E);
-    memcpy(&launcherExitCode,data+0x0006,sizeof(launcherExitCode));
-    memcpy(&keyboardInterruptState,data+0x02AB,sizeof(keyboardInterruptState));
-    musicFileHandle=MwReadNativeWord(data,0x0E39);
-    memcpy(campaignTextInputBuffer,data+0x03A5,sizeof(campaignTextInputBuffer));
-    textInputCursorX=MwReadNativeWord(data,0x03CE);
-    textInputCursorY=MwReadNativeWord(data,0x03D0);
-    textInputMaximumIndex=MwReadNativeWord(data,0x03D2);
-    memcpy(&textInputForeground,data+0x03D4,sizeof(textInputForeground));
-    memcpy(&textInputBackground,data+0x03D5,sizeof(textInputBackground));
-    memcpy(&textInputLastPhase,data+0x03D8,sizeof(textInputLastPhase));
-    textInputLength=MwReadNativeWord(data,0x03D6);
+    campaignMusicBufferSelector=0; /*016F*/
+    graphicsOverlaySelector=0; /*002E*/
+    memset(&launcherExitCode,0,sizeof(launcherExitCode)); /*0006*/
+    memset(&keyboardInterruptState,0,sizeof(keyboardInterruptState)); /*02AB*/
+    musicFileHandle=0; /*0E39*/
+    memset(campaignTextInputBuffer,0,sizeof(campaignTextInputBuffer)); /*03A5*/
+    textInputCursorX=0; /*03CE*/
+    textInputCursorY=0; /*03D0*/
+    textInputMaximumIndex=0; /*03D2*/
+    memset(&textInputForeground,0,sizeof(textInputForeground)); /*03D4*/
+    memset(&textInputBackground,0,sizeof(textInputBackground)); /*03D5*/
+    memset(&textInputLastPhase,0,sizeof(textInputLastPhase)); /*03D8*/
+    textInputLength=0; /*03D6*/
     {
         /* The story-planet pools from story/events.json (1090:8FDA..8FF3). */
         uint8_t *const pools[6]={eventPlanetChoicePool0,eventPlanetChoicePool1,eventPlanetChoicePool2,
@@ -902,24 +902,24 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
             sizeof(eventPlanetChoicePool3),sizeof(eventPlanetChoicePool4),sizeof(eventPlanetChoicePool5)};
         if (!MwStoryCopyPlanetPools(pools,sizes,6)) return false;
     }
-    campaignEventClass=MwReadNativeWord(data,0x5E62);
-    currentEventId=MwReadNativeWord(data,0x5E64);
-    dispatchedEventCount=MwReadNativeWord(data,0x5E68);
-    memcpy(&eventConditionResult,data+0x5E70,sizeof(eventConditionResult));
-    memcpy(&eventCombineWithAnd,data+0x5E71,sizeof(eventCombineWithAnd));
-    eventScheduledMonthScratch=MwReadNativeWord(data,0x5E72);
-    eventExpirySubmonthScratch=MwReadNativeWord(data,0x5E74);
-    eventScheduledYearScratch=MwReadNativeWord(data,0x5E76);
-    memcpy(&planetArrivalEventsPending,data+0x1082,sizeof(planetArrivalEventsPending));
-    memcpy(&campaignRestartPending,data+0x5EB2,sizeof(campaignRestartPending));
-    memcpy(&eventChoiceCount,data+0x5CEC,sizeof(eventChoiceCount));
-    memcpy(&eventTextRowCount,data+0x5CED,sizeof(eventTextRowCount));
-    eventChoiceSavedFontIndex=MwReadNativeWord(data,0x5E66);
+    campaignEventClass=0; /*5E62*/
+    currentEventId=0; /*5E64*/
+    dispatchedEventCount=0; /*5E68*/
+    memset(&eventConditionResult,0,sizeof(eventConditionResult)); /*5E70*/
+    memset(&eventCombineWithAnd,0,sizeof(eventCombineWithAnd)); /*5E71*/
+    eventScheduledMonthScratch=0; /*5E72*/
+    eventExpirySubmonthScratch=0; /*5E74*/
+    eventScheduledYearScratch=0; /*5E76*/
+    memset(&planetArrivalEventsPending,0,sizeof(planetArrivalEventsPending)); /*1082*/
+    memset(&campaignRestartPending,0,sizeof(campaignRestartPending)); /*5EB2*/
+    memset(&eventChoiceCount,0,sizeof(eventChoiceCount)); /*5CEC*/
+    memset(&eventTextRowCount,0,sizeof(eventTextRowCount)); /*5CED*/
+    eventChoiceSavedFontIndex=0; /*5E66*/
     if (!ImportRuleBytes("houses.mission_type_limits",defaultHouseMissionTypeLimits,sizeof(defaultHouseMissionTypeLimits))) return false;
     if (!MwStoryCopyText("commander.default_name",(char *)campaignDefaultCommanderNameBytes,sizeof(campaignDefaultCommanderNameBytes))) return false;
-    companyMenuSelectedRow=MwReadNativeWord(data,0x21CC);
-    barMenuSelectedRow=MwReadNativeWord(data,0x8FF4);
-    optionsMenuSelection=MwReadNativeWord(data,0x9D50);
+    companyMenuSelectedRow=0; /*21CC*/
+    barMenuSelectedRow=0; /*8FF4*/
+    optionsMenuSelection=0; /*9D50*/
     for (unsigned line=0;line<10;++line)
     {
         char id[24];snprintf(id,sizeof(id),"intro.narration.%u",line+1);
@@ -1178,7 +1178,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     repairQuoteDamage=NULL;componentRepairDamage=NULL;
     mechDiagramBodyDamage=NULL;mechDiagramRectangle=NULL;uiMenu=NULL;
     return ImportPilotUiData(data) && ImportTravelUiData(data) && MwImportCampaignEventData(data,byteCount)
-        && MwImportCampaignOptionsData(data,byteCount) && MwImportCampaignHandoffData(data,byteCount)
+        && MwImportCampaignOptionsData(data,byteCount)
         && CheckTextBoundTables();
 }
 /* Installation decoder, not an added native gameplay procedure. */
@@ -1215,20 +1215,20 @@ static bool ImportPilotUiData(const uint8_t *data)
         || !MwImportUiMenu("crew.menu.bar",&barMenu,owners,count)
         || !MwImportUiMenu("crew.menu.recruit",&recruitInterviewMenu,owners,count)) return false;
     crewScreenRightEdge=0; /* 2438: Written before it's read; zero where the exe reloaded it. */
-    pilotCardRosterSlot=MwReadNativeWord(data,0x243A);
+    pilotCardRosterSlot=0; /*243A*/
     pilotCardTextX=0; /* 243C: Written before it's read; zero where the exe reloaded it. */
-    displayedPilotId=MwReadNativeWord(data,0x243E);
+    displayedPilotId=0; /*243E*/
     pilotCardGunneryTier=0; /* Written before it's read; zero where the exe reloaded it. */
     pilotCardPilotingTier=0; /* Written before it's read; zero where the exe reloaded it. */
-    pilotCardPortraitId=MwReadNativeWord(data,0x2444);
+    pilotCardPortraitId=0; /*2444*/
     pilotCardQuotedWageTier=0; /* Written before it's read; zero where the exe reloaded it. */
-    pilotCardOwnedUnitSlot=MwReadNativeWord(data,0x2448);
-    assignmentSelectedPilotSlot=MwReadNativeWord(data,0x2581);
-    assignmentCandidateOwnedSlot=MwReadNativeWord(data,0x2583);
-    assignmentConflictingPilotSlot=MwReadNativeWord(data,0x2586);
-    assignmentConflictingOwnedSlot=MwReadNativeWord(data,0x2588);
-    recruitOfferSlot=MwReadNativeWord(data,0x911D)/sizeof(uint16_t);
-    selectedRecruitPilotId=MwReadNativeWord(data,0x911F);
+    pilotCardOwnedUnitSlot=0; /*2448*/
+    assignmentSelectedPilotSlot=0; /*2581*/
+    assignmentCandidateOwnedSlot=0; /*2583*/
+    assignmentConflictingPilotSlot=0; /*2586*/
+    assignmentConflictingOwnedSlot=0; /*2588*/
+    recruitOfferSlot=0; /*911D*/
+    selectedRecruitPilotId=0; /*911F*/
     assignmentConflictHighlighted=data[0x2585];
     if (!MwUiCopyWords("crew.table.pilot_card_column_origins",pilotCardColumnOrigins,PILOT_CARD_COUNT,0)) return false; /*244A*/
     /* The crew's words (crew.word.*), through the pointer tables crew.json
@@ -1315,15 +1315,15 @@ char commanderNeedsMechText[0x37],assignedMechUnreadyText[0x3A],contractCancelle
 /* Actual EXE import boundary: no runtime segment registry or copied live DS. */
 static bool ImportContractData(const uint8_t *data)
 {
-    negotiatingMissionOfferSlot=MwReadNativeWord(data,0x488B);
-    negotiatingMissionOfferByteOffset=MwReadNativeWord(data,0x488E);
+    negotiatingMissionOfferSlot=0; /*488B*/
+    negotiatingMissionOfferByteOffset=0; /*488E*/
     contractRequestEditorInitialized=data[0x488D];
     contractRequestTextColour=0; /* 4B34: Written before it's read; zero where the exe reloaded it. */
-    contractRequestTermByteOffset=MwReadNativeWord(data,0x4B32);
-    contractNegotiationAttempts=MwReadNativeWord(data,0x4B7E);
+    contractRequestTermByteOffset=0; /*4B32*/
+    contractNegotiationAttempts=0; /*4B7E*/
     negotiationRequestsSatisfied=data[0x4B7D];
-    acceptedContractAdvanceCbillsLow=MwReadNativeWord(data,0x4B73);
-    acceptedContractAdvanceCbillsHigh=MwReadNativeWord(data,0x4B75);
+    acceptedContractAdvanceCbillsLow=0; /*4B73*/
+    acceptedContractAdvanceCbillsHigh=0; /*4B75*/
     deploymentRefusalCount=data[0x0FBF];deploymentPenaltySuppressed=data[0x140B];
     /* data/ui/contract_office.json: the year offsets (4B1A), and the requested
      * terms' x, then y, then digit counts (49CC). */
@@ -1366,21 +1366,10 @@ static bool ImportContractData(const uint8_t *data)
         && ImportInitialString(mainWords,0x1031,contractCancelledText,sizeof(contractCancelledText));
 }
 
-/* Installation-only near-directory decoding. Shared entries retain ONE text
- * owner; normal campaign code follows C references, not native address tables. */
-bool MwImportCampaignHandoffData(const uint8_t *data,size_t byteCount)
-{
-    if (!data || byteCount<NATIVE_SEGMENT_BYTE_COUNT) return false;
-    static const uint16_t failureOffsets[CAMPAIGN_HOUSE_COUNT]={0x149B,0x159B,0x159B,0x1528,0x159B};
-    static const uint16_t successOffsets[CAMPAIGN_HOUSE_COUNT]={0x1674,0x1742,0x1742,0x16D6,0x1742};
-    static const uint16_t deductionOffsets[3]={0x178C,0x1834,0x18E0};
-    for (uint16_t house=0;house<CAMPAIGN_HOUSE_COUNT;++house)
-        if (MwReadNativeWord(data,0x1491+house*2)!=failureOffsets[house]
-            || MwReadNativeWord(data,0x166A+house*2)!=successOffsets[house]) return false;
-    for (uint16_t message=0;message<3;++message)
-        if (MwReadNativeWord(data,0x1786+message*2)!=deductionOffsets[message]) return false;
-    return true;
-}
+/* The after-action and settlement directories (1090:1491, 166A, 1786), whose
+ * entries the C references above stand for, are checked at import: the
+ * import table's check pieces (src/Import/pieces.txt) refuse an installation
+ * whose directories differ. */
 
 /* Native reserve-ammunition shop state and shared caption/menu owners. */
 uint16_t reserveAmmoShopSelectedRow,reserveAmmoPreviewSelection;
@@ -1397,8 +1386,8 @@ MwUiMenu reserveAmmoShopMenu={reserveAmmoShopRecords,RESERVE_AMMO_MENU_ROWS,NULL
 
 static bool ImportReserveAmmoUiData(const uint8_t *data)
 {
-    reserveAmmoShopSelectedRow=MwReadNativeWord(data,0x4137);
-    reserveAmmoPreviewSelection=MwReadNativeWord(data,0x3F6E);
+    reserveAmmoShopSelectedRow=0; /*4137*/
+    reserveAmmoPreviewSelection=0; /*3F6E*/
     reserveAmmoSelling=data[0x4139];
     memset(reserveAmmoMechColours,0,sizeof(reserveAmmoMechColours)); /* 3F70: Written before it's read; zero where the exe reloaded it. */
     if (!ImportInitialString(mainWords,0x413A,reserveAmmoBuyLabel,sizeof(reserveAmmoBuyLabel))

@@ -36,27 +36,27 @@ bool BtechImportAdlibInitialData(const uint8_t *data,size_t bytes)
     memcpy(combatAdlibOperatorChannels,data+0x2C50,sizeof(combatAdlibOperatorChannels));
     combatAdlibCachedScaledBend=(int32_t)((uint32_t)MwReadNativeWord(data,0x2C62)
         |((uint32_t)MwReadNativeWord(data,0x2C64)<<16));
-    combatAdlibCachedTranspose=MwReadNativeWord(data,0x73F2);
+    combatAdlibCachedTranspose=0; /*73F2*/
     uint16_t cachedRow=MwReadNativeWord(data,0x73F0);
     combatAdlibCachedFrequencyRow=NULL;
     if (cachedRow>=0x7178 && cachedRow<0x73D0 && (cachedRow-0x7178)%24==0)
         combatAdlibCachedFrequencyRow=combatAdlibFrequencies[(cachedRow-0x7178)/24];
     combatAdlibTremolo=data[0x6F78];combatAdlibRhythm=data[0x6F79];
-    combatAdlibNoteSelect=data[0x6F90];combatAdlibBendScale=MwReadNativeWord(data,0x6F92);
-    combatAdlibWaveforms=MwReadNativeWord(data,0x6FF4);combatAdlibVibrato=data[0x7056];
-    combatAdlibPercussionKeys=data[0x706E];combatAdlibFrequencyStep=MwReadNativeWord(data,0x73D0);
-    memcpy(combatAdlibNotes,data+0x7070,sizeof(combatAdlibNotes));
-    memcpy(combatAdlibKeys,data+0x73D2,sizeof(combatAdlibKeys));
-    memcpy(combatAdlibOperators,data+0x707C,sizeof(combatAdlibOperators));
-    memcpy(combatAdlibLevels,data+0x73DE,sizeof(combatAdlibLevels));
-    memcpy(combatAdlibPitchClasses,data+0x6F94,sizeof(combatAdlibPitchClasses));
-    memcpy(combatAdlibOctaves,data+0x6FF6,sizeof(combatAdlibOctaves));
+    combatAdlibNoteSelect=0; /*6F90*/combatAdlibBendScale=0; /*6F92*/
+    combatAdlibWaveforms=0; /*6FF4*/combatAdlibVibrato=0; /*7056*/
+    combatAdlibPercussionKeys=0; /*706E*/combatAdlibFrequencyStep=0; /*73D0*/
+    memset(combatAdlibNotes,0,sizeof(combatAdlibNotes)); /*7070*/
+    memset(combatAdlibKeys,0,sizeof(combatAdlibKeys)); /*73D2*/
+    memset(combatAdlibOperators,0,sizeof(combatAdlibOperators)); /*707C*/
+    memset(combatAdlibLevels,0,sizeof(combatAdlibLevels)); /*73DE*/
+    memset(combatAdlibPitchClasses,0,sizeof(combatAdlibPitchClasses)); /*6F94*/
+    memset(combatAdlibOctaves,0,sizeof(combatAdlibOctaves)); /*6FF6*/
     for (unsigned row=0;row<BTECH_OPL_FREQUENCY_ROWS;++row)
         for (unsigned note=0;note<BTECH_OPL_SEMITONES;++note)
-            combatAdlibFrequencies[row][note]=MwReadNativeWord(data,0x7178+row*24+note*2);
+            combatAdlibFrequencies[row][note]=0; /*7178*/
     for (unsigned channel=0;channel<BTECH_OPL_TUNING_CHANNELS;++channel)
     {
-        combatAdlibTransposes[channel]=MwReadNativeWord(data,0x6F7A+channel*2);
+        combatAdlibTransposes[channel]=0; /*6F7A*/
         /* Fresh BSS row offsets are not dereferenced before table construction. */
         uint16_t offset=MwReadNativeWord(data,0x7058+channel*2);
         combatAdlibFrequencyRows[channel]=NULL;

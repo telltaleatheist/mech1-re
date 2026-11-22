@@ -25,15 +25,15 @@ bool BtechImportPolygonInitialData(const uint8_t *data,size_t bytes)
     int16_t *coordinates[]={screenPolygonX,screenPolygonY,polygonWorkX,polygonWorkY,polygonOutlineX,polygonOutlineY};
     for (uint16_t axis=0;axis<6;++axis)
         for (uint16_t i=0;i<COMBAT_POLYGON_VERTEX_WORDS;++i) coordinates[axis][i]=(int16_t)MwReadNativeWord(data,0x2EFC+axis*0x28+i*2);
-    polygonVertexCount=MwReadNativeWord(data,0x2FEC);
+    polygonVertexCount=0; /*2FEC*/
     for (uint16_t i=0;i<=COMBAT_SCREEN_HEIGHT;++i)
-    {polygonSpanStorage[i].endpoints.left=MwReadNativeWord(data,0x2FFC+i*4);polygonSpanStorage[i].endpoints.right=MwReadNativeWord(data,0x2FFE + i*4);}
-    polygonMinimumYVertexByteOffset=MwReadNativeWord(data,0x3FD0);polygonMaximumYVertexByteOffset=MwReadNativeWord(data,0x3FD2);
-    polygonFirstChainVertexCount=MwReadNativeWord(data,0x3FD4);polygonSecondChainVertexCount=MwReadNativeWord(data,0x3FD6);
-    polygonChainEdgesRemaining=MwReadNativeWord(data,0x3FD8);polygonChainVertexByteOffset=MwReadNativeWord(data,0x3FDA);
-    polygonSpanBoundaryByteOffset=MwReadNativeWord(data,0x3FDC);polygonPreviousVertexX=MwReadNativeWord(data,0x3FDE);
-    polygonPreviousVertexY=MwReadNativeWord(data,0x3FE0);polygonOutlineVertexCount=MwReadNativeWord(data,0x3FE4);
+    {polygonSpanStorage[i].endpoints.left=0; /*2FFC*/polygonSpanStorage[i].endpoints.right=0; /*2FFE*/}
+    polygonMinimumYVertexByteOffset=0; /*3FD0*/polygonMaximumYVertexByteOffset=0; /*3FD2*/
+    polygonFirstChainVertexCount=0; /*3FD4*/polygonSecondChainVertexCount=0; /*3FD6*/
+    polygonChainEdgesRemaining=0; /*3FD8*/polygonChainVertexByteOffset=0; /*3FDA*/
+    polygonSpanBoundaryByteOffset=0; /*3FDC*/polygonPreviousVertexX=0; /*3FDE*/
+    polygonPreviousVertexY=0; /*3FE0*/polygonOutlineVertexCount=0; /*3FE4*/
     for (uint16_t i=0;i<8;++i) {egaPolygonLeadingMasks[i]=data[0x4494+i];egaPolygonTrailingMasks[i]=data[0x449C+i];}
-    egaSpanHighColour=data[0x44A4];egaSpanLowColour=data[0x44A5];egaSpanRowsRemaining=MwReadNativeWord(data,0x44A6);
+    egaSpanHighColour=0; /*44A4*/egaSpanLowColour=0; /*44A5*/egaSpanRowsRemaining=0; /*44A6*/
     return true;
 }

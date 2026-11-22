@@ -47,7 +47,7 @@ bool BtechImportCombatStageInitialData(const uint8_t *data,size_t byteCount)
         || !MwRulesCopyWords("combat.critical_transfer",criticalTransferBodyLocations,COMBAT_BODY_LOCATIONS,0)
         || !MwRulesCopyWords("combat.actuator_of_limb",actuatorIndicesByBodyLocation,4,0)) return false;
     if (!MwStoryCopyText("combat.commander.default_name",(char *)combatDefaultCommanderNameBytes,sizeof(combatDefaultCommanderNameBytes))) return false;
-    salvageEntryCount=MwReadNativeWord(data,0x0976);
+    salvageEntryCount=0; /*0976*/
     uint16_t steps[8],costs[16];
     if (!MwRulesCopyWords("combat.unit_kind_of_template",campaignUnitKindByCombatTemplate,COMBAT_MECH_TEMPLATES,0)
         || !MwRulesCopyWords("combat.actuator_integrity_by_condition",actuatorIntegrityTierByCondition,5,0)
@@ -71,9 +71,9 @@ bool BtechImportCombatStageInitialData(const uint8_t *data,size_t byteCount)
         mechFallbackTemplateSteps[i]=(int16_t)(steps[i]<0x8000?steps[i]:(int32_t)steps[i]-0x10000);
         mechTemplateBudgetCostsBytes[i]=(uint32_t)costs[i*2]|((uint32_t)costs[i*2+1]<<16);
     }
-    combatContinuationStage=MwReadNativeWord(data,0xC35A);
+    combatContinuationStage=0; /*C35A*/
     combatContinuationProfileIndex=MwReadNativeWord(data,0x0974);
-    combatMissionDefinitionIndex=MwReadNativeWord(data,0xC96E);
+    combatMissionDefinitionIndex=0; /*C96E*/
     return true;
 }
 
@@ -159,9 +159,9 @@ bool BtechImportMechInitialData(const uint8_t *data,size_t byteCount)
     }
     for (uint16_t index=0;index<COMBAT_RANDOM_WORDS;++index)
         randomStateWords[index]=MwReadNativeWord(data,0x281C+index*2);
-    randomWriteIndex=MwReadNativeWord(data,0x285C);
+    randomWriteIndex=0; /*285C*/
     randomAddendIndex=MwReadNativeWord(data,0x285E);
-    specialAssaultMode=MwReadNativeWord(data,0xC7BE);
+    specialAssaultMode=0; /*C7BE*/
     return true;
 }
 
@@ -199,10 +199,10 @@ void BtechInitializeFreshMechOwners(const uint8_t *data)
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
         unitControls[slot]=BtechUnitControlState{};
     specialAssaultMode=0;
-    specialTargetInteractionBlocked=MwReadNativeWord(data,0x0EEA);
+    specialTargetInteractionBlocked=0; /*0EEA*/
     /* Written before it's read (BtechPrepareCampaignCombatStage); zero where the exe reloaded it. */
     for (uint16_t slot=0;slot<sizeof(sideObjectiveRules)/sizeof(sideObjectiveRules[0]);++slot) sideObjectiveRules[slot]=0;
-    combatLandscapeIndex=MwReadNativeWord(data,0x1E86);
+    combatLandscapeIndex=0; /*1E86*/
     /* From the story file, as the importer reads it; a missing text fails that import. */
     (void)MwStoryCopyText("combat.commander.default_name",(char *)combatDefaultCommanderNameBytes,sizeof(combatDefaultCommanderNameBytes));
     savedArguments=NULL;

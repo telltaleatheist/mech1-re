@@ -51,19 +51,19 @@ bool MwImportCampaignMusicData(const uint8_t *data,size_t byteCount)
     mpuQueueWriteIndex=MwReadNativeWord(data,0x0324);
     mpuQueueReadIndex=MwReadNativeWord(data,0x0326);
     mpuQueueByteCount=MwReadNativeWord(data,0x0328);
-    mpuPreviousIrq=(uint32_t)MwReadNativeWord(data,0x0220)|((uint32_t)MwReadNativeWord(data,0x0222)<<16);
+    mpuPreviousIrq=0; /*0220*/
     midiTickDenominator=MwReadNativeWord(data,0x0042);
     midiTickNumerator=MwReadNativeWord(data,0x0044);
-    midiTickRemainder=MwReadNativeWord(data,0x0046);
+    midiTickRemainder=0; /*0046*/
     midiBeatDivision=MwReadNativeWord(data,0x0048);
     midiBarDivision=MwReadNativeWord(data,0x004A);
-    midiStreamOffset=MwReadNativeWord(data,0x004C);
-    midiStreamSegment=MwReadNativeWord(data,0x004E);
-    midiPlaybackFlags=MwReadNativeWord(data,0x0050);
-    midiEventTickBalance=MwReadNativeWord(data,0x0052);
-    midiBeatRemainder=MwReadNativeWord(data,0x0054);
-    midiBarRemainder=MwReadNativeWord(data,0x0056);
-    midiElapsedBars=MwReadNativeWord(data,0x0058);
+    midiStreamOffset=0; /*004C*/
+    midiStreamSegment=0; /*004E*/
+    midiPlaybackFlags=0; /*0050*/
+    midiEventTickBalance=0; /*0052*/
+    midiBeatRemainder=0; /*0054*/
+    midiBarRemainder=0; /*0056*/
+    midiElapsedBars=0; /*0058*/
     midiStateUpdateInProgress=data[0x005A];
     midiTickInProgress=data[0x005B];
     midiTrackRunningStatus=data[0x005C];
@@ -73,9 +73,9 @@ bool MwImportCampaignMusicData(const uint8_t *data,size_t byteCount)
         midiTrackSystemHandlers[i]=MwReadNativeWord(data,(uint16_t)(0x006B+i*2));
     for (uint16_t i=0;i<14;++i) midiByteHandlers[i]=MwReadNativeWord(data,(uint16_t)(0x008C+i*2));
     midiByteHandlerDisplacement=MwReadNativeWord(data,0x00A8);
-    midiDispatchChannel=MwReadNativeWord(data,0x00AA);
-    midiFirstDataByte=MwReadNativeWord(data,0x00AC);
-    midiControllerValue=MwReadNativeWord(data,0x00AE);
+    midiDispatchChannel=0; /*00AA*/
+    midiFirstDataByte=0; /*00AC*/
+    midiControllerValue=0; /*00AE*/
     /* These typed native records have proved BYTE aliases and exact widths.
      * Import once at IO; ordinary procedures do not keep a backing DS image. */
     for (size_t i=0;i<sizeof(audioVoiceList);++i) ((uint8_t *)&audioVoiceList)[i]=data[0x03FA+i];

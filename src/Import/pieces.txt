@@ -1112,3 +1112,13 @@ event.caption.28               MW_MAIN.EXE 1090:5E13 z
 # BTECH's AdLib default instruments (304E:2BA0, eight rows of 13 operator
 # parameters and an unread byte), written to story/music.json.
 music.adlib_instruments            BTECH.EXE 304E:2BA0 112
+
+# Checks: native tables the converted code stands for, not written to the
+# story. The import refuses a copy whose tables differ from these, rather than
+# run the wrong C handler (the event script's dispatch, the after-action and
+# settlement directories).
+check.event_conditions             MW_MAIN.EXE 1090:5E78 20
+check.event_actions                MW_MAIN.EXE 1090:5E8C 20
+check.after_action_failures        MW_MAIN.EXE 1090:1491 10
+check.after_action_successes       MW_MAIN.EXE 1090:166A 10
+check.settlement_deductions        MW_MAIN.EXE 1090:1786 6
