@@ -103,7 +103,7 @@ in the exe; each array's length is checked at load.
 
 **Extracted, in the player's data folder** (`<write dir>/story/`):
 
-    story/import.json      {"import_version": 1, "sources": {"MW_MAIN.EXE": "<sha256>",
+    story/import.json      {"import_version": 2, "sources": {"MW_MAIN.EXE": "<sha256>",
                             "BTECH.EXE": "<sha256>", "MW.EXE": "<sha256>"},
                             "revision": "1990-01-22", "table_sha256": "..."}
     story/text.json        {"texts": [{"id": "event.42", "address": "1AA5:0312",
@@ -125,9 +125,9 @@ or a rewrite. Text keeps the original's control codes as `\u00NN`.
 
 **The import table** (`src/Import/import_table.cpp`, in the repo): for each
 piece, its id, exe, `SEG:OFF`, length and the first 16 hex digits of its
-SHA-256. The repo ships the table, never the bytes. A player's copy is
-accepted piece by piece: every piece's hash must match, and a refusal names
-the pieces. Revisions are rows of segment bases, as
+keyed hash (HMAC-SHA-256, 7.4; a plain SHA-256 until slice 5g). The repo
+ships the table, never the bytes. A player's copy is accepted piece by
+piece: every piece's hash must match, and a refusal names the pieces. Revisions are rows of segment bases, as
 `src/Support/CombatInstallation.cpp` already keeps for BTECH (the
 1990-01-22 BTECH has the reference layout 0x11 paragraphs later); MW_MAIN
 and MW get the same table. Unknown revisions: the MSC runtime banner at
@@ -1297,9 +1297,10 @@ Each kind of artifact keeps to the rule as follows:
     player's exe, so verifying still needs nothing from the repo but the
     table.
   - The story's short pieces (pilot names, the commander's name, the house
-    names) have the same exposure today, and the goldens' 48-bit label
-    hashes do too (`state menu … label <hash>`). Decision 3 asks whether
-    to move those to the keyed hash in the same piece.
+    names) had the same exposure, and the goldens' 48-bit label hashes did
+    too (`state menu … label <hash>`). Decision 3 moved both to the keyed
+    hash, in 5g: every piece of the import table, and the label hashes
+    under MW_MAIN's key.
 - **The tests:**
   - With no game files, `words_test` builds a scratch story folder from
     made-up words that the test generates (`w1`, `w22`, with lengths taken
@@ -1502,6 +1503,32 @@ Each piece goes on its own branch, with the gate above:
     reads past the `(int)` casts in five array bounds, which had hidden
     those arrays, and `newsAtStart`/`newsAtEnd` move to code (the news
     screen's flags; their names had sorted them with the words).
+- **5g, one keyed hash (decision 3):**
+  - every piece of the import table is hashed as the words are,
+    HMAC-SHA-256 under its exe's key region;
+  - the goldens' label hashes are keyed by MW_MAIN's key region.
+
+  Done (branch `phase2-words-g`).
+  - **The import table.** `make_import_table.py` and the importer use the
+    one rule. The table's 1062 story rows got new hashes and nothing else
+    (ids, exes, addresses and lengths unchanged); the 449 words' hashes were
+    already keyed and are unchanged. `kImportVersion` is 2. A story folder
+    written before is outdated by both its version and its table hash, and
+    `ensure_story` imports it again; `story_test` builds such a folder and
+    checks it re-imports to what a fresh import writes, and that a table of
+    plain SHA-256s is refused piece by piece.
+  - **The label hashes.** `record.py` keys them by the SHA-256 of
+    MW_MAIN.EXE's key region in `--game`; `state.py` takes `--game` too, and
+    `run.py` passes its game copy. All 8 goldens were re-recorded. The
+    check: 121 distinct labels, each old hash mapping to exactly one new
+    hash and back; every label hash in the old goldens is covered. The
+    old goldens with their labels mapped (531 menu rows, 531 state lines)
+    and their screenKeys recomputed equal the new recordings exactly, in all
+    158 records. screenKey folds the label hashes in (it hashes each row's
+    callback, picture, links and label), so the 88 records with a label
+    have a new screenKey and the other 70 an unchanged one. Nothing else in
+    the goldens changed; the two combat traces have no labels and are
+    byte-identical.
 
 Decisions for review:
 1. The words are imported into `story/words.json` with the story, rather than
@@ -1509,8 +1536,8 @@ Decisions for review:
    importer opens an exe. `data/text/interface.json` is not made.
 2. Captions' words take slice 4's caption ids plus `.text`, derived from
    `ui_pieces.txt`; free words get `<screen>.word.*`.
-3. Word pieces use a keyed hash (7.4). Should the story's short pieces and
-   the goldens' label hashes move to it too, and in which slice?
+3. Word pieces use a keyed hash (7.4). The story's other pieces and the
+   goldens' label hashes moved to it too, in 5g.
 4. The four index tables and the pointer tables into words go to `data/ui`
    as numbers and references.
 5. The text-bound tables stay exact and are checked against the words.

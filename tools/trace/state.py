@@ -3,8 +3,11 @@
 trace in record.py's format, so check.py --traces compares the original with
 the golden traces snap by snap.
 
-    state.py --script scripts/campaign_contract.keys --run RUN_DIR --out DIR/campaign_contract.jsonl \\
-        [--frames DIR]
+    state.py --script scripts/campaign_contract.keys --run RUN_DIR --game GAME_DIR \\
+        --out DIR/campaign_contract.jsonl [--frames DIR]
+
+GAME_DIR is the game copy the run used: its MW_MAIN.EXE keys the label hashes
+(record.label_key).
 
 RUN_DIR holds MW1S0000.BIN, MW1S0001.BIN, ... in the script's @snap order
 (run_wsl.sh's run-NAME/). Each capture holds the screen (mode 0Dh: the
@@ -203,8 +206,10 @@ def main():
     ap.add_argument("--run", required=True, help="the run's folder of MW1Snnnn.BIN")
     ap.add_argument("--out", required=True)
     ap.add_argument("--frames", help="write .indices/.palette here (outside the repo)")
+    ap.add_argument("--game", required=True, help="the game copy; its MW_MAIN.EXE keys the label hashes")
     a = ap.parse_args()
     tokens, snaps = record.read_script(a.script)
+    key = record.label_key(a.game)
     keys_before, pending = {}, []
     for t in tokens:
         if t.startswith("@snap:"):
@@ -231,10 +236,10 @@ def main():
             status, ex, problems = campaign_status(cap, frozen)
             if not cap.combat:
                 frozen = {"row": status["campaign"]["selectedRow"], "random": status["campaign"]["random"]}
-            lines = record.state_lines(status)
+            lines = record.state_lines(status, key)
             if not cap.combat:
                 lines.append(f"state exchange {record.sha(ex, 32)}")
-            menu = record.menu_rows(status)
+            menu = record.menu_rows(status, key)
             rec = {"snap": name, "keys": keys_before[name], "state": lines, "menu": menu,
                    "screenKey": record.sha(json.dumps([(r["callback"], r["picture"], r["links"], r["label"])
                                                       for r in menu]).encode(), 12),

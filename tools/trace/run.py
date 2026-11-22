@@ -64,7 +64,7 @@ def main():
             failed.append(name)
             continue
         if run([sys.executable, os.path.join(HERE, "state.py"), "--script", script, "--run", rundir,
-                "--out", os.path.join(out, name + ".jsonl")]):
+                "--game", os.path.join(home, "game"), "--out", os.path.join(out, name + ".jsonl")]):
             failed.append(name)
     if failed:
         print("runs failed: " + ", ".join(failed))

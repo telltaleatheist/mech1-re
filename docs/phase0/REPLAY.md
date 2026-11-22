@@ -71,9 +71,10 @@ rebuild.
 
   `callback` is the original's 081B code offset the row activates (the rebuild
   keeps them as identifiers, `docs/phase0/HANDLER_MAP.md`). `label` is the
-  first 12 hex digits of the SHA-256 of the row's text bytes, as the
-  original holds them, up to the terminating zero (at most 512); `-` for a row
-  without text. `exchange` hashes the campaign
+  first 12 hex digits of the HMAC-SHA-256 of the row's text bytes, as the
+  original holds them, up to the terminating zero (at most 512), keyed by the
+  SHA-256 of MW_MAIN.EXE's key region (081B:0100, 0x1400 bytes, as the import
+  table's hashes); `-` for a row without text. `exchange` hashes the campaign
   as the save format encodes it (0x718 bytes, MW_MAIN_SAVE_FORMAT.c), so the
   rebuild's saves must keep that format byte for byte.
 

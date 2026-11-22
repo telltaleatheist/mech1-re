@@ -1,9 +1,10 @@
 // The UI words (docs/phase2/PLAN.md section 7) on a made-up exe, no game
-// files: HMAC-SHA-256 against RFC 4231; a word's hash is keyed by its exe's key
-// region, so a plain SHA-256 or another exe's key doesn't match; story/words.json
-// keeps a string without its NUL and a block whole; load_words takes every word
-// at its table length once and refuses anything else, naming the word. The
-// words here are made up ("w1", "w22"): no real word is in a test source.
+// files: HMAC-SHA-256 against RFC 4231; a word's hash, like every piece's, is
+// keyed by its exe's key region, so a plain SHA-256 or another exe's key
+// doesn't match; story/words.json keeps a string without its NUL and a block
+// whole; load_words takes every word at its table length once and refuses
+// anything else, naming the word. The words here are made up ("w1", "w22"):
+// no real word is in a test source.
 #include "../src/Import/Story.h"
 #include "../src/Support/Hmac.h"
 #include "../src/Support/Sha256.h"
@@ -85,7 +86,7 @@ int main() {
     const std::string key(reinterpret_cast<const char*>(key_digest.data()), key_digest.size());
     auto keyed = [&](const std::string& bytes) { return mw1o::support::hmac_sha256_hex(span_of(key), span_of(bytes)).substr(0, 16); };
     auto plain = [&](const std::string& bytes) { return mw1o::support::sha256_hex(span_of(bytes)).substr(0, 16); };
-    const std::string word_hash = keyed(word), block_hash = keyed(block), text_hash = plain(text);
+    const std::string word_hash = keyed(word), block_hash = keyed(block), text_hash = keyed(text);
     const std::string word_plain = plain(word);
     const auto at = [](std::size_t n) { return static_cast<std::uint16_t>(n); };
     const std::vector<ImportPiece> table = {
@@ -116,15 +117,15 @@ int main() {
     std::string why = thrown([&] { import_story(game, home, unkeyed); });
     check(why.find("test.word.w1 (MW_MAIN.EXE 0801:0000)") != std::string::npos, "a plain hash on a word is refused: " + why);
 
-    // Another key (a byte of the key region changed): every word refused, the text not.
+    // Another key (a byte of the key region changed): every piece refused, the text too.
     std::string rekeyed = exe;
     rekeyed[0x20 + key_at + 5] ^= 1;
     write(game / "MW_MAIN.EXE", rekeyed);
     why = thrown([&] { import_story(game, home, table); });
     check(why.find("test.word.w1") != std::string::npos && why.find("test.word.w22") != std::string::npos,
           "another exe's key refuses the words: " + why);
-    check(why.find("test.text") == std::string::npos && why.find("2 of 3") != std::string::npos,
-          "the story text still matches: " + why);
+    check(why.find("test.text") != std::string::npos && why.find("3 of 3") != std::string::npos,
+          "another exe's key refuses the story text too: " + why);
 
     // A changed word: refused, naming it.
     std::string changed = exe;

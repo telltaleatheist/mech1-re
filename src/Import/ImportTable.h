@@ -1,19 +1,21 @@
 // The import table: the pieces of the original's creative content (its
 // story, docs/phase2/PLAN.md) that the game takes from the player's own
 // exes, each by id with its place in the exe, its length and the first 16 hex
-// digits of its SHA-256. The repo ships this table, never the bytes; the
-// importer (Story.h) reads the pieces from the player's copy and writes them
-// to the story file in the player's data folder.
+// digits of its keyed hash (below). The repo ships this table, never the
+// bytes; the importer (Story.h) reads the pieces from the player's copy and
+// writes them to the story file in the player's data folder.
 //
 // A copy is accepted piece by piece: every piece must match its hash, and a
 // refusal names the pieces that differ. Bytes the game doesn't import are not
 // checked, so copies that differ only there are accepted.
 //
 // The UI words (docs/phase2/PLAN.md section 7) are pieces of the same table,
-// of the two Word kinds, written to story/words.json. Their hash is keyed
-// (HMAC-SHA-256, src/Support/Hmac.h) by the SHA-256 of a region of the same
-// exe's code (key_region), which the repo never holds, so a short word can't
-// be found from its hash by trying a dictionary.
+// of the two Word kinds, written to story/words.json.
+//
+// Every piece's hash is keyed (HMAC-SHA-256, src/Support/Hmac.h) by the
+// SHA-256 of a region of the same exe's code (key_region), which the repo
+// never holds, so a short piece (a word, a pilot's name) can't be found from
+// its hash by trying a dictionary.
 //
 // import_table.cpp is written by tools/import/make_import_table.py from
 // pieces.txt and word_pieces.txt; add a piece there and run the tool on a game
@@ -30,7 +32,7 @@ namespace mw1o::import {
 struct ImportPiece {
     // String: text read up to and including its NUL (the length counts the
     // NUL; the story file keeps the text without it). Bytes: a fixed length.
-    // Word and WordBytes: a UI word, as String and Bytes, with a keyed hash.
+    // Word and WordBytes: a UI word, as String and Bytes, in story/words.json.
     enum class Kind { String, Bytes, Word, WordBytes };
     Kind kind;
     std::string_view id;
@@ -38,7 +40,7 @@ struct ImportPiece {
     std::uint16_t segment;  // as the traces see it, the image loaded at load_segment(exe)
     std::uint16_t offset;
     std::uint16_t length;
-    std::string_view sha16;  // the first 16 hex digits of the piece's SHA-256 (a word's: its keyed hash)
+    std::string_view sha16;  // the first 16 hex digits of the piece's keyed hash
 };
 
 constexpr bool is_word(ImportPiece::Kind kind) {
@@ -64,7 +66,7 @@ constexpr std::uint16_t load_segment(std::string_view exe) {
     return exe == kBtechExe ? kBtechLoadSegment : kLoadSegment;
 }
 
-// The region of `exe`'s image whose SHA-256 keys its words' hashes: code, in
+// The region of `exe`'s image whose SHA-256 keys its pieces' hashes: code, in
 // both of BTECH's revisions the same once rebased (measured for slice 5a).
 struct KeyRegion {
     std::uint16_t segment;
@@ -77,8 +79,9 @@ constexpr KeyRegion key_region(std::string_view exe) {
 }
 
 // The shape of the story file. A data folder written by another version, or
-// with another table (import_table_hash), is imported again.
-inline constexpr int kImportVersion = 1;
+// with another table (import_table_hash), is imported again. Version 2: every
+// piece's hash keyed (version 1 keyed the words only).
+inline constexpr int kImportVersion = 2;
 
 // The revision the table's hashes come from.
 inline constexpr std::string_view kRevision = "1990-01-22";

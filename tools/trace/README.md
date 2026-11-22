@@ -66,10 +66,14 @@ and no host speed or load changes it.
       state objective position X Y Z damage D      (when the mission has one)
 
   `callback` is the original 081B code offset the row activates. `label` is a
-  12-hex SHA-256 of the row's text: MW1's own text never enters a trace. A
-  row with a label prints `picture -`: its picture word is only where the
-  label lives in the original's data segment.
-- `menu`: the same rows as data; `screenKey`: a hash of the menu's shape.
+  12-hex HMAC-SHA-256 of the row's text, keyed by the SHA-256 of MW_MAIN.EXE's
+  key region (081B:0100, 0x1400 bytes, as the import table's hashes) in the
+  `--game` folder: MW1's own text never enters a trace, and a short label
+  can't be found from its hash by trying a dictionary. A row with a label
+  prints `picture -`: its picture word is only where the label lives in the
+  original's data segment.
+- `menu`: the same rows as data; `screenKey`: a hash of the menu's shape
+  (each row's callback, picture, links and label hash).
 - `frame`: SHA-256 (32 hex) of the indexed 320x200 frame and of its palette.
   The frames are MW1 art: the recorder copies them to `--frames`, outside the
   repo.
@@ -107,7 +111,7 @@ for BTECH; the random words and row are those MW_MAIN left. Then
 `check.py --traces` compares it with the goldens:
 
     python3 tools/trace/state.py --script tools/trace/scripts/bar.keys \
-        --run ~/mwsnap/run-bar --out ~/mw1-orig/bar.jsonl
+        --run ~/mwsnap/run-bar --game ~/mwsnap/game --out ~/mw1-orig/bar.jsonl
     python3 tools/trace/check.py --traces ~/mw1-orig --only bar
 
 or all of it in one command, on Linux or WSL with DOSBox-X and nasm, and a

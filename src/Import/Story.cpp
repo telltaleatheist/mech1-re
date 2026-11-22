@@ -106,9 +106,9 @@ std::span<const std::uint8_t> span_of(std::string_view bytes) {
     return {reinterpret_cast<const std::uint8_t*>(bytes.data()), bytes.size()};
 }
 
-// The key of `exe`'s word hashes: the SHA-256 of its key region, or empty if
-// the image is too short to hold it (then no word matches).
-std::string word_key(const Exe& exe, std::string_view name) {
+// The key of `exe`'s piece hashes: the SHA-256 of its key region, or empty if
+// the image is too short to hold it (then no piece matches).
+std::string piece_key(const Exe& exe, std::string_view name) {
     const KeyRegion region = key_region(name);
     const std::uint16_t base = load_segment(name);
     const std::size_t at = std::size_t(region.segment - base) * 16 + region.offset;
@@ -117,9 +117,8 @@ std::string word_key(const Exe& exe, std::string_view name) {
     return std::string(reinterpret_cast<const char*>(key.data()), key.size());
 }
 
-// A piece's hash as the table keeps it: SHA-256, or a word's keyed hash.
-std::string piece_hash(const ImportPiece& piece, std::string_view bytes, const std::string& key) {
-    if (!is_word(piece.kind)) return sha256_of(bytes);
+// A piece's hash as the table keeps it: HMAC-SHA-256 under its exe's key.
+std::string piece_hash(std::string_view bytes, const std::string& key) {
     if (key.empty()) return {};
     return support::hmac_sha256_hex(span_of(key), span_of(bytes));
 }
@@ -180,12 +179,12 @@ void import_story(const fs::path& game_dir, const fs::path& write_dir, std::span
             it = exes.emplace(std::string(piece.exe), load_exe(find_game_file(game_dir, piece.exe), piece.exe)).first;
         const Exe& exe = it->second;
         auto key = keys.find(piece.exe);
-        if (key == keys.end()) key = keys.emplace(std::string(piece.exe), word_key(exe, piece.exe)).first;
+        if (key == keys.end()) key = keys.emplace(std::string(piece.exe), piece_key(exe, piece.exe)).first;
         const std::uint16_t base = load_segment(piece.exe);
         const std::size_t at = std::size_t(piece.segment - base) * 16 + piece.offset;
         const bool inside = piece.segment >= base && at + piece.length <= exe.image.size();
         const std::string_view bytes = inside ? bytes_view(exe.image, at, piece.length) : std::string_view();
-        const std::string hash = inside ? piece_hash(piece, bytes, key->second) : std::string();
+        const std::string hash = inside ? piece_hash(bytes, key->second) : std::string();
         if (!inside || hash.size() < 16 || hash.substr(0, 16) != piece.sha16) {
             refused.push_back(std::string(piece.id) + " (" + std::string(piece.exe) + " " + piece_address(piece) + ")");
             continue;

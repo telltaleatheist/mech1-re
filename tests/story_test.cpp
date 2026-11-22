@@ -1,8 +1,11 @@
 // src/Import/Story: the importer on a made-up exe (no game files needed).
-// A copy is accepted piece by piece and a refusal names the pieces; the story
-// file round-trips every byte but NUL; import.json goes last; a missing,
-// interrupted or outdated story file is imported again.
+// A copy is accepted piece by piece and a refusal names the pieces; every
+// piece's hash is keyed by the exe's key region, so a plain SHA-256 is
+// refused; the story file round-trips every byte but NUL; import.json goes
+// last; a missing, interrupted or outdated story file is imported again, and
+// so is one written before every piece was keyed (import version 1).
 #include "../src/Import/Story.h"
+#include "../src/Support/Hmac.h"
 #include "../src/Support/Sha256.h"
 
 #include <cstdio>
@@ -24,9 +27,11 @@ void check(bool ok, const std::string& what) {
     }
 }
 
-std::string hash16(const std::string& bytes) {
-    return mw1o::support::sha256_hex({reinterpret_cast<const std::uint8_t*>(bytes.data()), bytes.size()}).substr(0, 16);
+std::span<const std::uint8_t> span_of(const std::string& s) {
+    return {reinterpret_cast<const std::uint8_t*>(s.data()), s.size()};
 }
+
+std::string plain16(const std::string& bytes) { return mw1o::support::sha256_hex(span_of(bytes)).substr(0, 16); }
 
 void write(const fs::path& path, const std::string& bytes) {
     fs::create_directories(path.parent_path());
@@ -58,7 +63,8 @@ int main() {
     const fs::path home = root / "home";
 
     // An MZ exe with a two-paragraph header; its image is loaded at 0800, so
-    // 0801:0000 is file offset 0x20 + 0x10.
+    // 0801:0000 is file offset 0x20 + 0x10. The image runs on past MW_MAIN's
+    // key region, filled with a made-up pattern.
     std::string every;  // 01..FF: every byte a text can hold
     for (int b = 1; b < 256; ++b) every += static_cast<char>(b);
     const std::string first = every + '\0';
@@ -68,7 +74,16 @@ int main() {
     exe[1] = 'Z';
     exe[8] = 2;
     exe += first + second + "tail";
+    const KeyRegion region = key_region("MW_MAIN.EXE");
+    const std::size_t key_at = std::size_t(region.segment - kLoadSegment) * 16 + region.offset;
+    exe.resize(0x20 + key_at + region.length + 16, '\0');
+    for (std::size_t i = 0; i < region.length; ++i) exe[0x20 + key_at + i] = static_cast<char>(i * 5 + 1);
     write(game / "mw_main.exe", exe);  // lower case on disk: found ignoring case
+    const auto key_digest = mw1o::support::sha256_digest(span_of(exe.substr(0x20 + key_at, region.length)));
+    const std::string key(reinterpret_cast<const char*>(key_digest.data()), key_digest.size());
+    auto hash16 = [&](const std::string& bytes) {
+        return mw1o::support::hmac_sha256_hex(span_of(key), span_of(bytes)).substr(0, 16);
+    };
 
     const std::uint16_t second_at = static_cast<std::uint16_t>(first.size());
     // The table holds views: the hashes must outlive it.
@@ -88,12 +103,36 @@ int main() {
     check(text.count("test.first") && text.at("test.first") == every, "bytes 01..FF survive, without the NUL");
     check(text.count("test.second") && text.at("test.second") == "second\x02text", "a control code survives");
     const std::string manifest = read(story_dir(home) / "import.json");
-    check(manifest.find("\"import_version\": 1") != std::string::npos, "import.json has the version");
+    check(manifest.find("\"import_version\": 2") != std::string::npos, "import.json has the version");
     check(manifest.find(mw1o::support::sha256_hex({reinterpret_cast<const std::uint8_t*>(exe.data()), exe.size()})) !=
               std::string::npos,
           "import.json has the exe's SHA-256");
     check(manifest.find(import_table_hash(table)) != std::string::npos, "import.json has the table's hash");
     check(read(story_dir(home) / "text.json").find("\\u00ff") != std::string::npos, "text.json writes 8-bit as \\u00NN");
+
+    // A table of plain SHA-256s (the rule before every piece was keyed): every
+    // piece refused.
+    const std::string first_plain = plain16(first), second_plain = plain16(second);
+    std::vector<ImportPiece> plain = table;
+    plain[0].sha16 = first_plain;
+    plain[1].sha16 = second_plain;
+    std::string plain_why = thrown([&] { import_story(game, home, plain); });
+    check(plain_why.find("test.first") != std::string::npos && plain_why.find("2 of 2") != std::string::npos,
+          "plain hashes are refused: " + plain_why);
+    check(story_state(home, table) == StoryState::Current, "a refused import leaves the story as it was");
+
+    // A story folder written before every piece was keyed: import version 1
+    // and the plain table's hash. Outdated, and ensure_story imports it again.
+    std::string before = manifest;
+    before.replace(before.find("\"import_version\": 2"), 19, "\"import_version\": 1");
+    before.replace(before.find(import_table_hash(table)), import_table_hash(table).size(), import_table_hash(plain));
+    write(story_dir(home) / "import.json", before);
+    check(story_state(home, table) == StoryState::Outdated, "an old-format story folder: outdated");
+    check(thrown([&] { check(ensure_story(game, home, table), "ensure_story imports the old folder"); }).empty(),
+          "ensure_story re-imports the old folder");
+    check(story_state(home, table) == StoryState::Current, "the old folder re-imported: current");
+    check(read(story_dir(home) / "import.json") == manifest, "the old folder's import.json is as a fresh import's");
+    check(load_story_text(home) == text, "the old folder's text re-imported");
 
     // Another table (a piece added): outdated, and ensure_story imports again.
     std::vector<ImportPiece> longer = table;
@@ -106,7 +145,7 @@ int main() {
 
     // Another import version: outdated.
     std::string old = read(story_dir(home) / "import.json");
-    old.replace(old.find("\"import_version\": 1"), 19, "\"import_version\": 0");
+    old.replace(old.find("\"import_version\": 2"), 19, "\"import_version\": 0");
     write(story_dir(home) / "import.json", old);
     check(story_state(home, longer) == StoryState::Outdated, "another import version: outdated");
 
@@ -127,7 +166,7 @@ int main() {
     check(ensure_why.find("test.second") != std::string::npos, "ensure_story passes the refusal on: " + ensure_why);
 
     // A piece past the end of the exe: refused, not read.
-    std::vector<ImportPiece> past = {{ImportPiece::Kind::Bytes, "test.past", "MW_MAIN.EXE", 0x0900, 0, 4, "0000000000000000"}};
+    std::vector<ImportPiece> past = {{ImportPiece::Kind::Bytes, "test.past", "MW_MAIN.EXE", 0x0A00, 0, 4, "0000000000000000"}};
     write(game / "mw_main.exe", exe);
     check(thrown([&] { import_story(game, home, past); }).find("test.past") != std::string::npos,
           "a piece past the end is refused");

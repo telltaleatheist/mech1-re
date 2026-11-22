@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Writes src/Import/import_table.cpp from src/Import/pieces.txt,
 src/Import/word_pieces.txt and the player's exes: each piece's id, exe,
-SEG:OFF, length and the first 16 hex digits of its SHA-256. A word's hash is
-keyed (HMAC-SHA-256 under the SHA-256 of its exe's key region, as
-src/Import/ImportTable.h's key_region), so a short word can't be found from
-it. Prints nothing from the exes but lengths and hashes.
+SEG:OFF, length and the first 16 hex digits of its keyed hash (HMAC-SHA-256
+under the SHA-256 of its exe's key region, as src/Import/ImportTable.h's
+key_region), so a short piece can't be found from its hash. Prints nothing
+from the exes but lengths and hashes.
 
     tools/import/make_import_table.py [--rules | --ui] GAME_DIR [BTECH_IMAGE_TOOL]
 
@@ -155,7 +155,7 @@ def main():
             piece = data[at:at + size]
             if len(piece) != size:
                 sys.exit(f"{name}:{number}: {piece_id} runs past the end of {exe}")
-            if word:
+            if not rules:
                 if exe not in keys:
                     k_segment, k_offset, k_length = KEY_REGIONS[exe]
                     k_at = (k_segment - (BTECH_LOAD_SEGMENT if exe == BTECH_EXE else LOAD_SEGMENT)) * 16 + k_offset

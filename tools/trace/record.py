@@ -25,7 +25,7 @@ A record:
     snap    the snap's name
     keys    the tokens since the previous snap
     state   the compared state, as lines ("state random 1234 5678", ...);
-            menu labels only as a 12-hex SHA-256, never MW1's text
+            menu labels only as a 12-hex keyed hash, never MW1's text
     menu    each row's 081B callback offset, picture, links, enabled, label hash
     screenKey  a hash of the menu's shape
     frame   SHA-256 of the indexed 320x200 frame and of its palette
@@ -38,10 +38,15 @@ Frames are MW1 art: the recorder copies them to --frames, outside the repo.
         --script scripts/campaign_contract.keys --out traces/campaign_contract.jsonl \\
         --frames /tmp/frames
 """
-import argparse, hashlib, json, os, re, shutil, signal, subprocess, sys, tempfile, time
+import argparse, hashlib, hmac, json, os, re, shutil, signal, subprocess, sys, tempfile, time
 
 POLL_S = 0.05
 SNAP_NAME = re.compile(r"^[A-Za-z0-9_-]{1,47}$")
+# MW_MAIN's key region (segment, offset, length) and load segment, as
+# src/Import/ImportTable.h's key_region: a label's hash is keyed as the import
+# table's are, so a short label can't be found from it.
+MAIN_KEY_REGION = (0x081B, 0x0100, 0x1400)
+LOAD_SEGMENT = 0x0800
 
 
 def sha(data, n=16):
@@ -86,9 +91,24 @@ def read_json(path, deadline):
             time.sleep(POLL_S)
 
 
-def label_hash(row):
+def label_key(game_dir):
+    """The labels' key: the SHA-256 of MW_MAIN.EXE's key region in `game_dir`."""
+    names = [e for e in os.listdir(game_dir) if e.upper() == "MW_MAIN.EXE"]
+    if not names:
+        sys.exit(f"MW_MAIN.EXE is not in {game_dir}")
+    with open(os.path.join(game_dir, names[0]), "rb") as f:
+        data = f.read()
+    segment, offset, length = MAIN_KEY_REGION
+    at = (data[8] | data[9] << 8) * 16 + (segment - LOAD_SEGMENT) * 16 + offset
+    if data[:2] != b"MZ" or at + length > len(data):
+        sys.exit(f"{names[0]} in {game_dir} is not MechWarrior's MW_MAIN.EXE")
+    return hashlib.sha256(data[at:at + length]).digest()
+
+
+def label_hash(row, key):
+    """A 12-hex HMAC-SHA-256 of the row's label under `key` (label_key)."""
     label = row.get("label", "")
-    return sha(label.encode("latin-1"), 12) if label else ""
+    return hmac.new(key, label.encode("latin-1"), hashlib.sha256).hexdigest()[:12] if label else ""
 
 
 def picture(row):
@@ -97,8 +117,8 @@ def picture(row):
     return "-" if row.get("label") else row["picture"]
 
 
-def state_lines(status):
-    """The state the rebuild must match, one fact per line."""
+def state_lines(status, key):
+    """The state the rebuild must match, one fact per line; `key` hashes the labels."""
     c = status.get("campaign", {})
     r = c.get("random", [0, 0])
     lines = [f"state random {r[0]:04x} {r[1]:04x}",
@@ -113,7 +133,7 @@ def state_lines(status):
     for row in c.get("menu", []):
         lines.append("state menu {} enabled {} callback {:04x} picture {} links {} label {}".format(
             row["index"], row["enabled"], row["callback"], picture(row), " ".join(map(str, row["links"])),
-            label_hash(row) or "-"))
+            label_hash(row, key) or "-"))
     return lines
 
 
@@ -135,9 +155,10 @@ def combat_lines(status):
     return lines
 
 
-def menu_rows(status):
+def menu_rows(status, key):
     return [{"index": row["index"], "enabled": row["enabled"], "callback": f"0x{row['callback']:04X}",
-             "picture": None if row.get("label") else row["picture"], "links": row["links"], "label": label_hash(row)}
+             "picture": None if row.get("label") else row["picture"], "links": row["links"],
+             "label": label_hash(row, key)}
             for row in status.get("campaign", {}).get("menu", [])]
 
 
@@ -154,6 +175,7 @@ def main():
     args = ap.parse_args()
 
     tokens, snaps = read_script(args.script)
+    key = label_key(args.game)
     work = args.work or tempfile.mkdtemp(prefix="mw1trace-")
     ctl, saves, caps = (os.path.join(work, d) for d in ("ctl", "saves", "caps"))
     for d in (ctl, saves, caps):
@@ -226,8 +248,8 @@ def main():
                 failures += 1
                 print(f"{seq:3d} {name}: MISSING", flush=True)
                 continue
-            menu = menu_rows(st)
-            lines = state_lines(st) + ([f"state exchange {exchange}"] if exchange else [])
+            menu = menu_rows(st, key)
+            lines = state_lines(st, key) + ([f"state exchange {exchange}"] if exchange else [])
             record = {"snap": name, "keys": keys_before[name], "state": lines, "menu": menu,
                       "screenKey": sha(json.dumps([(r["callback"], r["picture"], r["links"], r["label"])
                                                    for r in menu]).encode(), 12),
