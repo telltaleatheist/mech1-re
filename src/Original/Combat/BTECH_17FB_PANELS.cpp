@@ -143,7 +143,7 @@ void BtechDrawUnitOrderPanels(void)
             int32_t structureCondition=(int16_t)(currentStructure*ORDER_CONDITION_SCALE)/(int16_t)maximumStructure;
             if (structureCondition<0 || structureCondition>=ORDER_CONDITION_BANDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: structureCondition<0 || structureCondition>=ORDER_CONDITION_BANDS");
             BtechSetConditionTextColours(colours->orderConditionColours[structureCondition]);
-            BtechDrawNearText(orderDamageLabels[2],x,ORDER_PANEL_DETAIL_FIRST_Y+ORDER_PANEL_ROW_STEP);
+            BtechDrawNearText(orderDamageLabels[2],x,(int)ORDER_PANEL_DETAIL_FIRST_Y+ORDER_PANEL_ROW_STEP);
             if (mech->engineHits>=ORDER_SYSTEM_CONDITION_LEVELS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mech->engineHits>=ORDER_SYSTEM_CONDITION_LEVELS");
             BtechSetConditionTextColours(orderEngineConditionColours[hudColourSchemeIndex][mech->engineHits]);
             BtechDrawNearText(orderDamageLabels[3],x,ORDER_PANEL_COMMAND_Y);

@@ -87,7 +87,7 @@ uint32_t BtechBuildOrderMapPositionMask(void)
 void BtechSetConditionTextColours(uint16_t conditionColour)
 {
     textForegroundColour=(uint8_t)conditionColour;
-    textBackgroundColour=conditionColour?Combat_Pal_EGA_Black:ORDER_CONDITION_FAILED_BACKGROUND;
+    textBackgroundColour=conditionColour?(int)Combat_Pal_EGA_Black:ORDER_CONDITION_FAILED_BACKGROUND;
 }
 
 /*17FB:1472. Combined armour/internal condition band, with exact system-hit

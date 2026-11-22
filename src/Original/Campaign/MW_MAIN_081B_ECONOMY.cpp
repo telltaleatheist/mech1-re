@@ -455,7 +455,7 @@ void MwAdvanceCampaignTimeAndChargeWages(uint16_t elapsedUnits)
                 {
                     uint16_t flagOffset = PILOT_DEPARTURE_NATIVE_BASE + rosterPilotIds[slot];
                     if (flagOffset >= PILOT_AVAILABILITY_NATIVE_BASE
-                        && flagOffset < PILOT_AVAILABILITY_NATIVE_BASE + CAMPAIGN_PILOT_ID_COUNT)
+                        && flagOffset < (int)PILOT_AVAILABILITY_NATIVE_BASE + CAMPAIGN_PILOT_ID_COUNT)
                         pilotUnavailableFlags[flagOffset - PILOT_AVAILABILITY_NATIVE_BASE] = 0;
                     else if (flagOffset == PILOT_DEPARTURE_TAIL_OFFSET) pilotDepartureFlagTail = 0;
                     else /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Unmapped adjacent native byte, not a new ID validation rule."); /* Unmapped adjacent native byte, not a new ID validation rule. */

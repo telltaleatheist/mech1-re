@@ -471,7 +471,7 @@ uint16_t MwRearmSelectedMech(void)
     selectedMechRearmQuoteLow=0; /* High WORD is deliberately stale. */
     do
     {
-        if (!profile || quantityIndex>=CAMPAIGN_AMMO_GROUPS*CAMPAIGN_OWNED_UNIT_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !profile || quantityIndex>=CAMPAIGN_AMMO_GROUPS*CAMPAIGN_OWNED_UNIT_SLOTS");
+        if (!profile || quantityIndex>=(int)CAMPAIGN_AMMO_GROUPS*CAMPAIGN_OWNED_UNIT_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !profile || quantityIndex>=CAMPAIGN_AMMO_GROUPS*CAMPAIGN_OWNED_UNIT_SLOTS");
         uint16_t ammoFamily=profile->ammoFamily;
         uint16_t purchasesRemaining=profile->quantityMaximum-ownedAmmoQuantitiesByGroup[quantityIndex];
         if (purchasesRemaining!=0)
@@ -519,7 +519,7 @@ uint16_t MwQuoteSelectedMechRearm(void)
     selectedMechRearmQuoteHigh=0;
     do
     {
-        if (!profile || quantityIndex>=CAMPAIGN_AMMO_GROUPS*CAMPAIGN_OWNED_UNIT_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !profile || quantityIndex>=CAMPAIGN_AMMO_GROUPS*CAMPAIGN_OWNED_UNIT_SLOTS"); /* Unrepresented adjacent reads. */
+        if (!profile || quantityIndex>=(int)CAMPAIGN_AMMO_GROUPS*CAMPAIGN_OWNED_UNIT_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !profile || quantityIndex>=CAMPAIGN_AMMO_GROUPS*CAMPAIGN_OWNED_UNIT_SLOTS"); /* Unrepresented adjacent reads. */
         uint16_t ammoFamily=profile->ammoFamily;
         uint16_t quantityToBuy=profile->quantityMaximum-ownedAmmoQuantitiesByGroup[quantityIndex];
         uint32_t rearmCost=((uint32_t)selectedMechRearmQuoteHigh<<NATIVE_WORD_BITS)|selectedMechRearmQuoteLow;

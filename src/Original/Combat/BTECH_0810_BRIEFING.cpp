@@ -24,7 +24,7 @@ void BtechShowCombatStageBriefing(void)
     BtechLoadScreenImage("status.scr",NULL);
     textTransparentBackground=true;
     screenPolygonNeedsClip=false;
-    textForegroundColour=hudColourSchemeIndex?Combat_Pal_EGA_Black:COMBAT_BRIEFING_TEXT_COLOUR;
+    textForegroundColour=hudColourSchemeIndex?(int)Combat_Pal_EGA_Black:COMBAT_BRIEFING_TEXT_COLOUR;
     BtechDrawNearText(briefingMissionLabel,BRIEFING_MISSION_LABEL_X,BRIEFING_MISSION_LABEL_Y);
     if (combatMissionDefinitionIndex>=COMBAT_BRIEFING_MISSIONS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatMissionDefinitionIndex>=COMBAT_BRIEFING_MISSIONS"); /* Adjacent directory alias not mapped. */
     BtechDrawNearText(combatMissionTitles[combatMissionDefinitionIndex],BRIEFING_MISSION_TITLE_X,BRIEFING_MISSION_TITLE_Y);

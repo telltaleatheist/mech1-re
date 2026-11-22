@@ -31,7 +31,7 @@ static uint8_t ReadToneDosByte(uint16_t offset)
             vector=interruptVectors[0];
             if (!vector) vector=dosDefaultDivideVector;
             else if (vector==BTECH_DIVIDE_HANDLER_VECTOR)
-                vector+=((uint32_t)(HOST_DOS_COMBAT_CODE_SELECTOR-BTECH_IMAGE_LOAD_SELECTOR)<<16);
+                vector+=((uint32_t)((int)HOST_DOS_COMBAT_CODE_SELECTOR-BTECH_IMAGE_LOAD_SELECTOR)<<16);
             else MwSdlFail("Unrecovered physical divide vector for tone fallback");
         }
         else

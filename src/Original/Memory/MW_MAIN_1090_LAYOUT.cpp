@@ -71,7 +71,7 @@ bool MwImportUiListPanel(const char *id,MwPanelDescriptor *panel,uint16_t lineCo
 }
 bool MwImportUiMenu(const char *id,MwUiMenu *menu,const UiCaptionOwner *owners,size_t count)
 {
-    uint8_t bytes[CAMPAIGN_UI_RECORD_BYTES*UI_MENU_MAX_RECORDS];
+    uint8_t bytes[(int)CAMPAIGN_UI_RECORD_BYTES*UI_MENU_MAX_RECORDS];
     const size_t size=(size_t)menu->recordCount*CAMPAIGN_UI_RECORD_BYTES;
     if (size>sizeof(bytes) || MwUiPieceSize(id)!=size || !MwUiCopyNative(id,bytes,size)) return false;
     for (uint16_t row=0;row<menu->recordCount;++row)
