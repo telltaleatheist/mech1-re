@@ -2000,3 +2000,103 @@ mingw check.
   - **Gate.** Fresh Release build, 0 warnings; ctest 13 of 13 in both
     setups (`exe_free` skipped there, as it is opt-in); traces 8 of 8;
     `exe_free` 8 of 8 on both folders; mingw clean on the changed files.
+
+## 9. Phase 2, closed
+
+The goal of the phase holds: **play opens no executable.** The game reads the
+player's exes once, at the first run's import, and from then on plays from
+three places only.
+
+### 9.1 What play reads
+
+- **`data/`, ours, in the repo and beside the program.** `data/rules/` (11
+  files: units, market, repair, contracts, houses, mechs, weapons, combat,
+  combat assets, animation, the new campaign) and `data/ui/` (11 files, one
+  per screen family: hub, intro, options, crew, dealer, complex, contract
+  office, travel, events, cockpit, orders). Numbers we own and may tune
+  within the contracts of 5.3 and 6.3; each table's hash is checked against
+  the player's exe when one is present (`rules_exe_test`, `ui_exe_test`).
+- **`story/`, the player's, in their save directory.** Written once by the
+  import from the player's MW_MAIN.EXE, BTECH.EXE (either revision) and
+  MW_EGA.EXE, and written again only when the import table or its version
+  changes: `text.json`, `words.json`, `pilots.json`, `planets.json`,
+  `missions.json`, `event_text.json`, `events.json`, `music.json`,
+  `native.json` (the original's raw spans the converted code reads as they
+  are) and `import.json` (the sources' hashes and BTECH's revision). MW1's
+  words live only here, never in the repo.
+- **The install's resource files, in place:** pictures, fonts, palettes,
+  models, maps and worlds, music and sound banks, scenario data (BMP, FNT,
+  PAL, TBL, BIN, WLD, GRD, MUS, SND, SCR, DAT). These were always read at
+  play and still are; the import never copies them.
+- **Code:** platform tables, generated math tables and start values with no
+  file, each checked byte for byte against the exes by `start_exe_test`.
+
+The guard (6f) stops the program if play opens any `.EXE` or `.COM`, naming
+the file and the opener. `exe_free` deletes every program from a copy of the
+game folder after the import and requires all 8 traces to be unchanged, on
+both the 1990 and the 1989 folders.
+
+### 9.2 The intended differences
+
+Everything else matches the original, trace for trace: 8 of 8 on the 1990
+goldens, and on the 1989 folder, the same build with and without its exes.
+
+1. **Copy protection** is gone (slice 1). Its random draws went with it, so
+   the goldens were re-recorded once.
+2. **Disk prompts** are gone. A missing or unreadable game file is a fatal
+   error naming the file, not a request for a disk (slice 1). The two
+   disk-wait opens of a program are dropped too: the campaign's BTECH.EXE
+   before a deployment and combat's MW.EXE before it returns (6f).
+3. **The DOS launcher's DOS path** is gone: the resident resize, the memory
+   probes, adapter detection, the graphics prompt and the disk prompts after
+   a failed EXEC (slice 1). Its loop between the campaign and combat stays,
+   as code, and the EXECs run our programs by name, opening nothing (6e).
+4. **Tandy and Hercules** are dropped; EGA only (slice 1, the last Hercules
+   table in slice 6).
+5. **BTECH's fatal-error messages** (nine, never seen in a trace) use our
+   own wording, on stderr only (7.3, done before 5a).
+6. **Bytes never read are zero** where the exe held something else:
+   - `launcherIdentity`: the 8 bytes nothing reads (6b);
+   - `savedCriticalErrorVector`: dead, since startup saves INT 24 into it
+     before any read (6c);
+   - MW_EGA's machine-code spans and the bytes after the font names' NULs
+     (6e). The one word play reads there, the row-200 scanline lookup's,
+     comes from the story, so nothing on screen changes. Each unchecked
+     path past the overlay's tables reports itself once on stderr.
+7. **Labels in the traces** are keyed hashes, so the goldens were
+   re-recorded for the key (5g). The screens themselves are unchanged.
+
+### 9.3 Before a first preview release
+
+Found in this close-out, and needed for any package:
+- **`data/` is not packaged.** `tools/build_package.py` stages the program,
+  its libraries, `MechWarrior.ini` and the notices. Play needs `data/rules`
+  and `data/ui` beside the program (slice 3 on), so a packaged build
+  without them stops at start. The package and its smoke test should
+  include `data/`.
+- **`RELEASING.md` is out of date.** It describes `release.yml`, which was
+  removed (nothing publishes from this repo; Windows builds by hand). It
+  should say how a preview is built and by whom.
+- **The first run, from the player's side.** The import needs MW_MAIN.EXE,
+  BTECH.EXE and MW_EGA.EXE from a supported copy (SUPPORTED_VERSIONS.md); a
+  refusal names the pieces. The README and PLAYABLE_TEST_BUILD.md should
+  say this plainly, and say where `story/` is written.
+
+Recorded already, not part of phase 2:
+- **Release checks** (`RELEASING.md`): both platform builds passing, and SDL,
+  campaign, combat, input and audio verified by hand on each. macOS and
+  Linux playable builds are not yet qualified (`RUNTIME_STATUS.md`).
+- **Campaign acceptance** is incomplete: every mission objective, every
+  chassis and scenario, and a full playthrough (`RUNTIME_STATUS.md`).
+
+Deferred on purpose until after the preview:
+- **Saves keep mission-description offsets** (8.4, decision 3): a story
+  whose texts change length would move them. That becomes ids, with an
+  old-save migration test.
+- **The `--text` override** (our wording or a translation), and with it the
+  layout tables tied to particular words (6.3).
+- **1989 goldens.** `exe_free` already checks that folder against its own
+  recording.
+- **Phases 3 to 6** of the scoping report: restructure by function, the
+  gotos, the platform (indexed renderer, fixed tick, audio), and revisions
+  and acceptance.
