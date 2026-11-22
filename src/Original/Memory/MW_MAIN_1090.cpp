@@ -493,7 +493,8 @@ static const char *const storyUnitKeys[CAMPAIGN_UNIT_KIND_COUNT]={"locust","wasp
 static const char *const storyHouseKeys[CAMPAIGN_HOUSE_COUNT]={"kurita","steiner","marik","liao","davion"};
 static_assert(CAMPAIGN_UNIT_DROPSHIP==10 && HOUSE_DAVION==4,"the story keys follow the enums");
 /* MW_MAIN's UI words that have left the exe (story/words.json: hub.word.*,
- * crew.word.*, contract_office.word.*, complex.word.*, dealer.word.*) at
+ * crew.word.*, contract_office.word.*, complex.word.*, dealer.word.*,
+ * travel.word.*) at
  * their data-segment offsets, so the
  * importers below read them where the exe kept them. Filled first, by
  * MwImportCampaignInitialData; zero everywhere else. */
@@ -505,7 +506,8 @@ static bool ImportMainWords(void)
         && MwWordsCopyInto("crew.word.",mainWords,sizeof(mainWords))
         && MwWordsCopyInto("contract_office.word.",mainWords,sizeof(mainWords))
         && MwWordsCopyInto("complex.word.",mainWords,sizeof(mainWords))
-        && MwWordsCopyInto("dealer.word.",mainWords,sizeof(mainWords));
+        && MwWordsCopyInto("dealer.word.",mainWords,sizeof(mainWords))
+        && MwWordsCopyInto("travel.word.",mainWords,sizeof(mainWords));
 }
 static bool ImportInitialString(const uint8_t *data, uint16_t offset, char *text, size_t capacity)
 {
@@ -559,15 +561,15 @@ static bool ImportTravelUiData(const uint8_t *data)
         || !MwImportUiMenu("travel.menu.house_planets",&travelHousePlanetMenu,owners,count)
         || !MwImportUiMenu("travel.menu.house_browser",&travelHouseBrowserMenu,owners,count)
         || !MwImportUiMenu("travel.menu.map",&travelMapMenu,owners,count)) return false;
+    /* The houses' search names (travel.word.house_search.*), by travel.json's house_search_words (59BB). */
+    uint16_t houseSearchWords[TRAVEL_HOUSE_COUNT];
+    if (!MwUiCopyWords("travel.table.house_search_words",houseSearchWords,TRAVEL_HOUSE_COUNT,0)) return false;
     for (uint16_t house=0;house<TRAVEL_HOUSE_COUNT;++house)
-    {
-        uint16_t textOffset=MwReadNativeWord(data,(uint16_t)(0x59BB+house*sizeof(uint16_t)));
-        if (!ImportInitialString(data,textOffset,travelHouseSearchNames[house],sizeof(travelHouseSearchNames[house]))) return false;
-    }
-    if (!ImportInitialString(data,0x5B83,travelPopulationSuffix,sizeof(travelPopulationSuffix))) return false;
+        if (!ImportInitialString(mainWords,houseSearchWords[house],travelHouseSearchNames[house],sizeof(travelHouseSearchNames[house]))) return false;
+    if (!ImportInitialString(mainWords,0x5B83,travelPopulationSuffix,sizeof(travelPopulationSuffix))) return false;
     const uint16_t landscapeLabels[TRAVEL_LANDSCAPE_LABEL_COUNT]={0x5CA6,0x5CAD,0x5CB6};
     for (uint16_t label=0;label<TRAVEL_LANDSCAPE_LABEL_COUNT;++label)
-        if (!ImportInitialString(data,landscapeLabels[label],travelLandscapeLabels[label],sizeof(travelLandscapeLabels[label]))) return false;
+        if (!ImportInitialString(mainWords,landscapeLabels[label],travelLandscapeLabels[label],sizeof(travelLandscapeLabels[label]))) return false;
     return true;
 }
 /* Native UI directories become typed references. Persistent pilot tables
@@ -785,14 +787,15 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     hiredTransportReverseTerminator=MwReadNativeWord(data,0x5AE8);
     if (!MwUiCopyWords("travel.table.hired_transport_frames",(uint16_t *)hiredTransportFrames,sizeof(hiredTransportFrames)/sizeof(uint16_t),0) /*5AEA*/
         || !MwUiCopyWords("travel.table.dropship_frames",(uint16_t *)dropShipTravelFrames,sizeof(dropShipTravelFrames)/sizeof(uint16_t),0)) return false; /*5B2E*/
-    memcpy(travelDestinationName,data+0x5C4E,sizeof(travelDestinationName));
+    /* DS:5C4E: the destination header's caption text (the original's buffer runs past it into the next caption's head, bytes after the NUL that nothing draws). */
+    if (!MwWordsCopyText("travel.caption.destination_name.text",travelDestinationName,sizeof(travelDestinationName))) return false;
     travelSelectedHouseByteOffset=MwReadNativeWord(data,0x54DC);
     travelHousePlanetStart=MwReadNativeWord(data,0x54DE);
     travelHousePlanetCount=MwReadNativeWord(data,0x54E2);
     travelSelectedHouseRow=MwReadNativeWord(data,0x5A0B);
-    memcpy(travelPopulationSuffix,data+0x5B83,sizeof(travelPopulationSuffix));
-    memcpy(travelLandscapeLabels,data+0x5CA6,sizeof(travelLandscapeLabels));
-    memcpy(travelInsufficientFundsText,data+0x5B5A,sizeof(travelInsufficientFundsText));
+    memcpy(travelPopulationSuffix,mainWords+0x5B83,sizeof(travelPopulationSuffix));
+    memcpy(travelLandscapeLabels,mainWords+0x5CA6,sizeof(travelLandscapeLabels));
+    memcpy(travelInsufficientFundsText,mainWords+0x5B5A,sizeof(travelInsufficientFundsText));
     if (!ImportRuleWords("market.freight_rates",(uint16_t *)reserveAmmoFreightRates,sizeof(reserveAmmoFreightRates)/sizeof(uint16_t))) return false;
     if (!ImportRuleBytes("market.stock_kind_range_maxima",generatedKindRangeMaxima,sizeof(generatedKindRangeMaxima))) return false;
     if (!ImportRuleBytes("market.stock_kind_range_starts",generatedKindRangeStarts,sizeof(generatedKindRangeStarts))) return false;
@@ -1016,7 +1019,9 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
         if (text<0x4AAC || text>=0x4B1A || !memchr(mainWords+text,0,0x4B1A-text)) return false;
         calendarMonthNames[month]=calendarMonthText+text-0x4AAC;
     }
+    /* The eighth planet row's caption (travel.caption.planet_8, 55EC): its head from the layout bytes, its 18-byte text from the words. */
     ImportInitialText(data,0x55EC,&positionedText.display,positionedText.text,18);
+    if (!MwWordsCopyBlock("travel.caption.planet_8.text",(uint8_t *)positionedText.text,18)) return false;
     /* data/ui/complex.json: the Mech Complex (panel 25C5, menu 2632), the owned
      * list (266A, 283B), 'Mech and DropShip service (2C3F, 2D53; 2D06, 2D99),
      * sale (3075, 30F0), rearm (3110, 316D) and component repair (3214, 3558).

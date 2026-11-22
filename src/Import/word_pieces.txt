@@ -341,3 +341,22 @@ dealer.word.owned_capacity                   MW_MAIN.EXE 1090:4347 55
 dealer.word.market_list_done                 MW_MAIN.EXE 1090:3049 12
 dealer.word.ammo_buy                         MW_MAIN.EXE 1090:413A z
 dealer.word.ammo_sell                        MW_MAIN.EXE 1090:413F z
+
+# Slice 5e: travel. Its 44 captions' texts (each NUL-ended; the destination
+# name's is also the buffer the selected planet's name is drawn from, and
+# the eighth planet row's is the market component menu's text).
+captions travel
+
+# Travel's words: the five houses' search names (strings the pointer table
+# house_search_words names), the population suffix, the three landscape
+# labels and the message for a trip the company cannot pay for.
+travel.word.house_search.1                   MW_MAIN.EXE 1090:59C5 z
+travel.word.house_search.2                   MW_MAIN.EXE 1090:59D3 z
+travel.word.house_search.3                   MW_MAIN.EXE 1090:59E1 z
+travel.word.house_search.4                   MW_MAIN.EXE 1090:59EF z
+travel.word.house_search.5                   MW_MAIN.EXE 1090:59FD z
+travel.word.population_suffix                MW_MAIN.EXE 1090:5B83 z
+travel.word.landscape.1                      MW_MAIN.EXE 1090:5CA6 z
+travel.word.landscape.2                      MW_MAIN.EXE 1090:5CAD z
+travel.word.landscape.3                      MW_MAIN.EXE 1090:5CB6 z
+travel.word.insufficient_funds               MW_MAIN.EXE 1090:5B5A z

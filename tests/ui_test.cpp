@@ -135,6 +135,8 @@ void what_doesnt_fit_is_refused(const fs::path& data, const fs::path& work) {
     refused(load, "is not a list of 4", "a notification missing");
     with_file("complex.json", [&](Json& c) { at(at(at(c, "tables"), "repair_weapon_words"), 9) = Json{std::string("repair_weapons.11")}; });
     refused(load, "\"complex.word.repair_weapons.11\" names no word", "a repair list naming no word");
+    with_file("travel.json", [&](Json& c) { at(at(c, "tables"), "house_search_words") = Json{Json::Array{}}; });
+    refused(load, "is not a list of 5", "the house search names missing");
 
     with_cockpit([&](Json& c) { at(first_template(c), "cockpit_layout") = Json{3.0}; });
     refused(load, "\"cockpit_layout\" 3 names no layout", "a template naming a layout past the last");

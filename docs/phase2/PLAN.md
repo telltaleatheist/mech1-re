@@ -1452,6 +1452,20 @@ Each piece goes on its own branch, with the gate above:
   fails mech_complex.
 - **5e, travel:** the 44 captions, the landscape labels and travel's
   messages.
+
+  Done (branch `phase2-words-e`). `captions travel` adds the 44 caption
+  texts, all NUL-ended. Two of them have a second reader: the destination
+  name's text (5C4E) is also the buffer the selected planet's name is
+  drawn from, now filled from that word (the original's buffer runs five
+  bytes past the NUL into the next caption's head; nothing draws them), and
+  the eighth planet row's 18-byte text is the market component menu's
+  `positionedText`, now copied from that word. Ten free words: the five
+  houses' search names (strings, by the `WordRefs` table
+  `house_search_words` in `travel.json`, 59BB), the population suffix, the
+  three landscape labels and the unaffordable-trip message. No word
+  overlaps another or any layout piece. Break checks: 0xEE over every
+  MW_MAIN word in the exe data keeps the traces 8 of 8; 0xEE over the
+  loaded travel words fails the travel trace.
 - **5f, what's left and the record:**
   - the text-bound tables' checks;
   - `MwUiCaptionOffset`'s comment;

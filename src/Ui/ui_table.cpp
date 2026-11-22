@@ -364,6 +364,7 @@ constexpr UiPiece kTable[] = {
     {"travel.caption.browse_houses", "MW_MAIN.EXE", 0x1090, 0x5C87, 5, "89eefc18fa4b815b"},
     {"travel.table.hired_transport_frames", "MW_MAIN.EXE", 0x1090, 0x5AEA, 68, "589775a06e839320"},
     {"travel.table.dropship_frames", "MW_MAIN.EXE", 0x1090, 0x5B2E, 44, "78a310549b1491b6"},
+    {"travel.table.house_search_words", "MW_MAIN.EXE", 0x1090, 0x59BB, 10, "3ace5ccae2df882c"},
 };
 }  // namespace
 

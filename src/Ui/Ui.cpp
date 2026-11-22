@@ -691,7 +691,8 @@ constexpr MenuSpec kTravelMenus[] = {{"house_planets", 31, MenuCaptions::Screen,
                                      {"house_browser", 6, MenuCaptions::Screen, false},
                                      {"map", 5, MenuCaptions::Screen, false}};
 constexpr TableSpec kTravelTables[] = {{"hired_transport_frames", TableKind::Words, 34},
-                                       {"dropship_frames", TableKind::Words, 22}};
+                                       {"dropship_frames", TableKind::Words, 22},
+                                       {"house_search_words", TableKind::WordRefs, 5}};
 constexpr ScreenSpec kScreens[] = {
     {"options", kOptionsCaptions, {}, kOptionsPanels, kOptionsMenus, {}},
     {"events", {}, {}, {}, kEventMenus, {}},

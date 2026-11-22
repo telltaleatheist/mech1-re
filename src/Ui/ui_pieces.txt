@@ -403,3 +403,4 @@ travel.caption.destination_detail        MW_MAIN.EXE 1090:5C61 5
 travel.caption.browse_houses             MW_MAIN.EXE 1090:5C87 5
 travel.table.hired_transport_frames      MW_MAIN.EXE 1090:5AEA 68
 travel.table.dropship_frames             MW_MAIN.EXE 1090:5B2E 44
+travel.table.house_search_words          MW_MAIN.EXE 1090:59BB 10
