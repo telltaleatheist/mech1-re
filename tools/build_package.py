@@ -1,20 +1,111 @@
-"""Build and smoke-test a redistributable runtime, without original game data."""
+"""Build and smoke-test a redistributable runtime, without original game data.
+
+    build_package.py --sdl SDL_SOURCE --label LABEL [--game GAME_DIR]
+    build_package.py --smoke EXTRACTED_PACKAGE_DIR [--game GAME_DIR]
+
+The package holds the program, its libraries, our data/ (rules and screen
+layout, which play reads beside the program), the configuration and the
+notices; never the original game's files. The smoke test starts the
+extracted archive: without arguments it must print its usage. With a game
+folder (--game, or MW1O_GAME) it also runs the first run headless from a
+scratch save directory and must import the story and reach the game's first
+input wait (the debug control's status.json) before it is stopped. --smoke
+runs the same checks on a package already extracted.
+"""
 import argparse
 import hashlib
+import json
 import os
 from pathlib import Path
 import re
 import shutil
+import signal
 import subprocess
+import sys
 import tarfile
+import tempfile
+import time
 import zipfile
+
+# Our data beside the program: each folder must hold JSON files.
+DATA_FOLDERS = ("data/rules", "data/ui")
+FIRST_RUN_SECONDS = 120
+
+
+def stage_data(root, stage):
+    """Copies root/data into the package, refusing a tree without the rules or the layout."""
+    for folder in DATA_FOLDERS:
+        if not list((root / folder).glob("*.json")):
+            raise RuntimeError(f"Missing game data: {folder}/*.json")
+    shutil.copytree(root / "data", stage / "data")
+
+
+def check_usage(executable):
+    result = subprocess.run([str(executable)], cwd=executable.parent, capture_output=True, text=True, timeout=30)
+    if result.returncode != 2 or "Usage: mechwarrior" not in result.stderr:
+        raise RuntimeError(f"Packaged executable failed to load: {result.returncode}\n{result.stdout}\n{result.stderr}")
+
+
+def check_first_run(executable, game, timeout=FIRST_RUN_SECONDS):
+    """Starts the package on `game` with an empty save directory: it must import
+    the story (story/import.json) and reach its first input wait (status.json)."""
+    for folder in DATA_FOLDERS:
+        if not list((executable.parent / folder).glob("*.json")):
+            raise RuntimeError(f"The package has no {folder}")
+    with tempfile.TemporaryDirectory(prefix="mw1-first-run-") as scratch:
+        scratch = Path(scratch)
+        saves, control, captures = (scratch / d for d in ("saves", "control", "captures"))
+        for d in (saves, control, captures):
+            d.mkdir()
+        headless = {"MW1O_HIDDEN": "1"} if sys.platform == "darwin" else {"SDL_VIDEO_DRIVER": "offscreen"}
+        env = dict(os.environ, **headless, SDL_AUDIO_DRIVER="dummy",
+                   MECHWARRIOR_SAVE_DIRECTORY=str(saves), MECHWARRIOR_DEBUG_CONTROL_DIRECTORY=str(control))
+        log_path = scratch / "run.log"
+        with open(log_path, "wb") as log:
+            game_process = subprocess.Popen([str(executable), str(Path(game).resolve()), str(captures)],
+                                            cwd=executable.parent, env=env, stdout=log, stderr=subprocess.STDOUT)
+            reached = False
+            deadline = time.monotonic() + timeout
+            try:
+                while time.monotonic() < deadline and game_process.poll() is None:
+                    try:
+                        json.loads((control / "status.json").read_text(encoding="latin-1"))
+                        reached = (saves / "story" / "import.json").is_file()
+                    except (OSError, ValueError):
+                        pass
+                    if reached:
+                        break
+                    time.sleep(0.1)
+            finally:
+                if game_process.poll() is None:
+                    if os.name == "nt":
+                        game_process.terminate()
+                    else:
+                        game_process.send_signal(signal.SIGTERM)
+                    try:
+                        game_process.wait(10)
+                    except subprocess.TimeoutExpired:
+                        game_process.kill()
+                        game_process.wait()
+        if not reached:
+            tail = log_path.read_text(encoding="latin-1", errors="replace").splitlines()[-10:]
+            what = "exited with code {}".format(game_process.returncode) if game_process.returncode not in (None, -signal.SIGTERM) else "timed out"
+            raise RuntimeError("Packaged first run did not import the story and reach the game ("
+                               + what + "):\n" + "\n".join(tail))
+    print(f"First run from the package: story imported, the game reached its first input wait")
+
+
+def smoke(executable, game):
+    check_usage(executable)
+    if game:
+        check_first_run(executable, game)
 
 
 def run(*args, **kwargs):
     return subprocess.run(args, check=True, **kwargs)
 
 
-def package(root, build, sdl, output, label):
+def package(root, build, sdl, output, label, game=None):
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", label):
         raise ValueError("Invalid package label")
     windows = os.name == "nt"
@@ -56,6 +147,7 @@ def package(root, build, sdl, output, label):
             raise RuntimeError(f"Missing runtime dependency: {required}")
     for source in [root / "LICENSE", root / "MechWarrior.ini"]:
         shutil.copy2(source, stage / source.name)
+    stage_data(root, stage)
     notices = stage / "licenses"
     notices.mkdir()
     shutil.copytree(root / "docs/LICENSES", notices / "project")
@@ -67,7 +159,9 @@ def package(root, build, sdl, output, label):
         "MechWarrior (1989) experimental SDL preservation port\n\n"
         "An original game installation is required and is not included.\n"
         "No game data, saves or MT-32 ROMs are included.\n"
-        "Keep the configuration and shared libraries beside the executable.\n"
+        "Keep the configuration, the data folder and the shared libraries beside the executable.\n"
+        "The first run reads the game's programs once and writes a story folder into the save\n"
+        "directory; after that the game plays from it and never opens the programs.\n"
         "Run from a writable directory with: mechwarrior <game-directory> [capture-directory]\n"
         "Windows: use mechwarrior.exe. Linux: use ./mechwarrior.\n"
         "Linux target: Ubuntu 24.04 x86-64 (glibc 2.39+) with desktop/audio services.\n"
@@ -97,18 +191,28 @@ def package(root, build, sdl, output, label):
     executable = extracted / name / binary.name
     if not windows:
         run("ldd", str(executable))
-    result = subprocess.run([str(executable)], cwd=executable.parent, capture_output=True, text=True, timeout=30)
-    if result.returncode != 2 or "Usage: mechwarrior" not in result.stderr:
-        raise RuntimeError(f"Packaged executable failed to load: {result.returncode}\n{result.stdout}\n{result.stderr}")
+    smoke(executable, game)
     digest = hashlib.sha256(archive.read_bytes()).hexdigest()
     (output / (archive.name + ".sha256")).write_text(f"{digest}  {archive.name}\n", encoding="utf-8")
     print(f"Packaged and startup-checked {archive}")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(__doc__)
-    parser.add_argument("--sdl", type=Path, required=True)
-    parser.add_argument("--label", required=True)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--sdl", type=Path)
+    parser.add_argument("--label")
+    parser.add_argument("--smoke", type=Path, help="an extracted package directory: run the smoke test only")
+    parser.add_argument("--game", type=Path, default=os.environ.get("MW1O_GAME"),
+                        help="an original game folder for the first-run check (default MW1O_GAME; never packaged)")
     options = parser.parse_args()
-    root = Path(__file__).resolve().parents[1]
-    package(root, root / "build-package", options.sdl.resolve(), root / "dist", options.label)
+    if options.smoke:
+        names = ["mechwarrior.exe", "mechwarrior"]
+        executable = next((options.smoke / n for n in names if (options.smoke / n).is_file()), None)
+        if not executable:
+            parser.error(f"no mechwarrior program in {options.smoke}")
+        smoke(executable.resolve(), options.game)
+    else:
+        if not options.sdl or not options.label:
+            parser.error("--sdl and --label are required to package")
+        root = Path(__file__).resolve().parents[1]
+        package(root, root / "build-package", options.sdl.resolve(), root / "dist", options.label, options.game)

@@ -2072,11 +2072,17 @@ Found in this close-out, and needed for any package:
 - **`data/` is not packaged.** `tools/build_package.py` stages the program,
   its libraries, `MechWarrior.ini` and the notices. Play needs `data/rules`
   and `data/ui` beside the program (slice 3 on), so a packaged build
-  without them stops at start. The package and its smoke test should
-  include `data/`.
+  without them stops at start. Fixed: the package stages `data/` and
+  refuses a tree without it, and its smoke test, given a game folder, runs
+  the first run from the package and must import the story and reach the
+  game's first input wait (`--smoke` runs it on an extracted package; on
+  the Mac, a package-like folder passed on both folders, and failed without
+  `data/ui`, the game stopping on the missing layout).
 - **`RELEASING.md` is out of date.** It describes `release.yml`, which was
-  removed (nothing publishes from this repo; Windows builds by hand). It
-  should say how a preview is built and by whom.
+  removed (nothing publishes from this repo; Windows builds by hand).
+  Fixed: it now describes the workflows as they are, what a package holds,
+  the first run, the smoke test and the checks by hand before a package
+  goes to anyone.
 - **The first run, from the player's side.** The import needs MW_MAIN.EXE,
   BTECH.EXE and MW_EGA.EXE from a supported copy (SUPPORTED_VERSIONS.md); a
   refusal names the pieces. The README and PLAYABLE_TEST_BUILD.md should

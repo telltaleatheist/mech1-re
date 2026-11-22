@@ -13,7 +13,8 @@ class PackageTests(unittest.TestCase):
     def fixture(self, root):
         for name in ["LICENSE", "MechWarrior.ini", "docs/LICENSES/MIT.txt", "docs/NOTICE.md",
                      "docs/THIRD_PARTY_NOTICES.md", "sdl/LICENSE.txt",
-                     "build/_deps/munt-src/mt32emu/COPYING.LESSER.txt", "build/_deps/nukedopl-src/LICENSE"]:
+                     "build/_deps/munt-src/mt32emu/COPYING.LESSER.txt", "build/_deps/nukedopl-src/LICENSE",
+                     "data/rules/units.json", "data/ui/hub.json"]:
             file = root / name
             file.parent.mkdir(parents=True, exist_ok=True)
             file.write_text("fixture")
@@ -36,6 +37,8 @@ class PackageTests(unittest.TestCase):
             self.assertTrue(os.access(extracted / "mechwarrior", os.X_OK))
             self.assertEqual(subprocess.run([str(extracted / "mechwarrior")], capture_output=True).returncode, 2)
             self.assertTrue((extracted / "licenses/Munt-COPYING.LESSER.txt").exists())
+            self.assertTrue((extracted / "data/rules/units.json").exists())
+            self.assertTrue((extracted / "data/ui/hub.json").exists())
             self.assertEqual(len(list((root / "dist").glob("*.sha256"))), 1)
 
     def test_missing_audio_library_blocks_packaging(self):
@@ -46,6 +49,42 @@ class PackageTests(unittest.TestCase):
             with patch.object(build_package, "run"), self.assertRaisesRegex(RuntimeError, "Missing runtime dependency"):
                 build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
             self.assertFalse(list((root / "dist").glob("*.tar.gz")))
+
+
+    def test_missing_data_blocks_packaging(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            (root / "data/ui/hub.json").unlink()
+            with patch.object(build_package, "run"), self.assertRaisesRegex(RuntimeError, "Missing game data: data/ui"):
+                build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
+            self.assertFalse(list((root / "dist").glob("*.tar.gz")))
+
+    def first_run_fixture(self, root, imports):
+        """A stand-in program: it imports (or not), then reaches its input wait and waits."""
+        for folder in ("data/rules", "data/ui"):
+            (root / folder).mkdir(parents=True)
+            (root / folder / "x.json").write_text("{}")
+        story = 'mkdir -p "$MECHWARRIOR_SAVE_DIRECTORY/story" && echo "{}" > "$MECHWARRIOR_SAVE_DIRECTORY/story/import.json"\n'
+        exe = root / "mechwarrior"
+        exe.write_text("#!/bin/sh\n" + (story if imports else "")
+                       + 'echo "{}" > "$MECHWARRIOR_DEBUG_CONTROL_DIRECTORY/status.json"\nexec sleep 30\n')
+        exe.chmod(0o755)
+        (root / "game").mkdir()
+        return exe
+
+    def test_first_run_imports_and_reaches_the_game(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            exe = self.first_run_fixture(root, imports=True)
+            build_package.check_first_run(exe, root / "game", timeout=20)
+
+    def test_first_run_without_the_import_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            exe = self.first_run_fixture(root, imports=False)
+            with self.assertRaisesRegex(RuntimeError, "did not import the story"):
+                build_package.check_first_run(exe, root / "game", timeout=2)
 
 
 if __name__ == "__main__":

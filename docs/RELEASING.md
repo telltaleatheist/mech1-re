@@ -1,9 +1,19 @@
-# Windows and Linux releases
+# Building a package
 
-The platform workflows build the playable SDL executable, package its shared
-libraries and check startup from an extracted archive. They run on pushes to
-main, develop and ci/** branches, pull requests, or manual dispatch. The existing
-headless workflow remains available separately.
+Nothing publishes from this repository: there is no release workflow, and a
+release (a preview included) is made only when the project decides to. The
+workflows build and check packages; a person publishes them.
+
+## The workflows
+
+- `linux.yml` builds the Linux package on every push to main, and by hand.
+  It runs the packaging unit tests first.
+- `windows.yml` builds the Windows package by hand only (Windows runners
+  cost twice as much). Run it before a milestone.
+- `build.yml` builds the headless Windows configuration, by hand only.
+
+Each package workflow uploads its archive as a workflow artifact
+(`release-linux`, `release-windows`); none creates a tag or a release.
 
 Windows uses MSVC x64 on Windows Server 2022. Linux uses GCC on Ubuntu 24.04
 x86-64 (glibc 2.39+). SDL 3.2.0 is pinned by commit, matching the supported CMake
@@ -12,33 +22,44 @@ Nuked-OPL3 use the project's existing pinned commits. SDL and the LGPL audio
 libraries are bundled as shared libraries. Windows also bundles the MSVC CRT.
 Linux requires compatible system C/C++ runtime, desktop and audio libraries.
 
-Packages contain the executable, MechWarrior.ini, runtime libraries and notices.
-No original game installation, saves or synthesizer ROMs are packaged. Run from
-a writable directory, supplying your original installation as the first argument.
+## What a package holds
 
-Before tagging, integrate the strict-C fixes from PR #1 (or equivalent) and
-require both platform builds to pass. Their packaged startup checks establish
-loading and argument handling only; manually verify SDL initialization, campaign,
-combat, input and audio on both platforms before calling a version validated.
+`tools/build_package.py` builds the program and stages:
+- the executable and its shared libraries;
+- `data/`: our rules (`data/rules`) and screen layout (`data/ui`), which the
+  game reads beside the program; packaging refuses a tree without them;
+- `MechWarrior.ini`, `LICENSE`, a `README.txt` and the licence notices.
 
-Create a version tag such as v0.1.0 on the intended tested commit and push it.
-The release workflow resolves the tag to a single commit and calls both reusable
-platform workflows. Only after both succeed does it verify both archives and
-their SHA-256 checksums and publish a release containing:
+No original game files, saves, story files or synthesizer ROMs are packaged.
+The player supplies their own copy of the game as the first argument. On the
+first run the game reads that copy's programs once (MW_MAIN.EXE, BTECH.EXE and
+MW_EGA.EXE, in a revision `SUPPORTED_VERSIONS.md` lists) and writes a
+`story/` folder into the save directory; from then on it plays from `story/`,
+`data/` and the game's resource files, and never opens a program
+(`docs/phase2/PLAN.md` section 9).
 
-- MechWarrior-vX.Y.Z-windows-x64.zip
-- MechWarrior-vX.Y.Z-linux-x86_64.tar.gz
-- MechWarrior-vX.Y.Z-SHA256SUMS.txt
+## The smoke test
 
-Tags with a prerelease suffix create GitHub prereleases. Alternatively dispatch
-the release workflow with an existing version tag. It refuses to replace an
-existing release; inspect and resolve an existing release explicitly before a
-rerun. No release version is selected or tag created by this workflow change.
+Packaging ends by extracting the archive and starting the program from it:
+- with no arguments it must print its usage;
+- with a game folder (`--game DIR`, or `MW1O_GAME`), it also runs the first
+  run headless from an empty save directory and must import the story and
+  reach the game's first input wait before it is stopped. The game folder is
+  only read and is never packaged. CI has no game folder, so this half runs
+  only where one is given.
 
-Repository Actions must allow artifact uploads and a contents:write token for
-the release publishing job. Build jobs have read-only repository access and do
-not receive publishing credentials. Fork pull-request approval requirements are
-unchanged.
+To run the same checks on a package already extracted (on any platform with a
+game folder):
 
-Local archive-fixture checks: python -m unittest discover -s tools -p 'test_build_package.py' -v
-These check packaging only and are not a substitute for native compilation.
+    python3 tools/build_package.py --smoke DIR/MechWarrior-LABEL-PLATFORM --game "$GAME"
+
+The packaging unit tests (no build, no game files):
+
+    python -m unittest discover -s tools -p 'test_build_package.py' -v
+
+## Before calling a package validated
+
+The smoke test establishes loading, the first-run import and startup only.
+Before a package goes to anyone, check by hand on each platform: SDL
+initialisation, the campaign, a combat and its return, input and audio. macOS
+and Linux playable builds are not yet qualified (`RUNTIME_STATUS.md`).
