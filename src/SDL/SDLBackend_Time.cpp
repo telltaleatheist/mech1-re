@@ -96,7 +96,7 @@ double MwSdlHardwareTime(void) {return hardwareTime;}
 double MwSdlTimerLagMilliseconds(void)
 {
     double elapsed=(double)(MwSdlNowNanoseconds()-startNanoseconds)/(double)HOST_NS_PER_MILLISECOND;
-    return elapsed-hardwareTime*HOST_MS_PER_SECOND/HOST_PIT_CLOCK_HZ;
+    return elapsed-hardwareTime*(double)HOST_MS_PER_SECOND/(double)HOST_PIT_CLOCK_HZ;
 }
 /* Sound-port event log (MECHWARRIOR_AUDIO_LOG=FILE): every access to the
  * speaker, PIT, AdLib and MPU ports, one JSON array per line:
@@ -145,7 +145,7 @@ void MwSdlWriteDevicePort(uint16_t port,uint8_t value)
     if (port==ADLIB_INDEX_PORT || port==ADLIB_DATA_PORT)
     {
         if (mwSdlSoundSystem==MW_SOUND_ADLIB)
-            MwAdlibWritePort(port==ADLIB_DATA_PORT,value,hardwareTime*1000000.0/HOST_PIT_CLOCK_HZ);
+            MwAdlibWritePort(port==ADLIB_DATA_PORT,value,hardwareTime*1000000.0/(double)HOST_PIT_CLOCK_HZ);
         return;
     }
     /* Native rhythm note-off can retain DX=0 from the VLQ reader. Those writes
@@ -153,7 +153,7 @@ void MwSdlWriteDevicePort(uint16_t port,uint8_t value)
     if (port==0 || port==1 || port==GAME_PORT) return;
     if (port==PIT_CONTROL_PORT && !(value&PIT_CONTROL_LATCH_TEST_MASK))
     {
-        uint64_t cycles=(uint64_t)((double)(MwSdlNowNanoseconds()-counterLoadNanoseconds)*HOST_PIT_CLOCK_HZ/(double)HOST_NS_PER_SECOND);
+        uint64_t cycles=(uint64_t)((double)(MwSdlNowNanoseconds()-counterLoadNanoseconds)*(double)HOST_PIT_CLOCK_HZ/(double)HOST_NS_PER_SECOND);
         latchedCounter=(uint16_t)(channel0Divisor-(cycles*2)%channel0Divisor);counterReadHigh=false;return;
     }
     if (port==PIT_CONTROL_PORT && value==PIT_CHANNEL0_SQUARE_WAVE)
@@ -186,7 +186,7 @@ static uint8_t ReadDevicePort(uint16_t port)
         return mwSdlSoundSystem==MW_SOUND_MT32?MwMpuReadPort(port):UINT8_MAX;
     if (port==ADLIB_INDEX_PORT)
         return mwSdlSoundSystem==MW_SOUND_ADLIB
-            ?MwAdlibReadStatus(hardwareTime*1000000.0/HOST_PIT_CLOCK_HZ):UINT8_MAX;
+            ?MwAdlibReadStatus(hardwareTime*1000000.0/(double)HOST_PIT_CLOCK_HZ):UINT8_MAX;
     if (port==0 || port==1) return 0; /* Only ignored calibrated-delay reads here. */
     if (port==GAME_PORT) return UINT8_MAX;
     if (port==PIT_CHANNEL0_PORT)
@@ -204,7 +204,7 @@ void MwSdlInitializeTimer(void)
     localTime=*localtime(&now);
 #endif
     uint32_t seconds=localTime.tm_hour*HOST_SECONDS_PER_HOUR+localTime.tm_min*HOST_SECONDS_PER_MINUTE+localTime.tm_sec;
-    biosTicks=(uint32_t)((double)seconds*HOST_PIT_CLOCK_HZ/(double)PIT_COUNTER_MODULUS);
+    biosTicks=(uint32_t)((double)seconds*(double)HOST_PIT_CLOCK_HZ/(double)PIT_COUNTER_MODULUS);
     virtualClock=getenv("MECHWARRIOR_DEBUG_VIRTUAL_CLOCK")!=NULL;virtualNanoseconds=0;
     AudioLogOpen();
     startNanoseconds=MwSdlNowNanoseconds();hardwareTime=0;channel0Divisor=PIT_COUNTER_MODULUS;
@@ -234,7 +234,7 @@ void MwSdlPumpTimer(void)
         MwSdlDeliverCombatKeyboardInterrupt();
         interruptsEnabled=true;inInterrupt=false;
     }
-    double target=(double)(MwSdlNowNanoseconds()-startNanoseconds)*HOST_PIT_CLOCK_HZ/(double)HOST_NS_PER_SECOND;
+    double target=(double)(MwSdlNowNanoseconds()-startNanoseconds)*(double)HOST_PIT_CLOCK_HZ/(double)HOST_NS_PER_SECOND;
     while (interruptsEnabled)
     {
         double mpuEvent=mwSdlCombatActive && mwSdlSoundSystem==MW_SOUND_MT32?MwMpuNextEventTime():DBL_MAX;

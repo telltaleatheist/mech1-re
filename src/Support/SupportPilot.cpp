@@ -13,9 +13,9 @@ static double Distance(PilotPoint first,PilotPoint second)
 {return hypot((double)second.x-first.x,(double)second.y-first.y);}
 static double AngleDifference(double desired,double actual)
 {
-    double difference=fmod(desired-actual+PILOT_HEADING_HALF,PILOT_HEADING_TURN);
-    if(difference<0)difference+=PILOT_HEADING_TURN;
-    return difference-PILOT_HEADING_HALF;
+    double difference=fmod(desired-actual+(double)PILOT_HEADING_HALF,(double)PILOT_HEADING_TURN);
+    if(difference<0)difference+=(double)PILOT_HEADING_TURN;
+    return difference-(double)PILOT_HEADING_HALF;
 }
 static double Bearing(PilotPoint from,PilotPoint to)
 {return atan2(-((double)to.x-from.x),(double)to.y-from.y)*(65536.0/6.2831853071795864769);}
@@ -98,7 +98,7 @@ PilotControls SupportPilotUpdate(SupportPilot *pilot,const PilotObservation *vie
     /* Locomotion arbitration: range braking > body heading > throttle.
      * Native direction groups are mutually overwriting, so emit only one. */
     if(view->requestedSpeed>desiredSpeed+3)controls.directionScan=PILOT_SCAN_DOWN;
-    else if(fabs(pilot->headingError-view->turnRate*2)>PILOT_TURN_DEADBAND)
+    else if(fabs(pilot->headingError-view->turnRate*2)>(double)PILOT_TURN_DEADBAND)
         controls.directionScan=pilot->headingError-view->turnRate*2>0?PILOT_SCAN_LEFT:PILOT_SCAN_RIGHT;
     else if(view->requestedSpeed<desiredSpeed-3)controls.directionScan=PILOT_SCAN_UP;
     /* Ground contact can clear actual speed while the pilot keeps requesting

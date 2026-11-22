@@ -145,7 +145,7 @@ void MwMpuWritePort(uint16_t port,uint8_t value)
     }
     if (uartMode)
     {
-        transmitReady=MwSdlHardwareTime()+(double)HOST_PIT_CLOCK_HZ*MIDI_BITS_PER_BYTE/MIDI_BAUD;
+        transmitReady=MwSdlHardwareTime()+(double)HOST_PIT_CLOCK_HZ*(double)MIDI_BITS_PER_BYTE/(double)MIDI_BAUD;
         MwMt32ReceiveByte(value);return;
     }
     if (commandData)

@@ -116,7 +116,9 @@ static bool HostSeekFile(uint32_t fileOffset, uint16_t fileHandle)
 {
     if (fileHandle < DOS_FIRST_FILE_HANDLE || fileHandle >= DOS_FILE_HANDLE_COUNT || fileStreams[fileHandle] == NULL)
         return true;
-    if (fileOffset > LONG_MAX) return true; /* Explicit host limit; current resources fit. */
+#if LONG_MAX < UINT32_MAX
+    if (fileOffset > LONG_MAX) return true; /* Explicit host limit (a 32-bit long); current resources fit. */
+#endif
     return fseek(fileStreams[fileHandle], (long)fileOffset, SEEK_SET) != 0;
 }
 static bool HostCreateFile(const char *filename,uint16_t *handleOrError)
