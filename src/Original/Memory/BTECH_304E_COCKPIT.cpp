@@ -192,7 +192,6 @@ bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
 #undef HUD_COLOUR
     }
     memcpy(cockpitScreenNames,data+0x07F4,sizeof(cockpitScreenNames));
-    memcpy(missionTitleText,data+0x09F0,sizeof(missionTitleText));
     /* The names come from the story file (combat.mech_template.N.name,
      * combat.pilot.N.name); the directories stay the exe's, and each name is
      * written at its directory offset in its own record, as the exe holds it. */
@@ -222,11 +221,19 @@ bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
         if (mechTemplateNames[name][12]) return false;
     for (uint16_t name=0;name<COMBAT_PILOT_NAMES;++name)
         if (pilotDefinitionNames[name][10]) return false;
-    for (uint16_t mission=0;mission<COMBAT_BRIEFING_MISSIONS;++mission)
+    /* The mission titles come from the story file (combat.mission.N.title),
+     * end to end with their NULs as the exe holds them (304E:09F0, its
+     * directory at 0DD2), each title pointing at its own. */
     {
-        uint16_t offset=MwReadNativeWord(data,0x0DD2+mission*2);
-        if (offset<0x09F0 || offset>=0x0D8B || !memchr(data+offset,0,0x0D8B-offset)) return false;
-        combatMissionTitles[mission]=missionTitleText+offset-0x09F0;
+        size_t used=0;
+        for (uint16_t mission=0;mission<COMBAT_BRIEFING_MISSIONS;++mission)
+        {
+            char id[40];
+            snprintf(id,sizeof(id),"combat.mission.%u.title",(unsigned)mission+1);
+            if (used>=sizeof(missionTitleText) || !MwStoryCopyText(id,missionTitleText+used,sizeof(missionTitleText)-used)) return false;
+            combatMissionTitles[mission]=missionTitleText+used;
+            used+=strlen(missionTitleText+used)+1;
+        }
     }
     for (uint16_t chassis=0;chassis<COMBAT_MECH_TEMPLATES;++chassis)
     {

@@ -51,6 +51,9 @@ orders.navigation_panel_deltas      BTECH.EXE 304E:009A 22
 orders.navigation_row_deltas        BTECH.EXE 304E:00B0 22
 orders.engine_condition_colours     BTECH.EXE 304E:030E 16
 orders.system_condition_colours     BTECH.EXE 304E:031E 16
+# Slice 6d: the order map's scale shifts and its markers' 3x3 masks.
+orders.map_scale_shifts             BTECH.EXE 304E:0088 3
+orders.map_marker_masks             BTECH.EXE 304E:00E8 36
 
 # orders.json, slice 5a: the pointer tables into the order panel's words, and
 # the order label each order code shows.

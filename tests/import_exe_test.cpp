@@ -1,18 +1,23 @@
 // The whole import, as the game runs it at start: the story (imported into a
 // scratch write dir), the rules, the layout, then MW_MAIN's importers (from
-// those alone; slice 6b) and BTECH's over its exe. Any refusal fails, so a piece the
+// those alone; slice 6b) and BTECH's (from those alone; slice 6d), at the
+// revision the story records. Any refusal fails, so a piece the
 // importers can't take (a wrong record count, a missing name) fails here
 // and not only in the traces.
 //
 // Needs the player's files, so ctest skips it (77) unless this is set:
 //   MW1O_GAME             a game folder (MW_MAIN.EXE, BTECH.EXE)
-//   MW1O_BTECH_REFERENCE  optional: a reference BTECH.EXE, imported as well
+//   MW1O_BTECH_REFERENCE  optional: a reference BTECH.EXE, imported as well (a
+//                         story from a scratch folder holding it and the game
+//                         folder's other exes)
 //   MW1O_MAIN_1989        optional: the 1989-11-03 MW_MAIN.EXE, imported as well
 //                         (the story and MW_MAIN's importers, from a scratch
 //                         folder holding it and the game folder's BTECH.EXE)
 // Arguments: <data dir> <scratch dir>. Prints steps only, never game bytes.
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
+#include <vector>
 #include <filesystem>
 #include <string>
 #include <system_error>
@@ -34,6 +39,15 @@ int g_failed = 0;
 void step(bool ok, const char* what) {
     std::printf("%s: %s\n", what, ok ? "ok" : "REFUSED");
     if (!ok) ++g_failed;
+}
+
+// The revision BTECH.EXE at `path` decodes as (the reference if it doesn't).
+BtechRevision revision_of(const fs::path& path) {
+    const std::vector<std::uint8_t> file = native_exe::read(path);
+    BtechRevision revision = BTECH_REVISION_REFERENCE;
+    std::uint8_t* image = nullptr;
+    if (BtechDecodeImage(file.data(), file.size(), &image, &revision)) std::free(image);
+    return revision;
 }
 }  // namespace
 
@@ -62,9 +76,26 @@ int main(int argc, char** argv) {
         step(MwImportCampaignInitialData(), "MW_MAIN's importers");
         step(MwImportCampaignEventText(), "MW_MAIN's event text");
         step(MwImportCampaignMusicData(), "MW_MAIN's music");
-        step(BtechHostLoadInitialData(btech_exe.c_str()), "BTECH's importers");
-        if (const char* reference = std::getenv("MW1O_BTECH_REFERENCE"))
-            step(BtechHostLoadInitialData(reference), "BTECH's importers, the reference revision");
+        step(BtechHostLoadInitialData(), "BTECH's importers");
+        step(btechLoadedRevision == revision_of(btech_exe), "BTECH's revision, from the story");
+    }
+    if (const char* reference = std::getenv("MW1O_BTECH_REFERENCE"); reference && !g_failed) {
+        const fs::path folder = scratch / "game_btech_reference", write = scratch / "write_btech_reference";
+        fs::create_directories(folder);
+        fs::create_directories(write);
+        for (const auto& entry : fs::directory_iterator(game)) {
+            std::string name = entry.path().filename().string();
+            for (char& c : name) c = char(std::toupper(static_cast<unsigned char>(c)));
+            if (entry.is_regular_file() && name.size() > 4 && name.substr(name.size() - 4) == ".EXE" && name != "BTECH.EXE")
+                fs::copy_file(entry.path(), folder / name);
+        }
+        fs::copy_file(reference, folder / "BTECH.EXE");
+        step(MwHostPrepareStory(folder.string().c_str(), write.string().c_str()), "story, the reference BTECH");
+        if (!g_failed) {
+            step(BtechHostLoadInitialData(), "BTECH's importers, the reference revision");
+            step(btechLoadedRevision == BTECH_REVISION_REFERENCE && revision_of(reference) == BTECH_REVISION_REFERENCE,
+                 "BTECH's revision, from the story, the reference");
+        }
     }
     if (const char* main1989 = std::getenv("MW1O_MAIN_1989"); main1989 && !g_failed) {
         const fs::path folder = scratch / "game_main_1989", write = scratch / "write_main_1989";

@@ -12,6 +12,8 @@
 #include "mechwarrior/combat_scene.h"
 #include "mechwarrior/native_address.h"
 #include "mechwarrior/btech_start_image.h"
+#include "mechwarrior/story.h"
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -156,26 +158,18 @@ void BtechHostDiscardChildData(void)
 /* Host fresh EXEC image + DFCE BSS projection for converted owners. This is
  * still NOT native0019/1E84 entry and does not open the live SDL BTECH gate.
  * The native stack/tail outside4EDC..D5DF is never supplied as zero residue. */
-bool BtechHostLoadInitialData(const char *executablePath)
+bool BtechHostLoadInitialData(void)
 {
-    FILE *file=fopen(executablePath,"rb");
-    if (!file) return false;
-    long fileBytes=-1;
-    if (!fseek(file,0,SEEK_END)) {fileBytes=ftell(file);rewind(file);}
-    size_t packedBytes=fileBytes>0?BtechInstallationPackedBytes((size_t)fileBytes):0;
-    uint8_t *packed=packedBytes?static_cast<uint8_t *>(malloc(packedBytes)):NULL,*image=NULL;
-    bool loaded=packed && fread(packed,1,packedBytes,file)==packedBytes
-        && fgetc(file)==EOF && !ferror(file);
-    if (fclose(file)) loaded=false;
-    if (loaded) loaded=BtechDecodeInstallationImage(packed,packedBytes,&image);
-    free(packed);
-    if (!loaded) return false;
-    /* The importers read BTECH's start image, built from code, generated
-     * tables, zeros and the story (btech_start_image.h); only the spans slice
-     * 6d moves are still copied from the decoded exe. */
-    uint8_t *start=static_cast<uint8_t *>(malloc(BTECH_IMAGE_BYTES));
-    if (!start || !BtechBuildStartImage(start,image)) {free(start);free(image);return false;}
-    free(image);image=start;
+    /* Play never opens BTECH.EXE: the revision is the one the story was
+     * imported from, and the importers read BTECH's start image, built from
+     * code, generated tables, zeros, the story and data/ (btech_start_image.h). */
+    if (!BtechRevisionFromName(MwStoryBtechRevision(),&btechLoadedRevision))
+    {
+        fprintf(stderr,"MechWarrior: the story file names no known BTECH revision\n");
+        return false;
+    }
+    uint8_t *image=static_cast<uint8_t *>(malloc(BTECH_IMAGE_BYTES));
+    if (!image || !BtechBuildStartImage(image)) {free(image);return false;}
     uint8_t *data=static_cast<uint8_t *>(malloc(0x10000));
     if (!data) {free(image);return false;}
     memcpy(data,image+BTECH_DATA_IMAGE_OFFSET,BTECH_BSS_START);
@@ -195,7 +189,7 @@ bool BtechHostLoadInitialData(const char *executablePath)
      * read (BTECH_0810_STARTUP.cpp). Zero, as the reference holds. */
     savedCriticalErrorVector=0; /*0810:CE9A*/
     savedSampleIrqVector=(uint32_t)MwReadNativeWord(audio,0x0E7D)|((uint32_t)MwReadNativeWord(audio,0x0E7F)<<16);
-    loaded=BtechImportCombatStageInitialData(data,0x10000)
+    bool loaded=BtechImportCombatStageInitialData(data,0x10000)
         && BtechImportWorldInitialData(data,0x10000,image+BTECH_GEOMETRY_IMAGE_OFFSET,BTECH_IMAGE_BYTES-BTECH_GEOMETRY_IMAGE_OFFSET)
         && BtechImportStartupInitialData(data,0x10000)
         && BtechImportSoundInitialData(data,0x10000)

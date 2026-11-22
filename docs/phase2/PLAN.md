@@ -218,7 +218,9 @@ DS:0008 finds the data segment, then each piece must still match its hash.
    House's contract-office planets as planet selectors, FF between groups and
    FE at the end, reached through 4B80) becomes lists of planet ids in
    `planets.json`, like the story-planet pools in 2e. Both are the story's
-   content, not layout or words, so 2g moves them before slice 6.
+   content, not layout or words, so 2g moves them before slice 6. (Done in
+   slice 6: the planet groups in 6b, as `houses.json`'s contract planet
+   groups; the titles in 6d, as story texts `combat.mission.N.title`.)
 3. **Rules and the new campaign** into `data/rules/`. Traces equal (same
    numbers). The rule table's hashes check them against the exe. The plan
    is section 5.
@@ -1835,19 +1837,70 @@ mingw check.
   - **Gate.** Fresh Release build; ctest 13 of 13 on the 1990 folder with
     the 1989 MW_MAIN, none skipped, and 13 of 13 on the 1989 folder; traces
     8 of 8; mingw clean on the changed files.
-- **6d, BTECH: game state, then no BTECH at play.** `btechStartExeSpans`
-  moves to data and the story: `weapons.json` (projectile profiles, beam
-  half widths, beam primitives and triangle indices), `mechs.json` (muzzle
-  offsets, fallen-body reference banks, chassis animation availability), a
-  new `data/rules/animation.json` (the pose tables, with
-  `animationLogicalFrameCounts` and `animationPartFrameCounts`),
-  `combat.json`'s start (random words and addend, radar and view shifts,
-  mount group mode, the avoidance probes, the world's boundary corners, the
-  combat flags), `data/ui/orders.json` (the order map's scale shifts and
-  marker masks), and `missionTitleText` as story text. Then
-  `btechLoadedRevision` comes from `story/import.json`, the combat EXEC
-  stops decoding BTECH.EXE, and BTECH.EXE poisoned with 0xEE after the
-  import must still give 8 of 8 (the base fails).
+- **6d, BTECH: game state, then no BTECH at play.**
+
+  Done (branch `phase2-noexe-d`).
+  - **The rest of the start image.** The 26 spans 6c still copied from the
+    exe are now rows of the start image whose bytes are rule or layout
+    pieces (`BTECH_START_RULES`, `BTECH_START_UI`): the row's id is the
+    piece's, its bytes the piece's native bytes (`MwRulesCopyNative`,
+    `MwUiCopyNative`), checked byte for byte against both revisions by
+    `rules_exe_test` and `ui_exe_test` like every other piece (109 rule
+    tables and 376 layout tables, all as the exe's). The importers are
+    unchanged but for the two below.
+    - `combat.json`: the avoidance probes (each axis a sign and the step,
+      "x" or "y", it scales; the exe holds the steps as near pointers to
+      `avoidanceStepX`/`Y`), the world's boundary corners, the two debug
+      switches `player_damage_suppressed` and `ai_updates_suppressed` with
+      the byte after the second (`unknown_0ebb`), and a new "start": the
+      continuation profile (null: none), the heading radar flag, the radar
+      and view shifts, the mount group mode, the two firing indicator
+      flags, the random generator's 32 words and its addend index.
+    - `weapons.json`: each weapon's `beam_half_width`; "projectiles" (the
+      five profiles: speed scale, weapon, lifetime, resource delta); "beams"
+      (the two shared triangles, and the PPC's and the lasers' polygons and
+      scale limit, laid out as the exe's triangles, polygons, primitive and
+      variant with their pointers).
+    - `mechs.json`: each template's `fallen_reference_points` and
+      `animations` (9 flags), and the file's `muzzle_lateral_offsets` by
+      body location.
+    - `animation.json`, new: the 9 unit animations (frame map, part frame
+      count; the logical frame count is the map's length) and the 8 player
+      poses (keyframes: displacement, orientation step). The frame maps and
+      keyframes are laid end to end in the exe's order (a code constant),
+      each map from an even offset; `assets.player_pose_frame_counts` is
+      now the poses' lengths, so `combat_assets.json` loses it.
+    - `data/ui/orders.json`: the order map's scale shifts and marker masks.
+  - **Mission titles** are story text, `combat.mission.N.title` (36; 28 and
+    29 are empty); the cockpit importer lays them end to end as the exe
+    does (they fill 304E:09F0..0D8A exactly in both revisions) instead of
+    reading the exe's directory.
+  - The importer's check of the exe's near directory of the two effect step
+    lists (304E:0EAA) is dropped: the lists are read by id.
+  - **The revision.** The import records BTECH.EXE's revision in
+    `story/import.json` (`btech_revision`, import version 4);
+    `BtechHostLoadInitialData` takes it from there and no longer opens,
+    decodes or reads BTECH.EXE. `BtechDecodeInstallationImage` is gone; only
+    the import and the tests decode BTECH.EXE.
+  - **Tests.** `rules_test` refuses a start value written before it's read,
+    a random addend past the state, an avoidance step that isn't one,
+    frame maps or poses past their storage, a beam vertex of 255 and an
+    animation flag that isn't true or false. `import_exe_test` runs BTECH's
+    importers from the story alone and checks the revision; with
+    `MW1O_BTECH_REFERENCE` it imports a story from the reference BTECH and
+    runs them at that revision.
+  - **The proof.** Probe builds of 6c and 6d on combat_cockpit, every
+    global compared after each loader, on both folders: no loader
+    introduces a difference (what differs is the host's paths and timers,
+    already different before any load). Then BTECH.EXE overwritten with
+    0xEE after the import: on the 1990 folder 6d gives 8 of 8 traces and
+    6c 6 of 8 (both combat traces fail; its log: "cannot read the game file
+    BTECH.EXE"); on the 1989 folder, whose combat traces don't match the
+    goldens in any build, 6d plays both combats to their return and 6c
+    fails the same way.
+  - **Gate.** Fresh Release build; ctest 13 of 13 in both setups; traces
+    8 of 8; mingw clean on the changed files. The inventory has no item
+    still read from the exe.
 - **6e, MW_EGA.** Which overlay spans are ever read, then imported or zeroed.
   `LoadOverlay` stops opening MW_EGA.EXE; `ExecuteChild`'s existence probes go.
 - **6f, the test, the guard and the docs.** `exe_free_test` in ctest,

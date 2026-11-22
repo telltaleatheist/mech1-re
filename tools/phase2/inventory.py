@@ -229,21 +229,19 @@ OVR.update({'mountedWeaponCountsByKind':'code','operationalWeaponCountsByKind':'
             'twoHitSystemConditionLabelIndices':'ours:ui','orderDisplayIndices':'ours:ui'})
 # Items still read straight from the exe, with the slice that will move them
 # (docs/phase2/PLAN.md 3, 2g).
-OWNER={'missionTitleText':'story 2g, not yet moved'}
+OWNER={}
 # Importers that decode a native span of the story (story/native.json) rather
 # than the exe: an item they read is extracted, at the span's exe offset.
 SPANS={'MW_MAIN_28BE.cpp':('music.driver','MW_MAIN 28BE')}
-# BTECH's start image (src/Original/Memory/BtechStartImage.cpp, slice 6c): the
-# rows that lay out what BTECH's importers read, and the spans still copied
-# from the exe until slice 6d. An item a BTECH importer reads at an offset of
-# 304E is sorted by the row that holds that offset.
+# BTECH's start image (src/Original/Memory/BtechStartImage.cpp, slices 6c and
+# 6d): the rows that lay out what BTECH's importers read. An item a BTECH
+# importer reads at an offset of 304E is sorted by the row that holds that
+# offset: a story span is extracted, a rule or layout piece ours, the rest code.
 START_TEXT=open(os.path.join(ROOT,'src','Original','Memory','BtechStartImage.cpp')).read()
 START_ROWS=[(m.group(1),int(m.group(2),16),int(m.group(3),16),int(m.group(4),16),m.group(5)) for m in
             re.finditer(r'\{"([\w.]+)",0x([0-9A-F]{4}),0x([0-9A-F]{4}),0x([0-9A-F]+),BTECH_START_(\w+),',START_TEXT)]
-START_EXE=[(int(m.group(1),16),int(m.group(2),16),int(m.group(3),16)) for m in
-           re.finditer(r'\{0x([0-9A-F]{4}),0x([0-9A-F]{4}),0x([0-9A-F]{4}),"',START_TEXT)]
 def start_row(f,off):
-    """The start image row of a BTECH 304E item at `off`, or None (exe span or none)."""
+    """The start image row of a BTECH 304E item at `off`, or None."""
     if not f.startswith('BTECH_304E') or not off.startswith('0x'): return None
     o=int(off,16)
     for id_,seg,at,size,source in START_ROWS:
@@ -265,6 +263,8 @@ for f,name,off,n,src in rows:
     if row:
         id_,source=row
         if source=='STORY': rows2.append(('extracted',f,name,f'BTECH 304E:{off[2:]}',f'story, {id_} (native span)'))
+        elif source=='RULES': rows2.append(('ours:rules',f,name,f'BTECH 304E:{off[2:]}',f'rule {id_} (start image)'))
+        elif source=='UI': rows2.append(('ours:layout',f,name,f'BTECH 304E:{off[2:]}',f'ui {id_} (start image)'))
         else: rows2.append(('code',f,name,f'BTECH 304E:{off[2:]}','start image, '+id_))
         continue
     if f in SPANS and off!='-':
@@ -282,7 +282,7 @@ G=[('extracted','Extracted: the original\'s creative content (the story file, fi
    ('ours:layout','Ours: screen layout, panels and menus (data/ui/*.json)'),('ours:rules','Ours: rules and constants (data/rules/*.json)'),
    ('ours:start','Ours: the new campaign\'s starting state (data/rules/new_campaign.json)'),('dropped','Dropped'),('code','Code: runtime state and renderer tables (no file)')]
 cnt=collections.Counter(r[0] for r in rows2)
-print('# Phase 2 inventory\n\nGenerated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-scope item). An item read through a door shows where it now comes from: a story piece, a rule piece, a layout piece, a UI word, or a save codec field of `new_campaign.json`, with the exe offset those tables give. Any other item shows the first native offset its importer reads, or `-` for runtime state with no import; its group names the slice that moves it, and the story item not yet moved names its slice. An item an importer decodes from a native span of the story (`story/native.json`) shows the span and the exe offset it holds. A BTECH item read from the BTECH start image (`BtechStartImage.cpp`) shows its row; the ones still copied from the exe until slice 6d keep their offset. The groups follow `docs/phase2/PLAN.md`. Names and offsets only: no MW1 text.\n')
+print('# Phase 2 inventory\n\nGenerated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-scope item). An item read through a door shows where it now comes from: a story piece, a rule piece, a layout piece, a UI word, or a save codec field of `new_campaign.json`, with the exe offset those tables give. Any other item shows the first native offset its importer reads, or `-` for runtime state with no import; its group names the slice that moves it, and the story item not yet moved names its slice. An item an importer decodes from a native span of the story (`story/native.json`) shows the span and the exe offset it holds. A BTECH item read from the BTECH start image (`BtechStartImage.cpp`) shows its row: code, a story span, or a rule or layout piece. The groups follow `docs/phase2/PLAN.md`. Names and offsets only: no MW1 text.\n')
 print('| Group | Items |\n|---|---|')
 for k,t in G: print(f'| {t} | {cnt[k]} |')
 for k,t in G:

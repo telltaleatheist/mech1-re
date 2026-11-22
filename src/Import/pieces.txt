@@ -92,6 +92,45 @@ unit.dropship.name             MW_MAIN.EXE 1090:2EE5 z
 # The commander's name in a new campaign.
 commander.default_name         MW_MAIN.EXE 1090:5CE2 z
 
+# BTECH's mission titles (304E:09F0..0D8A, end to end; the briefing shows
+# one per mission; 28 and 29 are empty). Slice 6d.
+combat.mission.1.title         BTECH.EXE 304E:09F0 z
+combat.mission.2.title         BTECH.EXE 304E:09FE z
+combat.mission.3.title         BTECH.EXE 304E:0A14 z
+combat.mission.4.title         BTECH.EXE 304E:0A2F z
+combat.mission.5.title         BTECH.EXE 304E:0A4C z
+combat.mission.6.title         BTECH.EXE 304E:0A63 z
+combat.mission.7.title         BTECH.EXE 304E:0A7D z
+combat.mission.8.title         BTECH.EXE 304E:0A97 z
+combat.mission.9.title         BTECH.EXE 304E:0AB2 z
+combat.mission.10.title        BTECH.EXE 304E:0ACB z
+combat.mission.11.title        BTECH.EXE 304E:0AE6 z
+combat.mission.12.title        BTECH.EXE 304E:0B00 z
+combat.mission.13.title        BTECH.EXE 304E:0B13 z
+combat.mission.14.title        BTECH.EXE 304E:0B30 z
+combat.mission.15.title        BTECH.EXE 304E:0B4C z
+combat.mission.16.title        BTECH.EXE 304E:0B6B z
+combat.mission.17.title        BTECH.EXE 304E:0B8A z
+combat.mission.18.title        BTECH.EXE 304E:0B9E z
+combat.mission.19.title        BTECH.EXE 304E:0BB9 z
+combat.mission.20.title        BTECH.EXE 304E:0BD2 z
+combat.mission.21.title        BTECH.EXE 304E:0BE8 z
+combat.mission.22.title        BTECH.EXE 304E:0BFC z
+combat.mission.23.title        BTECH.EXE 304E:0C1B z
+combat.mission.24.title        BTECH.EXE 304E:0C3A z
+combat.mission.25.title        BTECH.EXE 304E:0C59 z
+combat.mission.26.title        BTECH.EXE 304E:0C74 z
+combat.mission.27.title        BTECH.EXE 304E:0C90 z
+combat.mission.28.title        BTECH.EXE 304E:0CB0 z
+combat.mission.29.title        BTECH.EXE 304E:0CB1 z
+combat.mission.30.title        BTECH.EXE 304E:0CB2 z
+combat.mission.31.title        BTECH.EXE 304E:0CD1 z
+combat.mission.32.title        BTECH.EXE 304E:0CEE z
+combat.mission.33.title        BTECH.EXE 304E:0D0D z
+combat.mission.34.title        BTECH.EXE 304E:0D2C z
+combat.mission.35.title        BTECH.EXE 304E:0D4E z
+combat.mission.36.title        BTECH.EXE 304E:0D6D z
+
 # BTECH's names, in its unpacked image (BTECH.EXE is EXEPACKed; segment 304E is
 # its data segment, src/Import/ImportTable.h): the mech templates (directory
 # 304E:229C into 2045..20AD), the pilots (directory 304E:22AC into 20AD..2286),

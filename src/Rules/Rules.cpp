@@ -22,6 +22,17 @@ constexpr std::string_view kMechKeys[] = {
     "force_weight",     "body_repair_price", "ammo_profile",   "weapon_repair_prices"};
 constexpr std::string_view kDropShipKeys[] = {"base_price", "condition_score_divisor"};
 
+// The exe's layouts the native pieces follow (BTECH 304E): the avoidance
+// steps' near addresses (avoidanceStepX, avoidanceStepY), the polygon
+// primitive's kind and a vertex list's end, the frame map and keyframe
+// storage, and the order the exe lays the unit animations' frame maps and
+// the player's poses out in.
+constexpr std::uint16_t kAvoidanceStepXAt = 0x542A, kAvoidanceStepYAt = 0x542C;
+constexpr std::uint8_t kPolygonPrimitive = 0, kVertexListEnd = 0xFF;
+constexpr std::size_t kFrameMapBytes = 0x30, kPoseKeyframes = 40;
+constexpr std::size_t kFrameMapOrder[kUnitAnimationSequences] = {2, 1, 3, 4, 5, 7, 6, 0, 8};
+constexpr std::size_t kPoseOrder[kPlayerPoseSequences] = {1, 4, 5, 7, 0, 3, 2, 6};
+
 template <std::size_t N>
 void words(const Reader& r, const Json::Array& from, std::array<std::uint16_t, N>& to, std::string_view what) {
     for (std::size_t i = 0; i < N; ++i) to[i] = r.word(from[i], what);
@@ -250,7 +261,9 @@ Combat read_combat(const fs::path& data_dir) {
                   "fallback_start_template", "fallback_template_steps", "template_budget_costs", "damage_tiers",
                   "integrity_tiers", "opposing_objective", "mission_side_zero_rules", "continuation_profiles",
                   "heat_aim_jitter_thresholds", "range_hit_modifiers", "hit_locations", "missile_cluster_rows",
-                  "opposing_side_first_unit_slots", "avoidance_heading_offsets"});
+                  "opposing_side_first_unit_slots", "avoidance_heading_offsets", "avoidance_probes",
+                  "world_boundary_corners", "player_damage_suppressed", "ai_updates_suppressed", "unknown_0ebb",
+                  "start"});
     const std::span<const std::string_view> armour(kArmourLocations), body(kBodyLocations);
     const std::span<const std::string_view> mech_kinds = std::span(kUnitKinds).first(kMechKinds);
     Combat c;
@@ -295,13 +308,55 @@ Combat read_combat(const fs::path& data_dir) {
         words(r, row(r, clusters[i], kClusterRolls, "a missile cluster row"), c.missile_cluster_rows[i], "a missile count");
     words(r, r.array(file, "opposing_side_first_unit_slots", 2), c.opposing_side_first_unit_slots, "a unit slot");
     signed_words(r, r.array(file, "avoidance_heading_offsets", 3), c.avoidance_heading_offsets, "a heading offset");
+    // Each avoidance probe's x and y: a sign and the step ("x" or "y") it scales.
+    constexpr std::string_view kSteps[] = {"x", "y"};
+    const Json::Array& probes = r.array(file, "avoidance_probes", kAvoidanceProbes);
+    for (std::size_t i = 0; i < kAvoidanceProbes; ++i) {
+        r.only(probes[i], {"x", "y"});
+        for (std::size_t axis = 0; axis < 2; ++axis) {
+            const Json& a = r.member(probes[i], kSteps[axis]);
+            r.only(a, {"sign", "step"});
+            c.avoidance_probes[i][axis] = {r.signed_word(r.member(a, "sign"), "a probe sign"),
+                                           static_cast<std::uint16_t>(r.name(r.member(a, "step"), kSteps, "a probe step"))};
+        }
+    }
+    const Json::Array& corners = r.array(file, "world_boundary_corners", 2);
+    for (std::size_t i = 0; i < 2; ++i)
+        for (std::size_t axis = 0; axis < 3; ++axis) {
+            const Json& v = row(r, corners[i], 3, "a boundary corner")[axis];
+            if (!v.is_number() || std::floor(v.number()) != v.number() || v.number() < -2147483648.0 ||
+                v.number() > 2147483647.0)
+                r.fail("a boundary corner's coordinate is not a whole number from -2147483648 to 2147483647");
+            c.world_boundary_corners[i][axis] = static_cast<std::int32_t>(v.number());
+        }
+    c.player_damage_suppressed = r.flag(r.member(file, "player_damage_suppressed"), "player_damage_suppressed");
+    c.ai_updates_suppressed = r.flag(r.member(file, "ai_updates_suppressed"), "ai_updates_suppressed");
+    c.unknown_0ebb = r.u8(file, "unknown_0ebb");
+    // Runtime values play overwrites but reads first, as a fresh EXEC starts them.
+    const Json& start = r.member(file, "start");
+    r.only(start, {"continuation_profile", "heading_radar_selected", "radar_range_shift", "view_scale_shift",
+                   "mount_group_mode", "firing_indicators_pending", "random_state", "random_addend_index"});
+    CombatStart& s = c.start;
+    const Json& profile = r.member(start, "continuation_profile");
+    s.continuation_profile = Reader::is_null(profile)
+                                 ? kNone
+                                 : static_cast<std::uint16_t>(r.whole(profile, "continuation_profile", kStageProfiles - 1));
+    s.heading_radar_selected = r.u8(start, "heading_radar_selected");
+    s.radar_range_shift = r.u16(start, "radar_range_shift");
+    s.view_scale_shift = r.u16(start, "view_scale_shift");
+    s.mount_group_mode = r.u8(start, "mount_group_mode");
+    const Json::Array& pending = r.array(start, "firing_indicators_pending", 2);
+    for (std::size_t i = 0; i < 2; ++i) s.firing_indicators_pending[i] = r.byte(pending[i], "a firing indicator flag");
+    words(r, r.array(start, "random_state", kRandomStateWords), s.random_state, "a random state word");
+    s.random_addend_index = static_cast<std::uint16_t>(r.whole(r.member(start, "random_addend_index"),
+                                                               "random_addend_index", kRandomStateWords - 1));
     return c;
 }
 
-std::array<Weapon, kWeaponKinds.size()> read_weapons(const fs::path& data_dir) {
+Weapons read_weapons(const fs::path& data_dir) {
     Reader r(data_dir / "rules" / "weapons.json");
     const Json file = r.parse();
-    r.only(file, {"weapons"});
+    r.only(file, {"weapons", "projectiles", "beams"});
     const auto rows = r.keyed(file, "weapons", kWeaponKinds);
     // null for none, else a whole number below `count`.
     const auto optional = [&](const Json& object, std::string_view key, std::size_t count) {
@@ -309,12 +364,12 @@ std::array<Weapon, kWeaponKinds.size()> read_weapons(const fs::path& data_dir) {
         if (std::holds_alternative<std::nullptr_t>(v.value)) return kNone;
         return static_cast<std::uint16_t>(r.whole(v, key, double(count - 1)));
     };
-    std::array<Weapon, kWeaponKinds.size()> out;
-    for (std::size_t i = 0; i < out.size(); ++i) {
+    Weapons out;
+    for (std::size_t i = 0; i < out.kinds.size(); ++i) {
         const Json& e = *rows[i];
         r.only(e, {"damage", "ammo_family", "reload_ticks", "heat", "range_class", "ranges", "critical_slots",
-                   "unknown_14", "missile_cluster_row", "projectile_profile"});
-        Weapon& w = out[i];
+                   "unknown_14", "missile_cluster_row", "projectile_profile", "beam_half_width"});
+        Weapon& w = out.kinds[i];
         w.damage = r.u16(e, "damage");
         w.ammo_family = optional(e, "ammo_family", kAmmoFamilies);
         w.reload_ticks = r.u16(e, "reload_ticks");
@@ -330,6 +385,41 @@ std::array<Weapon, kWeaponKinds.size()> read_weapons(const fs::path& data_dir) {
         w.unknown_14 = r.u16(e, "unknown_14");
         w.missile_cluster_row = optional(e, "missile_cluster_row", kClusterRows);
         w.projectile_profile = optional(e, "projectile_profile", kProjectileProfiles);
+        w.beam_half_width = r.u16(e, "beam_half_width");
+    }
+    const Json::Array& projectiles = r.array(file, "projectiles", kProjectileProfiles);
+    for (std::size_t i = 0; i < kProjectileProfiles; ++i) {
+        const Json& p = projectiles[i];
+        r.only(p, {"speed_scale", "weapon", "lifetime_ticks", "resource_delta"});
+        out.projectiles[i] = {r.u16(p, "speed_scale"),
+                              static_cast<std::uint16_t>(r.name(r.member(p, "weapon"), kWeaponKinds, "a weapon")),
+                              r.u16(p, "lifetime_ticks"), r.u16(p, "resource_delta")};
+    }
+    // The PPC's and the lasers' beams: two polygons each, on the two shared
+    // triangles (vertex lists, each ended by 0xFF in the exe).
+    constexpr std::string_view kPolygons[] = {"vertical", "horizontal"}, kBeams[] = {"ppc", "laser"};
+    const Json& beams = r.member(file, "beams");
+    r.only(beams, {"triangles", "ppc", "laser"});
+    const Json& triangles = r.member(beams, "triangles");
+    r.only(triangles, kPolygons);
+    for (std::size_t k = 0; k < 2; ++k)
+        for (const Json& v : r.array(triangles, kPolygons[k], 3)) {
+            const std::uint8_t index = r.byte(v, "a vertex index");
+            if (index == kVertexListEnd) r.fail("a vertex index is 255, the list's end");
+            out.beam_triangles[k].push_back(index);
+        }
+    for (std::size_t b = 0; b < 2; ++b) {
+        const Json& beam = r.member(beams, kBeams[b]);
+        r.only(beam, {"scale_limit", "polygons"});
+        out.beams[b].scale_limit = r.u8(beam, "scale_limit");
+        const Json& polygons = r.member(beam, "polygons");
+        r.only(polygons, kPolygons);
+        for (std::size_t k = 0; k < 2; ++k) {
+            const Json& p = r.member(polygons, kPolygons[k]);
+            r.only(p, {"flags", "fill", "line", "alternate_fill", "alternate_line", "normal"});
+            out.beams[b].polygons[k] = {r.u8(p, "flags"), r.u8(p, "fill"), r.u8(p, "line"),
+                                        r.u8(p, "alternate_fill"), r.u8(p, "alternate_line"), r.u8(p, "normal")};
+        }
     }
     return out;
 }
@@ -337,21 +427,48 @@ std::array<Weapon, kWeaponKinds.size()> read_weapons(const fs::path& data_dir) {
 CombatAssets read_combat_assets(const fs::path& data_dir) {
     Reader r(data_dir / "rules" / "combat_assets.json");
     const Json file = r.parse();
-    r.only(file, {"animation_prefix_counts", "player_pose_frame_counts", "body_damage_effect_steps",
-                  "default_effect_steps", "machine_gun_effect_steps"});
+    r.only(file, {"animation_prefix_counts", "body_damage_effect_steps", "default_effect_steps",
+                  "machine_gun_effect_steps"});
     CombatAssets a;
     words(r, r.array(file, "animation_prefix_counts", 9), a.animation_prefix_counts, "a frame count");
-    words(r, r.array(file, "player_pose_frame_counts", 8), a.player_pose_frame_counts, "a frame count");
     words(r, r.array(file, "body_damage_effect_steps", 4), a.body_damage_effect_steps, "an effect step");
     words(r, r.array(file, "default_effect_steps", 7), a.default_effect_steps, "an effect step");
     words(r, r.array(file, "machine_gun_effect_steps", 3), a.machine_gun_effect_steps, "an effect step");
     return a;
 }
 
-std::array<MechTemplate, kTemplates> read_mechs(const fs::path& data_dir) {
+Animation read_animation(const fs::path& data_dir) {
+    Reader r(data_dir / "rules" / "animation.json");
+    const Json file = r.parse();
+    r.only(file, {"unit_sequences", "player_poses"});
+    Animation a;
+    const Json::Array& sequences = r.array(file, "unit_sequences", kUnitAnimationSequences);
+    for (std::size_t i = 0; i < kUnitAnimationSequences; ++i) {
+        r.only(sequences[i], {"frame_map", "part_frames"});
+        const Json::Array& map = r.array(sequences[i], "frame_map");
+        if (map.empty()) r.fail("a unit animation's frame map is empty");
+        for (const Json& v : map) a.unit_sequences[i].frame_map.push_back(r.byte(v, "a part frame"));
+        a.unit_sequences[i].part_frames = r.u8(sequences[i], "part_frames");
+    }
+    const Json::Array& poses = r.array(file, "player_poses", kPlayerPoseSequences);
+    for (std::size_t i = 0; i < kPlayerPoseSequences; ++i) {
+        if (!poses[i].is_array() || poses[i].array().empty()) r.fail("a player pose is not a list of keyframes");
+        for (const Json& k : poses[i].array()) {
+            r.only(k, {"displacement", "orientation_step"});
+            PoseKeyframe frame;
+            signed_words(r, row(r, r.member(k, "displacement"), 3, "a displacement"), frame.displacement,
+                         "a displacement");
+            frame.orientation_step = r.u16(k, "orientation_step");
+            a.player_poses[i].push_back(frame);
+        }
+    }
+    return a;
+}
+
+Mechs read_mechs(const fs::path& data_dir) {
     Reader r(data_dir / "rules" / "mechs.json");
     const Json file = r.parse();
-    r.only(file, {"mechs"});
+    r.only(file, {"mechs", "muzzle_lateral_offsets"});
     const Json::Array& mechs = r.array(file, "mechs", kTemplates);
     const std::span<const std::string_view> armour(kArmourLocations), body(kBodyLocations), weapons(kWeaponKinds);
     // A body location by name, or null for none (when `none` is allowed).
@@ -360,16 +477,19 @@ std::array<MechTemplate, kTemplates> read_mechs(const fs::path& data_dir) {
         if (none && std::holds_alternative<std::nullptr_t>(v.value)) return kNone;
         return static_cast<std::uint16_t>(r.name(v, body, "a location"));
     };
-    std::array<MechTemplate, kTemplates> out;
+    Mechs out;
+    const auto offsets = r.keyed(file, "muzzle_lateral_offsets", body);
+    for (std::size_t l = 0; l < body.size(); ++l)
+        out.muzzle_lateral_offsets[l] = r.signed_word(*offsets[l], "a muzzle offset");
     for (std::size_t i = 0; i < kTemplates; ++i) {
         const Json& m = mechs[i];
         r.only(m, {"name", "tonnage", "display_scale", "firing_movement_threshold", "maximum_speed_scale",
-                   "jump_acceleration", "jump_speed_limit", "unknown_0e", "heat_sinks", "reference_points", "armour",
-                   "internal", "mounts", "ammo", "jump_jets"});
+                   "jump_acceleration", "jump_speed_limit", "unknown_0e", "heat_sinks", "reference_points",
+                   "fallen_reference_points", "animations", "armour", "internal", "mounts", "ammo", "jump_jets"});
         // The name is the story's; the cockpit finds it by template number.
         const std::string name = "combat.mech_template." + std::to_string(i + 1) + ".name";
         if (r.text(m, "name") != name) r.fail("template " + std::to_string(i + 1) + "'s name is not \"" + name + "\"");
-        MechTemplate& t = out[i];
+        MechTemplate& t = out.templates[i];
         t.tonnage = r.u16(m, "tonnage");
         t.display_scale = r.u16(m, "display_scale");
         t.firing_movement_threshold = r.u16(m, "firing_movement_threshold");
@@ -381,6 +501,12 @@ std::array<MechTemplate, kTemplates> read_mechs(const fs::path& data_dir) {
         const auto points = r.keyed(m, "reference_points", armour);
         for (std::size_t l = 0; l < armour.size(); ++l)
             signed_words(r, row(r, *points[l], 3, "a reference point"), t.reference_points[l], "a reference component");
+        const auto fallen = r.keyed(m, "fallen_reference_points", armour);
+        for (std::size_t l = 0; l < armour.size(); ++l)
+            signed_words(r, row(r, *fallen[l], 3, "a reference point"), t.fallen_reference_points[l],
+                         "a reference component");
+        const Json::Array& animations = r.array(m, "animations", kUnitAnimationSequences);
+        for (std::size_t s = 0; s < kUnitAnimationSequences; ++s) t.animations[s] = r.flag(animations[s], "an animation");
         keyed_words(r, m, "armour", armour, {}, t.armour);
         keyed_words(r, m, "internal", body, {}, t.internal);
         const Json::Array& mounts = r.array(m, "mounts");
@@ -471,7 +597,7 @@ std::uint16_t piece_offset(std::string_view id) {
 Rules load_rules(const fs::path& data_dir) {
     return {read_units(data_dir), read_market(data_dir), read_repair(data_dir), read_houses(data_dir),
             read_contracts(data_dir), read_combat(data_dir), read_weapons(data_dir), read_combat_assets(data_dir),
-            read_mechs(data_dir), read_new_campaign(data_dir)};
+            read_animation(data_dir), read_mechs(data_dir), read_new_campaign(data_dir)};
 }
 
 std::map<std::string, std::string, std::less<>> native_pieces(const Rules& rules) {
@@ -644,18 +770,122 @@ std::map<std::string, std::string, std::less<>> native_pieces(const Rules& rules
     for (const auto& cluster : combat.missile_cluster_rows) put_words("combat.missile_cluster_rows", cluster);
     put_words("combat.opposing_side_first_unit_slots", combat.opposing_side_first_unit_slots);
     put_words("combat.avoidance_heading_offsets", combat.avoidance_heading_offsets);
+    // The probes' signs (all x, then all y), then the steps each scales, as
+    // the exe's near pointers to its two step words.
+    for (std::size_t axis = 0; axis < 2; ++axis)
+        for (const auto& probe : combat.avoidance_probes) put_word(out["combat.avoidance_probe_signs"], probe[axis].sign);
+    for (std::size_t axis = 0; axis < 2; ++axis)
+        for (const auto& probe : combat.avoidance_probes)
+            put_word(out["combat.avoidance_probe_steps"], probe[axis].step ? kAvoidanceStepYAt : kAvoidanceStepXAt);
+    for (const auto& corner : combat.world_boundary_corners)
+        for (std::int32_t c : corner) {
+            put_word(out["combat.world_boundary_corners"], static_cast<std::uint16_t>(c));
+            put_word(out["combat.world_boundary_corners"], static_cast<std::uint16_t>(static_cast<std::uint32_t>(c) >> 16));
+        }
+    out["combat.player_damage_suppressed"] = std::string(1, char(combat.player_damage_suppressed));
+    out["combat.ai_flags"] = std::string{char(combat.ai_updates_suppressed), char(combat.unknown_0ebb)};
+    const CombatStart& start = combat.start;
+    put_word(out["combat.start.continuation_profile"], start.continuation_profile);
+    out["combat.start.heading_radar_selected"] = std::string(1, char(start.heading_radar_selected));
+    put_word(out["combat.start.view_shifts"], start.radar_range_shift);
+    put_word(out["combat.start.view_shifts"], start.view_scale_shift);
+    out["combat.start.mount_group_mode"] = std::string(1, char(start.mount_group_mode));
+    // Bank 1's flag first, as the exe holds them.
+    out["combat.start.firing_indicators_pending"] =
+        std::string{char(start.firing_indicators_pending[1]), char(start.firing_indicators_pending[0])};
+    put_words("combat.start.random_state", start.random_state);
+    put_word(out["combat.start.random_addend_index"], start.random_addend_index);
 
     std::string& definitions = out["weapons.definitions"];
-    for (const Weapon& w : rules.weapons)
+    for (const Weapon& w : rules.weapons.kinds)
         for (std::uint16_t v : {w.damage, w.ammo_family, w.reload_ticks, w.heat, w.range_class, w.minimum_range,
                                 w.short_range, w.medium_range, w.long_range, w.critical_slots, w.unknown_14})
             put_word(definitions, v);
-    for (const Weapon& w : rules.weapons) put_word(out["weapons.projectile_profiles"], w.projectile_profile);
-    for (const Weapon& w : rules.weapons) put_word(out["weapons.missile_cluster_rows"], w.missile_cluster_row);
+    for (const Weapon& w : rules.weapons.kinds) put_word(out["weapons.projectile_profiles"], w.projectile_profile);
+    for (const Weapon& w : rules.weapons.kinds) put_word(out["weapons.missile_cluster_rows"], w.missile_cluster_row);
+    for (const Weapon& w : rules.weapons.kinds) put_word(out["weapons.beam_half_widths"], w.beam_half_width);
+    for (const Projectile& p : rules.weapons.projectiles)
+        for (std::uint16_t v : {p.speed_scale, p.weapon, p.lifetime_ticks, p.resource_delta})
+            put_word(out["weapons.projectiles"], v);
+    // The beams as the exe lays them out: the two triangles (each ended by
+    // 0xFF), then per beam its two polygons (each pointing at its triangle),
+    // its polygon primitive (pointing at the polygons, then a pad word) and
+    // its one-primitive variant.
+    {
+        const std::uint16_t at = piece_offset("weapons.beam_geometry");
+        std::string& g = out["weapons.beam_geometry"];
+        std::uint16_t triangle_at[2];
+        for (std::size_t k = 0; k < 2; ++k) {
+            if (rules.weapons.beam_triangles[k].size() != 3) throw RulesError("a beam triangle is not 3 vertices");
+            triangle_at[k] = static_cast<std::uint16_t>(at + g.size());
+            for (std::uint8_t v : rules.weapons.beam_triangles[k]) g += char(v);
+            g += char(kVertexListEnd);
+        }
+        for (const Beam& beam : rules.weapons.beams) {
+            const std::uint16_t polygons_at = static_cast<std::uint16_t>(at + g.size());
+            for (std::size_t k = 0; k < 2; ++k) {
+                const BeamPolygon& p = beam.polygons[k];
+                g += std::string{char(p.flags), char(p.fill), char(p.line), char(p.alternate_fill),
+                                 char(p.alternate_line), char(p.normal)};
+                put_word(g, triangle_at[k]);
+            }
+            const std::uint16_t primitive_at = static_cast<std::uint16_t>(at + g.size());
+            g += char(beam.scale_limit);
+            g += char(kPolygonPrimitive);
+            put_word(g, 2);
+            put_word(g, polygons_at);
+            put_word(g, 0);
+            put_word(g, 1);
+            put_word(g, primitive_at);
+        }
+    }
 
     const CombatAssets& assets = rules.assets;
     put_words("assets.animation_prefix_counts", assets.animation_prefix_counts);
-    put_words("assets.player_pose_frame_counts", assets.player_pose_frame_counts);
+
+    // The unit animations' frame maps, laid end to end in the exe's order
+    // (kFrameMapOrder), each from an even offset, then each sequence's
+    // pointer, logical frame count (its map's length) and part frame count.
+    {
+        const Animation& animation = rules.animation;
+        const std::uint16_t maps_at = piece_offset("animation.frame_maps");
+        std::string& maps = out["animation.frame_maps"];
+        std::array<std::uint16_t, kUnitAnimationSequences> map_at{};
+        for (std::size_t s : kFrameMapOrder) {
+            map_at[s] = static_cast<std::uint16_t>(maps_at + maps.size());
+            for (std::uint8_t f : animation.unit_sequences[s].frame_map) maps += char(f);
+            if (maps.size() % 2) maps += '\0';
+        }
+        if (maps.size() > kFrameMapBytes)
+            throw RulesError("the unit animations' frame maps are more than " + std::to_string(kFrameMapBytes) + " bytes");
+        maps.resize(kFrameMapBytes, '\0');
+        for (std::size_t s = 0; s < kUnitAnimationSequences; ++s) {
+            const auto& sequence = animation.unit_sequences[s];
+            if (sequence.frame_map.size() > 0xFF) throw RulesError("a unit animation has more than 255 frames");
+            put_word(out["animation.frame_map_offsets"], map_at[s]);
+            out["animation.logical_frame_counts"] += char(sequence.frame_map.size());
+            out["animation.part_frame_counts"] += char(sequence.part_frames);
+        }
+        // The player's pose keyframes, end to end in the exe's order
+        // (kPoseOrder), then each pose's pointer and frame count.
+        const std::uint16_t keyframes_at = piece_offset("animation.pose_keyframes");
+        std::string& keyframes = out["animation.pose_keyframes"];
+        std::array<std::uint16_t, kPlayerPoseSequences> pose_at{};
+        for (std::size_t s : kPoseOrder) {
+            pose_at[s] = static_cast<std::uint16_t>(keyframes_at + keyframes.size());
+            for (const PoseKeyframe& k : animation.player_poses[s]) {
+                for (std::int16_t d : k.displacement) put_word(keyframes, static_cast<std::uint16_t>(d));
+                put_word(keyframes, k.orientation_step);
+            }
+        }
+        if (keyframes.size() > kPoseKeyframes * 8)
+            throw RulesError("the player's poses have more than " + std::to_string(kPoseKeyframes) + " keyframes");
+        keyframes.resize(kPoseKeyframes * 8, '\0');
+        for (std::size_t s = 0; s < kPlayerPoseSequences; ++s) {
+            put_word(out["animation.pose_offsets"], pose_at[s]);
+            put_word(out["assets.player_pose_frame_counts"], static_cast<std::uint16_t>(animation.player_poses[s].size()));
+        }
+    }
     put_words("assets.body_damage_effect_steps", assets.body_damage_effect_steps);
     put_words("assets.default_effect_steps", assets.default_effect_steps);
     put_words("assets.machine_gun_effect_steps", assets.machine_gun_effect_steps);
@@ -663,7 +893,7 @@ std::map<std::string, std::string, std::less<>> native_pieces(const Rules& rules
     // Each template as the exe's 0xE0-byte row; unused mounts and jump jet
     // groups hold the exe's filler (no weapon, no location).
     std::string& templates = out["mechs.templates"];
-    for (const MechTemplate& t : rules.mechs) {
+    for (const MechTemplate& t : rules.mechs.templates) {
         for (std::uint16_t v : {t.tonnage, t.display_scale, t.firing_movement_threshold, t.maximum_speed_scale,
                                 static_cast<std::uint16_t>(t.jump_jets.size()), t.jump_acceleration,
                                 t.jump_speed_limit, t.unknown_0e, t.heat_sinks,
@@ -685,6 +915,12 @@ std::map<std::string, std::string, std::less<>> native_pieces(const Rules& rules
         for (std::uint16_t s : t.internal) put_word(templates, s);
         for (std::uint16_t s : t.ammo_salvos) put_word(templates, s);
     }
+    for (const MechTemplate& t : rules.mechs.templates) {
+        for (const auto& point : t.fallen_reference_points)
+            for (std::int16_t c : point) put_word(out["mechs.fallen_reference_points"], static_cast<std::uint16_t>(c));
+        for (bool a : t.animations) out["mechs.animations"] += char(a);
+    }
+    put_words("mechs.muzzle_lateral_offsets", rules.mechs.muzzle_lateral_offsets);
 
     // The save block, split around the commander's name (story text).
     const NewCampaignField* name = nullptr;

@@ -83,19 +83,22 @@ fs::path find_game_file(const fs::path& game_dir, std::string_view name) {
 struct Exe {
     std::vector<std::uint8_t> file;
     std::vector<std::uint8_t> image;  // the load image, as DOS loads it at load_segment()
+    std::string revision;             // BTECH's, by name; empty for the others
 };
 
 static_assert(kBtechLoadSegment == BTECH_IMAGE_LOAD_SELECTOR, "BTECH's image loads where the game decodes it to");
 
 Exe load_exe(const fs::path& path, std::string_view name) {
-    Exe exe{read_file(path), {}};
+    Exe exe{read_file(path), {}, {}};
     if (exe.file.size() < 0x1C || exe.file[0] != 'M' || exe.file[1] != 'Z')
         throw ImportError(path.string() + " is not a DOS program");
     if (name == kBtechExe) {
         std::uint8_t* image = nullptr;
-        if (!BtechDecodeImage(exe.file.data(), exe.file.size(), &image, nullptr))
+        BtechRevision revision{};
+        if (!BtechDecodeImage(exe.file.data(), exe.file.size(), &image, &revision))
             throw ImportError(path.string() + " is not a BTECH.EXE this game knows (by size and checksum)");
         exe.image.assign(image, image + BTECH_IMAGE_BYTES);
+        exe.revision = BtechRevisionName(revision);
         std::free(image);
     } else {
         const std::size_t header = std::size_t(exe.file[8] | exe.file[9] << 8) * 16;
@@ -238,14 +241,17 @@ void import_story(const fs::path& game_dir, const fs::path& write_dir, std::span
     write_file(story_dir(write_dir) / kRecordFiles[3], event_text_json(pieces));
     write_file(story_dir(write_dir) / kRecordFiles[4], events_json(pieces));
     write_file(story_dir(write_dir) / kRecordFiles[5], music_json(pieces));
-    std::string sources;
+    std::string sources, btech_revision;
     for (const auto& [name, exe] : exes) {
         if (!sources.empty()) sources += ", ";
         sources += json_quote(name) + ": " + json_quote(sha256_of(bytes_view(exe.file, 0, exe.file.size())));
+        if (name == kBtechExe) btech_revision = exe.revision;
     }
     write_file(manifest_path(write_dir),
                "{\n  \"import_version\": " + std::to_string(kImportVersion) + ",\n  \"sources\": {" + sources +
-                   "},\n  \"revision\": " + json_quote(kRevision) + ",\n  \"table_sha256\": " +
+                   "},\n  \"revision\": " + json_quote(kRevision) +
+                   (btech_revision.empty() ? std::string() : ",\n  \"btech_revision\": " + json_quote(btech_revision)) +
+                   ",\n  \"table_sha256\": " +
                    json_quote(import_table_hash(table)) + "\n}\n");
 }
 
@@ -329,6 +335,18 @@ Native load_native(const fs::path& write_dir, std::span<const ImportPiece> table
         for (const auto& p : table)
             if (is_native(p.kind) && !out.count(p.id)) throw ImportError("the span " + json_quote(p.id) + " is missing");
         return out;
+    } catch (const std::exception& e) {
+        throw ImportError(path.string() + ": " + e.what());
+    }
+}
+
+std::string load_btech_revision(const fs::path& write_dir) {
+    const fs::path path = manifest_path(write_dir);
+    try {
+        const auto bytes = read_file(path);
+        const auto manifest = parse_json(bytes_view(bytes, 0, bytes.size()));
+        const auto* revision = manifest.find("btech_revision");
+        return revision ? revision->string() : std::string();
     } catch (const std::exception& e) {
         throw ImportError(path.string() + ": " + e.what());
     }

@@ -11,7 +11,8 @@
 //   <write dir>/story/pilots.json, planets.json, missions.json
 //                                   typed records (Records.h)
 //   <write dir>/story/import.json   what was imported: the import version, the
-//                                   exes' SHA-256, the revision, the table's hash
+//                                   exes' SHA-256, the revision, BTECH.EXE's
+//                                   revision (BtechRevisionName), the table's hash
 //
 // import.json is written last, so an interrupted import counts as missing.
 // From then on the game reads the story file; the exe is needed only to
@@ -68,5 +69,9 @@ using Native = std::map<std::string, std::string, std::less<>>;
 // must be there once, at its table length, and nothing else. Throws
 // ImportError naming the file and the piece.
 Native load_native(const std::filesystem::path& write_dir, std::span<const ImportPiece> table = import_table());
+// import.json's "btech_revision": the BTECH.EXE revision the story was
+// imported from, which a combat EXEC runs as (BtechRevisionName); empty if
+// the table had no BTECH piece. Throws ImportError naming the file.
+std::string load_btech_revision(const std::filesystem::path& write_dir);
 
 }  // namespace mw1o::import

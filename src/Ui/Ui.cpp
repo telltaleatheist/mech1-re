@@ -231,10 +231,17 @@ void read_cockpit(const fs::path& data_dir, support::NativeBytes& out) {
     out["cockpit.condition_labels.actuator"] = label_indices(r, conditions, "actuator", 5, 6);
 }
 
+// A list of exactly `count` entries.
+const Json::Array& row_of(const Reader& r, const Json& v, std::size_t count, std::string_view what) {
+    if (!v.is_array() || v.array().size() != count) r.fail(std::string(what) + " is not a list of " + std::to_string(count));
+    return v.array();
+}
+
 void read_orders(const fs::path& data_dir, support::NativeBytes& out) {
     Reader r(data_dir / "ui" / "orders.json");
     const Json file = r.parse();
-    r.only(file, {"selection_rows", "navigation_deltas", "condition_colours", "start", "word_refs", "display_indices"});
+    r.only(file, {"selection_rows", "navigation_deltas", "condition_colours", "start", "word_refs", "display_indices",
+                  "map_scale_shifts", "map_markers"});
     const auto signed_list = [&](const Json& object, std::string_view key, std::size_t count) {
         std::string bytes;
         for (const Json& v : r.array(object, key, count)) put_signed(r, bytes, v, key);
@@ -267,6 +274,18 @@ void read_orders(const fs::path& data_dir, support::NativeBytes& out) {
     out["orders.word_refs.weapons"] = word_refs(r, refs, "weapons", words, 10);
     // The order label (one of the 7) each order code shows.
     out["orders.display_indices"] = label_indices(r, file, "display_indices", 11, 7);
+    // The order map: a shift per scale, and per marker style a 3x3 mask (rows
+    // by x, then y; 0 or 1).
+    std::string& shifts = out["orders.map_scale_shifts"];
+    for (const Json& v : r.array(file, "map_scale_shifts", 3)) shifts += char(r.byte(v, "a map scale shift"));
+    std::string& masks = out["orders.map_marker_masks"];
+    for (const Json& style : r.array(file, "map_markers", 4))
+        for (const Json& x : row_of(r, style, 3, "a marker mask"))
+            for (const Json& y : row_of(r, x, 3, "a marker mask row")) {
+                const std::uint8_t bit = r.byte(y, "a marker mask bit");
+                if (bit > 1) r.fail("a marker mask bit is not 0 or 1");
+                masks += char(bit);
+            }
 }
 
 // MW_MAIN's screens: captions, panels, menus and tables (docs/phase2/PLAN.md

@@ -27,7 +27,8 @@
 //      "start": {"lance_panel_text_x": [3]},
 //      "word_refs": {"orders": [7], "tactical": [9], "damage": [7],
 //        "weapons": [10]},
-//      "display_indices": [11]}
+//      "display_indices": [11],
+//      "map_scale_shifts": [3], "map_markers": [4 styles of 3 rows of 3, 0 or 1]}
 //     A word is a name after "orders.word."; each display index names one of
 //     the 7 order words for an order code. "start" holds what play writes but a fresh EXEC reads first.
 //   intro.json (MW_MAIN, the intro's captions; the text is the story's)

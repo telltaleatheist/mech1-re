@@ -91,10 +91,31 @@ combat.missile_cluster_rows         BTECH.EXE  304E:235E 96
 combat.hit_locations                BTECH.EXE  304E:26BC 88
 combat.range_hit_modifiers          BTECH.EXE  304E:2714 10
 combat.heat_aim_jitter_thresholds   BTECH.EXE  304E:271E 10
+# combat.json, slice 6d: the avoidance probes (signs, then the steps they
+# scale as near pointers), the world's boundary, and two debug switches with
+# the byte after them.
+combat.avoidance_probe_signs        BTECH.EXE  304E:243E 16
+combat.avoidance_probe_steps        BTECH.EXE  304E:244E 16
+combat.world_boundary_corners       BTECH.EXE  304E:0336 24
+combat.player_damage_suppressed     BTECH.EXE  304E:0E1A 1
+combat.ai_flags                     BTECH.EXE  304E:0EBA 2
+# combat.json "start": runtime values play overwrites but reads first.
+combat.start.continuation_profile   BTECH.EXE  304E:0974 2
+combat.start.heading_radar_selected  BTECH.EXE  304E:0E1E 1
+combat.start.view_shifts            BTECH.EXE  304E:0E20 4
+combat.start.mount_group_mode       BTECH.EXE  304E:0E26 1
+combat.start.firing_indicators_pending  BTECH.EXE  304E:0EAE 2
+combat.start.random_state           BTECH.EXE  304E:281C 64
+combat.start.random_addend_index    BTECH.EXE  304E:285E 2
 # weapons.json (BTECH).
 weapons.definitions                 BTECH.EXE  304E:0EEC 220
 weapons.projectile_profiles         BTECH.EXE  304E:232E 20
 weapons.missile_cluster_rows        BTECH.EXE  304E:234A 20
+# Slice 6d: the projectiles, the beams' geometry (triangles, polygons,
+# primitives and variants, pointing into each other) and half widths.
+weapons.projectiles                 BTECH.EXE  304E:0E6E 40
+weapons.beam_geometry               BTECH.EXE  304E:27C2 64
+weapons.beam_half_widths            BTECH.EXE  304E:2802 20
 # combat_assets.json (BTECH).
 assets.default_effect_steps         BTECH.EXE  304E:0E96 14
 assets.machine_gun_effect_steps     BTECH.EXE  304E:0EA4 6
@@ -103,6 +124,20 @@ assets.animation_prefix_counts      BTECH.EXE  304E:24B4 18
 assets.player_pose_frame_counts     BTECH.EXE  304E:265E 16
 # mechs.json (BTECH): the 8 templates, 0xE0 bytes each.
 mechs.templates                     BTECH.EXE  304E:1178 1792
+# Slice 6d: per template its fallen body's reference points and its
+# animations; per body location the muzzles' lateral offset.
+mechs.fallen_reference_points       BTECH.EXE  304E:0FC8 432
+mechs.animations                    BTECH.EXE  304E:24C6 72
+mechs.muzzle_lateral_offsets        BTECH.EXE  304E:2302 16
+# animation.json (slice 6d): the unit animations' frame maps, their pointers
+# and counts, and the player's pose keyframes and their pointers. The poses'
+# frame counts (assets.player_pose_frame_counts) are the lists' lengths.
+animation.frame_maps                BTECH.EXE  304E:245E 48
+animation.frame_map_offsets         BTECH.EXE  304E:248E 18
+animation.logical_frame_counts      BTECH.EXE  304E:24A0 9
+animation.part_frame_counts         BTECH.EXE  304E:24AA 9
+animation.pose_keyframes            BTECH.EXE  304E:250E 320
+animation.pose_offsets              BTECH.EXE  304E:264E 16
 # new_campaign.json: MW_MAIN's save block, split around the commander's name
 # (1090:0483, 10 bytes, story text commander.default_name).
 new_campaign.before_name            MW_MAIN.EXE  1090:0448 59

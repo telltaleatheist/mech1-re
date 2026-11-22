@@ -1,12 +1,16 @@
 /* BTECH's start image: the bytes its importers read, laid out as the
- * exe's (docs/phase2/PLAN.md 8.5, slice 6c). Each row names its address in
- * the unpacked image (segment:offset, loaded at 0810, as src/Import/ImportTable.h)
- * and where its bytes come from: code, zero, generated, or the story file.
- * start_exe_test compares every code, zero and generated row with both
- * BTECH revisions. Names, numbers and file names only: no MW1 text. */
+ * exe's (docs/phase2/PLAN.md 8.5, slices 6c and 6d). Each row names its
+ * address in the unpacked image (segment:offset, loaded at 0810, as
+ * src/Import/ImportTable.h) and where its bytes come from: code, zero,
+ * generated, the story file, or a rule or layout piece (data/rules,
+ * data/ui) of the row's id. start_exe_test compares every code, zero and
+ * generated row with both BTECH revisions; rules_exe_test and ui_exe_test
+ * compare the pieces. Names, numbers and file names only: no MW1 text. */
 #include "mechwarrior/btech_start_image.h"
 #include "mechwarrior/combat_installation.h"
+#include "mechwarrior/rules.h"
 #include "mechwarrior/story.h"
+#include "mechwarrior/ui_layout.h"
 #include <math.h>
 #include <string.h>
 
@@ -488,6 +492,9 @@ const BtechStartRow btechStartRows[]={
     {"tone.tandy_periods",0x2FEB,0x04F4,0x128,BTECH_START_CODE,(const uint8_t *)kToneTandyPeriods,NULL},
     {"tone.noise_periods",0x2FEB,0x061C,0x6,BTECH_START_CODE,(const uint8_t *)kToneNoisePeriods,NULL},
     {"runtime.prefix",0x304E,0x0000,0x60,BTECH_START_STORY,NULL,NULL},
+    {"orders.map_scale_shifts",0x304E,0x0088,0x3,BTECH_START_UI,NULL,NULL},
+    {"orders.map_marker_masks",0x304E,0x00E8,0x24,BTECH_START_UI,NULL,NULL},
+    {"combat.world_boundary_corners",0x304E,0x0336,0x18,BTECH_START_RULES,NULL,NULL},
     {"file.inspection_bitmaps",0x304E,0x034E,0x40,BTECH_START_CODE,(const uint8_t *)kFileInspectionBitmaps,NULL},
     {"file.inspection_bitmap_offsets",0x304E,0x04A8,0x10,BTECH_START_CODE,(const uint8_t *)kFileInspectionBitmapOffsets,NULL},
     {"file.chassis_banks",0x304E,0x067F,0x38,BTECH_START_CODE,(const uint8_t *)kFileChassisBanks,NULL},
@@ -497,11 +504,34 @@ const BtechStartRow btechStartRows[]={
     {"world.terrain_grid_bases",0x304E,0x07E4,0x10,BTECH_START_CODE,(const uint8_t *)kWorldTerrainGridBases,NULL},
     {"file.cockpit_screens",0x304E,0x07F4,0x20,BTECH_START_CODE,(const uint8_t *)kFileCockpitScreens,NULL},
     {"file.cockpit_screen_offsets",0x304E,0x0814,0x6,BTECH_START_CODE,(const uint8_t *)kFileCockpitScreenOffsets,NULL},
+    {"combat.start.continuation_profile",0x304E,0x0974,0x2,BTECH_START_RULES,NULL,NULL},
+    {"combat.player_damage_suppressed",0x304E,0x0E1A,0x1,BTECH_START_RULES,NULL,NULL},
+    {"combat.start.heading_radar_selected",0x304E,0x0E1E,0x1,BTECH_START_RULES,NULL,NULL},
+    {"combat.start.view_shifts",0x304E,0x0E20,0x4,BTECH_START_RULES,NULL,NULL},
+    {"combat.start.mount_group_mode",0x304E,0x0E26,0x1,BTECH_START_RULES,NULL,NULL},
+    {"weapons.projectiles",0x304E,0x0E6E,0x28,BTECH_START_RULES,NULL,NULL},
+    {"combat.start.firing_indicators_pending",0x304E,0x0EAE,0x2,BTECH_START_RULES,NULL,NULL},
     {"world.boundary_mask_by_code",0x304E,0x0EB6,0x4,BTECH_START_CODE,(const uint8_t *)kWorldBoundaryMaskByCode,NULL},
+    {"combat.ai_flags",0x304E,0x0EBA,0x2,BTECH_START_RULES,NULL,NULL},
+    {"mechs.fallen_reference_points",0x304E,0x0FC8,0x1B0,BTECH_START_RULES,NULL,NULL},
     {"names.mech_template_directory",0x304E,0x229C,0x10,BTECH_START_CODE,(const uint8_t *)kNamesMechTemplateDirectory,NULL},
     {"names.pilot_directory",0x304E,0x22AC,0x56,BTECH_START_CODE,(const uint8_t *)kNamesPilotDirectory,NULL},
+    {"mechs.muzzle_lateral_offsets",0x304E,0x2302,0x10,BTECH_START_RULES,NULL,NULL},
     {"cockpit.radar_previous_tick",0x304E,0x240E,0x2,BTECH_START_CODE,(const uint8_t *)kCockpitRadarPreviousTick,NULL},
+    {"combat.avoidance_probe_signs",0x304E,0x243E,0x10,BTECH_START_RULES,NULL,NULL},
+    {"combat.avoidance_probe_steps",0x304E,0x244E,0x10,BTECH_START_RULES,NULL,NULL},
+    {"animation.frame_maps",0x304E,0x245E,0x30,BTECH_START_RULES,NULL,NULL},
+    {"animation.frame_map_offsets",0x304E,0x248E,0x12,BTECH_START_RULES,NULL,NULL},
+    {"animation.logical_frame_counts",0x304E,0x24A0,0x9,BTECH_START_RULES,NULL,NULL},
+    {"animation.part_frame_counts",0x304E,0x24AA,0x9,BTECH_START_RULES,NULL,NULL},
+    {"mechs.animations",0x304E,0x24C6,0x48,BTECH_START_RULES,NULL,NULL},
+    {"animation.pose_keyframes",0x304E,0x250E,0x140,BTECH_START_RULES,NULL,NULL},
+    {"animation.pose_offsets",0x304E,0x264E,0x10,BTECH_START_RULES,NULL,NULL},
+    {"weapons.beam_geometry",0x304E,0x27C2,0x40,BTECH_START_RULES,NULL,NULL},
+    {"weapons.beam_half_widths",0x304E,0x2802,0x14,BTECH_START_RULES,NULL,NULL},
     {"render.selection_marker_pixels",0x304E,0x2816,0x4,BTECH_START_CODE,(const uint8_t *)kRenderSelectionMarkerPixels,NULL},
+    {"combat.start.random_state",0x304E,0x281C,0x40,BTECH_START_RULES,NULL,NULL},
+    {"combat.start.random_addend_index",0x304E,0x285E,0x2,BTECH_START_RULES,NULL,NULL},
     {"startup.critical_error_handler",0x304E,0x2860,0x1,BTECH_START_CODE,(const uint8_t *)kStartupCriticalErrorHandler,NULL},
     {"audio.sound_timer",0x304E,0x28D0,0x3,BTECH_START_CODE,(const uint8_t *)kAudioSoundTimer,NULL},
     {"audio.music_timer_divisor",0x304E,0x28D6,0x2,BTECH_START_CODE,(const uint8_t *)kAudioMusicTimerDivisor,NULL},
@@ -548,42 +578,12 @@ const BtechStartRow btechStartRows[]={
 };
 const size_t btechStartRowCount=sizeof(btechStartRows)/sizeof(btechStartRows[0]);
 
-/* Read from the exe until slice 6d moves them (data/rules, data/ui, story). */
-const BtechStartExeSpan btechStartExeSpans[]={
-    {0x304E,0x0088,0x0003,"orderMapScaleShifts"},
-    {0x304E,0x00E8,0x0024,"orderMapMarkerMasks"},
-    {0x304E,0x0336,0x0018,"combatWorldBoundaryCorners"},
-    {0x304E,0x0974,0x0002,"combatContinuationProfileIndex"},
-    {0x304E,0x09F0,0x039B,"missionTitleText"},
-    {0x304E,0x0DD2,0x0048,"combatMissionTitles' offsets"},
-    {0x304E,0x0E1A,0x0001,"playerDamageSuppressed"},
-    {0x304E,0x0E1E,0x0001,"headingRadarSelected"},
-    {0x304E,0x0E20,0x0004,"radarRangeShift, viewScaleShift"},
-    {0x304E,0x0E26,0x0001,"mountGroupMode"},
-    {0x304E,0x0E6E,0x0028,"projectileProfiles"},
-    {0x304E,0x0EAA,0x0006,"the beam styles' pointers, firingIndicatorBank1/0Pending"},
-    {0x304E,0x0EBA,0x0002,"aiUpdatesSuppressed, unidentifiedField22"},
-    {0x304E,0x0FC8,0x01B0,"fallenBodyReferenceBanks"},
-    {0x304E,0x2302,0x0010,"muzzleLateralOffsetsByBodyLocation"},
-    {0x304E,0x243E,0x0220,"the avoidance probes and the pose tables"},
-    {0x304E,0x27C2,0x0054,"the beams: triangle indices, primitives, half widths"},
-    {0x304E,0x281C,0x0040,"randomStateWords"},
-    {0x304E,0x285E,0x0002,"randomAddendIndex"},
-};
-const size_t btechStartExeSpanCount=sizeof(btechStartExeSpans)/sizeof(btechStartExeSpans[0]);
-
 size_t BtechStartImageOffset(uint16_t segment,uint16_t offset)
 {return (size_t)(segment-BTECH_IMAGE_LOAD_SELECTOR)*16+offset;}
 
-bool BtechBuildStartImage(uint8_t *image,const uint8_t *exeImage)
+bool BtechBuildStartImage(uint8_t *image)
 {
     memset(image,0,BTECH_IMAGE_BYTES);
-    for (size_t span=0;span<btechStartExeSpanCount;++span)
-    {
-        const BtechStartExeSpan *s=&btechStartExeSpans[span];
-        size_t at=BtechStartImageOffset(s->segment,s->offset);
-        memcpy(image+at,exeImage+at,s->size);
-    }
     for (size_t index=0;index<btechStartRowCount;++index)
     {
         const BtechStartRow *row=&btechStartRows[index];
@@ -594,6 +594,8 @@ bool BtechBuildStartImage(uint8_t *image,const uint8_t *exeImage)
         case BTECH_START_ZERO: break;
         case BTECH_START_GENERATED: row->generate(at);break;
         case BTECH_START_STORY: if (!MwStoryCopyBytes(row->id,at,row->size)) return false;break;
+        case BTECH_START_RULES: if (MwRulesPieceSize(row->id)!=row->size || !MwRulesCopyNative(row->id,at,row->size)) return false;break;
+        case BTECH_START_UI: if (MwUiPieceSize(row->id)!=row->size || !MwUiCopyNative(row->id,at,row->size)) return false;break;
         }
     }
     return true;

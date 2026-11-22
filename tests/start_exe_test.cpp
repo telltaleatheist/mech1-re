@@ -47,7 +47,9 @@ int check_btech(const fs::path& path) {
     int same = 0;
     for (std::size_t i = 0; i < btechStartRowCount; ++i) {
         const BtechStartRow& row = btechStartRows[i];
-        if (row.source == BTECH_START_STORY) continue;  // keyed and hashed by the import
+        // Story spans are keyed and hashed by the import; rule and layout
+        // pieces are checked by rules_exe_test and ui_exe_test.
+        if (row.source == BTECH_START_STORY || row.source == BTECH_START_RULES || row.source == BTECH_START_UI) continue;
         const std::size_t at = BtechStartImageOffset(row.segment, row.offset);
         if (at + row.size > image.size()) {
             check(false, std::string(row.id) + " runs past the image");
@@ -94,13 +96,11 @@ int main() {
     }
     std::printf("%d of %zu start constants as the exes'\n", same, mwNativeStartRowCount);
 
-    // BTECH's start image: no two rows or exe spans overlap, then every row
-    // against each revision given.
+    // BTECH's start image: no two rows overlap, then every row against each
+    // revision given.
     std::vector<std::pair<std::size_t, std::size_t>> spans;
     for (std::size_t i = 0; i < btechStartRowCount; ++i)
         spans.push_back({BtechStartImageOffset(btechStartRows[i].segment, btechStartRows[i].offset), btechStartRows[i].size});
-    for (std::size_t i = 0; i < btechStartExeSpanCount; ++i)
-        spans.push_back({BtechStartImageOffset(btechStartExeSpans[i].segment, btechStartExeSpans[i].offset), btechStartExeSpans[i].size});
     std::sort(spans.begin(), spans.end());
     for (std::size_t i = 1; i < spans.size(); ++i)
         check(spans[i - 1].first + spans[i - 1].second <= spans[i].first, "two BTECH start rows overlap");

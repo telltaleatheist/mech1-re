@@ -43,6 +43,8 @@ constexpr UiPiece kTable[] = {
     {"orders.navigation_row_deltas", "BTECH.EXE", 0x304E, 0x00B0, 22, "54e6ebd040b2a1a4"},
     {"orders.engine_condition_colours", "BTECH.EXE", 0x304E, 0x030E, 16, "f2ca7a127eff9f9b"},
     {"orders.system_condition_colours", "BTECH.EXE", 0x304E, 0x031E, 16, "c0ba92c2d26b99f4"},
+    {"orders.map_scale_shifts", "BTECH.EXE", 0x304E, 0x0088, 3, "76581baee0fcad96"},
+    {"orders.map_marker_masks", "BTECH.EXE", 0x304E, 0x00E8, 36, "93b06ee5df1ee67a"},
     {"orders.word_refs.orders", "BTECH.EXE", 0x304E, 0x02B6, 14, "1a6add8929a86580"},
     {"orders.display_indices", "BTECH.EXE", 0x304E, 0x02C4, 22, "aeebb44f00094c86"},
     {"orders.word_refs.tactical", "BTECH.EXE", 0x304E, 0x02DA, 18, "ac5f9ec418ab3424"},

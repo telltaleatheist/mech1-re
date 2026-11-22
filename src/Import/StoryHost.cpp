@@ -22,6 +22,7 @@ mw1o::import::Missions g_missions;
 std::vector<mw1o::import::EventTextRecord> g_event_text;
 mw1o::import::Events g_events;
 std::vector<mw1o::import::AdlibInstrument> g_music;
+std::string g_btech_revision;
 
 // Runs a rebuild; an error goes to stderr and returns false.
 template <typename Build>
@@ -52,11 +53,17 @@ bool MwHostPrepareStory(const char *gameDirectory, const char *writeDirectory)
         g_event_text = mw1o::import::load_event_text(writeDirectory);
         g_events = mw1o::import::load_events(writeDirectory);
         g_music = mw1o::import::load_music(writeDirectory);
+        g_btech_revision = mw1o::import::load_btech_revision(writeDirectory);
         return true;
     } catch (const std::exception &e) {
         std::fprintf(stderr, "MechWarrior: %s\n", e.what());
         return false;
     }
+}
+
+const char *MwStoryBtechRevision(void)
+{
+    return g_btech_revision.c_str();
 }
 
 bool MwStoryCopyText(const char *id, char *text, size_t capacity)

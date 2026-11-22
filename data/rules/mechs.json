@@ -21,6 +21,18 @@
         "right_torso": [100, 0, 177],
         "head": [0, 135, 132]
       },
+      "fallen_reference_points": {
+        "left_arm": [-130, -115, -20],
+        "right_arm": [130, -115, -20],
+        "left_leg": [-90, -155, -220],
+        "right_leg": [90, -155, -220],
+        "center_torso": [0, -105, -90],
+        "rear_center_torso": [0, -105, -90],
+        "left_torso": [0, -105, -90],
+        "right_torso": [0, -105, -90],
+        "head": [0, 30, -155]
+      },
+      "animations": [true, true, false, false, true, true, false, true, true],
       "armour": {
         "left_arm": 4,
         "right_arm": 4,
@@ -78,6 +90,18 @@
         "right_torso": [160, 5, 197],
         "head": [-5, 210, 170]
       },
+      "fallen_reference_points": {
+        "left_arm": [-160, -380, -195],
+        "right_arm": [160, -380, -195],
+        "left_leg": [-80, -135, -125],
+        "right_leg": [80, -135, -125],
+        "center_torso": [0, -365, -195],
+        "rear_center_torso": [0, -365, -5],
+        "left_torso": [0, -365, -5],
+        "right_torso": [0, -365, -5],
+        "head": [0, -410, -5]
+      },
+      "animations": [true, true, true, false, true, true, true, true, true],
       "armour": {
         "left_arm": 4,
         "right_arm": 4,
@@ -141,6 +165,18 @@
         "right_torso": [86, 7, 115],
         "head": [0, 0, 238]
       },
+      "fallen_reference_points": {
+        "left_arm": [-150, -305, -265],
+        "right_arm": [150, -305, -265],
+        "left_leg": [-65, -100, -220],
+        "right_leg": [65, -100, -220],
+        "center_torso": [0, -295, -240],
+        "rear_center_torso": [0, -295, -240],
+        "left_torso": [0, -295, -240],
+        "right_torso": [0, -295, -240],
+        "head": [0, -410, -260]
+      },
+      "animations": [true, true, true, false, true, true, true, true, true],
       "armour": {
         "left_arm": 10,
         "right_arm": 10,
@@ -203,6 +239,18 @@
         "right_torso": [95, 0, 155],
         "head": [0, -10, 267]
       },
+      "fallen_reference_points": {
+        "left_arm": [-150, -250, -245],
+        "right_arm": [150, -250, -245],
+        "left_leg": [-70, -100, -200],
+        "right_leg": [70, -100, -200],
+        "center_torso": [0, -300, -220],
+        "rear_center_torso": [0, -300, -220],
+        "left_torso": [0, -300, -220],
+        "right_torso": [0, -300, -220],
+        "head": [0, -425, -200]
+      },
+      "animations": [true, true, true, false, true, true, true, true, true],
       "armour": {
         "left_arm": 16,
         "right_arm": 16,
@@ -265,6 +313,18 @@
         "right_torso": [125, 0, 200],
         "head": [0, 92, 125]
       },
+      "fallen_reference_points": {
+        "left_arm": [-220, -425, -345],
+        "right_arm": [220, -425, -345],
+        "left_leg": [-75, -188, -300],
+        "right_leg": [75, -188, -300],
+        "center_torso": [0, -470, -345],
+        "rear_center_torso": [0, -470, -345],
+        "left_torso": [0, -470, -345],
+        "right_torso": [0, -470, -345],
+        "head": [0, -465, -250]
+      },
+      "animations": [true, true, false, false, true, true, false, true, true],
       "armour": {
         "left_arm": 15,
         "right_arm": 15,
@@ -325,6 +385,18 @@
         "right_torso": [103, 5, 212],
         "head": [-2, 37, 307]
       },
+      "fallen_reference_points": {
+        "left_arm": [-220, -425, -345],
+        "right_arm": [220, -425, -345],
+        "left_leg": [-75, -188, -300],
+        "right_leg": [75, -188, -300],
+        "center_torso": [0, -470, -345],
+        "rear_center_torso": [0, -470, -345],
+        "left_torso": [0, -470, -345],
+        "right_torso": [0, -470, -345],
+        "head": [0, -600, -274]
+      },
+      "animations": [true, true, false, false, true, true, false, true, true],
       "armour": {
         "left_arm": 20,
         "right_arm": 20,
@@ -388,6 +460,18 @@
         "right_torso": [125, -88, 328],
         "head": [0, 305, 232]
       },
+      "fallen_reference_points": {
+        "left_arm": [-255, 0, -400],
+        "right_arm": [255, 0, -400],
+        "left_leg": [-145, -140, -385],
+        "right_leg": [145, -140, -385],
+        "center_torso": [0, 125, -170],
+        "rear_center_torso": [0, 125, -170],
+        "left_torso": [0, 125, -170],
+        "right_torso": [0, 125, -170],
+        "head": [0, 105, -250]
+      },
+      "animations": [true, true, false, false, true, true, false, true, true],
       "armour": {
         "left_arm": 22,
         "right_arm": 22,
@@ -447,6 +531,18 @@
         "right_torso": [232, 32, 230],
         "head": [0, 75, 400]
       },
+      "fallen_reference_points": {
+        "left_arm": [-225, -510, -420],
+        "right_arm": [225, -510, -420],
+        "left_leg": [-90, -215, -385],
+        "right_leg": [90, -215, -385],
+        "center_torso": [0, -690, -350],
+        "rear_center_torso": [0, -690, -350],
+        "left_torso": [0, -690, -350],
+        "right_torso": [0, -690, -350],
+        "head": [0, -850, -335]
+      },
+      "animations": [true, true, false, false, true, true, false, true, true],
       "armour": {
         "left_arm": 24,
         "right_arm": 24,
@@ -490,5 +586,15 @@
       ],
       "jump_jets": []
     }
-  ]
+  ],
+  "muzzle_lateral_offsets": {
+    "left_arm": -500,
+    "right_arm": 500,
+    "left_leg": -200,
+    "right_leg": 200,
+    "center_torso": 0,
+    "left_torso": -200,
+    "right_torso": 200,
+    "head": 0
+  }
 }

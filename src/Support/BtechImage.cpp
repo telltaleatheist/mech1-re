@@ -143,7 +143,14 @@ bool BtechDecodeImage(const uint8_t *packed,size_t packedBytes,uint8_t **image,B
     if (revisionName) *revisionName=revision->name;
     return true;
 }
-bool BtechDecodeInstallationImage(const uint8_t *packed,size_t packedBytes,uint8_t **image)
+const char *BtechRevisionName(BtechRevision revision)
 {
-    return BtechDecodeImage(packed,packedBytes,image,&btechLoadedRevision);
+    return revision==BTECH_REVISION_1990_01_22?"1990-01-22":"reference";
+}
+bool BtechRevisionFromName(const char *name,BtechRevision *revision)
+{
+    if (!name) return false;
+    if (!strcmp(name,"reference")) {*revision=BTECH_REVISION_REFERENCE;return true;}
+    if (!strcmp(name,"1990-01-22")) {*revision=BTECH_REVISION_1990_01_22;return true;}
+    return false;
 }

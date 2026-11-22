@@ -85,7 +85,8 @@ constexpr KeyRegion key_region(std::string_view exe) {
 // The shape of the story file. A data folder written by another version, or
 // with another table (import_table_hash), is imported again. Version 2: every
 // piece's hash keyed (version 1 keyed the words only). Version 3: native.json.
-inline constexpr int kImportVersion = 3;
+// Version 4: import.json records BTECH's revision ("btech_revision").
+inline constexpr int kImportVersion = 4;
 
 // The revision the table's hashes come from.
 inline constexpr std::string_view kRevision = "1990-01-22";

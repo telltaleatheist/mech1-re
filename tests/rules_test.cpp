@@ -65,10 +65,12 @@ std::string dump(const Json& v) {
     }
     if (v.is_string()) return mw1o::support::json_quote(v.string());
     if (v.is_number()) return std::to_string(static_cast<long long>(v.number()));
+    if (std::holds_alternative<bool>(v.value)) return std::get<bool>(v.value) ? "true" : "false";
     return "null";
 }
 
 Json& at(Json& v, const std::string& key) { return std::get<Json::Object>(v.value).at(key); }
+Json& item(Json& v, std::size_t i) { return std::get<Json::Array>(v.value).at(i); }
 
 void the_rules_rebuild_the_exes_tables(const fs::path& data) {
     const auto pieces = native_pieces(load_rules(data));
@@ -194,8 +196,27 @@ void what_doesnt_fit_is_refused(const fs::path& data, const fs::path& work) {
         at(c, "avoidance_heading_offsets") = Json{offsets};
     });
     refused(load, "from -32768 to 32767", "a heading offset out of range");
-    with_file("combat.json", [](Json& c) { std::get<Json::Object>(c.value)["start"] = Json{Json::Object{}}; });
-    refused(load, "unknown key \"start\"", "a start value written before it's read");
+    with_file("combat.json", [](Json& c) {
+        std::get<Json::Object>(at(c, "start").value)["projectile_slots"] = Json{0.0};
+    });
+    refused(load, "unknown key \"projectile_slots\"", "a start value written before it's read");
+    with_file("combat.json", [](Json& c) { at(at(c, "start"), "random_addend_index") = Json{32.0}; });
+    refused(load, "random_addend_index is not a whole number from 0 to 31", "a random addend past the state");
+    with_file("combat.json", [](Json& c) { at(at(item(at(c, "avoidance_probes"), 0), "x"), "step") = Json{std::string("z")}; });
+    refused(load, "a probe step is not one of its names", "an avoidance step that isn't one");
+    with_file("animation.json", [](Json& a) {
+        at(item(at(a, "unit_sequences"), 1), "frame_map") = Json{Json::Array(30, Json{1.0})};
+    });
+    refused(load, "frame maps are more than 48 bytes", "unit animations past their storage");
+    with_file("animation.json", [](Json& a) {
+        Json& first = item(at(a, "player_poses"), 0);
+        first = Json{Json::Array(10, item(first, 0))};
+    });
+    refused(load, "more than 40 keyframes", "player poses past their storage");
+    with_file("weapons.json", [](Json& w) { at(at(at(w, "beams"), "triangles"), "vertical") = Json{Json::Array(3, Json{255.0})}; });
+    refused(load, "a vertex index is 255", "a beam vertex that ends the list");
+    with_file("mechs.json", [](Json& m) { at(item(at(m, "mechs"), 0), "animations") = Json{Json::Array(9, Json{1.0})}; });
+    refused(load, "an animation is not true or false", "an animation flag that isn't one");
     with_file("weapons.json", [](Json& w) { std::get<Json::Object>(at(w, "weapons").value).erase("ppc"); });
     refused(load, "no \"ppc\"", "a weapon kind missing");
     with_file("weapons.json", [](Json& w) { at(at(at(w, "weapons"), "ac5"), "ammo_family") = Json{6.0}; });

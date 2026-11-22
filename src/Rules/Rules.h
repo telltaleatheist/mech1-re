@@ -48,11 +48,20 @@
 //     COMBAT_WEAPON_*: {"damage", "ammo_family" (null: none), "reload_ticks",
 //     "heat", "range_class", "ranges": {"minimum", "short", "medium", "long"},
 //     "critical_slots", "unknown_14", "missile_cluster_row" (null: none),
-//     "projectile_profile" (null: none)}
+//     "projectile_profile" (null: none), "beam_half_width"},
+//     "projectiles": [5 {"speed_scale", "weapon", "lifetime_ticks",
+//     "resource_delta"}], "beams": {"triangles": {"vertical", "horizontal":
+//     [vertex indices]}, "ppc", "laser": {"scale_limit", "polygons":
+//     {"vertical", "horizontal": {"flags", "fill", "line", "alternate_fill",
+//     "alternate_line", "normal"}}}}
 //   combat_assets.json  frame counts and effect resource steps that describe
-//     the install's files: {"animation_prefix_counts" [9], "player_pose_frame_counts" [8],
+//     the install's files: {"animation_prefix_counts" [9],
 //     "body_damage_effect_steps" [4], "default_effect_steps" [7],
 //     "machine_gun_effect_steps" [3]}
+//   animation.json  {"unit_sequences": [9 {"frame_map": [logical frame ->
+//     part frame], "part_frames"}], "player_poses": [8 sequences of
+//     [{"displacement": [3 signed], "orientation_step"}]]}. A sequence's
+//     logical frame count and a pose's frame count are its list's length.
 //   mechs.json  {"mechs": [8 templates, in order]}, each {"name" (its story
 //     text id, combat.mech_template.N.name), "tonnage", "display_scale",
 //     "firing_movement_threshold", "maximum_speed_scale", "jump_acceleration",
@@ -61,7 +70,10 @@
 //     "mounts" [up to 10 {"weapon", "location" (body), "unknown_4",
 //     "unknown_6"}], "ammo" [6, by ammo family: {"location" (body or null),
 //     "salvos"}], "jump_jets" [up to 3 {"location" (body), "critical_slots"}]}.
-//     The mount and jet counts are the lists' lengths.
+//     The mount and jet counts are the lists' lengths. Each template also
+//     has "fallen_reference_points" {armour: [3 signed]} and "animations"
+//     [9 true/false, by unit animation sequence]; the file also has
+//     "muzzle_lateral_offsets" {body: signed}.
 //   new_campaign.json  MW_MAIN's save block at the start of a new campaign,
 //     keyed by the save codec's field names (NewCampaignFields.h): a byte or
 //     word field is a number, a word list a list of numbers, any other field
@@ -184,7 +196,18 @@ inline constexpr std::array<std::string_view, 10> kWeaponKinds = {
     "small_laser", "medium_laser", "large_laser", "machine_gun", "ppc", "ac5", "lrm5", "srm2", "srm4", "srm6"};
 inline constexpr std::size_t kTemplates = 8, kCombatMissions = 37, kStageProfiles = 9, kStagesPerProfile = 3;
 inline constexpr std::size_t kAttackArcs = 4, kHitRolls = 11, kClusterRows = 4, kClusterRolls = 12;
-inline constexpr std::size_t kProjectileProfiles = 5;
+inline constexpr std::size_t kProjectileProfiles = 5, kAvoidanceProbes = 4, kRandomStateWords = 32;
+// combat.json "start": runtime values play overwrites but reads first, as a
+// fresh EXEC starts them.
+struct CombatStart {
+    std::uint16_t continuation_profile = 0xFFFF;  // none
+    std::uint8_t heading_radar_selected = 0;
+    std::uint16_t radar_range_shift = 0, view_scale_shift = 0;
+    std::uint8_t mount_group_mode = 0;
+    std::array<std::uint8_t, 2> firing_indicators_pending{};  // bank 0, bank 1
+    std::array<std::uint16_t, kRandomStateWords> random_state{};
+    std::uint16_t random_addend_index = 0;
+};
 
 struct Combat {
     std::array<std::uint16_t, 9> body_of_armour{};               // body location index
@@ -210,6 +233,13 @@ struct Combat {
     std::array<std::array<std::uint16_t, kClusterRolls>, kClusterRows> missile_cluster_rows{};
     std::array<std::uint16_t, 2> opposing_side_first_unit_slots{};
     std::array<std::int16_t, 3> avoidance_heading_offsets{};
+    // Each probe's x and y: a sign, and the avoidance step it scales (0 x, 1 y).
+    struct ProbeAxis { std::int16_t sign = 0; std::uint16_t step = 0; };
+    std::array<std::array<ProbeAxis, 2>, kAvoidanceProbes> avoidance_probes{};
+    std::array<std::array<std::int32_t, 3>, 2> world_boundary_corners{};
+    bool player_damage_suppressed = false, ai_updates_suppressed = false;
+    std::uint8_t unknown_0ebb = 0;
+    CombatStart start;
 };
 
 inline constexpr std::uint16_t kNone = 0xFFFF;  // ammo family, cluster row, projectile profile: none
@@ -219,11 +249,37 @@ struct Weapon {
     std::uint16_t minimum_range = 0, short_range = 0, medium_range = 0, long_range = 0;
     std::uint16_t critical_slots = 0, unknown_14 = 0;
     std::uint16_t missile_cluster_row = kNone, projectile_profile = kNone;
+    std::uint16_t beam_half_width = 0;
+};
+struct Projectile {
+    std::uint16_t speed_scale = 0, weapon = 0, lifetime_ticks = 0, resource_delta = 0;
+};
+struct BeamPolygon {
+    std::uint8_t flags = 0, fill = 0, line = 0, alternate_fill = 0, alternate_line = 0, normal = 0;
+};
+struct Beam {
+    std::uint8_t scale_limit = 0;
+    std::array<BeamPolygon, 2> polygons{};  // vertical, horizontal
+};
+struct Weapons {
+    std::array<Weapon, kWeaponKinds.size()> kinds;
+    std::array<Projectile, kProjectileProfiles> projectiles{};
+    std::array<std::vector<std::uint8_t>, 2> beam_triangles;  // vertical, horizontal
+    std::array<Beam, 2> beams{};                               // ppc, laser
+};
+inline constexpr std::size_t kUnitAnimationSequences = 9, kPlayerPoseSequences = 8;
+struct PoseKeyframe {
+    std::array<std::int16_t, 3> displacement{};
+    std::uint16_t orientation_step = 0;
+};
+struct Animation {
+    struct UnitSequence { std::vector<std::uint8_t> frame_map; std::uint8_t part_frames = 0; };
+    std::array<UnitSequence, kUnitAnimationSequences> unit_sequences;
+    std::array<std::vector<PoseKeyframe>, kPlayerPoseSequences> player_poses;
 };
 
 struct CombatAssets {
     std::array<std::uint16_t, 9> animation_prefix_counts{};
-    std::array<std::uint16_t, 8> player_pose_frame_counts{};
     std::array<std::uint16_t, 4> body_damage_effect_steps{};
     std::array<std::uint16_t, 7> default_effect_steps{};
     std::array<std::uint16_t, 3> machine_gun_effect_steps{};
@@ -243,6 +299,12 @@ struct MechTemplate {
     std::array<std::uint16_t, kAmmoFamilies> ammo_salvos{};
     struct JumpJets { std::uint16_t location = 0, critical_slots = 0; };
     std::vector<JumpJets> jump_jets;                           // at most kJetGroups
+    std::array<std::array<std::int16_t, 3>, 9> fallen_reference_points{};  // by armour location
+    std::array<bool, kUnitAnimationSequences> animations{};
+};
+struct Mechs {
+    std::array<MechTemplate, kTemplates> templates;
+    std::array<std::int16_t, 8> muzzle_lateral_offsets{};  // by body location
 };
 
 inline constexpr std::size_t kSaveBlockBytes = 0x718;
@@ -262,9 +324,10 @@ struct Rules {
     std::array<House, kHouses.size()> houses;
     Contracts contracts;
     Combat combat;
-    std::array<Weapon, kWeaponKinds.size()> weapons;
+    Weapons weapons;
     CombatAssets assets;
-    std::array<MechTemplate, kTemplates> mechs;
+    Animation animation;
+    Mechs mechs;
     NewCampaign new_campaign;
 };
 

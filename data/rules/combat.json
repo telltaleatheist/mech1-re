@@ -106,5 +106,28 @@
     [2, 2, 3, 3, 4, 4, 4, 5, 5, 6, 6, 0]
   ],
   "opposing_side_first_unit_slots": [4, 0],
-  "avoidance_heading_offsets": [0, 16380, -16380]
+  "avoidance_heading_offsets": [0, 16380, -16380],
+  "avoidance_probes": [
+    {"x": {"sign": 1, "step": "x"}, "y": {"sign": 1, "step": "y"}},
+    {"x": {"sign": -1, "step": "y"}, "y": {"sign": 1, "step": "x"}},
+    {"x": {"sign": 1, "step": "y"}, "y": {"sign": -1, "step": "x"}},
+    {"x": {"sign": -1, "step": "x"}, "y": {"sign": -1, "step": "y"}}
+  ],
+  "world_boundary_corners": [[-44160, 24000, 0], [44160, -24000, 0]],
+  "player_damage_suppressed": false,
+  "ai_updates_suppressed": false,
+  "unknown_0ebb": 0,
+  "start": {
+    "continuation_profile": null,
+    "heading_radar_selected": 0,
+    "radar_range_shift": 10,
+    "view_scale_shift": 7,
+    "mount_group_mode": 0,
+    "firing_indicators_pending": [0, 0],
+    "random_state": [
+      15698, 32561, 32930, 60694, 17087, 23617, 3166, 37414, 42379, 18477, 25817, 33453, 57721, 8523, 33100, 55094,
+      38863, 44721, 63435, 27291, 3161, 34100, 29065, 5523, 27589, 1964, 15487, 42046, 55913, 6174, 39889, 54655
+    ],
+    "random_addend_index": 15
+  }
 }

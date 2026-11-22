@@ -164,7 +164,8 @@ bool MwSdlInitializeCombatProcess(const char *directory)
 bool MwSdlExecuteCombatChild(const char *path,const MwCampaignLaunch *launch,uint8_t audioCode,uint8_t *exitCode)
 {
     if (childActive) MwSdlFail("Nested BTECH EXEC");
-    if (!BtechHostLoadInitialData(path)) return true;
+    (void)path; /* BTECH.EXE itself is never opened at play (slice 6d). */
+    if (!BtechHostLoadInitialData()) return true;
     MwSdlResetCombatHardware();mwSdlCombatActive=true;
     MwSdlUpdateWindowTitle();
     /* MW.EXE's DOS tail is03,<graphics>,20,<audio>,0D. Phase/transfer live in

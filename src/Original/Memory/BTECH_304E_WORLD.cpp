@@ -168,8 +168,8 @@ bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t 
             fallenBodyReferenceBanks[chassis][location]=BtechBodyReferencePoint{(int16_t)MwReadNativeWord(data,at),(int16_t)MwReadNativeWord(data,at+2),(int16_t)MwReadNativeWord(data,at+4)};
         }
     if (!MwRulesCopyWords("assets.body_damage_effect_steps",bodyDamageEffectResourceDeltas,COMBAT_BODY_EFFECT_FRAMES,0)) return false;
-    /* Authored near directory is resolved at installation IO, not every frame. */
-    if (MwReadNativeWord(data,0x0EAA)!=0x0E96 || MwReadNativeWord(data,0x0EAC)!=0x0EA4) return false;
+    /* The exe's near directory of the two effect step lists (304E:0EAA, 0EAC)
+     * is not needed: the lists are read by id. */
     if (!MwRulesCopyWords("assets.default_effect_steps",defaultEffectResourceDeltas,7,0)
         || !MwRulesCopyWords("assets.machine_gun_effect_steps",machineGunEffectResourceDeltas,3,0)) return false;
     for (uint16_t tile=0;tile<TERRAIN_TILE_COUNT;++tile)
