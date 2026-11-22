@@ -1688,7 +1688,16 @@ mingw check.
     contract planet groups (4B80 pointers, 4B8A groups) are `houses.json`'s
     `contract_planet_groups`, and the mechs each ammo family fits (3F87
     pointers, 3F9F lists) are `units.json`'s `ammo_family_mechs`; both are
-    built back into the exe's bytes and hash-checked by `rules_exe_test`. The
+    built back into the exe's bytes and hash-checked by `rules_exe_test`.
+    The planet groups have one pointer per House, to the start of its run;
+    groups are split by FF and the run ends at FE. The contract office
+    (081B, `contractOfficePlanetGroups`) scans the House's run for the
+    current planet and counts the FFs before it: the count picks the region
+    picture, one of five per House. The third House's run has no FF, one
+    group of 19 with planet 65 twice, so every planet there shows the first
+    region picture, and the second 65 is never reached. That is the exe's
+    data as it is. The pointers are rebuilt from the lists, so an edit to a
+    list cannot leave a stale offset. The
     intro captions' x and y (14 pairs, 1C33..1EB8) are `data/ui/intro.json`,
     checked by `ui_exe_test`; the travel caption that was read through the
     exe (55EC) now takes its x, y and colour from its layout piece
