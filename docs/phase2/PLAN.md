@@ -21,7 +21,7 @@ UI words, 58 layout, 78 rules, 103 new-campaign fields (two more live in
 | Group | Items | Where it goes |
 |---|---|---|
 | Extracted: the original's creative content | 63 | the story file, in the player's data folder, written at first run |
-| Ours: UI words and system messages | 104 | `data/text/interface.json` |
+| UI words and system messages | 104 | imported with the story into `story/words.json` (section 7) |
 | Ours: screen layout, panels, menus | 58 | `data/ui/*.json` |
 | Ours: rules and constants | 90 | `data/rules/*.json` |
 | Ours: the new campaign's starting state | 99 | `data/rules/new_campaign.json` |
@@ -44,13 +44,15 @@ files stay in the install and are read in place):
   (the songs, the combat sequence table filled from MUS:INF, MW_MAIN's
   instruments) is in the game's data files, not the exes.
 
-**Ours, UI words.** Every menu and panel label, heading, caption, cockpit
-lamp and inspection label, the retreat question, ZOOM/AUTO/PAUSED, month
-names, ammo family and damage tier names, and every system message ("no
-contracts", "insufficient funds", save and load errors, full roster).
-These are written fresh, in our wording: MW1's own words never enter the
-repo, so a label is never transcribed, only its meaning kept. Each change
-re-records the snaps that show it.
+**UI words.** Every menu and panel label, heading, caption, cockpit lamp
+and inspection label, the retreat question, the zoom, automatic weapons and
+pause labels, month names, ammo family and damage tier names, and every
+system message (no contracts, insufficient funds, save and load errors, a
+full roster).
+MW1's own words never enter the repo. Slice 5 (section 7) imports them from
+the player's exes with the story, keeping the exe's bytes, so the traces stay
+equal; the repo keeps only ids, offsets, lengths and hashes. Our own wording
+or a translation is the `--text` override's job, a file of the player's.
 
 **Ours, layout.** Panel descriptors (x, y, width, line count, border,
 spacing, background), menu records (position, picture, links), row origins,
@@ -87,7 +89,6 @@ plain JSON with named fields, one place for every ID, readable and moddable.
 
 **Ours, in the repo** (`data/`, installed beside the program):
 
-    data/text/interface.json   {"texts": [{"id": "market.buy", "text": "Buy"}, ...]}
     data/ui/campaign.json      {"panels": {"market.list": {"x": 8, "y": 24, "width": 200,
                                  "lines": 13, "border": 1, "spacing": 2, "background": 7}},
                                 "menus": {"hub": [{"x": .., "y": .., "picture": 1,
@@ -96,8 +97,9 @@ plain JSON with named fields, one place for every ID, readable and moddable.
     data/rules/new_campaign.json  {"funds": ..., "year": ..., "house_standings": [...]}
 
 Text ids are dotted (`screen.item`). A menu row's label is a text id, not a
-string. Arrays keep the original's order and length, so an index means what
-it meant in the exe; each array's length is checked at load.
+string; the words themselves are imported (section 7), never in `data/`.
+Arrays keep the original's order and length, so an index means what it meant
+in the exe; each array's length is checked at load.
 
 **Extracted, in the player's data folder** (`<write dir>/story/`):
 
@@ -221,8 +223,9 @@ DS:0008 finds the data segment, then each piece must still match its hash.
    numbers). The rule table's hashes check them against the exe. The plan
    is section 5.
 4. **Layout** into `data/ui/`. Traces equal. The plan is section 6.
-5. **UI words** into `data/text/interface.json`, screen by screen, in our
-   wording. Each slice re-records its snaps with the changed words listed.
+5. **UI words**, imported from the player's exes with the story into
+   `story/words.json`, screen by screen, keeping the exe's bytes. Traces
+   equal. The plan is section 7.
 6. **No exe at play time.** The game starts from `story/` and `data/` alone;
    only the importer opens an exe. A test runs the traces with the exes
    moved away after import.
@@ -1074,3 +1077,306 @@ Decisions for review:
 3. Actions by `MwCampaignContinuation` name.
 4. The past-end probes and the code immediates stay code in slice 4.
 5. The three text-bound tables are flagged for slice 5 to derive.
+
+## 7. Slice 5: UI words
+
+Plan for review; no code yet. Slice 5 moves the words the screens show (labels,
+headings, captions, cockpit and inspection labels, system messages) off the
+exe image the importers read on every EXEC. It does not move them into the
+repo. **No text from MW1's exes enters the repo, ever**: not in `data/`, not in
+the code, not in tests, not in logs. The words are imported from the player's
+own exes, as the story is, and the repo keeps only names, offsets, lengths and
+hashes (`ui_table.cpp`'s pattern). The traces stay 8 of 8 because every word
+keeps the exe's bytes.
+
+This replaces the earlier intent (sections 1 to 3) to rewrite the words in our
+own wording in `data/text/interface.json`. That file is not made. Our own
+wording, or a translation, stays possible later through the `--text FILE`
+override (section 2), which is the player's file and is never shipped. The
+edits to sections 1 to 3 that say so are in this branch.
+
+### 7.1 What moves
+
+The census comes from the importers' reads (`ImportInitialString`, the
+`memcpy`s from `data+0x…`, the caption importer), as slice 4's did, not from
+the inventory alone. The inventory's word group (125 items) came from name
+heuristics, and some of the words the importers read are filed under code:
+BTECH's inspection legends (pointer table 304E:04F4), the blank weapon row
+(0590), and the strings that `weaponLabels` (2286), `weaponRangeClassLabels`
+(241C), `energyAmmoPlaceholder` (2424) and `radarRangeLabels` (2406) point
+into. The generated piece table gives the exact list, and 7.4's poison check
+proves it complete.
+
+**Captions (241 pieces, slice 4's ids).** Slice 4 gave every caption an id
+in `src/Ui/ui_pieces.txt`, and section 6.2 said the same ids name the words in
+slice 5:
+- 229 caption heads (x, y and colour, 5 bytes), each with its text right
+  after;
+- 12 colour captions, the pilot assignment captions: one colour byte, then
+  the text.
+
+By screen: complex 58, dealer 65, travel 44, crew 41 (the 12 colour
+captions among them), options 28, contract office 5.
+
+The caption's text piece takes the caption's id, with `.text` added
+(`complex.caption.repair_title.text`). Its offset is the head's plus 5 (or 1),
+so the generator derives these rows from `ui_pieces.txt`, and no caption is
+listed twice. The text is NUL-ended, or, for the fixed-width rows that code
+fills in (the list rows that 4d found), the byte count that the caption
+importer takes today. These are the inventory's 48 "ui, head" items (42 in
+MW_MAIN_1090.cpp, 6 in _OPTIONS).
+
+**Free words (about 73 items).** These are read at fixed offsets, with no
+head, so slice 5 gives them ids:
+- **BTECH, 22 items** (`BTECH_304E_COCKPIT.cpp`, 304E:0052..0590 and
+  2004..2424):
+  - the zoom and automatic weapons labels, and the reactor shutdown text;
+  - the simulation and pause texts;
+  - the retreat question and its choice line;
+  - the body location, inspection condition, actuator and subsystem labels;
+  - the heat sink and jump jet texts;
+  - the weapon heading;
+  - the weapon labels, range classes and radar ranges;
+  - the subsystem lamp letters.
+
+  Ids: `cockpit.word.*`.
+- **MW_MAIN, 45 + 9 items** (`MW_MAIN_1090.cpp`, `_OPTIONS.cpp`):
+  - the system messages (no contracts, insufficient funds, the full rosters,
+    repair and purchase refusals, save and load errors);
+  - the after-action headings;
+  - month names (`calendarMonthText`, one 0x6E block);
+  - ammo family names, damage tier labels and pilot skill labels;
+  - the reputation, recruit stat and landscape labels;
+  - the news boundary texts;
+  - the save prompt;
+  - the audio and terrain option labels.
+
+  Ids by screen, `<screen>.word.*`, using slice 4's screen names (hub,
+  crew, complex, dealer, contract_office, travel, options), so that a word
+  sits beside its screen's layout.
+
+**Kinds of piece.** Every word piece keeps the exe's bytes exactly:
+- **string:** read up to and including its NUL (`z`), into a buffer that
+  is zeroed after it, as the story's texts are;
+- **block:** a fixed byte count, kept whole, NULs and padding included.
+  This covers the month block, the fixed-width row templates, the
+  `[n][len]` label arrays that the exe keeps back to back, and the lamp
+  letters.
+
+**Pointer tables into words become references.** The legend pointers (04F4),
+weapon labels (2286), range classes (241C), ammo placeholder (2424), radar
+ranges (2406), `calendarMonthNames` and the ammo family pointers (2F78) are
+numbers. They go in `data/ui` as lists of word ids. The encoder rebuilds the
+native offsets from the word pieces' offsets, as 4d did for panels and
+diagrams, and a slot that names no word is refused.
+
+**The four index tables** (`actuatorConditionLabelIndices` 04E6,
+`engineConditionLabelIndices` 04DE, `twoHitSystemConditionLabelIndices` 04D8,
+`orderDisplayIndices` 02C4) pick labels by number. The inspection screen
+draws `inspectionConditionLabels[engineConditionLabelIndices[hits]]`.
+They are numbers, so they go in `data/ui`:
+- the three condition tables in `cockpit.json`, as lists of condition-label
+  indices by hit count, range-checked against the label array's length;
+- `orderDisplayIndices` in `orders.json`.
+
+They become layout pieces with hashes (`ui_test`, `ui_exe_test`), so
+`ui_pieces.txt` gains 4 rows.
+
+### 7.2 How the words reach the game
+
+The words are imported with the story, by the same importer and the same
+machinery, into the player's write dir:
+
+    <write dir>/story/words.json  {"words": [{"id": "complex.caption.repair_title.text",
+                                   "address": "1090:3259", "text": "..."}, ...]}
+
+- **The table.** `src/Import/word_pieces.txt` lists the free words in
+  `pieces.txt`'s row format (id, exe, SEG:OFF, `z` or a byte count), with
+  BTECH in its unpacked image rebased into the trace layout, as 2c-2 did.
+  `make_import_table.py` adds the caption text rows derived from
+  `ui_pieces.txt`, and writes them all into `import_table.cpp`: id, exe,
+  offset, length and hash, never bytes. They are part of the table that
+  `table_sha256` covers, so an older story folder re-imports by itself, with
+  no version bump.
+- **The import** (`ensure_story`, at every start, importing only when
+  `story/` is missing or out of date): each word piece is read from the
+  player's exe and its hash checked. A refusal names the pieces, as
+  today. `words.json` is written before `import.json`, so an interrupted
+  import counts as missing. Text keeps control codes as `\u00NN`; a block
+  keeps its NULs as `\u0000` and its exact length.
+- **The game.** `MwHostPrepareStory` loads `words.json` with
+  `StrictReader` into a `NativeStore` (`src/Support/NativePieces`). The
+  store checks each word's length against the table, so a hand-edited
+  folder can't overrun a buffer. Doors in `mechwarrior/story.h`:
+  - `MwWordsCopyText(id, buffer, capacity)` for strings (`MwStoryCopyText`'s
+    rules: the whole buffer filled, refused when too long or holding a NUL);
+  - `MwWordsCopyBlock(id, bytes, size)` for blocks (the exact length or a
+    refusal).
+- **The importers keep their shape.** `MwImportUiCaptions` takes the text
+  from `MwWordsCopy*` by the caption's id instead of `data + offset + 5`.
+  The free words' `memcpy`s and `ImportInitialString`s each become one door
+  call into the same buffer. `MwUiCaptionOffset` stays, for the pointer
+  rebuilds only; its "text follows" comment goes. The runtime code is
+  unchanged.
+- The two BTECH revisions: the words are read from the rebased image, so one
+  table serves both if their bytes are equal. 5a measures this. A word that
+  differs between them gets a second accepted hash in the table, as a
+  revision row, never a second id. `btech_revisions_test` gains the words.
+
+### 7.3 What stays in the exe
+
+After slice 5, no word is read from the exe image at play time. What the
+importers still read from it on EXEC:
+- the code group's runtime values that the exe reloads (zero or start
+  values, as sections 5 and 6 left them);
+- the past-end probes (6.1);
+- the launcher's file names and identity bytes, and
+  `combatExecutableFilename` (slice 6).
+
+Slice 6 then removes the exe from play altogether.
+
+Two items need deciding in 5a:
+- **The code's own error literals.** Two strings sit in the repo as code
+  today: `errorCardNotFound` (`BTECH_304E_VIDEO.cpp`) and
+  `errorInspectionShapeMemory` (`BTECH_304E_COCKPIT.cpp`). 5a checks them
+  against the exes without printing them. If they are the exe's words,
+  they leave the repo:
+  - shown on a screen: they become word pieces;
+  - on stderr only: our own wording replaces them, since no trace shows
+    them.
+  `tools/phase2/text_audit.py` (7.4) then guards the whole tree.
+- **The three text-bound layout tables**: `calendarMonthNameWidths`,
+  `repairTitleLeadingSpacesByKind` and `contractDateYearXOffsets` (6.3).
+  While the words are the exe's they stay exact, so they stay in
+  `data/ui`. The loader checks each against the imported words (a month
+  width against its name, for example) and refuses a mismatch. Deriving
+  them from the words waits for the `--text` override, the only way the
+  words can change.
+
+### 7.4 Keeping text out of the repo
+
+Each kind of artifact keeps to the rule as follows:
+- **The table and data.** `word_pieces.txt` and `import_table.cpp` hold
+  names, offsets, lengths and hash prefixes. `data/ui` holds word ids,
+  never text.
+- **The hashes.** A 64-bit prefix of a plain SHA-256 is not enough for
+  short words. A pause label, a lamp letter or a month name can be found from
+  its hash by trying a dictionary, so a short word's hash would amount to
+  the word.
+  - Proposal: word pieces are hashed as HMAC-SHA-256. The key is the SHA-256
+    of a region of the same exe that the repo never holds in any form: code
+    bytes, not the data/rules or data/ui tables, which are transcribed. 5a
+    picks the region and measures that it is the same in both BTECH
+    revisions; MW_MAIN has one. The importer computes the key from the
+    player's exe, so verifying still needs nothing from the repo but the
+    table.
+  - The story's short pieces (pilot names, the commander's name, the house
+    names) have the same exposure today, and the goldens' 48-bit label
+    hashes do too (`state menu … label <hash>`). Decision 3 asks whether
+    to move those to the keyed hash in the same piece.
+- **The tests:**
+  - With no game files, `words_test` builds a scratch story folder from
+    made-up words that the test generates (`w1`, `w22`, with lengths taken
+    from the table) and checks the doors, the lengths, the refusals and the
+    NUL handling. No real word is in a test source.
+  - `words_exe_test` (skipped without `MW1O_GAME`) imports from the player's
+    exes into a scratch write dir. It compares each word with the exe's
+    bytes in memory, in both BTECH revisions (`MW1O_BTECH_REFERENCE`,
+    `MW1O_BTECH_1990`).
+  - On a failure, every test prints the id, the offset, the lengths and hash
+    prefixes, never the bytes.
+- **Logs.** The importer's and doors' messages name ids. `MWSNAP` and the
+  traces already print label hashes, not text.
+- **A guard.** `tools/phase2/text_audit.py` (in ctest when `MW1O_GAME` is
+  set) reads every word piece from the player's exes. It searches the
+  tracked tree (git ls-files) for each word of 4 or more characters, case
+  folded, and for its hash, and fails naming the file and the id, never the
+  word. Shorter words are too common to search for. The keyed hash covers
+  those.
+
+### 7.5 How the traces stay equal
+
+Every word reaches the same buffer with the same bytes, and the buffers are
+filled whole as the exe holds them (strings zeroed after the NUL; blocks
+exact). So the screens, the state lines and the frame hashes are unchanged,
+and 8 of 8 holds with no snap re-recorded. Each piece's gate:
+`MW1O_HIDDEN=1 python3 tools/trace/check.py`, 8 of 8, plus `import_exe`,
+which runs the whole import, words included.
+
+### 7.6 Tests and break checks
+
+Each piece's gate:
+- the build from a fresh build dir;
+- ctest: `json_test`, `story_test`, `ui_test`, `words_test`, and with the
+  game files `ui_exe_test`, `words_exe_test`, `import_exe`,
+  `btech_revisions_test`;
+- `text_audit.py`;
+- traces 8 of 8.
+
+The break checks, run in a scratch build and reverted:
+1. **The words come from the story, not the exe.** After import, every byte
+   the word pieces cover is set to 0xEE in the exe image that the importers
+   receive. The traces must stay 8 of 8.
+   - Control: 0xEE in `words.json` instead (one word per screen). The snaps
+     that show those words must go off, so the doors are really read.
+   - Repeated with every piece in, this also proves the census complete: a
+     word still read from the image shows 0xEE in a trace.
+2. **A changed exe byte** in a scratch copy of the player's exe, inside one
+   word. The import must refuse, naming that piece.
+3. **A hand-edited `words.json`:**
+   - a word longer than its table length;
+   - a block one byte short;
+   - an unknown id;
+   - a missing id.
+   Each must be refused at load, naming the id.
+4. **A reference to a missing word** in data/ui (a pointer table slot, a
+   condition index past the labels). It must be refused at load.
+5. **The audit's own check:** a scratch file in the tree holding one real
+   word, created and removed by the check without printing it. The audit
+   must fail, naming the file.
+
+### 7.7 The pieces
+
+Each piece goes on its own branch, with the gate above:
+- **5a, the machinery and the cockpit.** It brings:
+  - `word_pieces.txt` and the generator's caption rows;
+  - `words.json` in the importer;
+  - the `NativeStore` doors;
+  - the keyed hash;
+  - `words_test`, `words_exe_test` and `text_audit.py`;
+  - BTECH's 22 free words, with their pointer tables and the four index
+    tables (in `cockpit.json` and `orders.json`);
+  - the error literals decided;
+  - the two revisions measured.
+
+  The combat traces (combat_cockpit, combat_retreat) are the proof.
+- **5b, options, news and events:** the 28 option captions and the
+  options screen's free words. These are the smallest campaign screens, and
+  they prove the caption route.
+- **5c, hub, crew and contract office:** their captions, the month block
+  and its pointers, the after-action headings, and the contract and roster
+  messages.
+- **5d, complex and dealer:** the 123 captions, including the fixed-width
+  rows, and the repair, purchase, ammo and list messages.
+- **5e, travel:** the 44 captions, the landscape labels and travel's
+  messages.
+- **5f, what's left and the record:**
+  - the text-bound tables' checks;
+  - `MwUiCaptionOffset`'s comment;
+  - `inventory.py` learns the words door and marks the items it fills, and
+    `INVENTORY.md` is regenerated, so the word group shows none left on
+    the exe;
+  - the record here.
+
+Decisions for review:
+1. The words are imported into `story/words.json` with the story, rather than
+   read from the exe at every start. That keeps slice 6's goal: only the
+   importer opens an exe. `data/text/interface.json` is not made.
+2. Captions' words take slice 4's caption ids plus `.text`, derived from
+   `ui_pieces.txt`; free words get `<screen>.word.*`.
+3. Word pieces use a keyed hash (7.4). Should the story's short pieces and
+   the goldens' label hashes move to it too, and in which slice?
+4. The four index tables and the pointer tables into words go to `data/ui`
+   as numbers and references.
+5. The text-bound tables stay exact and are checked against the words.
+   Deriving them waits for `--text`.
