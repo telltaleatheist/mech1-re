@@ -1,7 +1,9 @@
 /* Installation decoders shared by MW_MAIN's screen importers (see the
  * header). Boundary code, not original game helpers. */
 #include "MW_MAIN_1090_LAYOUT.h"
+#include "mechwarrior/story.h"
 #include "mechwarrior/ui_layout.h"
+#include <stdio.h>
 #include <string.h>
 
 enum { UI_CAPTION_HEAD_BYTES = 5, UI_PANEL_HEADER_BYTES = 0x10, UI_MENU_MAX_RECORDS = 0x20 };
@@ -15,12 +17,23 @@ bool MwImportUiCaptions(const uint8_t *data,UiCaptionOwner *owners,size_t count)
         owner.offset=MwUiCaptionOffset(owner.id);
         if (!owner.offset || (size_t)owner.offset+UI_CAPTION_HEAD_BYTES+owner.capacity>NATIVE_SEGMENT_BYTE_COUNT
             || !MwUiCopyNative(owner.id,head,sizeof(head))) return false;
-        const uint8_t *text=data+owner.offset+UI_CAPTION_HEAD_BYTES;
-        const uint8_t *end=owner.bytes?text+owner.bytes-1:static_cast<const uint8_t *>(memchr(text,0,owner.capacity));
-        if (!end || owner.bytes>owner.capacity) return false;
+        if (owner.bytes>owner.capacity) return false;
+        char word[96];
+        snprintf(word,sizeof(word),"%s.text",owner.id);
+        if (MwWordsKnown(word))
+        {
+            if (owner.bytes?!MwWordsCopyBlock(word,reinterpret_cast<uint8_t *>(owner.text),owner.bytes)
+                           :!MwWordsCopyText(word,owner.text,owner.capacity)) return false;
+        }
+        else
+        {
+            const uint8_t *text=data+owner.offset+UI_CAPTION_HEAD_BYTES;
+            const uint8_t *end=owner.bytes?text+owner.bytes-1:static_cast<const uint8_t *>(memchr(text,0,owner.capacity));
+            if (!end) return false;
+            memcpy(owner.text,text,(size_t)(end-text)+1);
+        }
         owner.display->x=MwReadNativeWord(head,0);owner.display->y=MwReadNativeWord(head,2);
         owner.display->colour=head[4];owner.display->text=owner.text;
-        memcpy(owner.text,text,(size_t)(end-text)+1);
     }
     return true;
 }

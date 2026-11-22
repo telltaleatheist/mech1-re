@@ -22,6 +22,10 @@ bool MwStoryCopyText(const char *id, char *text, size_t capacity);
 bool MwWordsCopyText(const char *id, char *text, size_t capacity);
 bool MwWordsCopyBlock(const char *id, uint8_t *bytes, size_t size);
 bool MwWordsCopyInto(const char *prefix, uint8_t *view, size_t viewBytes);
+/* Whether the game's table (src/Import/word_pieces.txt) has the word `id`:
+ * a fact of the build, not of story/words.json, which load refuses when a
+ * word of the table is missing. Prints nothing. */
+bool MwWordsKnown(const char *id);
 /* The original's record storage, rebuilt from story/pilots.json,
  * planets.json and missions.json (src/Import/Records.h) as the exe lays it
  * out: `base` is the storage's data-segment offset, and the offsets written

@@ -8,9 +8,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* A caption: its head (x, y, colour) from the layout piece `id`, its text
- * from the exe after the head, until slice 5: through its NUL, or exactly
- * `bytes` bytes where the row is a fixed-width template the code fills in.
+/* A caption: its head (x, y, colour) from the layout piece `id`, and its
+ * text through its NUL, or exactly `bytes` bytes where the row is a
+ * fixed-width template the code fills in. The text is the word `<id>.text`
+ * (story/words.json) when the game's table has one (slice 5 moves the
+ * screens one by one: `captions <screen>` in src/Import/word_pieces.txt),
+ * and otherwise still the exe's, after the head.
  * `offset` is the piece's place in the exe, filled in by MwImportUiCaptions. */
 struct UiCaptionOwner
 {

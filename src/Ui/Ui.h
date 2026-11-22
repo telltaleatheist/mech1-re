@@ -44,7 +44,9 @@
 //        [colour caption names] | [panel names, of those it may hold] |
 //        [{"background": rect,
 //        "regions": [9 rects]}] | {mech kind: diagram index | null}}}
-//     A caption is its head; its text follows in the exe until slice 5. A
+//     A caption is its head. Its text is the word `<caption>.text`
+//     (story/words.json) for the screens slice 5 has moved, and otherwise
+//     still follows in the exe. A
 //     colour caption (crew's pilot assignment captions) is a colour byte
 //     alone, named by a pointer table rather than a panel. A null caption
 //     on a text record is one code fills in. A table of rows is kept as the

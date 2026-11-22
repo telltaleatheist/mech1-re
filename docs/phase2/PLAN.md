@@ -1382,6 +1382,21 @@ Each piece goes on its own branch, with the gate above:
 - **5b, options, news and events:** the 28 option captions and the
   options screen's free words. These are the smallest campaign screens, and
   they prove the caption route.
+
+  Done (branch `phase2-words-b`). A line `captions <screen>` in
+  `word_pieces.txt` makes the generator add `<caption>.text` for each of that
+  screen's captions in `ui_pieces.txt`, right after the head (5 bytes, or 1),
+  NUL-ended; a fixed-width row is listed with its byte count instead and the
+  line skips it (options has none). `MwImportUiCaptions` takes a caption's
+  text from the words when the table has its `.text` word (`MwWordsKnown`, a
+  fact of the build), and from the exe otherwise, so 5c-5e each add their
+  screen's line. Options' seven free words are blocks: the save prompt, the
+  audio and terrain labels, the three save and load messages and the news
+  boundary text; the save file name buffer and find pattern stay (file
+  names, slice 6). `words_exe_test` now checks MW_MAIN's words too, and that
+  every caption text sits after its head. Break checks: 0xEE over the exe's
+  options words keeps the traces 8 of 8; 0xEE over the loaded options words
+  fails the options and company traces.
 - **5c, hub, crew and contract office:** their captions, the month block
   and its pointers, the after-action headings, and the contract and roster
   messages.

@@ -29,6 +29,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 PIECES = os.path.join(ROOT, "src", "Import", "pieces.txt")
 WORD_PIECES = os.path.join(ROOT, "src", "Import", "word_pieces.txt")
+UI_PIECES = os.path.join(ROOT, "src", "Ui", "ui_pieces.txt")
 OUT = os.path.join(ROOT, "src", "Import", "import_table.cpp")
 RULE_PIECES = os.path.join(ROOT, "src", "Rules", "rule_pieces.txt")
 RULE_OUT = os.path.join(ROOT, "src", "Rules", "rule_table.cpp")
@@ -73,6 +74,46 @@ def btech_image(tool, path):
     return run.stdout
 
 
+def rows_of(source):
+    """(line number, fields) for each row of `source`. In word_pieces.txt a line
+    `captions <screen>` stands for a text row per caption of that screen in
+    ui_pieces.txt: `<caption id>.text`, at the caption's offset plus its head's
+    length (5 bytes, or 1 for a colour caption), NUL-ended. A caption whose text
+    is a fixed-width row is listed in word_pieces.txt with its byte count
+    instead, and the line skips it, so no caption is listed twice."""
+    with open(source, encoding="utf-8") as f:
+        lines = [(n, line.split("#", 1)[0].split()) for n, line in enumerate(f, 1)]
+    lines = [(n, fields) for n, fields in lines if fields]
+    if source != WORD_PIECES:
+        return lines
+    listed = {fields[0] for _, fields in lines if fields[0] != "captions"}
+    out = []
+    for number, fields in lines:
+        if fields[0] != "captions":
+            out.append((number, fields))
+            continue
+        if len(fields) != 2:
+            sys.exit(f"word_pieces.txt:{number}: expected captions and a screen")
+        prefix = fields[1] + ".caption."
+        derived = 0
+        with open(UI_PIECES, encoding="utf-8") as f:
+            for ui in f:
+                ui = ui.split("#", 1)[0].split()
+                if len(ui) != 4 or not ui[0].startswith(prefix):
+                    continue
+                head = int(ui[3], 0)
+                if head not in (1, 5):
+                    sys.exit(f"ui_pieces.txt: {ui[0]} is a caption of {head} bytes, not a head of 5 or 1")
+                derived += 1
+                if ui[0] + ".text" in listed:
+                    continue
+                segment, offset = (int(part, 16) for part in ui[2].split(":"))
+                out.append((number, [ui[0] + ".text", ui[1], f"{segment:04X}:{offset + head:04X}", "z"]))
+        if not derived:
+            sys.exit(f"word_pieces.txt:{number}: {fields[1]} has no captions in ui_pieces.txt")
+    return out
+
+
 def main():
     args = sys.argv[1:]
     own = OWN.get(args[0]) if args else None
@@ -92,50 +133,45 @@ def main():
     for source in sources:
         name = os.path.basename(source)
         word = source == WORD_PIECES
-        with open(source, encoding="utf-8") as f:
-            for number, line in enumerate(f, 1):
-                line = line.split("#", 1)[0].strip()
-                if not line:
-                    continue
-                fields = line.split()
-                tuned = rules and len(fields) == 5 and fields[4] == "tuned"
-                if len(fields) != (5 if tuned else 4):
-                    sys.exit(f"{name}:{number}: expected id, exe, SEG:OFF and length")
-                piece_id, exe, address, length = fields[:4]
-                if rules and length == "z":
-                    sys.exit(f"{name}:{number}: a {own[6]} piece has a byte count")
-                segment, offset = (int(part, 16) for part in address.split(":"))
-                if exe not in images:
-                    images[exe] = btech_image(tool, find(game_dir, exe)) if exe == BTECH_EXE else image(find(game_dir, exe))
-                at = (segment - (BTECH_LOAD_SEGMENT if exe == BTECH_EXE else LOAD_SEGMENT)) * 16 + offset
-                data = images[exe]
-                if length == "z":
-                    end = data.find(b"\0", at)
-                    if end < 0:
-                        sys.exit(f"{name}:{number}: {piece_id} has no NUL")
-                    size = end + 1 - at
-                else:
-                    size = int(length, 0)
-                piece = data[at:at + size]
-                if len(piece) != size:
-                    sys.exit(f"{name}:{number}: {piece_id} runs past the end of {exe}")
-                if word:
-                    if exe not in keys:
-                        k_segment, k_offset, k_length = KEY_REGIONS[exe]
-                        k_at = (k_segment - (BTECH_LOAD_SEGMENT if exe == BTECH_EXE else LOAD_SEGMENT)) * 16 + k_offset
-                        keys[exe] = hashlib.sha256(data[k_at:k_at + k_length]).digest()
-                    digest = hmac.new(keys[exe], piece, hashlib.sha256).hexdigest()[:16]
-                else:
-                    digest = hashlib.sha256(piece).hexdigest()[:16]
-                if rules:
-                    kept = "" if tuned else digest
-                    rows.append(f'    {{"{piece_id}", "{exe}", 0x{segment:04X}, 0x{offset:04X}, {size}, "{kept}"}},')
-                    print(f"{piece_id:32} {exe} {segment:04X}:{offset:04X} {size:5} {digest}{' (tuned)' if tuned else ''}")
-                    continue
-                kind = ("Word" if length == "z" else "WordBytes") if word else ("String" if length == "z" else "Bytes")
-                rows.append(f'    {{ImportPiece::Kind::{kind}, "{piece_id}", "{exe}", 0x{segment:04X}, 0x{offset:04X}, '
-                            f'{size}, "{digest}"}},')
-                print(f"{piece_id:24} {exe} {segment:04X}:{offset:04X} {size:5} {digest}")
+        for number, fields in rows_of(source):
+            tuned = rules and len(fields) == 5 and fields[4] == "tuned"
+            if len(fields) != (5 if tuned else 4):
+                sys.exit(f"{name}:{number}: expected id, exe, SEG:OFF and length")
+            piece_id, exe, address, length = fields[:4]
+            if rules and length == "z":
+                sys.exit(f"{name}:{number}: a {own[6]} piece has a byte count")
+            segment, offset = (int(part, 16) for part in address.split(":"))
+            if exe not in images:
+                images[exe] = btech_image(tool, find(game_dir, exe)) if exe == BTECH_EXE else image(find(game_dir, exe))
+            at = (segment - (BTECH_LOAD_SEGMENT if exe == BTECH_EXE else LOAD_SEGMENT)) * 16 + offset
+            data = images[exe]
+            if length == "z":
+                end = data.find(b"\0", at)
+                if end < 0:
+                    sys.exit(f"{name}:{number}: {piece_id} has no NUL")
+                size = end + 1 - at
+            else:
+                size = int(length, 0)
+            piece = data[at:at + size]
+            if len(piece) != size:
+                sys.exit(f"{name}:{number}: {piece_id} runs past the end of {exe}")
+            if word:
+                if exe not in keys:
+                    k_segment, k_offset, k_length = KEY_REGIONS[exe]
+                    k_at = (k_segment - (BTECH_LOAD_SEGMENT if exe == BTECH_EXE else LOAD_SEGMENT)) * 16 + k_offset
+                    keys[exe] = hashlib.sha256(data[k_at:k_at + k_length]).digest()
+                digest = hmac.new(keys[exe], piece, hashlib.sha256).hexdigest()[:16]
+            else:
+                digest = hashlib.sha256(piece).hexdigest()[:16]
+            if rules:
+                kept = "" if tuned else digest
+                rows.append(f'    {{"{piece_id}", "{exe}", 0x{segment:04X}, 0x{offset:04X}, {size}, "{kept}"}},')
+                print(f"{piece_id:32} {exe} {segment:04X}:{offset:04X} {size:5} {digest}{' (tuned)' if tuned else ''}")
+                continue
+            kind = ("Word" if length == "z" else "WordBytes") if word else ("String" if length == "z" else "Bytes")
+            rows.append(f'    {{ImportPiece::Kind::{kind}, "{piece_id}", "{exe}", 0x{segment:04X}, 0x{offset:04X}, '
+                        f'{size}, "{digest}"}},')
+            print(f"{piece_id:24} {exe} {segment:04X}:{offset:04X} {size:5} {digest}")
     if rules:
         space, piece_type, function, header, what = own[2:]
         with open(out, "w", encoding="utf-8", newline="\n") as f:

@@ -228,7 +228,7 @@ if(MECHWARRIOR_BUILD_TESTS)
     # The UI words (story/words.json) against the player's exes, in memory (MW1O_GAME,
     # optionally MW1O_BTECH_REFERENCE); and the words' doors and refusals on made-up files.
     add_executable(words_exe_test tests/words_exe_test.cpp src/Import/Story.cpp src/Import/Records.cpp src/Import/Events.cpp src/Import/Music.cpp
-        src/Import/import_table.cpp src/Support/Json.cpp src/Support/Sha256.cpp src/Support/Hmac.cpp src/Support/BtechImage.cpp)
+        src/Import/import_table.cpp src/Ui/ui_table.cpp src/Support/Json.cpp src/Support/Sha256.cpp src/Support/Hmac.cpp src/Support/BtechImage.cpp)
     target_include_directories(words_exe_test PRIVATE src/include)
     add_test(NAME words_exe COMMAND words_exe_test)
     set_tests_properties(words_exe PROPERTIES SKIP_RETURN_CODE 77)

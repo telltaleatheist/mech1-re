@@ -4,6 +4,11 @@
 # read up to and including its NUL, or a byte count for a block kept whole.
 # tools/import/make_import_table.py adds them to import_table.cpp with a keyed
 # hash (ImportTable.h). Ids and places only: never the words.
+#
+# A line `captions <screen>` stands for the text of each of that screen's
+# captions in src/Ui/ui_pieces.txt, as `<caption id>.text` right after the
+# caption's head, NUL-ended. A caption whose text is a fixed-width row the code
+# fills in is listed here with its byte count instead, and the line skips it.
 
 # BTECH's cockpit (304E:0052..0088, five buffers back to back).
 cockpit.word.zoom                    BTECH.EXE 304E:0052 7
@@ -128,3 +133,16 @@ cockpit.word.range_class.3           BTECH.EXE 304E:2413 z
 cockpit.word.range_class.4           BTECH.EXE 304E:2415 z
 cockpit.word.energy_ammo             BTECH.EXE 304E:2417 z
 cockpit.word.range_text_end          BTECH.EXE 304E:241B 1
+
+# Slice 5b: the options screen. Its 28 captions' texts (each NUL-ended), and its
+# free words, blocks of the exe's exact bytes: the save prompt, the audio and
+# terrain option labels (back to back, [2][4] and [3][5]), the three save and
+# load messages, and the news boundary text.
+captions options
+options.word.save_prompt            MW_MAIN.EXE 1090:A031 27
+options.word.audio_labels           MW_MAIN.EXE 1090:A071 8
+options.word.terrain_labels         MW_MAIN.EXE 1090:A079 15
+options.word.disk_full              MW_MAIN.EXE 1090:A088 43
+options.word.save_disk_error        MW_MAIN.EXE 1090:A0B3 48
+options.word.load_disk_error        MW_MAIN.EXE 1090:A0E3 49
+options.word.news_boundary          MW_MAIN.EXE 1090:2564 27

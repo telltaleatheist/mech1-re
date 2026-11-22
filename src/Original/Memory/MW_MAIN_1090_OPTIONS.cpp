@@ -3,6 +3,7 @@
 #include "mechwarrior/campaign_options.h"
 #include "mechwarrior/campaign_pilots.h"
 #include "MW_MAIN_1090_LAYOUT.h"
+#include "mechwarrior/story.h"
 #include <string.h>
 
 MwPanelDescriptor optionsPanel,restorePanel,confirmationPanel,newsMenuPanel;
@@ -68,14 +69,16 @@ bool MwImportCampaignOptionsData(const uint8_t *data,size_t byteCount)
     saveFileHandle=MwReadNativeWord(data,0xA04C);saveFileCount=MwReadNativeWord(data,0xA04E);
     memcpy(selectedSaveFilename,data+0xA064,sizeof(selectedSaveFilename));
     memcpy(saveFindPattern,data+0xA056,sizeof(saveFindPattern));
-    memcpy(saveNamePrompt,data+0xA031,sizeof(saveNamePrompt));
-    memcpy(audioOptionLabels,data+0xA071,sizeof(audioOptionLabels));
-    memcpy(terrainDetailLabels,data+0xA079,sizeof(terrainDetailLabels));
-    memcpy(saveDiskFullText,data+0xA088,sizeof(saveDiskFullText));
-    memcpy(saveDiskErrorText,data+0xA0B3,sizeof(saveDiskErrorText));
-    memcpy(loadDiskErrorText,data+0xA0E3,sizeof(loadDiskErrorText));
+    /* The screen's words, from story/words.json (options.word.*), as the exe holds them. */
+    if (!MwWordsCopyBlock("options.word.save_prompt",saveNamePrompt,sizeof(saveNamePrompt))
+        || !MwWordsCopyBlock("options.word.audio_labels",reinterpret_cast<uint8_t *>(audioOptionLabels),sizeof(audioOptionLabels))
+        || !MwWordsCopyBlock("options.word.terrain_labels",reinterpret_cast<uint8_t *>(terrainDetailLabels),sizeof(terrainDetailLabels))
+        || !MwWordsCopyBlock("options.word.disk_full",saveDiskFullText,sizeof(saveDiskFullText))
+        || !MwWordsCopyBlock("options.word.save_disk_error",saveDiskErrorText,sizeof(saveDiskErrorText))
+        || !MwWordsCopyBlock("options.word.load_disk_error",loadDiskErrorText,sizeof(loadDiskErrorText))
+        || !MwWordsCopyBlock("options.word.news_boundary",reinterpret_cast<uint8_t *>(newsBoundaryText),sizeof(newsBoundaryText)))
+        return false;
     newsAtStart=data[0x257F];newsAtEnd=data[0x2580];newsLastArticleId=MwReadNativeWord(data,0x2562);
-    memcpy(newsBoundaryText,data+0x2564,sizeof(newsBoundaryText));
     newsArticleCursor=NULL;newsArticleListStart=NULL;
     saveSearchFilename=NULL;saveListWriteRow=NULL;
     return true;

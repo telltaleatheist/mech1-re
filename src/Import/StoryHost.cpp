@@ -84,6 +84,13 @@ static const mw1o::import::ImportPiece *find_word(const char *id)
     return nullptr;
 }
 
+bool MwWordsKnown(const char *id)
+{
+    for (const auto &piece : mw1o::import::import_table())
+        if (mw1o::import::is_word(piece.kind) && piece.id == id) return true;
+    return false;
+}
+
 bool MwWordsCopyText(const char *id, char *text, size_t capacity)
 {
     const auto *piece = find_word(id);
