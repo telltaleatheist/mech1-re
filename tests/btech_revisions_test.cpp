@@ -105,6 +105,7 @@ int main() {
     StoryText texts[2];
     Words words[2];
     std::string music[2];  // BTECH's one Bytes piece, music.adlib_instruments, imports to music.json
+    Native native[2];      // BTECH's native spans (story/native.json)
     const fs::path exes[2] = {reference, build1990};
     for (int r = 0; r < 2; ++r) {
         const fs::path folder = game_folder(work / ("game" + std::to_string(r)), game, exes[r]);
@@ -113,6 +114,7 @@ int main() {
             import_story(folder, write, import_table());
             texts[r] = load_story_text(write);
             words[r] = load_words(write);
+            native[r] = load_native(write);
             std::ifstream in(story_dir(write) / "music.json", std::ios::binary);
             music[r].assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
         } catch (const ImportError& e) {
@@ -134,6 +136,13 @@ int main() {
             if (is_word(piece.kind)) {  // the words, from words.json
                 const auto x = words[0].find(piece.id), y = words[1].find(piece.id);
                 check(x != words[0].end() && y != words[1].end() && x->second == y->second,
+                      std::string(piece.id) + " imports differently");
+                ++same;
+                continue;
+            }
+            if (is_native(piece.kind)) {
+                const auto x = native[0].find(piece.id), y = native[1].find(piece.id);
+                check(x != native[0].end() && y != native[1].end() && x->second == y->second,
                       std::string(piece.id) + " imports differently");
                 ++same;
                 continue;

@@ -1142,3 +1142,13 @@ probe.restore             MW_MAIN.EXE 1090:AD6D 1 native  # restoreMenu: the sam
 # The music driver's data segment, 28BE:0000..0A11, whole (its layout is in
 # PLAN.md 8.5, 6b). Read by MwImportCampaignMusicData (MW_MAIN_28BE.cpp).
 music.driver              MW_MAIN.EXE 28BE:0000 2578 native
+# BTECH's C runtime data that the converted runtime reads as it is (slice 6c;
+# BtechStartImage.cpp lays them into BTECH's start image).
+# The null area and copyright (304E:0000..005F): checksummed at exit
+# (BTECH_0810_EXIT.cpp); read by BtechImportRuntimeInitialData (runtimePrefix),
+# BtechImportWorldInitialData (nullNearSegment) and
+# BtechImportCombatStageInitialData (startupControlMovementAlias, 0051).
+runtime.prefix            BTECH.EXE 304E:0000 96 native
+# The runtime's error messages (304E:4E0A..4EDB), by code: read by
+# BtechImportRuntimeInitialData (runtimeMessages).
+runtime.messages          BTECH.EXE 304E:4E0A 210 native

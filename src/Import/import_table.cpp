@@ -1082,6 +1082,8 @@ constexpr ImportPiece kTable[] = {
     {ImportPiece::Kind::Native, "probe.options", "MW_MAIN.EXE", 0x1090, 0xABDD, 1, "7468421e01f4a60f"},
     {ImportPiece::Kind::Native, "probe.restore", "MW_MAIN.EXE", 0x1090, 0xAD6D, 1, "ffc4acb8a174b534"},
     {ImportPiece::Kind::Native, "music.driver", "MW_MAIN.EXE", 0x28BE, 0x0000, 2578, "19c655b790a63072"},
+    {ImportPiece::Kind::Native, "runtime.prefix", "BTECH.EXE", 0x304E, 0x0000, 96, "a9c5680303542da1"},
+    {ImportPiece::Kind::Native, "runtime.messages", "BTECH.EXE", 0x304E, 0x4E0A, 210, "cbfe85a665194419"},
     {ImportPiece::Kind::WordBytes, "cockpit.word.zoom", "BTECH.EXE", 0x304E, 0x0052, 7, "1ddc722086502721"},
     {ImportPiece::Kind::WordBytes, "cockpit.word.automatic_weapons", "BTECH.EXE", 0x304E, 0x0059, 4, "31a296d407c81778"},
     {ImportPiece::Kind::WordBytes, "cockpit.word.reactor_shutdown", "BTECH.EXE", 0x304E, 0x005D, 25, "2bad5750268e768a"},

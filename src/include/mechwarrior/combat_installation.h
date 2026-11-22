@@ -20,7 +20,9 @@ bool BtechDecodeInstallationImage(const uint8_t *packed,size_t packedBytes,uint8
 /* The same, without touching btechLoadedRevision: the revision decoded goes
  * to `revision` (if not NULL). The story importer and tools/import use it. */
 bool BtechDecodeImage(const uint8_t *packed,size_t packedBytes,uint8_t **image,BtechRevision *revision);
-/* Loads BTECH's initial data for a fresh EXEC. In the Btech*InitialData
+/* Loads BTECH's initial data for a fresh EXEC. The Btech*InitialData
+ * importers read BTECH's start image (btech_start_image.h, slice 6c), not
+ * the exe; only the spans slice 6d moves are still copied from it. In the
  * importers, a zero (`name=0;` or a memset) followed by a bare offset in a
  * comment is a value the exe holds as zero at that offset of 304E: it is
  * set, not read (docs/phase2/PLAN.md 8, slice 6a). */

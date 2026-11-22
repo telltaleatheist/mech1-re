@@ -11,6 +11,7 @@
 #include "mechwarrior/combat_pose.h"
 #include "mechwarrior/combat_scene.h"
 #include "mechwarrior/native_address.h"
+#include "mechwarrior/btech_start_image.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -169,6 +170,12 @@ bool BtechHostLoadInitialData(const char *executablePath)
     if (loaded) loaded=BtechDecodeInstallationImage(packed,packedBytes,&image);
     free(packed);
     if (!loaded) return false;
+    /* The importers read BTECH's start image, built from code, generated
+     * tables, zeros and the story (btech_start_image.h); only the spans slice
+     * 6d moves are still copied from the decoded exe. */
+    uint8_t *start=static_cast<uint8_t *>(malloc(BTECH_IMAGE_BYTES));
+    if (!start || !BtechBuildStartImage(start,image)) {free(start);free(image);return false;}
+    free(image);image=start;
     uint8_t *data=static_cast<uint8_t *>(malloc(0x10000));
     if (!data) {free(image);return false;}
     memcpy(data,image+BTECH_DATA_IMAGE_OFFSET,BTECH_BSS_START);
@@ -183,7 +190,10 @@ bool BtechHostLoadInitialData(const char *executablePath)
     savedBiosTickVector=(uint32_t)MwReadNativeWord(platform,0x2BC4)|((uint32_t)MwReadNativeWord(platform,0x2BC6)<<16);
     savedTimerVector=(uint32_t)MwReadNativeWord(platform,0x253C)|((uint32_t)MwReadNativeWord(platform,0x253E)<<16);
     keyboardScanMask=platform[0x2D51];keyboardExtendedScanMask=platform[0x2D5E];
-    savedCriticalErrorVector=(uint32_t)MwReadNativeWord(image,0xCE9A)|((uint32_t)MwReadNativeWord(image,0xCE9C)<<16);
+    /* 0810:CE9A holds code bytes in the 1990 revision and zero in the
+     * reference: a dead value, since startup saves INT 24 into it before any
+     * read (BTECH_0810_STARTUP.cpp). Zero, as the reference holds. */
+    savedCriticalErrorVector=0; /*0810:CE9A*/
     savedSampleIrqVector=(uint32_t)MwReadNativeWord(audio,0x0E7D)|((uint32_t)MwReadNativeWord(audio,0x0E7F)<<16);
     loaded=BtechImportCombatStageInitialData(data,0x10000)
         && BtechImportWorldInitialData(data,0x10000,image+BTECH_GEOMETRY_IMAGE_OFFSET,BTECH_IMAGE_BYTES-BTECH_GEOMETRY_IMAGE_OFFSET)

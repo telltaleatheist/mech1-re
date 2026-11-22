@@ -1765,12 +1765,92 @@ mingw check.
   - **Gate.** Fresh Release build; ctest 13 of 13 (with `start_exe`) on the
     1990 folder with the 1989 MW_MAIN, none skipped, and 13 of 13 on the
     1989 folder; traces 8 of 8; mingw clean on the changed files.
-- **6c, BTECH.** The data segment's B and C, the code-segment reads, the
-  layout checks with their loads, and the revision from the story. The combat
-  EXEC stops decoding BTECH.EXE.
-- **6d, MW_EGA.** Which overlay spans are ever read, then imported or zeroed.
+- **6c, BTECH: platform and math.** BTECH was split in two (6c, 6d), MW_EGA
+  became 6e and the test and guard 6f.
+
+  Done (branch `phase2-noexe-c`).
+  - **Measurement.** A scratch harness ran the BTECH importers in-process on
+    the decoded image, poisoning one 16-byte block at a time (0xEE, then
+    0x11; each probe in a forked child, so a refused run leaves no state),
+    then each byte of a block that changed any global or refused the load:
+    the importers read 18765 bytes of the image (304E 4487, 22B6 13127,
+    2FEB 1129, and seven code-segment bytes). The two revisions' decoded
+    images differ in 304E in ten bytes (04A4..04A7, 4AEC, 4AED, 4B90, 4B91,
+    4BC0, 4BC4), none read; of the bytes read, they differ only in 0810:CE9A
+    (the critical-error vector). So every row is revision-neutral.
+  - **The start image.** `BtechStartImage.cpp` (`btech_start_image.h`) lays
+    out what the importers read as the exe's unpacked image: 77 rows, each
+    with its address and where its bytes come from, and every other byte
+    zero. `BtechHostLoadInitialData` builds it and the importers read it, so
+    they are unchanged; until 6d the spans 6d moves are still copied from
+    the decoded exe, an explicit list (`btechStartExeSpans`) in the same
+    file. A read the rows miss gets zero, which the proof below catches.
+    - Code (decision 1, platform tables): keyboard maps and masks, the EGA,
+      polygon and span masks, the ellipse tables (`ellipseLeftInsets` with
+      its two siblings), text and draw colours, the video flags, the MPU and
+      AdLib ports and tables, the timer divisors, the runtime handle,
+      stream and character tables, `polygonShadeDeltas`, and the tone
+      driver's tables (2FEB: header, channel tables, branch handlers,
+      speaker, Tandy and noise periods); also two code-segment masks.
+    - Zero (A): the four 22B6 tables (`vertexNearPlaneState`,
+      `coordinateCaches`, `polygonVertexIndices`, `wideCoordinates`), the
+      tone channels, the font directory, the scheduler and four code-segment
+      vectors.
+    - E: the file names (inspection bitmaps, chassis banks, terrain
+      suffixes, cockpit screens) with their offset tables, and the mech and
+      pilot name directories.
+    - C, generated: `orientationCosines` (22B6:486D, 0x801 words) =
+      floor(16384 cos(i pi/2048)); `headingRatioAngles` (6073, 0x200) =
+      floor(atan(i/512) 2048/pi); `coefficientAngles` (586F, 0x402) =
+      floor(asin(i/512) 2048/pi) for 0..200, then floor(acos(j/512)
+      2048/pi) for j = i-201. All entries byte-exact. Measured at 50 digits,
+      no computed entry lies closer than 2e-4 to an integer (relative
+      1.5e-7); the entries that are integers (cos at 0, 400, 800; asin at 0,
+      200; acos at 201, 401; atan at 0) are written as such, so the libm
+      decides none of them. `start_exe_test` checks the margin is over 1e-6
+      on the platform it runs on, and compares every entry with the exe.
+    - Story native spans (D, the MS C runtime's bytes): `runtime.prefix`
+      (304E:0000, 0x60: the null area and copyright the runtime checksums
+      at exit, and `startupControlMovementAlias` at 0051) and
+      `runtime.messages` (304E:4E0A, 0xD2).
+    - `savedCriticalErrorVector` (0810:CE9A) is set to zero: in the 1990
+      revision the exe holds code bytes there and in the reference zero, and
+      startup saves INT 24 into it before any read, so the value is dead.
+  - **Tests.** `start_exe_test` compares every code, zero and generated row
+    with each BTECH revision given (the game folder's,
+    `MW1O_BTECH_REFERENCE`, `MW1O_BTECH_1990`) and checks that no rows or
+    exe spans overlap; `btech_revisions_test` compares the native spans of
+    both revisions' imports.
+  - **The proof.** The harness on 6c's start image: the exe bytes the
+    importers still read are exactly 6d's spans (2175 bytes, all in 304E;
+    none in 22B6, 2FEB or the code segments, none of the ten bytes the
+    revisions differ in), against 18765 on the base. Probe builds of the
+    base and of 6c on combat_cockpit, every global compared after each
+    loader: on the 1989 folder no loader introduces a difference; on the
+    1990 folder the BTECH load introduces only `savedCriticalErrorVector`
+    (4 bytes), the intended one.
+  - **The inventory.** `inventory.py` sorts a BTECH item by the start image
+    row that holds its offset, and reads past the file data as BSS; the
+    exe reads left are 6d's.
+  - **Gate.** Fresh Release build; ctest 13 of 13 on the 1990 folder with
+    the 1989 MW_MAIN, none skipped, and 13 of 13 on the 1989 folder; traces
+    8 of 8; mingw clean on the changed files.
+- **6d, BTECH: game state, then no BTECH at play.** `btechStartExeSpans`
+  moves to data and the story: `weapons.json` (projectile profiles, beam
+  half widths, beam primitives and triangle indices), `mechs.json` (muzzle
+  offsets, fallen-body reference banks, chassis animation availability), a
+  new `data/rules/animation.json` (the pose tables, with
+  `animationLogicalFrameCounts` and `animationPartFrameCounts`),
+  `combat.json`'s start (random words and addend, radar and view shifts,
+  mount group mode, the avoidance probes, the world's boundary corners, the
+  combat flags), `data/ui/orders.json` (the order map's scale shifts and
+  marker masks), and `missionTitleText` as story text. Then
+  `btechLoadedRevision` comes from `story/import.json`, the combat EXEC
+  stops decoding BTECH.EXE, and BTECH.EXE poisoned with 0xEE after the
+  import must still give 8 of 8 (the base fails).
+- **6e, MW_EGA.** Which overlay spans are ever read, then imported or zeroed.
   `LoadOverlay` stops opening MW_EGA.EXE; `ExecuteChild`'s existence probes go.
-- **6e, the test, the guard and the docs.** `exe_free_test` in ctest,
+- **6f, the test, the guard and the docs.** `exe_free_test` in ctest,
   skipped without `MW1O_GAME`: copy the game folder to scratch, import with
   the exes present, delete every `*.EXE` from the copy, then run
   `check.py --port` on the copy: 8 of 8. The host's file layer fails on any
