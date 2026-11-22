@@ -1,7 +1,9 @@
 // The UI words (docs/phase2/PLAN.md section 7) imported from the player's exes
 // are the exe's bytes: each word in story/words.json against MW_MAIN.EXE's
 // image or BTECH.EXE's decoded one at its address, compared in memory, for the
-// game folder's BTECH.EXE and, when given, the reference revision's. And each
+// game folder's BTECH.EXE and, when given, the reference revision's and the
+// 1989-11-03 MW_MAIN.EXE (MW1O_MAIN_1989), which differs from the 1990 one only
+// in code the port drops, outside the key region. And each
 // caption's text word (`<caption>.text`) starts right after its caption's head
 // in the layout table, so the generator's derived rows are where it says.
 //
@@ -56,11 +58,13 @@ std::string hash16(const std::string& bytes) {
 
 // Imports from a folder with the game's MW_MAIN.EXE and `btech`, and checks
 // every word against `btech`'s decoded image. The number of words checked.
-int check_revision(const fs::path& work, const fs::path& game, const fs::path& btech, const char* name) {
+int check_revision(const fs::path& work, const fs::path& game, const fs::path& btech, const char* name,
+                   const fs::path& main_exe = {}) {
     const fs::path folder = work / "game", write = work / "write";
     fs::remove_all(work);
     fs::create_directories(folder);
-    fs::copy_file(find_file(game, "MW_MAIN.EXE"), folder / "MW_MAIN.EXE");
+    const fs::path main_path = main_exe.empty() ? find_file(game, "MW_MAIN.EXE") : main_exe;
+    fs::copy_file(main_path, folder / "MW_MAIN.EXE");
     fs::copy_file(btech, folder / "BTECH.EXE");
     const auto packed = read(btech);
     std::uint8_t* decoded = nullptr;
@@ -70,7 +74,7 @@ int check_revision(const fs::path& work, const fs::path& game, const fs::path& b
     }
     const std::string image(reinterpret_cast<const char*>(decoded), BTECH_IMAGE_BYTES);
     std::free(decoded);
-    const auto main_file = read(find_file(game, "MW_MAIN.EXE"));
+    const auto main_file = read(main_path);
     const std::size_t header = main_file.size() > 9 ? std::size_t(main_file[8] | main_file[9] << 8) * 16 : 0;
     const std::string main_image(main_file.begin() + std::min(header, main_file.size()), main_file.end());
     Words words;
@@ -107,7 +111,7 @@ int check_revision(const fs::path& work, const fs::path& game, const fs::path& b
 int main() {
     const char* game = std::getenv("MW1O_GAME");
     if (!game) {
-        std::printf("skipped: set MW1O_GAME (and MW1O_BTECH_REFERENCE for the other revision)\n");
+        std::printf("skipped: set MW1O_GAME (and MW1O_BTECH_REFERENCE, MW1O_MAIN_1989 for the other revisions)\n");
         return 77;
     }
     // The derived caption texts: right after their heads (5 bytes, or 1 for a colour caption).
@@ -134,6 +138,11 @@ int main() {
         const int ref = check_revision(work / "reference", game, reference, "the reference BTECH.EXE");
         std::printf("%d of %d words are the exes' bytes, with the reference BTECH.EXE\n", ref, words);
         check(ref == words, "every word checked in the reference revision");
+    }
+    if (const char* main1989 = std::getenv("MW1O_MAIN_1989")) {
+        const int old = check_revision(work / "main_1989", game, find_file(game, "BTECH.EXE"), "the 1989 MW_MAIN.EXE", main1989);
+        std::printf("%d of %d words are the exes' bytes, with the 1989 MW_MAIN.EXE\n", old, words);
+        check(old == words, "every word checked with the 1989 MW_MAIN.EXE");
     }
     fs::remove_all(work);
     std::printf("%s\n", g_failures ? "FAILED" : "ok");

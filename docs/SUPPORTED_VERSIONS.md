@@ -12,6 +12,32 @@ Do not substitute the separately unpacked Reko copies or the SDL executable.
 | MW_EGA.EXE | `fbbeef961ab0308127c390a3e2b345e1d82b6fcebe5c487c5f949532d0abba16` |
 | MW_TANDY.EXE | `2f8e1c74cf99fedc41f4bd322e510c7563d01a674ddced0601eeb2772efe4618` |
 
+In this set BTECH.EXE is the 1989-11-03 revision and MW_MAIN.EXE the
+1990 one; the trace goldens use a 1990-01-22 installation (both exes 1990).
+
+## Revisions the importer accepts
+
+The importer (`story/`, `docs/phase2/PLAN.md` sections 2 and 7) takes each
+exe in either revision below. Nothing else differs in what it imports:
+
+| File | 1989-11-03 | 1990-01-22 |
+| --- | --- | --- |
+| BTECH.EXE | `1705b607e798ddfce93da73f999fa98e770e0359c739ec939d1cb7cefc5d3a4c` (174,267 bytes) | `832c39b8859ec102b955ed6022ce93aa7aa2cf3d504b1e0d63dfe1cad6fb9409` (174,533 bytes) |
+| MW_MAIN.EXE | `58bd9ebec6f987759a6d229d1f2b136a176aaf14f1bdb251023fee5cda8b1293` | `5143a95a95e767183894ee326c9112ac4998b536f9b13ff0f8d43e1291c7c808` |
+
+- BTECH.EXE: every region the importer reads is byte-identical in both.
+- MW_MAIN.EXE: the two differ in 11 bytes, all in the copy protection's code
+  (081B:174A..1782), which the port drops; its data segment is identical.
+- MW.EXE, MW_EGA.EXE and MW_TANDY.EXE are the same in both releases.
+- PHAPCK.TBL (the Phoenix Hawk's model bank) differs between the releases
+  (18,235 of its 24,673 bytes, from 0x166D). Nothing imports it: the game
+  reads it from the player's folder when it shows the 'Mech, so each player
+  sees their own release's model. The traces use the 1990 one.
+
+The tests take the further revisions as `MW1O_BTECH_REFERENCE` (the 1989
+BTECH.EXE) and `MW1O_MAIN_1989` (the 1989 MW_MAIN.EXE), besides the game folder
+`MW1O_GAME`.
+
 This is not a claim of compatibility with every release/language variant.
 Executable-derived animation/chassis tables require a reviewed revision.
 Separate native model/map browsing can still work without recognising an EXE.

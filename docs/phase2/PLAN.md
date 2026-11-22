@@ -1222,6 +1222,19 @@ machinery, into the player's write dir:
   table serves both if their bytes are equal. 5a measures this. A word that
   differs between them gets a second accepted hash in the table, as a
   revision row, never a second id. `btech_revisions_test` gains the words.
+- **The two MW_MAIN revisions** (measured after 5b). The 1989-11-03 release's
+  MW_MAIN.EXE (SHA-256 `58bd9ebe…`) and the 1990 one the goldens use
+  (`5143a95a…`) are the same size with the same header, and their images
+  differ in 11 bytes only, all in code at 081B:174A..1782 (098F:000A..0993:0002),
+  inside the copy protection the port drops (081B:16A4..1819, section 3). The
+  data segment 1090, which holds every MW_MAIN word and piece, is
+  byte-identical, so every word of 5b-5f imports from either exe with one
+  hash, and no revision rows are needed. The first key region,
+  081B:0100 for 0x2000 bytes, reached the copy protection, so the 1989 exe
+  gave another key and its words were refused; the key region is now
+  081B:0100 for 0x1400 bytes, identical in both. `words_exe_test` and
+  `import_exe_test` take the 1989 exe as `MW1O_MAIN_1989` (skipped without
+  it); docs/SUPPORTED_VERSIONS.md lists both revisions.
 
 ### 7.3 What stays in the exe
 
@@ -1368,7 +1381,8 @@ Each piece goes on its own branch, with the gate above:
   `src/Import/word_pieces.txt` (each label of a list its own row, so the
   22 groups above become 105 words), imported into `story/words.json` and
   hashed with HMAC-SHA-256 keyed by the SHA-256 of BTECH 2C53:0010 (0x1400
-  bytes of video code; MW_MAIN's words will use 081B:0100, 0x2000 bytes).
+  bytes of video code; MW_MAIN's words use 081B:0100, 0x1400 bytes, as
+  recorded under "The two MW_MAIN revisions" below).
   Both regions, and every word, are byte-identical in the two BTECH
   revisions. The cockpit and order importers fill a local view of the words
   at their native offsets through `MwWordsCopyInto`; the briefing's three

@@ -44,7 +44,7 @@ LOAD_SEGMENT = 0x0800  # where DOS put the image in the traces (the table's addr
 BTECH_EXE = "BTECH.EXE"
 BTECH_LOAD_SEGMENT = 0x0810  # the unpacked image, as src/Import/ImportTable.h
 # Each exe's key region (segment, offset, length), as ImportTable.h's key_region.
-KEY_REGIONS = {BTECH_EXE: (0x2C53, 0x0010, 0x1400), "MW_MAIN.EXE": (0x081B, 0x0100, 0x2000)}
+KEY_REGIONS = {BTECH_EXE: (0x2C53, 0x0010, 0x1400), "MW_MAIN.EXE": (0x081B, 0x0100, 0x1400)}
 
 
 def find(game_dir, name):

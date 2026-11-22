@@ -73,7 +73,7 @@ struct KeyRegion {
 };
 constexpr KeyRegion key_region(std::string_view exe) {
     return exe == kBtechExe ? KeyRegion{0x2C53, 0x0010, 0x1400}   // in the video code (2A36)
-                            : KeyRegion{0x081B, 0x0100, 0x2000};  // in MW_MAIN's campaign code
+                            : KeyRegion{0x081B, 0x0100, 0x1400};  // in MW_MAIN's campaign code
 }
 
 // The shape of the story file. A data folder written by another version, or

@@ -7,6 +7,9 @@
 // Needs the player's files, so ctest skips it (77) unless this is set:
 //   MW1O_GAME             a game folder (MW_MAIN.EXE, BTECH.EXE)
 //   MW1O_BTECH_REFERENCE  optional: a reference BTECH.EXE, imported as well
+//   MW1O_MAIN_1989        optional: the 1989-11-03 MW_MAIN.EXE, imported as well
+//                         (the story and MW_MAIN's importers, from a scratch
+//                         folder holding it and the game folder's BTECH.EXE)
 // Arguments: <data dir> <scratch dir>. Prints steps only, never game bytes.
 #include <cstdio>
 #include <cstdlib>
@@ -37,7 +40,7 @@ void step(bool ok, const char* what) {
 int main(int argc, char** argv) {
     const char* game = std::getenv("MW1O_GAME");
     if (!game) {
-        std::printf("skipped: set MW1O_GAME (and optionally MW1O_BTECH_REFERENCE)\n");
+        std::printf("skipped: set MW1O_GAME (and optionally MW1O_BTECH_REFERENCE, MW1O_MAIN_1989)\n");
         return 77;
     }
     if (argc != 3) {
@@ -63,6 +66,20 @@ int main(int argc, char** argv) {
         step(BtechHostLoadInitialData(btech_exe.c_str()), "BTECH's importers");
         if (const char* reference = std::getenv("MW1O_BTECH_REFERENCE"))
             step(BtechHostLoadInitialData(reference), "BTECH's importers, the reference revision");
+    }
+    if (const char* main1989 = std::getenv("MW1O_MAIN_1989"); main1989 && !g_failed) {
+        const fs::path folder = scratch / "game_main_1989", write = scratch / "write_main_1989";
+        fs::create_directories(folder);
+        fs::create_directories(write);
+        fs::copy_file(main1989, folder / "MW_MAIN.EXE");
+        fs::copy_file(btech_exe, folder / "BTECH.EXE");
+        const std::string copy = (folder / "MW_MAIN.EXE").string();
+        step(MwHostPrepareStory(folder.string().c_str(), write.string().c_str()), "story, the 1989 MW_MAIN");
+        if (!g_failed) {
+            step(MwHostLoadCampaignInitialData(copy.c_str()), "MW_MAIN's importers, the 1989 MW_MAIN");
+            step(MwImportCampaignEventText(), "MW_MAIN's event text, the 1989 MW_MAIN");
+            step(MwHostLoadCampaignMusicData(copy.c_str()), "MW_MAIN's music, the 1989 MW_MAIN");
+        }
     }
     fs::remove_all(scratch, ec);
     std::printf("%s\n", g_failed ? "FAILED" : "ok");
