@@ -30,7 +30,7 @@ void BtechInitializeCombatRuntime(void)
     BtechRegisterTimerCallback(BtechSelectTandyOrFallbackAudioCallback(),1);
     uint16_t inheritedSoundStreamIdentity;
     uint16_t soundBank=BtechLoadSoundBank("btechsnd.snd",NULL,&inheritedSoundStreamIdentity);
-    if (!soundBank) BtechShowFatalErrorAndExit("Sound file not found...");
+    if (!soundBank) BtechShowFatalErrorAndExit("the combat sound bank could not be loaded");
     else BtechSelectActiveSoundBank(soundBank);
     BtechPrepareCampaignCombatStage(inheritedSoundStreamIdentity);
     BtechInitializeUnitControlRecords();

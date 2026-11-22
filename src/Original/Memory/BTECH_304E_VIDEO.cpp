@@ -3,7 +3,7 @@
 #include "mechwarrior/ui_layout.h"
 
 const uint8_t glyphTailMasks[8]={0xFF,0x80,0xC0,0xE0,0xF0,0xFF,0xFC,0xFE};
-const char errorCardNotFound[]="card not found";
+const char errorCardNotFound[]="no supported graphics adapter was found";
 
 uint8_t textForegroundColour,textBackgroundColour,textTransparentBackground;
 int16_t clipMinimumX,clipMaximumX,clipMinimumY,clipMaximumY;

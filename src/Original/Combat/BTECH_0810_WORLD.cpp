@@ -44,7 +44,7 @@ BtechPooledWorldObject *BtechAllocatePooledWorldObject(uint16_t resourceId,const
         return object;
     }
     /* B203 passes304E:2778 to the game's fatal renderer/cleanup, not CRT abort. */
-    BtechShowFatalErrorAndExit("Could not allocate dynamic object...");
+    BtechShowFatalErrorAndExit("no room left for a moving object in the world");
     /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("The native fatal exit must not return an invented object."); /* The native fatal exit must not return an invented object. */
 }
 

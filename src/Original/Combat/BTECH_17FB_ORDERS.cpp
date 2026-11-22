@@ -373,7 +373,7 @@ void BtechInitializeOrderPanelState(void)
         uint16_t captureBytes=(uint16_t)BtechGetCaptureStorageSize(width,height);
         orderPanelCaptureBuffer.bytes=BtechAllocateDosMemoryBlock(captureBytes).bytes;
         orderPanelCaptureBuffer.byteCount=((uint32_t)captureBytes+0x0F)&~0x0Fu;
-        if (!orderPanelCaptureBuffer.bytes) BtechShowFatalErrorAndExit("no memory for map buffer.");
+        if (!orderPanelCaptureBuffer.bytes) BtechShowFatalErrorAndExit("the order map's capture buffer doesn't fit in memory");
     }
     if (reducedMemoryMode) lanceOrderPanelTextX[1]=lanceOrderPanelTextX[2];
     orderMapScaleIndex=ORDER_MAP_FULL_SCALE;previousOrderMapScaleIndex=ORDER_MAP_FULL_SCALE;

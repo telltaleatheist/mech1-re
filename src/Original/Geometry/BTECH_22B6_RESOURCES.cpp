@@ -224,7 +224,7 @@ void BtechReleaseResourceBankSelector(BtechResourceBank bank)
 BtechResourceBank BtechDetachShapeResourceBank(uint16_t bankSlot)
 {
     if ((int16_t)bankSlot<0 || (int16_t)bankSlot>=(int16_t)shapeResourceBankCount)
-        BtechShowFatalErrorAndExit("bad shape list"); /*304E:2D83*/
+        BtechShowFatalErrorAndExit("a shape list in the combat resources is damaged"); /*304E:2D83*/
     BtechResourceBank bank=shapeResourceBanks[bankSlot];
     shapeResourceBanks[bankSlot]=BtechResourceBank{};
     return bank;
@@ -271,7 +271,7 @@ void BtechSetShapeResourceEntryAddress(uint16_t resourceId,BtechShapeResource *r
         {bank->resources[resourceId]=resource;return;}
         resourceId-=bank->resourceCount;
     }
-    BtechShowFatalErrorAndExit("bad shpno"); /*304E:2D92. */
+    BtechShowFatalErrorAndExit("a shape number in the combat resources is out of range"); /*304E:2D92. */
 }
 
 /*22B6:1E28. Signed WORD scale, repeated DWORD SHL with wrap. */

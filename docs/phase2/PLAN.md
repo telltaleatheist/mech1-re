@@ -1245,6 +1245,19 @@ Two items need deciding in 5a:
   - on stderr only: our own wording replaces them, since no trace shows
     them.
   `tools/phase2/text_audit.py` (7.4) then guards the whole tree.
+
+  Done, before 5a (piece 0). Both are BTECH's own words, and the audit
+  found seven more of its fatal-error messages in combat code. All nine are
+  only shown when the game stops, never in a trace, so they now use our
+  own wording. `text_audit.py` is in ctest (skipped without `MW1O_GAME`).
+  It reads the data segments the piece tables name and counts a line of
+  three words or more, or a phrase of 20 characters or more, as wording.
+  Single words and two-word names ('Mechs, places, buttons) are left to the
+  keyed hash, since our identifiers and prose share them by meaning.
+  `text_audit_allow.txt` keeps one hit: a briefing label that the code draws
+  (BTECH 304E:0D96), which 5a makes a word piece. The briefing's other two
+  labels are two-word names below the audit's threshold, and 5a moves them
+  too. The old wording is still in the git history, which isn't rewritten.
 - **The three text-bound layout tables**: `calendarMonthNameWidths`,
   `repairTitleLeadingSpacesByKind` and `contractDateYearXOffsets` (6.3).
   While the words are the exe's they stay exact, so they stay in

@@ -17,7 +17,7 @@ char bodyLocationLabels[COMBAT_BODY_LOCATIONS][3],inspectionConditionLabels[6][1
 char inspectionLegendText[2][25],actuatorLabels[COMBAT_ACTUATORS][14];
 char inspectionSubsystemLabels[5][14],heatSinksOfText[3],jumpJetsText[14];
 char jumpJetsOfText[3],inspectionWeaponHeading[22],inspectionBlankWeaponRow[15];
-const char errorInspectionShapeMemory[]="not enough memory for shape";
+const char errorInspectionShapeMemory[]="the inspection screen's damage pictures don't fit in memory";
 uint16_t twoHitSystemConditionLabelIndices[3],engineConditionLabelIndices[4],actuatorConditionLabelIndices[5];
 BtechHudGaugeAnchor inspectionDiagramOrigins[COMBAT_MECH_TEMPLATES];
 BtechScreenRectangle inspectionDiagramRegions[COMBAT_MECH_TEMPLATES][COMBAT_ARMOR_LOCATIONS];

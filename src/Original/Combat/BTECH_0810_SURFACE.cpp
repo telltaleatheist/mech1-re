@@ -11,7 +11,7 @@ uint8_t BtechTestPatchBoundaryHalfPlanes(const BtechSurfacePatch *patch,uint16_t
     if (!surfaceResourceBank.allocation.bytes) return 0;
     uint16_t count=patch->boundaryCount;
     if (!count) return 0;
-    if (count>SURFACE_MAXIMUM_BOUNDARIES) BtechShowFatalErrorAndExit("too many edges"); // Authored304E:2CB6.
+    if (count>SURFACE_MAXIMUM_BOUNDARIES) BtechShowFatalErrorAndExit("a surface has more boundary edges than the renderer allows"); // Authored304E:2CB6.
     if (!patch->boundaries) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !patch->boundaries");
     for (uint16_t index=0;index<count;++index)
     {

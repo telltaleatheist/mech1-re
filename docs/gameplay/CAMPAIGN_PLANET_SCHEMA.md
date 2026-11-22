@@ -9,7 +9,7 @@ eligibility. Travel also uses the world's contribution to journey time.
 | Method | Gameplay purpose |
 | --- | --- |
 | `MwApplyCurrentPlanetState()` | Applies the current world's House allegiance, scenery, facilities and market conditions. Recalculates ammunition prices and sets the contract-negotiation limit. |
-| `MwFinishPlanetArrivalContinuation()` | Makes the destination the current world, applies its conditions, refreshes Mechs for sale, contract offers and available recruits, then returns to the planet hub after the transport sequence. |
+| `MwFinishPlanetArrivalContinuation()` | Makes the destination the current world, applies its conditions, refreshes the dealer's stock, contract offers and available recruits, then returns to the planet hub after the transport sequence. |
 | `MwEnterCampaignPlanetHub()` | Presents the current world and its available destinations: Mech Complex, Bar, company facilities and House office or contract deployment. Processes pending campaign notifications and events. |
 | `MwRefreshMarketUnitStock()` | Replenishes the local Mech market using the current market conditions. |
 | `MwRefreshMissionOffers()` | Generates the available mercenary contracts. |

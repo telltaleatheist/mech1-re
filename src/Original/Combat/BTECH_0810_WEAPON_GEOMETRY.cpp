@@ -119,7 +119,7 @@ void BtechBuildWeaponBeamGeometry(const BtechPosition3D *origin,const BtechPosit
         cockpitWorldObjects[cockpitWorldObjectCount++]=beamObject;
         return;
     }
-    BtechShowFatalErrorAndExit("Could not allocate laser object..."); /*304E:279E. */
+    BtechShowFatalErrorAndExit("no room left for a laser beam's geometry"); /*304E:279E. */
 }
 
 /*0810:C004. Remove membership only; beam geometry/resource headers stay live. */

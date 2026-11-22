@@ -255,6 +255,17 @@ endif()
 add_executable(btech_image tools/import/btech_image.cpp src/Support/BtechImage.cpp)
 target_include_directories(btech_image PRIVATE src/include)
 
+# No text from MW1's exes in the tracked tree (docs/phase2/PLAN.md 7.4): the
+# player's exes (MW1O_GAME, MW1O_BTECH_REFERENCE, MW1O_BTECH_1990) against
+# git ls-files. Prints addresses and lengths, never the text; skipped without them.
+if(MECHWARRIOR_BUILD_TESTS)
+    find_package(Python3 COMPONENTS Interpreter)
+    if(Python3_FOUND)
+        add_test(NAME text_audit COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tools/phase2/text_audit.py" $<TARGET_FILE:btech_image>)
+        set_tests_properties(text_audit PROPERTIES SKIP_RETURN_CODE 77)
+    endif()
+endif()
+
 
 option(MECHWARRIOR_BUILD_SDL "Build the playable SDL3 game" ON)
 if(MECHWARRIOR_BUILD_SDL)
