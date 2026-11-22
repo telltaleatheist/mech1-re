@@ -255,6 +255,9 @@ complex.table.repair_title_leading_spaces MW_MAIN.EXE 1090:31F2 22
 complex.table.body_damage_fill_colours   MW_MAIN.EXE 1090:3CD2 8
 complex.table.body_diagram_by_kind       MW_MAIN.EXE 1090:3CDA 20
 complex.table.body_diagrams              MW_MAIN.EXE 1090:3CEE 640
+complex.table.damage_tier_words          MW_MAIN.EXE 1090:2B23 8
+complex.table.ammo_family_words          MW_MAIN.EXE 1090:2F78 12
+complex.table.repair_weapon_words        MW_MAIN.EXE 1090:36AE 20
 
 # dealer.json: the market list, the 'Mech, DropShip and component panels,
 # and reserve ammunition with the six compatibility panels the pointer

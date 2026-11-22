@@ -639,7 +639,10 @@ constexpr TableSpec kComplexTables[] = {
     {"repair_title_leading_spaces", TableKind::KeyedWords, 0, kUnitKinds},
     {"body_damage_fill_colours", TableKind::Words, 4},
     {"body_diagram_by_kind", TableKind::DiagramRefs, 0, kMechKinds, "body_diagrams"},
-    {"body_diagrams", TableKind::Diagrams, 8}};
+    {"body_diagrams", TableKind::Diagrams, 8},
+    {"damage_tier_words", TableKind::WordRefs, 4},
+    {"ammo_family_words", TableKind::WordRefs, 6},
+    {"repair_weapon_words", TableKind::WordRefs, 10}};
 // dealer.json: the market list, the 'Mech and DropShip detail panels, the
 // component panel, and reserve ammunition with its six compatibility
 // panels, which a pointer table names.

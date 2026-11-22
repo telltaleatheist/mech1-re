@@ -873,6 +873,9 @@
           [254, 48, 30, 54]
         ]
       }
-    ]
+    ],
+    "damage_tier_words": ["damage_tier.1", "damage_tier.2", "damage_tier.3", "damage_tier.4"],
+    "ammo_family_words": ["ammo_family.1", "ammo_family.2", "ammo_family.3", "ammo_family.4", "ammo_family.5", "ammo_family.6"],
+    "repair_weapon_words": ["repair_weapons.1", "repair_weapons.2", "repair_weapons.3", "repair_weapons.4", "repair_weapons.5", "repair_weapons.6", "repair_weapons.7", "repair_weapons.8", "repair_weapons.9", "repair_weapons.10"]
   }
 }

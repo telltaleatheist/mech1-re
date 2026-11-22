@@ -493,7 +493,8 @@ static const char *const storyUnitKeys[CAMPAIGN_UNIT_KIND_COUNT]={"locust","wasp
 static const char *const storyHouseKeys[CAMPAIGN_HOUSE_COUNT]={"kurita","steiner","marik","liao","davion"};
 static_assert(CAMPAIGN_UNIT_DROPSHIP==10 && HOUSE_DAVION==4,"the story keys follow the enums");
 /* MW_MAIN's UI words that have left the exe (story/words.json: hub.word.*,
- * crew.word.*, contract_office.word.*) at their data-segment offsets, so the
+ * crew.word.*, contract_office.word.*, complex.word.*, dealer.word.*) at
+ * their data-segment offsets, so the
  * importers below read them where the exe kept them. Filled first, by
  * MwImportCampaignInitialData; zero everywhere else. */
 static uint8_t mainWords[NATIVE_SEGMENT_BYTE_COUNT];
@@ -502,7 +503,9 @@ static bool ImportMainWords(void)
     memset(mainWords,0,sizeof(mainWords));
     return MwWordsCopyInto("hub.word.",mainWords,sizeof(mainWords))
         && MwWordsCopyInto("crew.word.",mainWords,sizeof(mainWords))
-        && MwWordsCopyInto("contract_office.word.",mainWords,sizeof(mainWords));
+        && MwWordsCopyInto("contract_office.word.",mainWords,sizeof(mainWords))
+        && MwWordsCopyInto("complex.word.",mainWords,sizeof(mainWords))
+        && MwWordsCopyInto("dealer.word.",mainWords,sizeof(mainWords));
 }
 static bool ImportInitialString(const uint8_t *data, uint16_t offset, char *text, size_t capacity)
 {
@@ -831,7 +834,7 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     ImportInitialWords(data,0x2ADD,(uint16_t *)selectedMechAmmoQuantities,sizeof(selectedMechAmmoQuantities)/sizeof(uint16_t));
     if (!ImportRuleBytes("units.condition_fields",unitConditionSystemFieldCounts,sizeof(unitConditionSystemFieldCounts))) return false;
     if (!ImportRuleBytes("units.condition_score_divisors",unitConditionScoreDivisors,sizeof(unitConditionScoreDivisors))) return false;
-    memcpy(mechNonfunctionalTextBytes,data+0x2B55,sizeof(mechNonfunctionalTextBytes));
+    memcpy(mechNonfunctionalTextBytes,mainWords+0x2B55,sizeof(mechNonfunctionalTextBytes));
     if (!ImportRuleBytes("units.display_tonnages",unitDisplayTonnages,sizeof(unitDisplayTonnages))) return false;
     if (!ImportRuleBytes("units.display_speeds",unitDisplaySpeedsKph,sizeof(unitDisplaySpeedsKph))) return false;
     if (!ImportRuleBytes("units.display_jumps",unitDisplayJumpCapacitiesMetres,sizeof(unitDisplayJumpCapacitiesMetres))) return false;
@@ -848,25 +851,25 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     repairSystemRowIndex=MwReadNativeWord(data,0x3208);
     repairMenuSelectedCategory=MwReadNativeWord(data,0x320A);
     if (!ImportRuleBytes("units.heat_sinks",unitHeatSinkCounts,sizeof(unitHeatSinkCounts))) return false;
-    memcpy(repairNoJumpJetsTextBytes,data+0x36A0,sizeof(repairNoJumpJetsTextBytes));
-    memcpy(repairJumpJetCountTemplateBytes,data+0x36A5,sizeof(repairJumpJetCountTemplateBytes));
+    memcpy(repairNoJumpJetsTextBytes,mainWords+0x36A0,sizeof(repairNoJumpJetsTextBytes));
+    memcpy(repairJumpJetCountTemplateBytes,mainWords+0x36A5,sizeof(repairJumpJetCountTemplateBytes));
     if (!ImportRuleBytes("repair.success_roll_limits",repairSuccessRollLimitsByMarketTier,sizeof(repairSuccessRollLimitsByMarketTier))) return false;
     mechDiagramUnitKind=MwReadNativeWord(data,0x3CCC);
     if (!MwUiCopyWords("complex.table.body_damage_fill_colours",(uint16_t *)bodyDamageTierFillColours,sizeof(bodyDamageTierFillColours)/sizeof(uint16_t),0)) return false; /*3CD2*/
-    memcpy(unassignedMechWarriorText,data+0x3024,sizeof(unassignedMechWarriorText));
-    memcpy(ownedListDoneText,data+0x302F,sizeof(ownedListDoneText));
-    memcpy(cannotAffordRepairText,data+0x2BB0,sizeof(cannotAffordRepairText));
-    memcpy(noRepairWorkText,data+0x2BE7,sizeof(noRepairWorkText));
-    memcpy(repairCompleteText,data+0x2C01,sizeof(repairCompleteText));
-    memcpy(repairIncompleteText,data+0x2C21,sizeof(repairIncompleteText));
-    memcpy(repairFailedText,data+0x3CB5,sizeof(repairFailedText));
+    memcpy(unassignedMechWarriorText,mainWords+0x3024,sizeof(unassignedMechWarriorText));
+    memcpy(ownedListDoneText,mainWords+0x302F,sizeof(ownedListDoneText));
+    memcpy(cannotAffordRepairText,mainWords+0x2BB0,sizeof(cannotAffordRepairText));
+    memcpy(noRepairWorkText,mainWords+0x2BE7,sizeof(noRepairWorkText));
+    memcpy(repairCompleteText,mainWords+0x2C01,sizeof(repairCompleteText));
+    memcpy(repairIncompleteText,mainWords+0x2C21,sizeof(repairIncompleteText));
+    memcpy(repairFailedText,mainWords+0x3CB5,sizeof(repairFailedText));
     hubSelectedRecordIndex=MwReadNativeWord(data,0x1080);
-    memcpy(ammoBayFullText,data+0x315B,sizeof(ammoBayFullText));
-    memcpy(noMarketMechsText,data+0x31BB,sizeof(noMarketMechsText));
-    memcpy(dealerPurchaseLimitText,data+0x258A,sizeof(dealerPurchaseLimitText));
-    memcpy(purchaseInsufficientFundsText,data+0x4330,sizeof(purchaseInsufficientFundsText));
-    memcpy(ownedMechCapacityText,data+0x4347,sizeof(ownedMechCapacityText));
-    memcpy(marketListDoneText,data+0x3049,sizeof(marketListDoneText));
+    memcpy(ammoBayFullText,mainWords+0x315B,sizeof(ammoBayFullText));
+    memcpy(noMarketMechsText,mainWords+0x31BB,sizeof(noMarketMechsText));
+    memcpy(dealerPurchaseLimitText,mainWords+0x258A,sizeof(dealerPurchaseLimitText));
+    memcpy(purchaseInsufficientFundsText,mainWords+0x4330,sizeof(purchaseInsufficientFundsText));
+    memcpy(ownedMechCapacityText,mainWords+0x4347,sizeof(ownedMechCapacityText));
+    memcpy(marketListDoneText,mainWords+0x3049,sizeof(marketListDoneText));
     selectedMarketUnitSlot=MwReadNativeWord(data,0x431E);
     selectedMarketUnitByteOffset=MwReadNativeWord(data,0x4320);
     ImportInitialWords(data,0x4324,(uint16_t *)selectedMarketAmmoFamilies,sizeof(selectedMarketAmmoFamilies)/sizeof(uint16_t));
@@ -961,7 +964,9 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     }
     /* complex.table.body_diagram_by_kind (3CDA): each kind's diagram at its
      * exe address in the body_diagrams table (3CEE), or 0 for none. */
-    uint16_t diagramByKind[CAMPAIGN_MECH_KIND_COUNT];
+    uint16_t diagramByKind[CAMPAIGN_MECH_KIND_COUNT],repairWeaponWords[CAMPAIGN_MECH_KIND_COUNT];
+    /* Each kind's repair weapon labels (complex.word.repair_weapons.*), by complex.json's repair_weapon_words (36AE). */
+    if (!MwUiCopyWords("complex.table.repair_weapon_words",repairWeaponWords,CAMPAIGN_MECH_KIND_COUNT,0)) return false;
     const uint16_t diagramBase=MwUiPieceOffset("complex.table.body_diagrams");
     if (!diagramBase || !MwUiCopyWords("complex.table.body_diagram_by_kind",diagramByKind,CAMPAIGN_MECH_KIND_COUNT,0)) return false;
     for (uint16_t kind=0;kind<CAMPAIGN_MECH_KIND_COUNT;++kind)
@@ -975,10 +980,10 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
         unitAmmoProfiles[kind]=&unitAmmoProfileEntries[(profile-0x2F3C)/4];
         weaponRepairPricesByKind[kind]=&weaponRepairPrices[(prices-0x3C2F)/2];
         mechBodyDiagramLayoutsByKind[kind]=layout?&mechBodyDiagramLayouts[(layout-diagramBase)/0x50]:NULL;
-        uint16_t labelOffset=MwReadNativeWord(data,(uint16_t)(0x36AE +kind*2)),label=0;
-        while (data[labelOffset]!=0xFF && label<CAMPAIGN_WEAPON_SLOTS+1)
+        uint16_t labelOffset=repairWeaponWords[kind],label=0;
+        while (mainWords[labelOffset]!=0xFF && label<CAMPAIGN_WEAPON_SLOTS+1)
         {
-            if (!ImportInitialString(data,labelOffset,repairWeaponLabelStorage[kind][label],0x0F)) return false;
+            if (!ImportInitialString(mainWords,labelOffset,repairWeaponLabelStorage[kind][label],0x0F)) return false;
             repairWeaponLabels[kind][label]=repairWeaponLabelStorage[kind][label];
             labelOffset+=(uint16_t)(strlen(repairWeaponLabels[kind][label])+1);++label;
         }
@@ -993,10 +998,14 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
         if (!MwStoryCopyText(id,unitDisplayNames[i],sizeof(unitDisplayNames[i]))) return false;
     }
     if (!ImportReserveAmmoUiData(data)) return false;
+    /* The ammo family names and damage tier labels (complex.word.*), by complex.json's ammo_family_words (2F78) and damage_tier_words (2B23). */
+    uint16_t ammoFamilyWords[0x06],damageTierWords[0x04];
+    if (!MwUiCopyWords("complex.table.ammo_family_words",ammoFamilyWords,0x06,0)
+        || !MwUiCopyWords("complex.table.damage_tier_words",damageTierWords,0x04,0)) return false;
     for (uint16_t i=0;i<0x06;++i)
-        if (!ImportInitialString(data,MwReadNativeWord(data,(uint16_t)(0x2F78+i*2)),ammoFamilyDisplayNames[i],sizeof(ammoFamilyDisplayNames[i]))) return false;
+        if (!ImportInitialString(mainWords,ammoFamilyWords[i],ammoFamilyDisplayNames[i],sizeof(ammoFamilyDisplayNames[i]))) return false;
     for (uint16_t i=0;i<0x04;++i)
-        if (!ImportInitialString(data,MwReadNativeWord(data,(uint16_t)(0x2B23+i*2)),campaignDamageTierLabels[i],sizeof(campaignDamageTierLabels[i]))) return false;
+        if (!ImportInitialString(mainWords,damageTierWords[i],campaignDamageTierLabels[i],sizeof(campaignDamageTierLabels[i]))) return false;
     /* The month names (hub.word.month.*) and the pointers to them (hub.json's month_words, 4A94). */
     memcpy(calendarMonthText,mainWords+0x4AAC,sizeof(calendarMonthText));
     uint16_t monthWords[CAMPAIGN_MONTH_COUNT];
@@ -1385,8 +1394,8 @@ static bool ImportReserveAmmoUiData(const uint8_t *data)
     reserveAmmoPreviewSelection=MwReadNativeWord(data,0x3F6E);
     reserveAmmoSelling=data[0x4139];
     memset(reserveAmmoMechColours,0,sizeof(reserveAmmoMechColours)); /* 3F70: Written before it's read; zero where the exe reloaded it. */
-    if (!ImportInitialString(data,0x413A,reserveAmmoBuyLabel,sizeof(reserveAmmoBuyLabel))
-        || !ImportInitialString(data,0x413F,reserveAmmoSellLabel,sizeof(reserveAmmoSellLabel))) return false;
+    if (!ImportInitialString(mainWords,0x413A,reserveAmmoBuyLabel,sizeof(reserveAmmoBuyLabel))
+        || !ImportInitialString(mainWords,0x413F,reserveAmmoSellLabel,sizeof(reserveAmmoSellLabel))) return false;
     /* data/ui/dealer.json: the shop panel (4144) and menu (4268), and the six
      * compatibility panels the pointer table at 3F7B names, in family order. */
     static const char *const familyIds[CAMPAIGN_AMMO_FAMILY_COUNT]={"dealer.caption.ammo_family_1","dealer.caption.ammo_family_2",

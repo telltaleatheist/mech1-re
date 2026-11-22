@@ -208,3 +208,136 @@ contract_office.word.accepted             MW_MAIN.EXE 1090:4C6C z
 contract_office.word.commander_needs_mech MW_MAIN.EXE 1090:0FC0 z
 contract_office.word.mech_unready         MW_MAIN.EXE 1090:0FF7 z
 contract_office.word.cancelled            MW_MAIN.EXE 1090:1031 z
+
+# Slice 5d: the Mech Complex and the dealer. Their captions' texts: the
+# fixed-width rows the code fills in (list rows, condition rows, the status
+# templates) with the byte counts their owners take, the rest NUL-ended.
+captions complex
+captions dealer
+complex.caption.owned_heading.text           MW_MAIN.EXE 1090:269B 26
+complex.caption.owned_1.text                 MW_MAIN.EXE 1090:26BA 25
+complex.caption.owned_2.text                 MW_MAIN.EXE 1090:26D8 25
+complex.caption.owned_3.text                 MW_MAIN.EXE 1090:26F6 25
+complex.caption.owned_4.text                 MW_MAIN.EXE 1090:2714 25
+complex.caption.owned_5.text                 MW_MAIN.EXE 1090:2732 25
+complex.caption.owned_6.text                 MW_MAIN.EXE 1090:2750 25
+complex.caption.owned_7.text                 MW_MAIN.EXE 1090:276E 25
+complex.caption.owned_8.text                 MW_MAIN.EXE 1090:278C 25
+complex.caption.owned_9.text                 MW_MAIN.EXE 1090:27AA 25
+complex.caption.owned_10.text                MW_MAIN.EXE 1090:27C8 25
+complex.caption.owned_11.text                MW_MAIN.EXE 1090:27E6 25
+complex.caption.owned_12.text                MW_MAIN.EXE 1090:2804 25
+complex.caption.owned_13.text                MW_MAIN.EXE 1090:2822 25
+complex.caption.mech_status.text             MW_MAIN.EXE 1090:2C60 106
+complex.caption.service_repair.text          MW_MAIN.EXE 1090:2CCF 7
+complex.caption.service_repair_all.text      MW_MAIN.EXE 1090:2CDB 11
+complex.caption.service_rearm.text           MW_MAIN.EXE 1090:2CEB 7
+complex.caption.service_sell.text            MW_MAIN.EXE 1090:2CF7 5
+complex.caption.service_leave.text           MW_MAIN.EXE 1090:2D01 5
+complex.caption.dropship_status.text         MW_MAIN.EXE 1090:2D21 30
+complex.caption.dropship_sell.text           MW_MAIN.EXE 1090:2D44 5
+complex.caption.dropship_leave.text          MW_MAIN.EXE 1090:2D4E 5
+complex.caption.repair_title.text            MW_MAIN.EXE 1090:3259 25
+complex.caption.repair_system_1.text         MW_MAIN.EXE 1090:3277 26
+complex.caption.repair_system_2.text         MW_MAIN.EXE 1090:3296 26
+complex.caption.repair_system_3.text         MW_MAIN.EXE 1090:32B5 26
+complex.caption.repair_system_4.text         MW_MAIN.EXE 1090:32D4 26
+complex.caption.repair_system_5.text         MW_MAIN.EXE 1090:32F3 26
+complex.caption.repair_system_6.text         MW_MAIN.EXE 1090:3312 26
+complex.caption.repair_system_7.text         MW_MAIN.EXE 1090:3331 26
+complex.caption.repair_system_8.text         MW_MAIN.EXE 1090:3350 26
+complex.caption.repair_system_9.text         MW_MAIN.EXE 1090:336F 26
+complex.caption.repair_system_10.text        MW_MAIN.EXE 1090:338E 26
+complex.caption.repair_body.text             MW_MAIN.EXE 1090:33AD 19
+complex.caption.repair_footer.text           MW_MAIN.EXE 1090:33C5 62
+complex.caption.repair_weapon_1.text         MW_MAIN.EXE 1090:3408 26
+complex.caption.repair_weapon_2.text         MW_MAIN.EXE 1090:3427 26
+complex.caption.repair_weapon_3.text         MW_MAIN.EXE 1090:3446 26
+complex.caption.repair_weapon_4.text         MW_MAIN.EXE 1090:3465 26
+complex.caption.repair_weapon_5.text         MW_MAIN.EXE 1090:3484 26
+complex.caption.repair_weapon_6.text         MW_MAIN.EXE 1090:34A3 26
+complex.caption.repair_weapon_7.text         MW_MAIN.EXE 1090:34C2 26
+complex.caption.repair_weapon_8.text         MW_MAIN.EXE 1090:34E1 26
+complex.caption.repair_weapon_9.text         MW_MAIN.EXE 1090:3500 26
+complex.caption.repair_weapon_10.text        MW_MAIN.EXE 1090:351F 26
+complex.caption.repair_weapon_11.text        MW_MAIN.EXE 1090:353E 26
+dealer.caption.market_1.text                 MW_MAIN.EXE 1090:2936 13
+dealer.caption.market_2.text                 MW_MAIN.EXE 1090:2948 13
+dealer.caption.market_3.text                 MW_MAIN.EXE 1090:295A 13
+dealer.caption.market_4.text                 MW_MAIN.EXE 1090:296C 13
+dealer.caption.market_5.text                 MW_MAIN.EXE 1090:297E 13
+dealer.caption.market_6.text                 MW_MAIN.EXE 1090:2990 13
+dealer.caption.market_7.text                 MW_MAIN.EXE 1090:29A2 13
+dealer.caption.market_8.text                 MW_MAIN.EXE 1090:29B4 13
+dealer.caption.market_9.text                 MW_MAIN.EXE 1090:29C6 13
+dealer.caption.market_10.text                MW_MAIN.EXE 1090:29D8 13
+dealer.caption.market_11.text                MW_MAIN.EXE 1090:29EA 13
+dealer.caption.market_12.text                MW_MAIN.EXE 1090:29FC 13
+dealer.caption.market_13.text                MW_MAIN.EXE 1090:2A0E 13
+dealer.caption.component_system_1.text       MW_MAIN.EXE 1090:4554 26
+dealer.caption.component_system_2.text       MW_MAIN.EXE 1090:4573 26
+dealer.caption.component_system_3.text       MW_MAIN.EXE 1090:4592 26
+dealer.caption.component_system_4.text       MW_MAIN.EXE 1090:45B1 26
+dealer.caption.component_system_5.text       MW_MAIN.EXE 1090:45D0 26
+dealer.caption.component_system_6.text       MW_MAIN.EXE 1090:45EF 26
+dealer.caption.component_system_7.text       MW_MAIN.EXE 1090:460E 26
+dealer.caption.component_system_8.text       MW_MAIN.EXE 1090:462D 26
+dealer.caption.component_system_9.text       MW_MAIN.EXE 1090:464C 26
+dealer.caption.component_system_10.text      MW_MAIN.EXE 1090:466B 26
+dealer.caption.component_body.text           MW_MAIN.EXE 1090:468A 19
+dealer.caption.component_weapon_1.text       MW_MAIN.EXE 1090:46BF 26
+dealer.caption.component_weapon_2.text       MW_MAIN.EXE 1090:46DE 26
+dealer.caption.component_weapon_3.text       MW_MAIN.EXE 1090:46FD 26
+dealer.caption.component_weapon_4.text       MW_MAIN.EXE 1090:471C 26
+dealer.caption.component_weapon_5.text       MW_MAIN.EXE 1090:473B 26
+dealer.caption.component_weapon_6.text       MW_MAIN.EXE 1090:475A 26
+dealer.caption.component_weapon_7.text       MW_MAIN.EXE 1090:4779 26
+dealer.caption.component_weapon_8.text       MW_MAIN.EXE 1090:4798 26
+dealer.caption.component_weapon_9.text       MW_MAIN.EXE 1090:47B7 26
+dealer.caption.component_weapon_10.text      MW_MAIN.EXE 1090:47D6 26
+
+# The complex's words: its messages and row templates (blocks, as the code
+# copies them), the damage tier labels and ammo family names (strings the
+# pointer tables damage_tier_words and ammo_family_words name), and each 'Mech
+# kind's weapon labels for the repair screen (a block of strings ended by FF,
+# which repair_weapon_words names).
+complex.word.mech_nonfunctional              MW_MAIN.EXE 1090:2B55 14
+complex.word.no_jump_jets                    MW_MAIN.EXE 1090:36A0 5
+complex.word.jump_jet_count                  MW_MAIN.EXE 1090:36A5 9
+complex.word.unassigned                      MW_MAIN.EXE 1090:3024 11
+complex.word.owned_list_done                 MW_MAIN.EXE 1090:302F 24
+complex.word.cannot_afford_repair            MW_MAIN.EXE 1090:2BB0 55
+complex.word.no_repair_work                  MW_MAIN.EXE 1090:2BE7 26
+complex.word.repair_complete                 MW_MAIN.EXE 1090:2C01 32
+complex.word.repair_incomplete               MW_MAIN.EXE 1090:2C21 30
+complex.word.repair_failed                   MW_MAIN.EXE 1090:3CB5 23
+complex.word.ammo_bay_full                   MW_MAIN.EXE 1090:315B 18
+complex.word.damage_tier.1                   MW_MAIN.EXE 1090:2B2B z
+complex.word.damage_tier.2                   MW_MAIN.EXE 1090:2B36 z
+complex.word.damage_tier.3                   MW_MAIN.EXE 1090:2B43 z
+complex.word.damage_tier.4                   MW_MAIN.EXE 1090:2B50 z
+complex.word.ammo_family.1                   MW_MAIN.EXE 1090:2F91 z
+complex.word.ammo_family.2                   MW_MAIN.EXE 1090:2FB8 z
+complex.word.ammo_family.3                   MW_MAIN.EXE 1090:2FEC z
+complex.word.ammo_family.4                   MW_MAIN.EXE 1090:2FF9 z
+complex.word.ammo_family.5                   MW_MAIN.EXE 1090:3006 z
+complex.word.ammo_family.6                   MW_MAIN.EXE 1090:3013 z
+complex.word.repair_weapons.1                MW_MAIN.EXE 1090:36C2 56
+complex.word.repair_weapons.2                MW_MAIN.EXE 1090:36FA 41
+complex.word.repair_weapons.3                MW_MAIN.EXE 1090:3723 86
+complex.word.repair_weapons.4                MW_MAIN.EXE 1090:3779 86
+complex.word.repair_weapons.5                MW_MAIN.EXE 1090:37CF 71
+complex.word.repair_weapons.6                MW_MAIN.EXE 1090:3816 56
+complex.word.repair_weapons.7                MW_MAIN.EXE 1090:384E 101
+complex.word.repair_weapons.8                MW_MAIN.EXE 1090:38B3 146
+complex.word.repair_weapons.9                MW_MAIN.EXE 1090:3945 86
+complex.word.repair_weapons.10               MW_MAIN.EXE 1090:399B 156
+
+# The dealer's messages (blocks) and the reserve ammo shop's buy and sell labels.
+dealer.word.no_market_mechs                  MW_MAIN.EXE 1090:31BB 46
+dealer.word.purchase_limit                   MW_MAIN.EXE 1090:258A 51
+dealer.word.insufficient_funds               MW_MAIN.EXE 1090:4330 23
+dealer.word.owned_capacity                   MW_MAIN.EXE 1090:4347 55
+dealer.word.market_list_done                 MW_MAIN.EXE 1090:3049 12
+dealer.word.ammo_buy                         MW_MAIN.EXE 1090:413A z
+dealer.word.ammo_sell                        MW_MAIN.EXE 1090:413F z

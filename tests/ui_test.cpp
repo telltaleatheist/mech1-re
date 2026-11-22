@@ -133,6 +133,8 @@ void what_doesnt_fit_is_refused(const fs::path& data, const fs::path& work) {
     refused(load, "\"hub.word.skill.1\" names no word", "a month naming another screen's word");
     with_file("hub.json", [&](Json& h) { array(at(at(h, "tables"), "notification_words")).pop_back(); });
     refused(load, "is not a list of 4", "a notification missing");
+    with_file("complex.json", [&](Json& c) { at(at(at(c, "tables"), "repair_weapon_words"), 9) = Json{std::string("repair_weapons.11")}; });
+    refused(load, "\"complex.word.repair_weapons.11\" names no word", "a repair list naming no word");
 
     with_cockpit([&](Json& c) { at(first_template(c), "cockpit_layout") = Json{3.0}; });
     refused(load, "\"cockpit_layout\" 3 names no layout", "a template naming a layout past the last");

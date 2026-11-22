@@ -1435,6 +1435,21 @@ Each piece goes on its own branch, with the gate above:
   calendar).
 - **5d, complex and dealer:** the 123 captions, including the fixed-width
   rows, and the repair, purchase, ammo and list messages.
+
+  Done (branch `phase2-words-d`). `captions complex` and `captions dealer`
+  add 123 caption texts, 81 of them fixed-width rows listed with the byte
+  counts their owners in MW_MAIN_1090.cpp take (generated from those owner
+  tables, so the counts are the code's). 38 free words: the complex's
+  eleven messages and row templates and the dealer's five (blocks of the
+  size the code copies; some are rows shorter than the string behind them),
+  the reserve ammo shop's buy and sell labels, the four damage tier labels
+  and six ammo family names (strings), and each 'Mech kind's repair weapon
+  labels (ten blocks, each through its FF end mark, so the loop that walks
+  a list is unchanged). Their pointer tables (2B23, 2F78, 36AE) are
+  `WordRefs` tables in `complex.json`. No word overlaps another or any
+  layout piece. Break checks: 0xEE over every MW_MAIN word in the exe data
+  keeps the traces 8 of 8; 0xEE over the loaded complex and dealer words
+  fails mech_complex.
 - **5e, travel:** the 44 captions, the landscape labels and travel's
   messages.
 - **5f, what's left and the record:**
