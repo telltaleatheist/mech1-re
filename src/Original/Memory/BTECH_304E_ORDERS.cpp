@@ -111,22 +111,22 @@ bool BtechImportOrderInitialData(const uint8_t *data,size_t bytes)
         for (uint16_t axis=0;axis<3;++axis) *position[axis]=MwReadNativeWord(data,0x0336+corner*12+axis*4)|((uint32_t)MwReadNativeWord(data,0x0338+corner*12+axis*4)<<16);
     }
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
-    {unitOrderMapScreenX[slot]=(int16_t)MwReadNativeWord(data,0x4F08+slot*2);unitOrderMapScreenY[slot]=(int16_t)MwReadNativeWord(data,0x4F18+slot*2);}
+    {unitOrderMapScreenX[slot]=0; /*4F08*/unitOrderMapScreenY[slot]=0; /*4F18*/}
     for (uint16_t panel=0;panel<3;++panel) lanceOrderPanelTextX[panel]=MwReadNativeWord(ui,0x008C+panel*2); /* orders.json "start" */
     orderScreenFullRedrawPending=data[0x4EEC];
-    previousOrderHighlightPanel=MwReadNativeWord(data,0x4EEE);
-    previousOrderHighlightRow=MwReadNativeWord(data,0x4EF4);
+    previousOrderHighlightPanel=0; /*4EEE*/
+    previousOrderHighlightRow=0; /*4EF4*/
     orderMapPositionMask=0; /* 4EF0, past BTECH's file data: written before it's read, zero where the exe reloaded it. */
     for (uint16_t panel=0;panel<ORDER_WINGMATE_PANELS;++panel)
     {
         if (MwReadNativeWord(data,0x4EFC+panel*2)) return false; /* Fresh EXEC has no live near control references. */
         lanceOrderControls[panel]=NULL;
     }
-    orderMapScaleIndex=MwReadNativeWord(data,0x4EF6);
-    selectedLanceOrderPanel=MwReadNativeWord(data,0x4EF8);selectedOrderPanelRow=MwReadNativeWord(data,0x4EFA);
-    orderPanelMode=MwReadNativeWord(data,0x4F02);orderActionSelection=MwReadNativeWord(data,0x4F04);
-    pendingOrderCommand=MwReadNativeWord(data,0x4F06);
-    orderDestinationRepeatCountdown=MwReadNativeWord(data,0x4F28);
-    previousOrderMapScaleIndex=MwReadNativeWord(data,0x4F2A);previousOrderNavigationKey=MwReadNativeWord(data,0x4F2C);
+    orderMapScaleIndex=0; /*4EF6*/
+    selectedLanceOrderPanel=0; /*4EF8*/selectedOrderPanelRow=0; /*4EFA*/
+    orderPanelMode=0; /*4F02*/orderActionSelection=0; /*4F04*/
+    pendingOrderCommand=0; /*4F06*/
+    orderDestinationRepeatCountdown=0; /*4F28*/
+    previousOrderMapScaleIndex=0; /*4F2A*/previousOrderNavigationKey=0; /*4F2C*/
     return true;
 }

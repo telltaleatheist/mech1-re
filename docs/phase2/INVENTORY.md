@@ -6,11 +6,11 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 |---|---|
 | Extracted: the original's creative content (the story file, first run) | 60 |
 | Ours: UI words and system messages (story/words.json, imported) | 142 |
-| Ours: screen layout, panels and menus (data/ui/*.json) | 125 |
-| Ours: rules and constants (data/rules/*.json) | 78 |
+| Ours: screen layout, panels and menus (data/ui/*.json) | 126 |
+| Ours: rules and constants (data/rules/*.json) | 80 |
 | Ours: the new campaign's starting state (data/rules/new_campaign.json) | 103 |
 | Dropped | 6 |
-| Code: runtime state and renderer tables (no file) | 989 |
+| Code: runtime state and renderer tables (no file) | 986 |
 
 ## Extracted: the original's creative content (the story file, first run)
 
@@ -247,6 +247,7 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 | BTECH_304E_ORDERS.cpp | `orderSelectionFirstRows` | BTECH 304E:0092 | ui orders.selection_first_rows |
 | BTECH_304E_ORDERS.cpp | `orderSelectionLastRows` | BTECH 304E:0096 | ui orders.selection_last_rows |
 | BTECH_304E_ORDERS.cpp | `orderSystemConditionColours` | BTECH 304E:031E | ui orders.system_condition_colours |
+| BTECH_304E_VIDEO.cpp | `ellipseLeftInsets` | 0x401C | - |
 | BTECH_304E_VIDEO.cpp | `landscapeCameraColourRows` | BTECH 304E:1E88 | ui cockpit.landscape_camera_rows |
 | MW_MAIN_1090.cpp | `barMenu` | MW_MAIN 1090:904C | ui crew.menu.bar |
 | MW_MAIN_1090.cpp | `barMenuPanel` | MW_MAIN 1090:8FF6 | ui crew.panel.bar |
@@ -380,6 +381,8 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 | BTECH_304E.cpp | `weaponDefinitions` | BTECH 304E:0EEC | rule weapons.definitions |
 | BTECH_304E.cpp | `weaponDisabledByDamageTier` | BTECH 304E:08C0 | rule combat.weapon_disabled_by_tier |
 | BTECH_304E.cpp | `weaponIntegrityTierByOperational` | BTECH 304E:09EC | rule combat.weapon_integrity_by_operational |
+| BTECH_304E_POSE.cpp | `animationLogicalFrameCounts` | 0x24A0 | - |
+| BTECH_304E_POSE.cpp | `animationPartFrameCounts` | 0x24AA | - |
 | BTECH_304E_POSE.cpp | `animationPrefixSequenceCounts` | BTECH 304E:24B4 | rule assets.animation_prefix_counts |
 | BTECH_304E_POSE.cpp | `playerPoseFrameCounts` | BTECH 304E:265E | rule assets.player_pose_frame_counts |
 | BTECH_304E_WORLD.cpp | `avoidanceHeadingOffsets` | BTECH 304E:2438 | rule combat.avoidance_heading_offsets |
@@ -549,16 +552,18 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 
 | File | Item | Offset | From |
 |---|---|---|---|
-| BTECH_304E_VIDEO.cpp | `herculesDisplayRowOffsets` | 0x34DE | - |
+| BTECH_304E_VIDEO.cpp | `herculesDisplayRowOffsets` | - | - |
 | MW_0806_STATE.cpp | `launcherCampaignFilename` | 0x07E3 | - |
 | MW_0806_STATE.cpp | `launcherCombatFilename` | 0x07EF | - |
 | MW_0806_STATE.cpp | `launcherIdentity` | 0x07D4 | - |
 | MW_MAIN_1090.cpp | `combatExecutableFilename` | 0x0EF6 | - |
-| MW_MAIN_1090.cpp | `launcherExitCode` | 0x0006 | - |
+| MW_MAIN_1090.cpp | `launcherExitCode` | - | - |
 
 ## Code: runtime state and renderer tables (no file)
 
-Not listed one by one: BTECH_0810_STATE.cpp 1, BTECH_1ADF_STATE.cpp 2, BTECH_1BF5_STATE.cpp 5, BTECH_22B6_DATA.cpp 15, BTECH_2FEB.cpp 24, BTECH_304E.cpp 35, BTECH_304E_ADLIB.cpp 25, BTECH_304E_COCKPIT.cpp 36, BTECH_304E_MPU.cpp 10, BTECH_304E_ORDERS.cpp 26, BTECH_304E_POLYGONS.cpp 24, BTECH_304E_POSE.cpp 16, BTECH_304E_RENDER.cpp 62, BTECH_304E_RUNTIME.cpp 17, BTECH_304E_SCENE.cpp 8, BTECH_304E_SOUND.cpp 43, BTECH_304E_STARTUP.cpp 59, BTECH_304E_VIDEO.cpp 86, BTECH_304E_WORLD.cpp 111, MW_0806_STATE.cpp 1, MW_EGA_0800_STATE.cpp 66, MW_MAIN_0F41_STATE.cpp 5, MW_MAIN_1090.cpp 257, MW_MAIN_1090_OPTIONS.cpp 15, MW_MAIN_1AA5.cpp 1, MW_MAIN_28BE.cpp 39.
+Not listed one by one: BTECH_0810_STATE.cpp 1, BTECH_1ADF_STATE.cpp 2, BTECH_1BF5_STATE.cpp 5, BTECH_22B6_DATA.cpp 15, BTECH_2FEB.cpp 24, BTECH_304E.cpp 35, BTECH_304E_ADLIB.cpp 25, BTECH_304E_COCKPIT.cpp 36, BTECH_304E_MPU.cpp 10, BTECH_304E_ORDERS.cpp 26, BTECH_304E_POLYGONS.cpp 24, BTECH_304E_POSE.cpp 14, BTECH_304E_RENDER.cpp 62, BTECH_304E_RUNTIME.cpp 17, BTECH_304E_SCENE.cpp 8, BTECH_304E_SOUND.cpp 43, BTECH_304E_STARTUP.cpp 59, BTECH_304E_VIDEO.cpp 85, BTECH_304E_WORLD.cpp 111, MW_0806_STATE.cpp 1, MW_EGA_0800_STATE.cpp 66, MW_MAIN_0F41_STATE.cpp 5, MW_MAIN_1090.cpp 257, MW_MAIN_1090_OPTIONS.cpp 15, MW_MAIN_1AA5.cpp 1, MW_MAIN_28BE.cpp 39.
+
+Still read from the exe (slice 6 moves them): BTECH_304E.cpp 4, BTECH_304E_ADLIB.cpp 8, BTECH_304E_COCKPIT.cpp 4, BTECH_304E_MPU.cpp 6, BTECH_304E_ORDERS.cpp 3, BTECH_304E_POLYGONS.cpp 2, BTECH_304E_POSE.cpp 2, BTECH_304E_RENDER.cpp 9, BTECH_304E_RUNTIME.cpp 5, BTECH_304E_SOUND.cpp 19, BTECH_304E_STARTUP.cpp 23, BTECH_304E_VIDEO.cpp 27, BTECH_304E_WORLD.cpp 14, MW_MAIN_1090.cpp 20, MW_MAIN_1090_OPTIONS.cpp 5, MW_MAIN_28BE.cpp 20.
 
 ## Reclassified or removed in slice 3
 

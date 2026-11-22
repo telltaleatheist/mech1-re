@@ -191,7 +191,7 @@ bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t 
         if (!end || (size_t)(end-data-offset)>=sizeof(sceneChassisBankNames[chassis])) return false;
         memcpy(sceneChassisBankNames[chassis],data+offset,(size_t)(end-data-offset)+1);
     }
-    memcpy(sceneChassisResourcePresent,data+0x06EC,sizeof(sceneChassisResourcePresent));
+    memset(sceneChassisResourcePresent,0,sizeof(sceneChassisResourcePresent)); /*06EC*/
     memcpy(characterClassStorage.bytes,data+0x4C69,sizeof(characterClassStorage.bytes));
     for (uint16_t index=0;index<0x200;++index) headingRatioAngles[index]=MwReadNativeWord(segment22B6,0x6073+index*2);
     for (uint16_t index=0;index<0x801;++index) orientationCosines[index]=MwReadNativeWord(segment22B6,0x486D+index*2);
@@ -295,17 +295,17 @@ void BtechInitializeFreshWorldOwners(const uint8_t *data)
     lzwPreviousCode=0;
     lzwIncomingCode=0;
     lzwPhraseFirstByte=0;
-    for (uint16_t slot=0;slot<sizeof(sceneChassisResourcePresent)/sizeof(sceneChassisResourcePresent[0]);++slot) sceneChassisResourcePresent[slot]=data[0x06EC+slot*1];
-    beforeObjectListCallbackOffset=MwReadNativeWord(data,0x2CE8);
-    afterObjectListCallbackOffset=MwReadNativeWord(data,0x2CEA);
+    for (uint16_t slot=0;slot<sizeof(sceneChassisResourcePresent)/sizeof(sceneChassisResourcePresent[0]);++slot) sceneChassisResourcePresent[slot]=0; /*06EC*/
+    beforeObjectListCallbackOffset=0; /*2CE8*/
+    afterObjectListCallbackOffset=0; /*2CEA*/
     runtimeDelayActive=data[0x41E4];
     for (uint16_t slot=0;slot<sizeof(joystickPairInstalled)/sizeof(joystickPairInstalled[0]);++slot) joystickPairInstalled[slot]=data[0x41CA+slot*1];
     for (uint16_t slot=0;slot<sizeof(joystickAxisCentres)/sizeof(joystickAxisCentres[0]);++slot) joystickAxisCentres[slot]=data[0x41CC+slot*1];
-    runtimeDelayRemaining=MwReadNativeWord(data,0x41E5);
-    joystickTimingLoopCount=MwReadNativeWord(data,0x41DB);
-    for (uint16_t slot=0;slot<sizeof(joystickAxisReciprocals)/sizeof(joystickAxisReciprocals[0]);++slot) joystickAxisReciprocals[slot]=MwReadNativeWord(data,0x41D0+slot*2);
-    combatInputReplayMode=MwReadNativeWord(data,0x084C);
-    lzwReverseReadOffset=MwReadNativeWord(data,0x4AAF);
+    runtimeDelayRemaining=0; /*41E5*/
+    joystickTimingLoopCount=0; /*41DB*/
+    for (uint16_t slot=0;slot<sizeof(joystickAxisReciprocals)/sizeof(joystickAxisReciprocals[0]);++slot) joystickAxisReciprocals[slot]=0; /*41D0*/
+    combatInputReplayMode=0; /*084C*/
+    lzwReverseReadOffset=0; /*4AAF*/
     for (uint16_t slot=0;slot<sizeof(lzwPacketBytes)/sizeof(lzwPacketBytes[0]);++slot) lzwPacketBytes[slot]=data[0x4A9A+slot*1];
     combatInputReplayFilename=NULL;
     chassisResourceBases=BtechChassisResourceBases{};

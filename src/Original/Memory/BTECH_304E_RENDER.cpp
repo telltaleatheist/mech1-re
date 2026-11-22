@@ -47,14 +47,14 @@ bool BtechImportRenderInitialData(const uint8_t *data,size_t bytes)
         || MwReadNativeWord(data,0xC34A) || MwReadNativeWord(data,0xC8F8)) return false;
     activeCameraContext=NULL;activeRenderBasis=NULL;
     polygonShadeClass=data[0x2E34];
-    wordPolygonsRemaining=MwReadNativeWord(data,0x2E14);wordPolygonHasNearOutsideVertex=data[0x2E16];
-    polygonHasNearClippedVertex=data[0x2E38];widePolygonsRemaining=MwReadNativeWord(data,0x2E36);
+    wordPolygonsRemaining=0; /*2E14*/wordPolygonHasNearOutsideVertex=0; /*2E16*/
+    polygonHasNearClippedVertex=0; /*2E38*/widePolygonsRemaining=0; /*2E36*/
     activeRenderHeader=NULL;activeRenderEntry=NULL;activePrimitiveRecord=NULL;activeVariant=NULL;
     activeEntryGeometry=NULL;renderGeometry=NULL;
     for (uint16_t i=0;i<RENDER_ENTRY_PREFIX_CAPACITY;++i)
     {renderEntryOrderingKeys[i]=0;renderEntryVariants[i]=0;orderedRenderEntries[i]=NULL;}
     for (uint16_t i=0;i<3;++i) {resourceReferenceVector[i]=0;transformedEntryVector[i]=0;}
-    for (uint16_t i=0;i<3;++i) renderTransformedReference[i]=MwReadNativeWord(data,0x775A+i*2);
+    for (uint16_t i=0;i<3;++i) renderTransformedReference[i]=0; /*775A*/
     projectionScaleMultiplier=MwReadNativeWord(data,0x2CE6);renderGeometryVectorCount=0;
     resourceScaleShift=0;widePolygonCoordinates=0;useWordProductClipping=0;skipWordPolygonRenderer=0;
     activeColourShadeClasses=NULL;activePaletteRemap=NULL;
@@ -64,20 +64,20 @@ bool BtechImportRenderInitialData(const uint8_t *data,size_t bytes)
     composedTransformBasis=BtechOrientationBasis{};
     for (uint16_t axis=0;axis<3;++axis)
     {cameraViewOrientation[axis]=0;transformedReferenceVector[axis]=0;viewVectorCoefficients[axis]=0;}
-    combatProjectionShift=MwReadNativeWord(data,0xC356);nearClipDepth=MwReadNativeWord(data,0xC12E);
-    combatProjectionUnit=MwReadNativeWord(data,0xD1EA);objectProjectionScale=MwReadNativeWord(data,0xC8DA);
+    combatProjectionShift=0; /*C356*/nearClipDepth=0; /*C12E*/
+    combatProjectionUnit=0; /*D1EA*/objectProjectionScale=0; /*C8DA*/
     resourceScaledExtent=0;cameraDepthScratch=0;
     forceObjectScreenClip=data[0xC953];projectionMode10=data[0xC358];mirrorProjectionA=data[0x798D];
     objectNeedsScreenClip=data[0x798C];useViewBasisDirectly=data[0xC94A];
-    screenCentreA=(int16_t)MwReadNativeWord(data,0xCB16);screenCentreB=(int16_t)MwReadNativeWord(data,0xCB18);
-    dotProductScratchHigh=MwReadNativeWord(data,0x2E0E);dotProductScratchMiddle=MwReadNativeWord(data,0x2E10);dotProductScratchLow=MwReadNativeWord(data,0x2E12);
-    signedDivisionResult=BtechDwordDivisionResult{MwReadNativeWord(data,0x4BA0),MwReadNativeWord(data,0x4BA2),MwReadNativeWord(data,0x4BA4),MwReadNativeWord(data,0x4BA6)};
-    selectionCount=MwReadNativeWord(data,0x6F58);targetSelectionProbeActive=data[0x281A];
-    selectionPointScreenX=MwReadNativeWord(data,0x6F54);selectionPointScreenY=MwReadNativeWord(data,0x6F56);
+    screenCentreA=0; /*CB16*/screenCentreB=0; /*CB18*/
+    dotProductScratchHigh=0; /*2E0E*/dotProductScratchMiddle=0; /*2E10*/dotProductScratchLow=0; /*2E12*/
+    signedDivisionResult=BtechDwordDivisionResult{}; /*4BA0*/
+    selectionCount=0; /*6F58*/targetSelectionProbeActive=0; /*281A*/
+    selectionPointScreenX=0; /*6F54*/selectionPointScreenY=0; /*6F56*/
     selectionMarkerPixels=MwReadNativeWord(data,0x2816)|((uint32_t)MwReadNativeWord(data,0x2818)<<16);
-    selectionCapturedPixels=MwReadNativeWord(data,0x6F6C)|((uint32_t)MwReadNativeWord(data,0x6F6E)<<16);
-    selectionPointBackground=MwReadNativeWord(data,0x6F70)|((uint32_t)MwReadNativeWord(data,0x6F72)<<16);
+    selectionCapturedPixels=0; /*6F6C*/
+    selectionPointBackground=0; /*6F70*/
     memset(selectionObjectListIndices,0,sizeof(selectionObjectListIndices)); /* 6F5A, past the file data. */
-    for (uint16_t i=0;i<4;++i) {horizonPolygonX[i]=(int16_t)MwReadNativeWord(data,0x2E18+i*2);horizonPolygonY[i]=(int16_t)MwReadNativeWord(data,0x2E20+i*2);}
+    for (uint16_t i=0;i<4;++i) {horizonPolygonX[i]=0; /*2E18*/horizonPolygonY[i]=0; /*2E20*/}
     return true;
 }

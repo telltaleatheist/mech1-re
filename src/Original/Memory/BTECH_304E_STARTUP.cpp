@@ -40,9 +40,9 @@ uint8_t keyboardCompatibilityScans[COMBAT_KEYBOARD_COMPATIBILITY_CODES],keyboard
 bool BtechImportStartupInitialData(const uint8_t *data,size_t bytes)
 {
     if (!data || bytes<0x10000) return false;
-    terminationFlag=MwReadNativeWord(data,0x0050);
+    terminationFlag=0; /*0050*/
     aiUpdatesSuppressed=data[0x0EBA];unidentifiedField22=data[0x0EBB];
-    combatInputReplayCancelLatched=MwReadNativeWord(data,0x08AA);
+    combatInputReplayCancelLatched=0; /*08AA*/
     for (uint16_t group=0;group<2;++group) heldDirectionKeyMasks[group]=data[0x4278+group];
     for (uint16_t mask=0;mask<sizeof(heldDirectionMasks);++mask) heldDirectionMasks[mask]=data[0x43E3+mask];
     criticalErrorHandlerInstalled=data[0x2860];
@@ -50,20 +50,20 @@ bool BtechImportStartupInitialData(const uint8_t *data,size_t bytes)
     mouseDriverInstalled=data[0x41E2];
     divideErrorHookMarkedActive=data[0x4162];
     videoAdapter=data[0x3FC4];
-    savedDivideErrorVector=(uint32_t)MwReadNativeWord(data,0x4165)|((uint32_t)MwReadNativeWord(data,0x4163)<<16);
+    savedDivideErrorVector=0; /*4165*/
     pitChannel0DivisorShadow=MwReadNativeWord(data,0x41E7);
-    schedulerPeriod=MwReadNativeWord(data,0x41E9);schedulerCountdown=MwReadNativeWord(data,0x41EB);
-    schedulerActiveSlots=MwReadNativeWord(data,0x41ED);
+    schedulerPeriod=0; /*41E9*/schedulerCountdown=0; /*41EB*/
+    schedulerActiveSlots=0; /*41ED*/
     for (uint16_t slot=0;slot<COMBAT_SCHEDULER_SLOTS;++slot)
     {
         /* Fresh EXEC only;2540 deliberately leaves these stale on reinstall. */
         if (MwReadNativeWord(data,0x41EF+slot*4) || MwReadNativeWord(data,0x41F1+slot*4)) return false;
         schedulerCallbacks[slot]=NULL;
-        schedulerTimings[slot].ticksRemaining=MwReadNativeWord(data,0x422F+slot*4);
-        schedulerTimings[slot].period=MwReadNativeWord(data,0x4231+slot*4);
+        schedulerTimings[slot].ticksRemaining=0; /*422F*/
+        schedulerTimings[slot].period=0; /*4231*/
     }
     keyboardCapsLockRequested=data[0x4275];keyboardBiosIntercept=data[0x4403];
-    keyboardLastKey=MwReadNativeWord(data,0x4276);
+    keyboardLastKey=0; /*4276*/
     for (uint16_t scan=0;scan<COMBAT_KEYBOARD_SCAN_CODES;++scan)
     {keyboardUnshiftedCharacters[scan]=data[0x42C2+scan];keyboardShiftedCharacters[scan]=data[0x431B+scan];}
     for (uint16_t scan=0;scan<COMBAT_KEYBOARD_COMPATIBILITY_CODES;++scan)
@@ -106,14 +106,14 @@ void BtechInitializeFreshStartupOwners(const uint8_t *data)
         sideCompletionFlags[slot]=0;
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
     {unitLastDrawParts[slot]=NULL;heatAimJitterTiers[slot]=0;heatSpeedPenalties[slot]=0;heatInhibitFlags[slot]=0;}
-    selectedWeaponMount=MwReadNativeWord(data,0x0E24);
+    selectedWeaponMount=0; /*0E24*/
     radarRangeShift=MwReadNativeWord(data,0x0E20);
     viewScaleShift=MwReadNativeWord(data,0x0E22);
-    requestedPlayerForwardStepScale=MwReadNativeWord(data,0x0EB4);
-    unidentifiedField21=MwReadNativeWord(data,0x0EB2);
+    requestedPlayerForwardStepScale=0; /*0EB4*/
+    unidentifiedField21=0; /*0EB2*/
     mountGroupMode=data[0x0E26];
     headingRadarSelected=data[0x0E1E];
-    combatDispatchState=MwReadNativeWord(data,0x0E1C);
+    combatDispatchState=0; /*0E1C*/
     firingIndicatorBank0Pending=data[0x0EAF];
     firingIndicatorBank1Pending=data[0x0EAE];
     selectedHitObject=NULL;

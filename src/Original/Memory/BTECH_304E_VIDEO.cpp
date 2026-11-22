@@ -89,21 +89,21 @@ bool BtechImportVideoInitialData(const uint8_t *data,size_t bytes)
     graphicsLoadFont=NULL;graphicsLoadPalette=NULL;graphicsSelectPalette=NULL;
     graphicsBitmapStorageSize=NULL;graphicsPrepareBitmapList=NULL;
     graphicsDrawBitmap=NULL;
-    egaBitmapRoundedEndX=MwReadNativeWord(data,0x46E6);egaBitmapShiftPhase=MwReadNativeWord(data,0x46E8);
-    egaBitmapClipSides=data[0x46EA];egaBitmapSourceRowSkip=MwReadNativeWord(data,0x46EB);
-    egaBitmapDestinationRowSkip=MwReadNativeWord(data,0x46ED);egaBitmapPlaneStride=MwReadNativeWord(data,0x46EF);
+    egaBitmapRoundedEndX=0; /*46E6*/egaBitmapShiftPhase=0; /*46E8*/
+    egaBitmapClipSides=0; /*46EA*/egaBitmapSourceRowSkip=0; /*46EB*/
+    egaBitmapDestinationRowSkip=0; /*46ED*/egaBitmapPlaneStride=0; /*46EF*/
     graphicsCaptureStorageSize=NULL;
     graphicsUploadPackedScreenRegion=NULL;graphicsUploadAlternateScreenRegion=NULL;
     graphicsPresentRectangle=NULL;
-    egaScreenUploadColumns=MwReadNativeWord(data,0x4724);
-    egaScreenUploadRowSkip=MwReadNativeWord(data,0x4726);egaScreenUploadRowsRemaining=MwReadNativeWord(data,0x4728);
+    egaScreenUploadColumns=0; /*4724*/
+    egaScreenUploadRowSkip=0; /*4726*/egaScreenUploadRowsRemaining=0; /*4728*/
     graphicsColourMode=data[0x2E6F];
     graphicsWritePixel=NULL;graphicsReadPixel=NULL;graphicsSetOverscanColour=NULL;
     graphicsCopyScreenRectangle=NULL;
     graphicsSwapScreenPages=NULL;
     for (uint16_t bit=0;bit<8;++bit) egaPixelBitMasks[bit]=data[0x46D4+bit];
-    egaLinePixelMask=data[0x46DC];egaLineRunLength=MwReadNativeWord(data,0x46DD);
-    egaLineFractionStep=MwReadNativeWord(data,0x46DF);egaLineRemainingBeforeRun=MwReadNativeWord(data,0x46E1);egaLineFractionAccumulator=MwReadNativeWord(data,0x46E3);
+    egaLinePixelMask=0; /*46DC*/egaLineRunLength=0; /*46DD*/
+    egaLineFractionStep=0; /*46DF*/egaLineRemainingBeforeRun=0; /*46E1*/egaLineFractionAccumulator=0; /*46E3*/
     /* The layout's camera rows (data/ui, src/Ui), at their native offset. */
     uint8_t ui[0x1F3C];
     if (MwUiPieceSize("cockpit.landscape_camera_rows")!=0x1F3C-0x1E88
@@ -133,37 +133,37 @@ bool BtechImportVideoInitialData(const uint8_t *data,size_t bytes)
     pointPictures=NULL;smallMechPictures=NULL;strutPictures=NULL;
     cockpitPictures=NULL;hudGlyphPictures=NULL;inspectionDamagePictures=NULL;
     if (MwReadNativeWord(data,0x4714)) return false;
-    egaFontBuffer=NULL;egaFontChunkCounter=MwReadNativeWord(data,0x4716);
+    egaFontBuffer=NULL;egaFontChunkCounter=0; /*4716*/
     for (uint16_t slot=0;slot<COMBAT_PALETTE_SLOTS;++slot) paletteSlotIds[slot]=data[0x3796+slot];
     textForegroundColour=data[0x2E50];textBackgroundColour=data[0x2E51];
     textTransparentBackground=data[0x2E52];screenPolygonNeedsClip=data[0x2E5B];
     drawPolygonFilled=data[0x2E5C];egaBitmapEnabledPlanes=data[0x2E5F];
     drawLineColour=data[0x2E5D];drawFillColour=data[0x2E5E];
-    drawColourPattern=MwReadNativeWord(data,0x2E72);spanPrimaryPattern=MwReadNativeWord(data,0x2E74);
-    spanSecondaryPattern=MwReadNativeWord(data,0x2E76);spanAlternationState=MwReadNativeWord(data,0x2E7A);
+    drawColourPattern=0; /*2E72*/spanPrimaryPattern=0; /*2E74*/
+    spanSecondaryPattern=0; /*2E76*/spanAlternationState=0; /*2E7A*/
     for (uint16_t i=0;i<8;++i) {egaSpanLeadingMasks[i]=data[0x4702+i];egaSpanTrailingMasks[i]=data[0x470A+i];}
     egaSpanPrimaryColour=data[0x4712];egaSpanSecondaryColour=data[0x4713];
     graphicsFillSolidSpan=NULL;graphicsFillAlternatingSpan=NULL;shapeSpanCallback=BtechShapeSpanCallback{};
-    clipMinimumX=(int16_t)MwReadNativeWord(data,0x2E53);clipMaximumX=(int16_t)MwReadNativeWord(data,0x2E55);
-    clipMinimumY=(int16_t)MwReadNativeWord(data,0x2E57);clipMaximumY=(int16_t)MwReadNativeWord(data,0x2E59);
-    videoScratchPageSelector=MwReadNativeWord(data,0x2E60);backPageSelector=MwReadNativeWord(data,0x2E62);
-    frontPageSelector=MwReadNativeWord(data,0x2E64);copySourcePageSelector=MwReadNativeWord(data,0x2E66);
-    drawPageSelector=MwReadNativeWord(data,0x2E68);videoColourCount=data[0x2E71];
+    clipMinimumX=0; /*2E53*/clipMaximumX=(int16_t)MwReadNativeWord(data,0x2E55);
+    clipMinimumY=0; /*2E57*/clipMaximumY=(int16_t)MwReadNativeWord(data,0x2E59);
+    videoScratchPageSelector=0; /*2E60*/backPageSelector=0; /*2E62*/
+    frontPageSelector=0; /*2E64*/copySourcePageSelector=0; /*2E66*/
+    drawPageSelector=0; /*2E68*/videoColourCount=0; /*2E71*/
     pcjrTandyCompatible=data[0x2E6C];combatRendererKind=data[0x2E6D];
     textForegroundPattern=data[0x2E78];textBackgroundPattern=data[0x2E79];
     glyphTailMask=data[0x46D2];videoAdapterAllowedMask=data[0x3FC5];
-    ellipsePageSelector=MwReadNativeWord(data,0x4151);
+    ellipsePageSelector=0; /*4151*/
     for (uint16_t row=0;row<COMBAT_ELLIPSE_ROWS;++row)
     {ellipseLeftInsets[row]=data[0x401C+row];ellipseBorderWidths[row]=data[0x4083+row];ellipseInteriorWidths[row]=data[0x40EA+row];}
-    for (uint16_t row=0;row<COMBAT_SCREEN_HEIGHT;++row) graphicsRowOffsets[row]=MwReadNativeWord(data,0x334E +row*2);
-    for (uint16_t row=0;row<0x15C;++row) herculesDisplayRowOffsets[row]=MwReadNativeWord(data,0x34DE +row*2);
+    for (uint16_t row=0;row<COMBAT_SCREEN_HEIGHT;++row) graphicsRowOffsets[row]=0; /*334E*/
+    for (uint16_t row=0;row<0x15C;++row) herculesDisplayRowOffsets[row]=0; /*34DE*/
     for (uint16_t slot=0;slot<COMBAT_PALETTE_SLOTS;++slot)
         for (uint16_t colour=0;colour<COMBAT_PALETTE_WORDS;++colour)
         {
             uint16_t offset=(slot*COMBAT_PALETTE_WORDS+colour)*2;
-            palettePrimarySlots[slot][colour]=MwReadNativeWord(data,0x37B4+offset);
-            paletteSecondarySlots[slot][colour]=MwReadNativeWord(data,0x3A34+offset);
-            graphicsColourPatterns[slot*COMBAT_PALETTE_WORDS+colour]=MwReadNativeWord(data,0x3CB4+offset);
+            palettePrimarySlots[slot][colour]=0; /*37B4*/
+            paletteSecondarySlots[slot][colour]=0; /*3A34*/
+            graphicsColourPatterns[slot*COMBAT_PALETTE_WORDS+colour]=0; /*3CB4*/
         }
     return true;
 }

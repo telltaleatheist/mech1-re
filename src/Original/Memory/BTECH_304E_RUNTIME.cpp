@@ -29,15 +29,15 @@ bool BtechImportRuntimeInitialData(const uint8_t *data,size_t bytes)
     runtimeDiagnosticCallback=NULL;runtimeDeviceCleanup=NULL;
     for (uint16_t word=0;word<4;++word) runtimePrefix.ambientFallbackWords[word]=MwReadNativeWord(data,word*2);
     memcpy(runtimePrefix.copyrightBytes,data+8,sizeof(runtimePrefix.copyrightBytes));
-    runtimeSavedDivideVector=(uint32_t)MwReadNativeWord(data,0x4B4D)|((uint32_t)MwReadNativeWord(data,0x4B4F)<<16);
-    runtimeSavedExtraVector=(uint32_t)MwReadNativeWord(data,0x4B8C)|((uint32_t)MwReadNativeWord(data,0x4B8E)<<16);
+    runtimeSavedDivideVector=0; /*4B4D*/
+    runtimeSavedExtraVector=0; /*4B8C*/
     runtimeExtraVectorActive=data[0x4B8A];runtimeExtraInterrupt=data[0x4B8B];
     runtimeHandleLimit=MwReadNativeWord(data,0x4B66);
     if (runtimeHandleLimit!=COMBAT_DOS_HANDLES) return false;
     memcpy(runtimeHandleFlags,data+0x4B68,sizeof(runtimeHandleFlags));
     for (uint16_t slot=0;slot<COMBAT_STREAM_SLOTS;++slot)
     {
-        runtimeTemporaryFileIds[slot]=MwReadNativeWord(data,0x4C64+slot*6);
+        runtimeTemporaryFileIds[slot]=0; /*4C64*/
         runtimeStreamAuxiliaryFlags[slot]=data[0x4C60+slot*6];
     }
     uint16_t cursor=0x4E0A;

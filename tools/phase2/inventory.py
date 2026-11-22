@@ -40,7 +40,7 @@ def scan(memory_dir):
         for n in names:
             offs=[]
             for l in lines:
-                if re.search(r'\b'+n+r'\b',l): offs+=re.findall(r'(?:data\s*[+,]\s*\(?(?:uint16_t\)\()?)(0x[0-9A-Fa-f]{3,4})',l)
+                if re.search(r'\b'+n+r'\b',l): offs+=re.findall(r'(?:\bdata\s*(?:[+,]|\[)\s*\(?(?:uint16_t\)\()?)(0x[0-9A-Fa-f]{3,4})',l)
             rows.append((f,n,offs[0] if offs else '-',len(offs),word_source(n,lines,f) or door_source(n,lines)))
     return rows
 
@@ -255,7 +255,10 @@ for k,t in G:
     print(f'\n## {t}\n')
     if k=='code':
         byf=collections.Counter(r[1] for r in rows2 if r[0]=='code')
-        print('Not listed one by one: '+', '.join(f'{f} {n}' for f,n in sorted(byf.items()))+'.'); continue
+        print('Not listed one by one: '+', '.join(f'{f} {n}' for f,n in sorted(byf.items()))+'.')
+        # Slice 6 (docs/phase2/PLAN.md 8) moves the rest off the exe: zero, data or code.
+        onexe=collections.Counter(r[1] for r in rows2 if r[0]=='code' and r[3]!='-')
+        print('\nStill read from the exe (slice 6 moves them): '+(', '.join(f'{f} {n}' for f,n in sorted(onexe.items())) or 'none')+'.'); continue
     print('| File | Item | Offset | From |\n|---|---|---|---|')
     for c,f,name,off,src in sorted(r for r in rows2 if r[0]==k): print(f'| {f} | `{name}` | {off} | {src} |')
 print("""

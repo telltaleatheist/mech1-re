@@ -54,10 +54,10 @@ bool BtechImportPoseInitialData(const uint8_t *data,size_t bytes)
         playerPoseSequences[sequence]=&playerPoseKeyframes[(offset-0x250E)/PLAYER_POSE_KEYFRAME_BYTES];
     }
     if (!MwRulesCopyWords("assets.player_pose_frame_counts",playerPoseFrameCounts,PLAYER_POSE_SEQUENCES,0)) return false;
-    playerPoseDistanceAccumulator=MwReadNativeWord(data,0x5432);
-    playerPosePerturbationTicks=MwReadNativeWord(data,0x5434);
-    playerPoseSequence=MwReadNativeWord(data,0x5436);
-    playerPoseFrame=MwReadNativeWord(data,0x5438);
-    unidentifiedField26=MwReadNativeWord(data,0x543A);
+    playerPoseDistanceAccumulator=0; /*5432*/
+    playerPosePerturbationTicks=0; /*5434*/
+    playerPoseSequence=0; /*5436*/
+    playerPoseFrame=0; /*5438*/
+    unidentifiedField26=0; /*543A*/
     return true;
 }

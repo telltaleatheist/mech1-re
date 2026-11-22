@@ -228,7 +228,7 @@ DS:0008 finds the data segment, then each piece must still match its hash.
    equal. The plan is section 7.
 6. **No exe at play time.** The game starts from `story/` and `data/` alone;
    only the importer opens an exe. A test runs the traces with the exes
-   moved away after import.
+   moved away after import. The plan is section 8.
 
 Each slice: no goto in new code, C++20, every function keeps its original
 `SEG:OFF` in its comment, no names in the repo, headless and one suite at a
@@ -1542,3 +1542,145 @@ Decisions for review:
    as numbers and references.
 5. The text-bound tables stay exact and are checked against the words.
    Deriving them waits for `--text`.
+
+## 8. Slice 6: no exe at play time
+
+The goal of section 3's sixth slice: the game starts from `story/` and
+`data/` alone, and only the importer opens an exe.
+
+### 8.1 Where the exes are still opened at play
+
+1. MW_MAIN.EXE's 1090 data segment, at start and on every EXEC
+   (`MwHostLoadCampaignInitialData`).
+2. MW_MAIN.EXE's 28BE music data, 0xA12 bytes (`MwHostLoadCampaignMusicData`).
+3. MW.EXE's 0806 launcher data, 0x9EE bytes (`LoadResidentLauncher`).
+4. MW_EGA.EXE, the whole overlay image, through `LoadOverlay`
+   (`MwHostLoadEgaInitialData`). It is in no import table yet.
+5. BTECH.EXE, decoded at each combat EXEC (`BtechHostLoadInitialData`): the
+   304E data segment, and the code segments 1BF5 (vectors, keyboard masks),
+   1ADF (audio), 0810 (critical-error vector), 22B6 (geometry tables) and
+   2FEB (tone and music tables).
+6. `ExecuteChild` opens each exe only to check that it exists.
+
+### 8.2 How the sweep was measured
+
+A scratch probe build (not committed) writes the program's data segment
+before and after each exe loader during a combat_cockpit run, which covers the
+start, two campaign EXECs, the EGA overlay and one combat EXEC. The changed
+bytes are mapped to symbols (with global merging off, so each symbol is
+visible), then joined with `tools/phase2/inventory.py`'s scan. Every importer
+runs whole on each load, so one run sees every read. The dumps hold MW1's
+bytes and stay in scratch; the repo keeps the classes and counts below.
+
+### 8.3 The classes
+
+- **A. Zero in the exe.** The value is read from the exe, and the exe holds
+  zero there. It becomes an explicit zero in code: `name=0;` or a memset,
+  followed by the native offset in a comment. That is "zero where the exe
+  reloaded it", as slices 3 to 5 did for their zeros. No file.
+- **B. Nonzero game state** (timer phase and ticks, joystick calibration and
+  keys, panel state, picture selectors, the random seed words, the MPU and
+  AdLib backend structs, keyboard maps, animation frame tables and more).
+  Game state goes to `data/` as "start" entries in the owner's file, each
+  naming its exe address in that file's piece, as `market.start` does, and
+  hash-checked by `rules_exe_test` and `ui_exe_test`. Platform identities
+  (vectors, handler offsets) become code constants checked by the `*_exe`
+  tests.
+- **C. The program's math tables** (22B6's trig, angle and shade tables, the
+  EGA scanline and byte tables and masks). Generated in code only when a test
+  proves every byte against the exe. A formula that is close but not exact
+  leaves the table in class B.
+- **D. Original machine code kept as bytes** (the EGA overlay's code spans,
+  BTECH's bytecode branch handlers and music handler offsets). What is read is
+  imported into `story/` with keyed hashes; the rest is zeroed. MW_EGA.EXE and
+  MW.EXE are byte-identical in the 1989 and 1990 copies, so a key region in
+  either cannot differ between them.
+- **E. File names** (font, cockpit, chassis-bank and terrain suffixes, the
+  runtime prefix): code, as the inventory already treats file names.
+- **F. Dropped items still read** (`launcherIdentity`, the two launcher file
+  names, `combatExecutableFilename`, `launcherExitCode`,
+  `herculesDisplayRowOffsets`): constants, or the hand-off replaced, per piece.
+- **G. Consistency checks against the exe at play**: moved to the import.
+
+`btechLoadedRevision` comes from `story/import.json` instead of decoding
+BTECH at EXEC, so the layout choice stays.
+
+### 8.4 Decisions
+
+1. Class B is split as above: game state in `data/`, platform identities and
+   tables as code constants.
+2. Class D: import only what is read; zero the rest.
+3. The save format keeping mission-description ids instead of offsets is not
+   in this slice. It becomes its own piece after the preview, with an old-save
+   migration test.
+4. The 1989 folder's gate is a start-to-hub smoke plus one combat EXEC
+   (launch, then return to the hub), since BTECH is where the copies differ.
+   1989 goldens can come later.
+5. The guard matters most: an exe opened outside the importer fails loudly,
+   naming the file and the caller.
+
+### 8.5 The pieces
+
+Each on its own branch, with traces 8 of 8, ctest in both setups and the
+mingw check.
+
+- **6a, class A and the checks.** The class-A zeros in every importer, the
+  news flags, and G.
+
+  Done (branch `phase2-noexe-a`).
+  - **The zeros.** 370 items, in 373 statements across 16 files: MW_MAIN
+    1090 193 (6 of them in `MW_MAIN_1090_OPTIONS.cpp`, the news flags
+    `newsAtStart`, `newsAtEnd` and `newsLastArticleId` among them), 28BE 12,
+    and BTECH 304E 168. Each is `name=0;` or a memset, followed by its native
+    offset in a comment; `original_data.h` and `combat_installation.h` say
+    what that comment means. The importers' file and the exe's bytes are
+    otherwise unchanged.
+  - **What the proof caught.** The sweep listed `randomStateWord0` and
+    `randomStateWord1` (1090:03F5, 03F7) as zero, but they are not: the
+    trace moved at record 24. They stay read from the exe and go to 6b as
+    class B.
+  - **The proof.** Probe builds of the base and of 6a, each run on
+    combat_cockpit, compared every global's bytes after each exe loader,
+    symbol by symbol (pointer values masked). The traces are identical, and
+    no loader introduces a single difference, on the 1990 and the 1989
+    folders.
+  - **G.** The event dispatch and after-action checks in
+    `MW_MAIN_1090_EVENTS.cpp` compared the converted code's tables with the
+    exe at every start. They are now five `check.*` pieces in
+    `src/Import/pieces.txt` (event conditions and actions 1090:5E78 and
+    5E8C, after-action failures and successes 1491 and 166A, settlement
+    deductions 1786), hashed at import and not written to the story. The
+    hashes are the same in both copies, so a different MW_MAIN is still
+    refused, now before play. `MwImportCampaignHandoffData` went with them.
+  - **The inventory.** `inventory.py` now reads `data[0x...]` loop reads
+    too, and lists what each file still reads from the exe. Three BTECH
+    tables it had put under "code" (`ellipseLeftInsets`,
+    `animationLogicalFrameCounts`, `animationPartFrameCounts`) are read from
+    the exe and have no data file yet: 6c's.
+  - **Break check.** A scratch build recorded, at each zero, the bytes the
+    base's read took (a variant of the edit; with the records stripped it is
+    6a's source exactly): 6466 bytes (1090 1054, 28BE 26, BTECH 304E 5386),
+    every zero's offset among them. Those bytes and the 86 bytes of the five
+    check pieces were set to 0xEE in the importers' buffers before any read,
+    on every load (18 campaign loads, 2 combat): traces 8 of 8. The same
+    0xEE on the base build: 0 of 8 for the class-A bytes, and 0 of 8 for the
+    check bytes (the start refused), so the base read both and 6a reads
+    neither.
+  - **Gate.** Fresh Release build; ctest 12 of 12 on the 1990 folder with
+    the 1989 MW_MAIN, none skipped, and 12 of 12 on the 1989 folder; traces
+    8 of 8; mingw clean on the changed files.
+- **6b, MW_MAIN and MW.EXE.** MW_MAIN's class B and C (1090 and 28BE),
+  MW.EXE and the F items, the random seed words among them. The host stops
+  opening MW_MAIN.EXE and MW.EXE at play; an EXEC resets from `data/` and code.
+- **6c, BTECH.** The data segment's B and C, the code-segment reads, the
+  layout checks with their loads, and the revision from the story. The combat
+  EXEC stops decoding BTECH.EXE.
+- **6d, MW_EGA.** Which overlay spans are ever read, then imported or zeroed.
+  `LoadOverlay` stops opening MW_EGA.EXE; `ExecuteChild`'s existence probes go.
+- **6e, the test, the guard and the docs.** `exe_free_test` in ctest,
+  skipped without `MW1O_GAME`: copy the game folder to scratch, import with
+  the exes present, delete every `*.EXE` from the copy, then run
+  `check.py --port` on the copy: 8 of 8. The host's file layer fails on any
+  exe opened outside the importer, naming the file and the caller; a break
+  check re-adds one read and the test must fail, naming it. The 1989 folder
+  runs the smoke in decision 4.

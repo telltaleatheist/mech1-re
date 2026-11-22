@@ -20,6 +20,10 @@ bool BtechDecodeInstallationImage(const uint8_t *packed,size_t packedBytes,uint8
 /* The same, without touching btechLoadedRevision: the revision decoded goes
  * to `revision` (if not NULL). The story importer and tools/import use it. */
 bool BtechDecodeImage(const uint8_t *packed,size_t packedBytes,uint8_t **image,BtechRevision *revision);
+/* Loads BTECH's initial data for a fresh EXEC. In the Btech*InitialData
+ * importers, a zero (`name=0;` or a memset) followed by a bare offset in a
+ * comment is a value the exe holds as zero at that offset of 304E: it is
+ * set, not read (docs/phase2/PLAN.md 8, slice 6a). */
 bool BtechHostLoadInitialData(const char *executablePath);
 /* Host EXEC/CRT data projections, NOT additional native game procedures. */
 void BtechInitializeFreshMechOwners(const uint8_t *data);

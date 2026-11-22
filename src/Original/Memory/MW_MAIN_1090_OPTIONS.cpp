@@ -66,8 +66,8 @@ bool MwImportCampaignOptionsData(const uint8_t *data,size_t byteCount)
     barMenu.sentinelEnabled=&optionsMenu.records[5].rightRecordIndex; /*1090:9E3E*/
     optionsNavigationProbe=data[0xABDD];restoreNavigationProbe=data[0xAD6D];
     confirmationNavigationProbe=data[0xAB26];newsNavigationProbe=data[0x332A];
-    saveFileHandle=MwReadNativeWord(data,0xA04C);saveFileCount=MwReadNativeWord(data,0xA04E);
-    memcpy(selectedSaveFilename,data+0xA064,sizeof(selectedSaveFilename));
+    saveFileHandle=0; /*A04C*/saveFileCount=0; /*A04E*/
+    memset(selectedSaveFilename,0,sizeof(selectedSaveFilename)); /*A064*/
     memcpy(saveFindPattern,data+0xA056,sizeof(saveFindPattern));
     /* The screen's words, from story/words.json (options.word.*), as the exe holds them. */
     if (!MwWordsCopyBlock("options.word.save_prompt",saveNamePrompt,sizeof(saveNamePrompt))
@@ -78,7 +78,7 @@ bool MwImportCampaignOptionsData(const uint8_t *data,size_t byteCount)
         || !MwWordsCopyBlock("options.word.load_disk_error",loadDiskErrorText,sizeof(loadDiskErrorText))
         || !MwWordsCopyBlock("options.word.news_boundary",reinterpret_cast<uint8_t *>(newsBoundaryText),sizeof(newsBoundaryText)))
         return false;
-    newsAtStart=data[0x257F];newsAtEnd=data[0x2580];newsLastArticleId=MwReadNativeWord(data,0x2562);
+    newsAtStart=0; /*257F*/newsAtEnd=0; /*2580*/newsLastArticleId=0; /*2562*/
     newsArticleCursor=NULL;newsArticleListStart=NULL;
     saveSearchFilename=NULL;saveListWriteRow=NULL;
     return true;
