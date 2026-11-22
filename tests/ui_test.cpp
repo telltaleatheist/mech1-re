@@ -126,6 +126,13 @@ void what_doesnt_fit_is_refused(const fs::path& data, const fs::path& work) {
     refused(load, "\"orders.word.order.1x\" names no word", "an order list naming no word");
     with_orders([&](Json& o) { at(at(o, "display_indices"), 0) = Json{7.0}; });
     refused(load, "\"display_indices\" names label 7 of 7", "an order code past the order labels");
+    // Slice 5c: a screen's pointer tables into its words name words of that screen.
+    with_file("crew.json", [&](Json& c) { at(at(at(c, "tables"), "attitude_words"), 0) = Json{std::string("attitude.9")}; });
+    refused(load, "\"crew.word.attitude.9\" names no word", "an attitude naming no word");
+    with_file("hub.json", [&](Json& h) { at(at(at(h, "tables"), "month_words"), 0) = Json{std::string("skill.1")}; });
+    refused(load, "\"hub.word.skill.1\" names no word", "a month naming another screen's word");
+    with_file("hub.json", [&](Json& h) { array(at(at(h, "tables"), "notification_words")).pop_back(); });
+    refused(load, "is not a list of 4", "a notification missing");
 
     with_cockpit([&](Json& c) { at(first_template(c), "cockpit_layout") = Json{3.0}; });
     refused(load, "\"cockpit_layout\" 3 names no layout", "a template naming a layout past the last");

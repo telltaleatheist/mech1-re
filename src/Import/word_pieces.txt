@@ -146,3 +146,65 @@ options.word.disk_full              MW_MAIN.EXE 1090:A088 43
 options.word.save_disk_error        MW_MAIN.EXE 1090:A0B3 48
 options.word.load_disk_error        MW_MAIN.EXE 1090:A0E3 49
 options.word.news_boundary          MW_MAIN.EXE 1090:2564 27
+
+# Slice 5c: the hub, crew and contract office. The calendar's twelve month
+# names and the four notification texts (strings back to back, which hub.json's
+# month_words and notification_words name), and the after-action headings and
+# pilot status text (blocks, as the exe keeps them).
+captions crew
+captions contract_office
+hub.word.month.1                          MW_MAIN.EXE 1090:4AAC z
+hub.word.month.2                          MW_MAIN.EXE 1090:4AB6 z
+hub.word.month.3                          MW_MAIN.EXE 1090:4AC1 z
+hub.word.month.4                          MW_MAIN.EXE 1090:4AC9 z
+hub.word.month.5                          MW_MAIN.EXE 1090:4AD1 z
+hub.word.month.6                          MW_MAIN.EXE 1090:4AD7 z
+hub.word.month.7                          MW_MAIN.EXE 1090:4ADE z
+hub.word.month.8                          MW_MAIN.EXE 1090:4AE5 z
+hub.word.month.9                          MW_MAIN.EXE 1090:4AEE z
+hub.word.month.10                         MW_MAIN.EXE 1090:4AFA z
+hub.word.month.11                         MW_MAIN.EXE 1090:4B04 z
+hub.word.month.12                         MW_MAIN.EXE 1090:4B0F z
+hub.word.notification.1                   MW_MAIN.EXE 1090:5EDB z
+hub.word.notification.2                   MW_MAIN.EXE 1090:5F23 z
+hub.word.notification.3                   MW_MAIN.EXE 1090:5F91 z
+hub.word.notification.4                   MW_MAIN.EXE 1090:5FF7 z
+hub.word.after_action.crew_heading        MW_MAIN.EXE 1090:11DF 13
+hub.word.after_action.mech_heading        MW_MAIN.EXE 1090:11EC 13
+hub.word.after_action.salvage_heading     MW_MAIN.EXE 1090:11F9 9
+hub.word.after_action.payment_heading     MW_MAIN.EXE 1090:1202 9
+hub.word.after_action.percent             MW_MAIN.EXE 1090:120B 2
+hub.word.after_action.pilot_status        MW_MAIN.EXE 1090:120D 24
+
+# Crew: the reputation, attitude and skill labels (crew.json's reputation_words,
+# attitude_words and skill_words name them), the commander profile's name, the
+# recruit's stat labels and the three roster messages.
+crew.word.reputation.1                    MW_MAIN.EXE 1090:23D8 z
+crew.word.reputation.2                    MW_MAIN.EXE 1090:23DE z
+crew.word.reputation.3                    MW_MAIN.EXE 1090:23ED z
+crew.word.reputation.4                    MW_MAIN.EXE 1090:23F5 z
+crew.word.attitude.1                      MW_MAIN.EXE 1090:240D z
+crew.word.attitude.2                      MW_MAIN.EXE 1090:2414 z
+crew.word.attitude.3                      MW_MAIN.EXE 1090:241D z
+crew.word.attitude.4                      MW_MAIN.EXE 1090:2425 z
+crew.word.attitude.5                      MW_MAIN.EXE 1090:242E z
+crew.word.skill.1                         MW_MAIN.EXE 1090:245A z
+crew.word.skill.2                         MW_MAIN.EXE 1090:245F z
+crew.word.skill.3                         MW_MAIN.EXE 1090:2467 z
+crew.word.skill.4                         MW_MAIN.EXE 1090:246C z
+crew.word.commander_name                  MW_MAIN.EXE 1090:21C2 z
+crew.word.recruit_stats                   MW_MAIN.EXE 1090:9106 z
+crew.word.no_recruits                     MW_MAIN.EXE 1090:9C39 z
+crew.word.roster_full_four                MW_MAIN.EXE 1090:9C5A z
+crew.word.roster_full_three               MW_MAIN.EXE 1090:9C8D z
+
+# The contract office: its submit and accept captions (6-byte blocks, no NUL
+# between them), and its messages and the deployment refusals.
+contract_office.word.submit               MW_MAIN.EXE 1090:4B35 6
+contract_office.word.accept               MW_MAIN.EXE 1090:4B3B 6
+contract_office.word.no_contracts         MW_MAIN.EXE 1090:4BFA z
+contract_office.word.negotiation_ended    MW_MAIN.EXE 1090:4C25 z
+contract_office.word.accepted             MW_MAIN.EXE 1090:4C6C z
+contract_office.word.commander_needs_mech MW_MAIN.EXE 1090:0FC0 z
+contract_office.word.mech_unready         MW_MAIN.EXE 1090:0FF7 z
+contract_office.word.cancelled            MW_MAIN.EXE 1090:1031 z

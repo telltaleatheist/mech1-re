@@ -95,6 +95,8 @@ hub.menu.contract                   MW_MAIN.EXE 1090:10D7 42
 hub.menu.remote_planet              MW_MAIN.EXE 1090:1101 84
 hub.table.calendar_month_name_widths     MW_MAIN.EXE 1090:11BA 24
 hub.table.notification_boxes        MW_MAIN.EXE 1090:5EB3 32
+hub.table.month_words               MW_MAIN.EXE 1090:4A94 24
+hub.table.notification_words        MW_MAIN.EXE 1090:5ED3 8
 
 # crew.json: company, commander profile, crew, bar and recruit. The pilot
 # assignment captions are colour captions: one colour byte, then the text,
@@ -151,6 +153,9 @@ crew.caption.assignment_11          MW_MAIN.EXE 1090:24EC 1
 crew.caption.assignment_12          MW_MAIN.EXE 1090:24F6 1
 crew.table.pilot_card_column_origins     MW_MAIN.EXE 1090:244A 8
 crew.table.pilot_assignment_captions     MW_MAIN.EXE 1090:247E 24
+crew.table.reputation_words         MW_MAIN.EXE 1090:23D0 8
+crew.table.attitude_words           MW_MAIN.EXE 1090:23FB 18
+crew.table.skill_words              MW_MAIN.EXE 1090:2452 8
 
 # contract_office.json: the office and the offer's actions, the requested
 # terms (x, y, digits; three of each) and the contract date's year offsets.

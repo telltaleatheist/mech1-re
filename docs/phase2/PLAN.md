@@ -1414,6 +1414,25 @@ Each piece goes on its own branch, with the gate above:
 - **5c, hub, crew and contract office:** their captions, the month block
   and its pointers, the after-action headings, and the contract and roster
   messages.
+
+  Done (branch `phase2-words-c`). `captions crew` and `captions
+  contract_office` add 46 caption texts (hub has no captions; crew's 12
+  pilot assignment captions are colour captions, whose text the importer
+  now takes as `crew.caption.assignment_N.text`). 48 free words: the twelve
+  month names and four notification texts (`hub.word.*`, strings back to
+  back that fill 4AAC..4B1A and 5EDB..6067), the after-action headings and
+  pilot status text (blocks); crew's reputation, attitude and skill labels,
+  the commander profile's name, the recruit stat labels and the roster
+  messages; the contract office's two 6-byte captions and its six messages.
+  The five pointer tables into them (month 4A94, notification 5ED3,
+  reputation 23D0, attitude 23FB, with repeats, and skill 2452) are layout
+  tables of a new kind, `WordRefs`, listing word names. The importer reads
+  these words from one view of the data segment (`mainWords`, filled from
+  story/words.json by prefix), so its reads keep their offsets. Every word
+  is the same in both MW_MAIN revisions. Break checks: 0xEE over every
+  MW_MAIN word in the exe data keeps the traces 8 of 8; 0xEE over the loaded
+  hub, crew and contract office words fails all 8 (each passes the hub's
+  calendar).
 - **5d, complex and dealer:** the 123 captions, including the fixed-width
   rows, and the repair, purchase, ammo and list messages.
 - **5e, travel:** the 44 captions, the landscape labels and travel's

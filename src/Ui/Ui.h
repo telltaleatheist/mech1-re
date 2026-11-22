@@ -41,6 +41,7 @@
 //        "caption": name | null (a text record) | "picture": n (otherwise),
 //        "up", "down", "left", "right": record index | null}]}},
 //      "tables": {name: [words] | {unit kind: word} | [{field: word}] |
+//        [word names, after "<screen>.word." in src/Import/word_pieces.txt] |
 //        [colour caption names] | [panel names, of those it may hold] |
 //        [{"background": rect,
 //        "regions": [9 rects]}] | {mech kind: diagram index | null}}}

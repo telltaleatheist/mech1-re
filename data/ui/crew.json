@@ -252,6 +252,9 @@
   },
   "tables": {
     "pilot_card_column_origins": [44, 112, 180, 248],
-    "pilot_assignment_captions": ["assignment_1", "assignment_2", "assignment_3", "assignment_4", "assignment_5", "assignment_6", "assignment_7", "assignment_8", "assignment_9", "assignment_10", "assignment_11", "assignment_12"]
+    "pilot_assignment_captions": ["assignment_1", "assignment_2", "assignment_3", "assignment_4", "assignment_5", "assignment_6", "assignment_7", "assignment_8", "assignment_9", "assignment_10", "assignment_11", "assignment_12"],
+    "reputation_words": ["reputation.1", "reputation.2", "reputation.3", "reputation.4"],
+    "attitude_words": ["attitude.1", "attitude.2", "attitude.2", "attitude.2", "attitude.3", "attitude.4", "attitude.4", "attitude.4", "attitude.5"],
+    "skill_words": ["skill.1", "skill.2", "skill.3", "skill.4"]
   }
 }

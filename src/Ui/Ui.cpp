@@ -302,8 +302,10 @@ struct MenuSpec {
 //   Diagrams     body diagrams: a background rectangle and kBodyRegions
 //                region rectangles each, [x, y, width, height];
 //   DiagramRefs  keyed by `names`: the index of a diagram in the table
-//                `target`, or null for none (the exe's pointer, or 0).
-enum class TableKind { Words, KeyedWords, Rows, CaptionRefs, PanelRefs, Diagrams, DiagramRefs };
+//                `target`, or null for none (the exe's pointer, or 0);
+//   WordRefs     a pointer table naming the screen's words (slice 5), each a
+//                name after "<screen>.word." in src/Import/word_pieces.txt.
+enum class TableKind { Words, KeyedWords, Rows, CaptionRefs, PanelRefs, Diagrams, DiagramRefs, WordRefs };
 struct TableSpec {
     std::string_view name;
     TableKind kind;
@@ -466,6 +468,9 @@ void put_table(const Reader& r, std::string& out, const Json& v, const TableSpec
     case TableKind::CaptionRefs:
         for (const Json& n : entries) put_word(out, captions.colour_caption(r, n, what + "'s entry"));
         break;
+    case TableKind::WordRefs:
+        for (const Json& n : entries) put_word(out, word_offset(r, std::string(screen.file) + ".word.", n));
+        break;
     case TableKind::Rows:
         for (const Json& row : entries) r.only(row, table.names);
         for (std::string_view field : table.names)
@@ -564,7 +569,9 @@ constexpr MenuSpec kHubMenus[] = {{"planet", 6, MenuCaptions::Screen, false},
                                   {"remote_planet", 6, MenuCaptions::Screen, false}};
 constexpr std::string_view kNotificationBoxFields[] = {"inset_x", "inset_y", "columns", "rows"};
 constexpr TableSpec kHubTables[] = {{"calendar_month_name_widths", TableKind::Words, 12, {}},
-                                    {"notification_boxes", TableKind::Rows, 4, kNotificationBoxFields}};
+                                    {"notification_boxes", TableKind::Rows, 4, kNotificationBoxFields},
+                                    {"month_words", TableKind::WordRefs, 12, {}},
+                                    {"notification_words", TableKind::WordRefs, 4, {}}};
 // crew.json: the company menu, the commander profile, the crew screen, the
 // bar, the recruit interview, the pilot card's columns and the pilot
 // assignment captions (colour captions, named by the exe's pointer table).
@@ -584,7 +591,10 @@ constexpr MenuSpec kCrewMenus[] = {{"company", 3, MenuCaptions::Screen, false},
                                    {"bar", 3, MenuCaptions::Screen, false},
                                    {"recruit", 2, MenuCaptions::Screen, false}};
 constexpr TableSpec kCrewTables[] = {{"pilot_card_column_origins", TableKind::Words, 4, {}},
-                                     {"pilot_assignment_captions", TableKind::CaptionRefs, 12, {}}};
+                                     {"pilot_assignment_captions", TableKind::CaptionRefs, 12, {}},
+                                     {"reputation_words", TableKind::WordRefs, 4, {}},
+                                     {"attitude_words", TableKind::WordRefs, 9, {}},
+                                     {"skill_words", TableKind::WordRefs, 4, {}}};
 // contract_office.json: the office and the offer's actions, the requested
 // terms' positions and digit counts, and the contract date's year offsets.
 constexpr std::string_view kContractCaptions[] = {

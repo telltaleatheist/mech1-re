@@ -185,6 +185,8 @@
       {"inset_x": 12, "inset_y": 8, "columns": 28, "rows": 7},
       {"inset_x": 12, "inset_y": 8, "columns": 33, "rows": 6},
       {"inset_x": 12, "inset_y": 8, "columns": 33, "rows": 6}
-    ]
+    ],
+    "month_words": ["month.1", "month.2", "month.3", "month.4", "month.5", "month.6", "month.7", "month.8", "month.9", "month.10", "month.11", "month.12"],
+    "notification_words": ["notification.1", "notification.2", "notification.3", "notification.4"]
   }
 }

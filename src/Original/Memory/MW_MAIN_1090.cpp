@@ -492,6 +492,18 @@ static const char *const storyUnitKeys[CAMPAIGN_UNIT_KIND_COUNT]={"locust","wasp
     "shadow_hawk","wolverine","rifleman","warhammer","marauder","battlemaster","dropship"};
 static const char *const storyHouseKeys[CAMPAIGN_HOUSE_COUNT]={"kurita","steiner","marik","liao","davion"};
 static_assert(CAMPAIGN_UNIT_DROPSHIP==10 && HOUSE_DAVION==4,"the story keys follow the enums");
+/* MW_MAIN's UI words that have left the exe (story/words.json: hub.word.*,
+ * crew.word.*, contract_office.word.*) at their data-segment offsets, so the
+ * importers below read them where the exe kept them. Filled first, by
+ * MwImportCampaignInitialData; zero everywhere else. */
+static uint8_t mainWords[NATIVE_SEGMENT_BYTE_COUNT];
+static bool ImportMainWords(void)
+{
+    memset(mainWords,0,sizeof(mainWords));
+    return MwWordsCopyInto("hub.word.",mainWords,sizeof(mainWords))
+        && MwWordsCopyInto("crew.word.",mainWords,sizeof(mainWords))
+        && MwWordsCopyInto("contract_office.word.",mainWords,sizeof(mainWords));
+}
 static bool ImportInitialString(const uint8_t *data, uint16_t offset, char *text, size_t capacity)
 {
     if ((size_t)offset+capacity>NATIVE_SEGMENT_BYTE_COUNT) return false;
@@ -586,6 +598,7 @@ static bool ImportContractData(const uint8_t *data);
 bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
 {
     if (!data || byteCount<NATIVE_SEGMENT_BYTE_COUNT) return false; /* Transient file image, not live storage. */
+    if (!ImportMainWords()) return false;
     /* The save block (1090:0448..0B5F, CAMPAIGN_SAVE_BYTES) from data/rules
      * (new_campaign.json), the commander's name from the story file, decoded
      * by the save codec as a loaded game's would be. */
@@ -599,12 +612,12 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
     memcpy(combatExecutableFilename,data+0x0EF6,sizeof(combatExecutableFilename));
     memcpy(&deploymentResolvedWithoutCombat,data+0x140C,sizeof(deploymentResolvedWithoutCombat));
     if (!MwStoryCopyText("dark_wing.victory",darkWingVictoryText,sizeof(darkWingVictoryText))) return false;
-    memcpy(afterActionCrewHeading,data+0x11DF,sizeof(afterActionCrewHeading));
-    memcpy(afterActionMechHeading,data+0x11EC,sizeof(afterActionMechHeading));
-    memcpy(afterActionSalvageHeading,data+0x11F9,sizeof(afterActionSalvageHeading));
-    memcpy(afterActionPaymentHeading,data+0x1202,sizeof(afterActionPaymentHeading));
-    memcpy(afterActionPercentSuffix,data+0x120B,sizeof(afterActionPercentSuffix));
-    memcpy(afterActionPilotStatusText,data+0x120D,sizeof(afterActionPilotStatusText));
+    memcpy(afterActionCrewHeading,mainWords+0x11DF,sizeof(afterActionCrewHeading));
+    memcpy(afterActionMechHeading,mainWords+0x11EC,sizeof(afterActionMechHeading));
+    memcpy(afterActionSalvageHeading,mainWords+0x11F9,sizeof(afterActionSalvageHeading));
+    memcpy(afterActionPaymentHeading,mainWords+0x1202,sizeof(afterActionPaymentHeading));
+    memcpy(afterActionPercentSuffix,mainWords+0x120B,sizeof(afterActionPercentSuffix));
+    memcpy(afterActionPilotStatusText,mainWords+0x120D,sizeof(afterActionPilotStatusText));
     afterActionRosterRowOffset=0; /* 1229: Written before it's read; zero where the exe reloaded it. */
     if (!ImportRuleWords("units.tonnages",(uint16_t *)campaignMechTonnages,sizeof(campaignMechTonnages)/sizeof(uint16_t))) return false;
     settlementPayoutPercent=0; /* Written before it's read; zero where the exe reloaded it. */
@@ -680,8 +693,9 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
         || !MwUiCopyWords("hub.table.notification_boxes",notificationTextInsetY,4,8)
         || !MwUiCopyWords("hub.table.notification_boxes",notificationColumns,4,16)
         || !MwUiCopyWords("hub.table.notification_boxes",notificationRows,4,24)) return false;
-    ImportInitialWords(data,0x5ED3,(uint16_t *)notificationTextOffsets,sizeof(notificationTextOffsets)/sizeof(uint16_t));
-    memcpy(notificationTextStorage,data+0x5EDB,sizeof(notificationTextStorage));
+    /* The notification texts (hub.word.notification.*) and the pointers to them (hub.json's notification_words). */
+    if (!MwUiCopyWords("hub.table.notification_words",notificationTextOffsets,4,0)) return false; /*5ED3*/
+    memcpy(notificationTextStorage,mainWords+0x5EDB,sizeof(notificationTextStorage));
     compressedPictureBufferSelector=MwReadNativeWord(data,0x016D);
     randomStateWord0=MwReadNativeWord(data,0x03F5);
     randomStateWord1=MwReadNativeWord(data,0x03F7);
@@ -983,11 +997,14 @@ bool MwImportCampaignInitialData(const uint8_t *data, size_t byteCount)
         if (!ImportInitialString(data,MwReadNativeWord(data,(uint16_t)(0x2F78+i*2)),ammoFamilyDisplayNames[i],sizeof(ammoFamilyDisplayNames[i]))) return false;
     for (uint16_t i=0;i<0x04;++i)
         if (!ImportInitialString(data,MwReadNativeWord(data,(uint16_t)(0x2B23+i*2)),campaignDamageTierLabels[i],sizeof(campaignDamageTierLabels[i]))) return false;
-    memcpy(calendarMonthText,data+0x4AAC,sizeof(calendarMonthText));
+    /* The month names (hub.word.month.*) and the pointers to them (hub.json's month_words, 4A94). */
+    memcpy(calendarMonthText,mainWords+0x4AAC,sizeof(calendarMonthText));
+    uint16_t monthWords[CAMPAIGN_MONTH_COUNT];
+    if (!MwUiCopyWords("hub.table.month_words",monthWords,CAMPAIGN_MONTH_COUNT,0)) return false;
     for (uint16_t month=0;month<CAMPAIGN_MONTH_COUNT;++month)
     {
-        uint16_t text=MwReadNativeWord(data,(uint16_t)(0x4A94+month*2));
-        if (text<0x4AAC || text>=0x4B1A || !memchr(data+text,0,0x4B1A-text)) return false;
+        uint16_t text=monthWords[month];
+        if (text<0x4AAC || text>=0x4B1A || !memchr(mainWords+text,0,0x4B1A-text)) return false;
         calendarMonthNames[month]=calendarMonthText+text-0x4AAC;
     }
     ImportInitialText(data,0x55EC,&positionedText.display,positionedText.text,18);
@@ -1198,17 +1215,23 @@ static bool ImportPilotUiData(const uint8_t *data)
     selectedRecruitPilotId=MwReadNativeWord(data,0x911F);
     assignmentConflictHighlighted=data[0x2585];
     if (!MwUiCopyWords("crew.table.pilot_card_column_origins",pilotCardColumnOrigins,PILOT_CARD_COUNT,0)) return false; /*244A*/
+    /* The crew's words (crew.word.*), through the pointer tables crew.json
+     * names them by: reputation 23D0, skill 2452 and attitude 23FB. */
+    uint16_t reputationWords[4],skillWords[4],attitudeWords[9];
+    if (!MwUiCopyWords("crew.table.reputation_words",reputationWords,4,0)
+        || !MwUiCopyWords("crew.table.skill_words",skillWords,4,0)
+        || !MwUiCopyWords("crew.table.attitude_words",attitudeWords,9,0)) return false;
     for (uint16_t i=0;i<4;++i)
     {
-        if (!ImportInitialString(data,MwReadNativeWord(data,0x23D0+i*2),commanderReputationLabels[i],sizeof(commanderReputationLabels[i]))) return false;
-        if (!ImportInitialString(data,MwReadNativeWord(data,0x2452+i*2),pilotSkillLabels[i],sizeof(pilotSkillLabels[i]))) return false;
+        if (!ImportInitialString(mainWords,reputationWords[i],commanderReputationLabels[i],sizeof(commanderReputationLabels[i]))) return false;
+        if (!ImportInitialString(mainWords,skillWords[i],pilotSkillLabels[i],sizeof(pilotSkillLabels[i]))) return false;
     }
     const uint16_t attitudeOffsets[5]={0x240D,0x2414,0x241D,0x2425,0x242E};
     for (uint16_t i=0;i<5;++i)
-        if (!ImportInitialString(data,attitudeOffsets[i],houseAttitudeLabels[i],sizeof(houseAttitudeLabels[i]))) return false;
+        if (!ImportInitialString(mainWords,attitudeOffsets[i],houseAttitudeLabels[i],sizeof(houseAttitudeLabels[i]))) return false;
     for (uint16_t i=0;i<9;++i)
     {
-        uint16_t offset=MwReadNativeWord(data,0x23FB+i*2),label=0;
+        uint16_t offset=attitudeWords[i],label=0;
         while (label<5 && attitudeOffsets[label]!=offset) ++label;
         if (label==5) return false;
         houseAttitudeText[i]=houseAttitudeLabels[label];
@@ -1228,7 +1251,9 @@ static bool ImportPilotUiData(const uint8_t *data)
             ++caption;
         }
         if (caption==PILOT_ASSIGNMENT_CAPTION_COUNT || !MwUiCopyBytes(id,&pilotAssignmentCaptionColours[i],1,0)) return false;
-        if (!ImportInitialString(data,assignmentPointers[i]+1,pilotAssignmentCaptions[i],sizeof(pilotAssignmentCaptions[i]))) return false;
+        char textId[40];
+        snprintf(textId,sizeof(textId),"%s.text",id);  /* the caption's text, story/words.json */
+        if (!MwWordsCopyText(textId,pilotAssignmentCaptions[i],sizeof(pilotAssignmentCaptions[i]))) return false;
     }
     pilotDefinitions[0]=NULL;pilotDialogue[0]=NULL;
     for (uint16_t pilotId=1;pilotId<CAMPAIGN_PILOT_ID_COUNT;++pilotId)
@@ -1240,11 +1265,11 @@ static bool ImportPilotUiData(const uint8_t *data)
         pilotDialogue[pilotId]=(const char *)(pilotDefinitions[pilotId]+1);
     }
     companyNavigationPadding=data[0x3020];
-    if (!ImportInitialString(data,0x21C2,commanderProfileName,sizeof(commanderProfileName))) return false;
-    if (!ImportInitialString(data,0x9106,recruitStatLabels,sizeof(recruitStatLabels))) return false;
-    if (!ImportInitialString(data,0x9C39,noAvailableRecruitsText,sizeof(noAvailableRecruitsText))) return false;
-    if (!ImportInitialString(data,0x9C5A,fullFourPilotRosterText,sizeof(fullFourPilotRosterText))) return false;
-    if (!ImportInitialString(data,0x9C8D,fullThreePilotRosterText,sizeof(fullThreePilotRosterText))) return false;
+    if (!ImportInitialString(mainWords,0x21C2,commanderProfileName,sizeof(commanderProfileName))) return false;
+    if (!ImportInitialString(mainWords,0x9106,recruitStatLabels,sizeof(recruitStatLabels))) return false;
+    if (!ImportInitialString(mainWords,0x9C39,noAvailableRecruitsText,sizeof(noAvailableRecruitsText))) return false;
+    if (!ImportInitialString(mainWords,0x9C5A,fullFourPilotRosterText,sizeof(fullFourPilotRosterText))) return false;
+    if (!ImportInitialString(mainWords,0x9C8D,fullThreePilotRosterText,sizeof(fullThreePilotRosterText))) return false;
     return ImportContractData(data);
 }
 
@@ -1291,7 +1316,7 @@ static bool ImportContractData(const uint8_t *data)
         || !MwUiCopyWords("contract_office.table.requested_terms",requestedTermY,3,6)
         || !MwUiCopyWords("contract_office.table.requested_terms",requestedTermDigits,3,12)) return false;
     if (!ImportRuleWords("houses.extra_enemy_roll_thresholds",(uint16_t *)houseExtraEnemyRollThresholds,CAMPAIGN_HOUSE_COUNT)) return false;
-    memcpy(submitContractCaption,data+0x4B35,6);memcpy(acceptContractCaption,data+0x4B3B,6);
+    memcpy(submitContractCaption,mainWords+0x4B35,6);memcpy(acceptContractCaption,mainWords+0x4B3B,6);
     memcpy(contractOfficePlanetGroupStorage,data+0x4B8A,sizeof(contractOfficePlanetGroupStorage));
     for (uint16_t house=0;house<CAMPAIGN_HOUSE_COUNT;++house)
     {
@@ -1316,13 +1341,13 @@ static bool ImportContractData(const uint8_t *data)
         || !MwImportUiMenu("contract_office.menu.actions",&contractActionsMenu,owners,count)) return false;
     contractOfficeNavigationProbe=data[0x5661];contractActionsNavigationProbe=data[0x5807];
     return MwStoryCopyText("contract.narrative",contractNarrative,sizeof(contractNarrative))
-        && ImportInitialString(data,0x4BFA,noContractsText,sizeof(noContractsText))
-        && ImportInitialString(data,0x4C25,negotiationTerminatedText,sizeof(negotiationTerminatedText))
-        && ImportInitialString(data,0x4C6C,contractAcceptedText,sizeof(contractAcceptedText))
+        && ImportInitialString(mainWords,0x4BFA,noContractsText,sizeof(noContractsText))
+        && ImportInitialString(mainWords,0x4C25,negotiationTerminatedText,sizeof(negotiationTerminatedText))
+        && ImportInitialString(mainWords,0x4C6C,contractAcceptedText,sizeof(contractAcceptedText))
         && MwStoryCopyText("contract.refusal.house",houseContractRefusalText,sizeof(houseContractRefusalText))
-        && ImportInitialString(data,0x0FC0,commanderNeedsMechText,sizeof(commanderNeedsMechText))
-        && ImportInitialString(data,0x0FF7,assignedMechUnreadyText,sizeof(assignedMechUnreadyText))
-        && ImportInitialString(data,0x1031,contractCancelledText,sizeof(contractCancelledText));
+        && ImportInitialString(mainWords,0x0FC0,commanderNeedsMechText,sizeof(commanderNeedsMechText))
+        && ImportInitialString(mainWords,0x0FF7,assignedMechUnreadyText,sizeof(assignedMechUnreadyText))
+        && ImportInitialString(mainWords,0x1031,contractCancelledText,sizeof(contractCancelledText));
 }
 
 /* Installation-only near-directory decoding. Shared entries retain ONE text
