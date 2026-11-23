@@ -5,12 +5,14 @@ sound system does not change the combat tick length or the PIT clock.
 
 ```ini
 combat_tick_ms=60
-sound_system=speaker
+sound_system=adlib
 mt32_control_rom=
 mt32_pcm_rom=
 ```
 
-`speaker` retains the original PC-speaker music and combat effects. `mt32`
+The shipped `MechWarrior.ini` selects `adlib`, so a package plays AdLib from
+its first start (a project decision); with no INI, or a line the program does
+not read, it is `speaker`. `speaker` retains the original PC-speaker music and combat effects. `mt32`
 selects the original Roland campaign music backend, synthesized by libmt32emu.
 `adlib` selects the original AdLib campaign driver, synthesized by Nuked-OPL3
 in OPL2-compatible mode, and requires no external ROM files.
