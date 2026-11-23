@@ -82,6 +82,11 @@ class PackageTests(unittest.TestCase):
                     build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
                 self.assertFalse(list((root / "dist").glob("*.tar.gz")))
 
+    def test_program_version_from_the_label(self):
+        self.assertEqual(build_package.program_version("mw1r-v1.0.0"), "1.0.0")
+        self.assertEqual(build_package.program_version("1.0.0-test.436522e"), "1.0.0-test.436522e")
+        self.assertEqual(build_package.program_version("mw1r-v1.0"), "mw1r-v1.0")  # not a release tag: as given
+
     def test_missing_data_blocks_packaging(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

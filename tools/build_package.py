@@ -144,10 +144,16 @@ def platform_name():
     return "linux-x86_64"
 
 
+def program_version(label):
+    """The version the program reports (--status): a release tag's X.Y.Z (mw1r-v1.0.0 -> 1.0.0), else the label."""
+    found = re.fullmatch(r"mw1r-v(\d+\.\d+\.\d+)", label)
+    return found.group(1) if found else label
+
+
 def configure_and_build(root, build, sdl, label):
     args = ["cmake", "-S", str(root), "-B", str(build),
             "-DMECHWARRIOR_BUILD_SDL=ON", f"-DMECHWARRIOR_SDL_SOURCE_DIR={sdl}", "-DMECHWARRIOR_TRIM_PATHS=ON",
-            f"-DMECHWARRIOR_VERSION={label}"]
+            f"-DMECHWARRIOR_VERSION={program_version(label)}"]
     if os.name == "nt":
         args += ["-A", "x64", "-DMECHWARRIOR_WINDOWS_GUI=ON"]
     elif sys.platform == "darwin":
