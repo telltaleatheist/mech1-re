@@ -103,7 +103,8 @@ bool MwSdlSetDataDirectory(const char *directory)
     return true;
 }
 /* The player's write directory (saves, story/, their MechWarrior.ini):
- * MECHWARRIOR_SAVE_DIRECTORY, or SDL's per-user folder. */
+ * MECHWARRIOR_SAVE_DIRECTORY, or SDL's per-user folder (src/Setup/Setup.h
+ * names it the same way without making it, for --status). */
 bool MwSdlResolveWriteDirectory(char *directory,size_t size)
 {
     const char *configuredSaveDirectory=getenv("MECHWARRIOR_SAVE_DIRECTORY");
@@ -113,7 +114,7 @@ bool MwSdlResolveWriteDirectory(char *directory,size_t size)
         strcpy(directory,configuredSaveDirectory);
         return true;
     }
-    char *prefPath=SDL_GetPrefPath("BattleTechReverse","MechWarrior");
+    char *prefPath=SDL_GetPrefPath("MicroProse","MechWarrior 1 Rebuild");
     if (!prefPath || strlen(prefPath)>=size) {SDL_free(prefPath);return false;}
     strcpy(directory,prefPath);SDL_free(prefPath);
     return true;

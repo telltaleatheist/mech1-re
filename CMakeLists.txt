@@ -327,6 +327,26 @@ if(MECHWARRIOR_BUILD_SDL)
     else()
         find_package(SDL3 3.2 CONFIG REQUIRED)
     endif()
+    # The shared setup kit (extern/re-setup-kit, a submodule; DESIGN.md there): finding the player's copy in a
+    # folder or an archive, the launcher contract (--status, --setup). It reads archives through libarchive with
+    # zlib and liblzma, static in packages (built from pinned sources, as mech3-re's), else the system's; without
+    # it setup reads folders only.
+    find_path(MECHWARRIOR_LIBARCHIVE_INCLUDE archive.h
+              HINTS "${CMAKE_SOURCE_DIR}/deps/archive/include" /opt/homebrew/opt/libarchive/include /usr/local/opt/libarchive/include)
+    find_library(MECHWARRIOR_LIBARCHIVE_LIB NAMES archive archive_static
+                 HINTS "${CMAKE_SOURCE_DIR}/deps/archive/lib" /opt/homebrew/opt/libarchive/lib /usr/local/opt/libarchive/lib)
+    if(MECHWARRIOR_LIBARCHIVE_INCLUDE AND MECHWARRIOR_LIBARCHIVE_LIB)
+        set(REKIT_LIBARCHIVE_INCLUDE "${MECHWARRIOR_LIBARCHIVE_INCLUDE}" CACHE PATH "" FORCE)
+        set(REKIT_LIBARCHIVE_LIB "${MECHWARRIOR_LIBARCHIVE_LIB}" CACHE FILEPATH "" FORCE)
+    endif()
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/extern/re-setup-kit/CMakeLists.txt")
+        message(FATAL_ERROR "extern/re-setup-kit is missing: git submodule update --init")
+    endif()
+    add_subdirectory(extern/re-setup-kit "${CMAKE_CURRENT_BINARY_DIR}/re-setup-kit")
+    set(MECHWARRIOR_VERSION "dev" CACHE STRING "The program's version, as --status reports it (packages set it)")
+    add_library(mechwarrior_setup STATIC src/Setup/Setup.cpp)
+    target_include_directories(mechwarrior_setup PUBLIC src)
+    target_link_libraries(mechwarrior_setup PUBLIC rekit mechwarrior_original)
     add_library(mechwarrior_sdl STATIC
         src/SDL/SDLBackend_Main.cpp src/SDL/SDLBackend_Input.cpp src/SDL/SDLBackend_Time.cpp
         src/SDL/SDLBackend_Config.cpp src/MT32/MPU401.cpp
@@ -339,8 +359,19 @@ if(MECHWARRIOR_BUILD_SDL)
         target_link_libraries(mechwarrior_sdl PUBLIC m)
     endif()
     target_include_directories(mechwarrior_sdl PRIVATE src/SDL)
-    add_executable(mechwarrior src/SDL/SDLMain.cpp)
-    target_link_libraries(mechwarrior PRIVATE mechwarrior_sdl)
+    add_executable(mechwarrior src/SDL/SDLMain.cpp src/SDL/SDLSetup.cpp)
+    target_link_libraries(mechwarrior PRIVATE mechwarrior_sdl mechwarrior_setup)
+    if(TARGET rekit_sdl)
+        target_link_libraries(mechwarrior PRIVATE rekit_sdl)
+    endif()
+    target_compile_definitions(mechwarrior PRIVATE MECHWARRIOR_VERSION="${MECHWARRIOR_VERSION}")
+    if(MECHWARRIOR_BUILD_TESTS)
+        # The recipe: the walk's verdicts, the install from a folder and from an archive, the carry-over, --status's
+        # answer. Its game parts need the player's files (MW1O_GAME); without them only the game-free parts run.
+        add_executable(setup_test tests/setup_test.cpp)
+        target_link_libraries(setup_test PRIVATE mechwarrior_setup)
+        add_test(NAME setup COMMAND setup_test "${CMAKE_CURRENT_BINARY_DIR}/setup_work")
+    endif()
     if(WIN32)
         # The icon Explorer, the taskbar and the installer's shortcuts show.
         target_sources(mechwarrior PRIVATE tools/package/mechwarrior.rc)
@@ -377,6 +408,8 @@ if(MECHWARRIOR_BUILD_SDL)
     if(MECHWARRIOR_BUILD_TESTS)
         find_package(Python3 COMPONENTS Interpreter)
         if(Python3_FOUND)
+            add_test(NAME status_setup COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tests/status_setup_test.py"
+                --program $<TARGET_FILE:mechwarrior> --work "${CMAKE_CURRENT_BINARY_DIR}/status_setup_work")
             add_test(NAME exe_free COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tools/trace/exe_free.py"
                 --port $<TARGET_FILE:mechwarrior> --work "${CMAKE_CURRENT_BINARY_DIR}/exe_free_work")
             set_tests_properties(exe_free PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 3600)
