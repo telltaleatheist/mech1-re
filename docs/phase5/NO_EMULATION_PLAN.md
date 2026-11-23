@@ -155,6 +155,12 @@ Changes per piece:
 - **Campaign overlay (MW_EGA_0800):** keeps its drawing and addresses pixels by x and y instead of selector, byte offset and mask.
 - **The overlay's documented unchecked reads** (a row past 200 and so on) keep their behaviour and their stderr note.
 
+**From G1** (`src/Video/Canvas`):
+- **Pages:** eight, each a 64K-pixel stride in one block of memory, which is also the EGA model's aperture until G4 and G5 move the drawing. A page selector's page (A000h, A200h, ...) is a canvas page, and the rest of each stride past row 199 is the page's off-screen tail. The model's unchecked reads still reach it.
+- **Palette:** RGB entries, set from the game's palette codes by `PaletteCodeColour`, what the codes show in the game's 320×200 mode.
+- **Presenter:** takes a canvas page and draws it with the canvas palette. The display start (the campaign's page selector, combat's CRTC start) always falls on a page.
+- **Trace frame hash:** still covers the indices and the game's palette codes (`.palette`). The host keeps the codes for that alone until G5, where the codes stop reaching the host.
+
 ## 3. How we check "play identical"
 
 ### Sound

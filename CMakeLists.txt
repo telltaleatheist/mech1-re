@@ -41,6 +41,9 @@ endif()
 add_library(mechwarrior_json STATIC src/Support/Json.cpp)
 target_compile_features(mechwarrior_json PUBLIC cxx_std_20)
 
+# Our own screen (src/Video): the canvas the game draws into.
+add_subdirectory(src/Video)
+
 add_library(mechwarrior_original STATIC
     src/Original/campaign_graphics.cpp
     src/Original/Campaign/MW_MAIN_081B.cpp
@@ -235,7 +238,7 @@ add_library(mechwarrior_original STATIC
     src/Ui/Ui.cpp
     src/Ui/UiHost.cpp)
 target_include_directories(mechwarrior_original PUBLIC src/include)
-target_link_libraries(mechwarrior_original PUBLIC mechwarrior_json)
+target_link_libraries(mechwarrior_original PUBLIC mechwarrior_json mechwarrior_video)
 set_target_properties(mechwarrior_original PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Unit tests for our own support code (no SDL, no game files): ctest.
@@ -244,6 +247,10 @@ if(MECHWARRIOR_BUILD_TESTS)
     enable_testing()
     add_executable(json_test tests/json_test.cpp src/Support/Json.cpp)
     add_test(NAME json COMMAND json_test)
+    # The canvas (src/Video, G1): pages, palette codes' colours, present().
+    add_executable(canvas_test tests/canvas_test.cpp)
+    target_link_libraries(canvas_test PRIVATE mechwarrior_video)
+    add_test(NAME canvas COMMAND canvas_test)
     add_executable(story_test tests/story_test.cpp src/Import/Story.cpp src/Import/Records.cpp src/Import/Events.cpp src/Import/Music.cpp src/Support/Json.cpp src/Support/Sha256.cpp src/Support/Hmac.cpp
         src/Support/BtechImage.cpp)
     target_include_directories(story_test PRIVATE src/include)

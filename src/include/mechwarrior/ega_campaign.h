@@ -125,8 +125,9 @@ typedef struct EgaOverlayRange { uint16_t offset, byteCount; } EgaOverlayRange;
 extern const EgaOverlayRange egaStartZeroedRanges[];
 extern const size_t egaStartZeroedRangeCount;
 /* Logical aperture/controller projection owned by Video/MW_EGA_0800.c,
- * not additional serialized overlay fields. */
-extern uint8_t egaVideoPixels[EGA_VIDEO_PIXEL_COUNT];
+ * not additional serialized overlay fields. The aperture's
+ * EGA_VIDEO_PIXEL_COUNT pixels are the game canvas's memory (src/Video). */
+extern uint8_t *const egaVideoPixels;
 extern uint8_t egaLogicalFunction;
 extern void (*egaPresentPage)(uint16_t displayPage);
 

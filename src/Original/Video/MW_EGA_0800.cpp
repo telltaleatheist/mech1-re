@@ -1,13 +1,19 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/ega_campaign.h"
 #include "mechwarrior/dos_files.h"
+#include "Canvas.h"
 #include <stdio.h>
 #include <stdlib.h>
 
 /* Logical hardware state owned by the EGA adapter, not additional CS/DS bytes.
  * One indexed aperture preserves overlapping page selectors without producing
- * CRT planes just to undo them for presentation. The hook is scanout only. */
-uint8_t egaVideoPixels[EGA_VIDEO_PIXEL_COUNT];
+ * CRT planes just to undo them for presentation. The hook is scanout only.
+ * The aperture is the game's canvas (src/Video/Canvas.h): a selector's page is
+ * a canvas page, (selector-A000h)*16 bytes = page*PAGE_STRIDE/8 into it. */
+static_assert(mw1o::video::Canvas::MEMORY_BYTES == EGA_VIDEO_PIXEL_COUNT, "The aperture is the canvas's memory");
+static_assert(mw1o::video::Canvas::PAGE_STRIDE == 0x200 * EGA_SELECTOR_PARAGRAPH_BYTES * EGA_PIXELS_PER_BYTE,
+    "A page selector step (200h) is one canvas page");
+uint8_t *const egaVideoPixels = mw1o::video::GameCanvas().memory();
 uint8_t egaLogicalFunction;
 void (*egaPresentPage)(uint16_t displayPage);
 void (*egaSetVideoMode)(uint8_t mode);

@@ -1,0 +1,72 @@
+#ifndef MW1O_VIDEO_CANVAS_H
+#define MW1O_VIDEO_CANVAS_H
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+
+namespace mw1o::video
+{
+/* One colour of the frame. */
+struct Rgb
+{
+    uint8_t r = 0, g = 0, b = 0;
+    friend bool operator==(const Rgb &, const Rgb &) = default;
+};
+
+/* What the game's palette codes show in its 320x200 mode (BIOS mode 0Dh): bits
+ * 2, 1 and 0 are red, green and blue at two thirds, bit 4 adds a third to all
+ * three, and code 6 is brown (green at a third). The other bits are not shown
+ * in this mode. The game's palette tables are written in these codes. */
+Rgb PaletteCodeColour(uint8_t code);
+
+/* The game's screen (docs/phase5/NO_EMULATION_PLAN.md, "Graphics: a canvas,
+ * not an EGA card"): 320x200 pixels, one byte each (a 16-colour index), on as
+ * many pages as the game uses, with a 16-entry RGB palette and a border colour.
+ * Nothing in it models a card.
+ *
+ * Until the drawing moves onto it (slices G2-G5), the game's EGA model draws
+ * straight into memory(): a page starts every PAGE_STRIDE pixels, where the
+ * model's page selectors put it, and the rest of each stride past row 199 is
+ * the page's off-screen tail, which the model's documented unchecked reads
+ * (a row past 200 and so on) still reach. */
+class Canvas
+{
+public:
+    static constexpr int WIDTH = 320, HEIGHT = 200, PAGES = 8, COLOURS = 16;
+    static constexpr std::size_t PAGE_STRIDE = 0x10000, MEMORY_BYTES = PAGE_STRIDE * PAGES;
+    /* The border's entry, after the 16 colours. */
+    static constexpr int BORDER = COLOURS;
+    using Palette = std::array<Rgb, COLOURS + 1>;
+    /* Shows a page: the canvas and the page number. */
+    using Presenter = std::function<void(const Canvas &, int page)>;
+
+    /* Every page's pixels to index 0, the whole memory with them. */
+    void clear();
+    uint8_t *page(int index);
+    const uint8_t *page(int index) const;
+    /* All pages, PAGE_STRIDE apart: the EGA model's view (see above). */
+    uint8_t *memory() { return memory_.data(); }
+    const uint8_t *memory() const { return memory_.data(); }
+
+    void setPaletteEntry(int index, Rgb colour);
+    Rgb paletteEntry(int index) const;
+    const Palette &palette() const { return palette_; }
+
+    void setPresenter(Presenter presenter) { presenter_ = std::move(presenter); }
+    /* Shows `index` through the presenter, if one is set. */
+    void present(int index);
+    /* The last page present() showed; 0 before any. */
+    int presentedPage() const { return presented_; }
+
+private:
+    std::array<uint8_t, MEMORY_BYTES> memory_{};
+    Palette palette_{};
+    Presenter presenter_;
+    int presented_ = 0;
+};
+
+/* The game's one canvas, shared by the game's drawing and the host's presenter. */
+Canvas &GameCanvas();
+}
+#endif
