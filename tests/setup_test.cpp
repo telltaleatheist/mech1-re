@@ -168,7 +168,7 @@ void with_game(const fs::path& work, const char* game_env, const char* ref_env, 
   // status: the player's own install found, ready, nothing written beyond what is there.
   const size_t before = count_files(work / "user");
   const rekit::Status st = setup::status("", (work / "user").string(), (work / "notgame").string(), "test");
-  check(st.state == rekit::Status::kIncomplete && st.where == out.string(), "status: the player's install found (incomplete without MW_MAIN.EXE)");
+  check(st.state == rekit::Status::kIncomplete && fs::path(st.where).lexically_normal() == out.lexically_normal(), "status: the player's install found (incomplete without MW_MAIN.EXE)");
   check(count_files(work / "user") == before, "break: status wrote nothing in the player's folder");
 
 #if REKIT_HAVE_LIBARCHIVE
