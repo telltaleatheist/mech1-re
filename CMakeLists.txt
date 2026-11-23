@@ -320,6 +320,10 @@ if(MECHWARRIOR_BUILD_TESTS)
     if(Python3_FOUND)
         add_test(NAME text_audit COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tools/phase2/text_audit.py" $<TARGET_FILE:btech_image>)
         set_tests_properties(text_audit PROPERTIES SKIP_RETURN_CODE 77)
+        # The trace tools' palette rule against the port's, over every code (G1b).
+        add_executable(palette_rule tests/palette_rule.cpp)
+        target_link_libraries(palette_rule PRIVATE mechwarrior_video)
+        add_test(NAME palette_rule COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tools/trace/test_palette.py" $<TARGET_FILE:palette_rule>)
     endif()
 endif()
 

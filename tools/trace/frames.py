@@ -2,20 +2,18 @@
 """Turn a trace's indexed frames into PNGs for a person to look at.
 
 The recorder copies each 320x200 indexed frame (.indices, one byte per pixel)
-and its EGA palette (.palette: 16 registers + overscan, 6-bit EGA colours)
-into its --frames directory. This writes one PNG per frame and, with --sheet,
+and its colours (.rgb: 17 RGB triples) into its --frames directory; for an
+older frame with only its palette codes (.palette), palette.py gives the colours. This writes one PNG per frame and, with --sheet,
 a contact sheet at half size. Frames are MW1 art: write them outside the repo.
 
     python3 frames.py <frames dir> <png dir> [--sheet sheet.png] [--cols 4]
 """
 import argparse, glob, os, struct, sys, zlib
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from palette import code_colour  # noqa: E402
+
 W, H = 320, 200
-
-
-def ega_rgb(value):
-    # EGA 6-bit colour: bits 2,1,0 are R,G,B at 2/3; bits 5,4,3 add 1/3.
-    return tuple(((value >> b) & 1) * 170 + ((value >> (b + 3)) & 1) * 85 for b in (2, 1, 0))
 
 
 def write_png(path, width, height, rgb_rows):
@@ -31,8 +29,12 @@ def load(indices_path):
     pixels = open(indices_path, "rb").read()
     if len(pixels) != W * H:
         sys.exit(f"{indices_path}: {len(pixels)} bytes, expected {W * H}")
-    palette = open(indices_path[:-len(".indices")] + ".palette", "rb").read()
-    colours = [ega_rgb(v) for v in palette[:16]]
+    stem = indices_path[:-len(".indices")]
+    if os.path.exists(stem + ".rgb"):
+        rgb = open(stem + ".rgb", "rb").read()
+        colours = [tuple(rgb[i * 3:i * 3 + 3]) for i in range(16)]
+    else:
+        colours = [code_colour(v) for v in open(stem + ".palette", "rb").read()[:16]]
     return [[colours[pixels[y * W + x] & 15] for x in range(W)] for y in range(H)]
 
 

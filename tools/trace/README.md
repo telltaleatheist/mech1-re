@@ -77,7 +77,12 @@ and no host speed or load changes it.
   original's data segment.
 - `menu`: the same rows as data; `screenKey`: a hash of the menu's shape
   (each row's callback, picture, links and label hash).
-- `frame`: SHA-256 (32 hex) of the indexed 320x200 frame and of its palette.
+- `frame`: SHA-256 (32 hex) of the indexed 320x200 frame (`indices`), of the
+  colours it shows (`rgb`: 17 RGB triples, the 16 colours and the border) and
+  of its raw palette codes (`palette`, kept but not compared). check.py
+  compares `indices` and `rgb`. On the original's side, state.py turns the
+  codes into colours by `palette.py`'s own mode 0Dh rule, which the ctest
+  `palette_rule` checks against the port's on every code.
   The frames are MW1 art: the recorder copies them to `--frames`, outside the
   repo.
 

@@ -159,7 +159,10 @@ Changes per piece:
 - **Pages:** eight, each a 64K-pixel stride in one block of memory, which is also the EGA model's aperture until G4 and G5 move the drawing. A page selector's page (A000h, A200h, ...) is a canvas page, and the rest of each stride past row 199 is the page's off-screen tail. The model's unchecked reads still reach it.
 - **Palette:** RGB entries, set from the game's palette codes by `PaletteCodeColour`, what the codes show in the game's 320×200 mode.
 - **Presenter:** takes a canvas page and draws it with the canvas palette. The display start (the campaign's page selector, combat's CRTC start) always falls on a page.
-- **Trace frame hash:** still covers the indices and the game's palette codes (`.palette`). The host keeps the codes for that alone until G5, where the codes stop reaching the host.
+- **Trace frame hash (G1b):** covers the indices and the colours they show (`rgb`), no longer the raw palette codes. Codes that show the same colour are the same screen.
+  - The original stays the reference. `state.py` turns the original's captured codes into colours by `tools/trace/palette.py`, a mode 0Dh rule written separately from the port's `PaletteCodeColour`. The ctest `palette_rule` requires the two to agree on all 256 codes.
+  - The goldens gained `rgb` from a port recording that equals them in every other field. Over the goldens, the code sets and the colour sets correspond one to one (3 and 3).
+  - The codes (`.palette`) are still captured and recorded as raw data. The host keeps them until G5, where the port stops writing them.
 
 ## 3. How we check "play identical"
 

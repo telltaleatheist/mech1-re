@@ -20,6 +20,7 @@ static_assert(Canvas::WIDTH==EGA_COLUMNS && Canvas::HEIGHT==EGA_ROWS && Canvas::
 static uint8_t videoMode=3,paletteCodes[EGA_PALETTE_ENTRIES];
 static uint8_t displayedIndices[EGA_COLUMNS*EGA_ROWS],lastPalette[EGA_PALETTE_ENTRIES];
 static uint32_t rgbaPixels[EGA_COLUMNS*EGA_ROWS];
+static Canvas::Palette lastRgb; /* The canvas palette the presented frame was drawn with. */
 static int lastPage;
 static char captureDirectory[4096];
 static bool haveFrame,presenting;
@@ -200,7 +201,7 @@ static void PresentCanvasPage(const Canvas &canvas,int page,bool force)
     if (showNotice) DrawNotice(notice);
     noticeShown=showNotice;
     if (!SDL_RenderPresent(renderer)) MwSdlFail("Present EGA texture");
-    lastPage=page;memcpy(lastPalette,paletteCodes,sizeof(lastPalette));haveFrame=true;
+    lastPage=page;memcpy(lastPalette,paletteCodes,sizeof(lastPalette));lastRgb=palette;haveFrame=true;
     repeatPresentAt=SDL_GetTicksNS()+HOST_REPEAT_SETTLE_NS;
     if (mwSdlFrameObserver) mwSdlFrameObserver();
     presenting=false;
@@ -225,6 +226,15 @@ bool MwSdlCapture(const char *stem)
     if (snprintf(path,sizeof(path),"%s/%s.palette",captureDirectory,stem)>=(int)sizeof(path)) return false;
     file=fopen(path,"wbx");if (!file) return false;
     saved=saved && fwrite(lastPalette,1,sizeof(lastPalette),file)==sizeof(lastPalette);if (fclose(file)) saved=false;
+    /* The frame's colours: 17 entries (16, then the border) of red, green, blue. */
+    if (snprintf(path,sizeof(path),"%s/%s.rgb",captureDirectory,stem)>=(int)sizeof(path)) return false;
+    file=fopen(path,"wbx");if (!file) return false;
+    for (const mw1o::video::Rgb &colour:lastRgb)
+    {
+        const uint8_t bytes[3]={colour.r,colour.g,colour.b};
+        saved=saved && fwrite(bytes,1,3,file)==3;
+    }
+    if (fclose(file)) saved=false;
     if (snprintf(path,sizeof(path),"%s/%s.json",captureDirectory,stem)>=(int)sizeof(path)) return false;
     file=fopen(path,"wx");if (!file) return false;
     fprintf(file,"{\"kind\":\"Actual SDL renderer readback; not a matched original replay\",\"mode\":13,\"logicalWidth\":320,\"logicalHeight\":200,\"combat\":%s,\"displayPage\":%u,\"drawPage\":%u,\"displayByteOffset\":%u,\"SDL\":\"%s\",\"acceptance\":\"Pending\"}\n",mwSdlCombatActive?"true":"false",mwSdlCombatActive?frontPageSelector:egaDisplayPage,mwSdlCombatActive?drawPageSelector:egaDrawPage,

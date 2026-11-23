@@ -34,7 +34,8 @@ A record:
             menu labels only as a 12-hex keyed hash, never MW1's text
     menu    each row's 081B callback offset, picture, links, enabled, label hash
     screenKey  a hash of the menu's shape
-    frame   SHA-256 of the indexed 320x200 frame and of its palette
+    frame   SHA-256 of the indexed 320x200 frame, of its palette codes (raw, not
+            compared) and of its colours (rgb: 17 RGB triples, palette.py)
 The state ends with "state exchange <sha>", the hash of the whole campaign as
 the save format encodes it (0x718 bytes, NAME.exchange beside the frames).
 
@@ -268,7 +269,7 @@ def main():
             base = os.path.join(caps, name)
             st = read_json(base + ".state.json", time.monotonic() + 1)
             frame = {}
-            for ext in ("indices", "palette", "exchange"):
+            for ext in ("indices", "palette", "rgb", "exchange"):
                 try:
                     with open(f"{base}.{ext}", "rb") as f:
                         frame[ext] = sha(f.read(), 32)

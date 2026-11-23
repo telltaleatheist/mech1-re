@@ -28,14 +28,17 @@ reported, never guessed.
 
 The palette's 17th byte is the overscan colour (attribute register 11h),
 which BTECH sets during the briefing (2A36 BtechEgaSetOverscanColour). A
-version 2 capture holds it; a version 1 capture does not, and reads as 0. Frames are MW1 art: --frames
-writes them outside the repo, in the recorder's .indices/.palette form.
+version 2 capture holds it; a version 1 capture does not, and reads as 0. The
+frame's colours (rgb) are the codes' colours in mode 0Dh, by palette.py's own
+rule. Frames are MW1 art: --frames writes them outside the repo, in the
+recorder's .indices/.palette/.rgb form.
 """
 import argparse, json, os, struct, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import record  # noqa: E402  (state_lines, menu_rows, read_script, sha)
+from palette import rgb_palette  # noqa: E402  (the codes' colours, our own rule)
 
 PLANE = 8000
 MEMORY = 640 * 1024
@@ -243,10 +246,11 @@ def main():
             rec = {"snap": name, "keys": keys_before[name], "state": lines, "menu": menu,
                    "screenKey": record.sha(json.dumps([(r["callback"], r["picture"], r["links"], r["label"])
                                                       for r in menu]).encode(), 12),
-                   "frame": {"indices": record.sha(indices, 32), "palette": record.sha(palette, 32)}}
+                   "frame": {"indices": record.sha(indices, 32), "palette": record.sha(palette, 32),
+                             "rgb": record.sha(rgb_palette(palette), 32)}}
             out.write(json.dumps(rec) + "\n")
             if a.frames:
-                for ext, data in (("indices", indices), ("palette", palette)):
+                for ext, data in (("indices", indices), ("palette", palette), ("rgb", rgb_palette(palette))):
                     with open(os.path.join(a.frames, f"{seq:03d}-{name}.{ext}"), "wb") as f:
                         f.write(data)
             print(f"{seq:3d} {name:<24} {lines[0]} {'combat' if cap.combat else lines[3]}"

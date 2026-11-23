@@ -7,7 +7,9 @@
 
 For every golden trace in traces/ (or those named with --only), the candidate
 runs the same key script from scripts/, and each snap is compared: the frame
-(indexed pixels and palette, by hash) and every state line. A known
+(indexed pixels and the colours they show, rgb, by hash; the palette codes
+are kept but not compared: codes that show the same colour are the same
+screen) and every state line. A known
 difference (known/<trace>.json) is reported, not failed, so each one is
 fixed on purpose. The style follows crescent-hawks-rebuild's
 tools/reference/check.py.
@@ -53,13 +55,17 @@ def compare(name, golden, ours, say, strict=False):
             continue
         k = known.get(snap, {})
         same_frame = got.get("frame", {}).get("indices") == ref["frame"]["indices"]
-        same_palette = got.get("frame", {}).get("palette") == ref["frame"]["palette"]
+        if not ref["frame"].get("rgb"):
+            say("  FAIL the golden snap has no rgb (recorded before G1b)")
+            ok = False
+            continue
+        same_palette = got.get("frame", {}).get("rgb") == ref["frame"]["rgb"]
         if same_frame and same_palette:
             say("  ok   the screen")
         elif "frame" in k:
             say(f"  known the screen: {k['frame']}")
         else:
-            say("  FAIL the screen: " + ", ".join(w for w, same in (("pixels", same_frame), ("palette", same_palette)) if not same))
+            say("  FAIL the screen: " + ", ".join(w for w, same in (("pixels", same_frame), ("colours", same_palette)) if not same))
             ok = False
         differ, known_lines = [], []
         ref_lines, got_lines = ref["state"], got.get("state", [])
