@@ -1,6 +1,10 @@
 # Phase 5: audio plan
 
-Status: plan for review. No code until it's approved.
+Status: plan for review. No code until it's approved. **Superseded in part** by
+[sound and graphics rebuilt, no emulation](NO_EMULATION_PLAN.md) (2026-11-22):
+its own FM synth (`FmChip`, a chip model) and its MT-32 options are dropped;
+its slices 1-3 (the port-event log, the output layer split, the DOSBox-X
+comparison) are done and stay the base.
 
 Project rule: no emulation libraries. Munt (libmt32emu) and Nuked-OPL3 leave
 the build and are replaced by our own SDL3 audio. This plan says what the
