@@ -29,9 +29,9 @@ class PackageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self.fixture(root)
-            with patch.object(build_package, "run"):
+            with patch.object(build_package, "run"), patch.object(build_package, "platform_name", return_value="linux-x86_64"):
                 build_package.package(root, root / "build", root / "sdl", root / "dist", "v0.1.0-test")
-            extracted = root / "dist/smoke/MechWarrior-v0.1.0-test-linux-x86_64"
+            extracted = root / "dist/smoke/MW1-Rebuild-v0.1.0-test-linux-x86_64"
             self.assertFalse((extracted / "libSDL3.so").is_symlink())
             self.assertEqual((extracted / "libSDL3.so").read_bytes(), b"fixture library")
             self.assertTrue(os.access(extracted / "mechwarrior", os.X_OK))
@@ -46,7 +46,7 @@ class PackageTests(unittest.TestCase):
             root = Path(directory)
             self.fixture(root)
             (root / "build/libnukedopl.so").unlink()
-            with patch.object(build_package, "run"), self.assertRaisesRegex(RuntimeError, "Missing runtime dependency"):
+            with patch.object(build_package, "run"), patch.object(build_package, "platform_name", return_value="linux-x86_64"), self.assertRaisesRegex(RuntimeError, "Missing runtime dependency"):
                 build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
             self.assertFalse(list((root / "dist").glob("*.tar.gz")))
 
@@ -56,7 +56,7 @@ class PackageTests(unittest.TestCase):
             root = Path(directory)
             self.fixture(root)
             (root / "data/ui/hub.json").unlink()
-            with patch.object(build_package, "run"), self.assertRaisesRegex(RuntimeError, "Missing game data: data/ui"):
+            with patch.object(build_package, "run"), patch.object(build_package, "platform_name", return_value="linux-x86_64"), self.assertRaisesRegex(RuntimeError, "Missing game data: data/ui"):
                 build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
             self.assertFalse(list((root / "dist").glob("*.tar.gz")))
 
