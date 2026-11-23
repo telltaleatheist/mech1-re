@@ -194,6 +194,17 @@ Changes per piece:
 - **The sound-port goldens changed only by the acknowledges.** The three combat logs lost the handler's 56 port-61h read-and-write triples and nothing else: with them removed from the old goldens, every remaining line matches, the same values at the same cycles. They were re-recorded. The music logs are unchanged.
 - **The check.** The traces match (8/8 on 1990). The event logs match (12/12).
 
+**From H3** (the mouse and the joystick):
+- **The mouse is in the frame's pixels.** Positions set and read are the 320×200 frame's, not INT 33h's doubled x; the travel map's shift up and down are gone (they cancelled exactly). The campaign asks the host whether there is a mouse instead of resetting INT 33h for FFFFh. Motion was already SDL3's, scaled to the frame.
+- **Joysticks are SDL3's** (`joystick.h`). Joysticks A and B are the first two connected: a gamepad's left stick and its south and east buttons, or another joystick's first two axes and buttons. Each axis comes centred and scaled to -127..127. The test clock's runs open none, so a controller on the test machine never reaches the traces.
+- **The games' calibration rules read the axes.** Each axis becomes the reading the games' rules take where the original counted game-port reads: 127 at the centre, 0 and 254 at full deflection. Both calibrations keep their game role and rules on that reading: the campaign's centre and its fifths for near and far, and combat's centre, 7F00h reciprocal, dead zone under 8 and directions past -52 and from 53. A joystick is installed when it is connected; the original's presence tests (counting reads until the axes discharged, and checking that they still charged after 20 delay loops) are gone.
+- **Combat reads a connected joystick.** Its direction read (1BF5:2376, with 21C7 and 22F9) was never converted, because the game port always read FFh: it is converted now, with its values in 41D9h, 41DDh and 41DFh. The button read (23D6) reads the host's buttons.
+- **No original reference.** The original was never run with a joystick here, so a connected joystick's behaviour rests on the games' own calibration rules, not on a trace. `tests/joystick_test.cpp` drives both calibrations with fake axes (centred, full left, full right, small and diagonal deflections, buttons, calibrating off centre, none connected) and checks what each game reports.
+- **The hardware timing is gone.** The campaign's read counting and its retry when a tick came between, and combat's PIT-timed delay-loop count (41DB), delay loops and port reads, all timed hardware only. The PIT latch window in the host, used by nothing else, is gone with them.
+- **The test clock still charges their time until H4.** With no joystick connected, combat's calibration and axis reads took a fixed time of reads and delay loops. The test clock charges that time where they made it, with the same host waits in the same order, so the event logs stay identical; real time spends nothing. H4 removes the charge.
+- **The sound-port goldens changed only by the latches.** The three combat logs lost the calibration's two channel-0 latch writes (43h: 00h, 06h) and nothing else: with those removed from the old goldens, every remaining line matches. They were re-recorded. The music logs are unchanged.
+- **The check.** The traces match (8/8 on 1990). The event logs match (12/12). The joystick test passes.
+
 ## 3. How we check "play identical"
 
 ### Sound

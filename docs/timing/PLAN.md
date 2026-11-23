@@ -192,5 +192,7 @@ same frames on every host, so it is the same on the Mac.
   line naming `combat_tick_ms`.
 - `combat_tick_ms` ranges from 20 to 500.
 - The joystick calibration: a fixed length per loop and 1 µs per read.
+  (Since H3 of docs/phase5/NO_EMULATION_PLAN.md these waits are gone in real
+  time; the test clock alone still charges them, until H4.)
 - Every combat tick is fixed, including the inspection and full-screen ones.
 - Campaign waits are unchanged for now.

@@ -29,25 +29,25 @@ void (*mwSdlFrameObserver)(void);
 
 /* A frame of the canvas as it is now set up: a mode set starts a new screen. */
 static bool HaveFrame(void) {return haveFrame && lastSetUps==GameCanvas().setUps();}
-void MwSdlSetMousePosition(uint16_t horizontalPosition,uint16_t verticalPosition)
+/* The pointer in the frame's pixels (H3; INT 33h's x was twice them). */
+void MwSdlSetMousePosition(uint16_t x,uint16_t y)
 {
     float windowX,windowY;
-    if (!renderer || !window || !SDL_RenderCoordinatesToWindow(renderer,
-        horizontalPosition/2.0f,(float)verticalPosition,&windowX,&windowY))
+    if (!renderer || !window || !SDL_RenderCoordinatesToWindow(renderer,(float)x,(float)y,&windowX,&windowY))
         MwSdlFail("Position mouse in EGA coordinates");
     SDL_WarpMouseInWindow(window,windowX,windowY);
 }
-void MwSdlReadMousePosition(uint16_t *horizontalPosition,uint16_t *verticalPosition)
+void MwSdlReadMousePosition(uint16_t *x,uint16_t *y)
 {
     float windowX,windowY,logicalX,logicalY;
-    if (!horizontalPosition || !verticalPosition || !renderer) MwSdlFail("Read mouse in EGA coordinates");
+    if (!x || !y || !renderer) MwSdlFail("Read mouse in EGA coordinates");
     SDL_GetMouseState(&windowX,&windowY);
     if (!SDL_RenderCoordinatesFromWindow(renderer,windowX,windowY,&logicalX,&logicalY))
         MwSdlFail("Read mouse in EGA coordinates");
     if (logicalX<0) logicalX=0;else if (logicalX>EGA_COLUMNS-1) logicalX=EGA_COLUMNS-1;
     if (logicalY<0) logicalY=0;else if (logicalY>EGA_ROWS-1) logicalY=EGA_ROWS-1;
-    *horizontalPosition=(uint16_t)logicalX<<1;
-    *verticalPosition=(uint16_t)logicalY;
+    *x=(uint16_t)logicalX;
+    *y=(uint16_t)logicalY;
 }
 void MwSdlConvertMouseMotion(float windowXMotion,float windowYMotion,
     float *logicalXMotion,float *logicalYMotion)

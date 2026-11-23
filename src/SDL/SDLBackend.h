@@ -1,6 +1,7 @@
 #ifndef MECHWARRIOR_SDL_BACKEND_H
 #define MECHWARRIOR_SDL_BACKEND_H
 #include "mechwarrior/key_events.h"
+#include "mechwarrior/joystick.h"
 #include "mechwarrior/sdl_host.h"
 #include "mechwarrior/campaign_music.h"
 #include "mechwarrior/launcher.h"
@@ -84,8 +85,8 @@ void MwSdlPresentVideo(bool force);
 /* Show the current frame again at the next pump (a window event). */
 void MwSdlRepeatPresent(void);
 void MwSdlShutdownVideo(void);
-void MwSdlSetMousePosition(uint16_t horizontalPosition,uint16_t verticalPosition);
-void MwSdlReadMousePosition(uint16_t *horizontalPosition,uint16_t *verticalPosition);
+void MwSdlSetMousePosition(uint16_t x,uint16_t y); /* The frame's pixels. */
+void MwSdlReadMousePosition(uint16_t *x,uint16_t *y);
 void MwSdlConvertMouseMotion(float windowXMotion,float windowYMotion,
     float *logicalXMotion,float *logicalYMotion);
 bool MwSdlInitializeAudio(void);
@@ -112,4 +113,6 @@ bool MwSdlExecuteCombatChild(const MwCampaignLaunch *launch,uint8_t audioCode,ui
 bool MwSdlCombatKeyboardPending(void);
 uint16_t MwSdlCombatDosAllocationCount(void);
 void MwSdlDeliverCombatKeyEvent(void);
+MwJoystickState MwSdlReadJoystick(uint16_t joystick);
+void MwSdlChargeGamePortWait(uint8_t wait);
 #endif

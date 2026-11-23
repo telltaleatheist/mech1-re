@@ -46,7 +46,8 @@ BtechPooledWorldObject *objectiveVisibilityObject;
 BtechCameraContext *orderMapCameraContext,*playerPoseCameraContext;
 uint16_t specialTargetDamageRemaining;
 uint8_t runtimeDelayActive,joystickPairInstalled[2],joystickAxisCentres[4];
-uint16_t runtimeDelayRemaining,joystickTimingLoopCount,joystickAxisReciprocals[4];
+uint16_t runtimeDelayRemaining,joystickAxisReciprocals[4];
+int16_t joystickFirstAxisValue,joystickDirectionX,joystickDirectionY;
 const char *combatInputReplayFilename;
 uint16_t combatInputReplayMode;
 BtechCharacterClassStorage characterClassStorage;
@@ -302,7 +303,11 @@ void BtechInitializeFreshWorldOwners(const uint8_t *data)
     for (uint16_t slot=0;slot<sizeof(joystickPairInstalled)/sizeof(joystickPairInstalled[0]);++slot) joystickPairInstalled[slot]=data[0x41CA+slot*1];
     for (uint16_t slot=0;slot<sizeof(joystickAxisCentres)/sizeof(joystickAxisCentres[0]);++slot) joystickAxisCentres[slot]=data[0x41CC+slot*1];
     runtimeDelayRemaining=0; /*41E5*/
-    joystickTimingLoopCount=0; /*41DB*/
+    /* 41DB, the delay-loop count 1BF5:21FF calibrated, timed game-port reads
+     * only and is gone (H3). */
+    joystickFirstAxisValue=0; /*41D9*/
+    joystickDirectionX=0; /*41DD*/
+    joystickDirectionY=0; /*41DF*/
     for (uint16_t slot=0;slot<sizeof(joystickAxisReciprocals)/sizeof(joystickAxisReciprocals[0]);++slot) joystickAxisReciprocals[slot]=0; /*41D0*/
     combatInputReplayMode=0; /*084C*/
     lzwReverseReadOffset=0; /*4AAF*/

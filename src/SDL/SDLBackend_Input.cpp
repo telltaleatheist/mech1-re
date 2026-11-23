@@ -107,6 +107,61 @@ static bool CampaignKey(SDL_Scancode scancode,SDL_Keycode keycode,SDL_Keymod mod
 }
 bool MwSdlCampaignKeyForScancode(SDL_Scancode scancode,SDL_Keymod mod,MwCampaignKey *key)
 {return CampaignKey(scancode,SDL_GetKeyFromScancode(scancode,mod,false),mod,key);}
+/* Joysticks A and B (H3): the first two connected, in the order they came.
+ * A gamepad gives its left stick and its south and east buttons; another
+ * joystick its first two axes and buttons. The test clock's runs open none,
+ * so the traces never see a controller the machine happens to have. */
+static SDL_Joystick *joysticks[2];
+static SDL_Gamepad *gamepads[2];
+static bool joysticksEnabled;
+static void OpenJoystick(SDL_JoystickID id)
+{
+    for (unsigned slot=0;slot<2;++slot)
+        if ((joysticks[slot] && SDL_GetJoystickID(joysticks[slot])==id) || (gamepads[slot] && SDL_GetGamepadID(gamepads[slot])==id)) return;
+    for (unsigned slot=0;slot<2;++slot)
+    {
+        if (joysticks[slot] || gamepads[slot]) continue;
+        if (SDL_IsGamepad(id)) gamepads[slot]=SDL_OpenGamepad(id);
+        else
+        {
+            joysticks[slot]=SDL_OpenJoystick(id);
+            if (joysticks[slot] && (SDL_GetNumJoystickAxes(joysticks[slot])<2 || SDL_GetNumJoystickButtons(joysticks[slot])<1))
+            {SDL_CloseJoystick(joysticks[slot]);joysticks[slot]=NULL;} /* Not a joystick the games could read. */
+        }
+        return;
+    }
+}
+static void CloseJoystick(SDL_JoystickID id)
+{
+    for (unsigned slot=0;slot<2;++slot)
+    {
+        if (gamepads[slot] && SDL_GetGamepadID(gamepads[slot])==id) {SDL_CloseGamepad(gamepads[slot]);gamepads[slot]=NULL;}
+        if (joysticks[slot] && SDL_GetJoystickID(joysticks[slot])==id) {SDL_CloseJoystick(joysticks[slot]);joysticks[slot]=NULL;}
+    }
+}
+static int8_t AxisValue(Sint16 value)
+{
+    int scaled=(int)value*MW_JOYSTICK_AXIS_FULL/32767;
+    return (int8_t)(scaled<-MW_JOYSTICK_AXIS_FULL?-MW_JOYSTICK_AXIS_FULL:scaled);
+}
+MwJoystickState MwSdlReadJoystick(uint16_t joystick)
+{
+    MwJoystickState state={false,0,0,false,false};
+    if (joystick>1 || !joysticksEnabled) return state;
+    SDL_UpdateJoysticks();
+    if (SDL_Gamepad *gamepad=gamepads[joystick])
+    {
+        state=MwJoystickState{true,AxisValue(SDL_GetGamepadAxis(gamepad,SDL_GAMEPAD_AXIS_LEFTX)),
+            AxisValue(SDL_GetGamepadAxis(gamepad,SDL_GAMEPAD_AXIS_LEFTY)),
+            SDL_GetGamepadButton(gamepad,SDL_GAMEPAD_BUTTON_SOUTH),SDL_GetGamepadButton(gamepad,SDL_GAMEPAD_BUTTON_EAST)};
+    }
+    else if (SDL_Joystick *stick=joysticks[joystick])
+    {
+        state=MwJoystickState{true,AxisValue(SDL_GetJoystickAxis(stick,0)),AxisValue(SDL_GetJoystickAxis(stick,1)),
+            SDL_GetJoystickButton(stick,0),SDL_GetNumJoystickButtons(stick)>1 && SDL_GetJoystickButton(stick,1)};
+    }
+    return state;
+}
 void MwSdlPollEvents(void)
 {
     MwSdlPollDebugControl();
@@ -119,6 +174,8 @@ void MwSdlPollEvents(void)
         if(event.type==SDL_EVENT_KEY_DOWN && (event.key.scancode==SDL_SCANCODE_P || event.key.scancode==SDL_SCANCODE_ESCAPE))
             MwSdlStopSupportPilot(); /* Explicit manual pause/retreat always takes over. */
         if (event.type==SDL_EVENT_QUIT) {MwSdlRequestQuit();continue;}
+        if (event.type==SDL_EVENT_JOYSTICK_ADDED) {OpenJoystick(event.jdevice.which);continue;}
+        if (event.type==SDL_EVENT_JOYSTICK_REMOVED) {CloseJoystick(event.jdevice.which);continue;}
         if (event.type==SDL_EVENT_WINDOW_EXPOSED) {MwSdlPresentVideo(true);continue;}
         if (event.type==SDL_EVENT_WINDOW_SHOWN || event.type==SDL_EVENT_WINDOW_RESIZED
             || event.type==SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED || event.type==SDL_EVENT_WINDOW_MAXIMIZED
@@ -197,15 +254,15 @@ static void MouseMotion(uint16_t *x,uint16_t *y)
     mouseXMotion-=xMotion;mouseYMotion-=yMotion;
     *x=(uint16_t)xMotion;*y=(uint16_t)yMotion;
 }
-static uint8_t GamePort(void) {return GAMEPORT_DISCONNECTED;} /* No joystick connected: axes never discharge. */
-static void ChargeGamePort(uint8_t value) {(void)value;}
+static MwJoystickState ReadJoystickA(void) {return MwSdlReadJoystick(JOYSTICK_A);}
 static uint8_t CurrentDrive(void) {return HOST_DEFAULT_DRIVE_C;}
 void MwSdlInitializeInput(void)
 {
     readIndex=writeIndex=0;lastControl=quitRequested=false;captureNumber=0;MouseReset();
     combatKeyRead=combatKeyWrite=0;
     MwSdlInitializeDebugControl();
-    mwCampaignInput=MwCampaignInputCalls{MouseRelease,Available,ReadKey,GamePort,ChargeGamePort,
+    joysticksEnabled=!MwSdlVirtualClock() && SDL_InitSubSystem(SDL_INIT_GAMEPAD);
+    mwCampaignInput=MwCampaignInputCalls{MouseRelease,Available,ReadKey,ReadJoystickA,
         MwSdlSetInterrupts,MwSdlPump,CurrentDrive,MouseReset,MouseMotion,ControlHeld,
         MwSdlSetMousePosition,MwSdlReadMousePosition};
 }

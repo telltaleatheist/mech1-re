@@ -5,8 +5,7 @@
 #include "mechwarrior/campaign_exchange.h"
 
 enum { CAMPAIGN_PHASE_NEW=1, CAMPAIGN_PHASE_COMBAT_RETURN=2,
-    CAMPAIGN_EXIT_QUIT=0, CAMPAIGN_EXIT_COMBAT=1,
-    JOYSTICK_DETECT_MINIMUM_SAMPLES=5, JOYSTICK_DETECT_TIMEOUT_SAMPLES=0x03E8 };
+    CAMPAIGN_EXIT_QUIT=0, CAMPAIGN_EXIT_COMBAT=1 };
 /* Host projection of the launcher's PSP/FCB contract, not a serialized struct
  * or additional source arguments. The resident view includes the identity
  * bytes beyond the exchange buffer which0002 genuinely tests. */
@@ -24,7 +23,7 @@ typedef struct MwCampaignPlatformCalls
     void (*installInterrupts)(void);
     void (*restoreInterrupts)(void);
     uint32_t (*readBiosTicks)(void);
-    uint16_t (*resetMouse)(void);
+    bool (*mousePresent)(void); /* A mouse to read (H3); the original reset INT 33h to ask. */
     void (*displayDosString)(const char *text);
 } MwCampaignPlatformCalls;
 extern MwCampaignPlatformCalls mwCampaignPlatform;

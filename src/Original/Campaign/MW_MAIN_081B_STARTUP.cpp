@@ -533,29 +533,16 @@ void MwMixBiosTicksIntoRandomState(void)
     randomStateWord0^=(uint16_t)(ticks>>16);
     randomStateWord1^=(uint16_t)ticks;
 }
-/* MW_MAIN081B:05FE..0640. Probe resultFFFF only means installed mouse.
- * Game-port charge sampling and calibration stay game code, not SDL policy. */
+/* MW_MAIN081B:05FE..0640. A mouse if the host has one; a joystick if one is
+ * connected. The original reset INT 33h (FFFFh meaning a mouse) and counted
+ * game-port reads until both of joystick A's axes discharged; H3 asks the
+ * host instead, so those reads and their CLI/STI are gone. */
 void MwDetectMouseAndJoystick(void)
 {
     mouseInstalled=0;joystickInstalled=0;
-    if (!mwCampaignPlatform.resetMouse || !mwCampaignInput.setInterruptsEnabled
-        || !mwCampaignInput.writeGamePort || !mwCampaignInput.readGamePort) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignPlatform.resetMouse || !mwCampaignInput.setInterruptsEnabled || !mwCampaignInput.writeGamePort || !mwCampaignInput.readGamePort");
-    uint16_t mouseResult=mwCampaignPlatform.resetMouse();
-    if (mouseResult==UINT16_MAX) mouseInstalled=1;
-    mwCampaignInput.setInterruptsEnabled(false);
-    mwCampaignInput.writeGamePort((uint8_t)mouseResult);
-    uint16_t chargeCount=0;
-    do
-    {
-        ++chargeCount;
-        if (!(mwCampaignInput.readGamePort()&(GAMEPORT_X_CHARGED|GAMEPORT_Y_CHARGED)))
-        {
-            mwCampaignInput.setInterruptsEnabled(true);
-            if ((int16_t)chargeCount>=JOYSTICK_DETECT_MINIMUM_SAMPLES) joystickInstalled=1;
-            return;
-        }
-    } while (chargeCount!=JOYSTICK_DETECT_TIMEOUT_SAMPLES);
-    mwCampaignInput.setInterruptsEnabled(true);
+    if (!mwCampaignPlatform.mousePresent || !mwCampaignInput.readJoystick) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignPlatform.mousePresent || !mwCampaignInput.readJoystick");
+    if (mwCampaignPlatform.mousePresent()) mouseInstalled=1;
+    if (mwCampaignInput.readJoystick().connected) joystickInstalled=1;
 }
 /* MW_MAIN081B:03DD..03F6. The apparently empty mouse branch really is empty. */
 void MwDetectAndCalibrateInputDevices(void)

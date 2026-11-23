@@ -85,7 +85,7 @@ static bool LoadOverlay(const char *filename,uint16_t selector)
     if (strcmp(filename,"MW_EGA.EXE")) MwSdlFail("Only the native EGA overlay is converted");
     return !MwHostLoadEgaInitialData();
 }
-static uint16_t ResetMouse(void) {return UINT16_MAX;} /* SDL supplies the INT33-equivalent boundary. */
+static bool MousePresent(void) {return true;} /* SDL's pointer. */
 static void DosString(const char *text)
 {while (*text && *text!='$') fputc(*text++,stderr);fflush(stderr);}
 static void UnsupportedCampaignCall(uint16_t codeOffset)
@@ -162,7 +162,7 @@ bool MwSdlInitialize(const char *gameDirectory,const char *captureDirectory)
     mwHostValidateFileDestination=ValidateFileDestination;
     mwCampaignPlatform=MwCampaignPlatformCalls{AllocateParagraphs,LoadOverlay,
         MwSdlInstallCampaignInterrupts,MwSdlRestoreCampaignInterrupts,
-        MwSdlReadBiosTicks,ResetMouse,DosString};
+        MwSdlReadBiosTicks,MousePresent,DosString};
     campaignStartMusic=MwStartMidiTrackFar;campaignStopMusic=MwStopMidiTrackFar;
     campaignNearCallback=UnsupportedCampaignCall;
     mwLauncherSystem=MwLauncherSystemCalls{ExecuteChild};

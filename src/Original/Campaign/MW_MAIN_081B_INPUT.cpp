@@ -46,39 +46,15 @@ bool MwPollNavigationKeyFromMouseOrJoystick(uint16_t *navigationKey)
     *navigationKey=joystickNavigationKeys[byteOffset/2];
     return *navigationKey!=0;
 }
-/* MW_MAIN081B:03F7..04AC. Original discharge sampling, not a second04AD call:
- * calibration must not reset direction, button edge flags or live poll counts. */
+/* MW_MAIN081B:03F7..04AC. The centre is where joystick A is now (H3: its
+ * axes, where the original counted game-port reads with interrupts off and
+ * retried if a tick came between). The thresholds are the original's rules. */
 void MwCalibrateJoystickA(void)
 {
-    if (!mwCampaignInput.setInterruptsEnabled || !mwCampaignInput.writeGamePort || !mwCampaignInput.readGamePort) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.setInterruptsEnabled || !mwCampaignInput.writeGamePort || !mwCampaignInput.readGamePort");
-    uint16_t tick;
-    do
-    {
-        mwCampaignInput.setInterruptsEnabled(false);
-        tick=campaignTimerTicks;
-        mwCampaignInput.writeGamePort((uint8_t)tick);
-        uint16_t count=0;
-        uint8_t port;
-        for (;;)
-        {
-            ++count;port=mwCampaignInput.readGamePort();
-            if (!(port&GAMEPORT_X_CHARGED))
-            {
-                joystickCentreX=count;
-                do { ++count;port=mwCampaignInput.readGamePort(); }
-                while ((port&GAMEPORT_Y_CHARGED) && !(port&GAMEPORT_X_CHARGED));
-                joystickCentreY=count;break;
-            }
-            if (!(port&GAMEPORT_Y_CHARGED))
-            {
-                joystickCentreY=count;
-                do { ++count;port=mwCampaignInput.readGamePort(); }
-                while ((port&GAMEPORT_X_CHARGED) && !(port&GAMEPORT_Y_CHARGED));
-                joystickCentreX=count;break;
-            }
-        }
-        mwCampaignInput.setInterruptsEnabled(true);
-    } while (tick!=campaignTimerTicks);
+    if (!mwCampaignInput.readJoystick) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.readJoystick");
+    MwJoystickState joystick=mwCampaignInput.readJoystick();
+    joystickCentreX=MwJoystickAxisReading(joystick.x);
+    joystickCentreY=MwJoystickAxisReading(joystick.y);
     joystickXDeflectionStep=(uint16_t)(joystickCentreX*2)/JOYSTICK_CALIBRATION_DIVISOR;
     joystickXLow=joystickCentreX-(joystickXDeflectionStep>>1);
     joystickXFarLow=joystickXLow-joystickXDeflectionStep;
@@ -202,48 +178,22 @@ uint16_t MwReadCampaignTextInput(uint16_t x,uint16_t y,uint16_t capacity,
     }
 }
 
-/* MW_MAIN081B:04AD..05FD. Measure raw201h discharge, retry if the tick changed
- * after STI, detect new active-low button presses, then classify directions. */
+/* MW_MAIN081B:04AD..05FD. Read joystick A (H3: its axes and buttons, where
+ * the original counted game-port reads), detect new button presses, then
+ * classify the direction by the calibration's thresholds. */
 void MwPollJoystickA(void)
 {
-    if (mwCampaignInput.readGamePort == NULL || mwCampaignInput.writeGamePort == NULL
-        || mwCampaignInput.setInterruptsEnabled == NULL) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mwCampaignInput.readGamePort == NULL || mwCampaignInput.writeGamePort == NULL || mwCampaignInput.setInterruptsEnabled == NULL");
-    uint16_t startTick;
-    uint8_t port;
-    do
-    {
-        mwCampaignInput.setInterruptsEnabled(false);
-        startTick = campaignTimerTicks;
-        joystickDirection = JOYSTICK_CENTRED;
-        joystickDeflection = JOYSTICK_DEFLECTION_NEAR;
-        joystickButtonOnePressed = 0; joystickButtonTwoPressed = 0;
-        uint16_t count = 0;
-        mwCampaignInput.writeGamePort((uint8_t)startTick);
-        for (;;)
-        {
-            port = mwCampaignInput.readGamePort(); count++;
-            if (!(port & GAMEPORT_X_CHARGED))
-            {
-                joystickXCount = count;
-                do { port = mwCampaignInput.readGamePort(); count++; }
-                while ((port & GAMEPORT_Y_CHARGED) && !(port & GAMEPORT_X_CHARGED));
-                joystickYCount = count;
-                break;
-            }
-            if (!(port & GAMEPORT_Y_CHARGED))
-            {
-                joystickYCount = count;
-                do { port = mwCampaignInput.readGamePort(); count++; }
-                while ((port & GAMEPORT_X_CHARGED) && !(port & GAMEPORT_Y_CHARGED));
-                joystickXCount = count;
-                break;
-            }
-        }
-        mwCampaignInput.setInterruptsEnabled(true);
-    } while (startTick != campaignTimerTicks);
-    if (!(port & GAMEPORT_BUTTON_ONE) && (joystickPreviousButtons & GAMEPORT_BUTTON_ONE)) joystickButtonOnePressed = 1;
-    if (!(port & GAMEPORT_BUTTON_TWO) && (joystickPreviousButtons & GAMEPORT_BUTTON_TWO)) joystickButtonTwoPressed = 1;
-    joystickPreviousButtons = port;
+    if (mwCampaignInput.readJoystick == NULL) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mwCampaignInput.readJoystick == NULL");
+    joystickDirection = JOYSTICK_CENTRED;
+    joystickDeflection = JOYSTICK_DEFLECTION_NEAR;
+    joystickButtonOnePressed = 0; joystickButtonTwoPressed = 0;
+    MwJoystickState joystick = mwCampaignInput.readJoystick();
+    joystickXCount = MwJoystickAxisReading(joystick.x);
+    joystickYCount = MwJoystickAxisReading(joystick.y);
+    uint8_t buttons = (uint8_t)((joystick.buttonOne ? 0 : JOYSTICK_BUTTON_ONE_UP) | (joystick.buttonTwo ? 0 : JOYSTICK_BUTTON_TWO_UP));
+    if (!(buttons & JOYSTICK_BUTTON_ONE_UP) && (joystickPreviousButtons & JOYSTICK_BUTTON_ONE_UP)) joystickButtonOnePressed = 1;
+    if (!(buttons & JOYSTICK_BUTTON_TWO_UP) && (joystickPreviousButtons & JOYSTICK_BUTTON_TWO_UP)) joystickButtonTwoPressed = 1;
+    joystickPreviousButtons = buttons;
     uint16_t y = joystickYCount;
     if (joystickXCount < joystickXLow)
     {

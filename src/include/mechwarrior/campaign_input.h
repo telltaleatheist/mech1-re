@@ -3,6 +3,7 @@
 #include "mechwarrior/campaign.h"
 #include "mechwarrior/input_hardware.h"
 #include "mechwarrior/key_events.h"
+#include "mechwarrior/joystick.h"
 
 /* Lowest BIOS/port boundaries only; decoding and polling stay original code.
  * Backends must drive the original0273 tick when delivering a timer interrupt.
@@ -12,16 +13,16 @@ typedef struct MwCampaignInputCalls
     uint16_t (*mouseReleaseCount)(uint16_t button);
     bool (*keyboardAvailable)(void);
     MwCampaignKey (*readKeyboard)(void); /* The next key press (H2). */
-    uint8_t (*readGamePort)(void);
-    void (*writeGamePort)(uint8_t value);
+    MwJoystickState (*readJoystick)(void); /* Joystick A (H3). */
     void (*setInterruptsEnabled)(bool enabled);
     void (*waitForInterrupt)(void);
     uint8_t (*currentDefaultDrive)(void);
     void (*resetMouse)(void);
     void (*readMouseMotion)(uint16_t *xMotion,uint16_t *yMotion);
     bool (*controlHeld)(void); /* Control, with the last key read or held now. */
-    void (*setMousePosition)(uint16_t horizontalPosition,uint16_t verticalPosition);
-    void (*readMousePosition)(uint16_t *horizontalPosition,uint16_t *verticalPosition);
+    /* The pointer's position in the frame's pixels (H3; INT 33h's x was twice). */
+    void (*setMousePosition)(uint16_t x,uint16_t y);
+    void (*readMousePosition)(uint16_t *x,uint16_t *y);
 } MwCampaignInputCalls;
 extern MwCampaignInputCalls mwCampaignInput;
 extern uint8_t campaignTimerInhibited, campaignTimerByte;
@@ -33,8 +34,10 @@ extern uint8_t joystickPreviousButtons;
 extern uint16_t joystickXCount, joystickYCount, joystickDeflection;
 extern uint16_t joystickXLow, joystickXHigh, joystickYLow, joystickYHigh;
 extern uint16_t joystickXFarLow, joystickXFarHigh, joystickYFarLow, joystickYFarHigh;
-enum { GAMEPORT_X_CHARGED = 1, GAMEPORT_Y_CHARGED = 2, GAMEPORT_BUTTON_ONE = 0x10,
-    GAMEPORT_BUTTON_TWO = 0x20, JOYSTICK_DEFLECTION_NEAR = 1, JOYSTICK_DEFLECTION_FAR = 4 };
+/* joystickPreviousButtons keeps the buttons as the game port showed them:
+ * a bit clear while its button is held. */
+enum { JOYSTICK_BUTTON_ONE_UP = 0x10, JOYSTICK_BUTTON_TWO_UP = 0x20,
+    JOYSTICK_DEFLECTION_NEAR = 1, JOYSTICK_DEFLECTION_FAR = 4 };
 enum { JOYSTICK_CENTRED, JOYSTICK_UP, JOYSTICK_UP_RIGHT, JOYSTICK_RIGHT,
     JOYSTICK_DOWN_RIGHT, JOYSTICK_DOWN, JOYSTICK_DOWN_LEFT, JOYSTICK_LEFT,
     JOYSTICK_UP_LEFT, CAMPAIGN_TIMER_PHASE_PERIOD = 2 };

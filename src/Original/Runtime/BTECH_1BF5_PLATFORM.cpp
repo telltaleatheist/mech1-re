@@ -25,55 +25,37 @@ void BtechFreeDosMemorySelector(uint8_t *allocation)
     btechHostFreeDosAllocation(allocation);
 }
 
-/*1BF5:218B. PUSHF/POPF, not an unconditional STI; axis result complements
- * only AL. Delay loops have no game effects; port read order is retained. */
-uint16_t BtechMeasureJoystickAxisTiming(uint8_t axisMask)
+/*1BF5:218B. One axis's reading (H3: the host's joystick, where the original
+ * counted game-port reads between delay loops), or the timing limit when its
+ * joystick is not connected. PUSHF/CLI/POPF stay until H4. */
+uint16_t BtechReadJoystickAxisTiming(uint8_t axisMask)
 {
-    if (!btechHostReadPort || !btechHostWritePort || !btechHostSetInterrupts || !btechHostDelayLoops) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostReadPort || !btechHostWritePort || !btechHostSetInterrupts || !btechHostDelayLoops");
+    if (!btechHostSetInterrupts || !btechHostReadJoystick || !btechHostChargeGamePortWait) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterrupts || !btechHostReadJoystick || !btechHostChargeGamePortWait");
     uint8_t previousInterrupts=btechHostSetInterrupts(0);
-    uint16_t count=JOYSTICK_AXIS_TIMING_LIMIT;
-    uint8_t gamePort;
-    do {btechHostDelayLoops(joystickTimingLoopCount);gamePort=btechHostReadPort(GAME_PORT);--count;} while ((gamePort&axisMask) && count);
-    if (count)
-    {
-        btechHostWritePort(GAME_PORT,gamePort);
-        btechHostReadPort(PIT_CHANNEL_ZERO_PORT);btechHostReadPort(PIT_CHANNEL_ZERO_PORT);
-        count=JOYSTICK_AXIS_TIMING_LIMIT;
-        do {btechHostDelayLoops(joystickTimingLoopCount);--count;gamePort=btechHostReadPort(GAME_PORT);} while ((gamePort&axisMask) && count);
-    }
+    btechHostChargeGamePortWait(BTECH_GAME_PORT_WAIT_AXIS);
     btechHostSetInterrupts(previousInterrupts);
-    return (uint16_t)((count&JOYSTICK_TIMING_HIGH_BYTE_MASK)|(uint8_t)~count);
+    MwJoystickState joystick=btechHostReadJoystick((axisMask&JOYSTICK_B_AXES_MASK)?JOYSTICK_B:JOYSTICK_A);
+    if (!joystick.connected) return JOYSTICK_AXIS_TIMING_LIMIT;
+    return MwJoystickAxisReading((axisMask&JOYSTICK_X_AXES_MASK)?joystick.x:joystick.y);
 }
 
-/*1BF5:21FF. PIT/game-port arithmetic and all four reciprocal writes stay
- * original; host supplies raw hardware replies, never calibrated game values. */
+/*1BF5:21FF. Each axis's centre and scale from where the joysticks are now,
+ * and which are installed: a joystick whose X axis reads (is connected). The
+ * original first timed 1,000 game-port reads against the PIT to calibrate its
+ * delay loops, and last checked that each joystick's axes were still charging
+ * after 20 more; that hardware timing and presence test are gone (H3). */
 void BtechCalibrateJoystickAxisPairs(void)
 {
-    if (!btechHostReadPort || !btechHostWritePort || !btechHostSetInterrupts || !btechHostDelayLoops) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostReadPort || !btechHostWritePort || !btechHostSetInterrupts || !btechHostDelayLoops");
-    btechHostSetInterrupts(0);btechHostWritePort(PIT_CONTROL_PORT,PIT_CHANNEL_ZERO_LATCH);
-    uint16_t firstCounter=btechHostReadPort(PIT_CHANNEL_ZERO_PORT);
-    firstCounter|=(uint16_t)btechHostReadPort(PIT_CHANNEL_ZERO_PORT)<<8;
-    for (uint16_t sample=0;sample<JOYSTICK_CALIBRATION_PORT_SAMPLES;++sample) btechHostReadPort(GAME_PORT);
-    btechHostWritePort(PIT_CONTROL_PORT,PIT_CHANNEL_ZERO_MODE3_LATCH);
-    uint16_t lastCounter=btechHostReadPort(PIT_CHANNEL_ZERO_PORT);
-    lastCounter|=(uint16_t)btechHostReadPort(PIT_CHANNEL_ZERO_PORT)<<8;
+    if (!btechHostSetInterrupts || !btechHostChargeGamePortWait) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterrupts || !btechHostChargeGamePortWait");
+    btechHostSetInterrupts(0);
+    btechHostChargeGamePortWait(BTECH_GAME_PORT_WAIT_CALIBRATION);
     btechHostSetInterrupts(1);
-    uint16_t elapsed=firstCounter-lastCounter;
-    if (!elapsed) /* Port emulation of a native CPU fault. */ MW_NATIVE_FAULT("Rejected condition: !elapsed"); /* Native DIV fault, after hardware reads. */
-    joystickTimingLoopCount=JOYSTICK_LOOP_CALIBRATION_NUMERATOR/elapsed;
-    if (!joystickTimingLoopCount) joystickTimingLoopCount=1;
-    uint8_t lastOutput=0;
     for (uint16_t axis=0;axis<JOYSTICK_AXIS_COUNT;++axis)
     {
-        uint16_t timing=BtechMeasureJoystickAxisTiming((uint8_t)(1<<axis));
+        uint16_t timing=BtechReadJoystickAxisTiming((uint8_t)(1<<axis));
         joystickAxisCentres[axis]=(uint8_t)timing;
         if (!(axis&JOYSTICK_AXIS_PAIR_POSITION_MASK)) joystickPairInstalled[axis/JOYSTICK_AXES_PER_PAIR]=timing!=JOYSTICK_AXIS_TIMING_LIMIT;
-        lastOutput=(uint8_t)timing;
-        if (timing) {joystickAxisReciprocals[axis]=JOYSTICK_AXIS_RECIPROCAL_NUMERATOR/timing;lastOutput=(uint8_t)joystickAxisReciprocals[axis];}
+        if (timing) joystickAxisReciprocals[axis]=JOYSTICK_AXIS_RECIPROCAL_NUMERATOR/timing;
     }
-    btechHostWritePort(GAME_PORT,lastOutput);
-    btechHostDelayLoops(JOYSTICK_PRESENCE_DELAY_LOOPS);
-    uint8_t axisChargeState=btechHostReadPort(GAME_PORT);
-    if (!(axisChargeState&GAMEPORT_JOYSTICK_A_AXES_MASK)) joystickPairInstalled[JOYSTICK_A]=0;
-    if (!(axisChargeState&GAMEPORT_JOYSTICK_B_AXES_MASK)) joystickPairInstalled[JOYSTICK_B]=0;
+    btechHostChargeGamePortWait(BTECH_GAME_PORT_WAIT_PRESENCE);
 }

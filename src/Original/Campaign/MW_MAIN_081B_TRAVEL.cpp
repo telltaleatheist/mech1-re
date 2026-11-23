@@ -76,7 +76,7 @@ int16_t MwFindPlanetAtTravelMarker(void)
 
 /* MW_MAIN 081B:598A..5C5A. Keyboard, joystick and INT33 policy remains game
  * code. The host supplies only mouse position/release and BIOS/game-port IO.
- * INT33 horizontal positions are twice the 320-column EGA coordinates. */
+ * Mouse positions are the frame's pixels (H3). */
 uint16_t MwHandleTravelMapSelection(void)
 {
     if (selectedUiRecordIndex!=TRAVEL_MAP_UI_RECORD) return 0;
@@ -84,7 +84,7 @@ positionMouse:
     if (mouseInstalled!=0)
     {
         if (!mwCampaignInput.setMousePosition) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.setMousePosition");
-        mwCampaignInput.setMousePosition((uint16_t)(travelMarkerX<<1),travelMarkerY);
+        mwCampaignInput.setMousePosition(travelMarkerX,travelMarkerY);
     }
     for (;;)
     {
@@ -112,7 +112,6 @@ pollMouse:
             if (!mwCampaignInput.readMousePosition || !mwCampaignInput.mouseReleaseCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.readMousePosition || !mwCampaignInput.mouseReleaseCount");
             uint16_t mouseX,mouseY;
             mwCampaignInput.readMousePosition(&mouseX,&mouseY);
-            mouseX>>=1;
             if (mouseX!=travelMarkerX || mouseY!=travelMarkerY)
             {
                 travelMarkerX=mouseX;travelMarkerY=mouseY;
