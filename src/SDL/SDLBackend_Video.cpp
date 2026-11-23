@@ -122,6 +122,16 @@ static void DrawNotice(const char *text)
         || !SDL_SetRenderDrawColor(renderer,255,255,85,255) || !SDL_RenderDebugText(renderer,x,y,text))
         MwSdlFail("Draw the speed notice");
 }
+/* A frame is presented only when it changes, so a frame the window system
+ * drops or holds back (seen on Windows: two presents a few ms apart, the
+ * second never shown until the next change) would stay off the screen while
+ * the game waits for a key. The same frame is presented again 50 ms after
+ * each change, then once a second while nothing changes. A repeat touches
+ * neither displayedIndices nor the frame observer: captures and traces see
+ * the same frames as before. */
+enum { HOST_REPEAT_SETTLE_NS=50000000,HOST_REPEAT_IDLE_NS=1000000000 };
+static uint64_t repeatPresentAt;
+void MwSdlRepeatPresent(void) {repeatPresentAt=1;}
 void MwSdlPresentVideo(bool force)
 {
     if (!renderer || presenting || videoMode!=EGA_BIOS_MODE_320X200) return;
@@ -140,7 +150,18 @@ void MwSdlPresentVideo(bool force)
     static bool noticeShown;
     char notice[32];bool showNotice=mwSdlCombatActive && MwSdlCombatSpeedNotice(notice,sizeof(notice));
     if (showNotice!=noticeShown) changed=true;
-    if (!changed) return;
+    if (!changed)
+    {
+        uint64_t now=SDL_GetTicksNS();
+        if (!haveFrame || !repeatPresentAt || now<repeatPresentAt) return;
+        presenting=true;
+        Render();
+        if (showNotice) DrawNotice(notice);
+        if (!SDL_RenderPresent(renderer)) MwSdlFail("Present EGA texture");
+        repeatPresentAt=now+HOST_REPEAT_IDLE_NS;
+        presenting=false;
+        return;
+    }
     presenting=true;
     for (uint32_t pixel=0;pixel<EGA_COLUMNS*EGA_ROWS;++pixel) rgbaPixels[pixel]=Mode0dColour(paletteCodes[displayedIndices[pixel]]);
     if (!SDL_UpdateTexture(texture,NULL,rgbaPixels,EGA_COLUMNS*sizeof(uint32_t))) MwSdlFail("Upload EGA texture");
@@ -149,6 +170,7 @@ void MwSdlPresentVideo(bool force)
     noticeShown=showNotice;
     if (!SDL_RenderPresent(renderer)) MwSdlFail("Present EGA texture");
     lastPage=displayOffset;memcpy(lastPalette,paletteCodes,sizeof(lastPalette));haveFrame=true;
+    repeatPresentAt=SDL_GetTicksNS()+HOST_REPEAT_SETTLE_NS;
     if (mwSdlFrameObserver) mwSdlFrameObserver();
     presenting=false;
 }
