@@ -1,3 +1,4 @@
 #include "mechwarrior/combat_startup.h"
-uint32_t savedKeyboardVector,savedBiosTickVector,savedTimerVector;
+MwKeyboardOwner savedKeyboardOwner;
+MwTimerOwner savedTimerOwner;
 uint8_t keyboardScanMask,keyboardExtendedScanMask;

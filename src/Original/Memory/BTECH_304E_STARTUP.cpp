@@ -25,7 +25,7 @@ BtechPooledWorldObject *unitLastDrawParts[COMBAT_MECH_SLOTS];
 BtechWorldObjectPrefix *selectedHitObject;
 uint8_t criticalErrorHandlerInstalled,keyboardHandlersInstalled,mouseDriverInstalled;
 uint8_t divideErrorHookMarkedActive,videoAdapter;
-uint32_t savedDivideErrorVector;
+MwDivideOwner savedDivideErrorOwner;
 uint16_t pitChannel0DivisorShadow;
 uint16_t schedulerPeriod,schedulerCountdown,schedulerActiveSlots;
 BtechTimerCallback schedulerCallbacks[COMBAT_SCHEDULER_SLOTS];
@@ -52,7 +52,7 @@ bool BtechImportStartupInitialData(const uint8_t *data,size_t bytes)
     mouseDriverInstalled=data[0x41E2];
     divideErrorHookMarkedActive=data[0x4162];
     videoAdapter=data[0x3FC4];
-    savedDivideErrorVector=0; /*4165*/
+    savedDivideErrorOwner=MwDivideOwner::System; /*4165: 0000:0000*/
     pitChannel0DivisorShadow=MwReadNativeWord(data,0x41E7);
     schedulerPeriod=0; /*41E9*/schedulerCountdown=0; /*41EB*/
     schedulerActiveSlots=0; /*41ED*/

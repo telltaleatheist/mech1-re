@@ -22,8 +22,7 @@ extern BtechRuntimePrefix runtimePrefix;
 #define missingSoundFallbackSelectorAlias (runtimePrefix.ambientFallbackWords[1])
 extern BtechRuntimeCallback runtimeExitCallbacks[1],runtimeDiagnosticCallback;
 extern void (*runtimeDeviceCleanup)(uint16_t operation);
-extern uint32_t runtimeSavedDivideVector,runtimeSavedExtraVector;
-extern uint8_t runtimeExtraVectorActive,runtimeExtraInterrupt;
+extern MwDivideOwner runtimeSavedDivideOwner;
 extern uint16_t runtimeHandleLimit;
 extern uint8_t runtimeHandleFlags[COMBAT_DOS_HANDLES];
 extern uint16_t runtimeTemporaryFileIds[COMBAT_STREAM_SLOTS];

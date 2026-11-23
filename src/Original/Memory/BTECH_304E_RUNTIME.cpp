@@ -1,13 +1,14 @@
 #include "mechwarrior/combat_runtime.h"
 #include "mechwarrior/combat_heap.h"
 #include "mechwarrior/native_address.h"
+#include "mechwarrior/port_diagnostics.h"
+#include <stdio.h>
 #include <string.h>
 
 BtechRuntimePrefix runtimePrefix;
 BtechRuntimeCallback runtimeExitCallbacks[1],runtimeDiagnosticCallback;
 void (*runtimeDeviceCleanup)(uint16_t);
-uint32_t runtimeSavedDivideVector,runtimeSavedExtraVector;
-uint8_t runtimeExtraVectorActive,runtimeExtraInterrupt;
+MwDivideOwner runtimeSavedDivideOwner;
 uint16_t runtimeHandleLimit;
 uint8_t runtimeHandleFlags[COMBAT_DOS_HANDLES];
 uint16_t runtimeTemporaryFileIds[COMBAT_STREAM_SLOTS];
@@ -29,9 +30,15 @@ bool BtechImportRuntimeInitialData(const uint8_t *data,size_t bytes)
     runtimeDiagnosticCallback=NULL;runtimeDeviceCleanup=NULL;
     for (uint16_t word=0;word<4;++word) runtimePrefix.ambientFallbackWords[word]=MwReadNativeWord(data,word*2);
     memcpy(runtimePrefix.copyrightBytes,data+8,sizeof(runtimePrefix.copyrightBytes));
-    runtimeSavedDivideVector=0; /*4B4D*/
-    runtimeSavedExtraVector=0; /*4B8C*/
-    runtimeExtraVectorActive=data[0x4B8A];runtimeExtraInterrupt=data[0x4B8B];
+    runtimeSavedDivideOwner=MwDivideOwner::System; /*4B4D: 0000:0000*/
+    /* 4B8A/4B8B: the CRT's extra hooked vector, inactive (0) in both
+     * revisions, so its restore at exit is gone (H4c). An image with it
+     * active names a vector this port has no owner for. */
+    if (data[0x4B8A])
+    {
+        char reason[96];snprintf(reason,sizeof(reason),"The image's extra CRT vector at 304E:4B8A is active: bytes %02X %02X",data[0x4B8A],data[0x4B8B]);
+        MW_PORT_FAILSAFE(reason);
+    }
     runtimeHandleLimit=MwReadNativeWord(data,0x4B66);
     if (runtimeHandleLimit!=COMBAT_DOS_HANDLES) return false;
     memcpy(runtimeHandleFlags,data+0x4B68,sizeof(runtimeHandleFlags));

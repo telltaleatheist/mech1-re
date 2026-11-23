@@ -156,8 +156,8 @@ bool MwSdlInitialize(const char *gameDirectory,const char *captureDirectory)
     if (!MwSdlInitializeVideo(captureDirectory) || !MwSdlInitializeAudio()) {MwSdlShutdown();return false;}
     MwSdlInitializeTimer();MwSdlInitializeInput();
     MwSdlInitializeCombatHardware();
-    mwMusicHardware.readInterruptVector=btechHostGetInterruptVector;
-    mwMusicHardware.writeInterruptVector=btechHostSetInterruptVector;
+    mwMusicHardware.readMpuIrqOwner=btechHostGetMpuIrqOwner;
+    mwMusicHardware.writeMpuIrqOwner=btechHostSetMpuIrqOwner;
     if (!MwSdlInitializeCombatProcess(gameDirectory)) {MwSdlShutdown();return false;}
     mwHostValidateFileDestination=ValidateFileDestination;
     mwCampaignPlatform=MwCampaignPlatformCalls{AllocateParagraphs,LoadOverlay,

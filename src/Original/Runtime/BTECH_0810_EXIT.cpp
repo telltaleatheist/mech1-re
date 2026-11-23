@@ -74,9 +74,9 @@ void BtechRestoreRuntimeVectors(void)
 {
     /*4DF0 is the selector HALF of4DEE, not another enable-flag owner. */
     if (runtimeDeviceCleanup) runtimeDeviceCleanup(COMBAT_RUNTIME_DEVICE_EXIT);
-    if (!btechHostSetInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterruptVector");
-    btechHostSetInterruptVector(0,runtimeSavedDivideVector);
-    if (runtimeExtraVectorActive) btechHostSetInterruptVector(runtimeExtraInterrupt,runtimeSavedExtraVector);
+    if (!btechHostSetDivideOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetDivideOwner");
+    btechHostSetDivideOwner(runtimeSavedDivideOwner);
+    /* The extra vector's restore is gone: the import rejects an image with it active (H4c). */
 }
 
 /*0810:E144. Preserve all four callback ranges, checksum exit-code override,

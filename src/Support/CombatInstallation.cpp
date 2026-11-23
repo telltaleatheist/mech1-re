@@ -19,6 +19,17 @@
 
 void (*btechHostReleaseChildDosAllocations)(void);
 
+/* A saved vector the image carries must be 0000:0000 (H4c): the interrupt's
+ * previous owner. Any other bytes name a handler this port has no owner for. */
+static void RequireEmptySavedVector(const uint8_t *segment,uint16_t selector,uint16_t offset)
+{
+    if (!segment[offset] && !segment[offset+1] && !segment[offset+2] && !segment[offset+3]) return;
+    char reason[112];
+    snprintf(reason,sizeof(reason),"The image's saved vector at %04X:%04X holds %02X %02X %02X %02X, not 0000:0000",
+        selector,offset,segment[offset],segment[offset+1],segment[offset+2],segment[offset+3]);
+    MW_PORT_FAILSAFE(reason);
+}
+
 /*04FA overwrites its old near allocation without freeing it. Preserve that
  * lifetime through child disposal, without losing the host allocation owner. */
 typedef struct RetiredShapeRegistry {
@@ -180,15 +191,16 @@ bool BtechHostLoadInitialData(void)
     /* Reload writable CS owners as well as DS; handlers can patch their bytes. */
     const uint8_t *platform=image+(0x1BF5-BTECH_IMAGE_LOAD_SELECTOR)*0x10;
     const uint8_t *audio=image+(0x1ADF-BTECH_IMAGE_LOAD_SELECTOR)*0x10;
-    savedKeyboardVector=(uint32_t)MwReadNativeWord(platform,0x2BC0)|((uint32_t)MwReadNativeWord(platform,0x2BC2)<<16);
-    savedBiosTickVector=(uint32_t)MwReadNativeWord(platform,0x2BC4)|((uint32_t)MwReadNativeWord(platform,0x2BC6)<<16);
-    savedTimerVector=(uint32_t)MwReadNativeWord(platform,0x253C)|((uint32_t)MwReadNativeWord(platform,0x253E)<<16);
+    /* The saved vectors the image carries (H4c): 0000:0000 in both
+     * revisions, nothing saved yet, so each starts as its interrupt's
+     * previous owner. INT 1Ch's (2BC4) is checked though the hook is gone. */
+    RequireEmptySavedVector(platform,0x1BF5,0x2BC0);RequireEmptySavedVector(platform,0x1BF5,0x2BC4);
+    RequireEmptySavedVector(platform,0x1BF5,0x253C);RequireEmptySavedVector(audio,0x1ADF,0x0E7D);
+    savedKeyboardOwner=MwKeyboardOwner::System;savedTimerOwner=MwTimerOwner::Previous;savedSampleIrqOwner=MwTimerOwner::Previous;
     keyboardScanMask=platform[0x2D51];keyboardExtendedScanMask=platform[0x2D5E];
-    /* 0810:CE9A holds code bytes in the 1990 revision and zero in the
-     * reference: a dead value, since startup saves INT 24 into it before any
-     * read (BTECH_0810_STARTUP.cpp). Zero, as the reference holds. */
-    savedCriticalErrorVector=0; /*0810:CE9A*/
-    savedSampleIrqVector=(uint32_t)MwReadNativeWord(audio,0x0E7D)|((uint32_t)MwReadNativeWord(audio,0x0E7F)<<16);
+    /* 0810:CE9A, INT 24's saved vector, is gone with that hook (H4c). It held
+     * code bytes in the 1990 revision and zero in the reference: dead either
+     * way, as startup saved INT 24 into it before any read. */
     bool loaded=BtechImportCombatStageInitialData(data,0x10000)
         && BtechImportWorldInitialData(data,0x10000,image+BTECH_GEOMETRY_IMAGE_OFFSET,BTECH_IMAGE_BYTES-BTECH_GEOMETRY_IMAGE_OFFSET)
         && BtechImportStartupInitialData(data,0x10000)

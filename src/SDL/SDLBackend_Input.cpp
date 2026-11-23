@@ -22,11 +22,10 @@ bool MwSdlCombatKeyboardPending(void) {return mwSdlCombatActive && combatKeyRead
 void MwSdlDeliverCombatKeyEvent(void)
 {
     if (!MwSdlCombatKeyboardPending()) MwSdlFail("No combat key event to deliver");
-    if (!btechHostGetInterruptVector) MwSdlFail("Missing keyboard vector binding");
+    if (!btechHostGetKeyboardOwner) MwSdlFail("Missing keyboard owner binding");
     MwKeyEvent event=combatKeys[combatKeyRead];
-    uint32_t vector=btechHostGetInterruptVector(KEYBOARD_INTERRUPT);
-    if (vector==BTECH_KEYBOARD_HANDLER_VECTOR) BtechHandleKeyEvent(event);
-    else if (!vector)
+    if (btechHostGetKeyboardOwner()==MwKeyboardOwner::Combat) BtechHandleKeyEvent(event);
+    else
     {
         /* After 2C8D restores the system handler, an ordinary release changes
          * nothing the game sees and is dropped. Makes and modifier, lock and
@@ -36,7 +35,6 @@ void MwSdlDeliverCombatKeyEvent(void)
             || event.key==COMBAT_KEY_CAPS_LOCK || event.key==COMBAT_KEY_NUM_LOCK || event.key==COMBAT_KEY_SCROLL_LOCK || event.key==COMBAT_KEY_INSERT || event.key==COMBAT_KEY_SYSTEM_REQUEST)
             MwSdlFail("Unconverted key event without combat's keyboard handler");
     }
-    else MwSdlFail("Unmapped native keyboard vector");
     combatKeyRead=(combatKeyRead+1)%HOST_KEY_QUEUE_SLOTS;
 }
 static void QueueCombatKey(uint8_t key,bool released)

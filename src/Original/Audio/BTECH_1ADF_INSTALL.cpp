@@ -8,7 +8,7 @@
 enum { MPU_WRITE_BUSY=0x40,MPU_INPUT_EMPTY=0x80,MPU_ACK=0xFE,
     MPU_RESET=0xFF,MPU_VERSION=0xAC,MPU_PROBE_READY_POLLS=0x1F40,
     MPU_PROBE_ACK_POLLS=0xFFFF,MPU_PROBE_IRQ_POLLS=0x4E20,
-    MPU_IRQ_VECTOR=0x0A,MPU_IRQ_MASK=4 };
+    MPU_IRQ_MASK=4 };
 
 /*1ADF:0032. A zero request means all detected backends. Failed device
  * initializers do not remove bits or restore the previously stored callbacks. */
@@ -71,9 +71,9 @@ uint16_t BtechProbeMpuWithTemporaryInterrupt(void)
     uint16_t response=BtechSendMpuProbeCommandAndWaitAck(MPU_RESET);
     if (!(uint8_t)response) return 0;
     btechHostReadPort(mpuProbeDataPort);
-    if (!btechHostGetInterruptVector || !btechHostSetInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetInterruptVector || !btechHostSetInterruptVector");
-    mpuProbePreviousIrq=btechHostGetInterruptVector(MPU_IRQ_VECTOR);
-    btechHostSetInterruptVector(MPU_IRQ_VECTOR,0x1ADF1082);
+    if (!btechHostGetMpuIrqOwner || !btechHostSetMpuIrqOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetMpuIrqOwner || !btechHostSetMpuIrqOwner");
+    mpuProbePreviousOwner=btechHostGetMpuIrqOwner();
+    btechHostSetMpuIrqOwner(MwMpuIrqOwner::CombatProbe);
     btechHostWritePort(PIC_MASK_PORT,btechHostReadPort(PIC_MASK_PORT)&~MPU_IRQ_MASK);
     mpuProbeReceivedByteCount=0;
     response=BtechSendMpuProbeCommandAndWaitAck(MPU_VERSION);
@@ -85,7 +85,7 @@ uint16_t BtechProbeMpuWithTemporaryInterrupt(void)
             if (mpuProbeReceivedByteCount) break;
         }
     btechHostWritePort(PIC_MASK_PORT,btechHostReadPort(PIC_MASK_PORT)|MPU_IRQ_MASK);
-    btechHostSetInterruptVector(MPU_IRQ_VECTOR,mpuProbePreviousIrq);
+    btechHostSetMpuIrqOwner(mpuProbePreviousOwner);
     return (uint8_t)response;
 }
 

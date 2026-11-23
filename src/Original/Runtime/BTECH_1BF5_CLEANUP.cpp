@@ -36,10 +36,10 @@ void BtechRestoreKeyboardAndTickVectors(void)
 {
     if (!keyboardHandlersInstalled) return;
     keyboardHandlersInstalled=0;
-    if (!btechHostSetInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterruptVector");
+    if (!btechHostSetKeyboardOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetKeyboardOwner");
     combatKeyQueueHead=combatKeyQueueTail;
-    btechHostSetInterruptVector(KEYBOARD_INTERRUPT,savedKeyboardVector);
-    btechHostSetInterruptVector(BIOS_TICK_INTERRUPT,savedBiosTickVector);
+    btechHostSetKeyboardOwner(savedKeyboardOwner);
+    /* INT 1Ch's restore is gone with its never-installed hook (H4c). */
 }
 
 /*1BF5:2428. INT33 reset is a hardware boundary, not a game-input callback. */
@@ -56,20 +56,18 @@ void BtechShutdownMouseDriver(void)
 void BtechRestoreTimerScheduler(void)
 {
     if (!runtimeDelayActive) return;
-    if (!btechHostWritePort || !btechHostSetInterruptVector || !btechHostSetTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePort || !btechHostSetInterruptVector || !btechHostSetTimerPeriod");
+    if (!btechHostWritePort || !btechHostSetTimerOwner || !btechHostSetTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePort || !btechHostSetTimerOwner || !btechHostSetTimerPeriod");
     btechHostSetTimerPeriod(PIT_COUNTER_MODULUS); /* The BIOS's period (H4b; was 43h, 40h 0, 40h 0). */
     btechHostWritePort(PIC_MASK_PORT,COMBAT_PIC_DEVICE_MASK);
-    btechHostSetInterruptVector(TIMER_INTERRUPT,savedTimerVector);
+    btechHostSetTimerOwner(savedTimerOwner);
     runtimeDelayActive=0;
 }
 
 /*1BF5:1F84. The shipped26 A1 instructions READ INT00; they do not restore it.
- * Keep that native defect, not an idealized unhook (its CLI/STI are gone, H4c). */
+ * Keep that native defect, not an idealized unhook: combat's divide handler
+ * stays the owner. The discarded read went with the vectors (H4c). */
 void BtechDeactivateDivideErrorHook(void)
 {
     if (!divideErrorHookMarkedActive) return;
     divideErrorHookMarkedActive=0;
-    if (!btechHostGetInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetInterruptVector");
-    (void)savedDivideErrorVector;
-    (void)btechHostGetInterruptVector(DIVIDE_ERROR_INTERRUPT);
 }

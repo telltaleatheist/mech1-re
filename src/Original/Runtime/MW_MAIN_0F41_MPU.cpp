@@ -4,8 +4,7 @@
 #include <stdlib.h>
 
 enum { MPU_WRITE_BUSY=0x40,MPU_INPUT_EMPTY=0x80,MPU_RESET_COMMAND=0xFF,
-    MPU_UART_COMMAND=0x3F,MPU_ACK=0xFE,MPU_IRQ_VECTOR=0x0A,
-    MPU_RECEIVE_HANDLER=0x0F410A01 };
+    MPU_UART_COMMAND=0x3F,MPU_ACK=0xFE };
 
 /* MW_MAIN0F41:0912. LOOPNE's last-read timeout remains; its CLI/STI are gone (H4c). */
 uint16_t MwProbeMpuBackend(void)
@@ -28,14 +27,14 @@ uint16_t MwProbeMpuBackend(void)
 failed:
     return 0;
 }
-/* MW_MAIN0F41:0946. Saved vector is a native identity, not a host pointer. */
+/* MW_MAIN0F41:0946. The saved IRQ2 owner is a typed owner, not a host pointer (H4c). */
 void MwInitializeMpuUartBackend(void)
 {
-    if (!mwMusicHardware.readInterruptVector || !mwMusicHardware.writeInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.readInterruptVector || !mwMusicHardware.writeInterruptVector");
+    if (!mwMusicHardware.readMpuIrqOwner || !mwMusicHardware.writeMpuIrqOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.readMpuIrqOwner || !mwMusicHardware.writeMpuIrqOwner");
     mwMusicHardware.writePort(MPU_STATUS_COMMAND_PORT,MPU_UART_COMMAND);
     mpuQueueByteCount=0; mpuQueueReadIndex=mpuQueueByteCount; mpuQueueWriteIndex=mpuQueueReadIndex; /* Each read back, as the chained assignment did. */
-    mpuPreviousIrq=mwMusicHardware.readInterruptVector(MPU_IRQ_VECTOR);
-    mwMusicHardware.writeInterruptVector(MPU_IRQ_VECTOR,MPU_RECEIVE_HANDLER);
+    mpuPreviousIrqOwner=mwMusicHardware.readMpuIrqOwner();
+    mwMusicHardware.writeMpuIrqOwner(MwMpuIrqOwner::CampaignReceive);
     for (uint16_t reads=10;reads;--reads) mwMusicHardware.readPort(MPU_DATA_PORT);
     mwMusicHardware.writePort(PIC_COMMAND_PORT,PIC_END_OF_INTERRUPT);
     mwMusicHardware.writePort(PIC_MASK_PORT,0);
@@ -44,7 +43,7 @@ void MwInitializeMpuUartBackend(void)
 void MwDrainAndShutdownMpuBackend(void)
 {
     while (mpuQueueByteCount) mwMusicHardware.waitForInterrupt();
-    mwMusicHardware.writeInterruptVector(MPU_IRQ_VECTOR,mpuPreviousIrq);
+    mwMusicHardware.writeMpuIrqOwner(mpuPreviousIrqOwner);
 }
 /* MW_MAIN0F41:09A4. The producer's CLI/STI are gone (H4c). */
 uint16_t MwQueueMpuByte(uint16_t midiWord)

@@ -6,39 +6,39 @@
 #include "mechwarrior/combat_mpu.h"
 #include <string.h>
 
-/* Physical BIOS/interrupt transport, not another game state or replacement
- * timer. Native numeric vectors are opaque host identities at this boundary;
- * zero denotes the retained pre-child host handler, not invented BIOS bytes. */
+/* Physical BIOS transport and the interrupts' owners (H4c), not another game
+ * state or replacement timer. Each owner is typed: no vector table is kept.
+ * IRQ0's previous owner is the handler that ran before combat installed its
+ * own (the campaign's), not invented BIOS bytes. */
 static uint8_t biosData[0x100];
-static uint32_t interruptVectors[0x100];
+static MwTimerOwner timerOwner;
+static MwKeyboardOwner keyboardOwner;
+static MwDivideOwner divideOwner;
+static MwMpuIrqOwner mpuIrqOwner;
 static MwMusicTimerHandler previousTimerHandler;
 
-/* Actual DOSBox-X captures before EXEC, briefing, first scene and post-fire
- * agree on these bytes. This is the missing-ITM physical read edge, NOT a
- * fabricated zero instrument bank or a general DOS memory image. */
+/* The original read its tone data from the interrupt table here (a missing
+ * ITM leaves the tone pointer at 0000:0000), so these are the bytes it found:
+ * vectors 0 to 5 as DOS left them, captured in DOSBox-X before EXEC, at the
+ * briefing, the first scene and after firing. Only INT 0 changes, by whether
+ * combat's divide handler is installed. Not designed tone data. */
 enum { DOS_TONE_ZERO_WINDOW_START=0x1F4A,DOS_TONE_ZERO_WINDOW_BYTES=0x1D4,
-    DOS_DEFAULT_IRET_VECTOR=0x0070000E,DOS_TONE_VECTOR_PREFIX=6,
+    DOS_TONE_VECTOR_PREFIX=6,DOS_PRINT_SCREEN_INTERRUPT=5,
     HOST_REAL_MODE_ADDRESS_MASK=0xFFFFF,HOST_BIOS_MODEL_ADDRESS=0xFFFFE,HOST_BIOS_AT_MODEL=0xFC };
-static const uint32_t dosDefaultDivideVector=UINT32_C(0xF000CA60),dosPrintScreenVector=UINT32_C(0xF000FF54);
+static const uint32_t toneFallbackDivideVector[2]={
+    UINT32_C(0xF000CA60), /* DOS's own divide handler. */
+    UINT32_C(0x1D3B1F4A)}; /* Combat's, 1BF5:1F4A with the image loaded at 0956. */
+static_assert(UINT32_C(0x1D3B1F4A)==((UINT32_C(0x1BF5)+HOST_DOS_COMBAT_CODE_SELECTOR-BTECH_IMAGE_LOAD_SELECTOR)<<16|0x1F4A),
+    "Combat's divide handler, relocated to where DOS loaded the image");
+static const uint32_t toneFallbackIretVector=UINT32_C(0x0070000E),toneFallbackPrintScreenVector=UINT32_C(0xF000FF54);
 static const uint8_t dosToneZeroWindow[DOS_TONE_ZERO_WINDOW_BYTES]={0};
 static uint8_t ReadToneDosByte(uint16_t offset)
 {
     if (offset<DOS_TONE_VECTOR_PREFIX*4)
     {
-        uint16_t interrupt=offset/4;uint32_t vector;
-        if (!interrupt)
-        {
-            vector=interruptVectors[0];
-            if (!vector) vector=dosDefaultDivideVector;
-            else if (vector==BTECH_DIVIDE_HANDLER_VECTOR)
-                vector+=((uint32_t)((int)HOST_DOS_COMBAT_CODE_SELECTOR-BTECH_IMAGE_LOAD_SELECTOR)<<16);
-            else MwSdlFail("Unrecovered physical divide vector for tone fallback");
-        }
-        else
-        {
-            if (interruptVectors[interrupt]) MwSdlFail("Unrecovered modified physical DOS vector for tone fallback");
-            vector=interrupt<5?DOS_DEFAULT_IRET_VECTOR:dosPrintScreenVector;
-        }
+        uint16_t interrupt=offset/4;
+        uint32_t vector=!interrupt?toneFallbackDivideVector[divideOwner==MwDivideOwner::Combat]
+            :interrupt<DOS_PRINT_SCREEN_INTERRUPT?toneFallbackIretVector:toneFallbackPrintScreenVector;
         return (uint8_t)(vector>>((offset&3)*8));
     }
     if (offset>=DOS_TONE_ZERO_WINDOW_START
@@ -70,32 +70,34 @@ static uint16_t ReadBiosWord(uint16_t offset)
 }
 static void WriteBiosWord(uint16_t offset,uint16_t value)
 {WriteBiosByte(offset,(uint8_t)value);WriteBiosByte(offset+1,(uint8_t)(value>>8));}
-static uint32_t ReadInterruptVector(uint8_t interrupt) {return interruptVectors[interrupt];}
 void MwSdlDeliverCombatMpuInterrupt(void)
 {
-    uint32_t vector=interruptVectors[BTECH_MPU_VECTOR];
-    if (vector==BTECH_MPU_PROBE_VECTOR) BtechMpuProbeInterrupt();
-    else if (vector==BTECH_MPU_HANDLER_VECTOR) BtechMpuInterrupt();
-    else MwSdlFail("Unmapped combat MPU interrupt vector");
+    if (mpuIrqOwner==MwMpuIrqOwner::CombatProbe) BtechMpuProbeInterrupt();
+    else if (mpuIrqOwner==MwMpuIrqOwner::CombatReceive) BtechMpuInterrupt();
+    else MwSdlFail("No combat MPU handler owns IRQ2");
 }
-static void UnmappedTimerInterrupt(void) {MwSdlFail("Unconverted native IRQ0 vector");}
-static void WriteInterruptVector(uint8_t interrupt,uint32_t vector)
+static MwTimerOwner GetTimerOwner(void) {return timerOwner;}
+static void SetTimerOwner(MwTimerOwner owner)
 {
-    interruptVectors[interrupt]=vector;
-    if (interrupt==TIMER_INTERRUPT)
-        MwSdlWriteTimerHandler(vector==0?previousTimerHandler:
-            vector==BTECH_TIMER_HANDLER_VECTOR?BtechTimerSchedulerInterrupt:
-            vector==BTECH_MUSIC_TIMER_VECTOR?BtechMusicTimerInterrupt:UnmappedTimerInterrupt);
+    timerOwner=owner;
+    MwSdlWriteTimerHandler(owner==MwTimerOwner::CombatScheduler?BtechTimerSchedulerInterrupt
+        :owner==MwTimerOwner::CombatMusic?BtechMusicTimerInterrupt:previousTimerHandler);
 }
-static void ChainTimerInterrupt(uint32_t vector)
+static void ChainTimerInterrupt(MwTimerOwner owner)
 {
-    if (vector==BTECH_MUSIC_TIMER_VECTOR) BtechMusicTimerInterrupt();
+    if (owner==MwTimerOwner::CombatMusic) BtechMusicTimerInterrupt();
     else
     {
-        if (vector || !previousTimerHandler) MwSdlFail("Unmapped saved native timer vector");
+        if (owner!=MwTimerOwner::Previous || !previousTimerHandler) MwSdlFail("No previous IRQ0 owner to chain to");
         previousTimerHandler();
     }
 }
+static MwKeyboardOwner GetKeyboardOwner(void) {return keyboardOwner;}
+static void SetKeyboardOwner(MwKeyboardOwner owner) {keyboardOwner=owner;}
+static MwDivideOwner GetDivideOwner(void) {return divideOwner;}
+static void SetDivideOwner(MwDivideOwner owner) {divideOwner=owner;}
+static MwMpuIrqOwner GetMpuIrqOwner(void) {return mpuIrqOwner;}
+static void SetMpuIrqOwner(MwMpuIrqOwner owner) {mpuIrqOwner=owner;}
 static uint8_t ReadRomByte(uint16_t selector,uint16_t offset)
 {
     uint32_t address=(((uint32_t)selector<<4)+offset)&HOST_REAL_MODE_ADDRESS_MASK;
@@ -107,14 +109,19 @@ void MwSdlResetCombatHardware(void)
 {
     MwSdlResetCombatTick();
     previousTimerHandler=MwSdlReadTimerHandler();
-    memset(interruptVectors,0,sizeof(interruptVectors));memset(biosData,0,sizeof(biosData));
+    timerOwner=MwTimerOwner::Previous;keyboardOwner=MwKeyboardOwner::System;
+    divideOwner=MwDivideOwner::System;mpuIrqOwner=MwMpuIrqOwner::System;
+    memset(biosData,0,sizeof(biosData));
     WriteBiosWord(COMBAT_BIOS_CRTC_PORT,COMBAT_COLOUR_CRTC_INDEX_PORT);
 }
 void MwSdlInitializeCombatHardware(void)
 {
     btechHostReadBiosByte=ReadBiosByte;btechHostWriteBiosByte=WriteBiosByte;
     btechHostReadBiosWord=ReadBiosWord;btechHostWriteBiosWord=WriteBiosWord;
-    btechHostGetInterruptVector=ReadInterruptVector;btechHostSetInterruptVector=WriteInterruptVector;
+    btechHostGetTimerOwner=GetTimerOwner;btechHostSetTimerOwner=SetTimerOwner;
+    btechHostGetKeyboardOwner=GetKeyboardOwner;btechHostSetKeyboardOwner=SetKeyboardOwner;
+    btechHostGetDivideOwner=GetDivideOwner;btechHostSetDivideOwner=SetDivideOwner;
+    btechHostGetMpuIrqOwner=GetMpuIrqOwner;btechHostSetMpuIrqOwner=SetMpuIrqOwner;
     btechHostBorrowDosMemory=BorrowToneDosMemory;
     btechHostChainTimerInterrupt=ChainTimerInterrupt;
     btechHostSetTimerPeriod=MwSdlSetTimerPeriod;

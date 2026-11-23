@@ -2,6 +2,7 @@
 #define MECHWARRIOR_COMBAT_SOUND_H
 #include "mechwarrior/combat_resources.h"
 #include "mechwarrior/native_address.h"
+#include "mechwarrior/hardware_ports.h"
 #include <stdbool.h>
 
 enum { COMBAT_STREAM_SLOTS=0x14,COMBAT_STREAM_TABLE=0x4BC0,COMBAT_STREAM_STRIDE=8,
@@ -31,7 +32,7 @@ uint16_t BtechSendMpuProbeCommandAndWaitAck(uint8_t command);
 void BtechMpuProbeInterrupt(void);
 extern uint16_t mpuProbeDataPort,mpuProbeStatusPort,mpuProbeCommandPort;
 extern uint16_t mpuProbeReceivedByteCount;
-extern uint32_t mpuProbePreviousIrq;
+extern MwMpuIrqOwner mpuProbePreviousOwner;
 /* Hardware view, e.g. an instrumented DOS machine's live RAM. No fabricated
  * zero arena, game-memory registry or default IVT is installed by the port. */
 extern MwNativeByteView (*btechHostBorrowDosMemory)(uint16_t selector);
@@ -90,11 +91,10 @@ void BtechStartSoftwareMusicTrack(MwNativeByteView musicHeader,uint16_t headerOf
 void BtechTickSoftwareMusic(void);
 uint8_t BtechDecodeNextMidiEvent(uint8_t inheritedDeltaHighByte);
 typedef void (*BtechAudioTick)(void);
-#define BTECH_MUSIC_TIMER_VECTOR UINT32_C(0x1ADF0F39)
 extern BtechAudioTick musicTimerCallback;
 extern uint8_t musicTimerInstalled;
 extern uint16_t savedMusicTimerDivisor;
-extern uint32_t savedMusicTimerVector;
+extern MwTimerOwner savedMusicTimerOwner;
 void BtechMusicTimerInterrupt(void);
 void BtechInstallMusicTimerCallback(BtechAudioTick callback,uint16_t divisor);
 void BtechRestoreMusicTimerInterrupt(void);
@@ -118,7 +118,7 @@ extern uint16_t sampleSoundPriority;
 extern uint16_t timerSoundEventIndex,savedSoundTimerDivisor;
 extern uint8_t soundTimerInstalled;
 extern uint16_t *samplePriorityOwner;
-extern uint32_t savedSampleIrqVector;
+extern MwTimerOwner savedSampleIrqOwner;
 bool BtechImportToneInitialData(const uint8_t *data,size_t bytes,const uint8_t *toneData,size_t toneBytes);
 void BtechStopMatchingToneChannels(uint16_t soundEventIndex,uint8_t activityMask);
 uint16_t BtechStopSoundEventAndTimer(uint16_t soundEventIndex);

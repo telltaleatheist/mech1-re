@@ -25,7 +25,7 @@ uint16_t adlibPackedNoteFrequencies[MIDI_ADLIB_NOTE_COUNT];
 uint16_t midiAdlibOutputPort;
 uint8_t mpuTransmitQueue[MIDI_MPU_QUEUE_CAPACITY];
 volatile uint16_t mpuQueueWriteIndex,mpuQueueReadIndex,mpuQueueByteCount;
-uint32_t mpuPreviousIrq;
+MwMpuIrqOwner mpuPreviousIrqOwner;
 uint8_t musicRuntimeHeader[0x42];
 uint16_t midiByteHandlerDisplacement,midiDispatchChannel,midiFirstDataByte,midiControllerValue;
 uint16_t midiByteHandlers[14];
@@ -53,7 +53,7 @@ static bool DecodeMusicDriver(const uint8_t *data,size_t byteCount)
     mpuQueueWriteIndex=MwReadNativeWord(data,0x0324);
     mpuQueueReadIndex=MwReadNativeWord(data,0x0326);
     mpuQueueByteCount=MwReadNativeWord(data,0x0328);
-    mpuPreviousIrq=0; /*0220*/
+    mpuPreviousIrqOwner=MwMpuIrqOwner::System; /*0220: 0000:0000*/
     midiTickDenominator=MwReadNativeWord(data,0x0042);
     midiTickNumerator=MwReadNativeWord(data,0x0044);
     midiTickRemainder=0; /*0046*/

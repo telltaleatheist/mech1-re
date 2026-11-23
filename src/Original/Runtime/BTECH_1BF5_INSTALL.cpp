@@ -60,7 +60,7 @@ void BtechTimerSchedulerInterrupt(void)
     {
         schedulerCountdown=schedulerPeriod;
         if (!btechHostChainTimerInterrupt) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostChainTimerInterrupt");
-        btechHostChainTimerInterrupt(savedTimerVector); /* Old handler owns EOI. */
+        btechHostChainTimerInterrupt(savedTimerOwner); /* Old handler owns EOI. */
     }
 }
 
@@ -74,17 +74,17 @@ int16_t BtechProbePcjrTandyRomSignatures(void)
 }
 
 /*1BF5:2BC8. Repeated calls still adjust BIOS shift state. The compatibility
- * branch patches two CS immediates and four scan-table bytes in native order. */
-void BtechInstallKeyboardAndTickHandlers(uint16_t installBiosTick)
+ * branch patches two CS immediates and four scan-table bytes in native order.
+ * The original's argument chose an INT 1Ch hook; its only caller passed 0,
+ * so the argument and INT 1Ch's save and install are gone (H4c). */
+void BtechInstallKeyboardAndTickHandlers(void)
 {
-    if (!btechHostGetInterruptVector || !btechHostSetInterruptVector
-        || !btechHostReadBiosByte || !btechHostWriteBiosByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetInterruptVector || !btechHostSetInterruptVector || !btechHostReadBiosByte || !btechHostWriteBiosByte");
+    if (!btechHostGetKeyboardOwner || !btechHostSetKeyboardOwner
+        || !btechHostReadBiosByte || !btechHostWriteBiosByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetKeyboardOwner || !btechHostSetKeyboardOwner || !btechHostReadBiosByte || !btechHostWriteBiosByte");
     if (!keyboardHandlersInstalled)
     {
-        savedKeyboardVector=btechHostGetInterruptVector(KEYBOARD_INTERRUPT);
-        savedBiosTickVector=btechHostGetInterruptVector(BIOS_TICK_INTERRUPT);
-        btechHostSetInterruptVector(KEYBOARD_INTERRUPT,BTECH_KEYBOARD_HANDLER_VECTOR);
-        if (installBiosTick) btechHostSetInterruptVector(BIOS_TICK_INTERRUPT,BTECH_BIOS_TICK_HANDLER_VECTOR);
+        savedKeyboardOwner=btechHostGetKeyboardOwner();
+        btechHostSetKeyboardOwner(MwKeyboardOwner::Combat);
         keyboardBiosIntercept=0;
         int16_t compatibility=BtechProbePcjrTandyRomSignatures();
         if (compatibility)
@@ -113,10 +113,10 @@ void BtechInstallKeyboardAndTickHandlers(uint16_t installBiosTick)
  * overwrites them even if INT00 already points at this handler. */
 void BtechInstallDivideErrorHandler(void)
 {
-    if (!btechHostGetInterruptVector || !btechHostSetInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetInterruptVector || !btechHostSetInterruptVector");
+    if (!btechHostGetDivideOwner || !btechHostSetDivideOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetDivideOwner || !btechHostSetDivideOwner");
     divideErrorHookMarkedActive=1;
-    savedDivideErrorVector=btechHostGetInterruptVector(DIVIDE_ERROR_INTERRUPT);
-    btechHostSetInterruptVector(DIVIDE_ERROR_INTERRUPT,BTECH_DIVIDE_HANDLER_VECTOR);
+    savedDivideErrorOwner=btechHostGetDivideOwner();
+    btechHostSetDivideOwner(MwDivideOwner::Combat);
 }
 
 /*1BF5:2540. JG is SIGNED: high-bit periods are accepted. Zero/positive>FF
@@ -127,15 +127,15 @@ void BtechInstallTimerScheduler(uint16_t period)
     if (runtimeDelayActive) return;
     schedulerActiveSlots=0;
     BtechProbePcjrTandyRomSignatures();
-    if (!btechHostGetInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetInterruptVector");
-    savedTimerVector=btechHostGetInterruptVector(TIMER_INTERRUPT);
+    if (!btechHostGetTimerOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetTimerOwner");
+    savedTimerOwner=btechHostGetTimerOwner();
     if ((int16_t)period>COMBAT_SCHEDULER_MAX_POSITIVE_PERIOD || !period) return;
     schedulerPeriod=period;schedulerCountdown=period;
     pitChannel0DivisorShadow=UINT16_MAX/period;
-    if (!btechHostWritePort || !btechHostSetInterruptVector || !btechHostSetTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePort || !btechHostSetInterruptVector || !btechHostSetTimerPeriod");
+    if (!btechHostWritePort || !btechHostSetTimerOwner || !btechHostSetTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePort || !btechHostSetTimerOwner || !btechHostSetTimerPeriod");
     /* The PIT programming (43h, 40h low, 40h high) is the host's timer period since H4b. */
     btechHostSetTimerPeriod(pitChannel0DivisorShadow);
     btechHostWritePort(PIC_MASK_PORT,COMBAT_PIC_DEVICE_MASK);
-    btechHostSetInterruptVector(TIMER_INTERRUPT,BTECH_TIMER_HANDLER_VECTOR);
+    btechHostSetTimerOwner(MwTimerOwner::CombatScheduler);
     runtimeDelayActive=1;
 }

@@ -14,8 +14,10 @@ uint16_t BtechInstallMpuInterruptHandler(uint16_t unusedBasePort,uint8_t irq)
     {
         combatMpuVector=(uint8_t)(irq+8);combatMpuPicUnmask=(uint8_t)~(irq<8?(1u<<irq):0);
         BtechSendMpuCommandAndWaitAck(BTECH_MPU_RESET);btechHostReadPort(combatMpuDataPort);
-        combatMpuPreviousVector=btechHostGetInterruptVector(combatMpuVector);
-        btechHostSetInterruptVector(combatMpuVector,BTECH_MPU_HANDLER_VECTOR);
+        /* The only caller passes IRQ2, the one the host delivers (H4c). */
+        if (combatMpuVector!=BTECH_MPU_VECTOR) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatMpuVector!=BTECH_MPU_VECTOR");
+        combatMpuPreviousOwner=btechHostGetMpuIrqOwner();
+        btechHostSetMpuIrqOwner(MwMpuIrqOwner::CombatReceive);
         btechHostWritePort(PIC_MASK_PORT,btechHostReadPort(PIC_MASK_PORT)&combatMpuPicUnmask);
         combatMpuInstalled=1;combatMpuReceivedBytes=0;
         BtechSendMpuCommandAndWaitAck(BTECH_MPU_VERSION);
@@ -56,7 +58,8 @@ void BtechRestoreMpuInterruptHandler(void)
     {
         btechHostWritePort(PIC_MASK_PORT,btechHostReadPort(PIC_MASK_PORT)|(uint8_t)~combatMpuPicUnmask);
         BtechSendMpuCommandAndWaitAck(BTECH_MPU_RESET);
-        btechHostSetInterruptVector(combatMpuVector,combatMpuPreviousVector);
+        if (combatMpuVector!=BTECH_MPU_VECTOR) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatMpuVector!=BTECH_MPU_VECTOR");
+        btechHostSetMpuIrqOwner(combatMpuPreviousOwner);
     }
     combatMpuInstalled=0;
 }

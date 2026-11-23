@@ -35,8 +35,9 @@ typedef struct MwMusicHardwareCalls
     void (*writePort)(uint16_t port,uint8_t value);
     uint8_t (*readPort)(uint16_t port);
     void (*waitForInterrupt)(void);
-    uint32_t (*readInterruptVector)(uint8_t interrupt);
-    void (*writeInterruptVector)(uint8_t interrupt,uint32_t vector);
+    /* IRQ2's owner (H4c), where the original got and set INT 0Ah. */
+    MwMpuIrqOwner (*readMpuIrqOwner)(void);
+    void (*writeMpuIrqOwner)(MwMpuIrqOwner owner);
     /* The speaker music's tone (S6): a frequency in Hz, or 0 for silence. The
      * host plays it on the tone voice, where PIT channel 2 and port 61h were. */
     void (*playTone)(double frequency);
@@ -204,7 +205,7 @@ void MwInitializeAdlibVoiceRouting(void);
 void MwDecodeAdlibInstrument(const uint8_t *source,MwAdlibInstrument *instrument);
 extern uint8_t mpuTransmitQueue[MIDI_MPU_QUEUE_CAPACITY];
 extern volatile uint16_t mpuQueueWriteIndex,mpuQueueReadIndex,mpuQueueByteCount;
-extern uint32_t mpuPreviousIrq;
+extern MwMpuIrqOwner mpuPreviousIrqOwner;
 extern uint8_t musicRuntimeHeader[0x42];
 uint16_t MwProbeMpuBackend(void);
 void MwInitializeMpuUartBackend(void);

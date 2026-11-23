@@ -30,9 +30,10 @@ extern BtechPooledWorldObject *unitLastDrawParts[COMBAT_MECH_SLOTS];
 extern BtechWorldObjectPrefix *selectedHitObject;
 extern uint8_t criticalErrorHandlerInstalled,keyboardHandlersInstalled,mouseDriverInstalled;
 extern uint8_t divideErrorHookMarkedActive,videoAdapter;
-extern uint32_t savedDivideErrorVector;
-/* Writable native CS storage belongs to0810/1BF5, NOT to304E. */
-extern uint32_t savedCriticalErrorVector,savedKeyboardVector,savedBiosTickVector,savedTimerVector;
+extern MwDivideOwner savedDivideErrorOwner;
+/* Writable native CS storage belongs to1BF5, NOT to304E. */
+extern MwKeyboardOwner savedKeyboardOwner;
+extern MwTimerOwner savedTimerOwner;
 extern uint16_t pitChannel0DivisorShadow;
 extern uint16_t schedulerPeriod,schedulerCountdown,schedulerActiveSlots;
 enum { COMBAT_SCHEDULER_SLOTS=0x10 };
@@ -40,8 +41,8 @@ typedef void (*BtechTimerCallback)(void);
 typedef struct BtechSchedulerTiming {uint16_t ticksRemaining,period;} BtechSchedulerTiming;
 extern BtechTimerCallback schedulerCallbacks[COMBAT_SCHEDULER_SLOTS];
 extern BtechSchedulerTiming schedulerTimings[COMBAT_SCHEDULER_SLOTS];
-/* Hardware FAR tail to the saved IRQ, not an audio/game callback seam. */
-extern void (*btechHostChainTimerInterrupt)(uint32_t vector);
+/* The tail to IRQ0's saved owner, not an audio/game callback seam. */
+extern void (*btechHostChainTimerInterrupt)(MwTimerOwner owner);
 /* The timer's period (H4b), where PIT channel 0 was programmed: in the PIT's
  * clock units; PIT_COUNTER_MODULUS is the BIOS's 18.2 Hz. */
 extern void (*btechHostSetTimerPeriod)(uint32_t pitCycles);
@@ -52,8 +53,15 @@ enum { COMBAT_KEYBOARD_SCAN_CODES=0x59,COMBAT_KEYBOARD_COMPATIBILITY_CODES=0x0B 
 extern uint8_t keyboardCapsLockRequested,keyboardBiosIntercept,keyboardScanTranslations[COMBAT_KEYBOARD_SCAN_CODES];
 extern uint8_t keyboardScanMask,keyboardExtendedScanMask;
 extern bool (*btechHostQueryKeyboardIntercept)(uint16_t ax); /* INT15 -> carry. */
-extern uint32_t (*btechHostGetInterruptVector)(uint8_t interrupt);
-extern void (*btechHostSetInterruptVector)(uint8_t interrupt,uint32_t vector);
+/* Interrupt ownership (H4c), where the original got and set vectors. */
+extern MwTimerOwner (*btechHostGetTimerOwner)(void);
+extern void (*btechHostSetTimerOwner)(MwTimerOwner owner);
+extern MwKeyboardOwner (*btechHostGetKeyboardOwner)(void);
+extern void (*btechHostSetKeyboardOwner)(MwKeyboardOwner owner);
+extern MwDivideOwner (*btechHostGetDivideOwner)(void);
+extern void (*btechHostSetDivideOwner)(MwDivideOwner owner);
+extern MwMpuIrqOwner (*btechHostGetMpuIrqOwner)(void);
+extern void (*btechHostSetMpuIrqOwner)(MwMpuIrqOwner owner);
 extern uint16_t (*btechHostReadBiosWord)(uint16_t offset);
 extern void (*btechHostWriteBiosWord)(uint16_t offset,uint16_t value);
 extern uint8_t (*btechHostReadBiosByte)(uint16_t offset);
@@ -74,7 +82,7 @@ void BtechRestoreKeyboardAndTickVectors(void);
 void BtechShutdownMouseDriver(void);
 void BtechRestoreTimerScheduler(void);
 void BtechDeactivateDivideErrorHook(void);
-void BtechInstallKeyboardAndTickHandlers(uint16_t installBiosTick);
+void BtechInstallKeyboardAndTickHandlers(void);
 void BtechInstallDivideErrorHandler(void);
 void BtechInstallTimerScheduler(uint16_t period);
 int16_t BtechProbePcjrTandyRomSignatures(void);

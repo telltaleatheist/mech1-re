@@ -113,10 +113,10 @@ void BtechRestoreSoundTimerInterrupt(void)
 {
     if (!soundTimerInstalled) return;
     pitChannel0DivisorShadow=savedSoundTimerDivisor;
-    if (!btechHostSetTimerPeriod || !btechHostSetInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetTimerPeriod || !btechHostSetInterruptVector");
+    if (!btechHostSetTimerPeriod || !btechHostSetTimerOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetTimerPeriod || !btechHostSetTimerOwner");
     btechHostSetTimerPeriod(savedSoundTimerDivisor); /* Was 40h's low and high bytes (H4b). */
     soundTimerInstalled=0;
-    btechHostSetInterruptVector(8,savedSampleIrqVector);
+    btechHostSetTimerOwner(savedSampleIrqOwner);
 }
 
 /*1ADF:0F39. The native private IRQ stack becomes the C call frame. There is
@@ -133,13 +133,13 @@ void BtechMusicTimerInterrupt(void)
  * the period (the two PIT writes until H4b) still follow it. */
 void BtechInstallMusicTimerCallback(BtechAudioTick callback,uint16_t divisor)
 {
-    if (!btechHostGetInterruptVector || !btechHostSetInterruptVector
-        || !btechHostSetTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetInterruptVector || !btechHostSetInterruptVector || !btechHostSetTimerPeriod");
+    if (!btechHostGetTimerOwner || !btechHostSetTimerOwner
+        || !btechHostSetTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetTimerOwner || !btechHostSetTimerOwner || !btechHostSetTimerPeriod");
     if (!musicTimerInstalled)
     {
         musicTimerInstalled=1;
-        savedMusicTimerVector=btechHostGetInterruptVector(TIMER_INTERRUPT);
-        btechHostSetInterruptVector(TIMER_INTERRUPT,BTECH_MUSIC_TIMER_VECTOR);
+        savedMusicTimerOwner=btechHostGetTimerOwner();
+        btechHostSetTimerOwner(MwTimerOwner::CombatMusic);
         savedMusicTimerDivisor=pitChannel0DivisorShadow;
     }
     musicTimerCallback=callback;
@@ -152,10 +152,10 @@ void BtechInstallMusicTimerCallback(BtechAudioTick callback,uint16_t divisor)
 void BtechRestoreMusicTimerInterrupt(void)
 {
     if (!musicTimerInstalled) return;
-    if (!btechHostSetTimerPeriod || !btechHostSetInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetTimerPeriod || !btechHostSetInterruptVector");
+    if (!btechHostSetTimerPeriod || !btechHostSetTimerOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetTimerPeriod || !btechHostSetTimerOwner");
     btechHostSetTimerPeriod(savedMusicTimerDivisor);
     musicTimerInstalled=0;
-    btechHostSetInterruptVector(TIMER_INTERRUPT,savedMusicTimerVector);
+    btechHostSetTimerOwner(savedMusicTimerOwner);
 }
 
 /*1ADF:0290. Timer restoration can change the priority owner; select the final

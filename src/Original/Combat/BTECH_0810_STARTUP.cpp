@@ -85,7 +85,7 @@ void BtechInitializeVideoAndInput(void)
         BtechShowFatalErrorAndExit(errorCardNotFound);
     /* The native failure call falls through here if it unexpectedly returns. */
     drawPolygonFilled=true;textTransparentBackground=false;egaBitmapEnabledPlanes=COMBAT_EGA_PLANE_MASK_ALL;
-    BtechInstallKeyboardAndTickHandlers(0);
+    BtechInstallKeyboardAndTickHandlers();
     BtechInstallDivideErrorHandler();
     BtechInstallTimerScheduler(COMBAT_SCHEDULER_PERIOD);
     BtechResetCameraContextsAndReferenceVector();
@@ -143,19 +143,16 @@ void BtechResetCombatState(void)
     playerSpecialTargetLandingLatch=0;
 }
 
-/*0810:CE9E. Flag is written before DOS queries/installs INT24. */
+/*0810:CE9E. The flag is written where DOS's INT 24 query and install were.
+ * The host raises no DOS critical error, so the hook never ran: the vector
+ * save and install are gone (H4c). */
 void BtechInstallDosCriticalErrorHandler(void)
 {
     criticalErrorHandlerInstalled=1;
-    if (!btechHostGetInterruptVector || !btechHostSetInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetInterruptVector || !btechHostSetInterruptVector");
-    savedCriticalErrorVector=btechHostGetInterruptVector(0x24);
-    btechHostSetInterruptVector(0x24,0x0810CEC9);
 }
 
-/*0810:CED5. No installed-flag test: restore the saved pair unconditionally. */
+/*0810:CED5. No installed-flag test; the INT 24 restore went with the hook (H4c). */
 void BtechRestoreDosCriticalErrorHandler(void)
 {
     criticalErrorHandlerInstalled=0;
-    if (!btechHostSetInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterruptVector");
-    btechHostSetInterruptVector(0x24,savedCriticalErrorVector);
 }

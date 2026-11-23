@@ -22,6 +22,23 @@ uint16_t MwProbeMusicBackend(MwCampaignAudioBackend *backend)
     return MwProbeSpeakerBackend();
 }
 
+/* 0B6C reads BX as DOS's GET VECTOR left it: the offset of IRQ2's previous
+ * handler, used as data (H4c keeps it). These are the offsets each owner's
+ * handler had in the original's code. The system's own handler has always
+ * been 0000:0000 here: the host keeps no BIOS vector table. After an MT-32
+ * combat, which doesn't restore IRQ2, the owner is combat's receive handler. */
+static uint16_t MpuIrqOwnerVectorOffset(MwMpuIrqOwner owner)
+{
+    switch (owner)
+    {
+    case MwMpuIrqOwner::System: return 0x0000;
+    case MwMpuIrqOwner::CombatProbe: return 0x1082; /* 1ADF:1082 */
+    case MwMpuIrqOwner::CombatReceive: return 0x0106; /* 2176:0106 */
+    case MwMpuIrqOwner::CampaignReceive: return 0x0A01; /* 0F41:0A01 */
+    }
+    /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unknown IRQ2 owner");
+}
+
 /* MW_MAIN0F41:0B46..0B7F. Pending timer arguments precede initialization;
  * MPU's different BX residue is retained rather than repaired. */
 void MwSelectAndInitializeMidiBackend(MwCampaignAudioBackend *backend)
@@ -44,7 +61,7 @@ void MwSelectAndInitializeMidiBackend(MwCampaignAudioBackend *backend)
          * After BTECH returns,0106 aliases two AdLib frequency WORDs rather
          * than the runtime header. Apply the native byte write to that actual
          * owner; do not zero the retained IRQ or change MPU voice capacity. */
-        uint16_t previousOffset=mpuPreviousIrq;
+        uint16_t previousOffset=MpuIrqOwnerVectorOffset(mpuPreviousIrqOwner);
         uint16_t source=(uint16_t)(previousOffset+3),destination=(uint16_t)(previousOffset+0x17);
         if (source<sizeof(musicRuntimeHeader) && destination<sizeof(musicRuntimeHeader))
             musicRuntimeHeader[destination]=musicRuntimeHeader[source];
@@ -60,8 +77,8 @@ void MwSelectAndInitializeMidiBackend(MwCampaignAudioBackend *backend)
         }
         else
         {
-            fprintf(stderr,"Campaign MPU install residue for saved IRQ2 %04X:%04X has no typed owner\n",
-                (uint16_t)(mpuPreviousIrq>>16),previousOffset);/* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Music backend has an unsupported initialization, vector, pitch-copy or timer entry.");
+            fprintf(stderr,"Campaign MPU install residue for saved IRQ2 owner %u (offset %04X) has no typed owner\n",
+                (unsigned)mpuPreviousIrqOwner,previousOffset);/* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Music backend has an unsupported initialization, vector, pitch-copy or timer entry.");
         }
     }
     else

@@ -16,7 +16,7 @@ uint16_t timerSoundEventIndex,savedSoundTimerDivisor;
 uint8_t soundTimerInstalled;
 uint8_t musicTimerInstalled;
 uint16_t savedMusicTimerDivisor;
-uint32_t savedMusicTimerVector;
+MwTimerOwner savedMusicTimerOwner;
 uint8_t adlibProbeInitialStatus;
 uint8_t soundEffectsEnableMask;
 void (*audioTickCallback)(void);
@@ -33,7 +33,7 @@ uint16_t activeMusicBankIndex;
 int16_t musicSequences[COMBAT_MUSIC_SEQUENCE_ROWS][COMBAT_MUSIC_SEQUENCE_WORDS];
 uint16_t mpuProbeDataPort,mpuProbeStatusPort,mpuProbeCommandPort;
 uint16_t mpuProbeReceivedByteCount;
-uint32_t mpuProbePreviousIrq;
+MwMpuIrqOwner mpuProbePreviousOwner;
 uint16_t *samplePriorityOwner;
 
 /* Child-image IO only. Do not call this to reset an already-running child. */
@@ -60,7 +60,7 @@ bool BtechImportSoundInitialData(const uint8_t *data,size_t bytes)
     streamSetupCounter=0; /*4DEA*/
     selectedAudioBackendMask=0; /*28D4*/
     savedMusicTimerDivisor=MwReadNativeWord(data,0x28D6);
-    savedMusicTimerVector=0; /*28D8*/
+    savedMusicTimerOwner=MwTimerOwner::Previous; /*28D8: 0000:0000*/
     musicTimerInstalled=data[0x28DC];musicTimerCallback=BtechAudioTimerNoOp;
     soundEffectsEnableMask=data[0x28DD];
     /* These are the actual authored pairs, not a replacement empty tick. */
@@ -85,7 +85,7 @@ bool BtechImportSoundInitialData(const uint8_t *data,size_t bytes)
     memset(musicSequences,0,sizeof(musicSequences));
     mpuProbeDataPort=MwReadNativeWord(data,0x2CA8);
     mpuProbeStatusPort=MwReadNativeWord(data,0x2CAA);mpuProbeCommandPort=MwReadNativeWord(data,0x2CAC);
-    mpuProbePreviousIrq=0; /*2CAE*/
+    mpuProbePreviousOwner=MwMpuIrqOwner::System; /*2CAE: 0000:0000*/
     mpuProbeReceivedByteCount=0; /*2CB2*/
     adlibProbeInitialStatus=data[0x2CB4];
     activeSoundBankIndex=MwReadNativeWord(data,0x2B4C);
