@@ -315,6 +315,17 @@ if(MECHWARRIOR_BUILD_SDL)
     target_include_directories(mechwarrior_sdl PRIVATE src/SDL)
     add_executable(mechwarrior src/SDL/SDLMain.cpp)
     target_link_libraries(mechwarrior PRIVATE mechwarrior_sdl)
+    if(WIN32)
+        # The icon Explorer, the taskbar and the installer's shortcuts show.
+        target_sources(mechwarrior PRIVATE tools/package/mechwarrior.rc)
+    endif()
+    # A package's program opens no console window (tools/build_package.py
+    # sets it). It still writes to redirected stdout/stderr, and a start
+    # without a game folder logs to mechwarrior.log beside the saves.
+    option(MECHWARRIOR_WINDOWS_GUI "Windows: link mechwarrior as a GUI program (no console)" OFF)
+    if(MSVC AND MECHWARRIOR_WINDOWS_GUI)
+        target_link_options(mechwarrior PRIVATE /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup)
+    endif()
     # Our data/ (the rules) beside the program, where the game looks for it;
     # copied on every build so an edited file is picked up.
     add_custom_target(mechwarrior_data ALL
