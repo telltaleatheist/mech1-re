@@ -1,0 +1,65 @@
+{
+  "gain_db": -6.0,
+  "songs": [
+    {
+      "name": "MECH",
+      "head": "c71e0fea7b6df812",
+      "parts": [
+        {"channel": 2, "mt32": "B48", "program": 47, "level": 100, "pan": 64},
+        {"channel": 3, "mt32": "A50", "program": 48, "level": 100, "pan": 64},
+        {"channel": 4, "mt32": "B24", "program": 56, "level": 100, "pan": 64},
+        {"channel": 5, "mt32": "A24", "program": 62, "level": 100, "pan": 64},
+        {"channel": 6, "mt32": "A53", "program": 40, "level": 100, "pan": 64},
+        {"channel": 7, "mt32": "B8", "program": 73, "level": 100, "pan": 64},
+        {"channel": 10, "drums": true, "level": 100, "pan": 64}
+      ]
+    },
+    {
+      "name": "MECHBAR",
+      "head": "df26cc9f0487c367",
+      "parts": [
+        {"channel": 2, "mt32": "B4", "program": 36, "level": 100, "pan": 64},
+        {"channel": 3, "mt32": "A43", "program": 102, "level": 100, "pan": 64},
+        {"channel": 4, "mt32": "A24", "program": 62, "level": 100, "pan": 64},
+        {"channel": 5, "mt32": "A36", "program": 97, "level": 100, "pan": 64},
+        {"channel": 6, "mt32": "A50", "program": 48, "level": 100, "pan": 64},
+        {"channel": 10, "drums": true, "level": 100, "pan": 64}
+      ]
+    },
+    {
+      "name": "LAUNCH",
+      "head": "04a060e92d4ae507",
+      "parts": [
+        {"channel": 2, "mt32": "B48", "program": 47, "level": 100, "pan": 64},
+        {"channel": 3, "mt32": "A50", "program": 48, "level": 100, "pan": 64},
+        {"channel": 4, "mt32": "A24", "program": 62, "level": 100, "pan": 64},
+        {"channel": 5, "mt32": "A50", "program": 48, "level": 100, "pan": 64},
+        {"channel": 6, "mt32": "A36", "program": 97, "level": 100, "pan": 64}
+      ]
+    },
+    {
+      "name": "DEATH",
+      "head": "d02856fab7a5a5e1",
+      "parts": [
+        {"channel": 2, "mt32": "A50", "program": 48, "level": 100, "pan": 64},
+        {"channel": 3, "mt32": "A53", "program": 40, "level": 100, "pan": 64},
+        {"channel": 4, "mt32": "B48", "program": 47, "level": 100, "pan": 64},
+        {"channel": 5, "mt32": "B21", "program": 69, "level": 100, "pan": 64}
+      ]
+    },
+    {
+      "name": "VICTORY",
+      "head": "f54ab93a91275b4c",
+      "parts": [
+        {"channel": 2, "mt32": "B48", "program": 47, "level": 100, "pan": 64},
+        {"channel": 3, "mt32": "A24", "program": 62, "level": 100, "pan": 64},
+        {"channel": 4, "mt32": "B28", "program": 60, "level": 100, "pan": 64},
+        {"channel": 5, "mt32": "A50", "program": 48, "level": 100, "pan": 64},
+        {"channel": 6, "mt32": "B11", "program": 72, "level": 100, "pan": 64},
+        {"channel": 7, "mt32": "B28", "program": 60, "level": 100, "pan": 64},
+        {"channel": 10, "drums": true, "level": 100, "pan": 64}
+      ]
+    }
+  ],
+  "drum_keys": []
+}

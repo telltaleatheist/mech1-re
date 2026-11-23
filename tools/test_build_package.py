@@ -16,7 +16,8 @@ class PackageTests(unittest.TestCase):
                      "docs/THIRD_PARTY_NOTICES.md", "sdl/LICENSE.txt",
                      "build/_deps/munt-src/mt32emu/COPYING.LESSER.txt", "build/_deps/nukedopl-src/LICENSE",
                      "data/rules/units.json", "data/ui/hub.json", "data/music/soundfont_programs.txt", "extern/re-setup-kit/LICENSE",
-                     "extern/re-setup-kit/third_party/stb/LICENSE", "extern/re-setup-kit/third_party/miniz/LICENSE"]:
+                     "extern/re-setup-kit/third_party/stb/LICENSE", "extern/re-setup-kit/third_party/miniz/LICENSE",
+                     "extern/TinySoundFont/LICENSE"]:
             file = root / name
             file.parent.mkdir(parents=True, exist_ok=True)
             file.write_text("fixture")
@@ -51,6 +52,7 @@ class PackageTests(unittest.TestCase):
             self.assertEqual(subprocess.run([str(extracted / "mw1r"), "--help"], capture_output=True).returncode, 0)
             self.assertTrue((extracted / "licenses/Munt-COPYING.LESSER.txt").exists())
             self.assertTrue((extracted / "licenses/stb-LICENSE").exists() and (extracted / "licenses/miniz-LICENSE").exists())
+            self.assertTrue((extracted / "licenses/TinySoundFont-LICENSE").exists())
             for name in ["libarchive-COPYING", "zlib-LICENSE", "xz-COPYING", "xz-COPYING.0BSD"]:
                 self.assertTrue((extracted / "licenses" / name).exists(), name)
             self.assertTrue((extracted / "data/rules/units.json").exists())

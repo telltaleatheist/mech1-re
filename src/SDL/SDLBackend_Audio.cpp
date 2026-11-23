@@ -1,9 +1,14 @@
 #include "SDLBackend.h"
 #include "mechwarrior/audio_devices.h"
+#include "mechwarrior/music_out.h"
 #include "AudioClock.h"
 #include "Mixer.h"
+#include "Music.h"
+#include "../Support/Sha256.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdexcept>
+#include <string>
 
 /* The output layer: the SDL3 device, the bounded PCM queue and its stream
  * callback. Synthesis (the speaker voice, the selected card, mixing on PIT
@@ -20,6 +25,13 @@ static uint64_t audioStartedNanoseconds,clockSkippedFrames;
 static uint32_t playbackLeadFrames;
 static uint32_t leadFrames;
 static mw1o::audio::Mixer mixer;
+/* music=soundfont: the sequencer's output (music_out.h), played from
+ * data/music's soundfont and instrument table. */
+static mw1o::audio::Music music;
+/* With MECHWARRIOR_AUDIO_PCM, on any device: "<PIT cycle> <head>" per song
+ * start, in <dump>.songs, so tools/trace/listening.py can cut the songs out
+ * (frame = cycle * 48000 / 1193182, as audio.py counts). A test aid. */
+static FILE *songMarks;
 static_assert(HOST_PIT_CLOCK_HZ==mw1o::audio::PIT_CLOCK_HZ && HOST_AUDIO_SAMPLE_RATE==mw1o::audio::OUTPUT_SAMPLE_RATE,
     "The host timeline and the mixer share one clock and one output rate");
 /* Logging without ROMs (MECHWARRIOR_AUDIO_LOG, both ROM paths empty): the
@@ -30,6 +42,38 @@ static bool silentMt32;
  * synthesis offline (tools/trace/audio.py --pcm). */
 static FILE *pcmDump;
 void (*mwSdlAudioObserver)(const float *samples,uint32_t count);
+
+/* Each event sounds at the PIT time it happens: render up to now first. */
+static void MusicSongStarted(const uint8_t head[32])
+{
+    const std::string prefix=mw1o::support::sha256_hex(std::span<const uint8_t>(head,32)).substr(0,16);
+    if (songMarks) {fprintf(songMarks,"%.0f %s\n",MwSdlHardwareTime(),prefix.c_str());fflush(songMarks);}
+    if (!music.loaded()) return; /* Song marks only. */
+    MwSdlAdvanceAudio(MwSdlHardwareTime());
+    music.startSong(prefix);
+}
+static void MusicByte(uint8_t value)
+{
+    MwSdlAdvanceAudio(MwSdlHardwareTime());
+    music.midiByte(value);
+}
+static bool LoadMusic(void)
+{
+    const std::string folder=std::string(MwSdlDataDirectory())+"/music/";
+    size_t bankSize=0,tableSize=0;
+    void *bank=SDL_LoadFile((folder+"FluidR3_GM-subset.sf2").c_str(),&bankSize);
+    if (!bank) return SDL_SetError("music=soundfont: cannot read %sFluidR3_GM-subset.sf2: %s",folder.c_str(),SDL_GetError());
+    char *table=(char *)SDL_LoadFile((folder+"instruments.json").c_str(),&tableSize);
+    if (!table) {SDL_free(bank);return SDL_SetError("music=soundfont: cannot read %sinstruments.json: %s",folder.c_str(),SDL_GetError());}
+    std::string error;
+    bool loaded=false;
+    try {loaded=music.load(bank,bankSize,mw1o::audio::ParseInstrumentTable(std::string_view(table,tableSize)),HOST_AUDIO_SAMPLE_RATE,error);}
+    catch (const std::exception &failure) {error=failure.what();}
+    SDL_free(bank);SDL_free(table);
+    if (!loaded) return SDL_SetError("music=soundfont: %s",error.c_str());
+    mwMusicOut=MwMusicOutCalls{MusicSongStarted,MusicByte};
+    return true;
+}
 
 /* SDL asks for PCM only. It never runs an original timer/game callback.
  * An underrun advances the physical playback clock, just like silence from
@@ -81,14 +125,16 @@ bool MwSdlInitializeAudio(void)
     if (mwSdlSoundSystem==MW_SOUND_ADLIB) MwAdlibReset(HOST_AUDIO_SAMPLE_RATE);
     silentMt32=mwSdlSoundSystem==MW_SOUND_MT32 && getenv("MECHWARRIOR_AUDIO_LOG")
         && !*mwSdlMt32ControlRom && !*mwSdlMt32PcmRom;
-    if (mwSdlSoundSystem==MW_SOUND_MT32 && !silentMt32)
+    if (mwSdlMusicSoundfont) {if (!LoadMusic()) return false;} /* No MT-32 synthesizer: the MPU's output goes nowhere. */
+    else if (mwSdlSoundSystem==MW_SOUND_MT32 && !silentMt32)
     {
         char error[1024];
         if (!MwMt32Open(mwSdlMt32ControlRom,mwSdlMt32PcmRom,HOST_AUDIO_SAMPLE_RATE,error,sizeof(error)))
             return SDL_SetError("%s",error);
     }
-    mixer.reset(mwSdlSoundSystem==MW_SOUND_SPEAKER?mw1o::audio::Mixer::Card::None
-        :mwSdlSoundSystem==MW_SOUND_MT32?mw1o::audio::Mixer::Card::Mt32:mw1o::audio::Mixer::Card::Adlib,silentMt32);
+    mixer.reset(mwSdlMusicSoundfont?mw1o::audio::Mixer::Card::Soundfont
+        :mwSdlSoundSystem==MW_SOUND_SPEAKER?mw1o::audio::Mixer::Card::None
+        :mwSdlSoundSystem==MW_SOUND_MT32?mw1o::audio::Mixer::Card::Mt32:mw1o::audio::Mixer::Card::Adlib,silentMt32,&music);
     outputChannels=mixer.channels();
     SDL_AudioSpec format={SDL_AUDIO_F32,(int)outputChannels,HOST_AUDIO_SAMPLE_RATE};
     audioQueueMutex=SDL_CreateMutex();
@@ -114,6 +160,11 @@ bool MwSdlInitializeAudio(void)
     {
         const char *pcmPath=getenv("MECHWARRIOR_AUDIO_PCM");
         if (pcmPath && !pcmDump && !(pcmDump=fopen(pcmPath,"wb"))) return SDL_SetError("Cannot open the PCM dump %s",pcmPath);
+        if (pcmPath && !songMarks)
+        {
+            if (!(songMarks=fopen((std::string(pcmPath)+".songs").c_str(),"w"))) return SDL_SetError("Cannot open the song marks beside %s",pcmPath);
+            mwMusicOut.songStarted=MusicSongStarted;
+        }
     }
     return true;
 failed:
@@ -174,6 +225,9 @@ void MwSdlShutdownAudio(void)
     audioStream=NULL;
     SDL_DestroyMutex(audioQueueMutex);audioQueueMutex=NULL;
     MwMt32Close();
+    mwMusicOut=MwMusicOutCalls{};
     if (pcmDump) fclose(pcmDump);
     pcmDump=NULL;
+    if (songMarks) fclose(songMarks);
+    songMarks=NULL;
 }

@@ -232,7 +232,8 @@ def stage_common(root, build, sdl, resources):
     # The setup kit's own third-party code (stb, miniz): a package without their licences is refused.
     kit = root / "extern/re-setup-kit"
     for name, source in [("re-setup-kit-LICENSE", kit / "LICENSE"), ("stb-LICENSE", kit / "third_party/stb/LICENSE"),
-                         ("miniz-LICENSE", kit / "third_party/miniz/LICENSE")]:
+                         ("miniz-LICENSE", kit / "third_party/miniz/LICENSE"),
+                         ("TinySoundFont-LICENSE", root / "extern/TinySoundFont/LICENSE")]:
         if not source.is_file():
             raise RuntimeError(f"Missing licence: {source}")
         shutil.copy2(source, notices / name)

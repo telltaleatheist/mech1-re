@@ -7,6 +7,10 @@
 enum { HOST_PIT_CLOCK_HZ=1193182,HOST_AUDIO_SAMPLE_RATE=48000 };
 typedef enum MwHostSoundSystem {MW_SOUND_SPEAKER,MW_SOUND_MT32,MW_SOUND_ADLIB} MwHostSoundSystem;
 extern MwHostSoundSystem mwSdlSoundSystem;
+/* music=soundfont (docs/phase5/NO_EMULATION_PLAN.md, S3): the game is set up
+ * as for an MT-32, and its sequencer's output plays through the soundfont
+ * (src/Audio/Music) instead of a synthesizer behind the MPU. */
+extern bool mwSdlMusicSoundfont;
 extern char mwSdlMt32ControlRom[4096],mwSdlMt32PcmRom[4096];
 void MwMpuReset(void);
 void MwMpuWritePort(uint16_t port,uint8_t value);

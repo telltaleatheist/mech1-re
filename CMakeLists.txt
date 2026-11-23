@@ -37,6 +37,10 @@ if(MECHWARRIOR_TRIM_PATHS)
     endif()
 endif()
 
+# Our JSON reader (data/, the story file), shared by the game library and the music (src/Audio).
+add_library(mechwarrior_json STATIC src/Support/Json.cpp)
+target_compile_features(mechwarrior_json PUBLIC cxx_std_20)
+
 add_library(mechwarrior_original STATIC
     src/Original/campaign_graphics.cpp
     src/Original/Campaign/MW_MAIN_081B.cpp
@@ -212,7 +216,6 @@ add_library(mechwarrior_original STATIC
     src/Support/NativeAddress.cpp
     src/Support/PortDiagnostics.cpp
     src/Support/MidiAddress.cpp
-    src/Support/Json.cpp
     src/Support/Sha256.cpp
     src/Support/EventLog.cpp
     src/Support/Hmac.cpp
@@ -232,6 +235,7 @@ add_library(mechwarrior_original STATIC
     src/Ui/Ui.cpp
     src/Ui/UiHost.cpp)
 target_include_directories(mechwarrior_original PUBLIC src/include)
+target_link_libraries(mechwarrior_original PUBLIC mechwarrior_json)
 set_target_properties(mechwarrior_original PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # Unit tests for our own support code (no SDL, no game files): ctest.
@@ -395,12 +399,14 @@ if(MECHWARRIOR_BUILD_SDL)
     # cut from FluidR3 GM by tools/soundfont/subset.py and refused unless it hashes as data/music pins. Its source is
     # fetched once per machine (tools/deps/fetch_soundfont.sh), as libarchive's is: a build never downloads.
     find_package(Python3 REQUIRED COMPONENTS Interpreter)
-    if(NOT MECHWARRIOR_SOUNDFONT_SOURCE)
-        if(DEFINED ENV{MW1O_SOUNDFONT_SOURCE})
-            set(MECHWARRIOR_SOUNDFONT_SOURCE "$ENV{MW1O_SOUNDFONT_SOURCE}")
-        else()
-            set(MECHWARRIOR_SOUNDFONT_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/build-deps/soundfont/fluid-soundfont_3.1.orig.tar.gz")
-        endif()
+    # MW1O_SOUNDFONT_SOURCE when set, else the cached choice (a reconfigure the build itself runs sees no
+    # environment), else build-deps.
+    set(MECHWARRIOR_SOUNDFONT_SOURCE "" CACHE FILEPATH "A copy of fluid-soundfont_3.1.orig.tar.gz (default build-deps/soundfont)")
+    if(DEFINED ENV{MW1O_SOUNDFONT_SOURCE})
+        set(MECHWARRIOR_SOUNDFONT_SOURCE "$ENV{MW1O_SOUNDFONT_SOURCE}" CACHE FILEPATH "" FORCE)
+    elseif(NOT MECHWARRIOR_SOUNDFONT_SOURCE)
+        set(MECHWARRIOR_SOUNDFONT_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/build-deps/soundfont/fluid-soundfont_3.1.orig.tar.gz"
+            CACHE FILEPATH "" FORCE)
     endif()
     if(NOT EXISTS "${MECHWARRIOR_SOUNDFONT_SOURCE}")
         message(FATAL_ERROR "The music soundfont's source is missing: ${MECHWARRIOR_SOUNDFONT_SOURCE}\n"
@@ -464,6 +470,11 @@ if(MECHWARRIOR_BUILD_SDL)
             add_test(NAME soundfont_bank COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tools/soundfont/subset.py"
                 check --source "${MECHWARRIOR_SOUNDFONT_SOURCE}" --renderer $<TARGET_FILE:soundfont_render_test>)
             set_tests_properties(soundfont_bank PROPERTIES TIMEOUT 600)
+            # The music (src/Audio/Music, S3): the instrument table read strictly, and played on the subset.
+            add_executable(music_test tests/music_test.cpp)
+            target_link_libraries(music_test PRIVATE mechwarrior_audio)
+            add_dependencies(music_test mechwarrior_soundfont)
+            add_test(NAME music COMMAND music_test "${MECHWARRIOR_SOUNDFONT}" "${CMAKE_CURRENT_SOURCE_DIR}/data/music/instruments.json")
         endif()
     endif()
     if(MSVC)

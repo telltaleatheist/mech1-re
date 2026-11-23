@@ -55,7 +55,9 @@ import argparse, hashlib, hmac, json, os, re, shutil, signal, subprocess, sys, t
 POLL_S = 0.05
 SNAP_NAME = re.compile(r"^[A-Za-z0-9_-]{1,47}$")
 FEED_CALLS = ("song:", "sound:")
-FEED_CALL_SCRIPTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "events", "scripts")
+# The event-log feed scripts, and the listening renders' (listening.py), which run the same way.
+FEED_CALL_SCRIPTS = tuple(os.path.join(os.path.dirname(os.path.abspath(__file__)), *p)
+                          for p in (("events", "scripts"), ("listening",)))
 # MW_MAIN's key region (segment, offset, length) and load segment, as
 # src/Import/ImportTable.h's key_region: a label's hash is keyed as the import
 # table's are, so a short label can't be found from it.
@@ -91,8 +93,8 @@ def read_script(path, feed_calls=False):
         elif t.startswith(FEED_CALLS):
             if not feed_calls:
                 sys.exit(f"{path}: {t!r} calls the game: refused (event-log scripts only, with --feed-calls)")
-            if os.path.dirname(os.path.realpath(path)) != os.path.realpath(FEED_CALL_SCRIPTS):
-                sys.exit(f"{path}: {t!r} is allowed only in a script in {FEED_CALL_SCRIPTS}")
+            if os.path.dirname(os.path.realpath(path)) not in [os.path.realpath(p) for p in FEED_CALL_SCRIPTS]:
+                sys.exit(f"{path}: {t!r} is allowed only in a script in {' or '.join(FEED_CALL_SCRIPTS)}")
     if not snaps:
         sys.exit(f"{path}: no @snap")
     return tokens, snaps

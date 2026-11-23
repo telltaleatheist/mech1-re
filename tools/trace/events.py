@@ -31,6 +31,9 @@ scripts also run on AdLib and MT-32 (MT-32 without ROMs, silent) and must give:
   prefix of the other's within DEVICE_NOTE_SLACK (a key, or the last snap, may
   cut a piece a note or so earlier or later);
 - its tone and game streams exactly.
+They also run with music=soundfont (slice S3), which sets the game up as for
+an MT-32 and plays its sequencer's output through the soundfont: that run must
+give the MT-32 run's log exactly, every stream, ticks included.
 
 Goldens are kept per game revision, by BTECH.EXE's SHA-256
 (events/<first 12 hex>/<script>.jsonl.gz), so each revision checks against its
@@ -49,7 +52,7 @@ EVENTS = os.path.join(HERE, "events")
 FEED_SCRIPTS = os.path.join(EVENTS, "scripts")  # song: and sound: (record.py --feed-calls)
 SKIP = 77
 STREAMS = {"note": ("note", "song"), "tone": ("tone",), "game": ("sound", "key", "cpoll")}
-DEVICE_RUNS = ("adlib", "mt32")  # beside the speaker, for the sound scripts
+DEVICE_RUNS = ("adlib", "mt32", "soundfont")  # beside the speaker, for the sound scripts
 DEVICE_NOTE_SLACK = 32  # notes a song may be cut earlier or later on another device
 
 
@@ -81,7 +84,8 @@ def run(port, game, work, script, device):
     os.makedirs(base, exist_ok=True)
     ini = os.path.join(base, "sound.ini")
     with open(ini, "w") as f:
-        f.write(f"combat_tick_ms=60\ncombat_speed=1\nsound_system={device}\n")
+        setting = "music=soundfont" if device == "soundfont" else f"sound_system={device}"
+        f.write(f"combat_tick_ms=60\ncombat_speed=1\n{setting}\n")
     log = os.path.join(base, "events.log")
     # The sound-port log too: with it set and no ROM paths, MT-32 runs silent (SDLBackend_Audio.cpp).
     env = dict(os.environ, MECHWARRIOR_TIMING_CONFIG=ini, MECHWARRIOR_EVENT_LOG=log,
@@ -198,9 +202,14 @@ def main():
             continue
         ours = run(port, game, work, script, "speaker")
         if name.startswith(("audio-", "feed-")) and not a.no_devices:
+            runs = {}
             for device in DEVICE_RUNS:
-                if not same_on_device(name, device, ours, run(port, game, work, script, device), print):
+                runs[device] = run(port, game, work, script, device)
+                if not same_on_device(name, device, ours, runs[device], print):
                     failed.append(f"{name}.{device}")
+            if not all(compare(f"{name}: soundfont {k} against MT-32's", stream(runs["mt32"], kinds),
+                               stream(runs["soundfont"], kinds), print) for k, kinds in STREAMS.items()):
+                failed.append(f"{name}.soundfont")
         golden_path = os.path.join(folder, name + ".jsonl.gz")
         if a.mode == "record":
             os.makedirs(folder, exist_ok=True)

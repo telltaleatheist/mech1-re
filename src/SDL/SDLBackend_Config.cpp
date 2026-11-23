@@ -6,6 +6,7 @@
 #include <string.h>
 
 MwHostSoundSystem mwSdlSoundSystem=MW_SOUND_SPEAKER;
+bool mwSdlMusicSoundfont;
 char mwSdlMt32ControlRom[4096],mwSdlMt32PcmRom[4096],mwSdlGameFolder[4096];
 enum { HOST_MIN_COMBAT_TICK_MS=20,HOST_MAX_COMBAT_TICK_MS=500 };
 static char userConfigurationPath[4096];
@@ -28,6 +29,7 @@ bool MwSdlLoadTimingConfiguration(const char *path,bool optional)
     strcpy(controlRom,mwSdlMt32ControlRom);strcpy(pcmRom,mwSdlMt32PcmRom);strcpy(gameFolder,mwSdlGameFolder);
     uint32_t tickMs=mwSdlCombatTickMs;uint8_t speed=mwSdlCombatSpeed;
     MwHostSoundSystem soundSystem=mwSdlSoundSystem;
+    bool musicSoundfont=mwSdlMusicSoundfont;
     bool valid=true;
     while (fgets(line,sizeof(line),file))
     {
@@ -68,6 +70,11 @@ bool MwSdlLoadTimingConfiguration(const char *path,bool optional)
             else if (!strcmp(value,"adlib")) soundSystem=MW_SOUND_ADLIB;
             else {valid=false;break;}
         }
+        else if (!strcmp(key,"music"))
+        {
+            if (!strcmp(value,"soundfont")) musicSoundfont=true;
+            else {valid=false;break;}
+        }
         else if (!strcmp(key,"mt32_control_rom") || !strcmp(key,"mt32_pcm_rom"))
         {
             char *destination=!strcmp(key,"mt32_control_rom")?controlRom:pcmRom;
@@ -90,9 +97,10 @@ bool MwSdlLoadTimingConfiguration(const char *path,bool optional)
     }
     if (ferror(file)) valid=false;
     if (fclose(file)) valid=false;
+    if (musicSoundfont) soundSystem=MW_SOUND_MT32; /* music=soundfont decides, whatever sound_system says. */
     if (valid)
     {
-        mwSdlCombatTickMs=tickMs;mwSdlCombatSpeed=speed;mwSdlSoundSystem=soundSystem;
+        mwSdlCombatTickMs=tickMs;mwSdlCombatSpeed=speed;mwSdlSoundSystem=soundSystem;mwSdlMusicSoundfont=musicSoundfont;
         strcpy(mwSdlMt32ControlRom,controlRom);strcpy(mwSdlMt32PcmRom,pcmRom);strcpy(mwSdlGameFolder,gameFolder);
     }
     return valid;

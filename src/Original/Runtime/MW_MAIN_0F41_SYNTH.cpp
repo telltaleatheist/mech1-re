@@ -1,9 +1,12 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/campaign_music.h"
 #include "mechwarrior/event_log.h"
+#include "mechwarrior/music_out.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+
+MwMusicOutCalls mwMusicOut;
 
 /* Writable native callback identities stay observable; synthesis lives below
  * the original byte/register outputs, not in a replacement host sequencer. */
@@ -225,6 +228,7 @@ void MwSetCampaignMidiProgram(uint16_t channelIndex,uint16_t instrumentId)
 void MwDispatchMidiByte(uint16_t midiWord)
 {
     MwEventLogMidiByte((uint8_t)midiWord); /* Test instrument: the sequencer's output, before any backend. */
+    if (mwMusicOut.midiByte) mwMusicOut.midiByte((uint8_t)midiWord); /* The rebuild's music (music_out.h). */
     if (MwSendMidiByteToSelectedBackend(midiWord)) return;
     uint8_t midiByte=midiWord;
     if (midiByte>=MIDI_STATUS_BYTE)

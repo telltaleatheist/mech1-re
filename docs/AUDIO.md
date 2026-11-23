@@ -33,6 +33,31 @@ contain none. Shared resource allocation preserves the original 16-bit limits
 and reuse where playback depends on them, rather than granting unlimited host
 memory or inventing missing instrument data.
 
+## The rebuild's music: `music=soundfont`
+
+```ini
+music=soundfont
+```
+
+The campaign's songs play from a General MIDI soundfont instead of a card. The
+game is set up exactly as for an MT-32, so its sequencer sends the same notes
+at the same times. The notes go to the rebuild's own synthesizer
+(`src/Audio/Music`, TinySoundFont) instead of a synthesizer behind the MPU. No
+ROMs are needed. `music=soundfont` overrides `sound_system`, and combat's
+effects stay on the speaker.
+
+The instruments come from `data/music/instruments.json`: for each song and
+MIDI channel, a General MIDI program, a level and a pan, plus the drum map. The
+songs carry no Program Change. The MT-32 version picks the MT-32's built-in
+timbres by SysEx, which the rebuild skips. The first table plays the nearest
+General MIDI program to each of those timbres, and listening refines it
+(docs/phase5/NO_EMULATION_PLAN.md, S4). The soundfont is a subset of FluidR3 GM
+cut at build time (`tools/soundfont/subset.py`).
+
+`tools/trace/listening.py` renders every song to WAV files, beside the AdLib
+and speaker versions, with a listening sheet. It runs headless, and nothing is
+played aloud.
+
 ## Listening and playtesting
 
 MT-32 and AdLib are ready for listening/playtesting, not declared release-qualified.
