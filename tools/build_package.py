@@ -66,7 +66,8 @@ def check_first_run(executable, game, timeout=FIRST_RUN_SECONDS):
         saves, control, captures = (scratch / d for d in ("saves", "control", "captures"))
         for d in (saves, control, captures):
             d.mkdir()
-        headless = {"MW1O_HIDDEN": "1"} if sys.platform == "darwin" else {"SDL_VIDEO_DRIVER": "offscreen"}
+        headless = ({"MW1O_HIDDEN": "1", "SDL_MAC_BACKGROUND_APP": "1"} if sys.platform == "darwin"
+                    else {"SDL_VIDEO_DRIVER": "offscreen"})  # a background app on macOS: never activated
         env = dict(os.environ, **headless, SDL_AUDIO_DRIVER="dummy",
                    MECHWARRIOR_SAVE_DIRECTORY=str(saves), MECHWARRIOR_DEBUG_CONTROL_DIRECTORY=str(control))
         log_path = scratch / "run.log"

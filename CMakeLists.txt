@@ -518,3 +518,12 @@ if(MECHWARRIOR_BUILD_SDL)
         target_link_options(mechwarrior PRIVATE $<$<CONFIG:Release>:/DEBUG:FULL>)
     endif()
 endif()
+# Every test runs as a background app on macOS (SDL reads the hint from the
+# environment): a test's SDL never becomes a foreground app or takes the
+# keyboard from whoever is at the machine.
+if(APPLE AND MECHWARRIOR_BUILD_TESTS)
+    get_property(mw1_tests DIRECTORY PROPERTY TESTS)
+    if(mw1_tests)
+        set_property(TEST ${mw1_tests} APPEND PROPERTY ENVIRONMENT "SDL_MAC_BACKGROUND_APP=1")
+    endif()
+endif()

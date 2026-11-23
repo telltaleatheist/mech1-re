@@ -129,6 +129,8 @@ std::string take_copy(const std::string& picked, const std::string& user, std::s
 
 }  // namespace
 
+bool MwSetupUnattended(void) { return unattended(); }
+
 int MwSetupPrintStatus(void) {
   // Anything else printed while answering goes to stderr: stdout carries the one JSON line.
   std::fflush(stdout);

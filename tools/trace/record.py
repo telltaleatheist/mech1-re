@@ -218,8 +218,10 @@ def main():
     os.makedirs(args.frames, exist_ok=True)
 
     # No window on screen: SDL's offscreen video on Linux and Windows; macOS's
-    # offscreen driver has no renderer, so there the port's hidden window.
-    headless = {"MW1O_HIDDEN": "1"} if sys.platform == "darwin" else {"SDL_VIDEO_DRIVER": "offscreen"}
+    # offscreen driver has no renderer, so there the port's hidden window, in a
+    # background app (never activated, so it can't take the keyboard).
+    headless = ({"MW1O_HIDDEN": "1", "SDL_MAC_BACKGROUND_APP": "1"} if sys.platform == "darwin"
+                else {"SDL_VIDEO_DRIVER": "offscreen"})
     env = dict(os.environ, **headless, SDL_AUDIO_DRIVER="dummy",
                MECHWARRIOR_SAVE_DIRECTORY=saves, MECHWARRIOR_DEBUG_CONTROL_DIRECTORY=ctl,
                MECHWARRIOR_DEBUG_BIOS_TICKS=args.bios_ticks)

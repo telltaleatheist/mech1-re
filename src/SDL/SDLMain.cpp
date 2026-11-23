@@ -84,6 +84,11 @@ int main(int argc,char **argv)
 #if defined(_MSC_VER)
     signal(SIGABRT,ReportFatalAbort);
 #endif
+    /* A run with no player (a test's, a hidden one) is a background app on
+     * macOS: SDL then never makes it a foreground app or activates it, so it
+     * can't take the keyboard from whoever is at the machine. It comes before
+     * every SDL_Init, the setup screen's too. */
+    if (MwSetupUnattended()) SDL_SetHint(SDL_HINT_MAC_BACKGROUND_APP,"1");
     const char *pilotDirectory=NULL;
     /* --data DIR, anywhere: where our data/ folder is. */
     for (int index=1;index<argc;++index)
