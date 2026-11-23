@@ -20,6 +20,7 @@ namespace mw1o::setup {
 inline constexpr const char* kId = "mech1";             // the launcher contract's game id
 inline constexpr const char* kTitle = "MechWarrior 1";  // the setup screen's sentences
 inline constexpr const char* kFolderName = "MechWarrior 1 Rebuild";  // a game folder made inside a picked one
+inline constexpr const char* kFolderKey = "mw1r";  // its mark's game=<key> (the kit's game_folder.h), the launcher's name
 // The player's folder (saves, story/, MechWarrior.ini, the log): SDL's per-user folder for these names.
 inline constexpr const char* kOrganisation = "MicroProse";
 inline constexpr const char* kApplication = "MechWarrior 1 Rebuild";

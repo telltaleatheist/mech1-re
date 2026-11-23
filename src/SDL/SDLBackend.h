@@ -54,11 +54,13 @@ bool MwSdlLoadTimingConfiguration(const char *path,bool optional);
 /* The player's MechWarrior.ini in the write directory: overrides the shipped
  * one, and holds what the player changes in play (the combat speed). */
 bool MwSdlResolveWriteDirectory(char *directory,size_t size);
+/* Our data/ folder: --data's, or data beside the program (Contents/Resources on the Mac); "" when unknown. */
+const char *MwSdlDataDirectory(void);
 bool MwSdlLoadUserConfiguration(void);
 void MwSdlSaveUserSetting(const char *key,unsigned value);
 void MwSdlSaveUserText(const char *key,const char *value);
-/* game_folder: the player's MW1 folder, chosen once with a folder dialog when
- * the program starts without one (an installed copy, double-clicked). */
+/* game_folder: the player's MW1 files, set up once by the setup screen when
+ * the program starts without them (an installed copy, double-clicked). */
 extern char mwSdlGameFolder[4096];
 void MwSdlSetInterrupts(bool enabled);
 void MwSdlInstallCampaignInterrupts(void);

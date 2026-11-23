@@ -20,3 +20,12 @@ Pinned source: `765ec962e473aeb767e4cba74ffdc8f588ffbfe8`:
 It is a separately replaceable shared library; include its licence and provide
 corresponding source availability when distributing it. No Yamaha ROM download
 is required for this core. These dependencies are excluded from the MIT grant.
+
+The setup screen comes from re-setup-kit (MIT, `extern/re-setup-kit`), which
+carries stb_truetype and stb_image (public domain or MIT, the reader's choice)
+and miniz's inflate (MIT); their licences are in the kit's `third_party`
+folders and are copied into the package's `licenses` folder. The screen's
+face is Saira Condensed Bold (SIL Open Font License 1.1, "Saira" a reserved
+name), unchanged from github.com/google/fonts `ofl/sairacondensed` at
+`06bfe0d62a98375cb09c942fa18e68bd32cff057`; it ships with its licence in
+`data/setup`.

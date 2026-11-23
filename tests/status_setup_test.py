@@ -3,7 +3,8 @@
 writes nothing; `mechwarrior --setup` exits 0 ready, 1 cancelled, 2 failed
 (the reason as {"error": ...} on stdout) and never opens a picker in a hidden
 run. With MW1O_GAME (and MW1O_BTECH_1990) a copy is set up from a folder and
-the next --status finds it ready. Every run has its own player folder
+the next --status finds it ready, and again through the kit's setup screen,
+hidden and driven by its REKIT_SETUP_* hooks (MW1's theme, its log lines). Every run has its own player folder
 (MECHWARRIOR_SAVE_DIRECTORY) in the work folder; nothing of the game is kept.
 Prints names and counts only.
 
@@ -57,7 +58,8 @@ def main():
     shutil.rmtree(work, ignore_errors=True)  # the test's own folder
     os.makedirs(work)
     base = dict(os.environ)
-    for k in ("MECHWARRIOR_SAVE_DIRECTORY", "MECHWARRIOR_SETUP_PICK"):
+    for k in ("MECHWARRIOR_SAVE_DIRECTORY", "MECHWARRIOR_SETUP_PICK", "REKIT_SETUP_FRAMES", "REKIT_SETUP_GO",
+              "REKIT_SETUP_FIND", "REKIT_SETUP_PICKER", "REKIT_SETUP_FILES_TO", "REKIT_SETUP_SHOT"):
         base.pop(k, None)
     base["MW1O_HIDDEN"] = "1"
     base["SDL_VIDEO_DRIVER"] = "offscreen"
@@ -94,6 +96,21 @@ def main():
     check(p.returncode == 2 and '{"error": ' in p.stdout, "break: a pick that is not the game exits 2")
     check(not os.path.exists(os.path.join(user, "install")), "break: nothing installed from it")
 
+    # The setup screen, hidden: MW1's header and theme; no picker (unattended), a check's answer stands in.
+    alone = dict(HOME=home, APPDATA=home, XDG_DATA_HOME=os.path.join(home, "share"))  # FIND's search finds nothing
+    screen = dict(env, **alone, REKIT_SETUP_FRAMES="5", REKIT_SETUP_FIND="1", REKIT_SETUP_GO="1",
+                  REKIT_SETUP_PICKER="path:" + os.path.join(notgame, "README.TXT"))
+    p, _ = run(a.program, ["--setup"], screen)
+    out = p.stdout.splitlines()
+    check(p.returncode == 1, "break: the screen with a pick that is not the game ends cancelled (%d)" % p.returncode)
+    check("setup: screen find: FIND THE GAME, QUIT" in out and "setup: header MECHWARRIOR 1" in out,
+          "the screen's log: the find screen, MW1's header")
+    check("setup: the file picker asked for" in out and not any(l.startswith("setup: screen confirm") for l in out),
+          "break: not the game, not offered")
+    check(any(l.startswith("setup: font ") and l.endswith("SairaCondensed-Bold.ttf") for l in out),
+          "the theme's face read")
+    check(not os.path.exists(os.path.join(user, "install")), "break: nothing installed from the screen either")
+
     game = os.environ.get("MW1O_GAME")
     btech = os.environ.get("MW1O_BTECH_1990")
     if game and btech:
@@ -119,6 +136,28 @@ def main():
         check(files.get("data") == "1990-01-22", "--status: the revision")
         check(tree(work) == before, "break: --status wrote nothing after a setup either")
         check(took < 1.0, "--status found the game in %.2f s (< 1 s)" % took)
+
+        # The same copy through the setup screen (hidden): found, offered, installed; and into a picked folder.
+        user = os.path.join(work, "user-c")
+        env = dict(base, MECHWARRIOR_SAVE_DIRECTORY=user)
+        screen = dict(env, **alone, REKIT_SETUP_FRAMES="200", REKIT_SETUP_FIND="1", REKIT_SETUP_GO="1",
+                      REKIT_SETUP_PICKER="path:" + os.path.join(pick, "BTECH.EXE"))
+        p, _ = run(a.program, ["--setup"], screen)
+        out = p.stdout.splitlines()
+        check(p.returncode == 0, "the screen: --setup exits 0 (%d)" % p.returncode)
+        check("setup: screen confirm: MECHWAR, INSTALL, CHANGE FOLDER, BACK" in out and
+              "setup: work: INSTALLING MECHWARRIOR 1" in out, "the screen's log: offered, then installing")
+        check(os.path.isfile(os.path.join(user, "install", "BTECH.EXE")), "the screen's copy in the player's folder")
+        games = os.path.join(work, "games")
+        os.makedirs(os.path.join(games, "something else"))
+        user = os.path.join(work, "user-d")
+        p, _ = run(a.program, ["--setup"], dict(screen, MECHWARRIOR_SAVE_DIRECTORY=user, REKIT_SETUP_FILES_TO=games))
+        folder = os.path.join(games, "MechWarrior 1 Rebuild")
+        mark = os.path.join(folder, "rebuild-game-folder.txt")
+        check(p.returncode == 0 and os.path.isfile(os.path.join(folder, "install", "BTECH.EXE")),
+              "CHANGE FOLDER: a folder of the game's own made in a pick holding other things (%d)" % p.returncode)
+        check(os.path.isfile(mark) and "\ngame=mw1r\n" in open(mark).read(), "its mark: game=mw1r")
+        check(os.listdir(os.path.join(games, "something else")) == [], "what was there is left as it was")
     else:
         print("skip the game parts: MW1O_GAME and MW1O_BTECH_1990 not both set")
 

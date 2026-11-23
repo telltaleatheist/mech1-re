@@ -102,6 +102,15 @@ bool MwSdlSetDataDirectory(const char *directory)
     strcpy(dataDirectory,directory);
     return true;
 }
+const char *MwSdlDataDirectory(void)
+{
+    if (!dataDirectory[0])
+    {
+        const char *base=SDL_GetBasePath();
+        if (!base || snprintf(dataDirectory,sizeof(dataDirectory),"%sdata",base)>=(int)sizeof(dataDirectory)) dataDirectory[0]=0;
+    }
+    return dataDirectory;
+}
 /* The player's write directory (saves, story/, their MechWarrior.ini):
  * MECHWARRIOR_SAVE_DIRECTORY, or SDL's per-user folder (src/Setup/Setup.h
  * names it the same way without making it, for --status). */
@@ -127,11 +136,7 @@ bool MwSdlInitialize(const char *gameDirectory,const char *captureDirectory)
      * imported (once) before the campaign's initial data reads it. */
     char writeDirectory[4096];
     if (!MwSdlResolveWriteDirectory(writeDirectory,sizeof(writeDirectory))) return false;
-    if (!dataDirectory[0])
-    {
-        const char *base=SDL_GetBasePath();
-        if (!base || snprintf(dataDirectory,sizeof(dataDirectory),"%sdata",base)>=(int)sizeof(dataDirectory)) return false;
-    }
+    if (!MwSdlDataDirectory()[0]) return false;
     if (!MwHostPrepareRules(dataDirectory) || !MwHostPrepareUi(dataDirectory)) return false;
     if (!MwHostSetCampaignSaveDirectory(writeDirectory) || !MwHostPrepareStory(gameDirectory,writeDirectory)) return false;
     if (!MwImportCampaignInitialData() || !MwImportCampaignEventText()
