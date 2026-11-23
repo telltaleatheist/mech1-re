@@ -19,7 +19,7 @@ class PackageTests(unittest.TestCase):
             file.parent.mkdir(parents=True, exist_ok=True)
             file.write_text("fixture")
         exe = root / "build/mechwarrior"
-        exe.write_text('#!/bin/sh\necho "Usage: mechwarrior <game-directory>" >&2\nexit 2\n')
+        exe.write_text('#!/bin/sh\n[ "$1" = --help ] && { echo "Usage: mechwarrior [<game folder>]"; exit 0; }\nexit 2\n')
         exe.chmod(0o755)
         for name in ["libSDL3.so.0", "libmt32emu.so.2", "libnukedopl.so"]:
             (root / "build" / name).write_bytes(b"fixture library")
@@ -35,7 +35,7 @@ class PackageTests(unittest.TestCase):
             self.assertFalse((extracted / "libSDL3.so").is_symlink())
             self.assertEqual((extracted / "libSDL3.so").read_bytes(), b"fixture library")
             self.assertTrue(os.access(extracted / "mechwarrior", os.X_OK))
-            self.assertEqual(subprocess.run([str(extracted / "mechwarrior")], capture_output=True).returncode, 2)
+            self.assertEqual(subprocess.run([str(extracted / "mechwarrior"), "--help"], capture_output=True).returncode, 0)
             self.assertTrue((extracted / "licenses/Munt-COPYING.LESSER.txt").exists())
             self.assertTrue((extracted / "data/rules/units.json").exists())
             self.assertTrue((extracted / "data/ui/hub.json").exists())

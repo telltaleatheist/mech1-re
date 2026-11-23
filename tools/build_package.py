@@ -41,8 +41,9 @@ def stage_data(root, stage):
 
 
 def check_usage(executable):
-    result = subprocess.run([str(executable)], cwd=executable.parent, capture_output=True, text=True, timeout=30)
-    if result.returncode != 2 or "Usage: mechwarrior" not in result.stderr:
+    # --help, not a bare start: without a game folder an installed copy opens a folder dialog.
+    result = subprocess.run([str(executable), "--help"], cwd=executable.parent, capture_output=True, text=True, timeout=30)
+    if result.returncode != 0 or "Usage: mechwarrior" not in result.stdout:
         raise RuntimeError(f"Packaged executable failed to load: {result.returncode}\n{result.stdout}\n{result.stderr}")
 
 
