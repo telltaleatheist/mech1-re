@@ -94,7 +94,8 @@ void MwSdlPollSupportPilot(void)
             for(char *ch=line+consumed;*ch;++ch)if(!isspace((unsigned char)*ch))valid=false;
             orders.checkpoints[orders.checkpointCount++]=PilotPoint{(int32_t)x,(int32_t)y,(int32_t)z};
         }
-        if(ferror(file))valid=false;fclose(file);remove(pilotCommandPath);
+        if(ferror(file))valid=false;
+        fclose(file);remove(pilotCommandPath);
         valid=valid && id>lastCommand && slot<PILOT_TARGETS && minimum>=256 && maximum>minimum && maximum<=30000
             && heat>=1 && heat<1600 && tactic<=PILOT_ORBIT_RIGHT && lease>=PILOT_MIN_LEASE_MS && lease<=PILOT_MAX_LEASE_MS;
         if(id>lastCommand)lastCommand=id;
