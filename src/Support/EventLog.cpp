@@ -23,7 +23,9 @@ std::vector<uint8_t> sysex;
 // The combat speaker's last output, logged on change only.
 uint16_t lastPeriod = 0xFFFF;
 bool lastOn;
-// Input polls in a row, written as one line when anything else is logged.
+// Combat polls in a row, written as one line before the next game-stream line (sound, key, snap). Notes,
+// songs and tones don't end a run: the timer drives them, and its interleaving with combat polls depends
+// on the sound device.
 uint64_t pendingPolls;
 bool pendingCombat;
 
@@ -56,7 +58,6 @@ int DataBytes(uint8_t status) {
 void Message(uint8_t status) {
   static const char *const kinds[8] = {"off", "on", "poly", "cc", "prog", "press", "bend", ""};
   const unsigned channel = status & 0x0F, kind = (status >> 4) & 7;
-  FlushPolls();
   if (kind == 6)
     std::fprintf(eventLog, "[\"note\", %llu, \"bend\", %u, %u, 0]\n", (unsigned long long)musicTicks, channel,
                  (unsigned)(data[0] | (data[1] << 7)));
@@ -78,7 +79,6 @@ void MwEventLogMidiByte(uint8_t value) {
   if (inSysex) {
     if (value == 0xF7 || (value >= 0x80 && value < 0xF8)) {
       if (value == 0xF7) sysex.push_back(value);
-      FlushPolls();
       std::fprintf(eventLog, "[\"note\", %llu, \"sysex\", %zu, \"%s\"]\n", (unsigned long long)musicTicks,
                    sysex.size(), Prefix(sysex).c_str());
       inSysex = false;
@@ -117,7 +117,6 @@ void MwEventLogSong(const uint8_t *stream, uint16_t offset) {
   if (!Log()) return;
   uint8_t head[32];
   for (unsigned i = 0; i < sizeof(head); ++i) head[i] = stream[(uint16_t)(offset + i)];
-  FlushPolls();
   std::fprintf(eventLog, "[\"song\", %llu, \"%s\"]\n", (unsigned long long)musicTicks, Prefix(head).c_str());
 }
 
@@ -126,7 +125,6 @@ void MwEventLogToneTick(uint16_t period, bool on) {
   ++toneTicks;
   if (period == lastPeriod && on == lastOn) return;
   lastPeriod = period, lastOn = on;
-  FlushPolls();
   std::fprintf(eventLog, "[\"tone\", %llu, %u, %d]\n", (unsigned long long)toneTicks, period, on ? 1 : 0);
 }
 

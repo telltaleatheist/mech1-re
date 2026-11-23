@@ -20,6 +20,12 @@ In combat (one input poll per tick; a key is a press and a release):
     ticks:N           N more combat polls (ticks) before the next item
 These three wait for combat, so "ticks:0" marks where combat starts; idle:N
 waits for the campaign, so "idle:0" marks where it resumes after a battle.
+Event-log scripts only (tools/trace/events/scripts, with --feed-calls; the
+port also refuses them unless MECHWARRIOR_EVENT_LOG is set):
+    song:NAME         start a song through the game's own routine (campaign)
+    sound:N           request effect N through the game's own routine (combat)
+These call the game, so a game-state trace may never use them: without
+--feed-calls, or in a script outside that folder, the script is refused.
 
 A record:
     snap    the snap's name
@@ -48,6 +54,8 @@ import argparse, hashlib, hmac, json, os, re, shutil, signal, subprocess, sys, t
 
 POLL_S = 0.05
 SNAP_NAME = re.compile(r"^[A-Za-z0-9_-]{1,47}$")
+FEED_CALLS = ("song:", "sound:")
+FEED_CALL_SCRIPTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "events", "scripts")
 # MW_MAIN's key region (segment, offset, length) and load segment, as
 # src/Import/ImportTable.h's key_region: a label's hash is keyed as the import
 # table's are, so a short label can't be found from it.
@@ -59,8 +67,9 @@ def sha(data, n=16):
     return hashlib.sha256(data).hexdigest()[:n]
 
 
-def read_script(path):
-    """The tokens, checked, and the snap names in order."""
+def read_script(path, feed_calls=False):
+    """The tokens, checked, and the snap names in order. song: and sound: only with feed_calls, and only in a
+    script in FEED_CALL_SCRIPTS (they call the game, so a game-state trace may never use them)."""
     tokens = []
     with open(path, encoding="utf-8") as f:
         for line in f:
@@ -79,6 +88,11 @@ def read_script(path):
         elif t.startswith("random:"):
             if not re.fullmatch(r"[0-9A-Fa-f]{8}", t[7:]):
                 sys.exit(f"{path}: bad {t!r} (random:WWWWWWWW, hex)")
+        elif t.startswith(FEED_CALLS):
+            if not feed_calls:
+                sys.exit(f"{path}: {t!r} calls the game: refused (event-log scripts only, with --feed-calls)")
+            if os.path.dirname(os.path.realpath(path)) != os.path.realpath(FEED_CALL_SCRIPTS):
+                sys.exit(f"{path}: {t!r} is allowed only in a script in {FEED_CALL_SCRIPTS}")
     if not snaps:
         sys.exit(f"{path}: no @snap")
     return tokens, snaps
@@ -180,9 +194,11 @@ def main():
     ap.add_argument("--timeout", type=float, default=300.0)
     ap.add_argument("--story", help="a story folder to play from (an earlier run's saves/story)")
     ap.add_argument("--label-game", help="the folder whose MW_MAIN.EXE keys the labels (default --game)")
+    ap.add_argument("--feed-calls", action="store_true",
+                    help="allow song: and sound: (events.py only, for tools/trace/events/scripts)")
     args = ap.parse_args()
 
-    tokens, snaps = read_script(args.script)
+    tokens, snaps = read_script(args.script, args.feed_calls)
     if os.path.exists(args.out):
         os.remove(args.out)
     key = label_key(args.label_game or args.game)

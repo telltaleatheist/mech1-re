@@ -425,6 +425,9 @@ if(MECHWARRIOR_BUILD_SDL)
             add_test(NAME events COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tools/trace/events.py"
                 check --opt-in --port $<TARGET_FILE:mechwarrior> --work "${CMAKE_CURRENT_BINARY_DIR}/events_work")
             set_tests_properties(events PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 3600)
+            # song: and sound: (event-log test aids) stay out of the game checks.
+            add_test(NAME feed_calls COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tools/trace/test_feed_calls.py")
+            set_tests_properties(feed_calls PROPERTIES ENVIRONMENT "MW1O_FEED_PORT=$<TARGET_FILE:mechwarrior>" TIMEOUT 600)
         endif()
     endif()
     if(MSVC)

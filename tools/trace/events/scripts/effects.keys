@@ -1,0 +1,24 @@
+# Every effect the game requests, through its own sound-request routine at
+# the priority the game requests it with (sound:, event-log runs only;
+# SDLBackend_DebugControl.cpp's FeedSound). Effects 9 and 12 are in the bank
+# but neither BTECH revision requests them, so they have no golden. The
+# battle is combat_cockpit's; the mech stands still while the effects play
+# (the battle's own sounds may join them, as they would in play).
+random:178ab0ad
+Return Return Down Down Return Return Left Return @snap:accepted Return @snap:deploy
+Return
+ticks:0 @snap:briefing
+Return ticks:10 @snap:cockpit
+sound:0 ticks:40 @snap:fx_0
+sound:1 ticks:40 @snap:fx_1
+sound:2 ticks:40 @snap:fx_2
+sound:3 ticks:40 @snap:fx_3
+sound:4 ticks:40 @snap:fx_4
+sound:5 ticks:40 @snap:fx_5
+sound:6 ticks:40 @snap:fx_6
+sound:7 ticks:40 @snap:fx_7
+sound:8 ticks:40 @snap:fx_8
+sound:10 ticks:40 @snap:fx_10
+sound:11 ticks:40 @snap:fx_11
+sound:13 ticks:40 @snap:fx_13
+sound:14 ticks:40 @snap:fx_14

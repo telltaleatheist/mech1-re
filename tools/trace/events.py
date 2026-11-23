@@ -4,8 +4,10 @@
     events.py record --port BUILD/mechwarrior --game DIR --work DIR   # write the goldens
     events.py check  --port BUILD/mechwarrior --game DIR --work DIR   # compare a build
 
-Every trace script (scripts/*.keys) and every sound script (audio/scripts/*.keys)
-runs through record.py with:
+Every trace script (scripts/*.keys), every sound script (audio/scripts/*.keys)
+and every feed script (events/scripts/*.keys: song: and sound: ask for every
+song and every effect the game requests, through the game's own routines;
+record.py --feed-calls, events/README.md) runs through record.py with:
 - MECHWARRIOR_EVENT_LOG: what the game asked for (src/include/mechwarrior/event_log.h):
   the sequencer's notes, combat's tones, sound requests, key reads, input polls,
   snaps;
@@ -44,6 +46,7 @@ import argparse, gzip, hashlib, os, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 EVENTS = os.path.join(HERE, "events")
+FEED_SCRIPTS = os.path.join(EVENTS, "scripts")  # song: and sound: (record.py --feed-calls)
 SKIP = 77
 STREAMS = {"note": ("note", "song"), "tone": ("tone",), "game": ("sound", "key", "cpoll")}
 DEVICE_RUNS = ("adlib", "mt32")  # beside the speaker, for the sound scripts
@@ -60,14 +63,15 @@ def revision(game):
 
 def scripts():
     found = []
-    for folder in (os.path.join(HERE, "scripts"), os.path.join(HERE, "audio", "scripts")):
+    for folder in (os.path.join(HERE, "scripts"), os.path.join(HERE, "audio", "scripts"), FEED_SCRIPTS):
         found += [os.path.join(folder, f) for f in sorted(os.listdir(folder)) if f.endswith(".keys")]
     return found
 
 
 def name_of(script):
     stem = os.path.basename(script)[:-5]
-    return ("audio-" if os.sep + "audio" + os.sep in script else "") + stem
+    folder = os.path.basename(os.path.dirname(os.path.dirname(script)))
+    return {"audio": "audio-", "events": "feed-"}.get(folder, "") + stem
 
 
 def run(port, game, work, script, device):
@@ -82,10 +86,11 @@ def run(port, game, work, script, device):
     # The sound-port log too: with it set and no ROM paths, MT-32 runs silent (SDLBackend_Audio.cpp).
     env = dict(os.environ, MECHWARRIOR_TIMING_CONFIG=ini, MECHWARRIOR_EVENT_LOG=log,
                MECHWARRIOR_AUDIO_LOG=os.path.join(base, "sound.log"), MECHWARRIOR_DEBUG_VIRTUAL_CLOCK="1")
+    feed = ["--feed-calls"] if os.path.dirname(script) == FEED_SCRIPTS else []
     rec = subprocess.run([sys.executable, os.path.join(HERE, "record.py"), "--exe", port, "--game", game,
                           "--script", script, "--out", os.path.join(base, "trace.jsonl"),
                           "--frames", os.path.join(base, "frames"), "--work", os.path.join(base, "run"),
-                          "--timeout", "900"], env=env, capture_output=True, text=True)
+                          "--timeout", "900"] + feed, env=env, capture_output=True, text=True)
     if rec.returncode:
         sys.exit(f"{name}: record.py failed\n{rec.stdout[-2000:]}{rec.stderr[-2000:]}")
     with open(log, encoding="utf-8") as f:
@@ -192,7 +197,7 @@ def main():
         if a.only and name not in a.only:
             continue
         ours = run(port, game, work, script, "speaker")
-        if name.startswith("audio-") and not a.no_devices:
+        if name.startswith(("audio-", "feed-")) and not a.no_devices:
             for device in DEVICE_RUNS:
                 if not same_on_device(name, device, ours, run(port, game, work, script, device), print):
                     failed.append(f"{name}.{device}")

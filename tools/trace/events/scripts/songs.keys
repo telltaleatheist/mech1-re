@@ -1,0 +1,13 @@
+# Every song, through the game's own song-start routines (song:, event-log
+# runs only; SDLBackend_DebugControl.cpp's FeedSong). From the bar, where the
+# one music buffer holds MECHBAR, DEATH and LAUNCH: those three first, then
+# MECH and VICTORY, which overwrite the buffer, so keep this order. Each plays
+# for about 36 s of test-clock time (idle:60000 is about 18 s on this screen).
+Return Return @snap:hub
+Down Down Down Down @snap:bar_sel
+Return @snap:bar
+song:bar idle:60000 idle:60000 @snap:song_bar
+song:death idle:60000 idle:60000 @snap:song_death
+song:launch idle:60000 idle:60000 @snap:song_launch
+song:mech idle:60000 idle:60000 @snap:song_mech
+song:victory idle:60000 idle:60000 @snap:song_victory

@@ -99,7 +99,9 @@ That is game behaviour, and it stays.
 
 ### Effects: the game's own effect player, played as tones
 
-BTECHSND.SND's fifteen effects are bytecode: the 229C reader plus 2134's channels, priorities, pitch steps and bends. That logic stays.
+BTECHSND.SND's effects are bytecode: the 229C reader plus 2134's channels, priorities, pitch steps and bends. That logic stays.
+
+**The effects the game requests.** The bank holds fifteen effects, 0 to 14. Both BTECH revisions request thirteen of them, the same thirteen at the same priorities from the same sixteen call sites (checked in each revision's unpacked image): 0 to 8, 10, 11, 13 and 14. Effects 9 and 12 are in the bank but neither revision ever requests them. The rebuild plays what the game plays, so they get no golden and no render.
 
 Where 2134 writes PIT divisors and the 61h gate today, it hands **tone events** to `mw1o::audio::Effects` instead:
 - start and stop;
@@ -155,13 +157,13 @@ Changes per piece:
 ### Sound
 
 1. **The note log, exact.** A new log at the sequencer's output records each event as (game ms, channel, event, key, velocity).
-   - Goldens are recorded from today's port, through its MPU path, before anything changes. They cover the title, the bar, each world's song, and the LAUNCH and DEATH cues.
+   - Goldens are recorded from today's port, through its MPU path, before anything changes. They cover all five songs: the title (MECH), the bar (MECHBAR), the LAUNCH and DEATH cues, and VICTORY.
    - Level 3 of the audio plan showed the port's MIDI byte stream already matches the original's under DOSBox-X: 3,003 title bytes and 4,730 bar bytes, exactly. So these goldens are anchored to the original.
    - Every sound slice keeps the note log identical. The instrument table changes the sound, never the notes or their times.
 2. **The tone log, exact.** Combat's effects as (game ms, effect, frequency steps). The goldens are converted from today's port-event log, whose PIT divisors give the frequencies.
 3. **The traces, unchanged.** Sound doesn't touch game state, so check.py stays at 8/8 for 1990 and 6/8 for 1989 (combat_cockpit and combat_retreat are the known two), and exe_free stays 8/8.
 4. **Listening checks.**
-   - A fixed list is rendered headless to files, never played aloud by automation: each song, LAUNCH, DEATH and the fifteen effects, on the soundfont and on speaker-style.
+   - A fixed list is rendered headless to files, never played aloud by automation: each song (MECH, MECHBAR, LAUNCH, DEATH, VICTORY) and the thirteen effects the game requests, on the soundfont and on speaker-style.
    - The project owner listens to them next to the original's MT-32, AdLib and speaker captures, using the listening sheet (section 5), and signs off the instrument table and levels.
    - Only a listener can judge timbre. The numbers above cover everything else.
 
@@ -233,7 +235,7 @@ Every slice below is its own branch with the full gate green: both setups, the t
 
 | # | Slice | Check | Days |
 | --- | --- | --- | --- |
-| T1 | The game-event log beside each snap; the note log at the sequencer's output and the tone log at 2134's output; check.py compares all three. Goldens from today's port: the six campaign scripts, the combat scripts, every song, LAUNCH, DEATH, the fifteen effects. The songs' channel layout and rhythm channel confirmed | goldens reproduce run to run | 4 |
+| T1 | The game-event log beside each snap; the note log at the sequencer's output and the tone log at 2134's output; check.py compares all three. Goldens from today's port: the six campaign scripts, the combat scripts, every song (MECH, MECHBAR, LAUNCH, DEATH, VICTORY), the thirteen effects the game requests (0–8, 10, 11, 13, 14; 9 and 12 are in the bank but never requested). The songs' channel layout and rhythm channel confirmed | goldens reproduce run to run | 4 |
 | S2 | TinySoundFont vendored with its licence. The soundfont subset tool (our own) with tests: a subset holds exactly the listed programs and plays them the same as the full bank | tool tests; package licences | 2 |
 | S3 | `Music` behind `music=soundfont`, with a first instrument table. The listening list rendered to files in `outbox/<date>/mech1-re-listening/` with a one-page sheet (below) | note log identical | 3 |
 | G1 | `Canvas` and the RGB palette; the presenter takes a canvas page. The game still draws through the EGA model into it | frames identical | 2 |
@@ -244,7 +246,7 @@ Every slice below is its own branch with the full gate green: both setups, the t
 | H2 | Keyboard: SDL3 key events into a typed input queue. The BIOS keyboard words, shift flags and the INT 9 scancode ring removed, along with the IRQ1 handler | game-event log identical; traces 8/8 and 6/8 | 4 |
 | H3 | Mouse and joystick: SDL3 mouse scaled to the frame; SDL3 axes for the joystick; the calibration screen reads axes. Game-port read counting and the delay loops that only timed hardware removed | game-event log identical | 3 |
 | S4 | The instrument table from the listening notes, per song: programs, levels, pans, the drum map. Re-rendered for a second listen if asked | note log identical; the project owner's sign-off | 2, plus listening |
-| S5 | `Effects`: 2134 outputs tone events to the tone voice | tone log identical | 3 |
+| S5 | `Effects`: 2134 outputs tone events to the tone voice, for the thirteen effects the game requests (9 and 12 never are) | tone log identical | 3 |
 | S6 | Speaker-style music on the tone voice. The PIT channel 2 and 61h decoding removed | note log identical | 2 |
 | H4 | Timers and interrupts: the game's millisecond clock calls the music tick at its rate and supplies the 18.2 Hz count where the game reads it. The interrupt flag, vector install and restore, the INT 8 handler's IRQ entry and BIOS chain, the PIT latch window and the per-read time charges removed | note log identical, timestamps included; game-event log identical | 5 |
 | S8 | The campaign's AdLib and MPU backends and combat's 21CA and 2176 removed. 1ADF reports the rebuild's sound | logs and traces exact | 2 |

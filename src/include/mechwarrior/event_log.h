@@ -17,7 +17,9 @@
  *       period is the PIT divisor the effect player chose (Hz = 1193182 / period);
  *   ["sound", event, priority, enabled]  a combat sound request;
  *   ["key", word]   a campaign key read;
- *   ["cpoll", n]    n combat input polls in a row (one a tick). Campaign polls
+ *   ["cpoll", n]    n combat input polls in a row (one a tick), written before
+ *       the next sound, key or snap line (notes and tones don't end a run:
+ *       the timer drives them, interleaved by device). Campaign polls
  *       are not logged: how often the host polls while the game waits depends
  *       on the time the port model charges (1 us a port read), not on the game;
  *   ["snap", name]  a trace snap.

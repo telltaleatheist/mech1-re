@@ -1,7 +1,15 @@
 /* Opt-in test instrument, not recovered game code. No state setters or game
  * calls: commands enter SDL's ordinary keyboard event path, telemetry only
- * reads canonical owners; a feed's random: token (a test aid, as a rig poke)
- * is the one writer. Files are private local IPC, never a network server. */
+ * reads canonical owners. Two writers, both test aids:
+ * - a feed's random: token, as a rig poke;
+ * - the event-log feed's song: and sound: tokens (below, FeedSong and
+ *   FeedSound), which call the game's own song-start and sound-request
+ *   routines so the event goldens (tools/trace/events/README.md) cover every
+ *   song and every effect the game requests, including the ones play reaches
+ *   only at a campaign's end. They are refused unless MECHWARRIOR_EVENT_LOG is
+ *   set, and record.py refuses them in any script outside tools/trace/events/
+ *   scripts, so game-state traces still come from input alone.
+ * Files are private local IPC, never a network server. */
 #include "SDLBackend.h"
 #include "mechwarrior/event_log.h"
 #include "mechwarrior/combat_startup.h"
@@ -13,6 +21,9 @@
 #include "mechwarrior/campaign.h"
 #include "mechwarrior/campaign_economy.h"
 #include "mechwarrior/campaign_exchange.h"
+#include "mechwarrior/campaign_startup.h"
+#include "mechwarrior/campaign_handoff.h"
+#include "mechwarrior/combat_sound.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -53,12 +64,14 @@ static uint64_t inputPolls,totalKeyReads;
  * In combat a key token is a press and release of that key's scan code, and:
  *   make:KEY / break:KEY  press / release only (held keys steer and fire)
  *   ticks:N           N more combat polls before the next item
- * These three are combat-only: a campaign poll leaves them waiting, so
+ *   sound:N           request effect N (event-log runs only; FeedSound)
+ * These four are combat-only: a campaign poll leaves them waiting, so
  * ticks:0 marks where combat starts. idle:N is campaign-only, so idle:0
- * marks where the campaign resumes after a battle.
+ * marks where the campaign resumes after a battle, and so is
+ *   song:NAME         start song NAME (event-log runs only; FeedSong)
  * Status reports progress; the game then waits for keys as usual. */
 enum { FEED_MAX_ITEMS=4096,FEED_MAX_BYTES=65536,FEED_WAIT_POLLS=4,FEED_NAME=48 };
-typedef enum { FEED_KEY,FEED_IDLE,FEED_SNAP,FEED_RANDOM,FEED_MAKE,FEED_BREAK,FEED_TICKS } FeedKind;
+typedef enum { FEED_KEY,FEED_IDLE,FEED_SNAP,FEED_RANDOM,FEED_SONG,FEED_MAKE,FEED_BREAK,FEED_TICKS,FEED_SOUND } FeedKind;
 typedef struct { FeedKind kind;uint16_t word,word2;uint8_t shift;char name[FEED_NAME]; } FeedItem;
 static FeedItem feed[FEED_MAX_ITEMS];
 static unsigned feedCount,feedIndex,feedPolls,feedWait,combatFeedPolls,combatFeedWait;
@@ -67,9 +80,54 @@ static bool feedActive;
 static const char *feedError="";
 static char feedPath[4096];
 static void WriteStatus(const char *path);
+
+/* song:NAME, the event-log feed's second writer (header). The game has no
+ * "start song by id" routine: each site pairs one of its loaders with
+ * campaignStartMusic at its own offset, and these rows are those pairs, the
+ * game's functions and constants only (MW_MAIN_081B_STARTUP.cpp's sites).
+ * MECHBAR, DEATH and LAUNCH share the one buffer MwLoadBarDeathAndLaunchMusic
+ * fills; MECH and VICTORY overwrite it. So a script plays bar, death and
+ * launch first, then mech, then victory last; don't reorder them. */
+typedef struct { const char *name;bool (*load)(void);uint16_t offset; } FeedSongRow;
+static const FeedSongRow feedSongs[]={
+    {"bar",MwLoadBarDeathAndLaunchMusic,0},        /* the bar's entry (PILOTS:22) */
+    {"death",NULL,DEATH_MUSIC_OFFSET},             /* MwStartDeathMusic (STARTUP:523) */
+    {"launch",NULL,LAUNCH_MUSIC_OFFSET},           /* a won contract's debrief (STARTUP:399) */
+    {"mech",MwLoadMechMusic,0},                    /* the title (STARTUP:89, 112) */
+    {"victory",MwLoadVictoryMusic,0},              /* the Dark Wing ending (STARTUP:432, 434) */
+};
+static void FeedSong(uint16_t row)
+{
+    const FeedSongRow *song=&feedSongs[row];
+    if (song->load) (void)song->load();
+    if (song->offset==DEATH_MUSIC_OFFSET) MwStartDeathMusic();
+    else if (campaignStartMusic) campaignStartMusic(campaignMusicBufferSelector,song->offset);
+}
+/* sound:N: BtechPlaySoundIfEnabled at the priority the game requests effect N
+ * with, from its call sites (the same 16 in both BTECH revisions). Priority
+ * only decides who wins a busy channel; on idle channels the tone is the same.
+ * Effect 5 is requested at 5 (a direct hit) and 100 (the combat loss): 100.
+ * Effects 9 and 12 are in the bank but neither revision requests them, so
+ * they have no priority here and the parser refuses them. */
+static const int16_t feedSoundPriority[15]={
+    10,10,10,10,10,  /* 0-4 the player's weapons (PLAYER_WEAPON_SOUND_PRIORITY) */
+    100,             /* 5 COMBAT_LOSS_SOUND_PRIORITY */
+    0x32,            /* 6 MOVEMENT_IMPACT_SOUND_PRIORITY */
+    0x28,            /* 7 COMBAT_DAMAGE_SOUND_PRIORITY */
+    15,              /* 8 AI_INCOMING_PROJECTILE_PRIORITY */
+    -1,              /* 9 never requested */
+    60,              /* 10 COMBAT_CRITICAL_SOUND_PRIORITY */
+    1,               /* 11 the footstep (POSE) */
+    -1,              /* 12 never requested */
+    0x1E,            /* 13 PLAYER_JUMP_SOUND_DELAY, the jump launch's (POSE) */
+    15,              /* 14 PLAYER_JUMP_SOUND_PRIORITY */
+};
+static void FeedSound(uint16_t effect)
+{BtechPlaySoundIfEnabled((int16_t)effect,(uint16_t)feedSoundPriority[effect]);}
+static const char *parseError;
 static bool ParseFeed(char *text)
 {
-    feedCount=0;
+    feedCount=0;parseError=NULL;
     for (char *token=strtok(text," \t\r\n,");token;token=strtok(NULL," \t\r\n,"))
     {
         if (*token=='#') { strtok(NULL,"\n");continue; }
@@ -91,6 +149,26 @@ static bool ParseFeed(char *text)
             for (const char *ch=name;*ch;++ch)
                 if (!((*ch>='a'&&*ch<='z')||(*ch>='A'&&*ch<='Z')||(*ch>='0'&&*ch<='9')||*ch=='_'||*ch=='-')) return false;
             item->kind=FEED_SNAP;memcpy(item->name,name,length+1);
+        }
+        else if (!strncmp(token,"song:",5) || !strncmp(token,"sound:",6))
+        {
+            if (!MwEventLogActive())
+            {parseError="song: and sound: are event-log test aids: set MECHWARRIOR_EVENT_LOG";return false;}
+            if (token[1]=='o' && token[2]=='n')
+            {
+                unsigned row=0;
+                while (row<sizeof(feedSongs)/sizeof(*feedSongs) && strcmp(feedSongs[row].name,token+5)) ++row;
+                if (row==sizeof(feedSongs)/sizeof(*feedSongs)) {parseError="unknown song: (bar, death, launch, mech, victory)";return false;}
+                item->kind=FEED_SONG;item->word=(uint16_t)row;
+            }
+            else
+            {
+                const char *digits=token+6;
+                unsigned long n=strtoul(digits,&end,10);
+                if (!*digits || *end || n>=sizeof(feedSoundPriority)/sizeof(*feedSoundPriority) || feedSoundPriority[n]<0)
+                {parseError="sound:N takes an effect the game requests (0-8, 10, 11, 13, 14)";return false;}
+                item->kind=FEED_SOUND;item->word=(uint16_t)n;
+            }
         }
         else if (!strncmp(token,"random:",7))
         {
@@ -120,7 +198,7 @@ static void LoadFeed(void)
     remove(feedPath); /* Consume our mailbox only. */
     text[length<=FEED_MAX_BYTES?length:0]=0;
     if (length>FEED_MAX_BYTES || !ParseFeed(text))
-    {feedCount=0;feedActive=false;feedError="Rejected malformed or oversized feed";return;}
+    {feedCount=0;feedActive=false;feedError=parseError?parseError:"Rejected malformed or oversized feed";return;}
     feedIndex=0;feedPolls=0;feedWait=FEED_WAIT_POLLS;feedActive=true;feedError="";
 }
 static void Snap(const char *name)
@@ -154,6 +232,7 @@ void MwSdlDebugNoteInputPoll(bool empty,bool blocking)
         FeedItem *item=&feed[feedIndex];
         if (item->kind>=FEED_MAKE) break; /* combat-only: wait for combat */
         if (item->kind==FEED_IDLE) feedWait+=item->word;
+        else if (item->kind==FEED_SONG) FeedSong(item->word);
         else if (item->kind==FEED_SNAP) Snap(item->name);
         else if (item->kind==FEED_RANDOM) {randomStateWord0=item->word;randomStateWord1=item->word2;}
         if (++feedIndex==feedCount) feedActive=false;
@@ -173,13 +252,14 @@ void MwSdlDebugNoteCombatPoll(void)
     while (feedActive && combatFeedPolls>=combatFeedWait)
     {
         FeedItem *item=&feed[feedIndex];
-        if (item->kind==FEED_IDLE) break; /* campaign-only: wait for the campaign */
+        if (item->kind==FEED_IDLE || item->kind==FEED_SONG) break; /* campaign-only: wait for the campaign */
         uint8_t scan=(uint8_t)(item->word>>8);
         if (++feedIndex==feedCount) feedActive=false;
         if (item->kind==FEED_SNAP) Snap(item->name);
         else if (item->kind==FEED_RANDOM) {randomStateWord0=item->word;randomStateWord1=item->word2;}
         else if (item->kind==FEED_MAKE) MwSdlQueueCombatScan(scan);
         else if (item->kind==FEED_BREAK) MwSdlQueueCombatScan(scan|0x80);
+        else if (item->kind==FEED_SOUND) FeedSound(item->word);
         else if (item->kind==FEED_TICKS)
         {combatFeedPolls=0;combatFeedWait=item->word;if(item->word)break;}
         else if (item->kind==FEED_KEY)
