@@ -93,7 +93,9 @@ Market read_market(const fs::path& data_dir) {
     r.only(file, {"price_tier_multipliers", "ammunition_prices", "stock_kind_ranges", "freight_rates", "start"});
     Market out;
     const auto& tiers = r.array(file, "price_tier_multipliers", out.price_tier_multipliers.size());
-    for (std::size_t i = 0; i < tiers.size(); ++i) out.price_tier_multipliers[i] = r.byte(tiers[i], "a price tier multiplier");
+    // array() checked the count, so the destination's size bounds the loop.
+    for (std::size_t i = 0; i < out.price_tier_multipliers.size(); ++i)
+        out.price_tier_multipliers[i] = r.byte(tiers[i], "a price tier multiplier");
     const Json& ammo = r.member(file, "ammunition_prices");
     r.only(ammo, {"buy", "sell"});
     const auto& buy = r.array(ammo, "buy", kAmmoFamilies);

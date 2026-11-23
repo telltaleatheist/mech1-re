@@ -126,7 +126,10 @@ nextTrack:
     /* Native LOOP with length0 writes10000 bytes. Do not silently turn it
      * into an empty message or overwrite unrelated host objects. */
     if (!midiMessageDataLength || midiMessageDataLength>sizeof(midiMessageData)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !midiMessageDataLength || midiMessageDataLength>sizeof(midiMessageData)");
-    for (uint16_t byte=0;byte<midiMessageDataLength;++byte)
+    /* The count read once: a byte store may alias the global, so the compiler
+     * could not bound the loop by the check above. */
+    const uint16_t messageLength=midiMessageDataLength;
+    for (uint16_t byte=0;byte<messageLength;++byte)
         midiMessageData[byte]=MwReadNativeViewByte(&midiStreamData,cursor++);
     combatMidiStreamOffset=cursor;return deltaHighByte;
 }

@@ -188,13 +188,13 @@ bool MwSdlCapture(const char *stem)
     bool saved=SDL_SaveBMP(surface,path);SDL_DestroySurface(surface);
     if (!SDL_RenderPresent(renderer)) saved=false;
     if (!saved) return false;
-    snprintf(path,sizeof(path),"%s/%s.indices",captureDirectory,stem);
+    if (snprintf(path,sizeof(path),"%s/%s.indices",captureDirectory,stem)>=(int)sizeof(path)) return false;
     file=fopen(path,"wbx");if (!file) return false;
     saved=fwrite(displayedIndices,1,sizeof(displayedIndices),file)==sizeof(displayedIndices);if (fclose(file)) saved=false;
-    snprintf(path,sizeof(path),"%s/%s.palette",captureDirectory,stem);
+    if (snprintf(path,sizeof(path),"%s/%s.palette",captureDirectory,stem)>=(int)sizeof(path)) return false;
     file=fopen(path,"wbx");if (!file) return false;
     saved=saved && fwrite(lastPalette,1,sizeof(lastPalette),file)==sizeof(lastPalette);if (fclose(file)) saved=false;
-    snprintf(path,sizeof(path),"%s/%s.json",captureDirectory,stem);
+    if (snprintf(path,sizeof(path),"%s/%s.json",captureDirectory,stem)>=(int)sizeof(path)) return false;
     file=fopen(path,"wx");if (!file) return false;
     fprintf(file,"{\"kind\":\"Actual SDL renderer readback; not a matched original replay\",\"mode\":13,\"logicalWidth\":320,\"logicalHeight\":200,\"combat\":%s,\"displayPage\":%u,\"drawPage\":%u,\"displayByteOffset\":%u,\"SDL\":\"%s\",\"acceptance\":\"Pending\"}\n",mwSdlCombatActive?"true":"false",mwSdlCombatActive?frontPageSelector:egaDisplayPage,mwSdlCombatActive?drawPageSelector:egaDrawPage,lastPage,SDL_GetRevision());
     if (fclose(file)) saved=false;
