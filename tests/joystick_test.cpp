@@ -151,6 +151,15 @@ int main() {
   BtechCalibrateJoystickAxisPairs();
   Check(joystickAxisCentres[0] == 0 && joystickAxisReciprocals[0] == 128, "calibrated full left: centre 0, scale kept");
 
+  // Taken out after calibration (H3b): combat reads it centred, not at the
+  // timing limit's full right and down.
+  sticks[0] = Stick(0, 0);
+  BtechCalibrateJoystickAxisPairs();
+  sticks[0] = MwJoystickState{false, 0, 0, false, false};
+  Check(BtechReadJoystickDirectionMask(JOYSTICK_A) == 0 && joystickDirectionX == 0 && joystickDirectionY == 0
+            && BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_ONE) == 0,
+        "taken out after calibration: centred, released");
+
   // No joystick at all: nothing installed, no direction.
   sticks[0] = MwJoystickState{false, 0, 0, false, false};
   sticks[1] = sticks[0];

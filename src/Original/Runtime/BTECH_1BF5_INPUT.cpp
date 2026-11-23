@@ -58,6 +58,11 @@ static void ReadJoystickAxes(uint16_t joystick,int16_t *x,int16_t *y)
 {
     uint16_t pair=joystick!=0;
     if (!joystickPairInstalled[pair]) return;
+    /* H3b, a project decision: a joystick taken out since calibration reads
+     * centred. The original's game port would time out to the limit, full
+     * right and down, a held turn. */
+    if (!btechHostReadJoystick) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostReadJoystick");
+    if (!btechHostReadJoystick(pair).connected) {joystickFirstAxisValue=*x=*y=0;return;}
     uint16_t xAxis=pair*JOYSTICK_AXES_PER_PAIR,yAxis=xAxis+1;
     joystickFirstAxisValue=ScaleJoystickAxis(BtechReadJoystickAxisTiming((uint8_t)(1<<xAxis)),
         joystickAxisCentres[xAxis],joystickAxisReciprocals[xAxis]);

@@ -405,6 +405,12 @@ if(MECHWARRIOR_BUILD_SDL)
         add_executable(setup_test tests/setup_test.cpp)
         target_link_libraries(setup_test PRIVATE mechwarrior_setup)
         add_test(NAME setup COMMAND setup_test "${CMAKE_CURRENT_BINARY_DIR}/setup_work")
+        # Controllers through the real SDL host (H3b): virtual gamepads and joysticks, plugged in and taken out.
+        add_executable(sdl_joystick_test tests/sdl_joystick_test.cpp)
+        target_link_libraries(sdl_joystick_test PRIVATE mechwarrior_sdl)
+        target_include_directories(sdl_joystick_test PRIVATE src/SDL)
+        add_test(NAME sdl_joystick COMMAND sdl_joystick_test)
+        set_tests_properties(sdl_joystick PROPERTIES SKIP_RETURN_CODE 77)
     endif()
     if(WIN32)
         # The icon Explorer, the taskbar and the installer's shortcuts show.

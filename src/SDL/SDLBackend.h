@@ -115,5 +115,7 @@ bool MwSdlCombatKeyboardPending(void);
 uint16_t MwSdlCombatDosAllocationCount(void);
 void MwSdlDeliverCombatKeyEvent(void);
 MwJoystickState MwSdlReadJoystick(uint16_t joystick);
+bool MwSdlInitializeJoysticks(void);
+bool MwSdlHandleJoystickEvent(const SDL_Event &event);
 void MwSdlChargeGamePortWait(uint8_t wait);
 #endif

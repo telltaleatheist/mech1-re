@@ -144,6 +144,21 @@ static int8_t AxisValue(Sint16 value)
     int scaled=(int)value*MW_JOYSTICK_AXIS_FULL/32767;
     return (int8_t)(scaled<-MW_JOYSTICK_AXIS_FULL?-MW_JOYSTICK_AXIS_FULL:scaled);
 }
+/* The joystick events of the event loop: a device plugged in takes the first
+ * free slot, one taken out frees its slot (and reads as not connected). */
+bool MwSdlHandleJoystickEvent(const SDL_Event &event)
+{
+    if (event.type==SDL_EVENT_JOYSTICK_ADDED) {OpenJoystick(event.jdevice.which);return true;}
+    if (event.type==SDL_EVENT_JOYSTICK_REMOVED) {CloseJoystick(event.jdevice.which);return true;}
+    return false;
+}
+/* Off under the test clock; otherwise the gamepad subsystem, its devices
+ * arriving as events. */
+bool MwSdlInitializeJoysticks(void)
+{
+    joysticksEnabled=!MwSdlVirtualClock() && SDL_InitSubSystem(SDL_INIT_GAMEPAD);
+    return joysticksEnabled;
+}
 MwJoystickState MwSdlReadJoystick(uint16_t joystick)
 {
     MwJoystickState state={false,0,0,false,false};
@@ -174,8 +189,7 @@ void MwSdlPollEvents(void)
         if(event.type==SDL_EVENT_KEY_DOWN && (event.key.scancode==SDL_SCANCODE_P || event.key.scancode==SDL_SCANCODE_ESCAPE))
             MwSdlStopSupportPilot(); /* Explicit manual pause/retreat always takes over. */
         if (event.type==SDL_EVENT_QUIT) {MwSdlRequestQuit();continue;}
-        if (event.type==SDL_EVENT_JOYSTICK_ADDED) {OpenJoystick(event.jdevice.which);continue;}
-        if (event.type==SDL_EVENT_JOYSTICK_REMOVED) {CloseJoystick(event.jdevice.which);continue;}
+        if (MwSdlHandleJoystickEvent(event)) continue;
         if (event.type==SDL_EVENT_WINDOW_EXPOSED) {MwSdlPresentVideo(true);continue;}
         if (event.type==SDL_EVENT_WINDOW_SHOWN || event.type==SDL_EVENT_WINDOW_RESIZED
             || event.type==SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED || event.type==SDL_EVENT_WINDOW_MAXIMIZED
@@ -261,7 +275,7 @@ void MwSdlInitializeInput(void)
     readIndex=writeIndex=0;lastControl=quitRequested=false;captureNumber=0;MouseReset();
     combatKeyRead=combatKeyWrite=0;
     MwSdlInitializeDebugControl();
-    joysticksEnabled=!MwSdlVirtualClock() && SDL_InitSubSystem(SDL_INIT_GAMEPAD);
+    MwSdlInitializeJoysticks();
     mwCampaignInput=MwCampaignInputCalls{MouseRelease,Available,ReadKey,ReadJoystickA,
         MwSdlSetInterrupts,MwSdlPump,CurrentDrive,MouseReset,MouseMotion,ControlHeld,
         MwSdlSetMousePosition,MwSdlReadMousePosition};
