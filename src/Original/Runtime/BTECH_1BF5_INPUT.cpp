@@ -6,7 +6,8 @@
  * from the key queue (the BIOS ring in the original; H2), or 0 if none. */
 uint16_t BtechPopKey(void)
 {
-    if (!btechHostSetInterrupts) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterrupts");
+    if (!btechHostSetInterrupts || !btechHostRunDue) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterrupts || !btechHostRunDue");
+    btechHostRunDue(); /* Keeps when the due ticks and key events land: the original took them as it reached the CLI. */
     uint8_t savedInterrupts=btechHostSetInterrupts(0);
     uint16_t key=0;
     if (combatKeyQueueHead!=combatKeyQueueTail)
@@ -29,7 +30,8 @@ uint16_t BtechReadHeldDirectionMask(uint16_t keyGroup)
 /*1BF5:2FA1. Unlike2F58, CLI/STI does not restore the incoming IF. */
 uint16_t BtechReadHeldKeyState(uint16_t scanCode)
 {
-    if (!btechHostSetInterrupts || scanCode>=sizeof(keyboardScanTranslations)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterrupts || scanCode>=sizeof(keyboardScanTranslations)");
+    if (!btechHostSetInterrupts || !btechHostRunDue || scanCode>=sizeof(keyboardScanTranslations)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterrupts || !btechHostRunDue || scanCode>=sizeof(keyboardScanTranslations)");
+    btechHostRunDue(); /* Keeps when the due ticks and key events land: the original took them as it reached the CLI. */
     btechHostSetInterrupts(0);
     uint16_t held=keyboardScanTranslations[scanCode]&KEYBOARD_ATTRIBUTE_HELD;
     btechHostSetInterrupts(1);

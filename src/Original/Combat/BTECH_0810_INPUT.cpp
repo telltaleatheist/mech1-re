@@ -10,6 +10,13 @@ void BtechRequestTermination(void)
     terminationFlag=1;
 }
 
+/* A pass of a wait for a key: the host sleeps if nothing is due (H4c). The key
+ * reads take no time, so without it a wait would spin. Unbound in pure C fixtures. */
+static void WaitIdle(void)
+{
+    if (btechHostWaitIdle) btechHostWaitIdle();
+}
+
 static bool CombatInputHeld(void)
 {
     return combatInputScanCode || BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_ONE) || BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_TWO);
@@ -24,15 +31,15 @@ static bool CombatInputHeld(void)
 uint16_t BtechWaitForCombatInputReleaseThenPress(void)
 {
     while (CombatInputHeld())
-        BtechPollCombatCommandInput();
+    {BtechPollCombatCommandInput();WaitIdle();}
     while (!combatInputScanCode && !BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_ONE) && !BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_TWO))
     {
         if (terminationFlag) BtechTerminateToLauncher(1);
-        BtechPollCombatCommandInput();
+        BtechPollCombatCommandInput();WaitIdle();
     }
     uint16_t scanCode=combatInputScanCode;
     if (btechLoadedRevision==BTECH_REVISION_1990_01_22)
-        while (CombatInputHeld()) BtechPollCombatCommandInput();
+        while (CombatInputHeld()) {BtechPollCombatCommandInput();WaitIdle();}
     return scanCode;
 }
 
@@ -52,7 +59,7 @@ uint16_t BtechWaitForDialogKey(void)
     BtechWaitForCombatInputReleaseThenPress();
     uint16_t scanCode=combatInputScanCode;
     if (scanCode)
-        while (scanCode==combatInputScanCode) BtechPollCombatCommandInput();
+        while (scanCode==combatInputScanCode) {BtechPollCombatCommandInput();WaitIdle();}
     return scanCode;
 }
 

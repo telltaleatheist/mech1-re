@@ -88,9 +88,25 @@ uint8_t MwSdlReadInterrupts(void) {return interruptsEnabled;}
 MwMusicTimerHandler MwSdlReadTimerHandler(void) {return irq0;}
 void MwSdlWriteTimerHandler(MwMusicTimerHandler handler) {irq0=handler;}
 uint32_t MwSdlBiosTicksValue(void) {return biosTicks;}
+/* Combat's key reads run the host's due work first (H4c), where the CLI's
+ * pump used to: outside an interrupt, with interrupts on. Only the due work:
+ * a read takes no time; combat's waits take it in MwSdlWaitIdle. */
+static bool pumpIdles=true,idleOwed;
+void MwSdlRunDue(void)
+{
+    idleOwed=false;
+    if (!interruptsEnabled || inInterrupt) return;
+    pumpIdles=false;MwSdlPump();pumpIdles=true;
+}
+/* The end of a pass of one of combat's waits for a key (H4c): the host's idle
+ * step, if the pass's key read found nothing due, as the campaign's waits idle. */
+void MwSdlWaitIdle(void)
+{
+    if (idleOwed) MwSdlSpendNanoseconds(HOST_IDLE_WAIT_NS);
+    idleOwed=false;
+}
 uint8_t MwSdlExchangeInterrupts(uint8_t enabled)
 {
-    if (interruptsEnabled && !enabled && !inInterrupt) MwSdlPump();
     uint8_t previous=interruptsEnabled;interruptsEnabled=enabled!=0;
     return previous;
 }
@@ -262,7 +278,8 @@ void MwSdlPumpTimer(void)
     if (nextIrq>target)
     {
         hardwareTime=target;MwSdlAdvanceAudio(hardwareTime);
-        MwSdlSpendNanoseconds(HOST_IDLE_WAIT_NS); /* Host idle only; no synthetic game ticks. */
+        if (pumpIdles) MwSdlSpendNanoseconds(HOST_IDLE_WAIT_NS); /* Host idle only; no synthetic game ticks. */
+        else idleOwed=true; /* A key read's: a wait takes it at the pass's end (MwSdlWaitIdle). */
     }
 }
 void MwSdlInstallCampaignInterrupts(void) {campaignInterruptsInstalled=true;}

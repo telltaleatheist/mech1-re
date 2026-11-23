@@ -99,6 +99,8 @@ extern bool mwSdlCombatActive;
 void MwSdlWriteDevicePort(uint16_t port,uint8_t value);
 uint8_t MwSdlReadDevicePort(uint16_t port);
 uint8_t MwSdlExchangeInterrupts(uint8_t enabled);
+void MwSdlRunDue(void);
+void MwSdlWaitIdle(void);
 uint8_t MwSdlReadInterrupts(void);
 void MwSdlDeliverCombatMpuInterrupt(void);
 double MwMpuNextEventTime(void);
