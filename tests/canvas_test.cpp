@@ -1,5 +1,5 @@
-// src/Video/Canvas (docs/phase5/NO_EMULATION_PLAN.md, G1, G2): the pages where
-// the EGA model's selectors put them, the palette codes' colours, the palette's
+// src/Video/Canvas (docs/phase5/NO_EMULATION_PLAN.md, G1-G4): the pages where
+// the game's page selectors put them, the palette codes' colours, the palette's
 // entries, present(), and drawing. Plain checks, no framework: exit 0 when all hold.
 #include "Canvas.h"
 
@@ -36,7 +36,7 @@ bool Throws(F f) {
 int main() {
   static Canvas canvas;  // 512 KB: not on the stack
 
-  // Pages: PAGE_STRIDE apart in memory(), where the EGA model's selectors
+  // Pages: PAGE_STRIDE apart in memory(), where the game's page selectors
   // (A000h, A200h, ...; 2000h bytes of 8 pixels each) put them.
   Check(canvas.page(0) == canvas.memory(), "page 0 starts the memory");
   Check(canvas.page(1) == canvas.memory() + 0x2000 * 8, "page 1 is selector A200h");
@@ -86,6 +86,8 @@ int main() {
   canvas.present(1);
   Check(seen == &canvas && shown == 1 && canvas.presentedPage() == 1, "the presenter shows page 1");
   Check(Throws([&] { canvas.present(8); }) && shown == 1, "no page 8 presented");
+  canvas.clear();
+  Check(canvas.presentedPage() == 0 && shown == 1, "clear() (a mode set) makes page 0 the presented page, presenting nothing");
 
   // Drawing (G2): pixels and eight-pixel bit patterns, by each function.
   using mw1o::video::Logic;
@@ -105,7 +107,7 @@ int main() {
   Check(pattern && canvas.pixelAt(0, 15, 3) == 0 && canvas.pixelAt(0, 24, 3) == 0, "a bit pattern, leftmost at bit 7");
   canvas.bitPattern(0, 16, 3, 0xFF, 3, Logic::Xor);
   Check(canvas.pixelAt(0, 16, 3) == (9 ^ 3) && canvas.pixelAt(0, 17, 3) == 3, "a bit pattern by XOR");
-  // Past row 199 into the page's tail and the page after, as the EGA model's
+  // Past row 199 into the page's tail and the page after, as the game's
   // linear aperture lets the game draw; past the canvas's memory is refused.
   canvas.pixel(0, 0, 205, 7);
   Check(canvas.page(1)[(205 * 320) - Canvas::PAGE_STRIDE] == 7, "row 205 of page 0 is in page 1");

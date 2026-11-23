@@ -34,11 +34,11 @@ enum class Logic : uint8_t
  * many pages as the game uses, with a 16-entry RGB palette and a border colour.
  * Nothing in it models a card.
  *
- * Until the drawing moves onto it (slices G2-G5), the game's EGA model draws
- * straight into memory(): a page starts every PAGE_STRIDE pixels, where the
- * model's page selectors put it, and the rest of each stride past row 199 is
- * the page's off-screen tail, which the model's documented unchecked reads
- * (a row past 200 and so on) still reach. */
+ * A page starts every PAGE_STRIDE pixels, where the game's page selectors put
+ * it, and the rest of each stride past row 199 is the page's off-screen tail,
+ * which the game's documented unchecked drawing and reads (a row past 200 and
+ * so on) still reach. Combat draws through the drawing operations (G2-G4); the
+ * campaign overlay still writes memory() directly until G5. */
 class Canvas
 {
 public:
@@ -55,13 +55,13 @@ public:
     void clear();
     uint8_t *page(int index);
     const uint8_t *page(int index) const;
-    /* All pages, PAGE_STRIDE apart: the EGA model's view (see above). */
+    /* All pages, PAGE_STRIDE apart: the campaign overlay's view until G5. */
     uint8_t *memory() { return memory_.data(); }
     const uint8_t *memory() const { return memory_.data(); }
 
     /* Drawing, in pixel coordinates on a page. A position may run on past the
      * page (y*WIDTH+x beyond row 199, into its off-screen tail and the pages
-     * after it), as the game's unchecked drawing can in the EGA model's linear
+     * after it), as the game's unchecked drawing can in its linear page
      * aperture; past the canvas's memory is refused. Colours are 4-bit indices. */
     void pixel(int page, int x, int y, uint8_t colour, Logic logic = Logic::Copy);
     uint8_t pixelAt(int page, int x, int y) const;
