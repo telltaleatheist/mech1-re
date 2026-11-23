@@ -35,6 +35,12 @@ They also run with music=soundfont (slice S3), which sets the game up as for
 an MT-32 and plays its sequencer's output through the soundfont: that run must
 give the MT-32 run's log exactly, every stream, ticks included.
 
+The speaker runs also write the start-world log (MECHWARRIOR_START_LOG, H4b;
+event_log.h): the campaign's 18.2 Hz count, the random words and the world
+drawn when a new campaign starts. They are kept per revision in one file,
+events/<revision>/start.json, a script's lines under its name (scripts that
+start no new campaign have none), and must match exactly.
+
 Goldens are kept per game revision, by BTECH.EXE's SHA-256
 (events/<first 12 hex>/<script>.jsonl.gz), so each revision checks against its
 own. A revision with no goldens is skipped.
@@ -45,7 +51,7 @@ minutes (as exe_free's MW1O_EXE_FREE). The game folder defaults to MW1O_GAME.
 Exit status: 0 all match, 1 a mismatch, 77 skipped (no candidate, game or goldens,
 or not opted in).
 """
-import argparse, gzip, hashlib, os, subprocess, sys
+import argparse, gzip, hashlib, json, os, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 EVENTS = os.path.join(HERE, "events")
@@ -78,7 +84,7 @@ def name_of(script):
 
 
 def run(port, game, work, script, device):
-    """The candidate's event log for one script on one device, cut after the last snap."""
+    """The candidate's event log for one script on one device, cut after the last snap, and its start-world lines."""
     name = f"{name_of(script)}.{device}"
     base = os.path.join(work, name)
     os.makedirs(base, exist_ok=True)
@@ -87,9 +93,13 @@ def run(port, game, work, script, device):
         setting = "music=soundfont" if device == "soundfont" else f"sound_system={device}"
         f.write(f"combat_tick_ms=60\ncombat_speed=1\n{setting}\n")
     log = os.path.join(base, "events.log")
+    start = os.path.join(base, "start.log")
+    if os.path.exists(start):
+        os.remove(start)  # the log is appended to
     # The sound-port log too: with it set and no ROM paths, MT-32 runs silent (SDLBackend_Audio.cpp).
     env = dict(os.environ, MECHWARRIOR_TIMING_CONFIG=ini, MECHWARRIOR_EVENT_LOG=log,
-               MECHWARRIOR_AUDIO_LOG=os.path.join(base, "sound.log"), MECHWARRIOR_DEBUG_VIRTUAL_CLOCK="1")
+               MECHWARRIOR_AUDIO_LOG=os.path.join(base, "sound.log"), MECHWARRIOR_DEBUG_VIRTUAL_CLOCK="1",
+               MECHWARRIOR_START_LOG=start)
     feed = ["--feed-calls"] if os.path.dirname(script) == FEED_SCRIPTS else []
     rec = subprocess.run([sys.executable, os.path.join(HERE, "record.py"), "--exe", port, "--game", game,
                           "--script", script, "--out", os.path.join(base, "trace.jsonl"),
@@ -102,7 +112,11 @@ def run(port, game, work, script, device):
     last = max((i for i, line in enumerate(lines) if line.startswith('["snap"')), default=-1)
     if last < 0:
         sys.exit(f"{name}: the log has no snap")
-    return lines[:last + 1]
+    starts = []
+    if os.path.exists(start):
+        with open(start, encoding="utf-8") as f:
+            starts = [json.loads(line) for line in f.read().splitlines()]
+    return lines[:last + 1], starts
 
 
 def untimed(lines):
@@ -195,16 +209,23 @@ def main():
     if a.mode == "check" and not os.path.isdir(folder):
         print(f"skipped: no event goldens for this game's BTECH.EXE ({rev})")
         return SKIP
-    failed, checked = [], 0
+    failed, checked, bad_starts = [], 0, []
+    starts = {}
+    start_path = os.path.join(folder, "start.json")
+    golden_starts = {}
+    if os.path.exists(start_path):
+        with open(start_path, encoding="utf-8") as f:
+            golden_starts = json.load(f)
     for script in scripts():
         name = name_of(script)
         if a.only and name not in a.only:
             continue
-        ours = run(port, game, work, script, "speaker")
+        ours, start_lines = run(port, game, work, script, "speaker")
+        starts[name] = start_lines
         if name.startswith(("audio-", "feed-")) and not a.no_devices:
             runs = {}
             for device in DEVICE_RUNS:
-                runs[device] = run(port, game, work, script, device)
+                runs[device] = run(port, game, work, script, device)[0]
                 if not same_on_device(name, device, ours, runs[device], print):
                     failed.append(f"{name}.{device}")
             if not all(compare(f"{name}: soundfont {k} against MT-32's", stream(runs["mt32"], kinds),
@@ -231,12 +252,25 @@ def main():
             failed.append(f"{name} ({' '.join(bad)})")
         else:
             print(f"{name}: note, tone and game streams match ({len(ours)} lines)")
+    if a.mode == "record":
+        merged = dict(golden_starts, **{n: l for n, l in starts.items() if l})
+        for n in [n for n, l in starts.items() if not l]:
+            merged.pop(n, None)
+        with open(start_path, "w", encoding="utf-8") as f:  # one script a line
+            f.write("{\n" + ",\n".join(f" {json.dumps(n)}: {json.dumps(l)}" for n, l in sorted(merged.items()))
+                    + "\n}\n")
+        print(f"start worlds: {len(merged)} scripts start a new campaign")
+    else:
+        bad_starts = [n for n, l in starts.items() if l != golden_starts.get(n, [])]
+        for n in bad_starts:
+            print(f"{n}: start world differs\n  golden {golden_starts.get(n, [])}\n  ours   {starts[n]}")
+        print(f"start worlds: {len(starts) - len(bad_starts)} of {len(starts)} scripts match")
     if a.mode == "check":
         print(f"{checked - len([f for f in failed if '(' in f])} of {checked} event logs match"
               + (f"; failed: {', '.join(failed)}" if failed else ""))
     elif failed:
         print(f"recorded, but the sound device changed the log: {', '.join(failed)}")
-    return 1 if failed else 0
+    return 1 if failed or bad_starts else 0
 
 
 if __name__ == "__main__":

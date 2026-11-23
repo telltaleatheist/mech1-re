@@ -152,3 +152,12 @@ void MwEventLogSnap(const char *name) {
   std::fprintf(eventLog, "[\"snap\", \"%s\"]\n", name);
   std::fflush(eventLog);
 }
+
+void MwEventLogCampaignStart(uint16_t ticks, uint16_t word0, uint16_t word1, uint16_t planet) {
+  const char *path = std::getenv("MECHWARRIOR_START_LOG");
+  if (!path) return;
+  FILE *log = std::fopen(path, "a");
+  if (!log) return;
+  std::fprintf(log, "[\"start\", %u, %u, %u, %u]\n", ticks, word0, word1, planet);
+  std::fclose(log);
+}

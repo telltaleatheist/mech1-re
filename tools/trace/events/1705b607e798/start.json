@@ -1,0 +1,14 @@
+{
+ "audio-combat": [["start", 0, 6026, 45229, 120]],
+ "audio-music": [["start", 655, 54662, 24954, 118]],
+ "bar": [["start", 0, 28832, 30291, 128]],
+ "campaign_contract": [["start", 0, 28832, 30291, 128]],
+ "combat_cockpit": [["start", 0, 6026, 45229, 120]],
+ "combat_retreat": [["start", 0, 28832, 30291, 128]],
+ "company": [["start", 0, 28832, 30291, 128]],
+ "feed-effects": [["start", 0, 6026, 45229, 120]],
+ "feed-songs": [["start", 0, 28832, 30291, 128]],
+ "mech_complex": [["start", 0, 28832, 30291, 128]],
+ "options": [["start", 0, 28832, 30291, 128]],
+ "travel": [["start", 0, 28832, 30291, 128]]
+}

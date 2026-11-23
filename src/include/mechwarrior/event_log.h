@@ -24,7 +24,13 @@
  *       on the host's wait steps, not on the game;
  *   ["snap", name]  a trace snap.
  * Off unless the variable is set. Exact under the test clock
- * (MECHWARRIOR_DEBUG_VIRTUAL_CLOCK). */
+ * (MECHWARRIOR_DEBUG_VIRTUAL_CLOCK).
+ *
+ * The start-world log (MECHWARRIOR_START_LOG=FILE; H4b): one line when a new
+ * campaign starts, ["start", ticks, word0, word1, planet]: the campaign's
+ * 18.2 Hz count and the two random words as the start world is drawn, and the
+ * world drawn. The title's length decides how many draws come before it, so
+ * this is the check that the count still runs as before. */
 bool MwEventLogActive(void);
 void MwEventLogMusicTick(void);
 void MwEventLogMidiByte(uint8_t value);
@@ -34,4 +40,5 @@ void MwEventLogSound(int16_t event,uint16_t priority,bool enabled);
 void MwEventLogKeyRead(uint16_t key);
 void MwEventLogPoll(bool combat); /* combat polls only are logged */
 void MwEventLogSnap(const char *name);
+void MwEventLogCampaignStart(uint16_t ticks,uint16_t word0,uint16_t word1,uint16_t planet);
 #endif

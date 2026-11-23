@@ -8,6 +8,8 @@
 #include "mechwarrior/campaign_pilots.h"
 #include "mechwarrior/campaign_events.h"
 #include "mechwarrior/video_mode.h"
+#include "mechwarrior/campaign_input.h"
+#include "mechwarrior/event_log.h"
 #include "Canvas.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -674,8 +676,12 @@ uint16_t MwStartNewCampaign(uint16_t entryOffset)
         (void)MwLoadBarDeathAndLaunchMusic();
     }
     else if (entryOffset!=CAMPAIGN_CONTINUE_INITIALIZE_COMPANY) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: entryOffset is neither new-campaign entry"); /* Only the two proven shared entries. */
+    /* The start-world check (event_log.h): the 18.2 Hz count and the random
+     * words the start world is drawn from, kept before the draw. */
+    const uint16_t startTicks=campaignTimerTicks,startWord0=randomStateWord0,startWord1=randomStateWord1;
     campaignEventPlanetSelectors[0]=eventPlanetChoicePool0[MwRandomUpTo(7)];
     currentPlanetIndex=campaignEventPlanetSelectors[0]-1;
+    MwEventLogCampaignStart(startTicks,startWord0,startWord1,currentPlanetIndex);
     MwApplyCurrentPlanetState();
     campaignEventPlanetSelectors[1]=eventPlanetChoicePool1[MwRandomUpTo(2)];
     campaignEventPlanetSelectors[2]=eventPlanetChoicePool2[MwRandomUpTo(3)];
