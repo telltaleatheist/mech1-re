@@ -25,7 +25,10 @@ Linux requires compatible system C/C++ runtime, desktop and audio libraries.
 ## What a package holds
 
 `tools/build_package.py` builds the program and stages:
-- the executable and its shared libraries;
+- the program, `mw1r` (`mw1r.exe`; `Contents/MacOS/mw1r` in the Mac app;
+  `usr/bin/mw1r` in the AppImage), and its shared libraries. The build's
+  target and file stay `mechwarrior`, which the tools and traces run; the
+  package names it;
 - `data/`: our rules (`data/rules`) and screen layout (`data/ui`), which the
   game reads beside the program; packaging refuses a tree without them;
 - `MechWarrior.ini`, `LICENSE`, a `README.txt` and the licence notices.
@@ -56,9 +59,9 @@ run never opens the screen, except a check's (`REKIT_SETUP_FRAMES`, driven by
 the kit's `REKIT_SETUP_*` hooks, still with no picker).
 
 The launcher asks the program through the kit's contract:
-`mechwarrior --status` prints one JSON line (game `mech1`; files `ready`,
+`mw1r --status` prints one JSON line (game `mech1`; files `ready`,
 `missing` or `incomplete`; `story import` pending until done), exits 0 and
-writes nothing; `mechwarrior --setup` sets the game up and exits 0 ready,
+writes nothing; `mw1r --setup` sets the game up and exits 0 ready,
 1 cancelled or 2 failed (the reason as `{"error": ...}` on stdout).
 `tests/status_setup_test.py` checks both on the built program.
 
@@ -77,8 +80,10 @@ sources: `tools/deps/build_archive.sh mac|linux` (into `build-deps/`) and
 ## Names and installers
 
 A release is tagged `mw1r-vX.Y.Z`, only when the project decides to; the
-label below is that tag (or any other name for a test build). Each platform's
-files are named `MW1-Rebuild-<label>-...`:
+label below is that tag (or any other name for a test build: a name with
+`-test` in it, so it is never taken for a release). The label is the program's
+version too (`MECHWARRIOR_VERSION`, the `version` `--status` reports). Each
+platform's files are named `MW1-Rebuild-<label>-...`:
 
 | Platform | Made on | Files |
 |---|---|---|

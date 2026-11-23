@@ -50,7 +50,7 @@ def resources_of(executable):
 def check_usage(executable):
     # --help, not a bare start: without a game folder an installed copy opens the setup.
     result = subprocess.run([str(executable), "--help"], cwd=executable.parent, capture_output=True, text=True, timeout=30)
-    if result.returncode != 0 or "Usage: mechwarrior" not in result.stdout:
+    if result.returncode != 0 or f"Usage: {PROGRAM}" not in result.stdout:
         raise RuntimeError(f"Packaged executable failed to load: {result.returncode}\n{result.stdout}\n{result.stderr}")
 
 
@@ -116,6 +116,7 @@ def run(*args, **kwargs):
 
 STEM = "MW1-Rebuild"
 APP_NAME = "MechWarrior 1 Rebuild"
+PROGRAM = "mw1r"  # the shipped program (the build's target stays mechwarrior, which the tools and traces run)
 BUNDLE_ID = "io.github.mech1re.mechwarrior"  # its own, so it never replaces another game's settings
 README = (
     "MechWarrior 1 Rebuild\n\n"
@@ -132,7 +133,7 @@ README = (
     "Saves from the earlier previews (BattleTechReverse/MechWarrior) are copied there once.\n\n"
     "Keys: arrows and Enter; in combat - and + change the speed (1x to 4x); F12 saves a\n"
     "screenshot beside your saves; Ctrl+Escape quits.\n\n"
-    "From a command line: mechwarrior <game folder> [capture folder] starts on that folder.\n")
+    "From a command line: mw1r <game folder> [capture folder] starts on that folder.\n")
 
 
 def platform_name():
@@ -143,9 +144,10 @@ def platform_name():
     return "linux-x86_64"
 
 
-def configure_and_build(root, build, sdl):
+def configure_and_build(root, build, sdl, label):
     args = ["cmake", "-S", str(root), "-B", str(build),
-            "-DMECHWARRIOR_BUILD_SDL=ON", f"-DMECHWARRIOR_SDL_SOURCE_DIR={sdl}", "-DMECHWARRIOR_TRIM_PATHS=ON"]
+            "-DMECHWARRIOR_BUILD_SDL=ON", f"-DMECHWARRIOR_SDL_SOURCE_DIR={sdl}", "-DMECHWARRIOR_TRIM_PATHS=ON",
+            f"-DMECHWARRIOR_VERSION={label}"]
     if os.name == "nt":
         args += ["-A", "x64", "-DMECHWARRIOR_WINDOWS_GUI=ON"]
     elif sys.platform == "darwin":
@@ -199,8 +201,9 @@ def package(root, build, sdl, output, label, game=None, installer=False, tools=N
     if stage.exists():
         shutil.rmtree(stage)
     stage.mkdir(parents=True)
-    binary = configure_and_build(root, build, sdl)
-    shutil.copy2(binary, stage / binary.name)
+    binary = configure_and_build(root, build, sdl, label)
+    program = PROGRAM + (".exe" if windows else "")
+    shutil.copy2(binary, stage / program)
     libraries = list(build.rglob("*.dll" if windows else "*.so*"))
     for lib in libraries:
         if lib.is_file():
@@ -242,7 +245,7 @@ def package(root, build, sdl, output, label, game=None, installer=False, tools=N
     else:
         with tarfile.open(archive) as source:
             source.extractall(extracted, filter="data")
-    executable = extracted / name / binary.name
+    executable = extracted / name / program
     if not windows:
         run("ldd", str(executable))
     smoke(executable, game)
@@ -287,7 +290,7 @@ def windows_installer(root, stage, output, label, sdl):
 
 
 def appimage(root, stage, output, label, tools, game, sdl):
-    """MW1-Rebuild-<label>-x86_64.AppImage: usr/bin/mechwarrior with data/ and MechWarrior.ini beside it
+    """MW1-Rebuild-<label>-x86_64.AppImage: usr/bin/mw1r with data/ and MechWarrior.ini beside it
     (SDL_GetBasePath), the notices in usr/share/doc, the libraries by linuxdeploy. Needs `tools` holding
     linuxdeploy-x86_64.AppImage and appimagetool-x86_64.AppImage."""
     if not tools:
@@ -296,10 +299,10 @@ def appimage(root, stage, output, label, tools, game, sdl):
     appdir = output / "AppDir"
     if appdir.exists():
         shutil.rmtree(appdir)
-    bin_dir, doc = appdir / "usr/bin", appdir / "usr/share/doc/mechwarrior"
+    bin_dir, doc = appdir / "usr/bin", appdir / f"usr/share/doc/{PROGRAM}"
     bin_dir.mkdir(parents=True)
     doc.mkdir(parents=True)
-    shutil.copy2(stage / "mechwarrior", bin_dir / "mechwarrior")
+    shutil.copy2(stage / PROGRAM, bin_dir / PROGRAM)
     shutil.copy2(stage / "MechWarrior.ini", bin_dir / "MechWarrior.ini")
     shutil.copytree(stage / "data", bin_dir / "data")
     for name in ("LICENSE", "README.txt"):
@@ -307,14 +310,14 @@ def appimage(root, stage, output, label, tools, game, sdl):
     shutil.copytree(stage / "licenses", doc / "licenses")
     env = dict(os.environ, APPIMAGE_EXTRACT_AND_RUN="1", ARCH="x86_64",
                LD_LIBRARY_PATH=str(stage.resolve()) + os.pathsep + os.environ.get("LD_LIBRARY_PATH", ""))
-    run(str(tools / "linuxdeploy-x86_64.AppImage"), "--appdir", str(appdir), "-e", str(bin_dir / "mechwarrior"),
+    run(str(tools / "linuxdeploy-x86_64.AppImage"), "--appdir", str(appdir), "-e", str(bin_dir / PROGRAM),
         "-d", str(root / "tools/package/mechwarrior.desktop"), "-i", str(root / "tools/package/mechwarrior.png"), env=env)
-    smoke(bin_dir / "mechwarrior", game)
+    smoke(bin_dir / PROGRAM, game)
     check_paths(root, appdir, root, sdl)
     image = output / f"{STEM}-{label}-x86_64.AppImage"
     run(str(tools / "appimagetool-x86_64.AppImage"), str(appdir), str(image), env=env)
     result = subprocess.run([str(image.resolve()), "--help"], capture_output=True, text=True, timeout=60, env=env)
-    if result.returncode != 0 or "Usage: mechwarrior" not in result.stdout:
+    if result.returncode != 0 or f"Usage: {PROGRAM}" not in result.stdout:
         raise RuntimeError(f"The AppImage did not start: {result.returncode}\n{result.stderr}")
     write_digest(image)
     print(f"AppImage {image}")
@@ -324,14 +327,14 @@ def package_mac(root, build, sdl, output, label, game):
     """MechWarrior 1 Rebuild.app and MW1-Rebuild-<label>-mac.dmg: the program in Contents/MacOS, data/,
     MechWarrior.ini and the notices in Contents/Resources (SDL_GetBasePath), the libraries in
     Contents/Frameworks named @rpath, every binary signed ad hoc. This Mac's architecture."""
-    binary = configure_and_build(root, build, sdl)
+    binary = configure_and_build(root, build, sdl, label)
     app = output / f"{APP_NAME}.app"
     if app.exists():
         shutil.rmtree(app)
     macos, frameworks, resources = (app / "Contents" / d for d in ("MacOS", "Frameworks", "Resources"))
     for d in (macos, frameworks, resources):
         d.mkdir(parents=True)
-    exe = macos / "mechwarrior"
+    exe = macos / PROGRAM
     shutil.copy2(binary, exe)
 
     def dependencies(file):
@@ -390,7 +393,7 @@ def package_mac(root, build, sdl, output, label, game):
     minos = re.search(r"minos (\S+)", subprocess.run(["otool", "-l", str(exe)], capture_output=True, text=True,
                                                       check=True).stdout)
     plist = {"CFBundleName": APP_NAME, "CFBundleDisplayName": APP_NAME, "CFBundleIdentifier": BUNDLE_ID,
-             "CFBundleExecutable": "mechwarrior", "CFBundleIconFile": "mechwarrior", "CFBundlePackageType": "APPL",
+             "CFBundleExecutable": PROGRAM, "CFBundleIconFile": "mechwarrior", "CFBundlePackageType": "APPL",
              "CFBundleShortVersionString": label, "CFBundleVersion": label, "CFBundleDevelopmentRegion": "en",
              "CFBundleInfoDictionaryVersion": "6.0", "LSMinimumSystemVersion": minos.group(1) if minos else "12.0",
              "LSApplicationCategoryType": "public.app-category.games", "NSHighResolutionCapable": True,
@@ -440,10 +443,10 @@ if __name__ == "__main__":
                         help="an original game folder for the first-run check (default MW1O_GAME; never packaged)")
     options = parser.parse_args()
     if options.smoke:
-        names = ["mechwarrior.exe", "mechwarrior", "Contents/MacOS/mechwarrior"]
+        names = [PROGRAM + ".exe", PROGRAM, "Contents/MacOS/" + PROGRAM]
         executable = next((options.smoke / n for n in names if (options.smoke / n).is_file()), None)
         if not executable:
-            parser.error(f"no mechwarrior program in {options.smoke}")
+            parser.error(f"no {PROGRAM} program in {options.smoke}")
         smoke(executable.resolve(), options.game)
     else:
         if not options.sdl or not options.label:

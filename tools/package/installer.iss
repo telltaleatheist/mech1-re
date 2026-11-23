@@ -42,7 +42,7 @@ PrivilegesRequiredOverridesAllowed=dialog
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 SetupIconFile=mechwarrior.ico
-UninstallDisplayIcon={app}\mechwarrior.exe
+UninstallDisplayIcon={app}\mw1r.exe
 UninstallDisplayName=MechWarrior 1 Rebuild
 OutputBaseFilename={#Stem}-Setup
 Compression=lzma2/max
@@ -62,14 +62,16 @@ Source: "{#Dist}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs creat
 ; data\ is ours and replaced whole, so a file an earlier version shipped and
 ; this one dropped doesn't linger. Nothing else in {app} is touched.
 Type: filesandordirs; Name: "{app}\data"
+; An earlier version's program, before it was named mw1r.
+Type: files; Name: "{app}\mechwarrior.exe"
 
 [Icons]
-Name: "{autoprograms}\MechWarrior 1 Rebuild"; Filename: "{app}\mechwarrior.exe"; WorkingDir: "{app}"; Comment: "MechWarrior (1989), rebuilt"
+Name: "{autoprograms}\MechWarrior 1 Rebuild"; Filename: "{app}\mw1r.exe"; WorkingDir: "{app}"; Comment: "MechWarrior (1989), rebuilt"
 Name: "{autoprograms}\MechWarrior 1 Rebuild - Read me"; Filename: "{app}\README.txt"
-Name: "{autodesktop}\MechWarrior 1 Rebuild"; Filename: "{app}\mechwarrior.exe"; WorkingDir: "{app}"; Comment: "MechWarrior (1989), rebuilt"; Tasks: desktopicon
+Name: "{autodesktop}\MechWarrior 1 Rebuild"; Filename: "{app}\mw1r.exe"; WorkingDir: "{app}"; Comment: "MechWarrior (1989), rebuilt"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\mechwarrior.exe"; Description: "{cm:LaunchProgram,MechWarrior 1 Rebuild}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\mw1r.exe"; Description: "{cm:LaunchProgram,MechWarrior 1 Rebuild}"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
 ; Only what the installer put in {app}; the player's folder in %APPDATA% stays.

@@ -79,6 +79,17 @@ static bool JoinWriteDirectory(const char *name,char *path,size_t size)
     const char *separator=length && (directory[length-1]=='/' || directory[length-1]=='\\')?"":"/";
     return snprintf(path,size,"%s%s%s",directory,separator,name)<(int)size;
 }
+/* The name the program was started by, for its usage line: mw1r in a package, mechwarrior in a build. */
+static const char *ProgramName(const char *argv0)
+{
+    static char name[256];
+    const char *base=argv0?argv0:"mw1r";
+    for (const char *at=base;*at;++at) if (*at=='/' || *at=='\\') base=at+1;
+    snprintf(name,sizeof(name),"%s",*base?base:"mw1r");
+    size_t length=strlen(name);
+    if (length>4 && (!strcmp(name+length-4,".exe") || !strcmp(name+length-4,".EXE"))) name[length-4]=0;
+    return name;
+}
 int main(int argc,char **argv)
 {
 #if defined(_MSC_VER)
@@ -115,13 +126,14 @@ int main(int argc,char **argv)
         }
     }
     if (help || argc>3)
-    {fprintf(help?stdout:stderr,"Usage: mechwarrior [<game folder> [existing capture directory]] [--support-pilot DIRECTORY | --no-support-pilot] [--data DIRECTORY]\n"
-        "       mechwarrior --status | --setup\n"
+    {const char *name=ProgramName(argv[0]);
+    fprintf(help?stdout:stderr,"Usage: %s [<game folder> [existing capture directory]] [--support-pilot DIRECTORY | --no-support-pilot] [--data DIRECTORY]\n"
+        "       %s --status | --setup\n"
         "Without a game folder: the one remembered in the player's MechWarrior.ini or the player's own copy, else the\n"
         "setup (pick your copy, its folder or the archive it came in: it is copied beside the saves); the log and F12\n"
         "captures then go beside the saves. --status prints what is found as JSON; --setup only sets the game up.\n"
         "EGA; sound device from MechWarrior.ini; arrows and Enter; Ctrl+Escape quits; F12 captures; F11 stops Support pilot;\n"
-        "- and + change the combat speed.\n");return help?0:2;}
+        "- and + change the combat speed.\n",name,name);return help?0:2;}
     SDL_SetMainReady();
     if(!MwSdlConfigureSupportPilot(pilotDirectory))
     {fprintf(stderr,"Cannot open Support pilot directory.\n");return 2;}
