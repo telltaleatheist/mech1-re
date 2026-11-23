@@ -1,0 +1,37 @@
+{
+  "selection_rows": {
+    "first": [3, 1],
+    "last": [6, 6]
+  },
+  "navigation_deltas": {
+    "panel": [0, 0, 0, 0, -1, -1, -1, 0, 1, 1, 1],
+    "row": [0, -1, 1, 0, 0, -1, 1, 0, 0, -1, 1]
+  },
+  "condition_colours": {
+    "engine": [
+      [2, 14, 4, 8],
+      [15, 11, 4, 0]
+    ],
+    "system": [
+      [2, 4, 8, 0],
+      [15, 4, 0, 0]
+    ]
+  },
+  "start": {
+    "lance_panel_text_x": [16, 121, 228]
+  },
+  "word_refs": {
+    "orders": ["order.1", "order.2", "order.3", "order.4", "order.5", "order.6", "order.7"],
+    "tactical": ["tactical.1", "tactical.2", "tactical.3", "tactical.4", "tactical.5", "tactical.6", "tactical.7", "tactical.8", "tactical.9"],
+    "damage": ["damage.1", "damage.2", "damage.3", "damage.4", "damage.5", "damage.6", "damage.7"],
+    "weapons": ["weapon.1", "weapon.2", "weapon.3", "weapon.4", "weapon.5", "weapon.6", "weapon.7", "weapon.8", "weapon.9", "weapon.10"]
+  },
+  "display_indices": [0, 1, 2, 3, 4, 5, 3, 5, 3, 3, 2],
+  "map_scale_shifts": [14, 15, 16],
+  "map_markers": [
+    [[1, 1, 1], [1, 1, 1], [1, 1, 1]],
+    [[1, 1, 1], [0, 1, 0], [1, 1, 1]],
+    [[1, 0, 1], [1, 1, 1], [1, 0, 1]],
+    [[0, 1, 0], [1, 1, 1], [0, 1, 0]]
+  ]
+}

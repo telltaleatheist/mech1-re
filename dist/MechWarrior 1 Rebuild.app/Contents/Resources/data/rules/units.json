@@ -1,0 +1,188 @@
+{
+  "units": {
+    "locust": {
+      "tonnage": 20,
+      "base_price": 1504,
+      "display": {"tonnage": 20, "speed_kph": 129, "jump_metres": 0},
+      "heat_sinks": 10,
+      "weapons": 3,
+      "ammo_groups": 1,
+      "jump_jet_groups": 0,
+      "condition_fields": 9,
+      "condition_score_divisor": 70,
+      "force_weight": 1,
+      "body_repair_price": 4,
+      "ammo_profile": [
+        {"family": 5, "quantity_maximum": 200}
+      ],
+      "weapon_repair_prices": [40, 5, 5, 0]
+    },
+    "wasp": {
+      "tonnage": 20,
+      "base_price": 2000,
+      "display": {"tonnage": 20, "speed_kph": 95, "jump_metres": 180},
+      "heat_sinks": 10,
+      "weapons": 2,
+      "ammo_groups": 1,
+      "jump_jet_groups": 3,
+      "condition_fields": 10,
+      "condition_score_divisor": 70,
+      "force_weight": 1,
+      "body_repair_price": 3,
+      "ammo_profile": [
+        {"family": 2, "quantity_maximum": 50}
+      ],
+      "weapon_repair_prices": [40, 10, 0]
+    },
+    "jenner": {
+      "tonnage": 35,
+      "base_price": 3183,
+      "display": {"tonnage": 35, "speed_kph": 118, "jump_metres": 150},
+      "heat_sinks": 10,
+      "weapons": 5,
+      "ammo_groups": 1,
+      "jump_jet_groups": 3,
+      "condition_fields": 10,
+      "condition_score_divisor": 79,
+      "force_weight": 1,
+      "body_repair_price": 4,
+      "ammo_profile": [
+        {"family": 3, "quantity_maximum": 25}
+      ],
+      "weapon_repair_prices": [60, 40, 40, 40, 40, 0]
+    },
+    "phoenix_hawk": {
+      "tonnage": 45,
+      "base_price": 4022,
+      "display": {"tonnage": 45, "speed_kph": 97, "jump_metres": 180},
+      "heat_sinks": 10,
+      "weapons": 5,
+      "ammo_groups": 1,
+      "jump_jet_groups": 2,
+      "condition_fields": 10,
+      "condition_score_divisor": 78,
+      "force_weight": 2,
+      "body_repair_price": 8,
+      "ammo_profile": [
+        {"family": 5, "quantity_maximum": 200}
+      ],
+      "weapon_repair_prices": [100, 40, 40, 5, 5, 0]
+    },
+    "shadow_hawk": {
+      "tonnage": 55,
+      "base_price": 4622,
+      "display": {"tonnage": 55, "speed_kph": 86, "jump_metres": 90},
+      "heat_sinks": 12,
+      "weapons": 4,
+      "ammo_groups": 3,
+      "jump_jet_groups": 3,
+      "condition_fields": 10,
+      "condition_score_divisor": 78,
+      "force_weight": 2,
+      "body_repair_price": 10,
+      "ammo_profile": [
+        {"family": 0, "quantity_maximum": 20},
+        {"family": 1, "quantity_maximum": 24},
+        {"family": 2, "quantity_maximum": 50}
+      ],
+      "weapon_repair_prices": [125, 30, 10, 40, 0]
+    },
+    "wolverine": {
+      "tonnage": 55,
+      "base_price": 4966,
+      "display": {"tonnage": 55, "speed_kph": 86, "jump_metres": 150},
+      "heat_sinks": 12,
+      "weapons": 3,
+      "ammo_groups": 2,
+      "jump_jet_groups": 3,
+      "condition_fields": 10,
+      "condition_score_divisor": 77,
+      "force_weight": 2,
+      "body_repair_price": 10,
+      "ammo_profile": [
+        {"family": 0, "quantity_maximum": 20},
+        {"family": 4, "quantity_maximum": 15}
+      ],
+      "weapon_repair_prices": [125, 80, 40, 0]
+    },
+    "rifleman": {
+      "tonnage": 60,
+      "base_price": 5500,
+      "display": {"tonnage": 60, "speed_kph": 64, "jump_metres": 0},
+      "heat_sinks": 10,
+      "weapons": 6,
+      "ammo_groups": 1,
+      "jump_jet_groups": 0,
+      "condition_fields": 9,
+      "condition_score_divisor": 79,
+      "force_weight": 3,
+      "body_repair_price": 12,
+      "ammo_profile": [
+        {"family": 0, "quantity_maximum": 20}
+      ],
+      "weapon_repair_prices": [100, 100, 125, 125, 40, 40, 0]
+    },
+    "warhammer": {
+      "tonnage": 70,
+      "base_price": 6021,
+      "display": {"tonnage": 70, "speed_kph": 64, "jump_metres": 0},
+      "heat_sinks": 18,
+      "weapons": 9,
+      "ammo_groups": 2,
+      "jump_jet_groups": 0,
+      "condition_fields": 9,
+      "condition_score_divisor": 96,
+      "force_weight": 3,
+      "body_repair_price": 10,
+      "ammo_profile": [
+        {"family": 4, "quantity_maximum": 15},
+        {"family": 5, "quantity_maximum": 200}
+      ],
+      "weapon_repair_prices": [200, 200, 80, 40, 40, 11, 11, 5, 5, 0]
+    },
+    "marauder": {
+      "tonnage": 75,
+      "base_price": 6729,
+      "display": {"tonnage": 75, "speed_kph": 64, "jump_metres": 0},
+      "heat_sinks": 16,
+      "weapons": 5,
+      "ammo_groups": 1,
+      "jump_jet_groups": 0,
+      "condition_fields": 9,
+      "condition_score_divisor": 82,
+      "force_weight": 3,
+      "body_repair_price": 12,
+      "ammo_profile": [
+        {"family": 0, "quantity_maximum": 20}
+      ],
+      "weapon_repair_prices": [200, 200, 40, 40, 125, 0]
+    },
+    "battlemaster": {
+      "tonnage": 85,
+      "base_price": 8410,
+      "display": {"tonnage": 85, "speed_kph": 64, "jump_metres": 0},
+      "heat_sinks": 18,
+      "weapons": 10,
+      "ammo_groups": 2,
+      "jump_jet_groups": 0,
+      "condition_fields": 9,
+      "condition_score_divisor": 99,
+      "force_weight": 3,
+      "body_repair_price": 15,
+      "ammo_profile": [
+        {"family": 4, "quantity_maximum": 30},
+        {"family": 5, "quantity_maximum": 200}
+      ],
+      "weapon_repair_prices": [200, 40, 40, 40, 5, 5, 80, 40, 40, 40, 0]
+    },
+    "dropship": {"base_price": 60000, "condition_score_divisor": 100}
+  },
+  "ammo_family_mechs": [
+    ["shadow_hawk", "rifleman", "marauder"],
+    ["shadow_hawk"],
+    ["shadow_hawk"],
+    ["jenner"],
+    ["warhammer", "battlemaster"],
+    ["locust", "phoenix_hawk", "warhammer", "battlemaster"]
+  ]
+}

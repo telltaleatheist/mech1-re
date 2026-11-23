@@ -1,0 +1,67 @@
+{
+  "menus": {
+    "two_choices": {
+      "records": [
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [100, 10],
+          "action": "callback.event_first_choice",
+          "story_caption": 23796,
+          "up": 1,
+          "down": 1,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [100, 17],
+          "action": "callback.event_second_choice",
+          "story_caption": 23803,
+          "up": 0,
+          "down": 0,
+          "left": null,
+          "right": null
+        }
+      ]
+    },
+    "three_choices": {
+      "records": [
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [0, 0],
+          "action": "callback.event_first_choice",
+          "story_caption": null,
+          "up": 2,
+          "down": 1,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [0, 0],
+          "action": "callback.event_second_choice",
+          "story_caption": null,
+          "up": 0,
+          "down": 2,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [0, 0],
+          "action": "callback.event_third_choice",
+          "story_caption": null,
+          "up": 1,
+          "down": 0,
+          "left": null,
+          "right": null
+        }
+      ]
+    }
+  }
+}

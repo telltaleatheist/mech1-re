@@ -1,0 +1,585 @@
+{
+  "captions": {
+    "search": {"at": [65, 8], "colour": 8},
+    "planet_1": {"at": [14, 24], "colour": 3},
+    "planet_2": {"at": [14, 32], "colour": 3},
+    "planet_3": {"at": [14, 40], "colour": 3},
+    "planet_4": {"at": [14, 48], "colour": 3},
+    "planet_5": {"at": [14, 56], "colour": 3},
+    "planet_6": {"at": [14, 64], "colour": 3},
+    "planet_7": {"at": [14, 72], "colour": 3},
+    "planet_8": {"at": [14, 80], "colour": 3},
+    "planet_9": {"at": [14, 88], "colour": 3},
+    "planet_10": {"at": [14, 96], "colour": 3},
+    "planet_11": {"at": [14, 104], "colour": 3},
+    "planet_12": {"at": [14, 112], "colour": 3},
+    "planet_13": {"at": [14, 120], "colour": 3},
+    "planet_14": {"at": [14, 128], "colour": 3},
+    "planet_15": {"at": [14, 136], "colour": 3},
+    "planet_16": {"at": [122, 24], "colour": 3},
+    "planet_17": {"at": [122, 32], "colour": 3},
+    "planet_18": {"at": [122, 40], "colour": 3},
+    "planet_19": {"at": [122, 48], "colour": 3},
+    "planet_20": {"at": [122, 56], "colour": 3},
+    "planet_21": {"at": [122, 64], "colour": 3},
+    "planet_22": {"at": [122, 72], "colour": 3},
+    "planet_23": {"at": [122, 80], "colour": 3},
+    "planet_24": {"at": [122, 88], "colour": 3},
+    "planet_25": {"at": [122, 96], "colour": 3},
+    "planet_26": {"at": [122, 104], "colour": 3},
+    "planet_27": {"at": [122, 112], "colour": 3},
+    "planet_28": {"at": [122, 120], "colour": 3},
+    "planet_29": {"at": [122, 128], "colour": 3},
+    "planet_30": {"at": [122, 136], "colour": 3},
+    "planets_back": {"at": [95, 152], "colour": 3},
+    "browser_title": {"at": [14, 8], "colour": 8},
+    "house_1": {"at": [14, 18], "colour": 3},
+    "house_2": {"at": [14, 26], "colour": 3},
+    "house_3": {"at": [14, 34], "colour": 3},
+    "house_4": {"at": [14, 42], "colour": 3},
+    "house_5": {"at": [14, 50], "colour": 3},
+    "browser_close": {"at": [14, 58], "colour": 3},
+    "confirm_travel": {"at": [0, 0], "colour": 2},
+    "leave": {"at": [0, 0], "colour": 2},
+    "destination_name": {"at": [1, 1], "colour": 2},
+    "destination_detail": {"at": [197, 1], "colour": 2},
+    "browse_houses": {"at": [0, 0], "colour": 2}
+  },
+  "panels": {
+    "house_planets": {
+      "at": [50, 30],
+      "width": 220,
+      "bottom_inset": 103,
+      "border": 1,
+      "line_spacing": 0,
+      "background": 1,
+      "lines": ["search", "planet_1", "planet_2", "planet_3", "planet_4", "planet_5", "planet_6", "planet_7", "planet_8", "planet_9", "planet_10", "planet_11", "planet_12", "planet_13", "planet_14", "planet_15", "planet_16", "planet_17", "planet_18", "planet_19", "planet_20", "planet_21", "planet_22", "planet_23", "planet_24", "planet_25", "planet_26", "planet_27", "planet_28", "planet_29", "planet_30", "planets_back"]
+    },
+    "house_browser": {
+      "at": [126, 60],
+      "width": 68,
+      "bottom_inset": 16,
+      "border": 1,
+      "line_spacing": 6,
+      "background": 1,
+      "lines": ["browser_title", "house_1", "house_2", "house_3", "house_4", "house_5", "browser_close"]
+    },
+    "cost": {
+      "at": [258, 147],
+      "width": 52,
+      "bottom_inset": 0,
+      "border": 0,
+      "line_spacing": 0,
+      "background": 1,
+      "lines": ["confirm_travel"]
+    },
+    "confirm": {
+      "at": [258, 185],
+      "width": 52,
+      "bottom_inset": 0,
+      "border": 0,
+      "line_spacing": 0,
+      "background": 1,
+      "lines": ["leave"]
+    },
+    "destination": {
+      "at": [9, 7],
+      "width": 280,
+      "bottom_inset": 0,
+      "border": 0,
+      "line_spacing": 0,
+      "background": 3,
+      "lines": ["destination_name", "destination_detail"]
+    },
+    "browse": {
+      "at": [254, 166],
+      "width": 82,
+      "bottom_inset": 0,
+      "border": 0,
+      "line_spacing": 0,
+      "background": 1,
+      "lines": ["browse_houses"]
+    }
+  },
+  "menus": {
+    "house_planets": {
+      "records": [
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [64, 54],
+          "action": "continue.select_house_planet",
+          "caption": "planet_1",
+          "up": 30,
+          "down": 1,
+          "left": null,
+          "right": 15
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [64, 62],
+          "action": "continue.select_house_planet",
+          "caption": "planet_2",
+          "up": 0,
+          "down": 2,
+          "left": null,
+          "right": 16
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [64, 70],
+          "action": "continue.select_house_planet",
+          "caption": "planet_3",
+          "up": 1,
+          "down": 3,
+          "left": null,
+          "right": 17
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [64, 78],
+          "action": "continue.select_house_planet",
+          "caption": "planet_4",
+          "up": 2,
+          "down": 4,
+          "left": null,
+          "right": 18
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [64, 86],
+          "action": "continue.select_house_planet",
+          "caption": "planet_5",
+          "up": 3,
+          "down": 5,
+          "left": null,
+          "right": 19
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [64, 94],
+          "action": "continue.select_house_planet",
+          "caption": "planet_6",
+          "up": 4,
+          "down": 6,
+          "left": null,
+          "right": 20
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [64, 102],
+          "action": "continue.select_house_planet",
+          "caption": "planet_7",
+          "up": 5,
+          "down": 7,
+          "left": null,
+          "right": 21
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [64, 110],
+          "action": "continue.select_house_planet",
+          "caption": "planet_8",
+          "up": 6,
+          "down": 8,
+          "left": null,
+          "right": 22
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [64, 118],
+          "action": "continue.select_house_planet",
+          "caption": "planet_9",
+          "up": 7,
+          "down": 9,
+          "left": null,
+          "right": 23
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [64, 126],
+          "action": "continue.select_house_planet",
+          "caption": "planet_10",
+          "up": 8,
+          "down": 10,
+          "left": null,
+          "right": 24
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [64, 134],
+          "action": "continue.select_house_planet",
+          "caption": "planet_11",
+          "up": 9,
+          "down": 11,
+          "left": null,
+          "right": 25
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [64, 142],
+          "action": "continue.select_house_planet",
+          "caption": "planet_12",
+          "up": 10,
+          "down": 12,
+          "left": null,
+          "right": 26
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [64, 150],
+          "action": "continue.select_house_planet",
+          "caption": "planet_13",
+          "up": 11,
+          "down": 13,
+          "left": null,
+          "right": 27
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [64, 158],
+          "action": "continue.select_house_planet",
+          "caption": "planet_14",
+          "up": 12,
+          "down": 14,
+          "left": null,
+          "right": 28
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [64, 166],
+          "action": "continue.select_house_planet",
+          "caption": "planet_15",
+          "up": 13,
+          "down": 30,
+          "left": null,
+          "right": 29
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [172, 54],
+          "action": "continue.select_house_planet",
+          "caption": "planet_16",
+          "up": 30,
+          "down": 16,
+          "left": 0,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [172, 62],
+          "action": "continue.select_house_planet",
+          "caption": "planet_17",
+          "up": 15,
+          "down": 17,
+          "left": 1,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [172, 70],
+          "action": "continue.select_house_planet",
+          "caption": "planet_18",
+          "up": 16,
+          "down": 18,
+          "left": 2,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [172, 78],
+          "action": "continue.select_house_planet",
+          "caption": "planet_19",
+          "up": 17,
+          "down": 19,
+          "left": 3,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [172, 86],
+          "action": "continue.select_house_planet",
+          "caption": "planet_20",
+          "up": 18,
+          "down": 20,
+          "left": 4,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [172, 94],
+          "action": "continue.select_house_planet",
+          "caption": "planet_21",
+          "up": 19,
+          "down": 21,
+          "left": 5,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [172, 102],
+          "action": "continue.select_house_planet",
+          "caption": "planet_22",
+          "up": 20,
+          "down": 22,
+          "left": 6,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [172, 110],
+          "action": "continue.select_house_planet",
+          "caption": "planet_23",
+          "up": 21,
+          "down": 23,
+          "left": 7,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [172, 118],
+          "action": "continue.select_house_planet",
+          "caption": "planet_24",
+          "up": 22,
+          "down": 24,
+          "left": 8,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [172, 126],
+          "action": "continue.select_house_planet",
+          "caption": "planet_25",
+          "up": 23,
+          "down": 25,
+          "left": 9,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [172, 134],
+          "action": "continue.select_house_planet",
+          "caption": "planet_26",
+          "up": 24,
+          "down": 26,
+          "left": 10,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [172, 142],
+          "action": "continue.select_house_planet",
+          "caption": "planet_27",
+          "up": 25,
+          "down": 27,
+          "left": 11,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [172, 150],
+          "action": "continue.select_house_planet",
+          "caption": "planet_28",
+          "up": 26,
+          "down": 28,
+          "left": 12,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [172, 158],
+          "action": "continue.select_house_planet",
+          "caption": "planet_29",
+          "up": 27,
+          "down": 29,
+          "left": 13,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [172, 166],
+          "action": "continue.select_house_planet",
+          "caption": "planet_30",
+          "up": 28,
+          "down": 30,
+          "left": 14,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [145, 182],
+          "action": "continue.return_to_house_browser",
+          "caption": "planets_back",
+          "up": 14,
+          "down": 0,
+          "left": null,
+          "right": null
+        }
+      ]
+    },
+    "house_browser": {
+      "records": [
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [140, 78],
+          "action": "continue.house_planet_list",
+          "caption": "house_1",
+          "up": 5,
+          "down": 1,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [140, 86],
+          "action": "continue.house_planet_list",
+          "caption": "house_2",
+          "up": 0,
+          "down": 2,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [140, 94],
+          "action": "continue.house_planet_list",
+          "caption": "house_3",
+          "up": 1,
+          "down": 3,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [140, 102],
+          "action": "continue.house_planet_list",
+          "caption": "house_4",
+          "up": 2,
+          "down": 4,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [140, 110],
+          "action": "continue.house_planet_list",
+          "caption": "house_5",
+          "up": 3,
+          "down": 5,
+          "left": null,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [140, 118],
+          "action": "continue.close_house_browser",
+          "caption": "browser_close",
+          "up": 4,
+          "down": 0,
+          "left": null,
+          "right": null
+        }
+      ]
+    },
+    "map": {
+      "records": [
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [10, 8],
+          "action": "continue.search_planet",
+          "caption": "destination_name",
+          "up": 3,
+          "down": 1,
+          "left": 4,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [258, 147],
+          "action": "continue.confirm_travel",
+          "caption": "confirm_travel",
+          "up": 0,
+          "down": 2,
+          "left": 4,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [254, 166],
+          "action": "continue.open_house_browser",
+          "caption": "browse_houses",
+          "up": 1,
+          "down": 3,
+          "left": 4,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [258, 185],
+          "action": "continue.planet_hub",
+          "caption": "leave",
+          "up": 2,
+          "down": 0,
+          "left": 4,
+          "right": null
+        },
+        {
+          "enabled": true,
+          "text_record": true,
+          "at": [0, 0],
+          "action": null,
+          "caption": null,
+          "up": null,
+          "down": null,
+          "left": null,
+          "right": null
+        }
+      ]
+    }
+  },
+  "tables": {
+    "hired_transport_frames": [4, 5, 6, 4, 5, 6, 4, 5, 6, 4, 5, 6, 4, 5, 6, 4, 5, 6, 3, 2, 3, 2, 3, 2, 1, 2, 1, 2, 1, 1, 1, 1, 1, 65535],
+    "dropship_frames": [23, 24, 25, 24, 23, 24, 25, 24, 23, 24, 25, 24, 23, 24, 25, 24, 23, 25, 23, 24, 23, 65535],
+    "house_search_words": ["house_search.1", "house_search.2", "house_search.3", "house_search.4", "house_search.5"]
+  }
+}

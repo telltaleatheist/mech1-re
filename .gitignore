@@ -70,6 +70,8 @@ CLAUDE.local.md
 *.jpg
 *.jpeg
 !docs/images/*.png
+# The program's icon (docs/LICENSES/README.md): the project's own badge, no game artwork.
+!tools/package/mechwarrior.png
 
 # Our own DOS tool sources (not game data or disassembly).
 !tools/capture/*.asm

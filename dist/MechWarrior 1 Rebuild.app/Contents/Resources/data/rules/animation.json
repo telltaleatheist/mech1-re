@@ -1,0 +1,71 @@
+{
+  "unit_sequences": [
+    {"frame_map": [0], "part_frames": 1},
+    {"frame_map": [0, 1, 2, 3, 4, 5, 6, 7], "part_frames": 8},
+    {"frame_map": [0, 1, 2, 2, 3, 4, 5], "part_frames": 6},
+    {"frame_map": [0, 1, 2, 1], "part_frames": 3},
+    {"frame_map": [0, 1, 2, 3, 4], "part_frames": 5},
+    {"frame_map": [3, 2, 1, 0], "part_frames": 5},
+    {"frame_map": [5, 4, 4, 5], "part_frames": 6},
+    {"frame_map": [3, 2, 2, 3, 4], "part_frames": 5},
+    {"frame_map": [0, 0, 0], "part_frames": 1}
+  ],
+  "player_poses": [
+    [
+      {"displacement": [0, 0, 0], "orientation_step": 0}
+    ],
+    [
+      {"displacement": [0, 0, 0], "orientation_step": 0},
+      {"displacement": [0, 0, 40], "orientation_step": 0},
+      {"displacement": [0, 0, 0], "orientation_step": 0},
+      {"displacement": [0, 0, -20], "orientation_step": 0},
+      {"displacement": [0, 0, 0], "orientation_step": 0},
+      {"displacement": [0, 0, 40], "orientation_step": 0},
+      {"displacement": [0, 0, 0], "orientation_step": 0},
+      {"displacement": [0, 0, -20], "orientation_step": 0}
+    ],
+    [
+      {"displacement": [0, 0, -50], "orientation_step": 64990},
+      {"displacement": [0, 0, -100], "orientation_step": 64080},
+      {"displacement": [0, 0, -150], "orientation_step": 62806},
+      {"displacement": [0, 0, -160], "orientation_step": 61896},
+      {"displacement": [0, 0, -140], "orientation_step": 62442},
+      {"displacement": [0, 0, -80], "orientation_step": 63716},
+      {"displacement": [0, 0, 0], "orientation_step": 0}
+    ],
+    [
+      {"displacement": [0, 0, 0], "orientation_step": 0},
+      {"displacement": [0, 0, 0], "orientation_step": 0},
+      {"displacement": [0, 0, 0], "orientation_step": 0}
+    ],
+    [
+      {"displacement": [0, 0, -10], "orientation_step": 910},
+      {"displacement": [0, -50, -30], "orientation_step": 1820},
+      {"displacement": [0, -100, -130], "orientation_step": 4550},
+      {"displacement": [0, -300, -210], "orientation_step": 7280},
+      {"displacement": [0, -350, -340], "orientation_step": 10920},
+      {"displacement": [0, -400, -550], "orientation_step": 16380}
+    ],
+    [
+      {"displacement": [0, -350, -340], "orientation_step": 10920},
+      {"displacement": [0, -300, -210], "orientation_step": 7280},
+      {"displacement": [0, -100, -130], "orientation_step": 4550},
+      {"displacement": [0, -50, -30], "orientation_step": 1820},
+      {"displacement": [0, 0, -10], "orientation_step": 910}
+    ],
+    [
+      {"displacement": [0, 0, -200], "orientation_step": 63716},
+      {"displacement": [0, 0, -300], "orientation_step": 62806},
+      {"displacement": [0, 0, -300], "orientation_step": 62806},
+      {"displacement": [0, 0, -200], "orientation_step": 63716}
+    ],
+    [
+      {"displacement": [0, -350, -340], "orientation_step": 10920},
+      {"displacement": [0, -300, -210], "orientation_step": 7280},
+      {"displacement": [0, -100, -130], "orientation_step": 4550},
+      {"displacement": [0, -300, -210], "orientation_step": 7280},
+      {"displacement": [0, -350, -340], "orientation_step": 10920},
+      {"displacement": [0, -400, -550], "orientation_step": 16380}
+    ]
+  ]
+}
