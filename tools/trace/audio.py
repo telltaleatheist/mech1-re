@@ -6,9 +6,11 @@
 
 Each script in audio/scripts/ runs once per sound device (speaker, adlib,
 mt32) through record.py, with:
-- MECHWARRIOR_AUDIO_LOG: every access to the speaker, PIT, AdLib and MPU
-  ports, as [PIT cycle, "w" or "r", port, value], plus each snap as
-  [PIT cycle, "snap", name];
+- MECHWARRIOR_AUDIO_LOG: every access to the PIT channel 0, AdLib and MPU
+  ports, as [PIT cycle, "w" or "r", port, value]; each change of the tone
+  voice's tone (the speaker music, S6, and combat's effects, S5, where PIT
+  channel 2 and port 61h were), as [PIT cycle, "tone", Hz to 0.001, 0 for
+  silence]; and each snap as [PIT cycle, "snap", name];
 - MECHWARRIOR_DEBUG_VIRTUAL_CLOCK: time moves only where the port would wait,
   so the log depends on the script alone;
 - MT-32 with no ROMs: the MPU byte stream runs and the synthesizer is silent.

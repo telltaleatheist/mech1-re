@@ -1,5 +1,6 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/combat_sound.h"
+#include "mechwarrior/tone.h"
 #include "mechwarrior/event_log.h"
 #include <stdlib.h>
 
@@ -186,7 +187,7 @@ void BtechTickSpeakerToneChannels(void)
     }
     if (!btechHostPlayTone) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostPlayTone");
     bool sounding=selectedSpeakerState && selectedSpeakerState->outputLevel;
-    btechHostPlayTone(sounding?BtechTonePeriodFrequency(selectedSpeakerState->outputPeriod):0);
+    btechHostPlayTone(sounding?MwTonePeriodFrequency(selectedSpeakerState->outputPeriod):0);
     /* Test instrument (event_log.h): what the effect player chose this tick. */
     MwEventLogToneTick(selectedSpeakerState?selectedSpeakerState->outputPeriod:0,sounding);
 }

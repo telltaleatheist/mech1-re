@@ -130,13 +130,17 @@ static void AudioLogOpen(void)
 static bool AudioPort(uint16_t port)
 {
     return port==ADLIB_INDEX_PORT || port==ADLIB_DATA_PORT || port==MPU_DATA_PORT || port==MPU_STATUS_COMMAND_PORT
-        || port==PIT_CHANNEL0_PORT || port==PIT_CHANNEL2_PORT || port==PIT_CONTROL_PORT || port==SPEAKER_CONTROL_PORT
+        || port==PIT_CHANNEL0_PORT || port==PIT_CONTROL_PORT
         || port==0 || port==1;
 }
 static void AudioLogEvent(char kind,uint16_t port,uint8_t value)
 {
     if (audioLog && AudioPort(port))
         fprintf(audioLog,"[%llu, \"%c\", %u, %u]\n",(unsigned long long)hardwareTime,kind,port,value);
+}
+void MwSdlAudioLogTone(double frequency)
+{
+    if (audioLog) fprintf(audioLog,"[%llu, \"tone\", %.3f]\n",(unsigned long long)hardwareTime,frequency);
 }
 void MwSdlAudioLogSnap(const char *name)
 {
@@ -175,7 +179,7 @@ void MwSdlWriteDevicePort(uint16_t port,uint8_t value)
         channel0HighNext=false;nextIrq=hardwareTime+channel0Divisor;
         return;
     }
-    MwSdlWriteSpeakerPort(port,value);
+    MwSdlFail("Unsupported hardware write"); /* PIT channel 2 and port 61h are gone: tones (S5, S6). */
 }
 /* The test clock's charge for combat's game-port waits before H3, with no
  * joystick connected: the same host waits and time in the same order, so the
@@ -225,9 +229,8 @@ static uint8_t ReadDevicePort(uint16_t port)
     if (port==ADLIB_INDEX_PORT)
         return mwSdlSoundSystem==MW_SOUND_ADLIB
             ?MwAdlibReadStatus(hardwareTime*1000000.0/(double)HOST_PIT_CLOCK_HZ):UINT8_MAX;
-    if (port==0 || port==1) return 0; /* Only ignored calibrated-delay reads here. */
-    if (port!=SPEAKER_CONTROL_PORT) MwSdlFail("Unsupported hardware read");
-    return MwSdlReadSpeakerControl();
+    if (port!=0 && port!=1) MwSdlFail("Unsupported hardware read");
+    return 0; /* Only ignored calibrated-delay reads here. */
 }
 void MwSdlInitializeTimer(void)
 {
@@ -249,7 +252,7 @@ void MwSdlInitializeTimer(void)
     campaignInterruptsInstalled=inInterrupt=channel0HighNext=false;
     MwMpuReset();
     mwMusicHardware=MwMusicHardwareCalls{MwSdlSetInterrupts,MwSdlReadTimerHandler,MwSdlWriteTimerHandler,MwSdlWriteDevicePort,MwSdlReadDevicePort,
-        MwSdlPumpTimer,btechHostGetInterruptVector,btechHostSetInterruptVector};
+        MwSdlPumpTimer,btechHostGetInterruptVector,btechHostSetInterruptVector,MwSdlPlayTone};
     /* Same physical PIT/speaker, different original sequencer. No backend
      * selection or invented combat callback is installed at this boundary. */
     btechHostWritePort=MwSdlWriteDevicePort;btechHostReadPort=MwSdlReadDevicePort;

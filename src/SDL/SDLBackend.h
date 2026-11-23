@@ -43,7 +43,8 @@ void MwSdlInitializeTimer(void);
 bool MwSdlVirtualClock(void);
 uint64_t MwSdlNowNanoseconds(void);
 void MwSdlSpendNanoseconds(uint64_t nanoseconds);
-void MwSdlAudioLogSnap(const char *name); /* A trace snap, as a mark in the sound-port log. */
+void MwSdlAudioLogSnap(const char *name);
+void MwSdlAudioLogTone(double frequency); /* A trace snap, as a mark in the sound-port log. */
 void MwSdlPumpTimer(void);
 /* Combat runs one tick per fixed length, combat_tick_ms divided by the speed
  * step (docs/timing/PLAN.md). The logic reads no clock: only the wait changes. */
@@ -91,8 +92,7 @@ void MwSdlConvertMouseMotion(float windowXMotion,float windowYMotion,
     float *logicalXMotion,float *logicalYMotion);
 bool MwSdlInitializeAudio(void);
 void MwSdlAdvanceAudio(double pitTime);
-void MwSdlWriteSpeakerPort(uint16_t port,uint8_t value);
-uint8_t MwSdlReadSpeakerControl(void);
+void MwSdlPlayTone(double frequency);
 void MwSdlPlayEffectTone(double frequency);
 void MwSdlShutdownAudio(void);
 /* Combat is running (its frames are on the canvas like the campaign's). */

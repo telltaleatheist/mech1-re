@@ -24,9 +24,7 @@ enum { MUSIC_TIMER_CALLBACK_COUNT=9, MUSIC_TIMER_FAST_SLOT=8,
     MUSIC_TIMER_PHASE_MASK=0x1F, MUSIC_TIMER_COARSE_MASK=0xE0,
     MUSIC_TIMER_BASE_DIVISOR_HIGH=0x20, MUSIC_TIMER_MAX_RATE_SHIFT=5,
     MUSIC_TIMER_CLOCK_INCREMENT=0x01C2,
-    PIT_CHANNEL0_PORT=0x0040, PIT_CHANNEL2_PORT=0x0042,
-    PIT_CHANNEL0_SQUARE_WAVE=0x36, PIT_CHANNEL2_SQUARE_WAVE=0xB6,
-    SPEAKER_CONTROL_PORT=0x0061, SPEAKER_GATE_BITS=0x03 };
+    PIT_CHANNEL0_PORT=0x0040, PIT_CHANNEL0_SQUARE_WAVE=0x36 };
 typedef struct MwMusicHardwareCalls
 {
     void (*setInterruptsEnabled)(bool enabled);
@@ -37,6 +35,9 @@ typedef struct MwMusicHardwareCalls
     void (*waitForInterrupt)(void);
     uint32_t (*readInterruptVector)(uint8_t interrupt);
     void (*writeInterruptVector)(uint8_t interrupt,uint32_t vector);
+    /* The speaker music's tone (S6): a frequency in Hz, or 0 for silence. The
+     * host plays it on the tone voice, where PIT channel 2 and port 61h were. */
+    void (*playTone)(double frequency);
 } MwMusicHardwareCalls;
 extern MwMusicHardwareCalls mwMusicHardware;
 extern uint16_t timerClockLow,timerClockHigh;

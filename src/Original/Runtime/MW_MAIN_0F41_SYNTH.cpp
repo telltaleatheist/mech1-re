@@ -2,6 +2,7 @@
 #include "mechwarrior/campaign_music.h"
 #include "mechwarrior/event_log.h"
 #include "mechwarrior/music_out.h"
+#include "mechwarrior/tone.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -48,8 +49,8 @@ void MwSelectAndInitializeMidiBackend(MwCampaignAudioBackend *backend)
         if (source<sizeof(musicRuntimeHeader) && destination<sizeof(musicRuntimeHeader))
             musicRuntimeHeader[destination]=musicRuntimeHeader[source];
         else if (source>=MIDI_ADLIB_NOTE_FREQUENCIES_OFFSET && destination>=MIDI_ADLIB_NOTE_FREQUENCIES_OFFSET
-            && source-MIDI_ADLIB_NOTE_FREQUENCIES_OFFSET<sizeof(adlibPackedNoteFrequencies)
-            && destination-MIDI_ADLIB_NOTE_FREQUENCIES_OFFSET<sizeof(adlibPackedNoteFrequencies))
+            && (size_t)(source-MIDI_ADLIB_NOTE_FREQUENCIES_OFFSET)<sizeof(adlibPackedNoteFrequencies)
+            && (size_t)(destination-MIDI_ADLIB_NOTE_FREQUENCIES_OFFSET)<sizeof(adlibPackedNoteFrequencies))
         {
             source-=MIDI_ADLIB_NOTE_FREQUENCIES_OFFSET;destination-=MIDI_ADLIB_NOTE_FREQUENCIES_OFFSET;
             uint8_t value=adlibPackedNoteFrequencies[source/2]>>((source&1)*8);
@@ -463,26 +464,34 @@ void MwResetMidiParserState(uint16_t entryOffset)
 
 /* MW_MAIN0F41:0EE4..0EE7. Native unconditional success, no hardware probe. */
 uint16_t MwProbeSpeakerBackend(void) {return 1;}
+/* S6: the speaker music sounds from the backend's start to its shutdown (the
+ * original's port 61h gate), each period as a tone on the tone voice (where it
+ * programmed PIT channel 2). The backend's silent period, an inaudible
+ * 59.7 kHz on the speaker, is silence. */
+static bool speakerMusicSounding;
+static void PlaySpeakerPeriod(uint16_t period)
+{
+    if (!mwMusicHardware.playTone) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.playTone");
+    if (!speakerMusicSounding) return;
+    mwMusicHardware.playTone(period==SPEAKER_SILENT_PERIOD?0:MwTonePeriodFrequency(period));
+}
 /* MW_MAIN0F41:0EE8..0F00. */
 void MwInitializeSpeakerBackend(void)
 {
-    if (!mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.writePort || !mwMusicHardware.readPort) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.writePort || !mwMusicHardware.readPort");
+    if (!mwMusicHardware.setInterruptsEnabled) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.setInterruptsEnabled");
     mwMusicHardware.setInterruptsEnabled(false);
-    mwMusicHardware.writePort(PIT_CONTROL_PORT,PIT_CHANNEL2_SQUARE_WAVE);
     midiSysex.currentPeriod=SPEAKER_SILENT_PERIOD;
-    mwMusicHardware.writePort(PIT_CHANNEL2_PORT,SPEAKER_SILENT_PERIOD);
-    mwMusicHardware.writePort(PIT_CHANNEL2_PORT,0);
-    uint8_t control=mwMusicHardware.readPort(SPEAKER_CONTROL_PORT);
-    mwMusicHardware.writePort(SPEAKER_CONTROL_PORT,control|SPEAKER_GATE_BITS);
+    speakerMusicSounding=true;
+    PlaySpeakerPeriod(SPEAKER_SILENT_PERIOD);
     mwMusicHardware.setInterruptsEnabled(true);
 }
 /* MW_MAIN0F41:0F01..0F09. */
 void MwShutdownSpeakerBackend(void)
 {
-    if (!mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.writePort || !mwMusicHardware.readPort) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.writePort || !mwMusicHardware.readPort");
+    if (!mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.playTone) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.playTone");
     mwMusicHardware.setInterruptsEnabled(false);
-    uint8_t control=mwMusicHardware.readPort(SPEAKER_CONTROL_PORT);
-    mwMusicHardware.writePort(SPEAKER_CONTROL_PORT,control&~SPEAKER_GATE_BITS);
+    speakerMusicSounding=false;
+    mwMusicHardware.playTone(0);
     mwMusicHardware.setInterruptsEnabled(true);
 }
 /* MW_MAIN0F41:0F0A..0F0C. Genuine XOR AX,AX /RET. */
@@ -506,12 +515,10 @@ uint16_t MwStopSpeakerVoice(MwMidiVoice *voice)
 /* MW_MAIN0F41:0F3B..0F4E. Native MOV AL,BH preserves AH on return. */
 uint16_t MwWriteSpeakerPeriod(uint16_t period)
 {
-    if (!mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.writePort) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.writePort");
+    if (!mwMusicHardware.setInterruptsEnabled) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.setInterruptsEnabled");
     mwMusicHardware.setInterruptsEnabled(false);
     midiSysex.currentPeriod=period;
-    mwMusicHardware.writePort(PIT_CONTROL_PORT,PIT_CHANNEL2_SQUARE_WAVE);
-    mwMusicHardware.writePort(PIT_CHANNEL2_PORT,(uint8_t)period);
-    mwMusicHardware.writePort(PIT_CHANNEL2_PORT,(uint8_t)(period>>8));
+    PlaySpeakerPeriod(period);
     mwMusicHardware.setInterruptsEnabled(true);
     return (period&0xFF00)|(period>>8);
 }
@@ -543,10 +550,7 @@ void MwTickSpeakerVoices(void)
     if (period!=midiSysex.currentPeriod)
     {
         midiSysex.currentPeriod=period;
-        if (!mwMusicHardware.writePort) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.writePort");
-        mwMusicHardware.writePort(PIT_CONTROL_PORT,PIT_CHANNEL2_SQUARE_WAVE);
-        mwMusicHardware.writePort(PIT_CHANNEL2_PORT,(uint8_t)period);
-        mwMusicHardware.writePort(PIT_CHANNEL2_PORT,(uint8_t)(period>>8));
+        PlaySpeakerPeriod(period);
     }
     midiSysex.currentVoiceOffset+=sizeof(MwMidiVoice);
     if (!--midiSysex.voicesRemaining)

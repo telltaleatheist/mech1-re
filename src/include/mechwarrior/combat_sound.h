@@ -108,11 +108,6 @@ uint16_t BtechAudioMusicNoOp(uint16_t statusDisplacement,uint16_t channel,uint16
 /* The tone combat's effect player chose this tick (S5): a frequency in Hz,
  * or 0 for silence. The host plays it on the tone voice. */
 extern void (*btechHostPlayTone)(double frequency);
-/* The clock the effect bank's periods and the pitch tables count in: a period
- * of N sounds at TONE_PERIOD_CLOCK_HZ / N Hz (0 meaning 65536). */
-#define TONE_PERIOD_CLOCK_HZ 1193182.0
-static inline double BtechTonePeriodFrequency(uint16_t period)
-{ return TONE_PERIOD_CLOCK_HZ/(period?period:65536.0); }
 void BtechTickSpeakerToneChannels(void);
 void BtechTickTandyToneChannels(void);
 void BtechAdvanceToneChannel(BtechToneChannelState *state,MwNativeByteView event,uint16_t channel);
