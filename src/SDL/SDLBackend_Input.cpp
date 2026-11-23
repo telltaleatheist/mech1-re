@@ -119,6 +119,12 @@ void MwSdlPollEvents(void)
             MwSdlStopSupportPilot(); /* Explicit manual pause/retreat always takes over. */
         if (event.type==SDL_EVENT_QUIT) {MwSdlRequestQuit();continue;}
         if (event.type==SDL_EVENT_WINDOW_EXPOSED) {MwSdlPresentVideo(true);continue;}
+        if (event.type==SDL_EVENT_WINDOW_SHOWN || event.type==SDL_EVENT_WINDOW_RESIZED
+            || event.type==SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED || event.type==SDL_EVENT_WINDOW_MAXIMIZED
+            || event.type==SDL_EVENT_WINDOW_RESTORED || event.type==SDL_EVENT_WINDOW_FOCUS_GAINED
+            || event.type==SDL_EVENT_WINDOW_DISPLAY_CHANGED || event.type==SDL_EVENT_WINDOW_ENTER_FULLSCREEN
+            || event.type==SDL_EVENT_WINDOW_LEAVE_FULLSCREEN)
+        {MwSdlRepeatPresent();continue;}
         if (event.type==SDL_EVENT_MOUSE_BUTTON_UP)
         {
             uint16_t button=event.button.button==SDL_BUTTON_LEFT?MOUSE_BUTTON_LEFT:
