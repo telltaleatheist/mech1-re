@@ -20,6 +20,15 @@ struct Rgb
  * in this mode. The game's palette tables are written in these codes. */
 Rgb PaletteCodeColour(uint8_t code);
 
+/* How a drawn colour combines with the pixel already there. */
+enum class Logic : uint8_t
+{
+    Copy,
+    And,
+    Or,
+    Xor
+};
+
 /* The game's screen (docs/phase5/NO_EMULATION_PLAN.md, "Graphics: a canvas,
  * not an EGA card"): 320x200 pixels, one byte each (a 16-colour index), on as
  * many pages as the game uses, with a 16-entry RGB palette and a border colour.
@@ -49,6 +58,16 @@ public:
     uint8_t *memory() { return memory_.data(); }
     const uint8_t *memory() const { return memory_.data(); }
 
+    /* Drawing, in pixel coordinates on a page. A position may run on past the
+     * page (y*WIDTH+x beyond row 199, into its off-screen tail and the pages
+     * after it), as the game's unchecked drawing can in the EGA model's linear
+     * aperture; past the canvas's memory is refused. Colours are 4-bit indices. */
+    void pixel(int page, int x, int y, uint8_t colour, Logic logic = Logic::Copy);
+    uint8_t pixelAt(int page, int x, int y) const;
+    /* Eight pixels from (x, y) rightwards, leftmost at bit 7: where `bits` has a
+     * 1, `colour` is drawn by `logic`; the others are left as they are. */
+    void bitPattern(int page, int x, int y, uint8_t bits, uint8_t colour, Logic logic = Logic::Copy);
+
     void setPaletteEntry(int index, Rgb colour);
     Rgb paletteEntry(int index) const;
     const Palette &palette() const { return palette_; }
@@ -60,6 +79,7 @@ public:
     int presentedPage() const { return presented_; }
 
 private:
+    uint8_t *at(int page, int x, int y, int count);
     std::array<uint8_t, MEMORY_BYTES> memory_{};
     Palette palette_{};
     Presenter presenter_;

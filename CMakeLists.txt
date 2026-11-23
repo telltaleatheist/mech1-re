@@ -181,6 +181,7 @@ add_library(mechwarrior_original STATIC
     src/Original/Video/BTECH_2A36_POLYGONS.cpp
     src/Original/Video/BTECH_2A36_LINES.cpp
     src/Original/Video/BTECH_2A36_PIXELS.cpp
+    src/Original/Video/BTECH_2A36_CANVAS.cpp
     src/Original/Video/BTECH_1BF5_PIXELS.cpp
     src/Original/Video/BTECH_2A36_SPANS.cpp
     src/Original/Video/BTECH_2A36_SCREENS.cpp

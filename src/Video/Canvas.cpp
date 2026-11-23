@@ -11,6 +11,16 @@ void CheckPage(int index)
 {
     if (index < 0 || index >= Canvas::PAGES) throw std::out_of_range("canvas: no page " + std::to_string(index));
 }
+uint8_t Combine(uint8_t old, uint8_t colour, Logic logic)
+{
+    switch (logic)
+    {
+    case Logic::And: return old & colour;
+    case Logic::Or: return old | colour;
+    case Logic::Xor: return old ^ colour;
+    default: return colour;
+    }
+}
 void CheckEntry(int index)
 {
     if (index < 0 || index > Canvas::BORDER) throw std::out_of_range("canvas: no palette entry " + std::to_string(index));
@@ -41,6 +51,34 @@ const uint8_t *Canvas::page(int index) const
 {
     CheckPage(index);
     return memory_.data() + index * PAGE_STRIDE;
+}
+
+uint8_t *Canvas::at(int page, int x, int y, int count)
+{
+    uint8_t *start = this->page(page);
+    const long first = (long)y * WIDTH + x;
+    if (x < 0 || y < 0 || (std::size_t)(start - memory_.data()) + first + count > MEMORY_BYTES)
+        throw std::out_of_range("canvas: (" + std::to_string(x) + ", " + std::to_string(y) + ") on page "
+                                + std::to_string(page) + " is past the canvas");
+    return start + first;
+}
+
+void Canvas::pixel(int page, int x, int y, uint8_t colour, Logic logic)
+{
+    uint8_t *p = at(page, x, y, 1);
+    *p = Combine(*p, colour & 15, logic);
+}
+
+uint8_t Canvas::pixelAt(int page, int x, int y) const
+{
+    return const_cast<Canvas *>(this)->at(page, x, y, 1)[0];
+}
+
+void Canvas::bitPattern(int page, int x, int y, uint8_t bits, uint8_t colour, Logic logic)
+{
+    uint8_t *p = at(page, x, y, 8);
+    for (int i = 0; i < 8; ++i)
+        if (bits & (0x80 >> i)) p[i] = Combine(p[i], colour & 15, logic);
 }
 
 void Canvas::setPaletteEntry(int index, Rgb colour)

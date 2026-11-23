@@ -1,6 +1,6 @@
-// src/Video/Canvas (docs/phase5/NO_EMULATION_PLAN.md, G1): the pages where the
-// EGA model's selectors put them, the palette codes' colours, the palette's
-// entries and present(). Plain checks, no framework: exit 0 when all hold.
+// src/Video/Canvas (docs/phase5/NO_EMULATION_PLAN.md, G1, G2): the pages where
+// the EGA model's selectors put them, the palette codes' colours, the palette's
+// entries, present(), and drawing. Plain checks, no framework: exit 0 when all hold.
 #include "Canvas.h"
 
 #include <cstdio>
@@ -86,6 +86,32 @@ int main() {
   canvas.present(1);
   Check(seen == &canvas && shown == 1 && canvas.presentedPage() == 1, "the presenter shows page 1");
   Check(Throws([&] { canvas.present(8); }) && shown == 1, "no page 8 presented");
+
+  // Drawing (G2): pixels and eight-pixel bit patterns, by each function.
+  using mw1o::video::Logic;
+  canvas.clear();
+  canvas.pixel(1, 10, 20, 0x1C);
+  Check(canvas.pixelAt(1, 10, 20) == 0x0C && canvas.page(1)[20 * 320 + 10] == 0x0C, "a pixel, its colour's low nibble");
+  canvas.pixel(1, 10, 20, 0x06, Logic::And);
+  Check(canvas.pixelAt(1, 10, 20) == 0x04, "AND");
+  canvas.pixel(1, 10, 20, 0x03, Logic::Or);
+  Check(canvas.pixelAt(1, 10, 20) == 0x07, "OR");
+  canvas.pixel(1, 10, 20, 0x05, Logic::Xor);
+  Check(canvas.pixelAt(1, 10, 20) == 0x02, "XOR");
+  canvas.bitPattern(0, 16, 3, 0xA1, 9);
+  const uint8_t want[8] = {9, 0, 9, 0, 0, 0, 0, 9};
+  bool pattern = true;
+  for (int i = 0; i < 8; ++i) pattern = pattern && canvas.pixelAt(0, 16 + i, 3) == want[i];
+  Check(pattern && canvas.pixelAt(0, 15, 3) == 0 && canvas.pixelAt(0, 24, 3) == 0, "a bit pattern, leftmost at bit 7");
+  canvas.bitPattern(0, 16, 3, 0xFF, 3, Logic::Xor);
+  Check(canvas.pixelAt(0, 16, 3) == (9 ^ 3) && canvas.pixelAt(0, 17, 3) == 3, "a bit pattern by XOR");
+  // Past row 199 into the page's tail and the page after, as the EGA model's
+  // linear aperture lets the game draw; past the canvas's memory is refused.
+  canvas.pixel(0, 0, 205, 7);
+  Check(canvas.page(1)[(205 * 320) - Canvas::PAGE_STRIDE] == 7, "row 205 of page 0 is in page 1");
+  Check(Throws([&] { canvas.pixel(7, 0, 205, 1); }) && Throws([&] { canvas.bitPattern(7, 319, 204, 1, 1); }),
+        "past the last page refused");
+  Check(Throws([&] { canvas.pixel(0, -1, 0, 1); }), "negative x refused");
 
   Check(&mw1o::video::GameCanvas() == &mw1o::video::GameCanvas(), "one game canvas");
 

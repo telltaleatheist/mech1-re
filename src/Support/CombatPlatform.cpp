@@ -42,6 +42,7 @@ uint8_t (*btechHostReadRomByte)(uint16_t,uint16_t);
 uint8_t (*btechHostReadVideoByte)(uint16_t,uint16_t);
 void (*btechHostWriteVideoByte)(uint16_t,uint16_t,uint8_t);
 void (*btechHostWritePortWord)(uint16_t,uint16_t);
+void (*btechHostReadEgaWriteState)(BtechEgaWriteState *);
 void (*btechHostSetPaletteRegister)(uint8_t,uint8_t);
 void (*btechHostSetOverscanColour)(uint8_t);
 bool (*btechHostQueryKeyboardIntercept)(uint16_t);

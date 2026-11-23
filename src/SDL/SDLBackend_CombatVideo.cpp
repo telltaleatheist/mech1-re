@@ -109,6 +109,12 @@ static void WriteVideoByte(uint16_t selector,uint16_t offset,uint8_t value)
         }
     }
 }
+static void ReadEgaWriteState(BtechEgaWriteState *state)
+{
+    state->writeMode=graphicsRegisters[EGA_MODE]&3;
+    state->logicalFunction=(graphicsRegisters[EGA_DATA_ROTATE]>>3)&3;
+    state->mapMask=sequencerRegisters[EGA_MAP_MASK]&0x0F;
+}
 static void WritePortWord(uint16_t port,uint16_t value)
 {
     MwSdlWriteDevicePort(port,(uint8_t)value);MwSdlWriteDevicePort(port+1,(uint8_t)(value>>8));
@@ -118,4 +124,5 @@ uint16_t MwSdlCombatDisplayByteOffset(void)
 void MwSdlBindCombatVideo(void)
 {
     btechHostReadVideoByte=ReadVideoByte;btechHostWriteVideoByte=WriteVideoByte;btechHostWritePortWord=WritePortWord;
+    btechHostReadEgaWriteState=ReadEgaWriteState;
 }

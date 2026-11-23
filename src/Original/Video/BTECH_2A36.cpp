@@ -2,6 +2,7 @@
 #include "mechwarrior/combat_runtime.h"
 #include "mechwarrior/combat_video.h"
 #include "mechwarrior/combat_startup.h"
+#include "BTECH_2A36_CANVAS.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -40,13 +41,41 @@ void BtechInitializeEgaVideo(uint16_t paletteByteOffset)
     btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_WRITE_MODE_TWO);
 }
 
+/* G2: each byte the glyph writes is drawn on the canvas as an eight-pixel bit
+ * pattern, the mask the original has just put in the bit mask register, by the
+ * inherited function (BtechEgaCanvasInheritedLogic: write mode 2, every plane).
+ * The register writes and the latch reads stay as they were, for the paths
+ * still on the register model (until G4). The page and function are resolved
+ * at the first byte, so a rejected character checks nothing, as before. */
+namespace {
+struct GlyphCanvas
+{
+    uint16_t selector;
+    bool resolved=false;
+    int page=0;
+    mw1o::video::Logic logic=mw1o::video::Logic::Copy;
+};
+void GlyphPattern(GlyphCanvas &canvas,uint16_t cursor,uint8_t bits,uint8_t colour)
+{
+    if (!canvas.resolved)
+    {
+        canvas.page=BtechEgaCanvasPage(canvas.selector);
+        canvas.logic=BtechEgaCanvasInheritedLogic();
+        canvas.resolved=true;
+    }
+    int x,y;BtechEgaCanvasPosition(cursor,&x,&y);
+    mw1o::video::GameCanvas().bitPattern(canvas.page,x,y,bits,colour,canvas.logic);
+}
+}
+
 /*2A36:0343, reached through02C2's CLD. BYTE counters, native wrap, character
  * rejection, transparency and inherited raster operation remain original.
  * Direct DF-set calls, invalid row/font aliases are not converted here. */
 void BtechEgaDrawGlyph(uint16_t character,uint16_t x,uint16_t y,uint16_t page)
 {
     if (y>=COMBAT_SCREEN_HEIGHT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: y>=COMBAT_SCREEN_HEIGHT");
-    if (!btechHostWritePortWord || !btechHostReadVideoByte || !btechHostWriteVideoByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePortWord || !btechHostReadVideoByte || !btechHostWriteVideoByte");
+    if (!btechHostWritePortWord || !btechHostReadVideoByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePortWord || !btechHostReadVideoByte");
+    GlyphCanvas canvas{page};
     // FAR AX/DX/BP entry, ambient ES page; DX/SI/BP/DS preserved. DI is scratch.
     // No clipping here; the shared text caller owns clipping decisions.
     uint8_t width=fontAdvanceWidths[0x0000];
@@ -84,12 +113,12 @@ void BtechEgaDrawGlyph(uint16_t character,uint16_t x,uint16_t y,uint16_t page)
                 glyphCursor++;
                 btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,(uint16_t)((uint16_t)glyphBits<<0x0008)|COMBAT_EGA_BIT_MASK_REGISTER);
                 btechHostReadVideoByte(page,cursor); // Required latch read, even for mask0.
-                btechHostWriteVideoByte(page,cursor,foreground);
+                GlyphPattern(canvas,cursor,(uint8_t)(glyphBits),foreground);
                 if (!transparent)
                 {
                     btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,(uint16_t)((uint16_t)(uint8_t)~glyphBits<<0x0008)|COMBAT_EGA_BIT_MASK_REGISTER);
                     btechHostReadVideoByte(page,cursor);
-                    btechHostWriteVideoByte(page,cursor,background);
+                    GlyphPattern(canvas,cursor,(uint8_t)((uint8_t)~glyphBits),background);
                 }
                 cursor++;
             } while (--bytesRemaining!=0x00); // BYTE0 means256 copies.
@@ -112,7 +141,7 @@ void BtechEgaDrawGlyph(uint16_t character,uint16_t x,uint16_t y,uint16_t page)
                     glyphCursor++;
                     btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,(uint16_t)((uint16_t)glyphBits<<0x0008)|COMBAT_EGA_BIT_MASK_REGISTER);
                     btechHostReadVideoByte(page,cursor);
-                    btechHostWriteVideoByte(page,cursor,foreground); // Cached once in this path.
+                    GlyphPattern(canvas,cursor,(uint8_t)(glyphBits),foreground); // Cached once in this path.
                     cursor++;
                 } while (--bytesRemaining!=0x00);
             }
@@ -125,10 +154,10 @@ void BtechEgaDrawGlyph(uint16_t character,uint16_t x,uint16_t y,uint16_t page)
                     glyphCursor++;
                     btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,(uint16_t)((uint16_t)glyphBits<<0x0008)|COMBAT_EGA_BIT_MASK_REGISTER);
                     btechHostReadVideoByte(page,cursor);
-                    btechHostWriteVideoByte(page,cursor,textForegroundPattern);
+                    GlyphPattern(canvas,cursor,(uint8_t)(glyphBits),textForegroundPattern);
                     btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,(uint16_t)((uint16_t)(uint8_t)~glyphBits<<0x0008)|COMBAT_EGA_BIT_MASK_REGISTER);
                     btechHostReadVideoByte(page,cursor);
-                    btechHostWriteVideoByte(page,cursor,textBackgroundPattern);
+                    GlyphPattern(canvas,cursor,(uint8_t)((uint8_t)~glyphBits),textBackgroundPattern);
                     cursor++;
                 }
                 if (!font->bytes || glyphCursor>=font->byteCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !font->bytes || glyphCursor>=font->byteCount");
@@ -136,11 +165,11 @@ void BtechEgaDrawGlyph(uint16_t character,uint16_t x,uint16_t y,uint16_t page)
                 glyphCursor++;
                 btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,(uint16_t)((uint16_t)glyphBits<<0x0008)|COMBAT_EGA_BIT_MASK_REGISTER);
                 btechHostReadVideoByte(page,cursor);
-                btechHostWriteVideoByte(page,cursor,textForegroundPattern);
+                GlyphPattern(canvas,cursor,(uint8_t)(glyphBits),textForegroundPattern);
                 uint8_t backgroundMask=(uint8_t)~glyphBits&glyphTailMask;
                 btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,(uint16_t)((uint16_t)backgroundMask<<0x0008)|COMBAT_EGA_BIT_MASK_REGISTER);
                 btechHostReadVideoByte(page,cursor);
-                btechHostWriteVideoByte(page,cursor,textBackgroundPattern);
+                GlyphPattern(canvas,cursor,(uint8_t)(backgroundMask),textBackgroundPattern);
                 cursor++;
             }
         }
@@ -158,14 +187,14 @@ void BtechEgaDrawGlyph(uint16_t character,uint16_t x,uint16_t y,uint16_t page)
                 uint8_t shiftedBits=joinedBits>>shift;
                 btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,(uint16_t)((uint16_t)shiftedBits<<0x0008)|COMBAT_EGA_BIT_MASK_REGISTER);
                 btechHostReadVideoByte(page,cursor);
-                btechHostWriteVideoByte(page,cursor,textForegroundPattern);
+                GlyphPattern(canvas,cursor,(uint8_t)(shiftedBits),textForegroundPattern);
                 cursor++;
             }
             uint16_t joinedBits=(uint16_t)previousBits<<0x0008;
             uint8_t shiftedBits=joinedBits>>shift;
             btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,(uint16_t)((uint16_t)shiftedBits<<0x0008)|COMBAT_EGA_BIT_MASK_REGISTER);
             btechHostReadVideoByte(page,cursor);
-            btechHostWriteVideoByte(page,cursor,textForegroundPattern);
+            GlyphPattern(canvas,cursor,(uint8_t)(shiftedBits),textForegroundPattern);
             cursor++;
         }
         else
@@ -181,13 +210,13 @@ void BtechEgaDrawGlyph(uint16_t character,uint16_t x,uint16_t y,uint16_t page)
                 previousBits=glyphBits;
                 btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,(uint16_t)((uint16_t)foregroundMask<<0x0008)|COMBAT_EGA_BIT_MASK_REGISTER);
                 btechHostReadVideoByte(page,cursor);
-                btechHostWriteVideoByte(page,cursor,textForegroundPattern);
+                GlyphPattern(canvas,cursor,(uint8_t)(foregroundMask),textForegroundPattern);
                 uint8_t invertedBits=(uint8_t)~previousBits;
                 uint8_t backgroundMask=((uint16_t)((uint16_t)previousBackground<<0x0008)|invertedBits)>>shift;
                 previousBackground=invertedBits;
                 btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,(uint16_t)((uint16_t)backgroundMask<<0x0008)|COMBAT_EGA_BIT_MASK_REGISTER);
                 btechHostReadVideoByte(page,cursor);
-                btechHostWriteVideoByte(page,cursor,textBackgroundPattern);
+                GlyphPattern(canvas,cursor,(uint8_t)(backgroundMask),textBackgroundPattern);
                 cursor++;
             }
             if (!font->bytes || glyphCursor>=font->byteCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !font->bytes || glyphCursor>=font->byteCount");
@@ -197,22 +226,22 @@ void BtechEgaDrawGlyph(uint16_t character,uint16_t x,uint16_t y,uint16_t page)
             previousBits=glyphBits;
             btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,(uint16_t)((uint16_t)foregroundMask<<0x0008)|COMBAT_EGA_BIT_MASK_REGISTER);
             btechHostReadVideoByte(page,cursor);
-            btechHostWriteVideoByte(page,cursor,textForegroundPattern);
+            GlyphPattern(canvas,cursor,(uint8_t)(foregroundMask),textForegroundPattern);
             uint8_t invertedBits=(uint8_t)~previousBits&glyphTailMask;
             uint8_t backgroundMask=((uint16_t)((uint16_t)previousBackground<<0x0008)|invertedBits)>>shift;
             previousBackground=invertedBits;
             btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,(uint16_t)((uint16_t)backgroundMask<<0x0008)|COMBAT_EGA_BIT_MASK_REGISTER);
             btechHostReadVideoByte(page,cursor);
-            btechHostWriteVideoByte(page,cursor,textBackgroundPattern);
+            GlyphPattern(canvas,cursor,(uint8_t)(backgroundMask),textBackgroundPattern);
             cursor++;
             foregroundMask=(uint8_t)((uint16_t)((uint16_t)previousBits<<0x0008)>>shift);
             btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,(uint16_t)((uint16_t)foregroundMask<<0x0008)|COMBAT_EGA_BIT_MASK_REGISTER);
             btechHostReadVideoByte(page,cursor);
-            btechHostWriteVideoByte(page,cursor,textForegroundPattern);
+            GlyphPattern(canvas,cursor,(uint8_t)(foregroundMask),textForegroundPattern);
             backgroundMask=(uint8_t)((uint16_t)((uint16_t)previousBackground<<0x0008)>>shift);
             btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,(uint16_t)((uint16_t)backgroundMask<<0x0008)|COMBAT_EGA_BIT_MASK_REGISTER);
             btechHostReadVideoByte(page,cursor);
-            btechHostWriteVideoByte(page,cursor,textBackgroundPattern);
+            GlyphPattern(canvas,cursor,(uint8_t)(backgroundMask),textBackgroundPattern);
             // Extra opaque tail uses MOV, not STOSB: no cursor increment.
         }
         uint16_t rowBytes=bytesPerRow;
