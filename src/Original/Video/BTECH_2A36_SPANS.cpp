@@ -3,15 +3,14 @@
 #include "BTECH_2A36_CANVAS.h"
 #include <stdlib.h>
 
-/* G3: drawn on the canvas through BtechEgaCanvasWriter (BTECH_2A36_CANVAS.h),
- * which keeps the bit mask writes and latch reads for the register model. */
+/* Drawn on the canvas through BtechEgaCanvasWriter (BTECH_2A36_CANVAS.h): the
+ * colour where the mask has a 1 (G3, G4). */
 
-/*2A36:1E32. Native mode2 writes, including inherited controller state and
- * latch reuse by REP STOSB. Forward game path; no added clip or mask restore. */
+/*2A36:1E32. The leading and trailing partial bytes and the whole bytes between
+ * (REP STOSB in the original). Forward game path; no added clip. */
 void BtechEgaFillSolidSpan(uint16_t pattern,uint16_t x,int16_t count,uint16_t rowOffset,uint16_t page)
 {
     if (count<=0) return;
-    if (!btechHostWritePortWord || !btechHostReadVideoByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePortWord || !btechHostReadVideoByte");
     BtechEgaCanvasWriter ega(page);
     uint16_t cursor=rowOffset+(x>>3);
     uint16_t firstPixel=x&7,endPixel=(uint16_t)(firstPixel+(uint16_t)count);
@@ -20,13 +19,11 @@ void BtechEgaFillSolidSpan(uint16_t pattern,uint16_t x,int16_t count,uint16_t ro
     {
         mask&=egaSpanTrailingMasks[(uint8_t)endPixel];
         ega.setMask((uint8_t)(mask));
-        ega.load(cursor);
         ega.write(cursor,(uint8_t)pattern);
         return;
     }
     uint16_t remaining=(uint16_t)count-(8-firstPixel);
     ega.setMask((uint8_t)(mask));
-    ega.load(cursor);
     ega.write(cursor++,(uint8_t)pattern);
     uint16_t wholeBytes=(remaining&0xFFF8)>>3;
     if (wholeBytes)
@@ -39,19 +36,19 @@ void BtechEgaFillSolidSpan(uint16_t pattern,uint16_t x,int16_t count,uint16_t ro
     {
         mask=egaSpanTrailingMasks[tail];
         ega.setMask((uint8_t)(mask));
-        ega.load(cursor);
         ega.write(cursor,(uint8_t)pattern);
     }
 }
 
-/*2A36:1D40. Two original raster phases kept inline: the second refreshes
- * only its FIRST bulk latch, not every destination. That quirk is observable. */
+/*2A36:1D40. Two original raster phases kept inline. The original's second phase
+ * reloads the latches only at its first whole byte; by copy (the only function
+ * combat draws with), that leaves the same pixels as drawing each byte where
+ * its mask has a 1 (G4; BTECH_2A36_CANVAS.h). */
 void BtechEgaFillAlternatingSpan(uint16_t primary,uint16_t x,int16_t count,uint16_t alternate,uint16_t rowOffset,uint16_t page)
 {
     spanAlternationState^=1;
     uint16_t pattern=spanAlternationState?alternate:primary;
     if (count<=0) return;
-    if (!btechHostWritePortWord || !btechHostReadVideoByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePortWord || !btechHostReadVideoByte");
     BtechEgaCanvasWriter ega(page);
     egaSpanPrimaryColour=(uint8_t)(pattern>>8);
     egaSpanSecondaryColour=(uint8_t)pattern;
@@ -67,19 +64,16 @@ void BtechEgaFillAlternatingSpan(uint16_t primary,uint16_t x,int16_t count,uint1
         {
             uint8_t mask=leading&egaSpanTrailingMasks[(uint8_t)endPixel]&columns;
             ega.setMask((uint8_t)(mask));
-            ega.load(cursor);
             ega.write(cursor,colour);
             continue;
         }
         uint16_t remaining=(uint16_t)count-(8-firstPixel);
         ega.setMask((uint8_t)((leading&columns)));
-        ega.load(cursor);
         ega.write(cursor++,colour);
         uint16_t wholeBytes=(remaining&0xFFF8)>>3;
         if (wholeBytes)
         {
             ega.setMask((uint8_t)(columns));
-            if (phase) ega.load(cursor);
             do {ega.write(cursor++,colour);} while (--wholeBytes);
         }
         uint16_t tail=remaining&7;
@@ -87,7 +81,6 @@ void BtechEgaFillAlternatingSpan(uint16_t primary,uint16_t x,int16_t count,uint1
         {
             uint8_t mask=egaSpanTrailingMasks[tail]&columns;
             ega.setMask((uint8_t)(mask));
-            ega.load(cursor);
             ega.write(cursor,colour);
         }
     }

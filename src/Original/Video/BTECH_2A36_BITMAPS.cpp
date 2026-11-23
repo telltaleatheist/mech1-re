@@ -1,5 +1,6 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/combat_video.h"
+#include "BTECH_2A36_CANVAS.h"
 #include <stdlib.h>
 
 /*2A36:1EB0. Truncate each MUL before accumulating DWORD; add one mask plane. */
@@ -43,15 +44,12 @@ void BtechEgaPrepareBitmapList(BtechBitmapList *list,BtechResourceAllocation pix
     list->pixels=pixels; // Host ownership metadata; original first-image selector owns this one DOS block.
 }
 
-/*2A36:1F98. Actual packed-nibble expansion, original two WORD reads before
- * four plane writes. Preserve port sequence and source paragraph carry. */
+/*2A36:1F98. Actual packed-nibble expansion, original two WORD reads before the
+ * eight pixels are written to the scratch page (one plane at a time in the
+ * original; their colours on the canvas, G4). Source paragraph carry kept. */
 void BtechEgaUnpackNibblesToScratchPlanes(BtechResourceAllocation source,uint16_t planeBytes)
 {
-    if (!btechHostWritePortWord || !btechHostWritePort || !btechHostWriteVideoByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePortWord || !btechHostWritePort || !btechHostWriteVideoByte");
-    btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_WRITE_MODE_TWO);
-    btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_ALL_PIXEL_BITS);
-    btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_WRITE_MODE_ZERO);
-    btechHostWritePortWord(COMBAT_EGA_SEQUENCER_PORT,COMBAT_EGA_MAP_PLANE_ZERO);
+    const int scratch=BtechEgaCanvasPage(COMBAT_EGA_BITMAP_SCRATCH_PAGE);
     uint16_t sourceCursor=0,destinationCursor=0,groupsRemaining=planeBytes;
     uint32_t sourceParagraph=0;
     do
@@ -62,57 +60,43 @@ void BtechEgaUnpackNibblesToScratchPlanes(BtechResourceAllocation source,uint16_
         uint16_t secondPixels=source.bytes[sourceParagraph+sourceCursor]|((uint16_t)source.bytes[sourceParagraph+sourceCursor+1]<<8);
         uint8_t sourceWrapped=sourceCursor>=0xFFFE;
         sourceCursor+=2;
-        uint8_t planePixels[COMBAT_EGA_PLANES]={0};
+        uint8_t colours[8];
         for (uint16_t packedByte=0;packedByte<4;++packedByte)
         {
             uint8_t pixels=(packedByte<2?firstPixels:secondPixels)>>((packedByte&1)*8);
-            for (uint16_t nibble=0;nibble<2;++nibble)
-            {
-                uint8_t colour=nibble==0?pixels>>4:pixels&0x0F;
-                for (uint16_t plane=0;plane<COMBAT_EGA_PLANES;++plane)
-                    planePixels[plane]=(uint8_t)((planePixels[plane]<<1)|((colour>>plane)&1));
-            }
+            colours[packedByte*2]=pixels>>4;
+            colours[packedByte*2+1]=pixels&0x0F;
         }
         if (sourceWrapped) sourceParagraph+=0x10000;
-        for (uint16_t plane=0;plane<COMBAT_EGA_PLANES;++plane)
-        {
-            btechHostWritePort(COMBAT_EGA_SEQUENCER_PORT+1,(uint8_t)(1<<plane));
-            btechHostWriteVideoByte(COMBAT_EGA_BITMAP_SCRATCH_PAGE,destinationCursor,planePixels[plane]);
-        }
+        BtechEgaCanvasSetPixels(scratch,destinationCursor,colours);
         ++destinationCursor;
     } while (--groupsRemaining);
-    btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_WRITE_MODE_TWO);
-    btechHostWritePortWord(COMBAT_EGA_SEQUENCER_PORT,COMBAT_EGA_MAP_ALL_PLANES);
 }
 
-/*2A36:209B. Repeat the same scratch range per plane; zero copies nothing. */
+/*2A36:209B. Repeat the same scratch range per colour bit (plane); zero copies
+ * nothing. The image keeps the planar form (BTECH_2A36_CANVAS.h). */
 void BtechEgaCopyScratchPlanes(uint16_t sourceOffset,uint8_t *destination,uint16_t planeBytes)
 {
-    if (!btechHostWritePortWord || !btechHostReadVideoByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePortWord || !btechHostReadVideoByte");
+    const int scratch=BtechEgaCanvasPage(COMBAT_EGA_BITMAP_SCRATCH_PAGE);
     for (uint16_t plane=0;plane<COMBAT_EGA_PLANES;++plane)
     {
-        btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,(uint16_t)((plane<<8)|COMBAT_EGA_READ_MAP_REGISTER));
         uint16_t sourceCursor=sourceOffset;
         for (uint16_t remaining=planeBytes;remaining;--remaining)
-            *destination++=btechHostReadVideoByte(COMBAT_EGA_BITMAP_SCRATCH_PAGE,sourceCursor++);
+            *destination++=BtechEgaCanvasColourBits(scratch,sourceCursor++,plane);
     }
 }
 
-/*2A36:20CE. Zero-colour mask is the inverse OR of the four scratch planes.
- * The original DEC loop and read-map3 residue remain visible. */
+/*2A36:20CE. Zero-colour mask is the inverse OR of the four scratch colour bits:
+ * a 1 where the pixel is colour 0. The original DEC loop remains. */
 void BtechEgaBuildZeroColourMask(uint16_t sourceOffset,uint8_t *destination,uint16_t planeBytes)
 {
-    if (!btechHostWritePortWord || !btechHostWritePort || !btechHostReadVideoByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePortWord || !btechHostWritePort || !btechHostReadVideoByte");
-    btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_READ_MAP_REGISTER);
+    const int scratch=BtechEgaCanvasPage(COMBAT_EGA_BITMAP_SCRATCH_PAGE);
     uint16_t sourceCursor=sourceOffset,remaining=planeBytes;
     do
     {
         uint8_t opaquePixels=0;
         for (uint16_t plane=0;plane<COMBAT_EGA_PLANES;++plane)
-        {
-            btechHostWritePort(COMBAT_EGA_GRAPHICS_PORT+1,(uint8_t)plane);
-            opaquePixels|=btechHostReadVideoByte(COMBAT_EGA_BITMAP_SCRATCH_PAGE,sourceCursor);
-        }
+            opaquePixels|=BtechEgaCanvasColourBits(scratch,sourceCursor,plane);
         *destination++=(uint8_t)~opaquePixels;
         ++sourceCursor;
     } while (--remaining);

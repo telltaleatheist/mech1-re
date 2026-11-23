@@ -1,16 +1,18 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/combat_polygons.h"
+#include "BTECH_2A36_CANVAS.h"
 #include <stdlib.h>
 
 /*2A36:0071. Native polygon-span writer, including first-attempt count0,
- * signed endpoint comparison, palette/parity, partial masks and latch reuse.
- * Two raster phases stay inline; they are not calls to invented draw helpers. */
+ * signed endpoint comparison, palette/parity and partial masks, drawn on the
+ * canvas (G4). Two raster phases stay inline; they are not calls to invented
+ * draw helpers. The original's second phase reloads the latches only at its
+ * first whole byte; by copy, that leaves the same pixels as drawing each byte
+ * where its mask has a 1 (BTECH_2A36_CANVAS.h). */
 void BtechEgaFillPolygonSpans(const BtechPolygonSpan *header)
 {
-    if (!btechHostWritePortWord || !btechHostWritePort || !btechHostReadVideoByte || !btechHostWriteVideoByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePortWord || !btechHostWritePort || !btechHostReadVideoByte || !btechHostWriteVideoByte");
-    btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_WRITE_MODE_TWO);
-    btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_ALL_PIXEL_BITS);
     uint16_t page=drawPageSelector,row=header->header.firstRow;
+    BtechEgaCanvasWriter ega(page);
     egaSpanRowsRemaining=header->header.rowCount;
     const BtechPolygonSpan *span=header+1;
     uint8_t colour=drawLineColour;
@@ -40,28 +42,22 @@ void BtechEgaFillPolygonSpans(const BtechPolygonSpan *header)
                 {
                     if ((uint8_t)endPixel>=8) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint8_t)endPixel>=8"); /* Adjacent mask/scratch aliases unsupported. */
                     uint8_t mask=leading&egaPolygonTrailingMasks[(uint8_t)endPixel]&columns;
-                    btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)mask<<8));
-                    (void)btechHostReadVideoByte(page,cursor);btechHostWriteVideoByte(page,cursor,paint);
+                    ega.setMask(mask);ega.write(cursor,paint);
                     continue;
                 }
                 uint16_t remaining=width-(8-firstPixel);
-                btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)(leading&columns)<<8));
-                (void)btechHostReadVideoByte(page,cursor);btechHostWriteVideoByte(page,cursor++,paint);
+                ega.setMask((uint8_t)(leading&columns));ega.write(cursor++,paint);
                 uint16_t bulk=remaining>>3;
                 if (bulk)
                 {
-                    if (alternating) btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)columns<<8));
-                    else btechHostWritePort(COMBAT_EGA_GRAPHICS_DATA_PORT,0xFF);
-                    if (alternating && phase) (void)btechHostReadVideoByte(page,cursor);
-                    do {btechHostWriteVideoByte(page,cursor++,paint);} while (--bulk);
+                    ega.setMask(alternating?columns:0xFF);
+                    do {ega.write(cursor++,paint);} while (--bulk);
                 }
                 uint16_t tail=remaining&7;
                 if (tail)
                 {
                     uint8_t mask=egaPolygonTrailingMasks[tail]&columns;
-                    if (alternating) btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)mask<<8));
-                    else btechHostWritePort(COMBAT_EGA_GRAPHICS_DATA_PORT,mask);
-                    (void)btechHostReadVideoByte(page,cursor);btechHostWriteVideoByte(page,cursor,paint);
+                    ega.setMask(mask);ega.write(cursor,paint);
                 }
             }
         }

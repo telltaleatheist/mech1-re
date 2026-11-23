@@ -1,11 +1,14 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/combat_video.h"
+#include "BTECH_2A36_CANVAS.h"
 #include <stdlib.h>
 
 /*2A36:083F. Eight native shift continuations share this one FAR boundary.
- * Descriptor snapshots precede clipping. The mask clears ALL enabled hardware
- * planes before the live2E5F-selected colour passes OR their ink. DF-clear and
- * ordinary RAM payload owners only; no invented shifted-blit helper. */
+ * Descriptor snapshots precede clipping. The mask pass sets the image's opaque
+ * pixels to colour 0; then, for each colour bit the live 2E5F selection enables,
+ * the image's bits are ORed into the pixels' colours (one plane at a time in
+ * the original; on the canvas, G4). DF-clear and ordinary RAM payload owners
+ * only; no invented shifted-blit helper. */
 void BtechEgaDrawBitmap(const BtechBitmap *bitmap,uint16_t x,uint16_t y)
 {
     if (!bitmap) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !bitmap");
@@ -69,7 +72,7 @@ void BtechEgaDrawBitmap(const BtechBitmap *bitmap,uint16_t x,uint16_t y)
     uint8_t phase=egaBitmapShiftPhase;
     uint16_t maskCursor=sourceSkip,destination=rowStart;
     uint8_t rowsRemaining=rows;
-    if (!btechHostWritePortWord || !btechHostReadVideoByte || !btechHostWriteVideoByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePortWord || !btechHostReadVideoByte || !btechHostWriteVideoByte");
+    BtechEgaCanvasWriter ega(page);
     do
     {
         uint8_t bytesRemaining=rowBytes;
@@ -79,8 +82,7 @@ void BtechEgaDrawBitmap(const BtechBitmap *bitmap,uint16_t x,uint16_t y)
             {
                 if (maskCursor>=image.maskStorageBytes) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: maskCursor>=image.maskStorageBytes");
                 uint8_t preserve=image.preserveMask[maskCursor++];
-                btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)(uint8_t)~preserve<<8));
-                (void)btechHostReadVideoByte(page,destination);btechHostWriteVideoByte(page,destination++,0);
+                ega.setMask((uint8_t)~preserve);ega.write(destination++,0);
             } while (--bytesRemaining);
         }
         else
@@ -97,29 +99,24 @@ void BtechEgaDrawBitmap(const BtechBitmap *bitmap,uint16_t x,uint16_t y)
                 if (maskCursor>=image.maskStorageBytes) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: maskCursor>=image.maskStorageBytes");
                 uint8_t current=image.preserveMask[maskCursor++];
                 uint8_t preserve=(previous<<(8-phase))|(current>>phase);previous=current;
-                btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)(uint8_t)~preserve<<8));
-                (void)btechHostReadVideoByte(page,destination);btechHostWriteVideoByte(page,destination++,0);
+                ega.setMask((uint8_t)~preserve);ega.write(destination++,0);
             }
             uint8_t current=0xFF;
             if (egaBitmapClipSides&2)
             {if (maskCursor>=image.maskStorageBytes) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: maskCursor>=image.maskStorageBytes");current=image.preserveMask[maskCursor];}
             uint8_t preserve=(previous<<(8-phase))|(current>>phase);
-            btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)(uint8_t)~preserve<<8));
-            (void)btechHostReadVideoByte(page,destination);btechHostWriteVideoByte(page,destination,0);
+            ega.setMask((uint8_t)~preserve);ega.write(destination,0);
         }
         if (!--rowsRemaining) break;
         maskCursor+=egaBitmapSourceRowSkip;destination+=egaBitmapDestinationRowSkip;
     } while (1);
-    btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_WRITE_MODE_ZERO);
-    btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_ALL_PIXEL_BITS);
+    const int canvasPage=BtechEgaCanvasPage(page);
     uint8_t clipSides=egaBitmapClipSides;
     uint16_t planeStart=sourceSkip;
     for (uint16_t plane=0;plane<COMBAT_EGA_PLANES;++plane)
     {
         if (plane) planeStart+=egaBitmapPlaneStride;
         if (!(egaBitmapEnabledPlanes&(1<<plane))) continue;
-        btechHostWritePortWord(COMBAT_EGA_SEQUENCER_PORT,COMBAT_EGA_SEQUENCER_MAP_MASK|((uint16_t)(1<<plane)<<8));
-        btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_READ_MAP_REGISTER|(plane<<8));
         uint16_t cursor=planeStart;destination=rowStart;rowsRemaining=(uint8_t)rows;
         do
         {
@@ -135,20 +132,16 @@ void BtechEgaDrawBitmap(const BtechBitmap *bitmap,uint16_t x,uint16_t y)
                 if (cursor>=image.pixelStorageBytes) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: cursor>=image.pixelStorageBytes");
                 uint8_t pixels=image.pixelPlanes[cursor++];
                 uint8_t ink=phase?(uint8_t)((previous<<(8-phase))|(pixels>>phase)):pixels;previous=pixels;
-                uint8_t background=btechHostReadVideoByte(page,destination);
-                btechHostWriteVideoByte(page,destination++,(uint8_t)(background|ink));
+                BtechEgaCanvasAddColourBits(canvasPage,destination++,plane,ink);
             }
             if (phase)
             {
                 uint8_t pixels=0;
                 if (clipSides&2) {if (cursor>=image.pixelStorageBytes) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: cursor>=image.pixelStorageBytes");pixels=image.pixelPlanes[cursor];}
-                uint8_t background=btechHostReadVideoByte(page,destination);
-                btechHostWriteVideoByte(page,destination,(uint8_t)(background|(previous<<(8-phase))|(pixels>>phase)));
+                BtechEgaCanvasAddColourBits(canvasPage,destination,plane,(uint8_t)((previous<<(8-phase))|(pixels>>phase)));
             }
             if (!--rowsRemaining) break;
             cursor+=egaBitmapSourceRowSkip;destination+=egaBitmapDestinationRowSkip;
         } while (1);
     }
-    btechHostWritePortWord(COMBAT_EGA_SEQUENCER_PORT,COMBAT_EGA_MAP_ALL_PLANES);
-    btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_WRITE_MODE_TWO);
 }

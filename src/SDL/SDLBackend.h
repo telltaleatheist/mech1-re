@@ -96,11 +96,9 @@ uint8_t MwSdlReadSpeakerControl(void);
 void MwSdlShutdownAudio(void);
 /* Shared physical EGA adapter. Game rasterizers remain in Original. */
 extern bool mwSdlCombatActive;
-void MwSdlBindCombatVideo(void);
 void MwSdlResetCombatVideoHardware(void);
 bool MwSdlWriteCombatVideoPort(uint16_t port,uint8_t value);
 bool MwSdlReadCombatVideoPort(uint16_t port,uint8_t *value);
-uint16_t MwSdlCombatDisplayByteOffset(void);
 void MwSdlWriteDevicePort(uint16_t port,uint8_t value);
 uint8_t MwSdlReadDevicePort(uint16_t port);
 uint8_t MwSdlExchangeInterrupts(uint8_t enabled);

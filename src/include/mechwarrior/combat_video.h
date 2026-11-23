@@ -159,19 +159,11 @@ void BtechEgaUploadPackedScreenRegion(BtechResourceAllocation source,uint16_t le
 void BtechEgaNoOperation(void);
 uint32_t BtechGetCaptureStorageSize(uint16_t width,uint16_t height);
 uint32_t BtechEgaGetCaptureStorageSize(uint16_t width,uint16_t height);
-/* BIOS register replies and physical ROM/video accesses only; no renderer or
- * game-decision callbacks. The live SDL BTECH entry remains gated. */
+/* BIOS register replies and physical ROM accesses only (combat draws on the
+ * canvas, G4); no renderer or game-decision callbacks. The live SDL BTECH entry remains gated. */
 extern uint16_t (*btechHostQueryEgaInfo)(void); /* INT10 AX1200/BX0010 -> BX. */
 extern uint8_t (*btechHostReadRomByte)(uint16_t selector,uint16_t offset);
-extern uint8_t (*btechHostReadVideoByte)(uint16_t page,uint16_t offset);
-extern void (*btechHostWriteVideoByte)(uint16_t page,uint16_t offset,uint8_t value);
-extern void (*btechHostWritePortWord)(uint16_t port,uint16_t value);
 extern void (*btechHostSetPaletteRegister)(uint8_t index,uint8_t colour); /* INT10 AX1000. */
-/* G2-G4 only (docs/phase5/NO_EMULATION_PLAN.md): the EGA write state a path
- * drawn through the canvas inherits from the paths still on the register model.
- * Goes with that model in G4. */
-typedef struct BtechEgaWriteState {uint8_t writeMode,logicalFunction,mapMask,bitMask,latchPixels[8];} BtechEgaWriteState;
-extern void (*btechHostReadEgaWriteState)(BtechEgaWriteState *state);
 bool BtechImportVideoInitialData(const uint8_t *data,size_t bytes);
 uint16_t BtechSelectCombatRenderer(uint8_t adapterOverride,uint8_t allowedMask);
 uint16_t BtechDetectVideoAdapter(void);

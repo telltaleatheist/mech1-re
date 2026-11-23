@@ -50,7 +50,8 @@ public:
     /* Shows a page: the canvas and the page number. */
     using Presenter = std::function<void(const Canvas &, int page)>;
 
-    /* Every page's pixels to index 0, the whole memory with them. */
+    /* Every page's pixels to index 0, the whole memory with them, and page 0
+     * the presented page (a mode set: the screen shows the start of memory). */
     void clear();
     uint8_t *page(int index);
     const uint8_t *page(int index) const;

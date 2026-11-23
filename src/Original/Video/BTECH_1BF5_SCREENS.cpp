@@ -17,16 +17,11 @@ void BtechCopyScreenRectangle(uint16_t x,uint16_t y,uint16_t width,uint16_t heig
     graphicsCopyScreenRectangle(x,y,width,height);
 }
 
-/*1BF5:3470. No sequencer or enable-set/reset write; setup precedes IO failure. */
+/*1BF5:3470. The original sets write mode 2, copy and every pixel bit here for
+ * EGA: what every combat drawing routine starts from. On the canvas there is
+ * nothing to set (G4); the call sites stay. */
 void BtechSetEgaSpriteWriteRegisters(void)
 {
-    if (combatRendererKind==COMBAT_VIDEO_EGA)
-    {
-        if (!btechHostWritePortWord) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePortWord");
-        btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_WRITE_MODE_TWO);
-        btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_DATA_ROTATE_COPY);
-        btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_ALL_PIXEL_BITS);
-    }
 }
 
 /*1BF5:3441/3445. Genuine FAR tails, typed source instead of selector:offset. */

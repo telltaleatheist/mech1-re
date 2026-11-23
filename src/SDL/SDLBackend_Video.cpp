@@ -78,9 +78,8 @@ static void PaletteRegister(uint8_t index,uint8_t code)
 {if (index>=EGA_PALETTE_ENTRIES) MwSdlFail("Unsupported EGA palette register");SetPaletteCode(index,code);}
 static void PaletteTable(const uint8_t *codes) {for (uint8_t i=0;i<EGA_PALETTE_ENTRIES;++i) SetPaletteCode(i,codes[i]);}
 static void OverscanRegister(uint8_t code) {SetPaletteCode(Canvas::BORDER,code);}
-/* The canvas page an EGA display start (a byte offset into the aperture) shows.
- * Both the campaign's page selectors and combat's CRTC start (high byte only)
- * fall on a page. */
+/* The canvas page a campaign display page (a selector into the aperture) shows;
+ * it always falls on a page. Combat's flips present their page (G4). */
 static int DisplayStartPage(uint16_t byteOffset)
 {
     const uint32_t pageBytes=(uint32_t)(Canvas::PAGE_STRIDE/EGA_PIXELS_PER_BYTE);
@@ -89,8 +88,8 @@ static int DisplayStartPage(uint16_t byteOffset)
 }
 static int DisplayedPage(void)
 {
-    return DisplayStartPage(mwSdlCombatActive?MwSdlCombatDisplayByteOffset()
-        :(uint16_t)((egaDisplayPage-EGA_FIRST_PAGE_SELECTOR)*EGA_SELECTOR_PARAGRAPH_BYTES));
+    if (mwSdlCombatActive) return GameCanvas().presentedPage();
+    return DisplayStartPage((uint16_t)((egaDisplayPage-EGA_FIRST_PAGE_SELECTOR)*EGA_SELECTOR_PARAGRAPH_BYTES));
 }
 static void PresentCanvasPage(const Canvas &canvas,int page,bool force);
 static void PresentPage(uint16_t page)
@@ -117,7 +116,6 @@ bool MwSdlInitializeVideo(const char *directory)
     egaSetVideoMode=MwSdlSetVideoMode;egaSetPaletteRegister=PaletteRegister;
     egaSetPaletteTable=PaletteTable;egaPresentPage=PresentPage;
     btechHostSetPaletteRegister=PaletteRegister;btechHostSetOverscanColour=OverscanRegister;
-    MwSdlBindCombatVideo();
     haveFrame=presenting=false;videoMode=3;
     return true;
 }

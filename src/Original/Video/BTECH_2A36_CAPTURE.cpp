@@ -1,18 +1,14 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/combat_video.h"
+#include "BTECH_2A36_CANVAS.h"
 #include <stdlib.h>
-
-enum { EGA_CLEAR_SET_RESET_COLOUR=0x0000 };
 
 /*2A36:1BB0. Four plane-major REP MOVSW passes, high plane first. The RAM
  * cursor wraps as a WORD, row start advances40 regardless of row width.
- * Converted callers supply paragraph-aligned storage and clear DF. */
+ * Converted callers supply paragraph-aligned storage and clear DF. The buffer
+ * keeps the planar form, one colour bit per pass (BTECH_2A36_CANVAS.h). */
 void BtechEgaCaptureScreenRectangle(BtechResourceAllocation buffer,uint16_t x,uint16_t y,uint16_t width,uint16_t height)
 {
-    if (!btechHostWritePortWord || !btechHostReadVideoByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePortWord || !btechHostReadVideoByte");
-    btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_WRITE_MODE_ZERO);
-    btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_ALL_PIXEL_BITS);
-    btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,EGA_CLEAR_SET_RESET_COLOUR);
     uint16_t leftByte=x>>3;
     uint16_t coveredBytes=((uint16_t)(x+width)>>3)-leftByte+1;
     uint16_t wordsPerRow=(coveredBytes>>1)+(coveredBytes&1);
@@ -21,7 +17,6 @@ void BtechEgaCaptureScreenRectangle(BtechResourceAllocation buffer,uint16_t x,ui
     uint16_t page=copySourcePageSelector,bufferCursor=0;
     for (int16_t plane=COMBAT_EGA_PLANES-1;plane>=0;--plane)
     {
-        btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,(uint16_t)(plane<<8)|COMBAT_EGA_READ_MAP_REGISTER);
         uint16_t rowsRemaining=height,screenCursor=screenStart;
         do
         {
@@ -31,25 +26,21 @@ void BtechEgaCaptureScreenRectangle(BtechResourceAllocation buffer,uint16_t x,ui
                 if (!buffer.bytes || (uint32_t)bufferCursor+2>buffer.byteCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !buffer.bytes || (uint32_t)bufferCursor+2>buffer.byteCount");
                 /* A native WORD startingFFFF crosses the segment physically;
                  * only the later SI increment wraps. It is not two LODSBs. */
-                uint8_t low=btechHostReadVideoByte(page,screenCursor);
-                uint8_t high=btechHostReadVideoByte((uint16_t)(page+(screenCursor==UINT16_MAX?0x1000:0)),(uint16_t)(screenCursor+1));
+                uint8_t low=BtechEgaCanvasColourBits(BtechEgaCanvasPage(page),screenCursor,plane);
+                uint8_t high=BtechEgaCanvasColourBits(BtechEgaCanvasPage((uint16_t)(page+(screenCursor==UINT16_MAX?0x1000:0))),(uint16_t)(screenCursor+1),plane);
                 buffer.bytes[bufferCursor]=low;buffer.bytes[bufferCursor+1]=high;
                 bufferCursor+=2;screenCursor+=2;
             }
             screenCursor=rowStart+COMBAT_SCREEN_ROW_BYTES;
         } while (--rowsRemaining);
     }
-    btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_WRITE_MODE_TWO);
 }
 
-/*2A36:1C69. WORD-aligned RAM cursor, inherited logical operation/set-reset
- * enables and native live latches. No clipping, pixel-mask helper or repaint. */
+/*2A36:1C69. WORD-aligned RAM cursor; each pass writes one colour bit back by
+ * copy (the only function combat draws with; set/reset is never enabled). No
+ * clipping, pixel-mask helper or repaint. */
 void BtechEgaRestoreScreenRectangle(BtechResourceAllocation buffer,uint16_t x,uint16_t y,uint16_t width,uint16_t height)
 {
-    if (!btechHostWritePortWord || !btechHostWriteVideoByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePortWord || !btechHostWriteVideoByte");
-    btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_WRITE_MODE_ZERO);
-    btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_ALL_PIXEL_BITS);
-    btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,EGA_CLEAR_SET_RESET_COLOUR);
     uint16_t leftByte=x>>3;
     uint16_t coveredBytes=((uint16_t)(x+width)>>3)-leftByte+1;
     uint16_t wordsPerRow=(coveredBytes>>1)+(coveredBytes&1);
@@ -58,7 +49,6 @@ void BtechEgaRestoreScreenRectangle(BtechResourceAllocation buffer,uint16_t x,ui
     uint16_t page=drawPageSelector,bufferCursor=0;
     for (int16_t plane=COMBAT_EGA_PLANES-1;plane>=0;--plane)
     {
-        btechHostWritePortWord(COMBAT_EGA_SEQUENCER_PORT,(uint16_t)((1u<<plane)<<8)|COMBAT_EGA_SEQUENCER_MAP_MASK);
         uint16_t rowsRemaining=height,screenCursor=screenStart;
         do
         {
@@ -67,13 +57,11 @@ void BtechEgaRestoreScreenRectangle(BtechResourceAllocation buffer,uint16_t x,ui
             {
                 if (!buffer.bytes || (uint32_t)bufferCursor+2>buffer.byteCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !buffer.bytes || (uint32_t)bufferCursor+2>buffer.byteCount");
                 uint8_t low=buffer.bytes[bufferCursor],high=buffer.bytes[bufferCursor+1];
-                btechHostWriteVideoByte(page,screenCursor,low);
-                btechHostWriteVideoByte((uint16_t)(page+(screenCursor==UINT16_MAX?0x1000:0)),(uint16_t)(screenCursor+1),high);
+                BtechEgaCanvasSetColourBits(BtechEgaCanvasPage(page),screenCursor,plane,low);
+                BtechEgaCanvasSetColourBits(BtechEgaCanvasPage((uint16_t)(page+(screenCursor==UINT16_MAX?0x1000:0))),(uint16_t)(screenCursor+1),plane,high);
                 bufferCursor+=2;screenCursor+=2;
             }
             screenCursor=rowStart+COMBAT_SCREEN_ROW_BYTES;
         } while (--rowsRemaining);
     }
-    btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_WRITE_MODE_TWO);
-    btechHostWritePortWord(COMBAT_EGA_SEQUENCER_PORT,COMBAT_EGA_MAP_ALL_PLANES);
 }

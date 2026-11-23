@@ -39,6 +39,7 @@ Rgb PaletteCodeColour(uint8_t code)
 void Canvas::clear()
 {
     memory_.fill(0);
+    presented_ = 0;
 }
 
 uint8_t *Canvas::page(int index)

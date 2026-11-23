@@ -2,11 +2,14 @@
 #include "mechwarrior/port_diagnostics.h"
 #include <stdlib.h>
 
+using mw1o::video::Canvas;
+using mw1o::video::GameCanvas;
+
 int BtechEgaCanvasPage(uint16_t selector)
 {
-    const uint16_t pageParagraphs=(uint16_t)(mw1o::video::Canvas::PAGE_STRIDE/8/0x10);
+    const uint16_t pageParagraphs=(uint16_t)(Canvas::PAGE_STRIDE/8/0x10);
     if (selector<COMBAT_EGA_FRONT_PAGE || (selector-COMBAT_EGA_FRONT_PAGE)%pageParagraphs
-        || (selector-COMBAT_EGA_FRONT_PAGE)/pageParagraphs>=mw1o::video::Canvas::PAGES)
+        || (selector-COMBAT_EGA_FRONT_PAGE)/pageParagraphs>=Canvas::PAGES)
         /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: a page selector off the canvas's pages");
     return (selector-COMBAT_EGA_FRONT_PAGE)/pageParagraphs;
 }
@@ -14,56 +17,57 @@ int BtechEgaCanvasPage(uint16_t selector)
 void BtechEgaCanvasPosition(uint16_t byteOffset, int *x, int *y)
 {
     const uint32_t pixel=(uint32_t)byteOffset*8;
-    *x=(int)(pixel%mw1o::video::Canvas::WIDTH);
-    *y=(int)(pixel/mw1o::video::Canvas::WIDTH);
+    *x=(int)(pixel%Canvas::WIDTH);
+    *y=(int)(pixel/Canvas::WIDTH);
 }
 
-void BtechEgaCanvasWriter::setMask(uint8_t mask)
+void BtechEgaCanvasDraw(int page, uint16_t byteOffset, uint8_t mask, uint8_t colour)
 {
-    btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)mask<<8));
-    mask_=mask;maskSet_=true;
+    int x,y;BtechEgaCanvasPosition(byteOffset,&x,&y);
+    GameCanvas().bitPattern(page,x,y,mask,colour);
 }
 
-void BtechEgaCanvasWriter::resolve()
+void BtechEgaCanvasSetPixels(int page, uint16_t byteOffset, const uint8_t colours[8])
 {
-    if (resolved_) return;
-    page_=BtechEgaCanvasPage(selector_);
-    logic_=BtechEgaCanvasInheritedLogic();
-    BtechEgaWriteState state;
-    btechHostReadEgaWriteState(&state);
-    if (!maskSet_) mask_=state.bitMask;
-    for (int i=0;i<8;++i) latched_[i]=state.latchPixels[i];
-    resolved_=true;
+    int x,y;BtechEgaCanvasPosition(byteOffset,&x,&y);
+    for (int i=0;i<8;++i) GameCanvas().pixel(page,x+i,y,colours[i]);
 }
 
-void BtechEgaCanvasWriter::load(uint16_t cursor)
+void BtechEgaCanvasCopy(int fromPage, int toPage, uint16_t byteOffset)
 {
-    resolve();
-    (void)btechHostReadVideoByte(selector_,cursor);
-    int x,y;BtechEgaCanvasPosition(cursor,&x,&y);
-    for (int i=0;i<8;++i) latched_[i]=mw1o::video::GameCanvas().pixelAt(page_,x+i,y);
+    int x,y;BtechEgaCanvasPosition(byteOffset,&x,&y);
+    Canvas &canvas=GameCanvas();
+    for (int i=0;i<8;++i) canvas.pixel(toPage,x+i,y,canvas.pixelAt(fromPage,x+i,y));
 }
 
-void BtechEgaCanvasWriter::write(uint16_t cursor, uint8_t colour)
+uint8_t BtechEgaCanvasColourBits(int page, uint16_t byteOffset, int bit)
 {
-    resolve();
-    int x,y;BtechEgaCanvasPosition(cursor,&x,&y);
-    mw1o::video::Canvas &canvas=mw1o::video::GameCanvas();
+    int x,y;BtechEgaCanvasPosition(byteOffset,&x,&y);
+    uint8_t bits=0;
+    for (int i=0;i<8;++i) bits|=(uint8_t)(((GameCanvas().pixelAt(page,x+i,y)>>bit)&1)<<(7-i));
+    return bits;
+}
+
+void BtechEgaCanvasSetColourBits(int page, uint16_t byteOffset, int bit, uint8_t bits)
+{
+    int x,y;BtechEgaCanvasPosition(byteOffset,&x,&y);
+    Canvas &canvas=GameCanvas();
     for (int i=0;i<8;++i)
     {
-        canvas.pixel(page_,x+i,y,latched_[i]);
-        if (mask_&(0x80>>i)) canvas.pixel(page_,x+i,y,colour,logic_);
+        const uint8_t old=canvas.pixelAt(page,x+i,y)&(uint8_t)~(1<<bit);
+        canvas.pixel(page,x+i,y,(uint8_t)(old|(((bits>>(7-i))&1)<<bit)));
     }
 }
 
-mw1o::video::Logic BtechEgaCanvasInheritedLogic(void)
+void BtechEgaCanvasAddColourBits(int page, uint16_t byteOffset, int bit, uint8_t bits)
 {
-    if (!btechHostReadEgaWriteState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostReadEgaWriteState");
-    BtechEgaWriteState state;
-    btechHostReadEgaWriteState(&state);
-    if (state.writeMode!=2 || state.mapMask!=COMBAT_EGA_PLANE_MASK_ALL)
-        /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: a canvas path inherited a write mode other than 2 or masked planes");
-    static const mw1o::video::Logic logic[4]={mw1o::video::Logic::Copy,mw1o::video::Logic::And,
-        mw1o::video::Logic::Or,mw1o::video::Logic::Xor};
-    return logic[state.logicalFunction&3];
+    int x,y;BtechEgaCanvasPosition(byteOffset,&x,&y);
+    GameCanvas().bitPattern(page,x,y,bits,(uint8_t)(1<<bit),mw1o::video::Logic::Or);
+}
+
+void BtechEgaCanvasWriter::write(uint16_t byteOffset, uint8_t colour)
+{
+    if (!maskSet_) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: a combat write before its mask");
+    if (!resolved_) {page_=BtechEgaCanvasPage(selector_);resolved_=true;}
+    BtechEgaCanvasDraw(page_,byteOffset,mask_,colour);
 }

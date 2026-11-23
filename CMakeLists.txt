@@ -305,7 +305,7 @@ if(MECHWARRIOR_BUILD_TESTS)
     set_tests_properties(start_exe PROPERTIES SKIP_RETURN_CODE 77)
     add_executable(import_exe_test tests/import_exe_test.cpp)
     target_link_libraries(import_exe_test PRIVATE mechwarrior_original)
-    # 2A36's mode 2 writes in pixels on the canvas (G3), against fake host hooks.
+    # Combat's drawing on the canvas (G3, G4): the pen and the game's planar form.
     add_executable(ega_canvas_writer_test tests/ega_canvas_writer_test.cpp)
     target_include_directories(ega_canvas_writer_test PRIVATE src/Original/Video)
     target_link_libraries(ega_canvas_writer_test PRIVATE mechwarrior_original)
