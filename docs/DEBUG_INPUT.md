@@ -86,5 +86,5 @@ into the random words), as if the DOS clock had been set before the run. With
 a feed present at start and the clock pinned, two runs of one script are
 byte-identical.
 
-The interface changes neither jump physics nor the approved default
-`cpu_cycles_per_ms=2500`.
+The interface changes neither jump physics nor the combat tick length
+(`combat_tick_ms`, docs/CPU_TIMING_PROFILE.md).

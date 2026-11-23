@@ -51,7 +51,8 @@ The real campaign/launcher chain reaches briefing, movement, firing and combat
 return. Campaign travel, Bar/recruitment, contracts, Mech repair/rearm and trading
 are connected. A local Support-pilot defence victory was recorded; that does not
 certify the full campaign, all scenarios, adapters or audiovisual fidelity.
-The approved default speed remains **2500 reference CPU cycles/ms**.
+Combat runs at a fixed **60 ms per tick** at 1x, with the main-row `-` and `=` keys
+for 2x to 4x ([game speed](docs/CPU_TIMING_PROFILE.md)).
 Campaign music also supports [MT-32 and AdLib](docs/AUDIO.md), with user-provided
 ROMs required for MT-32. Combat initializes the selected card but retains the
 original speaker effects supplied by its sound bank.

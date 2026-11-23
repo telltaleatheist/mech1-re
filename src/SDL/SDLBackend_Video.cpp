@@ -34,7 +34,7 @@ void MwSdlSetVideoMode(uint8_t mode)
         MwSdlResetCombatVideoHardware();
         for (uint8_t i=0;i<16;++i) paletteCodes[i]=(i&7)|((i&8)?0x10:0);
         paletteCodes[16]=EGA_PALETTE_BLACK;haveFrame=false;
-        MwSdlResetCombatCpu();
+        MwSdlResetCombatTick();
     }
 }
 uint8_t MwSdlGetVideoMode(void) {return videoMode;}
@@ -113,6 +113,15 @@ static void Render(void)
     if (!SDL_SetRenderDrawColor(renderer,0,0,0,255) || !SDL_RenderClear(renderer)
         || !SDL_RenderTexture(renderer,texture,NULL,NULL)) MwSdlFail("Render EGA texture");
 }
+/* A small boxed line at the top right of the 320x200 frame (SDL's 8x8 font). */
+static void DrawNotice(const char *text)
+{
+    float width=(float)(strlen(text)*SDL_DEBUG_TEXT_FONT_CHARACTER_SIZE),x=(float)EGA_COLUMNS-width-6.0f,y=4.0f;
+    SDL_FRect box={x-3.0f,y-3.0f,width+6.0f,(float)SDL_DEBUG_TEXT_FONT_CHARACTER_SIZE+6.0f};
+    if (!SDL_SetRenderDrawColor(renderer,0,0,0,255) || !SDL_RenderFillRect(renderer,&box)
+        || !SDL_SetRenderDrawColor(renderer,255,255,85,255) || !SDL_RenderDebugText(renderer,x,y,text))
+        MwSdlFail("Draw the speed notice");
+}
 void MwSdlPresentVideo(bool force)
 {
     if (!renderer || presenting || videoMode!=EGA_BIOS_MODE_320X200) return;
@@ -126,11 +135,18 @@ void MwSdlPresentVideo(bool force)
         if (displayedIndices[pixel]!=index) changed=true;
         displayedIndices[pixel]=index;
     }
+    /* The speed notice is drawn over the frame at present time only: captures
+     * and trace frames (displayedIndices) never contain it. */
+    static bool noticeShown;
+    char notice[32];bool showNotice=mwSdlCombatActive && MwSdlCombatSpeedNotice(notice,sizeof(notice));
+    if (showNotice!=noticeShown) changed=true;
     if (!changed) return;
     presenting=true;
     for (uint32_t pixel=0;pixel<EGA_COLUMNS*EGA_ROWS;++pixel) rgbaPixels[pixel]=Mode0dColour(paletteCodes[displayedIndices[pixel]]);
     if (!SDL_UpdateTexture(texture,NULL,rgbaPixels,EGA_COLUMNS*sizeof(uint32_t))) MwSdlFail("Upload EGA texture");
     Render();
+    if (showNotice) DrawNotice(notice);
+    noticeShown=showNotice;
     if (!SDL_RenderPresent(renderer)) MwSdlFail("Present EGA texture");
     lastPage=displayOffset;memcpy(lastPalette,paletteCodes,sizeof(lastPalette));haveFrame=true;
     if (mwSdlFrameObserver) mwSdlFrameObserver();

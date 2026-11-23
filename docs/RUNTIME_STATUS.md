@@ -1,7 +1,8 @@
 # Runtime status
 
 The Windows x64 EGA/PC-speaker build is experimentally playable, not a completed
-campaign release. The approved default remains `cpu_cycles_per_ms=2500`.
+campaign release. Combat runs at a fixed `combat_tick_ms=60` per tick at 1x, with
+speed keys for 2x to 4x (docs/CPU_TIMING_PROFILE.md).
 Campaign music can also use MT-32 (Munt, user-supplied ROMs) or AdLib (Nuked-OPL3).
 Both follow the original sequencing and have offline full-cue and dummy-SDL
 integration checks, including the real campaign debrief/death/ending branches

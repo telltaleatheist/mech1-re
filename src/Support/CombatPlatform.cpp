@@ -18,7 +18,7 @@ uint8_t (*btechHostSetInterrupts)(uint8_t);
 uint8_t (*btechHostReadInterrupts)(void);
 void (*btechHostDelayLoops)(uint16_t);
 void (*btechHostPollInterrupts)(void);
-void (*btechHostPaceCombatCpu)(void);
+void (*btechHostPaceCombatTick)(void);
 void (*btechHostNoteCombatInputPoll)(void);
 void (*btechHostChainTimerInterrupt)(uint32_t);
 uint8_t *(*btechHostAllocateParagraphs)(uint16_t,uint16_t *);

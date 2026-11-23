@@ -22,14 +22,14 @@ static void TraceDiagnosticFrame(void)
         || !playerUnitBinding->positionedLeftLeg) return;
     nextDiagnosticFrame=now+1000;
     const BtechPooledWorldObject *body=playerUnitBinding->positionedLeftLeg;
-    fprintf(stderr,"Combat time=%llu tick=%u position=%ld,%ld step=%d pose=%u/%u gait=%u sound=%u timerLagMs=%.2f audioQueueMs=%u cpuCycles=%llu lateAudioFrames=%llu underrunFrames=%llu\n",
+    fprintf(stderr,"Combat time=%llu tick=%u position=%ld,%ld step=%d pose=%u/%u gait=%u sound=%u timerLagMs=%.2f audioQueueMs=%u tickMs=%.1f speed=%u lateAudioFrames=%llu underrunFrames=%llu\n",
         (unsigned long long)now,combatTickCounter,
         (long)(int32_t)body->object.prefix.position.positionA,
         (long)(int32_t)body->object.prefix.position.positionB,
         body->forwardStepScale,playerPoseSequence,playerPoseFrame,
         playerPoseDistanceAccumulator,combatSoundEnabled,
         MwSdlTimerLagMilliseconds(),MwSdlQueuedAudioMilliseconds(),
-        (unsigned long long)MwSdlLastCombatCpuCycles(),(unsigned long long)MwSdlLateAudioFrames(),
+        (double)MwSdlCombatTickNanoseconds()/1e6,(unsigned)mwSdlCombatSpeed,(unsigned long long)MwSdlLateAudioFrames(),
         (unsigned long long)MwSdlAudioUnderrunFrames());
     for (uint16_t slot=1;slot<COMBAT_MECH_SLOTS;++slot)
     {
@@ -103,8 +103,11 @@ int main(int argc,char **argv)
         timingPath=defaultTimingPath;
     }
     if (!MwSdlLoadTimingConfiguration(timingPath,optionalTiming))
-    {fprintf(stderr,"Invalid MechWarrior configuration: %s (CPU rate, sound system or ROM path).\n",timingPath);return 2;}
-    printf("Reference CPU budget: %u cycles/ms; PIT/audio retain hardware rate.\n",mwSdlCpuCyclesPerMillisecond);
+    {fprintf(stderr,"Invalid MechWarrior configuration: %s (combat tick, speed, sound system or ROM path).\n",timingPath);return 2;}
+    if (!MwSdlLoadUserConfiguration())
+    {fprintf(stderr,"Invalid player configuration: MechWarrior.ini in the save directory (combat tick, speed, sound system or ROM path).\n");return 2;}
+    printf("Combat tick: %u ms at 1x, speed %ux (- and + in combat); PIT/audio keep hardware rate.\n",
+        mwSdlCombatTickMs,(unsigned)mwSdlCombatSpeed);
     fflush(stdout); /* Keep startup information live when the launcher logs it. */
     if (!MwSdlInitialize(argv[1],argc==3?argv[2]:"."))
     {fprintf(stderr,"Cannot initialize the private installation/SDL: %s\n",SDL_GetError());return 1;}
