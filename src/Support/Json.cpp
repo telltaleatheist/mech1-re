@@ -1,7 +1,10 @@
 #include "Json.h"
 
 #include <algorithm>
+#include <cerrno>
 #include <charconv>
+#include <cstdlib>
+#include <string>
 #include <cstdio>
 
 namespace mw1o::support {
@@ -223,8 +226,20 @@ private:
             fail("a number with a leading zero");
         }
         double d = 0;
+#if defined(__APPLE__)
+        // Apple's libc++ has from_chars for double only from macOS 26, and the
+        // Mac package targets macOS 12: strtod reads the same number, already
+        // checked above, in the C locale (the program never calls setlocale).
+        const std::string number(t_.substr(start, i_ - start));
+        char *end = nullptr;
+        errno = 0;
+        d = std::strtod(number.c_str(), &end);
+        const bool read = end == number.c_str() + number.size() && errno != ERANGE;
+#else
         const auto r = std::from_chars(t_.data() + start, t_.data() + i_, d);
-        if (r.ec != std::errc() || r.ptr != t_.data() + i_) {
+        const bool read = r.ec == std::errc() && r.ptr == t_.data() + i_;
+#endif
+        if (!read) {
             i_ = start;
             fail("bad number");
         }
