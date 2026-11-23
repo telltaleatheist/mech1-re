@@ -97,7 +97,8 @@ def main():
     check(not os.path.exists(os.path.join(user, "install")), "break: nothing installed from it")
 
     # The setup screen, hidden: MW1's header and theme; no picker (unattended), a check's answer stands in.
-    alone = dict(HOME=home, APPDATA=home, XDG_DATA_HOME=os.path.join(home, "share"))  # FIND's search finds nothing
+    # FIND's search finds nothing; the screen on SDL's dummy driver (offscreen needs GL for a window on a Mac).
+    alone = dict(HOME=home, APPDATA=home, XDG_DATA_HOME=os.path.join(home, "share"), SDL_VIDEO_DRIVER="dummy")
     screen = dict(env, **alone, REKIT_SETUP_FRAMES="5", REKIT_SETUP_FIND="1", REKIT_SETUP_GO="1",
                   REKIT_SETUP_PICKER="path:" + os.path.join(notgame, "README.TXT"))
     p, _ = run(a.program, ["--setup"], screen)
