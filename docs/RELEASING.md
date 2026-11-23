@@ -31,17 +31,73 @@ Linux requires compatible system C/C++ runtime, desktop and audio libraries.
 - `MechWarrior.ini`, `LICENSE`, a `README.txt` and the licence notices.
 
 No original game files, saves, story files or synthesizer ROMs are packaged.
-The player supplies their own copy of the game as the first argument. On the
-first run the game reads that copy's programs once (MW_MAIN.EXE, BTECH.EXE and
-MW_EGA.EXE, in a revision `SUPPORTED_VERSIONS.md` lists) and writes a
-`story/` folder into the save directory; from then on it plays from `story/`,
-`data/` and the game's resource files, and never opens a program
+On the first run the game reads the player's copy's programs once (MW_MAIN.EXE,
+BTECH.EXE and MW_EGA.EXE, in a revision `SUPPORTED_VERSIONS.md` lists) and
+writes a `story/` folder into the save directory; from then on it plays from
+`story/`, `data/` and the game's resource files, and never opens a program
 (`docs/phase2/PLAN.md` section 9).
+
+## Starting without a game folder
+
+An installed copy is started with no arguments (a shortcut, a double-click).
+The game folder is then the `game_folder` line of the player's own
+`MechWarrior.ini` (in the save directory), or, the first time, the one the
+player picks in a folder dialog: it must hold `MW_MAIN.EXE` until the story
+is imported, and the game remembers it. The log (`mechwarrior.log`) and F12
+captures go beside the saves. Deleting the `game_folder` line asks again.
+With a game folder on the command line nothing changes.
+
+The save directory is `MECHWARRIOR_SAVE_DIRECTORY`, or SDL's per-user folder:
+`%APPDATA%\BattleTechReverse\MechWarrior` on Windows,
+`~/Library/Application Support/BattleTechReverse/MechWarrior` on macOS and
+`~/.local/share/BattleTechReverse/MechWarrior` on Linux. Nothing is written
+into the install folder.
+
+## Names and installers
+
+A release is tagged `mw1r-vX.Y.Z`, only when the project decides to; the
+label below is that tag (or any other name for a test build). Each platform's
+files are named `MW1-Rebuild-<label>-...`:
+
+| Platform | Made on | Files |
+|---|---|---|
+| Windows x64 | Windows, MSVC | `-win64.zip`, and with `--installer` `-Setup.exe` (Inno Setup) |
+| macOS | a Mac | `-mac.dmg` (`MechWarrior 1 Rebuild.app`, signed ad hoc), this Mac's architecture |
+| Linux x86-64 | Linux or WSL | `-linux-x86_64.tar.gz`, and with `--installer` `-x86_64.AppImage` |
+
+    python tools/build_package.py --sdl SDL_SOURCE --label LABEL [--game GAME] [--installer] [--appimage-tools DIR]
+
+- **Windows**: the program is linked as a GUI program
+  (`MECHWARRIOR_WINDOWS_GUI`), so no console window opens, with its icon
+  (`tools/package/mechwarrior.ico`). `--installer` runs Inno Setup's `iscc`
+  (on the PATH, scoop's `extras/inno-setup`, or Program Files) on
+  `tools/package/installer.iss`. Setup installs to
+  `Program Files\MechWarrior 1 Rebuild` (or "only for me"), with Start-menu
+  and desktop shortcuts and an uninstaller that leaves the save directory. Its
+  AppId is this project's own and stays the same every version, so a new
+  Setup upgrades in place.
+- **macOS**: the libraries go to `Contents/Frameworks` named `@rpath`, `data/`
+  and `MechWarrior.ini` to `Contents/Resources` (SDL's base path); the
+  libraries, the program and the app are signed ad hoc with
+  `tools/package/mechwarrior.entitlements` and checked with
+  `codesign --verify --deep --strict`. The dmg holds the app, a link to
+  Applications and the read-me. Unsigned by a developer identity: the first
+  start needs right-click, Open.
+- **Linux**: `--appimage-tools DIR` names the folder with
+  `linuxdeploy-x86_64.AppImage` and `appimagetool-x86_64.AppImage`. The
+  AppImage holds `usr/bin/mechwarrior` with `data/` and `MechWarrior.ini`
+  beside it, and the notices in `usr/share/doc/mechwarrior`.
+
+Every installer's contents pass `tools/package/check_paths.py`: no local path
+or user name in any file. Each file gets a `.sha256` beside it; for a release,
+`python3 -I tools/package/sums.py <folder>` writes one `SHA256SUMS` over all
+the platforms' files.
 
 ## The smoke test
 
 Packaging ends by extracting the archive and starting the program from it:
-- with no arguments it must print its usage;
+- with `--help` it must print its usage (a start with no arguments asks for
+  the game folder);
 - with a game folder (`--game DIR`, or `MW1O_GAME`), it also runs the first
   run headless from an empty save directory and must import the story and
   reach the game's first input wait before it is stopped. The game folder is

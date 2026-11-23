@@ -9,6 +9,7 @@ game is granted and no claim of ownership of recovered game material is made.
 | Reconstructed game procedures, recovered text and tables, annotations | Original-rights/research material; excluded from the MIT grant |
 | Documentation screenshots | Original-rights artwork; identification/documentation only, excluded from MIT |
 | Independently drawn `docs/images/title-banner.svg` | Project-authored graphic; MIT, no trademark rights granted |
+| The program icon, `tools/package/mechwarrior.png` and `.ico` | The MW1 remake's own badge (no game artwork), used with the project's leave; no trademark rights granted |
 | User installations, extracted media and private evidence | Not distributed; ignored local input/output |
 | SDL3 | zlib licence, supplied separately; see [third-party notices](../THIRD_PARTY_NOTICES.md) |
 | Munt libmt32emu | LGPL-2.1-or-later; separate shared library, excluded from MIT |

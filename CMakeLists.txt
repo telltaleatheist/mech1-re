@@ -11,6 +11,32 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# A package build (tools/build_package.py) keeps the build machine's folders
+# out of the program: __FILE__ in failsafes and in SDL's asserts names
+# mech1-re/, SDL/ and build/ instead, and on Windows the PDB is named without
+# its folder (tools/package/check_paths.py checks every shipped file). It must
+# come before any target, SDL's and the audio libraries' included.
+option(MECHWARRIOR_TRIM_PATHS "Name source files relative to the tree in the program (packages)" OFF)
+if(MECHWARRIOR_TRIM_PATHS)
+    set(mechwarrior_path_maps "${CMAKE_SOURCE_DIR}=mech1-re")
+    if(MECHWARRIOR_SDL_SOURCE_DIR)
+        list(APPEND mechwarrior_path_maps "${MECHWARRIOR_SDL_SOURCE_DIR}=SDL")
+    endif()
+    list(APPEND mechwarrior_path_maps "${CMAKE_BINARY_DIR}=build")  # last: it may sit inside the tree, and the last match wins
+    foreach(path_map IN LISTS mechwarrior_path_maps)
+        string(REGEX REPLACE "=.*" "" from "${path_map}")
+        if(MSVC)
+            file(TO_NATIVE_PATH "${from}/" native_from)
+            add_compile_options("/d1trimfile:${native_from}" "/d1trimfile:${from}/")
+        else()
+            add_compile_options("-ffile-prefix-map=${path_map}")
+        endif()
+    endforeach()
+    if(MSVC)
+        add_link_options("/PDBALTPATH:%_PDB%")
+    endif()
+endif()
+
 add_library(mechwarrior_original STATIC
     src/Original/campaign_graphics.cpp
     src/Original/Campaign/MW_MAIN_081B.cpp
@@ -315,6 +341,17 @@ if(MECHWARRIOR_BUILD_SDL)
     target_include_directories(mechwarrior_sdl PRIVATE src/SDL)
     add_executable(mechwarrior src/SDL/SDLMain.cpp)
     target_link_libraries(mechwarrior PRIVATE mechwarrior_sdl)
+    if(WIN32)
+        # The icon Explorer, the taskbar and the installer's shortcuts show.
+        target_sources(mechwarrior PRIVATE tools/package/mechwarrior.rc)
+    endif()
+    # A package's program opens no console window (tools/build_package.py
+    # sets it). It still writes to redirected stdout/stderr, and a start
+    # without a game folder logs to mechwarrior.log beside the saves.
+    option(MECHWARRIOR_WINDOWS_GUI "Windows: link mechwarrior as a GUI program (no console)" OFF)
+    if(MSVC AND MECHWARRIOR_WINDOWS_GUI)
+        target_link_options(mechwarrior PRIVATE /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup)
+    endif()
     # Our data/ (the rules) beside the program, where the game looks for it;
     # copied on every build so an edited file is picked up.
     add_custom_target(mechwarrior_data ALL

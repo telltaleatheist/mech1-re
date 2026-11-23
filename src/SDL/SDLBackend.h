@@ -56,6 +56,10 @@ bool MwSdlLoadTimingConfiguration(const char *path,bool optional);
 bool MwSdlResolveWriteDirectory(char *directory,size_t size);
 bool MwSdlLoadUserConfiguration(void);
 void MwSdlSaveUserSetting(const char *key,unsigned value);
+void MwSdlSaveUserText(const char *key,const char *value);
+/* game_folder: the player's MW1 folder, chosen once with a folder dialog when
+ * the program starts without one (an installed copy, double-clicked). */
+extern char mwSdlGameFolder[4096];
 void MwSdlSetInterrupts(bool enabled);
 void MwSdlInstallCampaignInterrupts(void);
 void MwSdlRestoreCampaignInterrupts(void);

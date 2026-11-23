@@ -6,7 +6,7 @@
 #include <string.h>
 
 MwHostSoundSystem mwSdlSoundSystem=MW_SOUND_SPEAKER;
-char mwSdlMt32ControlRom[4096],mwSdlMt32PcmRom[4096];
+char mwSdlMt32ControlRom[4096],mwSdlMt32PcmRom[4096],mwSdlGameFolder[4096];
 enum { HOST_MIN_COMBAT_TICK_MS=20,HOST_MAX_COMBAT_TICK_MS=500 };
 static char userConfigurationPath[4096];
 
@@ -24,8 +24,8 @@ bool MwSdlLoadTimingConfiguration(const char *path,bool optional)
 {
     FILE *file=fopen(path,"r");
     if (!file) return optional && errno==ENOENT;
-    char line[8192],controlRom[4096],pcmRom[4096];
-    strcpy(controlRom,mwSdlMt32ControlRom);strcpy(pcmRom,mwSdlMt32PcmRom);
+    char line[8192],controlRom[4096],pcmRom[4096],gameFolder[4096];
+    strcpy(controlRom,mwSdlMt32ControlRom);strcpy(pcmRom,mwSdlMt32PcmRom);strcpy(gameFolder,mwSdlGameFolder);
     uint32_t tickMs=mwSdlCombatTickMs;uint8_t speed=mwSdlCombatSpeed;
     MwHostSoundSystem soundSystem=mwSdlSoundSystem;
     bool valid=true;
@@ -53,6 +53,11 @@ bool MwSdlLoadTimingConfiguration(const char *path,bool optional)
         {
             if (!ParseWhole(value,MW_COMBAT_SPEED_MIN,MW_COMBAT_SPEED_MAX,&number)) {valid=false;break;}
             speed=(uint8_t)number;
+        }
+        else if (!strcmp(key,"game_folder"))
+        {
+            if (strlen(value)>=sizeof(gameFolder)) {valid=false;break;}
+            strcpy(gameFolder,value);
         }
         else if (!strcmp(key,"cpu_cycles_per_ms")) /* The old cycle model's key: ignored. */
             fprintf(stderr,"%s: cpu_cycles_per_ms is no longer used; combat_tick_ms sets the combat speed.\n",path);
@@ -88,7 +93,7 @@ bool MwSdlLoadTimingConfiguration(const char *path,bool optional)
     if (valid)
     {
         mwSdlCombatTickMs=tickMs;mwSdlCombatSpeed=speed;mwSdlSoundSystem=soundSystem;
-        strcpy(mwSdlMt32ControlRom,controlRom);strcpy(mwSdlMt32PcmRom,pcmRom);
+        strcpy(mwSdlMt32ControlRom,controlRom);strcpy(mwSdlMt32PcmRom,pcmRom);strcpy(mwSdlGameFolder,gameFolder);
     }
     return valid;
 }
@@ -105,9 +110,12 @@ bool MwSdlLoadUserConfiguration(void)
     {userConfigurationPath[0]=0;return false;}
     return MwSdlLoadTimingConfiguration(userConfigurationPath,true);
 }
-/* Replace (or add) one key's line, keeping the player's other lines. */
 void MwSdlSaveUserSetting(const char *key,unsigned value)
+{char text[16];snprintf(text,sizeof(text),"%u",value);MwSdlSaveUserText(key,text);}
+/* Replace (or add) one key's line, keeping the player's other lines. */
+void MwSdlSaveUserText(const char *key,const char *value)
 {
+    if (strchr(value,'\n') || strchr(value,'\r')) return;
     if (!userConfigurationPath[0]) return;
     static char text[65536];size_t used=0;
     size_t keyLength=strlen(key);
@@ -123,7 +131,7 @@ void MwSdlSaveUserSetting(const char *key,unsigned value)
             const char *after=start+keyLength;
             bool match=!strncmp(start,key,keyLength);
             while (match && (*after==' ' || *after=='\t')) ++after;
-            int written=match && *after=='='?snprintf(text+used,sizeof(text)-used,"%s=%u\n",key,value)
+            int written=match && *after=='='?snprintf(text+used,sizeof(text)-used,"%s=%s\n",key,value)
                 :snprintf(text+used,sizeof(text)-used,"%s",line);
             if (match && *after=='=') replaced=true;
             if (written<0 || (size_t)written>=sizeof(text)-used) {fclose(file);fprintf(stderr,"%s: too long to update.\n",userConfigurationPath);return;}
@@ -133,7 +141,7 @@ void MwSdlSaveUserSetting(const char *key,unsigned value)
     }
     if (!replaced)
     {
-        int written=snprintf(text+used,sizeof(text)-used,"%s=%u\n",key,value);
+        int written=snprintf(text+used,sizeof(text)-used,"%s=%s\n",key,value);
         if (written<0 || (size_t)written>=sizeof(text)-used) return;
         used+=(size_t)written;
     }
