@@ -7,6 +7,7 @@
 //     btech_image GAME/BTECH.EXE > image
 #include "mechwarrior/combat_installation.h"
 
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
