@@ -331,10 +331,16 @@ if(MECHWARRIOR_BUILD_SDL)
     # folder or an archive, the launcher contract (--status, --setup). It reads archives through libarchive with
     # zlib and liblzma, static in packages (built from pinned sources, as mech3-re's), else the system's; without
     # it setup reads folders only.
+    # tools/deps/build_archive.sh's prefix first (mac or linux), then tools/windows/build_deps_archive.cmd's.
+    if(APPLE)
+        set(MECHWARRIOR_DEPS_PLATFORM mac)
+    else()
+        set(MECHWARRIOR_DEPS_PLATFORM linux)
+    endif()
     find_path(MECHWARRIOR_LIBARCHIVE_INCLUDE archive.h
-              HINTS "${CMAKE_SOURCE_DIR}/deps/archive/include" /opt/homebrew/opt/libarchive/include /usr/local/opt/libarchive/include)
+              HINTS "${CMAKE_SOURCE_DIR}/deps/archive/include" "${CMAKE_SOURCE_DIR}/build-deps/${MECHWARRIOR_DEPS_PLATFORM}/prefix/include" /opt/homebrew/opt/libarchive/include /usr/local/opt/libarchive/include)
     find_library(MECHWARRIOR_LIBARCHIVE_LIB NAMES archive archive_static
-                 HINTS "${CMAKE_SOURCE_DIR}/deps/archive/lib" /opt/homebrew/opt/libarchive/lib /usr/local/opt/libarchive/lib)
+                 HINTS "${CMAKE_SOURCE_DIR}/deps/archive/lib" "${CMAKE_SOURCE_DIR}/build-deps/${MECHWARRIOR_DEPS_PLATFORM}/prefix/lib" /opt/homebrew/opt/libarchive/lib /usr/local/opt/libarchive/lib)
     if(MECHWARRIOR_LIBARCHIVE_INCLUDE AND MECHWARRIOR_LIBARCHIVE_LIB)
         set(REKIT_LIBARCHIVE_INCLUDE "${MECHWARRIOR_LIBARCHIVE_INCLUDE}" CACHE PATH "" FORCE)
         set(REKIT_LIBARCHIVE_LIB "${MECHWARRIOR_LIBARCHIVE_LIB}" CACHE FILEPATH "" FORCE)
