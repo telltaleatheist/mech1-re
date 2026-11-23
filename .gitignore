@@ -1,4 +1,6 @@
 /build*/
+# Packages and installers (tools/build_package.py).
+/dist/
 **/bin/
 **/obj/
 **/__pycache__/
