@@ -5,3 +5,7 @@
 *.md text eol=lf
 *.cmd text eol=crlf
 *.bat text eol=crlf
+# The soundfont's licence texts are kept byte for byte (tools/soundfont/subset.py check).
+data/music/FluidR3_GM-*.txt -text
+# Vendored files are kept byte for byte (extern/TinySoundFont/PROVENANCE.md).
+extern/TinySoundFont/** -text

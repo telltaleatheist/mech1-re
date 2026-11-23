@@ -85,6 +85,14 @@ Packages link libarchive, zlib and liblzma statically, built from pinned
 sources: `tools/deps/build_archive.sh mac|linux` (into `build-deps/`) and
 `tools/windows/build_deps_archive.cmd` (into `deps\archive`, clang-cl).
 
+The music soundfont is cut from FluidR3 GM at build time. Its pinned source
+is fetched once per machine, beside the libarchive step:
+`tools/deps/fetch_soundfont.sh` (Windows: `python tools\soundfont\subset.py
+fetch`), into `build-deps/soundfont`, or `MW1O_SOUNDFONT_SOURCE` names a copy.
+Configure refuses without it; the build never downloads. A package without
+the subset hashing as `data/music/soundfont_subset.sha256` pins, or without
+its `COPYING` and `README`, is refused.
+
 ## Names and installers
 
 A release is tagged `mw1r-vX.Y.Z`, only when the project decides to; the

@@ -42,6 +42,13 @@ jobs:
           apt_options=(-o Acquire::Retries=2 -o Acquire::https::Timeout=20 -o Acquire::http::Timeout=20)
           sudo apt-get "${apt_options[@]}" update --error-on=any
           sudo apt-get "${apt_options[@]}" install -y build-essential pkg-config libasound2-dev libpulse-dev libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev libxkbcommon-dev libdrm-dev libgbm-dev libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev libdbus-1-dev libudev-dev libwayland-dev wayland-protocols libdecor-0-dev libpipewire-0.3-dev
+      - name: The music soundfont's pinned source (tools/deps/fetch_soundfont.sh)
+        uses: actions/cache@v4
+        with:
+          path: build-deps/soundfont
+          key: soundfont-2621acaa1c78e4abdb24bdd163230cc577e61276936d6aa6e3180582142f0343
+      - name: Fetch the soundfont source if not cached
+        run: python tools/soundfont/subset.py fetch
       - name: Test archive packaging
         run: python -m unittest discover -s tools -p test_build_package.py -v
       - name: Build and verify extracted runtime package

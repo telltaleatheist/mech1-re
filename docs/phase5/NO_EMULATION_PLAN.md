@@ -81,13 +81,16 @@ That is game behaviour, and it stays.
 
 **What changes is below it.** Today the sequencer feeds an OPL register driver or an MPU byte queue. In the rebuild it hands its channel events (note on and off, velocity, controllers, pitch bend) to a new `mw1o::audio::Music`, each timestamped in game milliseconds. `Music` renders them with **TinySoundFont** (MIT, one header, SF2) from a bundled soundfont.
 
-**Instruments.** The songs carry no Program Change. The MT-32 version sets custom timbres by SysEx, and the AdLib version sets 11-byte FM instruments by its own records, so neither maps to General MIDI by itself. The rebuild therefore carries **our own instrument table**: per song and channel, a GM program, a level and a pan, plus a drum-key map for the rhythm channel.
+**Instruments.** The songs carry no Program Change. The MT-32 version picks the MT-32's built-in timbres for its parts by SysEx (S2 found preset timbres, not custom ones), and the AdLib version sets 11-byte FM instruments by its own records, so neither maps to General MIDI by itself. S2's provisional programs are the nearest GM program to each built-in timbre (`data/music/soundfont_programs.txt`). The rebuild therefore carries **our own instrument table**: per song and channel, a GM program, a level and a pan, plus a drum-key map for the rhythm channel.
 - It is chosen by listening against the original's MT-32 and AdLib versions.
 - It is project data: numbers only, no text from the game.
 
-**Soundfont.** FluidR3 Mono GM (MIT, as secondary sources state: Frank Wen's FluidR3 GM, converted to mono by Michael Cowgill). It ships as a **subset holding only the programs the table uses**, which is expected to be a few MB.
-- **Licence, confirmed at the source (S2).** S2 confirms the licence from the pinned upstream file's own licence text, not from secondary sources. The package carries that text beside the bank. If the Mono conversion's terms differ from FluidR3 GM's MIT, S2 stops and the lead decides before another bank is chosen.
-- A small tool of our own builds the subset from the pinned upstream file, so the package doesn't carry the whole bank.
+**Soundfont.** FluidR3 GM (MIT, © 2000-2002, 2008 Frank Wen), the SF2 in Debian's fluid-soundfont 3.1 upstream tarball. It ships as a **subset holding only the programs the table uses**.
+- **Licence, confirmed at the source (S2).** The tarball carries Frank Wen's `COPYING`, the MIT grant, and his `README`, which credits the samples to public-domain sources, his own recordings and named contributors, all released under that MIT grant. No sample source is credited under other terms. Both texts are kept verbatim in `data/music` and copied into the package's `licenses` folder. Debian's own packaging (`debian/*`, GPL-2+) is not used.
+- **Pinned and fetched once.** The tarball is pinned by its SHA-256 and a snapshot.debian.org URL. `tools/deps/fetch_soundfont.sh` fetches it once per machine into `build-deps/`, as `build_archive.sh` does libarchive's sources. A build or a player's install never downloads: configure refuses without the source.
+- **Generated, not committed.** Our tool (`tools/soundfont/subset.py`) cuts the subset from the pinned bank at build time. The repo holds the program list, the subset's SHA-256 and the licence texts, and the build refuses a subset that hashes otherwise. A ctest proves through TinySoundFont that every kept program has the full bank's regions and sample points.
+- **Size.** S2's 12 provisional programs and the standard kit come to 34.6 MiB, because the bank is stereo throughout and the kit alone is 10.6 MiB. That was too large to commit, hence the fetch. Cutting to the keys the songs play (about 16 MiB) or downmixing to mono are left for R, checked by listening, because the instrument table changes in S4 and pitch bends can reach outside today's note ranges.
+- **Not FluidR3 Mono.** Michael Cowgill's mono conversion is also MIT, but it is published only as SF3 (MuseScore, Debian's fluidr3mono-gm-soundfont). Its SF2 exists only behind a forum's file-sharing link, which can't be pinned.
 - SF2, not SF3, so TinySoundFont needs no Vorbis decoder.
 - GeneralUser GS was considered and not chosen. Its licence allows bundling, but its samples' provenance is uncertain, and Debian has declined it for that reason.
 
@@ -209,8 +212,9 @@ These events survive every slice in both groups, so later slices compare against
 | **Nuked-OPL3** | **LGPL-2.1-or-later** | AdLib option today | **no: removed by slice S9** |
 | **Munt libmt32emu** | **LGPL-2.1-or-later** | MT-32 option today | **no: removed by slice S9** |
 | Roland MT-32 ROMs | proprietary, supplied by the player, never shipped | MT-32 option today | removed with Munt |
-| TinySoundFont | MIT | music synthesis (new) | yes |
-| FluidR3 Mono GM, subset | MIT | music instruments (new) | yes |
+| TinySoundFont (a3621a1) | MIT | music synthesis (new), `extern/TinySoundFont` | yes |
+| FluidR3 GM 3.1, subset | MIT | music instruments (new): cut at build time from the pinned SF2, fetched once (`tools/deps/fetch_soundfont.sh`) | yes |
+| *FluidR3 Mono GM* | *MIT* | *not used: SF3 only; its SF2 can't be pinned* | yes |
 | *miniaudio* | *public domain or MIT-0* | *not used: SDL3 covers output* | yes |
 | *GeneralUser GS* | *its own licence; sample provenance uncertain* | *not used* | *not chosen* |
 
@@ -236,7 +240,7 @@ Every slice below is its own branch with the full gate green: both setups, the t
 | # | Slice | Check | Days |
 | --- | --- | --- | --- |
 | T1 | The game-event log beside each snap; the note log at the sequencer's output and the tone log at 2134's output; check.py compares all three. Goldens from today's port: the six campaign scripts, the combat scripts, every song (MECH, MECHBAR, LAUNCH, DEATH, VICTORY), the thirteen effects the game requests (0–8, 10, 11, 13, 14; 9 and 12 are in the bank but never requested). The songs' channel layout and rhythm channel confirmed | goldens reproduce run to run | 4 |
-| S2 | TinySoundFont vendored with its licence. The soundfont subset tool (our own) with tests: a subset holds exactly the listed programs and plays them the same as the full bank | tool tests; package licences | 2 |
+| S2 | TinySoundFont vendored with its licence. The soundfont subset tool (our own) with tests: a subset holds exactly the listed programs and plays them the same as the full bank. The pinned source is fetched once per machine; the build cuts the subset and refuses one that doesn't hash as pinned | tool tests; the subset's hash and render check; package licences | 2 |
 | S3 | `Music` behind `music=soundfont`, with a first instrument table. The listening list rendered to files in `outbox/<date>/mech1-re-listening/` with a one-page sheet (below) | note log identical | 3 |
 | G1 | `Canvas` and the RGB palette; the presenter takes a canvas page. The game still draws through the EGA model into it | frames identical | 2 |
 | G2 | Combat text and single pixels (2A36's glyph and pixel paths) through the canvas | frames identical | 2 |
@@ -290,8 +294,8 @@ Group B overlaps the fork plan's phases 3-6, which give the game's state its own
 
 ## 6. Risks
 
-1. **Instrument choice is taste.** No GM program is the MT-32's custom timbre. The table is chosen by ear, and the listening pass signs it off. Until then, S3's first table plays the right notes at the right times with provisional instruments.
-2. **Soundfont size.** The full FluidR3 Mono bank is large. The subset tool (S2) keeps the package small; S3 measures and states the subset's size.
+1. **Instrument choice is taste.** No GM program is exactly an MT-32 timbre. The table is chosen by ear, and the listening pass signs it off. Until then, S3's first table plays the right notes at the right times with provisional instruments.
+2. **Soundfont size.** The full FluidR3 GM bank is 148 MB; S2's subset is 34.6 MiB, stereo throughout. It is generated at build time, so the repo stays small, but the package carries it. If the package's size matters, R revisits key-range pruning or a mono downmix, with listening as the check.
 3. **Tone voice and the original speaker.** The original speaker's timbre came from the PC's speaker cone, not from a square-wave formula. The bar is the same pitches and timing (the tone log), not that hardware's sound.
 4. **Clock-derived BIOS ticks.** Game logic that reads the 18.2 Hz count (the title's length rule picks the start world) must see the same counts from the millisecond clock. The game-event log catches any difference exactly. Likewise the music clock depends on the combat tick's timing. The note log's timestamps catch any tempo drift exactly.
 5. **Players who used the MT-32 or AdLib options** lose them. That is the decision. MIDI out to a real device isn't emulation and could return later as an option, but it isn't in this plan.

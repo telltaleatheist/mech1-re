@@ -32,6 +32,13 @@ jobs:
           python-version: '3.12'
       - name: Install pinned CMake
         run: python -m pip install cmake==3.31.6
+      - name: The music soundfont's pinned source (tools/deps/fetch_soundfont.sh)
+        uses: actions/cache@v4
+        with:
+          path: build-deps/soundfont
+          key: soundfont-2621acaa1c78e4abdb24bdd163230cc577e61276936d6aa6e3180582142f0343
+      - name: Fetch the soundfont source if not cached
+        run: python tools/soundfont/subset.py fetch
       - name: Build and verify extracted runtime package
         env:
           PACKAGE_LABEL: ${{ inputs.label || github.sha }}

@@ -1,4 +1,5 @@
 """Exercise archive extraction/startup without downloading build dependencies."""
+import hashlib
 import os
 from pathlib import Path
 import subprocess
@@ -14,7 +15,7 @@ class PackageTests(unittest.TestCase):
         for name in ["LICENSE", "MechWarrior.ini", "docs/LICENSES/MIT.txt", "docs/NOTICE.md",
                      "docs/THIRD_PARTY_NOTICES.md", "sdl/LICENSE.txt",
                      "build/_deps/munt-src/mt32emu/COPYING.LESSER.txt", "build/_deps/nukedopl-src/LICENSE",
-                     "data/rules/units.json", "data/ui/hub.json", "extern/re-setup-kit/LICENSE",
+                     "data/rules/units.json", "data/ui/hub.json", "data/music/soundfont_programs.txt", "extern/re-setup-kit/LICENSE",
                      "extern/re-setup-kit/third_party/stb/LICENSE", "extern/re-setup-kit/third_party/miniz/LICENSE"]:
             file = root / name
             file.parent.mkdir(parents=True, exist_ok=True)
@@ -23,6 +24,12 @@ class PackageTests(unittest.TestCase):
         for name in ["libarchive-3.7.9/COPYING", "zlib-1.3.1/LICENSE", "xz-5.8.1/COPYING", "xz-5.8.1/COPYING.0BSD"]:
             (prefix / "share/licenses" / name).parent.mkdir(parents=True, exist_ok=True)
             (prefix / "share/licenses" / name).write_text("fixture licence")
+        music = root / "data/music"
+        for name in build_package.SOUNDFONT_LICENCES:
+            (music / name).write_text("fixture licence")
+        (root / "build/soundfont").mkdir(parents=True)
+        (root / "build/soundfont" / build_package.SOUNDFONT).write_bytes(b"fixture bank")
+        (music / "soundfont_subset.sha256").write_text(hashlib.sha256(b"fixture bank").hexdigest() + "  x\n")
         (root / "build/CMakeCache.txt").write_text(f"REKIT_LIBARCHIVE_LIB:FILEPATH={prefix / 'lib/libarchive.a'}\n")
         exe = root / "build/mechwarrior"
         exe.write_text('#!/bin/sh\n[ "$1" = --help ] && { echo "Usage: mw1r [<game folder>]"; exit 0; }\nexit 2\n')
@@ -48,6 +55,9 @@ class PackageTests(unittest.TestCase):
                 self.assertTrue((extracted / "licenses" / name).exists(), name)
             self.assertTrue((extracted / "data/rules/units.json").exists())
             self.assertTrue((extracted / "data/ui/hub.json").exists())
+            self.assertEqual((extracted / "data/music" / build_package.SOUNDFONT).read_bytes(), b"fixture bank")
+            for name in build_package.SOUNDFONT_LICENCES:
+                self.assertTrue((extracted / "licenses" / name).exists(), name)
             self.assertEqual(len(list((root / "dist").glob("*.sha256"))), 1)
 
     def test_missing_audio_library_blocks_packaging(self):
@@ -79,6 +89,22 @@ class PackageTests(unittest.TestCase):
                 else:
                     (root / "build/CMakeCache.txt").write_text("REKIT_LIBARCHIVE_LIB:FILEPATH=REKIT_LIBARCHIVE_LIB-NOTFOUND\n")
                 with patch.object(build_package, "run"), patch.object(build_package, "platform_name", return_value="linux-x86_64"), self.assertRaisesRegex(RuntimeError, "Missing (licence|libarchive)"):
+                    build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
+                self.assertFalse(list((root / "dist").glob("*.tar.gz")))
+
+    def test_missing_or_wrong_soundfont_blocks_packaging(self):
+        for broken in ("missing", "wrong", "licence"):
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                self.fixture(root)
+                bank = root / "build/soundfont" / build_package.SOUNDFONT
+                if broken == "missing":
+                    bank.unlink()
+                elif broken == "wrong":
+                    bank.write_bytes(b"another bank")
+                else:
+                    (root / "data/music" / build_package.SOUNDFONT_LICENCES[0]).unlink()
+                with patch.object(build_package, "run"), patch.object(build_package, "platform_name", return_value="linux-x86_64"), self.assertRaisesRegex(RuntimeError, "Missing soundfont|Soundfont .* hashes|Missing licence"):
                     build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
                 self.assertFalse(list((root / "dist").glob("*.tar.gz")))
 

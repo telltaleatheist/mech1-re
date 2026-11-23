@@ -391,10 +391,36 @@ if(MECHWARRIOR_BUILD_SDL)
     if(MSVC AND MECHWARRIOR_WINDOWS_GUI)
         target_link_options(mechwarrior PRIVATE /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup)
     endif()
-    # Our data/ (the rules) beside the program, where the game looks for it;
+    # The music soundfont (docs/phase5/NO_EMULATION_PLAN.md, S2): the programs in data/music/soundfont_programs.txt,
+    # cut from FluidR3 GM by tools/soundfont/subset.py and refused unless it hashes as data/music pins. Its source is
+    # fetched once per machine (tools/deps/fetch_soundfont.sh), as libarchive's is: a build never downloads.
+    find_package(Python3 REQUIRED COMPONENTS Interpreter)
+    if(NOT MECHWARRIOR_SOUNDFONT_SOURCE)
+        if(DEFINED ENV{MW1O_SOUNDFONT_SOURCE})
+            set(MECHWARRIOR_SOUNDFONT_SOURCE "$ENV{MW1O_SOUNDFONT_SOURCE}")
+        else()
+            set(MECHWARRIOR_SOUNDFONT_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/build-deps/soundfont/fluid-soundfont_3.1.orig.tar.gz")
+        endif()
+    endif()
+    if(NOT EXISTS "${MECHWARRIOR_SOUNDFONT_SOURCE}")
+        message(FATAL_ERROR "The music soundfont's source is missing: ${MECHWARRIOR_SOUNDFONT_SOURCE}\n"
+            "Fetch it once: tools/deps/fetch_soundfont.sh (Windows: python tools\\soundfont\\subset.py fetch), "
+            "or set MW1O_SOUNDFONT_SOURCE to a copy of fluid-soundfont_3.1.orig.tar.gz.")
+    endif()
+    set(MECHWARRIOR_SOUNDFONT "${CMAKE_CURRENT_BINARY_DIR}/soundfont/FluidR3_GM-subset.sf2")
+    add_custom_command(OUTPUT "${MECHWARRIOR_SOUNDFONT}"
+        COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tools/soundfont/subset.py" generate
+            --source "${MECHWARRIOR_SOUNDFONT_SOURCE}" --out "${MECHWARRIOR_SOUNDFONT}"
+        DEPENDS tools/soundfont/subset.py data/music/soundfont_programs.txt data/music/soundfont_subset.sha256
+            "${MECHWARRIOR_SOUNDFONT_SOURCE}"
+        COMMENT "Cutting the music soundfont from FluidR3 GM" VERBATIM)
+    add_custom_target(mechwarrior_soundfont DEPENDS "${MECHWARRIOR_SOUNDFONT}")
+    # Our data/ (the rules, the soundfont) beside the program, where the game looks for it;
     # copied on every build so an edited file is picked up.
     add_custom_target(mechwarrior_data ALL
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/data" "$<TARGET_FILE_DIR:mechwarrior>/data")
+        COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/data" "$<TARGET_FILE_DIR:mechwarrior>/data"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${MECHWARRIOR_SOUNDFONT}" "$<TARGET_FILE_DIR:mechwarrior>/data/music")
+    add_dependencies(mechwarrior_data mechwarrior_soundfont)
     add_dependencies(mechwarrior mechwarrior_data)
     add_custom_command(TARGET mechwarrior POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -428,6 +454,16 @@ if(MECHWARRIOR_BUILD_SDL)
             # song: and sound: (event-log test aids) stay out of the game checks.
             add_test(NAME feed_calls COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tools/trace/test_feed_calls.py")
             set_tests_properties(feed_calls PROPERTIES ENVIRONMENT "MW1O_FEED_PORT=$<TARGET_FILE:mechwarrior>" TIMEOUT 600)
+            # The soundfont subset: the tool on a bank it builds, then the real subset against the pinned source
+            # (its hash, its licence texts, and through TinySoundFont the same regions and samples as the full bank).
+            add_executable(soundfont_render_test tests/soundfont_render_test.cpp)
+            target_include_directories(soundfont_render_test SYSTEM PRIVATE extern/TinySoundFont)
+            target_compile_definitions(soundfont_render_test PRIVATE _CRT_SECURE_NO_WARNINGS)
+            add_test(NAME soundfont_subset COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tools/soundfont/test_subset.py"
+                --renderer $<TARGET_FILE:soundfont_render_test>)
+            add_test(NAME soundfont_bank COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tools/soundfont/subset.py"
+                check --source "${MECHWARRIOR_SOUNDFONT_SOURCE}" --renderer $<TARGET_FILE:soundfont_render_test>)
+            set_tests_properties(soundfont_bank PROPERTIES TIMEOUT 600)
         endif()
     endif()
     if(MSVC)

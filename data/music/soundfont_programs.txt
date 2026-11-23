@@ -1,0 +1,20 @@
+# The presets data/music/FluidR3_GM-subset.sf2 keeps: "bank program", 0-based
+# General MIDI program numbers, bank 128 for the percussion kits.
+# Regenerate with tools/soundfont/subset.py generate (docs/phase5/NO_EMULATION_PLAN.md, S2).
+#
+# Provisional (S2): for each MT-32 preset timbre the songs' playing parts
+# select, the General MIDI program nearest it. S3's first instrument table
+# and S4's listening choose from and change this list.
+0 36    # MT-32 preset B4, a slap bass
+0 40    # A53, a violin
+0 47    # B48, timpani
+0 48    # A50, a string section
+0 56    # B24, a trumpet
+0 60    # B28, a French horn
+0 62    # A24, a synth brass
+0 69    # B21, an English horn
+0 72    # B11, a piccolo
+0 73    # B8, a flute
+0 97    # A36, a soundtrack pad
+0 102   # A43, an echo effect
+128 0   # the rhythm part (channel 10): the standard kit

@@ -28,6 +28,14 @@ their pinned release sources and linked in statically
 licences are copied into the package's `licenses` folder, and a package
 without them is refused.
 
+The music soundfont is a subset of FluidR3 GM 3.1 (MIT, © 2000-2002, 2008
+Frank Wen), cut at build time from the SF2 in Debian's fluid-soundfont 3.1
+upstream tarball, pinned by its SHA-256 (`tools/soundfont/subset.py`). Its
+`COPYING` and `README`, which credits the samples' sources, are kept verbatim
+in `data/music` and copied into the package's `licenses` folder; a package
+without them is refused. The music is played through TinySoundFont (MIT,
+`extern/TinySoundFont`, with its licence and pinned commit).
+
 The setup screen comes from re-setup-kit (MIT, `extern/re-setup-kit`), which
 carries stb_truetype and stb_image (public domain or MIT, the reader's choice)
 and miniz's inflate (MIT); their licences are in the kit's `third_party`

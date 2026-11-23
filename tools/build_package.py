@@ -4,8 +4,8 @@
     build_package.py --smoke EXTRACTED_PACKAGE_DIR [--game GAME_DIR]
 
 The package holds the program, its libraries, our data/ (rules and screen
-layout, which play reads beside the program), the configuration and the
-notices; never the original game's files. The smoke test starts the
+layout, which play reads beside the program, and the music soundfont the
+build cuts), the configuration and the notices; never the original game's files. The smoke test starts the
 extracted archive: without arguments it must print its usage. With a game
 folder (--game, or MW1O_GAME) it also runs the first run headless from a
 scratch save directory and must import the story and reach the game's first
@@ -192,6 +192,28 @@ def archive_licences(build, notices):
         shutil.copy2(licences / source, notices / name)
 
 
+# The music soundfont the build cuts from FluidR3 GM (tools/soundfont/subset.py), and its licence texts.
+SOUNDFONT = "FluidR3_GM-subset.sf2"
+SOUNDFONT_LICENCES = ("FluidR3_GM-COPYING.txt", "FluidR3_GM-README.txt")
+
+
+def stage_soundfont(root, build, resources, notices):
+    """The build's soundfont into data/music, refused unless it hashes as data/music pins; its licences into `notices`."""
+    bank = build / "soundfont" / SOUNDFONT
+    if not bank.is_file():
+        raise RuntimeError(f"Missing soundfont: {bank} (fetch its source once: tools/deps/fetch_soundfont.sh)")
+    pinned = (root / "data/music/soundfont_subset.sha256").read_text(encoding="utf-8").split()[0]
+    digest = hashlib.sha256(bank.read_bytes()).hexdigest()
+    if digest != pinned:
+        raise RuntimeError(f"Soundfont {bank} hashes {digest}, data/music/soundfont_subset.sha256 pins {pinned}")
+    shutil.copy2(bank, resources / "data/music" / SOUNDFONT)
+    for name in SOUNDFONT_LICENCES:
+        source = root / "data/music" / name
+        if not source.is_file():
+            raise RuntimeError(f"Missing licence: {source}")
+        shutil.copy2(source, notices / name)
+
+
 def stage_common(root, build, sdl, resources):
     """The configuration, our data, the read-me and the notices, into `resources`
     (beside the program, or a Mac app's Contents/Resources)."""
@@ -206,6 +228,7 @@ def stage_common(root, build, sdl, resources):
         prefix = "SDL-" if source.parent == sdl else "Munt-" if source.name == "COPYING.LESSER.txt" else "Nuked-" if source.name == "LICENSE" else ""
         shutil.copy2(source, notices / (prefix + source.name))
     archive_licences(build, notices)
+    stage_soundfont(root, build, resources, notices)
     # The setup kit's own third-party code (stb, miniz): a package without their licences is refused.
     kit = root / "extern/re-setup-kit"
     for name, source in [("re-setup-kit-LICENSE", kit / "LICENSE"), ("stb-LICENSE", kit / "third_party/stb/LICENSE"),

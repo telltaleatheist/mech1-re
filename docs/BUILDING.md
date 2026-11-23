@@ -26,6 +26,20 @@ as its argument, for example your private `assets/original-game`; the launcher
 supports an external installation instead. See
 [original-game requirements](ORIGINAL_GAME.md).
 
+## The music soundfont
+
+A playable build cuts its music soundfont from FluidR3 GM, whose pinned
+source (135 MB) is fetched once per machine before the first configure:
+
+```sh
+tools/deps/fetch_soundfont.sh            # macOS, Linux, WSL
+python tools\soundfont\subset.py fetch   # Windows
+```
+
+It lands in `build-deps/soundfont`; `MW1O_SOUNDFONT_SOURCE` can name a copy
+instead. Configure refuses without it, and the build itself never downloads.
+See `tools/soundfont/subset.py`.
+
 ## Direct CMake
 
 ```sh
