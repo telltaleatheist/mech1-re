@@ -3,7 +3,9 @@
 Level 1 of the Phase 5 audio plan (`docs/phase5/AUDIO_PLAN.md`): an exact log
 of what the game sends to the sound hardware, recorded from the port before
 the synthesizers change. Every later audio slice must leave these logs
-identical.
+identical. The combat logs were re-recorded once, when the combat tick became
+a fixed 60 ms (`docs/timing/PLAN.md`): they match the old ones up to the
+first cockpit tick, and the music logs did not change.
 
     python3 tools/trace/audio.py check  --port build/mechwarrior --game ~/MECHWAR --work ~/mw1-audio
     python3 tools/trace/audio.py record --port build/mechwarrior --game ~/MECHWAR --work ~/mw1-audio
@@ -29,7 +31,7 @@ Each script in `scripts/` runs once per device (speaker, adlib, mt32) through
 - `MECHWARRIOR_DEBUG_VIRTUAL_CLOCK=1`: the port's PIT time normally follows
   the wall clock. Under this switch, time moves only where the port would
   wait:
-  - CPU-budget deadlines;
+  - each combat tick's fixed length (`combat_tick_ms` ÷ speed);
   - idle pumps, at 100 µs;
   - port reads, at 1 µs, so timing loops that count reads still see time
     pass.
