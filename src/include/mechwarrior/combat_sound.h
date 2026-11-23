@@ -36,8 +36,7 @@ extern uint32_t mpuProbePreviousIrq;
  * zero arena, game-memory registry or default IVT is installed by the port. */
 extern MwNativeByteView (*btechHostBorrowDosMemory)(uint16_t selector);
 enum { COMBAT_TONE_CHANNELS=8,COMBAT_SPEAKER_CHANNELS=4,COMBAT_TONE_HEADER_BYTES=8,
-    TONE_PIT_DATA_PORT=0x42,TONE_SPEAKER_GATE_PORT=0x61,TONE_TANDY_DATA_PORT=0xC0,
-    TONE_SPEAKER_GATE_BITS=3,TONE_STATE_FIELD_MASK=0x7E,
+    TONE_TANDY_DATA_PORT=0xC0,TONE_STATE_FIELD_MASK=0x7E,
     TONE_BRANCH_RETURN=0x0232,TONE_BRANCH_CALL=0x0239,TONE_BRANCH_STOP=0x01E5,TONE_BRANCH_REPEAT=0x01B3 };
 enum { TONE_SPEAKER_PITCH_TABLE=0x03B4,TONE_TANDY_PITCH_TABLE=0x04F4,
     TONE_SPEAKER_PITCH_WORDS=0xA0,TONE_TANDY_PITCH_WORDS=0x94,TONE_NOISE_PERIOD_WORDS=3,
@@ -106,6 +105,14 @@ BtechAudioTick BtechSelectTandyOrFallbackAudioCallback(void);
 BtechAudioTick BtechSelectSpeakerAdlibOrMpuCallback(void);
 void BtechAudioTimerNoOp(void);
 uint16_t BtechAudioMusicNoOp(uint16_t statusDisplacement,uint16_t channel,uint16_t packedData);
+/* The tone combat's effect player chose this tick (S5): a frequency in Hz,
+ * or 0 for silence. The host plays it on the tone voice. */
+extern void (*btechHostPlayTone)(double frequency);
+/* The clock the effect bank's periods and the pitch tables count in: a period
+ * of N sounds at TONE_PERIOD_CLOCK_HZ / N Hz (0 meaning 65536). */
+#define TONE_PERIOD_CLOCK_HZ 1193182.0
+static inline double BtechTonePeriodFrequency(uint16_t period)
+{ return TONE_PERIOD_CLOCK_HZ/(period?period:65536.0); }
 void BtechTickSpeakerToneChannels(void);
 void BtechTickTandyToneChannels(void);
 void BtechAdvanceToneChannel(BtechToneChannelState *state,MwNativeByteView event,uint16_t channel);

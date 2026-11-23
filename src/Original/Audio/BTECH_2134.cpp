@@ -165,7 +165,9 @@ void BtechAdvanceToneChannel(BtechToneChannelState *state,MwNativeByteView event
 }
 
 /*2134:0000. Choose BEFORE advancing each active channel. Unsigned priority
- * ties replace in descending traversal, so lower channel wins. */
+ * ties replace in descending traversal, so lower channel wins. The chosen
+ * channel sounds at its period while its level is not zero (S5: as a tone,
+ * where the original wrote PIT channel 2's divisor and port 61h's gate). */
 void BtechTickSpeakerToneChannels(void)
 {
     if (!audioTickCallback) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !audioTickCallback");
@@ -182,18 +184,11 @@ void BtechTickSpeakerToneChannels(void)
         currentChannelDisplacement=channel*2;
         BtechAdvanceToneChannel(state,toneEventData[channel],channel);
     }
-    if (!btechHostWritePort || !btechHostReadPort) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePort || !btechHostReadPort");
-    uint8_t gateBits=0;
-    if (selectedSpeakerState)
-    {
-        btechHostWritePort(TONE_PIT_DATA_PORT,(uint8_t)selectedSpeakerState->outputPeriod);
-        btechHostWritePort(TONE_PIT_DATA_PORT,(uint8_t)(selectedSpeakerState->outputPeriod>>8));
-        if (selectedSpeakerState->outputLevel) gateBits=TONE_SPEAKER_GATE_BITS;
-    }
-    uint8_t gate=btechHostReadPort(TONE_SPEAKER_GATE_PORT);
-    btechHostWritePort(TONE_SPEAKER_GATE_PORT,(gate&~TONE_SPEAKER_GATE_BITS)|gateBits);
+    if (!btechHostPlayTone) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostPlayTone");
+    bool sounding=selectedSpeakerState && selectedSpeakerState->outputLevel;
+    btechHostPlayTone(sounding?BtechTonePeriodFrequency(selectedSpeakerState->outputPeriod):0);
     /* Test instrument (event_log.h): what the effect player chose this tick. */
-    MwEventLogToneTick(selectedSpeakerState?selectedSpeakerState->outputPeriod:0,gateBits!=0);
+    MwEventLogToneTick(selectedSpeakerState?selectedSpeakerState->outputPeriod:0,sounding);
 }
 
 /*2134:0086. Noise inherits transformed period AX for volume; masked/inactive

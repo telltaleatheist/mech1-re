@@ -93,6 +93,7 @@ bool MwSdlInitializeAudio(void);
 void MwSdlAdvanceAudio(double pitTime);
 void MwSdlWriteSpeakerPort(uint16_t port,uint8_t value);
 uint8_t MwSdlReadSpeakerControl(void);
+void MwSdlPlayEffectTone(double frequency);
 void MwSdlShutdownAudio(void);
 /* Combat is running (its frames are on the canvas like the campaign's). */
 extern bool mwSdlCombatActive;

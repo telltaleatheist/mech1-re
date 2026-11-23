@@ -14,7 +14,7 @@ void Mixer::reset(Card card, bool silentMt32, Music *music)
     music_ = music;
     musicFrames_.assign(2 * MUSIC_RUN_FRAMES, 0.0f);
     musicRead_ = musicCount_ = 0;
-    speaker_.reset();
+    tone_.reset();
     time_ = sampleCycles_ = sampleIntegral_ = 0;
     blockFrames_ = 0;
 }
@@ -28,13 +28,13 @@ void Mixer::advance(double pitTime, Sink sink)
     while (time_ < pitTime)
     {
         double duration = fmin(pitTime - time_, cyclesPerSample - sampleCycles_);
-        speaker_.integrate(duration, sampleIntegral_);
+        tone_.integrate(duration, sampleIntegral_);
         time_ += duration;
         sampleCycles_ += duration;
         if (sampleCycles_ < cyclesPerSample - 1e-8) continue;
-        float speaker = (float)(0.15 * sampleIntegral_ / cyclesPerSample);
+        float tone = (float)(0.15 * sampleIntegral_ / cyclesPerSample);
         float *frame = &block_[blockFrames_ * channelCount];
-        if (card_ == Card::None) frame[0] = speaker;
+        if (card_ == Card::None) frame[0] = tone;
         else
         {
             if (card_ == Card::Mt32)
@@ -57,8 +57,8 @@ void Mixer::advance(double pitTime, Sink sink)
                 ++musicRead_;
             }
             else MwAdlibRender(frame, 1);
-            frame[0] += speaker;
-            frame[1] += speaker;
+            frame[0] += tone;
+            frame[1] += tone;
         }
         ++blockFrames_;
         sampleCycles_ = sampleIntegral_ = 0;

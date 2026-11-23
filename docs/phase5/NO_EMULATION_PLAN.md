@@ -205,6 +205,15 @@ Changes per piece:
 - **The sound-port goldens changed only by the latches.** The three combat logs lost the calibration's two channel-0 latch writes (43h: 00h, 06h) and nothing else: with those removed from the old goldens, every remaining line matches. They were re-recorded. The music logs are unchanged.
 - **The check.** The traces match (8/8 on 1990). The event logs match (12/12). The joystick test passes.
 
+**From S5** (combat's effects as tones):
+- **The tone voice** (`src/Audio/ToneVoice`, which was `SpeakerVoice`) plays a frequency or silence: a square of its odd harmonics up to the 31st, none at or above the output's Nyquist. A new tone starts at the wave's start, and a repeated or changed pitch keeps its place. It takes no ports. Before, the speaker model restarted its wave at every divisor write, so 145.6 times a second in combat; that restart is gone, so the PCM differs (the PCM was never a golden).
+- **2134 plays tones.** Each tick, the channel the effect player chooses sounds at its period while its level is not zero, as a frequency (1,193,182 Hz over the period, the clock the effect bank and pitch tables count in), or the tick is silent. The host plays it on the tone voice at the hardware time now, where the PIT channel 2 divisor and the 61h gate were written. The priorities, steps, bends and level sequences are 2134's own and unchanged, so the effects the game requests (0-8, 10, 11, 13, 14) sound as their bytecode says. Effects 9 and 12 are never requested.
+- **No `Effects` class.** The plan named one to take start, stop, frequency, schedule and priority. The schedule and priority are 2134's game logic, which picks one tone a tick. A class between it and the tone voice would only pass the frequency on, so the host binding goes to the tone voice directly. A sample pack keyed by effect number, if one ever comes, would add it.
+- **The campaign's speaker music still writes ports until S6.** The host decodes its PIT channel 2 and 61h writes into tones on the same voice. Combat never writes them any more.
+- **The test clock still charges the 61h read** each tick made (1 µs), until H4, so the timeline stays the same.
+- **The tone log is identical** (the event logs match, 12/12). The sound-port goldens' combat logs lost 2134's port I/O and nothing else: per tick one 61h read and one 61h write (4,975 ticks), and the 42h divisor's two bytes on the ticks that chose a channel (2,146 writes). All of them fall between the deploy and results snaps, and every other line matches in order, including the campaign's speaker shutdown and restart around combat. They were re-recorded. The music logs are unchanged.
+- **The check.** The traces match (8/8 on 1990). The event logs match (12/12), the tone log with them. `tests/tone_voice_test.cpp` checks the voice.
+
 ## 3. How we check "play identical"
 
 ### Sound

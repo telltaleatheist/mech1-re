@@ -120,7 +120,7 @@ void MwSdlInitializeCombatHardware(void)
     btechHostReadInterrupts=MwSdlReadInterrupts;
     btechHostReadRomByte=ReadRomByte;btechHostQueryEgaInfo=QueryEgaInfo;
     btechHostReadJoystick=MwSdlReadJoystick;btechHostChargeGamePortWait=MwSdlChargeGamePortWait;
-    btechHostPollInterrupts=MwSdlPump;btechHostResetMouse=ResetMouse;
+    btechHostPollInterrupts=MwSdlPump;btechHostPlayTone=MwSdlPlayEffectTone;btechHostResetMouse=ResetMouse;
     btechHostPaceCombatTick=MwSdlPaceCombatTick;
     btechHostNoteCombatInputPoll=MwSdlDebugNoteCombatPoll;
 }

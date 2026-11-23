@@ -1,6 +1,7 @@
 #include "SDLBackend.h"
 #include "mechwarrior/audio_devices.h"
 #include "mechwarrior/music_out.h"
+#include "mechwarrior/campaign_music.h"
 #include "AudioClock.h"
 #include "Mixer.h"
 #include "Music.h"
@@ -11,13 +12,24 @@
 #include <string>
 
 /* The output layer: the SDL3 device, the bounded PCM queue and its stream
- * callback. Synthesis (the speaker voice, the selected card, mixing on PIT
+ * callback. Synthesis (the tone voice, the selected card, mixing on PIT
  * time) is mw1o::audio::Mixer in src/Audio, which hands this file blocks.
  * MIDI scheduling, allocation, instruments and rotation remain Original code;
  * the host never plays an SMF itself. */
+/* The campaign's speaker music still writes PIT channel 2 and port 61h, until
+ * S6 gives it the tone voice directly: those writes, decoded into tones. A tone
+ * sounds while channel 2 counts a divisor (written low byte, then high) and
+ * both 61h gate bits are set. */
+struct SpeakerPorts
+{
+    uint32_t divisor=0x10000;
+    uint8_t control=0,periodLow=0;
+    bool highByteNext=false,counting=false;
+};
+static SpeakerPorts speakerPorts;
 static SDL_AudioStream *audioStream;
 static SDL_Mutex *audioQueueMutex;
-enum { AUDIO_QUEUE_FRAMES=0x4000,AUDIO_START_LEAD_FRAMES=0x0800 };
+enum { AUDIO_QUEUE_FRAMES=0x4000,AUDIO_START_LEAD_FRAMES=0x0800,HOST_EFFECT_TICK_PORT_READ_NS=1000 };
 static float audioQueue[AUDIO_QUEUE_FRAMES][2];
 static uint32_t outputChannels=1;
 static uint64_t generatedFrames,playbackFrames,lateFrames,underrunFrames;
@@ -132,6 +144,7 @@ bool MwSdlInitializeAudio(void)
         if (!MwMt32Open(mwSdlMt32ControlRom,mwSdlMt32PcmRom,HOST_AUDIO_SAMPLE_RATE,error,sizeof(error)))
             return SDL_SetError("%s",error);
     }
+    speakerPorts=SpeakerPorts{};
     mixer.reset(mwSdlMusicSoundfont?mw1o::audio::Mixer::Card::Soundfont
         :mwSdlSoundSystem==MW_SOUND_SPEAKER?mw1o::audio::Mixer::Card::None
         :mwSdlSoundSystem==MW_SOUND_MT32?mw1o::audio::Mixer::Card::Mt32:mw1o::audio::Mixer::Card::Adlib,silentMt32,&music);
@@ -201,9 +214,32 @@ static void QueueAudioBlock(const float *samples,uint32_t frames)
 void MwSdlAdvanceAudio(double pitTime) {mixer.advance(pitTime,QueueAudioBlock);}
 void MwSdlWriteSpeakerPort(uint16_t port,uint8_t value)
 {
-    if (!mixer.speaker().writePort(port,value)) MwSdlFail("Unsupported speaker hardware write");
+    SpeakerPorts &ports=speakerPorts;
+    if (port==PIT_CONTROL_PORT && value==PIT_CHANNEL2_SQUARE_WAVE) {ports.highByteNext=ports.counting=false;}
+    else if (port==PIT_CHANNEL2_PORT)
+    {
+        if (!ports.highByteNext) {ports.periodLow=value;ports.highByteNext=true;return;}
+        uint16_t period=ports.periodLow|((uint16_t)value<<8);
+        ports.divisor=period?period:0x10000;ports.highByteNext=false;ports.counting=true;
+    }
+    else if (port==SPEAKER_CONTROL_PORT) ports.control=value;
+    else MwSdlFail("Unsupported speaker hardware write");
+    if (ports.counting && (ports.control&SPEAKER_GATE_BITS)==SPEAKER_GATE_BITS)
+        mixer.tone().play((double)mw1o::audio::PIT_CLOCK_HZ/ports.divisor);
+    else mixer.tone().stop();
 }
-uint8_t MwSdlReadSpeakerControl(void) {return mixer.speaker().control();}
+uint8_t MwSdlReadSpeakerControl(void) {return speakerPorts.control;}
+/* One tone from combat's effect player (2134, S5), each tick, from the
+ * hardware time now, as a port write landed before. The test clock still
+ * charges the 61h read each tick made before S5 (H4 removes the per-read
+ * charges), so the logs' timeline stays the same. */
+void MwSdlPlayEffectTone(double frequency)
+{
+    if (MwSdlVirtualClock()) MwSdlSpendNanoseconds(HOST_EFFECT_TICK_PORT_READ_NS);
+    MwSdlAdvanceAudio(MwSdlHardwareTime());
+    if (frequency>0) mixer.tone().play(frequency);
+    else mixer.tone().stop();
+}
 uint32_t MwSdlQueuedAudioMilliseconds(void)
 {
     int bytes=SDL_GetAudioStreamQueued(audioStream);
