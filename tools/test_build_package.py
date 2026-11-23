@@ -19,6 +19,11 @@ class PackageTests(unittest.TestCase):
             file = root / name
             file.parent.mkdir(parents=True, exist_ok=True)
             file.write_text("fixture")
+        prefix = root / "deps/prefix"
+        for name in ["libarchive-3.7.9/COPYING", "zlib-1.3.1/LICENSE", "xz-5.8.1/COPYING", "xz-5.8.1/COPYING.0BSD"]:
+            (prefix / "share/licenses" / name).parent.mkdir(parents=True, exist_ok=True)
+            (prefix / "share/licenses" / name).write_text("fixture licence")
+        (root / "build/CMakeCache.txt").write_text(f"REKIT_LIBARCHIVE_LIB:FILEPATH={prefix / 'lib/libarchive.a'}\n")
         exe = root / "build/mechwarrior"
         exe.write_text('#!/bin/sh\n[ "$1" = --help ] && { echo "Usage: mw1r [<game folder>]"; exit 0; }\nexit 2\n')
         exe.chmod(0o755)
@@ -39,6 +44,8 @@ class PackageTests(unittest.TestCase):
             self.assertEqual(subprocess.run([str(extracted / "mw1r"), "--help"], capture_output=True).returncode, 0)
             self.assertTrue((extracted / "licenses/Munt-COPYING.LESSER.txt").exists())
             self.assertTrue((extracted / "licenses/stb-LICENSE").exists() and (extracted / "licenses/miniz-LICENSE").exists())
+            for name in ["libarchive-COPYING", "zlib-LICENSE", "xz-COPYING", "xz-COPYING.0BSD"]:
+                self.assertTrue((extracted / "licenses" / name).exists(), name)
             self.assertTrue((extracted / "data/rules/units.json").exists())
             self.assertTrue((extracted / "data/ui/hub.json").exists())
             self.assertEqual(len(list((root / "dist").glob("*.sha256"))), 1)
@@ -61,6 +68,19 @@ class PackageTests(unittest.TestCase):
             with patch.object(build_package, "run"), patch.object(build_package, "platform_name", return_value="linux-x86_64"), self.assertRaisesRegex(RuntimeError, "Missing licence"):
                 build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
             self.assertFalse(list((root / "dist").glob("*.tar.gz")))
+
+    def test_missing_archive_licence_or_library_blocks_packaging(self):
+        for broken in ("licence", "library"):
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                self.fixture(root)
+                if broken == "licence":
+                    (root / "deps/prefix/share/licenses/xz-5.8.1/COPYING.0BSD").unlink()
+                else:
+                    (root / "build/CMakeCache.txt").write_text("REKIT_LIBARCHIVE_LIB:FILEPATH=REKIT_LIBARCHIVE_LIB-NOTFOUND\n")
+                with patch.object(build_package, "run"), patch.object(build_package, "platform_name", return_value="linux-x86_64"), self.assertRaisesRegex(RuntimeError, "Missing (licence|libarchive)"):
+                    build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
+                self.assertFalse(list((root / "dist").glob("*.tar.gz")))
 
     def test_missing_data_blocks_packaging(self):
         with tempfile.TemporaryDirectory() as directory:

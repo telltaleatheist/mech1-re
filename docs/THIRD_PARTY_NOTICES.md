@@ -21,6 +21,13 @@ It is a separately replaceable shared library; include its licence and provide
 corresponding source availability when distributing it. No Yamaha ROM download
 is required for this core. These dependencies are excluded from the MIT grant.
 
+The setup reads downloads (zip, 7z, RAR, tar) with libarchive 3.7.9 (BSD
+2-clause), zlib 1.3.1 (zlib licence) and xz 5.8.1's liblzma (0BSD), built from
+their pinned release sources and linked in statically
+(`tools/deps/build_archive.sh`, `tools/windows/build_deps_archive.cmd`); their
+licences are copied into the package's `licenses` folder, and a package
+without them is refused.
+
 The setup screen comes from re-setup-kit (MIT, `extern/re-setup-kit`), which
 carries stb_truetype and stb_image (public domain or MIT, the reader's choice)
 and miniz's inflate (MIT); their licences are in the kit's `third_party`

@@ -160,6 +160,31 @@ def configure_and_build(root, build, sdl, label):
     return build / "Release/mechwarrior.exe" if os.name == "nt" else build / "mechwarrior"
 
 
+# libarchive, zlib and liblzma, linked in statically (tools/deps/build_archive.sh, tools/windows/build_deps_archive.cmd
+# put their licences in <prefix>/share/licenses): <folder>/<file> -> the name in licenses/.
+ARCHIVE_LICENCES = {"libarchive-3.7.9/COPYING": "libarchive-COPYING", "zlib-1.3.1/LICENSE": "zlib-LICENSE",
+                    "xz-5.8.1/COPYING": "xz-COPYING", "xz-5.8.1/COPYING.0BSD": "xz-COPYING.0BSD"}
+
+
+def archive_licences(build, notices):
+    """The archive libraries' licences into `notices`. A build without the pinned static libarchive (none, or a
+    system one) is refused: the setup could not read a download, and its licences would be missing."""
+    cache = build / "CMakeCache.txt"
+    lib = ""
+    if cache.is_file():
+        for line in cache.read_text(encoding="utf-8", errors="replace").splitlines():
+            if line.startswith("REKIT_LIBARCHIVE_LIB:"):
+                lib = line.split("=", 1)[1].strip()
+    if not lib or lib.endswith("-NOTFOUND"):
+        raise RuntimeError("Missing libarchive: build it first (tools/deps/build_archive.sh, "
+                           "tools/windows/build_deps_archive.cmd) so the setup reads downloads")
+    licences = Path(lib).parent.parent / "share/licenses"
+    for source, name in ARCHIVE_LICENCES.items():
+        if not (licences / source).is_file():
+            raise RuntimeError(f"Missing licence: {licences / source} (libarchive {lib} is not the pinned static build)")
+        shutil.copy2(licences / source, notices / name)
+
+
 def stage_common(root, build, sdl, resources):
     """The configuration, our data, the read-me and the notices, into `resources`
     (beside the program, or a Mac app's Contents/Resources)."""
@@ -173,6 +198,7 @@ def stage_common(root, build, sdl, resources):
                    build / "_deps/munt-src/mt32emu/COPYING.LESSER.txt", build / "_deps/nukedopl-src/LICENSE"]:
         prefix = "SDL-" if source.parent == sdl else "Munt-" if source.name == "COPYING.LESSER.txt" else "Nuked-" if source.name == "LICENSE" else ""
         shutil.copy2(source, notices / (prefix + source.name))
+    archive_licences(build, notices)
     # The setup kit's own third-party code (stb, miniz): a package without their licences is refused.
     kit = root / "extern/re-setup-kit"
     for name, source in [("re-setup-kit-LICENSE", kit / "LICENSE"), ("stb-LICENSE", kit / "third_party/stb/LICENSE"),
