@@ -13,10 +13,6 @@ extern uint8_t (*btechHostSetInterrupts)(uint8_t enabled);
 extern uint8_t (*btechHostReadInterrupts)(void);
 /* Joystick A (0) or B (1) as it is now (H3). */
 extern MwJoystickState (*btechHostReadJoystick)(uint16_t joystick);
-/* The test clock's charge for the time a game-port wait took before H3, made
- * where the original waited (H4 removes it); nothing in real time. */
-enum { BTECH_GAME_PORT_WAIT_CALIBRATION,BTECH_GAME_PORT_WAIT_AXIS,BTECH_GAME_PORT_WAIT_PRESENCE };
-extern void (*btechHostChargeGamePortWait)(uint8_t wait);
 extern void (*btechHostPollInterrupts)(void);
 /* Host-only pacing at the native 0019 loop boundary: the fixed tick length.
  * Does not add a native argument, game tick, decision or source procedure. */

@@ -21,9 +21,9 @@ on its own, each keeping the snap lines as marks:
 - game: sound requests, key reads and combat polls ("sound", "key", "cpoll").
 
 The goldens are the speaker's, the default device. What the game asks for
-doesn't depend on the device, but the test clock charges 1 us for every port
-read, and AdLib's calibrated reads make more of them, so on another device a
-key, or a snap, can arrive some sequencer ticks earlier or later. The sound
+doesn't depend on the device, but the devices' own waits (AdLib's calibrated
+bus delays, the MPU's handshakes) pass time differently, so on another device
+a key, or a snap, can arrive some sequencer ticks earlier or later. The sound
 scripts also run on AdLib and MT-32 (MT-32 without ROMs, silent) and must give:
 - the speaker run's notes, ticks and snap marks left out, cut into pieces where
   the music can be cut by a key: at each song start and each all-notes-off sweep

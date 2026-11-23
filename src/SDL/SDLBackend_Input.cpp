@@ -8,8 +8,7 @@
  * queue of 16 slots (15 keys, as the BIOS ring its key reads used held), and
  * combat's presses and releases in one of 16 events until its handler takes
  * them. No BIOS keyboard data, scan port or IRQ1 is modelled. */
-enum { HOST_KEY_QUEUE_SLOTS=16,HOST_DEFAULT_DRIVE_C=2,
-    HOST_KEY_HANDLER_PORT_READS=2,HOST_PRE_CHILD_PORT_READS=1,HOST_PORT_READ_NS=1000 };
+enum { HOST_KEY_QUEUE_SLOTS=16,HOST_DEFAULT_DRIVE_C=2 };
 static MwCampaignKey keys[HOST_KEY_QUEUE_SLOTS];
 static uint8_t readIndex,writeIndex;
 static bool lastControl,quitRequested;
@@ -26,9 +25,6 @@ void MwSdlDeliverCombatKeyEvent(void)
     if (!btechHostGetInterruptVector) MwSdlFail("Missing keyboard vector binding");
     MwKeyEvent event=combatKeys[combatKeyRead];
     uint32_t vector=btechHostGetInterruptVector(KEYBOARD_INTERRUPT);
-    /* The test clock's charge for the port reads the IRQ1 made (H4 removes
-     * the per-read charges with the rest of the port timing). */
-    unsigned portReads=HOST_KEY_HANDLER_PORT_READS;
     if (vector==BTECH_KEYBOARD_HANDLER_VECTOR) BtechHandleKeyEvent(event);
     else if (!vector)
     {
@@ -39,10 +35,8 @@ void MwSdlDeliverCombatKeyEvent(void)
             || event.key==COMBAT_KEY_CONTROL || event.key==COMBAT_KEY_LEFT_SHIFT || event.key==COMBAT_KEY_RIGHT_SHIFT || event.key==COMBAT_KEY_ALT
             || event.key==COMBAT_KEY_CAPS_LOCK || event.key==COMBAT_KEY_NUM_LOCK || event.key==COMBAT_KEY_SCROLL_LOCK || event.key==COMBAT_KEY_INSERT || event.key==COMBAT_KEY_SYSTEM_REQUEST)
             MwSdlFail("Unconverted key event without combat's keyboard handler");
-        portReads=HOST_PRE_CHILD_PORT_READS;
     }
     else MwSdlFail("Unmapped native keyboard vector");
-    if (MwSdlVirtualClock()) MwSdlSpendNanoseconds((uint64_t)portReads*HOST_PORT_READ_NS);
     combatKeyRead=(combatKeyRead+1)%HOST_KEY_QUEUE_SLOTS;
 }
 static void QueueCombatKey(uint8_t key,bool released)

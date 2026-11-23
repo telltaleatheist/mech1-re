@@ -15,12 +15,6 @@
 enum { HOST_DEFAULT_COMBAT_TICK_MS=60,HOST_MINIMUM_TICK_NS=10000000,HOST_IDLE_WAIT_NS=100000,
     HOST_NS_PER_MILLISECOND=1000000,HOST_NS_PER_SECOND=1000000000,
     HOST_MS_PER_SECOND=1000,HOST_SECONDS_PER_MINUTE=60,HOST_SECONDS_PER_HOUR=3600 };
-/* A delay loop (1BF5 calibrated loops) lasts a fixed 0.4 us, the old model's
- * loop at 2500 cycles/ms; a joystick-calibration game-port read counts 1 us. */
-enum { HOST_DELAY_LOOP_NS=400,HOST_PORT_READ_NS=1000,
-    /* Before H3, combat's joystick code with no joystick connected: */
-    HOST_CALIBRATION_GAME_PORT_READS=1000,HOST_CALIBRATION_COUNTER_READS=4,
-    HOST_LOOP_CALIBRATION_NUMERATOR=0x6FCC,HOST_AXIS_TIMING_LIMIT=0xFF,HOST_PRESENCE_DELAY_LOOPS=20 };
 static const uint64_t HOST_SPEED_NOTICE_NS=UINT64_C(1500000000);
 uint32_t mwSdlCombatTickMs=HOST_DEFAULT_COMBAT_TICK_MS;
 uint8_t mwSdlCombatSpeed=MW_COMBAT_SPEED_MIN;
@@ -75,8 +69,6 @@ void MwSdlPaceCombatTick(void)
     combatTickStarted=MwSdlNowNanoseconds();combatTickActive=true;
     MwSdlUpdateSupportPilot(); /* Optional host input at the existing loop boundary. */
 }
-void MwSdlDelayLoops(uint16_t loops)
-{WaitDeadline(MwSdlNowNanoseconds()+(uint64_t)loops*HOST_DELAY_LOOP_NS);}
 
 static MwMusicTimerHandler irq0;
 static bool interruptsEnabled,campaignInterruptsInstalled,inInterrupt;
@@ -86,8 +78,6 @@ static uint32_t channel0Divisor,biosTicks;
 static uint8_t channel0Low;
 static bool channel0HighNext;
 static uint8_t picMask;
-static uint64_t counterLoadNanoseconds;
-static uint16_t gamePortDelayLoops; /* The delay-loop count 1BF5:21FF calibrated before H3. */
 
 static void BiosTimerInterrupt(void)
 {
@@ -175,48 +165,14 @@ void MwSdlWriteDevicePort(uint16_t port,uint8_t value)
         if (!channel0HighNext) {channel0Low=value;channel0HighNext=true;return;}
         uint16_t divisor=channel0Low|((uint16_t)value<<8);
         channel0Divisor=divisor?divisor:PIT_COUNTER_MODULUS;
-        counterLoadNanoseconds=MwSdlNowNanoseconds();
         channel0HighNext=false;nextIrq=hardwareTime+channel0Divisor;
         return;
     }
     MwSdlFail("Unsupported hardware write"); /* PIT channel 2 and port 61h are gone: tones (S5, S6). */
 }
-/* The test clock's charge for combat's game-port waits before H3, with no
- * joystick connected: the same host waits and time in the same order, so the
- * event logs stay identical (H4 removes it with the rest of the port timing).
- * Real time spends nothing: the waits only timed the hardware. */
-void MwSdlChargeGamePortWait(uint8_t wait)
-{
-    if (!virtualClock) return;
-    if (wait==BTECH_GAME_PORT_WAIT_CALIBRATION)
-    {
-        /* 1BF5:21FF timed 1,000 game-port reads between two channel-0 latches,
-         * each read a fixed 1 us, and divided 6FCCh by the counts between. */
-        uint64_t first=MwSdlNowNanoseconds();
-        if (first<counterLoadNanoseconds) first=counterLoadNanoseconds;
-        uint64_t last=first+(uint64_t)HOST_CALIBRATION_GAME_PORT_READS*HOST_PORT_READ_NS;
-        uint64_t firstCycles=(uint64_t)((double)(first-counterLoadNanoseconds)*(double)HOST_PIT_CLOCK_HZ/(double)HOST_NS_PER_SECOND);
-        uint64_t lastCycles=(uint64_t)((double)(last-counterLoadNanoseconds)*(double)HOST_PIT_CLOCK_HZ/(double)HOST_NS_PER_SECOND);
-        uint16_t elapsed=(uint16_t)((uint16_t)(channel0Divisor-(firstCycles*2)%channel0Divisor)
-            -(uint16_t)(channel0Divisor-(lastCycles*2)%channel0Divisor));
-        if (!elapsed) MwSdlFail("Joystick calibration timed no counts"); /* The original's divide fault. */
-        gamePortDelayLoops=(uint16_t)(HOST_LOOP_CALIBRATION_NUMERATOR/elapsed);
-        if (!gamePortDelayLoops) gamePortDelayLoops=1;
-        MwSdlSpendNanoseconds((uint64_t)(HOST_CALIBRATION_GAME_PORT_READS+HOST_CALIBRATION_COUNTER_READS)*HOST_PORT_READ_NS);
-    }
-    else if (wait==BTECH_GAME_PORT_WAIT_AXIS)
-        /* 1BF5:218B: a delay and a read for each of 255 steps, no axis ever
-         * discharging. */
-        for (unsigned step=0;step<HOST_AXIS_TIMING_LIMIT;++step)
-        {MwSdlDelayLoops(gamePortDelayLoops);MwSdlSpendNanoseconds(HOST_PORT_READ_NS);}
-    else if (wait==BTECH_GAME_PORT_WAIT_PRESENCE)
-    {MwSdlDelayLoops(HOST_PRESENCE_DELAY_LOOPS);MwSdlSpendNanoseconds(HOST_PORT_READ_NS);}
-    else MwSdlFail("Unknown game-port wait");
-}
 static uint8_t ReadDevicePort(uint16_t port);
 uint8_t MwSdlReadDevicePort(uint16_t port)
 {
-    if (virtualClock) MwSdlSpendNanoseconds(HOST_PORT_READ_NS); /* One ISA read: timing loops that count reads still see time pass. */
     uint8_t value=ReadDevicePort(port);
     AudioLogEvent('r',port,value);
     return value;
@@ -247,7 +203,6 @@ void MwSdlInitializeTimer(void)
     AudioLogOpen();
     startNanoseconds=MwSdlNowNanoseconds();hardwareTime=0;channel0Divisor=PIT_COUNTER_MODULUS;
     nextIrq=channel0Divisor;irq0=BiosTimerInterrupt;interruptsEnabled=true;
-    counterLoadNanoseconds=startNanoseconds;gamePortDelayLoops=0;
     picMask=0;
     campaignInterruptsInstalled=inInterrupt=channel0HighNext=false;
     MwMpuReset();

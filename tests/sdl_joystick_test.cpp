@@ -81,7 +81,6 @@ bool ReadsAxes(uint16_t joystick, uint8_t x, uint8_t y) {
 MwJoystickState CampaignJoystick() { return MwSdlReadJoystick(JOYSTICK_A); }
 bool MousePresent() { return false; }
 uint8_t SetInterrupts(uint8_t) { return 1; }
-void Charge(uint8_t) {}
 
 }  // namespace
 
@@ -104,7 +103,6 @@ int main() {
   mwCampaignPlatform.mousePresent = MousePresent;
   btechHostReadJoystick = MwSdlReadJoystick;
   btechHostSetInterrupts = SetInterrupts;
-  btechHostChargeGamePortWait = Charge;
 
   Check(Reads(JOYSTICK_A, false, 0, 0, false, false) && Reads(JOYSTICK_B, false, 0, 0, false, false), "none plugged in");
 

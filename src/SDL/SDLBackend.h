@@ -56,7 +56,6 @@ void MwSdlStepCombatSpeed(int direction);
 bool MwSdlCombatSpeedNotice(char *text,size_t size);
 void MwSdlResetCombatTick(void);
 void MwSdlPaceCombatTick(void);
-void MwSdlDelayLoops(uint16_t loops);
 bool MwSdlLoadTimingConfiguration(const char *path,bool optional);
 /* The player's MechWarrior.ini in the write directory: overrides the shipped
  * one, and holds what the player changes in play (the combat speed). */
@@ -93,7 +92,6 @@ void MwSdlConvertMouseMotion(float windowXMotion,float windowYMotion,
 bool MwSdlInitializeAudio(void);
 void MwSdlAdvanceAudio(double pitTime);
 void MwSdlPlayTone(double frequency);
-void MwSdlPlayEffectTone(double frequency);
 void MwSdlShutdownAudio(void);
 /* Combat is running (its frames are on the canvas like the campaign's). */
 extern bool mwSdlCombatActive;
@@ -117,5 +115,4 @@ void MwSdlDeliverCombatKeyEvent(void);
 MwJoystickState MwSdlReadJoystick(uint16_t joystick);
 bool MwSdlInitializeJoysticks(void);
 bool MwSdlHandleJoystickEvent(const SDL_Event &event);
-void MwSdlChargeGamePortWait(uint8_t wait);
 #endif

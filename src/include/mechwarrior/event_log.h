@@ -21,7 +21,7 @@
  *       the next sound, key or snap line (notes and tones don't end a run:
  *       the timer drives them, interleaved by device). Campaign polls
  *       are not logged: how often the host polls while the game waits depends
- *       on the time the port model charges (1 us a port read), not on the game;
+ *       on the host's wait steps, not on the game;
  *   ["snap", name]  a trace snap.
  * Off unless the variable is set. Exact under the test clock
  * (MECHWARRIOR_DEBUG_VIRTUAL_CLOCK). */

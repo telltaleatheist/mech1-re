@@ -21,7 +21,6 @@ void Check(bool ok, const char *what) {
 }
 
 MwJoystickState sticks[2];
-unsigned charges[3];
 bool interrupts = true;
 
 MwJoystickState ReadA() { return sticks[0]; }
@@ -32,7 +31,6 @@ uint8_t SetInterrupts(uint8_t enabled) {
   interrupts = enabled != 0;
   return previous;
 }
-void Charge(uint8_t wait) { ++charges[wait]; }
 
 MwJoystickState Stick(int x, int y, bool one = false, bool two = false) {
   return MwJoystickState{true, (int8_t)x, (int8_t)y, one, two};
@@ -55,7 +53,6 @@ int main() {
   mwCampaignPlatform.mousePresent = MousePresent;
   btechHostReadJoystick = ReadEither;
   btechHostSetInterrupts = SetInterrupts;
-  btechHostChargeGamePortWait = Charge;
 
   // The axis reading.
   Check(MwJoystickAxisReading(0) == 127 && MwJoystickAxisReading(-127) == 0 && MwJoystickAxisReading(127) == 254
@@ -117,9 +114,7 @@ int main() {
   Check(joystickPairInstalled[0] == 1 && joystickPairInstalled[1] == 0, "A installed, B not");
   Check(joystickAxisCentres[0] == 127 && joystickAxisCentres[1] == 127 && joystickAxisReciprocals[0] == 256,
         "A's centres 127, scale 256ths of 7F00h/127");
-  Check(charges[BTECH_GAME_PORT_WAIT_CALIBRATION] == 1 && charges[BTECH_GAME_PORT_WAIT_AXIS] == 4
-            && charges[BTECH_GAME_PORT_WAIT_PRESENCE] == 1 && interrupts,
-        "the test clock charged where the original waited; interrupts back on");
+  Check(interrupts, "interrupts back on after calibration");
 
   Check(CombatAt(0, 0) == 0, "combat centred: no direction");
   Check(CombatAt(-127, 0) == COMBAT_DIRECTION_LEFT && joystickDirectionX == -127, "combat full left: left, -127");

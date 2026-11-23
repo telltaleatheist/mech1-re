@@ -17,7 +17,6 @@ void (*btechHostWritePort)(uint16_t,uint8_t);
 uint8_t (*btechHostSetInterrupts)(uint8_t);
 uint8_t (*btechHostReadInterrupts)(void);
 MwJoystickState (*btechHostReadJoystick)(uint16_t);
-void (*btechHostChargeGamePortWait)(uint8_t);
 void (*btechHostPollInterrupts)(void);
 void (*btechHostPlayTone)(double);
 void (*btechHostPaceCombatTick)(void);

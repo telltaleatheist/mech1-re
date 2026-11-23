@@ -17,7 +17,7 @@
  * the host never plays an SMF itself. */
 static SDL_AudioStream *audioStream;
 static SDL_Mutex *audioQueueMutex;
-enum { AUDIO_QUEUE_FRAMES=0x4000,AUDIO_START_LEAD_FRAMES=0x0800,HOST_EFFECT_TICK_PORT_READ_NS=1000 };
+enum { AUDIO_QUEUE_FRAMES=0x4000,AUDIO_START_LEAD_FRAMES=0x0800 };
 static float audioQueue[AUDIO_QUEUE_FRAMES][2];
 static uint32_t outputChannels=1;
 static uint64_t generatedFrames,playbackFrames,lateFrames,underrunFrames;
@@ -208,14 +208,6 @@ void MwSdlPlayTone(double frequency)
     if (frequency!=mixer.tone().frequency()) MwSdlAudioLogTone(frequency); /* Each change, for the sound log. */
     if (frequency>0) mixer.tone().play(frequency);
     else mixer.tone().stop();
-}
-/* Combat's effect player, each tick. The test clock still charges the 61h
- * read each tick made before S5 (H4 removes the per-read charges), so the
- * logs' timeline stays the same. */
-void MwSdlPlayEffectTone(double frequency)
-{
-    if (MwSdlVirtualClock()) MwSdlSpendNanoseconds(HOST_EFFECT_TICK_PORT_READ_NS);
-    MwSdlPlayTone(frequency);
 }
 uint32_t MwSdlQueuedAudioMilliseconds(void)
 {
