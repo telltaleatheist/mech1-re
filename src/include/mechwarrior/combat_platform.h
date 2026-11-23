@@ -12,9 +12,9 @@ extern uint8_t (*btechHostSetInterrupts)(uint8_t enabled);
 extern uint8_t (*btechHostReadInterrupts)(void);
 extern void (*btechHostDelayLoops)(uint16_t loopCount);
 extern void (*btechHostPollInterrupts)(void);
-/* Host-only CPU-work instrumentation at native0019 loop boundary. Does not
- * add a native argument, game tick, decision or source procedure. */
-extern void (*btechHostPaceCombatCpu)(void);
+/* Host-only pacing at the native 0019 loop boundary: the fixed tick length.
+ * Does not add a native argument, game tick, decision or source procedure. */
+extern void (*btechHostPaceCombatTick)(void);
 /* Host-only test instrumentation at each 0810:2A17 combat input poll, before
  * the BIOS buffer is read (a scripted feed queues its scans here). Optional;
  * no native argument, decision or source procedure. */

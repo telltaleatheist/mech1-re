@@ -133,6 +133,15 @@ void MwSdlPollEvents(void)
             mouseXMotion+=logicalXMotion;mouseYMotion+=logicalYMotion;
             continue;
         }
+        if (mwSdlCombatActive && (event.type==SDL_EVENT_KEY_DOWN || event.type==SDL_EVENT_KEY_UP)
+            && (event.key.scancode==SDL_SCANCODE_MINUS || event.key.scancode==SDL_SCANCODE_EQUALS))
+        {
+            /* The host's speed keys: main-row - and =/+ (BTECH reads neither;
+             * its keypad - and + select weapons and stay the game's). */
+            if (event.type==SDL_EVENT_KEY_DOWN && !event.key.repeat)
+                MwSdlStepCombatSpeed(event.key.scancode==SDL_SCANCODE_EQUALS?1:-1);
+            continue;
+        }
         if (mwSdlCombatActive && (event.type==SDL_EVENT_KEY_DOWN || event.type==SDL_EVENT_KEY_UP) && event.key.scancode!=SDL_SCANCODE_F12)
         {
             uint8_t scan=ScanCode(event.key.scancode);

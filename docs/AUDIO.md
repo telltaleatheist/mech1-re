@@ -1,10 +1,10 @@
 # Sound configuration
 
-Use the existing `MechWarrior.ini`, alongside `cpu_cycles_per_ms`. Changing the
-sound system does not change the approved CPU budget or PIT clock.
+Use the existing `MechWarrior.ini`, alongside `combat_tick_ms`. Changing the
+sound system does not change the combat tick length or the PIT clock.
 
 ```ini
-cpu_cycles_per_ms=2500
+combat_tick_ms=60
 sound_system=speaker
 mt32_control_rom=
 mt32_pcm_rom=
@@ -36,7 +36,7 @@ memory or inventing missing instrument data.
 ## Listening and playtesting
 
 MT-32 and AdLib are ready for listening/playtesting, not declared release-qualified.
-Both use the same game speed: keep `cpu_cycles_per_ms=2500` while comparing them.
+Both use the same game speed: keep `combat_tick_ms=60` and speed 1x while comparing them.
 Set `sound_system=adlib` in your INI to test without ROMs, or use `mt32` and your
 own ROM paths. Select the INI with the existing launcher option:
 

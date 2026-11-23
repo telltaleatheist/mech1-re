@@ -105,7 +105,7 @@ static uint16_t QueryEgaInfo(void) {return 0;}
 static void ResetMouse(void) {mwCampaignInput.resetMouse();}
 void MwSdlResetCombatHardware(void)
 {
-    MwSdlResetCombatCpu();
+    MwSdlResetCombatTick();
     previousTimerHandler=MwSdlReadTimerHandler();
     memset(interruptVectors,0,sizeof(interruptVectors));memset(biosData,0,sizeof(biosData));
     WriteBiosWord(BIOS_KEYBOARD_HEAD,BIOS_KEY_BUFFER_FIRST);WriteBiosWord(BIOS_KEYBOARD_TAIL,BIOS_KEY_BUFFER_FIRST);
@@ -121,7 +121,7 @@ void MwSdlInitializeCombatHardware(void)
     btechHostSetInterrupts=MwSdlExchangeInterrupts;btechHostChainTimerInterrupt=ChainTimerInterrupt;
     btechHostReadInterrupts=MwSdlReadInterrupts;
     btechHostReadRomByte=ReadRomByte;btechHostQueryEgaInfo=QueryEgaInfo;btechHostSetVideoMode=MwSdlSetVideoMode;
-    btechHostDelayLoops=MwSdlDelayCpuLoops;btechHostPollInterrupts=MwSdlPump;btechHostResetMouse=ResetMouse;
-    btechHostPaceCombatCpu=MwSdlPaceCombatCpu;
+    btechHostDelayLoops=MwSdlDelayLoops;btechHostPollInterrupts=MwSdlPump;btechHostResetMouse=ResetMouse;
+    btechHostPaceCombatTick=MwSdlPaceCombatTick;
     btechHostNoteCombatInputPoll=MwSdlDebugNoteCombatPoll;
 }

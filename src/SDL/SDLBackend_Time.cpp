@@ -9,18 +9,19 @@
 #include <stdlib.h>
 #include <time.h>
 
-/* User-approved playable budget; see the human speed review in CPU_TIMING_PROFILE.md.
- * Keep standalone startup consistent with the supplied MechWarrior.ini. */
-enum { HOST_DEFAULT_CPU_CYCLES_PER_MS=2500,HOST_IDLE_WAIT_NS=100000,
+/* Combat speed (docs/timing/PLAN.md, docs/CPU_TIMING_PROFILE.md): 60 ms per
+ * tick at 1x, about 2.1 times the old cycle model's live-cockpit 127 ms. Keep
+ * the shipped MechWarrior.ini consistent with it. */
+enum { HOST_DEFAULT_COMBAT_TICK_MS=60,HOST_MINIMUM_TICK_NS=10000000,HOST_IDLE_WAIT_NS=100000,
     HOST_NS_PER_MILLISECOND=1000000,HOST_NS_PER_SECOND=1000000000,
     HOST_MS_PER_SECOND=1000,HOST_SECONDS_PER_MINUTE=60,HOST_SECONDS_PER_HOUR=3600 };
-uint32_t mwSdlCpuCyclesPerMillisecond=HOST_DEFAULT_CPU_CYCLES_PER_MS;
-/* Original x86 replay of paused cockpit RAM; see CPU_TIMING_PROFILE.md.
- * This is a measured reference workload, not an interpreter for arbitrary
- * branches. Live aperture traffic scales the dominant rendering cost. */
-enum { REFERENCE_LOGIC_CYCLES=24080,REFERENCE_RENDER_CYCLES=263005,
-    REFERENCE_VIDEO_BYTES=14154,REFERENCE_VIDEO_READ_NS=1000,
-    REFERENCE_VIDEO_WRITE_NS=750 };
+/* A delay loop (1BF5 calibrated loops) lasts a fixed 0.4 us, the old model's
+ * loop at 2500 cycles/ms; a joystick-calibration game-port read counts 1 us. */
+enum { HOST_DELAY_LOOP_NS=400,HOST_GAME_PORT_READ_NS=1000 };
+static const uint64_t HOST_SPEED_NOTICE_NS=UINT64_C(1500000000);
+uint32_t mwSdlCombatTickMs=HOST_DEFAULT_COMBAT_TICK_MS;
+uint8_t mwSdlCombatSpeed=MW_COMBAT_SPEED_MIN;
+static uint64_t speedNoticeUntil;
 static bool virtualClock;
 static uint64_t virtualNanoseconds;
 bool MwSdlVirtualClock(void) {return virtualClock;}
@@ -28,41 +29,51 @@ uint64_t MwSdlNowNanoseconds(void) {return virtualClock?virtualNanoseconds:SDL_G
 /* A host wait: real sleep, or under the test clock the same time spent at once. */
 void MwSdlSpendNanoseconds(uint64_t nanoseconds)
 {if (virtualClock) virtualNanoseconds+=nanoseconds;else SDL_DelayNS(nanoseconds);}
-static bool combatCpuActive;
-static uint64_t cpuIterationStarted,videoReadBytes,videoWriteBytes,lastCpuCycles;
+static bool combatTickActive;
+static uint64_t combatTickStarted;
 
-void MwSdlResetCombatCpu(void)
-{combatCpuActive=false;videoReadBytes=videoWriteBytes=lastCpuCycles=0;}
-void MwSdlAccountCombatVideoAccess(bool write)
+void MwSdlResetCombatTick(void) {combatTickActive=false;}
+uint64_t MwSdlCombatTickNanoseconds(void)
 {
-    if (!combatCpuActive) return;
-    if (write) ++videoWriteBytes;else ++videoReadBytes;
+    uint64_t tick=(uint64_t)mwSdlCombatTickMs*HOST_NS_PER_MILLISECOND/mwSdlCombatSpeed;
+    return tick<HOST_MINIMUM_TICK_NS?HOST_MINIMUM_TICK_NS:tick;
 }
-uint64_t MwSdlLastCombatCpuCycles(void) {return lastCpuCycles;}
-static void WaitCpuDeadline(uint64_t deadline)
+/* The player's speed keys (main-row - and =/+, combat only). The step is
+ * remembered in the player's MechWarrior.ini and shown for a moment. */
+void MwSdlStepCombatSpeed(int direction)
+{
+    int speed=(int)mwSdlCombatSpeed+direction;
+    if (speed<MW_COMBAT_SPEED_MIN) speed=MW_COMBAT_SPEED_MIN;
+    if (speed>MW_COMBAT_SPEED_MAX) speed=MW_COMBAT_SPEED_MAX;
+    if (speed!=mwSdlCombatSpeed) {mwSdlCombatSpeed=(uint8_t)speed;MwSdlSaveUserSetting("combat_speed",(unsigned)speed);}
+    fprintf(stderr,"Combat speed %ux: %.1f ms per tick\n",(unsigned)mwSdlCombatSpeed,
+        (double)MwSdlCombatTickNanoseconds()/(double)HOST_NS_PER_MILLISECOND);
+    speedNoticeUntil=SDL_GetTicksNS()+HOST_SPEED_NOTICE_NS; /* Real time, also under the test clock. */
+    MwSdlPresentVideo(true);
+}
+bool MwSdlCombatSpeedNotice(char *text,size_t size)
+{
+    if (!speedNoticeUntil || SDL_GetTicksNS()>=speedNoticeUntil) return false;
+    SDL_snprintf(text,size,"SPEED %ux",(unsigned)mwSdlCombatSpeed);
+    return true;
+}
+static void WaitDeadline(uint64_t deadline)
 {
     while (MwSdlNowNanoseconds()<deadline)
     {MwSdlPollEvents();MwSdlPumpTimer();MwSdlSpendNanoseconds(HOST_IDLE_WAIT_NS);}
 }
-void MwSdlPaceCombatCpu(void)
+/* Each combat tick (0810:0019's loop) lasts MwSdlCombatTickNanoseconds from
+ * its start, however much it drew and whatever the host. */
+void MwSdlPaceCombatTick(void)
 {
-    if (combatCpuActive)
-    {
-        lastCpuCycles=REFERENCE_LOGIC_CYCLES+
-            (videoReadBytes+videoWriteBytes)*REFERENCE_RENDER_CYCLES/REFERENCE_VIDEO_BYTES;
-        uint64_t duration=lastCpuCycles*HOST_NS_PER_MILLISECOND/mwSdlCpuCyclesPerMillisecond;
-        /* Separate EGA bus time, not an extra multiplier on game motion. */
-        duration+=videoReadBytes*REFERENCE_VIDEO_READ_NS+videoWriteBytes*REFERENCE_VIDEO_WRITE_NS;
-        WaitCpuDeadline(cpuIterationStarted+duration);
-    }
+    if (combatTickActive) WaitDeadline(combatTickStarted+MwSdlCombatTickNanoseconds());
     /* No accumulated catch-up debt after loading, a native wait or a slow
      * host. Explicit original delays already consumed their wall time. */
-    cpuIterationStarted=MwSdlNowNanoseconds();combatCpuActive=true;
-    videoReadBytes=videoWriteBytes=0;
+    combatTickStarted=MwSdlNowNanoseconds();combatTickActive=true;
     MwSdlUpdateSupportPilot(); /* Optional host input at the existing loop boundary. */
 }
-void MwSdlDelayCpuLoops(uint16_t loops)
-{WaitCpuDeadline(MwSdlNowNanoseconds()+(uint64_t)loops*HOST_NS_PER_MILLISECOND/mwSdlCpuCyclesPerMillisecond);}
+void MwSdlDelayLoops(uint16_t loops)
+{WaitDeadline(MwSdlNowNanoseconds()+(uint64_t)loops*HOST_DELAY_LOOP_NS);}
 
 static MwMusicTimerHandler irq0;
 static bool interruptsEnabled,campaignInterruptsInstalled,inInterrupt;
@@ -74,7 +85,12 @@ static bool channel0HighNext;
 static uint8_t picMask;
 static uint16_t latchedCounter;
 static bool counterReadHigh;
-static uint64_t counterLoadNanoseconds;
+static uint64_t counterLoadNanoseconds,lastLatchNanoseconds;
+static uint32_t gamePortReadsSinceLatch;
+/* Open from a channel-0 latch made with interrupts off until interrupts come
+ * back on: in play only the joystick calibration (1BF5:21FF) does that. */
+static bool latchWindowOpen;
+static void CloseLatchWindow(void) {latchWindowOpen=false;gamePortReadsSinceLatch=0;}
 
 static void BiosTimerInterrupt(void)
 {
@@ -82,7 +98,7 @@ static void BiosTimerInterrupt(void)
     if (biosTicks>=BIOS_TICKS_PER_DAY) biosTicks=0;
     if (campaignInterruptsInstalled) MwCampaignTimerTick();
 }
-void MwSdlSetInterrupts(bool enabled) {interruptsEnabled=enabled;}
+void MwSdlSetInterrupts(bool enabled) {interruptsEnabled=enabled;if (enabled) CloseLatchWindow();}
 uint8_t MwSdlReadInterrupts(void) {return interruptsEnabled;}
 MwMusicTimerHandler MwSdlReadTimerHandler(void) {return irq0;}
 void MwSdlWriteTimerHandler(MwMusicTimerHandler handler) {irq0=handler;}
@@ -90,7 +106,9 @@ uint32_t MwSdlBiosTicksValue(void) {return biosTicks;}
 uint8_t MwSdlExchangeInterrupts(uint8_t enabled)
 {
     if (interruptsEnabled && !enabled && !inInterrupt) MwSdlPump();
-    uint8_t previous=interruptsEnabled;interruptsEnabled=enabled!=0;return previous;
+    uint8_t previous=interruptsEnabled;interruptsEnabled=enabled!=0;
+    if (enabled) CloseLatchWindow();
+    return previous;
 }
 double MwSdlHardwareTime(void) {return hardwareTime;}
 double MwSdlTimerLagMilliseconds(void)
@@ -153,7 +171,15 @@ void MwSdlWriteDevicePort(uint16_t port,uint8_t value)
     if (port==0 || port==1 || port==GAME_PORT) return;
     if (port==PIT_CONTROL_PORT && !(value&PIT_CONTROL_LATCH_TEST_MASK))
     {
-        uint64_t cycles=(uint64_t)((double)(MwSdlNowNanoseconds()-counterLoadNanoseconds)*(double)HOST_PIT_CLOCK_HZ/(double)HOST_NS_PER_SECOND);
+        /* The joystick calibration (1BF5:21FF), the only latches in play, times
+         * 1,000 game-port reads between two latches with interrupts off. Each
+         * read counts a fixed 1 us, so its loop count, and the delay loops that
+         * use it, are the same on every host. Any other latch reads the clock. */
+        uint64_t latch=MwSdlNowNanoseconds();
+        if (latchWindowOpen && gamePortReadsSinceLatch) latch=lastLatchNanoseconds+(uint64_t)gamePortReadsSinceLatch*HOST_GAME_PORT_READ_NS;
+        if (latch<counterLoadNanoseconds) latch=counterLoadNanoseconds;
+        lastLatchNanoseconds=latch;gamePortReadsSinceLatch=0;latchWindowOpen=!interruptsEnabled;
+        uint64_t cycles=(uint64_t)((double)(latch-counterLoadNanoseconds)*(double)HOST_PIT_CLOCK_HZ/(double)HOST_NS_PER_SECOND);
         latchedCounter=(uint16_t)(channel0Divisor-(cycles*2)%channel0Divisor);counterReadHigh=false;return;
     }
     if (port==PIT_CONTROL_PORT && value==PIT_CHANNEL0_SQUARE_WAVE)
@@ -188,7 +214,7 @@ static uint8_t ReadDevicePort(uint16_t port)
         return mwSdlSoundSystem==MW_SOUND_ADLIB
             ?MwAdlibReadStatus(hardwareTime*1000000.0/(double)HOST_PIT_CLOCK_HZ):UINT8_MAX;
     if (port==0 || port==1) return 0; /* Only ignored calibrated-delay reads here. */
-    if (port==GAME_PORT) return UINT8_MAX;
+    if (port==GAME_PORT) {if (latchWindowOpen) ++gamePortReadsSinceLatch;return UINT8_MAX;}
     if (port==PIT_CHANNEL0_PORT)
     {uint8_t value=counterReadHigh?(uint8_t)(latchedCounter>>8):(uint8_t)latchedCounter;counterReadHigh=!counterReadHigh;return value;}
     if (port!=SPEAKER_CONTROL_PORT) MwSdlFail("Unsupported hardware read");
@@ -196,7 +222,7 @@ static uint8_t ReadDevicePort(uint16_t port)
 }
 void MwSdlInitializeTimer(void)
 {
-    MwSdlResetCombatCpu();
+    MwSdlResetCombatTick();
     time_t now=time(NULL);struct tm localTime;
 #if defined(_MSC_VER)
     localtime_s(&localTime,&now);
@@ -209,7 +235,8 @@ void MwSdlInitializeTimer(void)
     AudioLogOpen();
     startNanoseconds=MwSdlNowNanoseconds();hardwareTime=0;channel0Divisor=PIT_COUNTER_MODULUS;
     nextIrq=channel0Divisor;irq0=BiosTimerInterrupt;interruptsEnabled=true;
-    counterLoadNanoseconds=startNanoseconds;latchedCounter=0;counterReadHigh=false;picMask=0;
+    counterLoadNanoseconds=lastLatchNanoseconds=startNanoseconds;CloseLatchWindow();
+    latchedCounter=0;counterReadHigh=false;picMask=0;
     campaignInterruptsInstalled=inInterrupt=channel0HighNext=false;
     MwMpuReset();
     mwMusicHardware=MwMusicHardwareCalls{MwSdlSetInterrupts,MwSdlReadTimerHandler,MwSdlWriteTimerHandler,MwSdlWriteDevicePort,MwSdlReadDevicePort,

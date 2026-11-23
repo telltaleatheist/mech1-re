@@ -36,9 +36,10 @@ Tab fires all weapons. Watch heat and ammunition. C opens command, D own
 damage, E target damage and Q returns to the cockpit. T selects the map
 instrument, Z changes zoom and P pauses. F12 saves a real display capture.
 
-The default `cpu_cycles_per_ms=2500` is the user-approved playable speed.
-Keep it unless deliberately investigating timing; do not copy older test
-configurations which used faster settings.
+Combat runs at `combat_tick_ms=60` per tick at 1x, the same on any computer.
+In combat the main-row `-` and `=` (`+`) keys step the speed through 1x, 2x,
+3x and 4x; the choice is remembered in the player's own `MechWarrior.ini`
+beside the saves (docs/CPU_TIMING_PROFILE.md).
 
 ## Reporting a problem
 

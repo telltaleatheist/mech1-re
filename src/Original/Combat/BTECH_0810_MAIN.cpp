@@ -30,9 +30,9 @@ void BtechProgramMain(uint16_t argumentCount,const char *const *arguments)
     BtechInitializeCombatRuntime();
     for (;;)
     {
-        /* Host CPU accounting for the completed native loop, not a game
-         * wait or replacement simulation clock. Unbound in pure C fixtures. */
-        if (btechHostPaceCombatCpu) btechHostPaceCombatCpu();
+        /* Host pacing: each tick lasts a fixed length (docs/timing/PLAN.md).
+         * Not a game clock: the logic reads none. Unbound in pure C fixtures. */
+        if (btechHostPaceCombatTick) btechHostPaceCombatTick();
         if (terminationFlag) BtechTerminateToLauncher(1);
         runtimeDelayRemaining=COMBAT_FRAME_DELAY_TICKS;
         BtechPollCombatCommandInput();

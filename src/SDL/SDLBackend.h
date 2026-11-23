@@ -39,14 +39,23 @@ uint64_t MwSdlNowNanoseconds(void);
 void MwSdlSpendNanoseconds(uint64_t nanoseconds);
 void MwSdlAudioLogSnap(const char *name); /* A trace snap, as a mark in the sound-port log. */
 void MwSdlPumpTimer(void);
-/* Measured reference-workload CPU budget, not an instruction interpreter. */
-extern uint32_t mwSdlCpuCyclesPerMillisecond;
-void MwSdlResetCombatCpu(void);
-void MwSdlAccountCombatVideoAccess(bool write);
-void MwSdlPaceCombatCpu(void);
-void MwSdlDelayCpuLoops(uint16_t loops);
-uint64_t MwSdlLastCombatCpuCycles(void);
+/* Combat runs one tick per fixed length, combat_tick_ms divided by the speed
+ * step (docs/timing/PLAN.md). The logic reads no clock: only the wait changes. */
+enum { MW_COMBAT_SPEED_MIN=1,MW_COMBAT_SPEED_MAX=4 };
+extern uint32_t mwSdlCombatTickMs;
+extern uint8_t mwSdlCombatSpeed;
+uint64_t MwSdlCombatTickNanoseconds(void);
+void MwSdlStepCombatSpeed(int direction);
+bool MwSdlCombatSpeedNotice(char *text,size_t size);
+void MwSdlResetCombatTick(void);
+void MwSdlPaceCombatTick(void);
+void MwSdlDelayLoops(uint16_t loops);
 bool MwSdlLoadTimingConfiguration(const char *path,bool optional);
+/* The player's MechWarrior.ini in the write directory: overrides the shipped
+ * one, and holds what the player changes in play (the combat speed). */
+bool MwSdlResolveWriteDirectory(char *directory,size_t size);
+bool MwSdlLoadUserConfiguration(void);
+void MwSdlSaveUserSetting(const char *key,unsigned value);
 void MwSdlSetInterrupts(bool enabled);
 void MwSdlInstallCampaignInterrupts(void);
 void MwSdlRestoreCampaignInterrupts(void);

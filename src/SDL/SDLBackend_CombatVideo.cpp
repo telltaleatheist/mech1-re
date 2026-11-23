@@ -69,7 +69,6 @@ static uint32_t AperturePixel(uint16_t selector,uint16_t offset)
 }
 static uint8_t ReadVideoByte(uint16_t selector,uint16_t offset)
 {
-    MwSdlAccountCombatVideoAccess(false);
     uint32_t pixel=AperturePixel(selector,offset);
     for (uint16_t plane=0;plane<4;++plane)
     {
@@ -82,7 +81,6 @@ static uint8_t ReadVideoByte(uint16_t selector,uint16_t offset)
 }
 static void WriteVideoByte(uint16_t selector,uint16_t offset,uint8_t value)
 {
-    MwSdlAccountCombatVideoAccess(true);
     uint32_t pixel=AperturePixel(selector,offset);
     uint8_t mode=graphicsRegisters[EGA_MODE]&3,rotate=graphicsRegisters[EGA_DATA_ROTATE]&7;
     uint8_t rotated=(uint8_t)((value>>rotate)|(value<<((8-rotate)&7)));
