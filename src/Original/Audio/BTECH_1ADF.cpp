@@ -113,9 +113,8 @@ void BtechRestoreSoundTimerInterrupt(void)
 {
     if (!soundTimerInstalled) return;
     pitChannel0DivisorShadow=savedSoundTimerDivisor;
-    if (!btechHostWritePort || !btechHostSetInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePort || !btechHostSetInterruptVector");
-    btechHostWritePort(PIT_CHANNEL_ZERO_PORT,(uint8_t)savedSoundTimerDivisor);
-    btechHostWritePort(PIT_CHANNEL_ZERO_PORT,(uint8_t)(savedSoundTimerDivisor>>8));
+    if (!btechHostSetTimerPeriod || !btechHostSetInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetTimerPeriod || !btechHostSetInterruptVector");
+    btechHostSetTimerPeriod(savedSoundTimerDivisor); /* Was 40h's low and high bytes (H4b). */
     soundTimerInstalled=0;
     btechHostSetInterruptVector(8,savedSampleIrqVector);
 }
@@ -130,11 +129,12 @@ void BtechMusicTimerInterrupt(void)
 }
 
 /*1ADF:0F76. Reinstallation changes the callback/divisor, not the saved vector.
- * STI deliberately precedes the shadow store and the two PIT writes. */
+ * STI deliberately precedes the shadow store and the period (the two PIT
+ * writes until H4b). */
 void BtechInstallMusicTimerCallback(BtechAudioTick callback,uint16_t divisor)
 {
     if (!btechHostGetInterruptVector || !btechHostSetInterruptVector
-        || !btechHostSetInterrupts || !btechHostWritePort) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetInterruptVector || !btechHostSetInterruptVector || !btechHostSetInterrupts || !btechHostWritePort");
+        || !btechHostSetInterrupts || !btechHostSetTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetInterruptVector || !btechHostSetInterruptVector || !btechHostSetInterrupts || !btechHostSetTimerPeriod");
     if (!musicTimerInstalled)
     {
         musicTimerInstalled=1;
@@ -144,18 +144,16 @@ void BtechInstallMusicTimerCallback(BtechAudioTick callback,uint16_t divisor)
     }
     btechHostSetInterrupts(0);musicTimerCallback=callback;btechHostSetInterrupts(1);
     pitChannel0DivisorShadow=divisor;
-    btechHostWritePort(PIT_CHANNEL_ZERO_PORT,(uint8_t)divisor);
-    btechHostWritePort(PIT_CHANNEL_ZERO_PORT,(uint8_t)(divisor>>8));
+    btechHostSetTimerPeriod(divisor);
 }
 
 /*1ADF:0FC9. No CLI/STI or control-port write. The saved divisor returns to
- * the PIT, but the native shadow and callback deliberately remain unchanged. */
+ * the timer, but the native shadow and callback deliberately remain unchanged. */
 void BtechRestoreMusicTimerInterrupt(void)
 {
     if (!musicTimerInstalled) return;
-    if (!btechHostWritePort || !btechHostSetInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePort || !btechHostSetInterruptVector");
-    btechHostWritePort(PIT_CHANNEL_ZERO_PORT,(uint8_t)savedMusicTimerDivisor);
-    btechHostWritePort(PIT_CHANNEL_ZERO_PORT,(uint8_t)(savedMusicTimerDivisor>>8));
+    if (!btechHostSetTimerPeriod || !btechHostSetInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetTimerPeriod || !btechHostSetInterruptVector");
+    btechHostSetTimerPeriod(savedMusicTimerDivisor);
     musicTimerInstalled=0;
     btechHostSetInterruptVector(TIMER_INTERRUPT,savedMusicTimerVector);
 }

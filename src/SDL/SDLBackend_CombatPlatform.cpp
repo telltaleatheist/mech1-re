@@ -117,6 +117,7 @@ void MwSdlInitializeCombatHardware(void)
     btechHostGetInterruptVector=ReadInterruptVector;btechHostSetInterruptVector=WriteInterruptVector;
     btechHostBorrowDosMemory=BorrowToneDosMemory;
     btechHostSetInterrupts=MwSdlExchangeInterrupts;btechHostChainTimerInterrupt=ChainTimerInterrupt;
+    btechHostSetTimerPeriod=MwSdlSetTimerPeriod;
     btechHostReadInterrupts=MwSdlReadInterrupts;
     btechHostReadRomByte=ReadRomByte;btechHostQueryEgaInfo=QueryEgaInfo;
     btechHostReadJoystick=MwSdlReadJoystick;

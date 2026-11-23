@@ -74,9 +74,7 @@ static MwMusicTimerHandler irq0;
 static bool interruptsEnabled,campaignInterruptsInstalled,inInterrupt;
 static uint64_t startNanoseconds;
 static double hardwareTime,nextIrq;
-static uint32_t channel0Divisor,biosTicks;
-static uint8_t channel0Low;
-static bool channel0HighNext;
+static uint32_t timerPeriod,biosTicks;
 static uint8_t picMask;
 
 static void BiosTimerInterrupt(void)
@@ -103,7 +101,7 @@ double MwSdlTimerLagMilliseconds(void)
     return elapsed-hardwareTime*(double)HOST_MS_PER_SECOND/(double)HOST_PIT_CLOCK_HZ;
 }
 /* Sound-port event log (MECHWARRIOR_AUDIO_LOG=FILE): every access to the
- * speaker, PIT, AdLib and MPU ports, one JSON array per line:
+ * AdLib and MPU ports, one JSON array per line:
  * [PIT cycle, "w" or "r", port, value]. Reads log the value returned. The
  * device lines come first. Exact under the test clock (docs/phase5). */
 static FILE *audioLog;
@@ -120,7 +118,6 @@ static void AudioLogOpen(void)
 static bool AudioPort(uint16_t port)
 {
     return port==ADLIB_INDEX_PORT || port==ADLIB_DATA_PORT || port==MPU_DATA_PORT || port==MPU_STATUS_COMMAND_PORT
-        || port==PIT_CHANNEL0_PORT || port==PIT_CONTROL_PORT
         || port==0 || port==1;
 }
 static void AudioLogEvent(char kind,uint16_t port,uint8_t value)
@@ -158,17 +155,15 @@ void MwSdlWriteDevicePort(uint16_t port,uint8_t value)
     /* Native rhythm note-off can retain DX=0 from the VLQ reader. Those writes
      * reach unused DMA channel 0 ports, not the OPL card; never redirect them. */
     if (port==0 || port==1) return;
-    if (port==PIT_CONTROL_PORT && value==PIT_CHANNEL0_SQUARE_WAVE)
-    {channel0HighNext=false;return;}
-    if (port==PIT_CHANNEL0_PORT)
-    {
-        if (!channel0HighNext) {channel0Low=value;channel0HighNext=true;return;}
-        uint16_t divisor=channel0Low|((uint16_t)value<<8);
-        channel0Divisor=divisor?divisor:PIT_COUNTER_MODULUS;
-        channel0HighNext=false;nextIrq=hardwareTime+channel0Divisor;
-        return;
-    }
-    MwSdlFail("Unsupported hardware write"); /* PIT channel 2 and port 61h are gone: tones (S5, S6). */
+    MwSdlFail("Unsupported hardware write"); /* The PIT and port 61h are gone: tones (S5, S6), the timer period (H4b). */
+}
+/* The timer's period (H4b), where the games programmed PIT channel 0: in the
+ * PIT's clock units, so the interrupts fall where they did; 0 is the PIT's
+ * 65536. The next interrupt is one period on, as when the count was loaded. */
+void MwSdlSetTimerPeriod(uint32_t pitCycles)
+{
+    timerPeriod=pitCycles&&pitCycles<PIT_COUNTER_MODULUS?pitCycles:PIT_COUNTER_MODULUS;
+    nextIrq=hardwareTime+timerPeriod;
 }
 static uint8_t ReadDevicePort(uint16_t port);
 uint8_t MwSdlReadDevicePort(uint16_t port)
@@ -201,13 +196,13 @@ void MwSdlInitializeTimer(void)
     biosTicks=(uint32_t)((double)seconds*(double)HOST_PIT_CLOCK_HZ/(double)PIT_COUNTER_MODULUS);
     virtualClock=getenv("MECHWARRIOR_DEBUG_VIRTUAL_CLOCK")!=NULL;virtualNanoseconds=0;
     AudioLogOpen();
-    startNanoseconds=MwSdlNowNanoseconds();hardwareTime=0;channel0Divisor=PIT_COUNTER_MODULUS;
-    nextIrq=channel0Divisor;irq0=BiosTimerInterrupt;interruptsEnabled=true;
+    startNanoseconds=MwSdlNowNanoseconds();hardwareTime=0;timerPeriod=PIT_COUNTER_MODULUS;
+    nextIrq=timerPeriod;irq0=BiosTimerInterrupt;interruptsEnabled=true;
     picMask=0;
-    campaignInterruptsInstalled=inInterrupt=channel0HighNext=false;
+    campaignInterruptsInstalled=inInterrupt=false;
     MwMpuReset();
     mwMusicHardware=MwMusicHardwareCalls{MwSdlSetInterrupts,MwSdlReadTimerHandler,MwSdlWriteTimerHandler,MwSdlWriteDevicePort,MwSdlReadDevicePort,
-        MwSdlPumpTimer,btechHostGetInterruptVector,btechHostSetInterruptVector,MwSdlPlayTone};
+        MwSdlPumpTimer,btechHostGetInterruptVector,btechHostSetInterruptVector,MwSdlPlayTone,MwSdlSetTimerPeriod};
     /* Same physical PIT/speaker, different original sequencer. No backend
      * selection or invented combat callback is installed at this boundary. */
     btechHostWritePort=MwSdlWriteDevicePort;btechHostReadPort=MwSdlReadDevicePort;
@@ -253,7 +248,7 @@ void MwSdlPumpTimer(void)
         bool campaignScheduler=irq0==MwCampaignTimerInterrupt;
         MwMusicTimerHandler dispatchedHandler=irq0;
         uint32_t biosTicksBefore=biosTicks;
-        hardwareTime=nextIrq;nextIrq+=channel0Divisor;
+        hardwareTime=nextIrq;nextIrq+=timerPeriod;
         MwSdlAdvanceAudio(hardwareTime);
         bool previousInInterrupt=inInterrupt;
         inInterrupt=true;bool savedInterrupts=interruptsEnabled;interruptsEnabled=false;

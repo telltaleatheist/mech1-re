@@ -22,6 +22,7 @@ void (*btechHostPlayTone)(double);
 void (*btechHostPaceCombatTick)(void);
 void (*btechHostNoteCombatInputPoll)(void);
 void (*btechHostChainTimerInterrupt)(uint32_t);
+void (*btechHostSetTimerPeriod)(uint32_t);
 uint8_t *(*btechHostAllocateParagraphs)(uint16_t,uint16_t *);
 void (*btechHostFreeDosAllocation)(uint8_t *);
 void (*btechHostFreeDosSelector)(uint16_t);

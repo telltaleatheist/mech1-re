@@ -136,11 +136,10 @@ void BtechInstallTimerScheduler(uint16_t period)
     if ((int16_t)period>COMBAT_SCHEDULER_MAX_POSITIVE_PERIOD || !period) return;
     schedulerPeriod=period;schedulerCountdown=period;
     pitChannel0DivisorShadow=UINT16_MAX/period;
-    if (!btechHostSetInterrupts || !btechHostWritePort || !btechHostSetInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterrupts || !btechHostWritePort || !btechHostSetInterruptVector");
+    if (!btechHostSetInterrupts || !btechHostWritePort || !btechHostSetInterruptVector || !btechHostSetTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterrupts || !btechHostWritePort || !btechHostSetInterruptVector || !btechHostSetTimerPeriod");
     btechHostSetInterrupts(0);
-    btechHostWritePort(PIT_CONTROL_PORT,PIT_MODE_3_LOW_HIGH);
-    btechHostWritePort(PIT_CHANNEL_ZERO_PORT,(uint8_t)pitChannel0DivisorShadow);
-    btechHostWritePort(PIT_CHANNEL_ZERO_PORT,(uint8_t)(pitChannel0DivisorShadow>>8));
+    /* The PIT programming (43h, 40h low, 40h high) is the host's timer period since H4b. */
+    btechHostSetTimerPeriod(pitChannel0DivisorShadow);
     btechHostWritePort(PIC_MASK_PORT,COMBAT_PIC_DEVICE_MASK);
     btechHostSetInterruptVector(TIMER_INTERRUPT,BTECH_TIMER_HANDLER_VECTOR);
     btechHostSetInterrupts(1);runtimeDelayActive=1;

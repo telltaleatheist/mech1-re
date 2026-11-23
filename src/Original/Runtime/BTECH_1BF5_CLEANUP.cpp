@@ -55,10 +55,9 @@ void BtechShutdownMouseDriver(void)
 void BtechRestoreTimerScheduler(void)
 {
     if (!runtimeDelayActive) return;
-    if (!btechHostSetInterrupts || !btechHostWritePort || !btechHostSetInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterrupts || !btechHostWritePort || !btechHostSetInterruptVector");
+    if (!btechHostSetInterrupts || !btechHostWritePort || !btechHostSetInterruptVector || !btechHostSetTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterrupts || !btechHostWritePort || !btechHostSetInterruptVector || !btechHostSetTimerPeriod");
     btechHostSetInterrupts(0);
-    btechHostWritePort(PIT_CONTROL_PORT,PIT_MODE_3_LOW_HIGH);
-    btechHostWritePort(PIT_CHANNEL_ZERO_PORT,0);btechHostWritePort(PIT_CHANNEL_ZERO_PORT,0);
+    btechHostSetTimerPeriod(PIT_COUNTER_MODULUS); /* The BIOS's period (H4b; was 43h, 40h 0, 40h 0). */
     btechHostWritePort(PIC_MASK_PORT,COMBAT_PIC_DEVICE_MASK);
     btechHostSetInterruptVector(TIMER_INTERRUPT,savedTimerVector);
     runtimeDelayActive=0;

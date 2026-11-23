@@ -92,6 +92,7 @@ void MwSdlConvertMouseMotion(float windowXMotion,float windowYMotion,
 bool MwSdlInitializeAudio(void);
 void MwSdlAdvanceAudio(double pitTime);
 void MwSdlPlayTone(double frequency);
+void MwSdlSetTimerPeriod(uint32_t pitCycles);
 void MwSdlShutdownAudio(void);
 /* Combat is running (its frames are on the canvas like the campaign's). */
 extern bool mwSdlCombatActive;

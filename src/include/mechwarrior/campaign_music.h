@@ -23,8 +23,7 @@ typedef void (*MwMusicTimerHandler)(void);
 enum { MUSIC_TIMER_CALLBACK_COUNT=9, MUSIC_TIMER_FAST_SLOT=8,
     MUSIC_TIMER_PHASE_MASK=0x1F, MUSIC_TIMER_COARSE_MASK=0xE0,
     MUSIC_TIMER_BASE_DIVISOR_HIGH=0x20, MUSIC_TIMER_MAX_RATE_SHIFT=5,
-    MUSIC_TIMER_CLOCK_INCREMENT=0x01C2,
-    PIT_CHANNEL0_PORT=0x0040, PIT_CHANNEL0_SQUARE_WAVE=0x36 };
+    MUSIC_TIMER_CLOCK_INCREMENT=0x01C2 };
 typedef struct MwMusicHardwareCalls
 {
     void (*setInterruptsEnabled)(bool enabled);
@@ -38,6 +37,10 @@ typedef struct MwMusicHardwareCalls
     /* The speaker music's tone (S6): a frequency in Hz, or 0 for silence. The
      * host plays it on the tone voice, where PIT channel 2 and port 61h were. */
     void (*playTone)(double frequency);
+    /* The timer's period (H4b), where PIT channel 0 was programmed: in the
+     * PIT's clock units (1/1193182 s), so the ticks fall where they did;
+     * PIT_COUNTER_MODULUS is the BIOS's 18.2 Hz. The host's clock runs it. */
+    void (*setTimerPeriod)(uint32_t pitCycles);
 } MwMusicHardwareCalls;
 extern MwMusicHardwareCalls mwMusicHardware;
 extern uint16_t timerClockLow,timerClockHigh;

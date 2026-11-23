@@ -5,8 +5,7 @@
 #include <stdbool.h>
 #include "mechwarrior/hardware_ports.h"
 
-enum { COMBAT_SCREEN_COCKPIT=0,BIOS_VIDEO_EQUIPMENT=0x10,PIT_CHANNEL_ZERO_PORT=0x40,
-    PIC_MASK_PORT=0x21,PIT_MODE_3_LOW_HIGH=0x36 };
+enum { COMBAT_SCREEN_COCKPIT=0,BIOS_VIDEO_EQUIPMENT=0x10,PIC_MASK_PORT=0x21 };
 
 enum { COMBAT_SCHEDULER_INVALID_SLOT_BITS=0xF0,COMBAT_SCHEDULER_MAX_POSITIVE_PERIOD=0xFF,
     BIOS_ROM_SELECTOR=0xF000,BIOS_MODEL_OFFSET=0xFFFE,BIOS_PCJR_MODEL_BYTE=0xFF,
@@ -43,6 +42,9 @@ extern BtechTimerCallback schedulerCallbacks[COMBAT_SCHEDULER_SLOTS];
 extern BtechSchedulerTiming schedulerTimings[COMBAT_SCHEDULER_SLOTS];
 /* Hardware FAR tail to the saved IRQ, not an audio/game callback seam. */
 extern void (*btechHostChainTimerInterrupt)(uint32_t vector);
+/* The timer's period (H4b), where PIT channel 0 was programmed: in the PIT's
+ * clock units; PIT_COUNTER_MODULUS is the BIOS's 18.2 Hz. */
+extern void (*btechHostSetTimerPeriod)(uint32_t pitCycles);
 uint16_t BtechRegisterTimerCallback(BtechTimerCallback callback,uint16_t period);
 uint16_t BtechUnregisterTimerCallback(uint16_t callbackHandle);
 void BtechTimerSchedulerInterrupt(void);

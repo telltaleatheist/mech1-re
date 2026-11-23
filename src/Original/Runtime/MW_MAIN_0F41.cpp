@@ -46,35 +46,34 @@ void MwCampaignTimerInterrupt(void)
 }
 
 /* MW_MAIN0F41:00B5..00F9. Original DOS vector operations project to typed
- * handler references; their numeric identities are not consumed by this slice. */
+ * handler references; their numeric identities are not consumed by this slice.
+ * The PIT programming (43h, then 40h's low and high bytes) is the host's
+ * timer period since H4b, set where the high byte took effect. */
 void MwInstallMusicTimer(void)
 {
     if (!mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.readIrq0Handler
-        || !mwMusicHardware.writeIrq0Handler || !mwMusicHardware.writePort) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.readIrq0Handler || !mwMusicHardware.writeIrq0Handler || !mwMusicHardware.writePort");
+        || !mwMusicHardware.writeIrq0Handler || !mwMusicHardware.setTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.readIrq0Handler || !mwMusicHardware.writeIrq0Handler || !mwMusicHardware.setTimerPeriod");
     mwMusicHardware.setInterruptsEnabled(false);
     for (uint16_t slot=0;slot<MUSIC_TIMER_CALLBACK_COUNT;++slot) timerCallbackSlots[slot]=NULL;
     timerCallbackSlots[0]=mwMusicHardware.readIrq0Handler();
     mwMusicHardware.writeIrq0Handler(MwCampaignTimerInterrupt);
-    mwMusicHardware.writePort(PIT_CONTROL_PORT,PIT_CHANNEL0_SQUARE_WAVE);
-    mwMusicHardware.writePort(PIT_CHANNEL0_PORT,0);
     timerPhase=0;
     timerClockLow=0;
     timerClockHigh=0;
-    mwMusicHardware.writePort(PIT_CHANNEL0_PORT,MUSIC_TIMER_BASE_DIVISOR_HIGH);
+    mwMusicHardware.setTimerPeriod((uint32_t)MUSIC_TIMER_BASE_DIVISOR_HIGH<<8);
     pitDivisorHigh=MUSIC_TIMER_BASE_DIVISOR_HIGH;
     mwMusicHardware.setInterruptsEnabled(true);
 }
 
-/* MW_MAIN0F41:00FA..0117. Restore writable slot0, not a second saved vector. */
+/* MW_MAIN0F41:00FA..0117. Restore writable slot0, not a second saved vector,
+ * and the BIOS's period. */
 void MwRestoreBiosTimer(void)
 {
     if (!mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.writeIrq0Handler
-        || !mwMusicHardware.writePort) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.writeIrq0Handler || !mwMusicHardware.writePort");
+        || !mwMusicHardware.setTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.writeIrq0Handler || !mwMusicHardware.setTimerPeriod");
     mwMusicHardware.setInterruptsEnabled(false);
     mwMusicHardware.writeIrq0Handler(timerCallbackSlots[0]);
-    mwMusicHardware.writePort(PIT_CONTROL_PORT,PIT_CHANNEL0_SQUARE_WAVE);
-    mwMusicHardware.writePort(PIT_CHANNEL0_PORT,0);
-    mwMusicHardware.writePort(PIT_CHANNEL0_PORT,0);
+    mwMusicHardware.setTimerPeriod(PIT_COUNTER_MODULUS);
     mwMusicHardware.setInterruptsEnabled(true);
 }
 
@@ -83,7 +82,7 @@ void MwRestoreBiosTimer(void)
 void MwTimerSetCallback(uint16_t slot,MwMusicTimerHandler handler,uint16_t rateShift)
 {
     if (slot>=MUSIC_TIMER_CALLBACK_COUNT) return;
-    if (!mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.writePort) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.writePort");
+    if (!mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.setTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.setTimerPeriod");
     mwMusicHardware.setInterruptsEnabled(false);
     timerCallbackSlots[slot]=handler;
     if (slot==MUSIC_TIMER_FAST_SLOT)
@@ -92,9 +91,7 @@ void MwTimerSetCallback(uint16_t slot,MwMusicTimerHandler handler,uint16_t rateS
         uint8_t divisorHigh=MUSIC_TIMER_BASE_DIVISOR_HIGH;
         if (handler && rateShift && rateShift<=MUSIC_TIMER_MAX_RATE_SHIFT) divisorHigh>>=rateShift;
         pitDivisorHigh=divisorHigh;
-        mwMusicHardware.writePort(PIT_CONTROL_PORT,PIT_CHANNEL0_SQUARE_WAVE);
-        mwMusicHardware.writePort(PIT_CHANNEL0_PORT,0);
-        mwMusicHardware.writePort(PIT_CHANNEL0_PORT,divisorHigh);
+        mwMusicHardware.setTimerPeriod((uint32_t)divisorHigh<<8);
     }
     mwMusicHardware.setInterruptsEnabled(true);
 }
