@@ -14,7 +14,8 @@ class PackageTests(unittest.TestCase):
         for name in ["LICENSE", "MechWarrior.ini", "docs/LICENSES/MIT.txt", "docs/NOTICE.md",
                      "docs/THIRD_PARTY_NOTICES.md", "sdl/LICENSE.txt",
                      "build/_deps/munt-src/mt32emu/COPYING.LESSER.txt", "build/_deps/nukedopl-src/LICENSE",
-                     "data/rules/units.json", "data/ui/hub.json"]:
+                     "data/rules/units.json", "data/ui/hub.json", "extern/re-setup-kit/LICENSE",
+                     "extern/re-setup-kit/third_party/stb/LICENSE", "extern/re-setup-kit/third_party/miniz/LICENSE"]:
             file = root / name
             file.parent.mkdir(parents=True, exist_ok=True)
             file.write_text("fixture")
@@ -37,6 +38,7 @@ class PackageTests(unittest.TestCase):
             self.assertTrue(os.access(extracted / "mechwarrior", os.X_OK))
             self.assertEqual(subprocess.run([str(extracted / "mechwarrior"), "--help"], capture_output=True).returncode, 0)
             self.assertTrue((extracted / "licenses/Munt-COPYING.LESSER.txt").exists())
+            self.assertTrue((extracted / "licenses/stb-LICENSE").exists() and (extracted / "licenses/miniz-LICENSE").exists())
             self.assertTrue((extracted / "data/rules/units.json").exists())
             self.assertTrue((extracted / "data/ui/hub.json").exists())
             self.assertEqual(len(list((root / "dist").glob("*.sha256"))), 1)
@@ -50,6 +52,15 @@ class PackageTests(unittest.TestCase):
                 build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
             self.assertFalse(list((root / "dist").glob("*.tar.gz")))
 
+
+    def test_missing_kit_licence_blocks_packaging(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            (root / "extern/re-setup-kit/third_party/stb/LICENSE").unlink()
+            with patch.object(build_package, "run"), patch.object(build_package, "platform_name", return_value="linux-x86_64"), self.assertRaisesRegex(RuntimeError, "Missing licence"):
+                build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
+            self.assertFalse(list((root / "dist").glob("*.tar.gz")))
 
     def test_missing_data_blocks_packaging(self):
         with tempfile.TemporaryDirectory() as directory:
