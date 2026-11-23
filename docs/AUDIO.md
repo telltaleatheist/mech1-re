@@ -11,8 +11,8 @@ mt32_pcm_rom=
 ```
 
 The shipped `MechWarrior.ini` selects `adlib`, so a package plays AdLib from
-its first start (a project decision); with no INI, or a line the program does
-not read, it is `speaker`. `speaker` retains the original PC-speaker music and combat effects. `mt32`
+its first start (a project decision); with no INI, or no `sound_system` line,
+it is `speaker`. `speaker` retains the original PC-speaker music and combat effects. `mt32`
 selects the original Roland campaign music backend, synthesized by libmt32emu.
 `adlib` selects the original AdLib campaign driver, synthesized by Nuked-OPL3
 in OPL2-compatible mode, and requires no external ROM files.
