@@ -68,9 +68,12 @@ beside each tick count), not to change them.
   start (section 3).
 - **Slice 1:** each delay loop waits a fixed 0.4 µs (the 2500 model's
   loop, so the test clock's timeline is unchanged). Between the calibration's
-  two PIT latches, each game-port read counts a fixed 1 µs. The loop count
-  is then 0x6FCC / 1,193 = 23 on every host, and the calibration takes
-  4 × 255 × 23 × 0.4 µs = 9.4 ms. It was 0.83 s on the PC (loop count 2,044).
+  two PIT latches (made with interrupts off; the only latches in play), each
+  game-port read counts a fixed 1 µs. Its 1,000 reads are 1,193 PIT clocks,
+  which mode 3 counts down by two: 2,386 counts. The loop count is then
+  0x6FCC / 2,386 = 11 on every host (logged on the PC), and the calibration
+  takes 4 × 255 × 11 × 0.4 µs = 4.5 ms. It was 0.83 s on the PC (loop count
+  2,044).
   No stick is emulated, so the count changes no play.
 
 ## 2. The fixed tick and the speed steps (slice 1)
