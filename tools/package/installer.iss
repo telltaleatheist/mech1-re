@@ -6,7 +6,7 @@
 ; shortcut (a desktop one ticked by default) and an uninstaller. The game
 ; writes nothing there: the player's settings (MechWarrior.ini), the copy of
 ; the game the first start sets up (install\), saves, story\ and the log live
-; in %APPDATA%\MicroProse\MechWarrior 1 Rebuild, which the uninstaller and
+; in %APPDATA%\BattleTech\MechWarrior 1 Rebuild, which the uninstaller and
 ; every update leave alone.
 ; No file of the original game is in the installer.
 
@@ -79,4 +79,4 @@ Type: filesandordirs; Name: "{app}\data"
 Type: dirifempty; Name: "{app}"
 
 [Messages]
-UninstalledAll=%1 was removed from your computer.%n%nYour settings, saved games and the copy of the game it set up are kept in %APPDATA%\MicroProse\MechWarrior 1 Rebuild. Delete that folder to remove them too. Your own copy of MechWarrior was never changed.
+UninstalledAll=%1 was removed from your computer.%n%nYour settings, saved games and the copy of the game it set up are kept in %APPDATA%\BattleTech\MechWarrior 1 Rebuild. Delete that folder to remove them too. Your own copy of MechWarrior was never changed.

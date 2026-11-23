@@ -6,8 +6,9 @@
 
 /* --status: one JSON line on stdout, exit 0; no window, nothing written. */
 int MwSetupPrintStatus(void);
-/* The previews' folder copied once into the player's (never moved). Logged. */
-void MwSetupCarryOver(void);
+/* The player's folder settled for this start (setup::settle_user_folder: in use,
+ * a test version's MicroProse one moved across, or the previews' copied once). Logged. */
+void MwSetupSettleUserFolder(void);
 /* The game folder a start plays from, into `folder`: the remembered one, the
  * player's own install, else the setup (the player picks a copy, a folder or
  * an archive, which is copied into the player's folder). `setupOnly`: the

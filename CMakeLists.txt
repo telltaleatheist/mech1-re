@@ -360,7 +360,8 @@ if(MECHWARRIOR_BUILD_SDL)
         src/SDL/SDLBackend_Pilot.cpp src/Support/SupportPilot.cpp src/Support/SupportPilotObservation.cpp
         src/SDL/SDLBackend_Video.cpp src/SDL/SDLBackend_CombatVideo.cpp src/SDL/SDLBackend_CombatPlatform.cpp
         src/SDL/SDLBackend_CombatProcess.cpp src/SDL/SDLBackend_Audio.cpp)
-    target_link_libraries(mechwarrior_sdl PUBLIC mechwarrior_original SDL3::SDL3 mechwarrior_audio mechwarrior_mt32 mechwarrior_adlib)
+    target_link_libraries(mechwarrior_sdl PUBLIC mechwarrior_original SDL3::SDL3 mechwarrior_audio mechwarrior_mt32 mechwarrior_adlib
+                          mechwarrior_setup)  # the player's folder's names and order (src/Setup/Setup.h)
     if(NOT MSVC)
         target_link_libraries(mechwarrior_sdl PUBLIC m)
     endif()

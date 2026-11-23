@@ -139,12 +139,19 @@ int MwSetupPrintStatus(void) {
   return 0;
 }
 
-void MwSetupCarryOver(void) {
-  if (std::getenv("MECHWARRIOR_SAVE_DIRECTORY")) return;  // a folder named by the run: nothing to carry
-  const std::string from = setup::pref_folder(setup::kOldOrganisation, setup::kOldApplication);
-  const setup::Carried c = setup::carry_over(from, setup::user_folder());
-  if (c.done) std::fprintf(stderr, "setup: copied %d files once from %s (left as it was)\n", c.files, from.c_str());
-  if (!c.error.empty()) std::fprintf(stderr, "setup: %s\n", c.error.c_str());
+void MwSetupSettleUserFolder(void) {
+  if (std::getenv("MECHWARRIOR_SAVE_DIRECTORY")) return;  // a folder named by the run: nothing to settle
+  const setup::Settled s =
+      setup::settle_user_folder(setup::pref_folder(setup::kOrganisation, setup::kApplication),
+                                setup::pref_folder(setup::kOldOrganisation, setup::kOldApplication));
+  if (s.kind == setup::Settled::kMoved)
+    std::fprintf(stderr, "setup: moved %s to %s\n", s.from.c_str(), s.folder.c_str());
+  else if (s.kind == setup::Settled::kMoveFailed)
+    std::fprintf(stderr, "setup: %s; this start uses %s, the move is tried again at the next\n", s.error.c_str(),
+                 s.folder.c_str());
+  else if (s.kind == setup::Settled::kCarried)
+    std::fprintf(stderr, "setup: copied %d files once from %s (left as it was)\n", s.files, s.from.c_str());
+  if (!s.error.empty() && s.kind != setup::Settled::kMoveFailed) std::fprintf(stderr, "setup: %s\n", s.error.c_str());
 }
 
 int MwSetupResolveGame(bool setupOnly, char* folder, size_t size) {

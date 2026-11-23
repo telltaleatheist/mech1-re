@@ -11,6 +11,7 @@
 #include "mechwarrior/launcher.h"
 #include "mechwarrior/campaign_startup.h"
 #include "mechwarrior/combat_startup.h"
+#include "Setup/Setup.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -112,8 +113,10 @@ const char *MwSdlDataDirectory(void)
     return dataDirectory;
 }
 /* The player's write directory (saves, story/, their MechWarrior.ini):
- * MECHWARRIOR_SAVE_DIRECTORY, or SDL's per-user folder (src/Setup/Setup.h
- * names it the same way without making it, for --status). */
+ * MECHWARRIOR_SAVE_DIRECTORY, or SDL's per-user folder under the family's
+ * name (src/Setup/Setup.h names it the same way without making it, for
+ * --status), or the same game's folder under the old name while a move
+ * across has not happened (setup::unmoved_folder: it failed this start). */
 bool MwSdlResolveWriteDirectory(char *directory,size_t size)
 {
     const char *configuredSaveDirectory=getenv("MECHWARRIOR_SAVE_DIRECTORY");
@@ -123,7 +126,14 @@ bool MwSdlResolveWriteDirectory(char *directory,size_t size)
         strcpy(directory,configuredSaveDirectory);
         return true;
     }
-    char *prefPath=SDL_GetPrefPath("MicroProse","MechWarrior 1 Rebuild");
+    const std::string unmoved=mw1o::setup::unmoved_folder(mw1o::setup::pref_folder(mw1o::setup::kOrganisation,mw1o::setup::kApplication));
+    if (!unmoved.empty())
+    {
+        if (unmoved.size()>=size) return false;
+        strcpy(directory,unmoved.c_str());
+        return true;
+    }
+    char *prefPath=SDL_GetPrefPath(mw1o::setup::kOrganisation,mw1o::setup::kApplication);
     if (!prefPath || strlen(prefPath)>=size) {SDL_free(prefPath);return false;}
     strcpy(directory,prefPath);SDL_free(prefPath);
     return true;

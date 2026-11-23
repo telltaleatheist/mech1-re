@@ -98,7 +98,47 @@ std::string pref_folder(const char* organisation, const char* application) {
 std::string user_folder() {
   const std::string configured = env("MECHWARRIOR_SAVE_DIRECTORY");
   if (!configured.empty()) return with_slash(configured);
-  return pref_folder(kOrganisation, kApplication);
+  const std::string folder = pref_folder(kOrganisation, kApplication);
+  const std::string unmoved = unmoved_folder(folder);
+  return unmoved.empty() ? folder : unmoved;
+}
+
+bool has_content(const std::string& dir) {
+  std::error_code ec;
+  if (!is_dir(dir)) return false;
+  for (fs::directory_iterator it(dir, ec), end; !ec && it != end; it.increment(ec))
+    if (it->path().filename() != ".DS_Store") return true;
+  return false;
+}
+
+std::string unmoved_folder(const std::string& folder) {
+  const std::string old = folder.empty() ? "" : rekit::old_org_folder(folder);
+  return !old.empty() && !has_content(folder) && has_content(old) ? with_slash(old) : "";
+}
+
+Settled settle_user_folder(const std::string& folder, const std::string& preview) {
+  Settled s;
+  s.folder = folder;
+  if (has_content(folder)) return s.kind = Settled::kInUse, s;
+  const std::string old = unmoved_folder(folder);
+  if (!old.empty()) {
+    s.from = old;
+    std::string to = folder, from = old;  // without the separator: the rename's own names
+    while (to.size() > 1 && (to.back() == '/' || to.back() == '\\')) to.pop_back();
+    while (from.size() > 1 && (from.back() == '/' || from.back() == '\\')) from.pop_back();
+    const rekit::FolderMove m = rekit::move_once(from, to);
+    if (m.kind == rekit::FolderMove::kMoved) {
+      rekit::remove_if_empty(fs::path(from).parent_path().string(), 1);  // MicroProse, if nothing else is in it
+      return s.kind = Settled::kMoved, s;
+    }
+    s.kind = Settled::kMoveFailed, s.folder = old;
+    s.error = m.error.empty() ? "nothing moved from " + from + " to " + to : m.error;
+    return s;
+  }
+  const Carried c = carry_over(preview, folder);
+  s.files = c.files, s.error = c.error;
+  if (c.done) s.kind = Settled::kCarried, s.from = preview;
+  return s;
 }
 
 std::string default_install(const std::string& user) {

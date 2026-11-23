@@ -66,12 +66,20 @@ writes nothing; `mw1r --setup` sets the game up and exits 0 ready,
 `tests/status_setup_test.py` checks both on the built program.
 
 The save directory is `MECHWARRIOR_SAVE_DIRECTORY`, or SDL's per-user folder:
-`%APPDATA%\MicroProse\MechWarrior 1 Rebuild` on Windows,
-`~/Library/Application Support/MicroProse/MechWarrior 1 Rebuild` on macOS and
-`~/.local/share/MicroProse/MechWarrior 1 Rebuild` on Linux (or under
-`$XDG_DATA_HOME`). Nothing is written into the install folder. The previews'
-`BattleTechReverse/MechWarrior` is copied into it once on the first start
-(a marker file; nothing overwritten, the old folder left as it was).
+`%APPDATA%\BattleTech\MechWarrior 1 Rebuild` on Windows,
+`~/Library/Application Support/BattleTech/MechWarrior 1 Rebuild` on macOS and
+`~/.local/share/BattleTech/MechWarrior 1 Rebuild` on Linux (or under
+`$XDG_DATA_HOME`): the family's folder, re-setup-kit's `rekit::kFamilyOrg`.
+Nothing is written into the install folder. Each start settles it in this
+order (`setup::settle_user_folder`):
+
+1. The BattleTech folder has something in it: used as it is.
+2. Else a test version's `MicroProse/MechWarrior 1 Rebuild` has: renamed
+   across once (`rekit::move_once`, never a copy), and `MicroProse` removed
+   only if that leaves it empty. If the rename fails (another drive, a file in
+   use), that start uses the MicroProse folder and the next start tries again.
+3. Else the previews' `BattleTechReverse/MechWarrior` is copied in once (a
+   marker file; nothing overwritten, the old folder left as it was).
 
 Packages link libarchive, zlib and liblzma statically, built from pinned
 sources: `tools/deps/build_archive.sh mac|linux` (into `build-deps/`) and
