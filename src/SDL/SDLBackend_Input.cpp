@@ -4,62 +4,64 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-enum { HOST_KEYBOARD_SCAN_QUEUE_BYTES=16,HOST_DEFAULT_DRIVE_C=2 };
-static uint16_t keys[BIOS_KEY_BUFFER_WORDS];
-static uint8_t keyShifts[BIOS_KEY_BUFFER_WORDS],readIndex,writeIndex,lastShift;
-static bool quitRequested;
+/* Keys reach the games as typed events (H2): the campaign's presses wait in a
+ * queue of 16 slots (15 keys, as the BIOS ring its key reads used held), and
+ * combat's presses and releases in one of 16 events until its handler takes
+ * them. No BIOS keyboard data, scan port or IRQ1 is modelled. */
+enum { HOST_KEY_QUEUE_SLOTS=16,HOST_DEFAULT_DRIVE_C=2,
+    HOST_KEY_HANDLER_PORT_READS=2,HOST_PRE_CHILD_PORT_READS=1,HOST_PORT_READ_NS=1000 };
+static MwCampaignKey keys[HOST_KEY_QUEUE_SLOTS];
+static uint8_t readIndex,writeIndex;
+static bool lastControl,quitRequested;
 static uint32_t captureNumber;
 static uint16_t mouseReleaseCounts[MOUSE_BUTTON_COUNT];
 static float mouseXMotion,mouseYMotion;
-static uint8_t keyboardScans[HOST_KEYBOARD_SCAN_QUEUE_BYTES],keyboardRead,keyboardWrite;
-bool MwSdlCombatKeyboardPending(void) {return mwSdlCombatActive && keyboardRead!=keyboardWrite;}
-uint8_t MwSdlReadKeyboardScanByte(void)
+static MwKeyEvent combatKeys[HOST_KEY_QUEUE_SLOTS];
+static uint8_t combatKeyRead,combatKeyWrite;
+bool MwSdlCombatKeyboardPending(void) {return mwSdlCombatActive && combatKeyRead!=combatKeyWrite;}
+/* One combat key event to the game, where the IRQ1 was delivered before H2. */
+void MwSdlDeliverCombatKeyEvent(void)
 {
-    if (!MwSdlCombatKeyboardPending()) MwSdlFail("Keyboard controller has no scan byte");
-    return keyboardScans[keyboardRead];
-}
-void MwSdlDeliverCombatKeyboardInterrupt(void)
-{
+    if (!MwSdlCombatKeyboardPending()) MwSdlFail("No combat key event to deliver");
     if (!btechHostGetInterruptVector) MwSdlFail("Missing keyboard vector binding");
+    MwKeyEvent event=combatKeys[combatKeyRead];
     uint32_t vector=btechHostGetInterruptVector(KEYBOARD_INTERRUPT);
-    if (vector==BTECH_KEYBOARD_HANDLER_VECTOR) BtechKeyboardInterrupt();
+    /* The test clock's charge for the port reads the IRQ1 made (H4 removes
+     * the per-read charges with the rest of the port timing). */
+    unsigned portReads=HOST_KEY_HANDLER_PORT_READS;
+    if (vector==BTECH_KEYBOARD_HANDLER_VECTOR) BtechHandleKeyEvent(event);
     else if (!vector)
     {
-        /* Opaque0 is the configured pre-child system handler, NOT BIOS bytes
-         * at0000:0000. Ordinary releases produce no BIOS key and do not touch
-         * BTECH's held-key/last-key state after2C8D restores the system vector.
-         * Modifier/lock/Insert releases and all makes still need the complete
-         * firmware translation; never pretend they are harmless releases. */
-        uint8_t scan=MwSdlReadKeyboardScanByte(),key=scan&KEYBOARD_SCAN_MASK;
-        if (!(scan&KEYBOARD_BREAK_FLAG) || !key || key>=COMBAT_KEYBOARD_SCAN_CODES
-            || key==COMBAT_KEY_CONTROL || key==COMBAT_KEY_LEFT_SHIFT || key==COMBAT_KEY_RIGHT_SHIFT || key==COMBAT_KEY_ALT
-            || key==COMBAT_KEY_CAPS_LOCK || key==COMBAT_KEY_NUM_LOCK || key==COMBAT_KEY_SCROLL_LOCK || key==COMBAT_KEY_INSERT || key==COMBAT_KEY_SYSTEM_REQUEST)
-            MwSdlFail("Unconverted pre-child BIOS keyboard scan");
-        uint8_t control=MwSdlReadDevicePort(KEYBOARD_CONTROL_PORT);
-        MwSdlWriteDevicePort(KEYBOARD_CONTROL_PORT,control|KEYBOARD_ACKNOWLEDGE_BIT);
-        MwSdlWriteDevicePort(KEYBOARD_CONTROL_PORT,control);
-        MwSdlWriteDevicePort(PIC_COMMAND_PORT,PIC_END_OF_INTERRUPT);
+        /* After 2C8D restores the system handler, an ordinary release changes
+         * nothing the game sees and is dropped. Makes and modifier, lock and
+         * Insert releases would need the BIOS's keyboard; none is converted. */
+        if (!event.released || !event.key || event.key>=COMBAT_KEYBOARD_SCAN_CODES
+            || event.key==COMBAT_KEY_CONTROL || event.key==COMBAT_KEY_LEFT_SHIFT || event.key==COMBAT_KEY_RIGHT_SHIFT || event.key==COMBAT_KEY_ALT
+            || event.key==COMBAT_KEY_CAPS_LOCK || event.key==COMBAT_KEY_NUM_LOCK || event.key==COMBAT_KEY_SCROLL_LOCK || event.key==COMBAT_KEY_INSERT || event.key==COMBAT_KEY_SYSTEM_REQUEST)
+            MwSdlFail("Unconverted key event without combat's keyboard handler");
+        portReads=HOST_PRE_CHILD_PORT_READS;
     }
     else MwSdlFail("Unmapped native keyboard vector");
-    keyboardRead=(keyboardRead+1)%sizeof(keyboardScans);
+    if (MwSdlVirtualClock()) MwSdlSpendNanoseconds((uint64_t)portReads*HOST_PORT_READ_NS);
+    combatKeyRead=(combatKeyRead+1)%HOST_KEY_QUEUE_SLOTS;
 }
-static void QueueCombatScan(uint8_t scan)
+static void QueueCombatKey(uint8_t key,bool released)
 {
-    uint8_t next=(keyboardWrite+1)%sizeof(keyboardScans);
-    if (next!=keyboardRead) {keyboardScans[keyboardWrite]=scan;keyboardWrite=next;}
+    uint8_t next=(combatKeyWrite+1)%HOST_KEY_QUEUE_SLOTS;
+    if (next!=combatKeyRead) {combatKeys[combatKeyWrite]=MwKeyEvent{key,released};combatKeyWrite=next;}
 }
-void MwSdlQueueCombatScan(uint8_t scan) {if(mwSdlCombatActive)QueueCombatScan(scan);}
+void MwSdlQueueCombatKey(uint8_t key,bool released) {if(mwSdlCombatActive)QueueCombatKey(key,released);}
 
-void MwSdlQueueBiosKey(uint16_t key,uint8_t shift)
+void MwSdlQueueCampaignKey(MwCampaignKey key)
 {
     if (getenv("MECHWARRIOR_DIAGNOSTICS"))
-    {fprintf(stderr,"BIOS key=%04X shift=%02X time=%llu\n",key,shift,(unsigned long long)SDL_GetTicks());fflush(stderr);}
-    uint8_t next=(writeIndex+1)%BIOS_KEY_BUFFER_WORDS;
-    if (next==readIndex) return; /* BIOS ring is full; no game action mapping. */
-    keys[writeIndex]=key;keyShifts[writeIndex]=shift;writeIndex=next;
+    {fprintf(stderr,"Key=%04X control=%d time=%llu\n",MwCampaignKeyWord(key),key.control,(unsigned long long)SDL_GetTicks());fflush(stderr);}
+    uint8_t next=(writeIndex+1)%HOST_KEY_QUEUE_SLOTS;
+    if (next==readIndex) return; /* The queue is full; the key is dropped. */
+    keys[writeIndex]=key;writeIndex=next;
 }
 void MwSdlRequestQuit(void) {quitRequested=true;}
-static uint8_t ScanCode(SDL_Scancode scan)
+static uint8_t KeyNumber(SDL_Scancode scan)
 {
     static const struct {SDL_Scancode scan;uint8_t bios;} map[]={
         {SDL_SCANCODE_ESCAPE,COMBAT_KEY_ESCAPE},{SDL_SCANCODE_RETURN,COMBAT_KEY_ENTER},{SDL_SCANCODE_KP_ENTER,COMBAT_KEY_ENTER},
@@ -88,10 +90,10 @@ static uint8_t ScanCode(SDL_Scancode scan)
     for (uint16_t i=0;i<sizeof(map)/sizeof(map[0]);++i) if (map[i].scan==scan) return map[i].bios;
     return 0;
 }
-/* The BIOS word and shift flags a campaign key press produces. */
-static bool BiosKey(SDL_Scancode scancode,SDL_Keycode keycode,SDL_Keymod mod,uint16_t *word,uint8_t *shift)
+/* The campaign key a press gives: its number, character and Control. */
+static bool CampaignKey(SDL_Scancode scancode,SDL_Keycode keycode,SDL_Keymod mod,MwCampaignKey *key)
 {
-    uint8_t scan=ScanCode(scancode);if (!scan) return false;
+    uint8_t scan=KeyNumber(scancode);if (!scan) return false;
     uint8_t ascii=keycode<ASCII_CHARACTER_LIMIT?(uint8_t)keycode:0;
     if ((mod&SDL_KMOD_NUM) && scancode>=SDL_SCANCODE_KP_1 && scancode<=SDL_SCANCODE_KP_9)
         ascii=(uint8_t)('1'+scancode-SDL_SCANCODE_KP_1);
@@ -100,12 +102,11 @@ static bool BiosKey(SDL_Scancode scancode,SDL_Keycode keycode,SDL_Keymod mod,uin
     else if (((mod&SDL_KMOD_SHIFT)!=0)^((mod&SDL_KMOD_CAPS)!=0))
     {if (ascii>='a' && ascii<='z') ascii-=ASCII_CASE_DISTANCE;}
     if (mod&SDL_KMOD_ALT) ascii=0;
-    *shift=(mod&SDL_KMOD_CTRL)?BIOS_SHIFT_CONTROL:0;
-    *word=((uint16_t)scan<<BIOS_KEY_SCAN_SHIFT)|ascii;
+    *key=MwCampaignKey{scan,ascii,(mod&SDL_KMOD_CTRL)!=0};
     return true;
 }
-bool MwSdlBiosKeyForScancode(SDL_Scancode scancode,SDL_Keymod mod,uint16_t *word,uint8_t *shift)
-{return BiosKey(scancode,SDL_GetKeyFromScancode(scancode,mod,false),mod,word,shift);}
+bool MwSdlCampaignKeyForScancode(SDL_Scancode scancode,SDL_Keymod mod,MwCampaignKey *key)
+{return CampaignKey(scancode,SDL_GetKeyFromScancode(scancode,mod,false),mod,key);}
 void MwSdlPollEvents(void)
 {
     MwSdlPollDebugControl();
@@ -150,8 +151,8 @@ void MwSdlPollEvents(void)
         }
         if (mwSdlCombatActive && (event.type==SDL_EVENT_KEY_DOWN || event.type==SDL_EVENT_KEY_UP) && event.key.scancode!=SDL_SCANCODE_F12)
         {
-            uint8_t scan=ScanCode(event.key.scancode);
-            if (scan) QueueCombatScan(scan|(event.type==SDL_EVENT_KEY_UP?KEYBOARD_BREAK_FLAG:0));
+            uint8_t key=KeyNumber(event.key.scancode);
+            if (key) QueueCombatKey(key,event.type==SDL_EVENT_KEY_UP);
             continue;
         }
         if (event.type!=SDL_EVENT_KEY_DOWN) continue;
@@ -161,25 +162,26 @@ void MwSdlPollEvents(void)
             if (!MwSdlCapture(stem)) fprintf(stderr,"Capture failed or file already exists.\n");
             continue;
         }
-        uint16_t word;uint8_t shift;
-        if (BiosKey(event.key.scancode,event.key.key,event.key.mod,&word,&shift)) MwSdlQueueBiosKey(word,shift);
+        MwCampaignKey key;
+        if (CampaignKey(event.key.scancode,event.key.key,event.key.mod,&key)) MwSdlQueueCampaignKey(key);
     }
     if (quitRequested)
     {
-        if (mwSdlCombatActive) {QueueCombatScan(COMBAT_KEY_CONTROL);QueueCombatScan(COMBAT_KEY_ESCAPE);quitRequested=false;}
-        else if (readIndex==writeIndex) MwSdlQueueBiosKey(CAMPAIGN_KEY_ESCAPE,BIOS_SHIFT_CONTROL);
+        if (mwSdlCombatActive) {QueueCombatKey(COMBAT_KEY_CONTROL,false);QueueCombatKey(COMBAT_KEY_ESCAPE,false);quitRequested=false;}
+        else if (readIndex==writeIndex)
+            MwSdlQueueCampaignKey(MwCampaignKey{(uint8_t)(CAMPAIGN_KEY_ESCAPE>>8),(uint8_t)CAMPAIGN_KEY_ESCAPE,true});
     }
 }
 static bool Available(void) {MwSdlPump();MwSdlDebugNoteInputPoll(readIndex==writeIndex,false);return readIndex!=writeIndex;}
-static uint16_t ReadKey(void)
+static MwCampaignKey ReadKey(void)
 {
     while (readIndex==writeIndex) {MwSdlPump();MwSdlDebugNoteInputPoll(true,true);}
-    uint16_t key=keys[readIndex];lastShift=keyShifts[readIndex];readIndex=(readIndex+1)%BIOS_KEY_BUFFER_WORDS;
-    MwSdlDebugNoteKeyRead(key);
+    MwCampaignKey key=keys[readIndex];lastControl=key.control;readIndex=(readIndex+1)%HOST_KEY_QUEUE_SLOTS;
+    MwSdlDebugNoteKeyRead(MwCampaignKeyWord(key));
     return key;
 }
-static uint8_t ShiftFlags(void)
-{return lastShift|((SDL_GetModState()&SDL_KMOD_CTRL)?BIOS_SHIFT_CONTROL:0);}
+static bool ControlHeld(void)
+{return lastControl || (SDL_GetModState()&SDL_KMOD_CTRL)!=0;}
 static uint16_t MouseRelease(uint16_t button)
 {
     MwSdlPump();
@@ -200,10 +202,10 @@ static void ChargeGamePort(uint8_t value) {(void)value;}
 static uint8_t CurrentDrive(void) {return HOST_DEFAULT_DRIVE_C;}
 void MwSdlInitializeInput(void)
 {
-    readIndex=writeIndex=lastShift=0;quitRequested=false;captureNumber=0;MouseReset();
-    keyboardRead=keyboardWrite=0;
+    readIndex=writeIndex=0;lastControl=quitRequested=false;captureNumber=0;MouseReset();
+    combatKeyRead=combatKeyWrite=0;
     MwSdlInitializeDebugControl();
     mwCampaignInput=MwCampaignInputCalls{MouseRelease,Available,ReadKey,GamePort,ChargeGamePort,
-        MwSdlSetInterrupts,MwSdlPump,CurrentDrive,MouseReset,MouseMotion,ShiftFlags,
+        MwSdlSetInterrupts,MwSdlPump,CurrentDrive,MouseReset,MouseMotion,ControlHeld,
         MwSdlSetMousePosition,MwSdlReadMousePosition};
 }

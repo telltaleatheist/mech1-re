@@ -342,13 +342,13 @@ uint16_t MwPollPilotMechAssignmentContinuation(void)
         {
             if (!mwCampaignInput.keyboardAvailable || !mwCampaignInput.readKeyboard) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.keyboardAvailable || !mwCampaignInput.readKeyboard");
             if (!mwCampaignInput.keyboardAvailable()) continue;
-            key=mwCampaignInput.readKeyboard();
+            key=MwCampaignKeyWord(mwCampaignInput.readKeyboard());
         }
         if (key==CAMPAIGN_KEY_ENTER) return CAMPAIGN_CONTINUE_CONFIRM_PILOT_ASSIGNMENT;
         if (key==CAMPAIGN_KEY_ESCAPE)
         {
-            if (!mwCampaignInput.readKeyboardShiftFlags) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.readKeyboardShiftFlags");
-            if (mwCampaignInput.readKeyboardShiftFlags()&BIOS_SHIFT_CONTROL) return CAMPAIGN_CONTINUE_CLEANUP;
+            if (!mwCampaignInput.controlHeld) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.controlHeld");
+            if (mwCampaignInput.controlHeld()) return CAMPAIGN_CONTINUE_CLEANUP;
             continue; /* Plain Escape is NOT a cancel action here. */
         }
         uint16_t candidateOwnedUnitSlot=assignmentCandidateOwnedSlot;

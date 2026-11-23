@@ -2,6 +2,7 @@
 #define MECHWARRIOR_CAMPAIGN_INPUT_H
 #include "mechwarrior/campaign.h"
 #include "mechwarrior/input_hardware.h"
+#include "mechwarrior/key_events.h"
 
 /* Lowest BIOS/port boundaries only; decoding and polling stay original code.
  * Backends must drive the original0273 tick when delivering a timer interrupt.
@@ -10,7 +11,7 @@ typedef struct MwCampaignInputCalls
 {
     uint16_t (*mouseReleaseCount)(uint16_t button);
     bool (*keyboardAvailable)(void);
-    uint16_t (*readKeyboard)(void);
+    MwCampaignKey (*readKeyboard)(void); /* The next key press (H2). */
     uint8_t (*readGamePort)(void);
     void (*writeGamePort)(uint8_t value);
     void (*setInterruptsEnabled)(bool enabled);
@@ -18,7 +19,7 @@ typedef struct MwCampaignInputCalls
     uint8_t (*currentDefaultDrive)(void);
     void (*resetMouse)(void);
     void (*readMouseMotion)(uint16_t *xMotion,uint16_t *yMotion);
-    uint8_t (*readKeyboardShiftFlags)(void);
+    bool (*controlHeld)(void); /* Control, with the last key read or held now. */
     void (*setMousePosition)(uint16_t horizontalPosition,uint16_t verticalPosition);
     void (*readMousePosition)(uint16_t *horizontalPosition,uint16_t *verticalPosition);
 } MwCampaignInputCalls;

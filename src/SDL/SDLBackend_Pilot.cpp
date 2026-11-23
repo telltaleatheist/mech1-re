@@ -21,8 +21,8 @@ static void ReleasePilotKeys(void)
 {
     if(mwSdlCombatActive)
     {
-        if(heldDirection)MwSdlQueueCombatScan(heldDirection|0x80);
-        if(heldCommand)MwSdlQueueCombatScan(heldCommand|0x80);
+        if(heldDirection)MwSdlQueueCombatKey(heldDirection,true);
+        if(heldCommand)MwSdlQueueCombatKey(heldCommand,true);
     }
     heldDirection=heldCommand=0;
 }
@@ -124,16 +124,16 @@ void MwSdlUpdateSupportPilot(void)
     lastPilotFrame=SDL_GetTicks();SupportPilotObserve(&observation,mwSdlCombatActive);
     if(pauseOnNextFrame && observation.cockpit)
     {
-        pauseOnNextFrame=false;MwSdlQueueCombatScan(0x19); /* Ordinary P; never sent inside a paused dialog. */
+        pauseOnNextFrame=false;MwSdlQueueCombatKey(0x19,false); /* Ordinary P; never sent inside a paused dialog. */
         for(unsigned scans=0;scans<16 && MwSdlCombatKeyboardPending();++scans)MwSdlPumpTimer();
     }
     if(!pilotArmed)return;
     PilotControls controls=SupportPilotUpdate(&pilot,&observation);
-    /* Break before make, with the action make LAST: native IRQ1 break clears
-     * last-key state. Drain through the normal installed IRQ, not game calls. */
+    /* Break before make, with the action make LAST: combat's handler clears
+     * last-key state on a break. Drained through the normal key delivery. */
     ReleasePilotKeys();
-    if(controls.directionScan){MwSdlQueueCombatScan(controls.directionScan);heldDirection=controls.directionScan;}
-    if(controls.commandScan){MwSdlQueueCombatScan(controls.commandScan);heldCommand=controls.commandScan;}
+    if(controls.directionScan){MwSdlQueueCombatKey(controls.directionScan,false);heldDirection=controls.directionScan;}
+    if(controls.commandScan){MwSdlQueueCombatKey(controls.commandScan,false);heldCommand=controls.commandScan;}
     for(unsigned scans=0;scans<16 && MwSdlCombatKeyboardPending();++scans)MwSdlPumpTimer();
     if(MwSdlCombatKeyboardPending()){MwSdlStopSupportPilot();pilotMessage="keyboard delivery blocked";}
     if(pilot.complete){pilotArmed=false;pilotMessage="goal complete";}

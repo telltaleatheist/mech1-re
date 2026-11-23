@@ -2,19 +2,17 @@
 #include "mechwarrior/combat_input.h"
 #include <stdlib.h>
 
-/*1BF5:2F58. PUSHF/CLI/POPF, not an unconditional STI. Ring pointers and
- * wrap endpoints are live BDA WORDs; a keystroke is one scan/ASCII WORD. */
-uint16_t BtechPopBiosKeyboardBuffer(void)
+/*1BF5:2F58. PUSHF/CLI/POPF, not an unconditional STI. The next key word
+ * from the key queue (the BIOS ring in the original; H2), or 0 if none. */
+uint16_t BtechPopKey(void)
 {
-    if (!btechHostSetInterrupts || !btechHostReadBiosWord || !btechHostWriteBiosWord) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterrupts || !btechHostReadBiosWord || !btechHostWriteBiosWord");
+    if (!btechHostSetInterrupts) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterrupts");
     uint8_t savedInterrupts=btechHostSetInterrupts(0);
-    uint16_t key=0,head=btechHostReadBiosWord(BIOS_KEYBOARD_HEAD);
-    if (head!=btechHostReadBiosWord(BIOS_KEYBOARD_TAIL))
+    uint16_t key=0;
+    if (combatKeyQueueHead!=combatKeyQueueTail)
     {
-        key=btechHostReadBiosWord(head);
-        head+=sizeof(uint16_t);
-        if (head==btechHostReadBiosWord(BIOS_KEYBOARD_END)) head=btechHostReadBiosWord(BIOS_KEYBOARD_START);
-        btechHostWriteBiosWord(BIOS_KEYBOARD_HEAD,head);
+        key=combatKeyQueue[combatKeyQueueHead];
+        combatKeyQueueHead=(uint8_t)((combatKeyQueueHead+1)%COMBAT_KEY_QUEUE_SLOTS);
     }
     btechHostSetInterrupts(savedInterrupts);
     return key;

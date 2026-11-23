@@ -109,8 +109,8 @@ void BtechInstallKeyboardAndTickHandlers(uint16_t installBiosTick)
         }
         keyboardHandlersInstalled=1;
     }
-    btechHostWriteBiosByte(BIOS_KEYBOARD_SHIFT_FLAGS,btechHostReadBiosByte(BIOS_KEYBOARD_SHIFT_FLAGS)&BIOS_SHIFT_CLEAR_NUM_LOCK);
-    if (keyboardCapsLockRequested) btechHostWriteBiosByte(BIOS_KEYBOARD_SHIFT_FLAGS,btechHostReadBiosByte(BIOS_KEYBOARD_SHIFT_FLAGS)|BIOS_SHIFT_CAPS_LOCK);
+    keyboardShiftFlags&=BIOS_SHIFT_CLEAR_NUM_LOCK;
+    if (keyboardCapsLockRequested) keyboardShiftFlags|=BIOS_SHIFT_CAPS_LOCK;
 }
 
 /*1BF5:1F20. Saved offset/selector are captured before CLI; reinstallation

@@ -61,7 +61,7 @@ uint16_t BtechWaitForDialogKey(void)
 void BtechPollCombatCommandInput(void)
 {
     if (btechHostNoteCombatInputPoll) btechHostNoteCombatInputPoll(); /* Host test feed; unbound normally. */
-    uint16_t scanCode=BtechPopBiosKeyboardBuffer()>>BIOS_KEY_SCAN_SHIFT;
+    uint16_t scanCode=BtechPopKey()>>BIOS_KEY_SCAN_SHIFT;
     uint16_t direction=BtechReadJoystickDirectionMask(JOYSTICK_A);
     if (!direction)
     {

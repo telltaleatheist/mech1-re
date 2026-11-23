@@ -72,7 +72,7 @@ static uint64_t inputPolls,totalKeyReads;
  * Status reports progress; the game then waits for keys as usual. */
 enum { FEED_MAX_ITEMS=4096,FEED_MAX_BYTES=65536,FEED_WAIT_POLLS=4,FEED_NAME=48 };
 typedef enum { FEED_KEY,FEED_IDLE,FEED_SNAP,FEED_RANDOM,FEED_SONG,FEED_MAKE,FEED_BREAK,FEED_TICKS,FEED_SOUND } FeedKind;
-typedef struct { FeedKind kind;uint16_t word,word2;uint8_t shift;char name[FEED_NAME]; } FeedItem;
+typedef struct { FeedKind kind;uint16_t word,word2;MwCampaignKey key;char name[FEED_NAME]; } FeedItem;
 static FeedItem feed[FEED_MAX_ITEMS];
 static unsigned feedCount,feedIndex,feedPolls,feedWait,combatFeedPolls,combatFeedWait;
 static uint64_t combatPolls;
@@ -183,8 +183,8 @@ static bool ParseFeed(char *text)
             else if (!strncmp(token,"break:",6)) {item->kind=FEED_BREAK;token+=6;}
             for (char *ch=token;*ch;++ch) if (*ch=='_') *ch=' ';
             SDL_Scancode scan=SDL_GetScancodeFromName(token);
-            if (!scan || !MwSdlBiosKeyForScancode(scan,SDL_KMOD_NONE,&item->word,&item->shift)) return false;
-            if (item->kind!=FEED_KEY && !(item->word>>8)) return false; /* needs a scan code */
+            if (!scan || !MwSdlCampaignKeyForScancode(scan,SDL_KMOD_NONE,&item->key)) return false;
+            if (item->kind!=FEED_KEY && !item->key.key) return false; /* needs a key number */
         }
         ++feedCount;
     }
@@ -236,12 +236,12 @@ void MwSdlDebugNoteInputPoll(bool empty,bool blocking)
         else if (item->kind==FEED_SNAP) Snap(item->name);
         else if (item->kind==FEED_RANDOM) {randomStateWord0=item->word;randomStateWord1=item->word2;}
         if (++feedIndex==feedCount) feedActive=false;
-        if (item->kind==FEED_KEY) {MwSdlQueueBiosKey(item->word,item->shift);break;}
+        if (item->kind==FEED_KEY) {MwSdlQueueCampaignKey(item->key);break;}
         if (item->kind==FEED_IDLE && !blocking) break; /* the extra polls start now */
     }
 }
-/* Each combat input poll, before it reads the BIOS buffer. Scans go through
- * the keyboard interrupt as typed ones do, so the held-key masks see them. */
+/* Each combat input poll, before it reads its key queue. Keys go through the
+ * key delivery as typed ones do, so the held-key masks see them. */
 void MwSdlDebugNoteCombatPoll(void)
 {
     MwEventLogPoll(true);
@@ -253,17 +253,17 @@ void MwSdlDebugNoteCombatPoll(void)
     {
         FeedItem *item=&feed[feedIndex];
         if (item->kind==FEED_IDLE || item->kind==FEED_SONG) break; /* campaign-only: wait for the campaign */
-        uint8_t scan=(uint8_t)(item->word>>8);
+        uint8_t key=item->key.key;
         if (++feedIndex==feedCount) feedActive=false;
         if (item->kind==FEED_SNAP) Snap(item->name);
         else if (item->kind==FEED_RANDOM) {randomStateWord0=item->word;randomStateWord1=item->word2;}
-        else if (item->kind==FEED_MAKE) MwSdlQueueCombatScan(scan);
-        else if (item->kind==FEED_BREAK) MwSdlQueueCombatScan(scan|0x80);
+        else if (item->kind==FEED_MAKE) MwSdlQueueCombatKey(key,false);
+        else if (item->kind==FEED_BREAK) MwSdlQueueCombatKey(key,true);
         else if (item->kind==FEED_SOUND) FeedSound(item->word);
         else if (item->kind==FEED_TICKS)
         {combatFeedPolls=0;combatFeedWait=item->word;if(item->word)break;}
         else if (item->kind==FEED_KEY)
-        {MwSdlQueueCombatScan(scan);MwSdlQueueCombatScan(scan|0x80);combatFeedPolls=0;combatFeedWait=1;break;}
+        {MwSdlQueueCombatKey(key,false);MwSdlQueueCombatKey(key,true);combatFeedPolls=0;combatFeedWait=1;break;}
     }
     for(unsigned scans=0;scans<16 && MwSdlCombatKeyboardPending();++scans)MwSdlPumpTimer();
     if (MwSdlCombatKeyboardPending()) feedError="Combat key delivery blocked";

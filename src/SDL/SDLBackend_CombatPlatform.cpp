@@ -108,8 +108,6 @@ void MwSdlResetCombatHardware(void)
     MwSdlResetCombatTick();
     previousTimerHandler=MwSdlReadTimerHandler();
     memset(interruptVectors,0,sizeof(interruptVectors));memset(biosData,0,sizeof(biosData));
-    WriteBiosWord(BIOS_KEYBOARD_HEAD,BIOS_KEY_BUFFER_FIRST);WriteBiosWord(BIOS_KEYBOARD_TAIL,BIOS_KEY_BUFFER_FIRST);
-    WriteBiosWord(BIOS_KEYBOARD_START,BIOS_KEY_BUFFER_FIRST);WriteBiosWord(BIOS_KEYBOARD_END,BIOS_KEY_BUFFER_END);
     WriteBiosWord(COMBAT_BIOS_CRTC_PORT,COMBAT_COLOUR_CRTC_INDEX_PORT);
 }
 void MwSdlInitializeCombatHardware(void)

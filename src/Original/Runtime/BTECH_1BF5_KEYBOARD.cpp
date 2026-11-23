@@ -3,17 +3,17 @@
 #include "mechwarrior/combat_video.h"
 #include <stdlib.h>
 
-/*1BF5:2CCB. Genuine IRQ1, no source arguments. Read the make/break byte from
- * port60, acknowledge through61, then execute original translation/state/BIOS
- * ring logic. SDL must not synthesize these game-owned tables or commands. */
-void BtechKeyboardInterrupt(void)
+/* The key queue: `head` is the next key to read, `tail` the next slot to
+ * write, as in the PC BIOS's ring the original queued into (16 slots). */
+static uint8_t NextKeySlot(uint8_t slot) { return (uint8_t)((slot+1)%COMBAT_KEY_QUEUE_SLOTS); }
+
+/*1BF5:2CCB, the original's IRQ1 handler, as the handler of one key event (H2).
+ * The event is the make/break byte the original read from port 60h; there is
+ * no port acknowledge or interrupt controller. The translation, held-key
+ * state, shift flags and key queue are the game's own logic and tables. */
+void BtechHandleKeyEvent(MwKeyEvent event)
 {
-    if (!btechHostReadPort || !btechHostWritePort || !btechHostReadBiosByte || !btechHostWriteBiosByte
-        || !btechHostReadBiosWord || !btechHostWriteBiosWord) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostReadPort || !btechHostWritePort || !btechHostReadBiosByte || !btechHostWriteBiosByte || !btechHostReadBiosWord || !btechHostWriteBiosWord");
-    uint8_t scan=btechHostReadPort(KEYBOARD_DATA_PORT);
-    uint8_t keyboardControl=btechHostReadPort(KEYBOARD_CONTROL_PORT);
-    btechHostWritePort(KEYBOARD_CONTROL_PORT,keyboardControl|KEYBOARD_ACKNOWLEDGE_BIT);
-    btechHostWritePort(KEYBOARD_CONTROL_PORT,keyboardControl);
+    uint8_t scan=MwKeyEventScanByte(event);
     if (pcjrTandyCompatible==1)
     {
         if (keyboardBiosIntercept==1)
@@ -26,7 +26,7 @@ void BtechKeyboardInterrupt(void)
                 if (scan==keyboardCompatibilityScans[index]) {scan=keyboardCompatibilityReplacements[index];break;}
     }
     uint8_t scanIndex=scan&KEYBOARD_SCAN_MASK;
-    if (scanIndex>=COMBAT_KEYBOARD_SCAN_CODES) goto acknowledge;
+    if (scanIndex>=COMBAT_KEYBOARD_SCAN_CODES) return;
     uint8_t attributes;attributes=keyboardScanTranslations[scanIndex];
     keyboardScanTranslations[scanIndex]=(attributes
         &((scan&KEYBOARD_BREAK_FLAG)?UINT8_MAX:KEYBOARD_ATTRIBUTE_CLEAR_HELD))^KEYBOARD_ATTRIBUTE_HELD;
@@ -46,8 +46,8 @@ void BtechKeyboardInterrupt(void)
         keyboardLastKey=0;
         uint8_t character=keyboardUnshiftedCharacters[scan&KEYBOARD_SCAN_MASK];
         if ((character&KEYBOARD_CHARACTER_SPECIAL) && !(character&KEYBOARD_CHARACTER_TOGGLE_MASK))
-            btechHostWriteBiosByte(BIOS_KEYBOARD_SHIFT_FLAGS,btechHostReadBiosByte(BIOS_KEYBOARD_SHIFT_FLAGS)&(character^KEYBOARD_CHARACTER_VALUE_MASK));
-        goto acknowledge;
+            keyboardShiftFlags&=character^KEYBOARD_CHARACTER_VALUE_MASK;
+        return;
     }
     if (attributes&KEYBOARD_ATTRIBUTE_DIRECTION_MASK)
         heldDirectionKeyMasks[(attributes>>KEYBOARD_ATTRIBUTE_GROUP_SHIFT)&KEYBOARD_ATTRIBUTE_GROUP_MASK]
@@ -56,34 +56,34 @@ void BtechKeyboardInterrupt(void)
     if (character&KEYBOARD_CHARACTER_SPECIAL)
     {
         character&=KEYBOARD_CHARACTER_VALUE_MASK;
-        if (!(character&KEYBOARD_CHARACTER_TOGGLE_MASK)) btechHostWriteBiosByte(BIOS_KEYBOARD_SHIFT_FLAGS,btechHostReadBiosByte(BIOS_KEYBOARD_SHIFT_FLAGS)|character);
+        if (!(character&KEYBOARD_CHARACTER_TOGGLE_MASK)) keyboardShiftFlags|=character;
         else if (!((character&KEYBOARD_CHARACTER_CAPS_LOCK) && keyboardCapsLockRequested) && !(attributes&KEYBOARD_ATTRIBUTE_HELD))
-            btechHostWriteBiosByte(BIOS_KEYBOARD_SHIFT_FLAGS,btechHostReadBiosByte(BIOS_KEYBOARD_SHIFT_FLAGS)^character);
-        goto acknowledge;
+            keyboardShiftFlags^=character;
+        return;
     }
-    if (btechHostReadBiosByte(BIOS_KEYBOARD_SHIFT_FLAGS)&BIOS_SHIFT_CONTROL)
+    if (keyboardShiftFlags&BIOS_SHIFT_CONTROL)
     {character|=ASCII_CONTROL_MARKER;if (attributes&KEYBOARD_ATTRIBUTE_ALPHABETIC) character-=ASCII_CASE_DISTANCE;}
-    else if ((btechHostReadBiosByte(BIOS_KEYBOARD_SHIFT_FLAGS)&BIOS_SHIFT_CAPS_LOCK) && (attributes&KEYBOARD_ATTRIBUTE_ALPHABETIC)) character-=ASCII_CASE_DISTANCE;
-    else if (btechHostReadBiosByte(BIOS_KEYBOARD_SHIFT_FLAGS)&BIOS_SHIFT_EITHER_SHIFT) character=keyboardShiftedCharacters[scan];
+    else if ((keyboardShiftFlags&BIOS_SHIFT_CAPS_LOCK) && (attributes&KEYBOARD_ATTRIBUTE_ALPHABETIC)) character-=ASCII_CASE_DISTANCE;
+    else if (keyboardShiftFlags&BIOS_SHIFT_EITHER_SHIFT) character=keyboardShiftedCharacters[scan];
     uint16_t key;key=((uint16_t)scan<<BIOS_KEY_SCAN_SHIFT)|character;
     keyboardLastKey=key;
-    uint16_t head;uint16_t tail;head=btechHostReadBiosWord(BIOS_KEYBOARD_HEAD);tail=btechHostReadBiosWord(BIOS_KEYBOARD_TAIL);
-    if ((head==BIOS_KEY_BUFFER_LAST && tail!=BIOS_KEY_BUFFER_FIRST)
-        || (head!=BIOS_KEY_BUFFER_LAST && (uint16_t)(head+BIOS_KEY_BUFFER_WORD_BYTES)!=tail))
+    /* The original's room test compares the slot after the head with the
+     * tail, not the slot after the tail with the head: a key is dropped while
+     * exactly one waits, and one more key into 15 leaves the queue empty. The
+     * game's rule, kept as it is. */
+    uint8_t tail;tail=combatKeyQueueTail;
+    if (NextKeySlot(combatKeyQueueHead)!=tail)
     {
-        btechHostWriteBiosWord(tail,key);
-        if (tail==BIOS_KEY_BUFFER_LAST) tail=BIOS_KEY_BUFFER_BEFORE_FIRST;
-        tail+=BIOS_KEY_BUFFER_WORD_BYTES;btechHostWriteBiosWord(BIOS_KEYBOARD_TAIL,tail);
+        combatKeyQueue[tail]=key;
+        tail=NextKeySlot(tail);combatKeyQueueTail=tail;
     }
-    if (scan==COMBAT_KEY_D && (btechHostReadBiosByte(BIOS_KEYBOARD_SHIFT_FLAGS)&BIOS_SHIFT_CONTROL)) goto acknowledge;
-    if (key==BIOS_CONTROL_ESCAPE_KEY && (btechHostReadBiosByte(BIOS_KEYBOARD_SHIFT_FLAGS)&BIOS_SHIFT_CONTROL))
+    if (scan==COMBAT_KEY_D && (keyboardShiftFlags&BIOS_SHIFT_CONTROL)) return;
+    if (key==COMBAT_CONTROL_ESCAPE_KEY && (keyboardShiftFlags&BIOS_SHIFT_CONTROL))
     {
-        tail-=BIOS_KEY_BUFFER_WORD_BYTES;if (tail==BIOS_KEY_BUFFER_BEFORE_FIRST) tail=BIOS_KEY_BUFFER_LAST;
-        btechHostWriteBiosWord(tail,0);
-        btechHostWriteBiosWord(BIOS_KEYBOARD_HEAD,btechHostReadBiosWord(BIOS_KEYBOARD_TAIL));
-        btechHostWritePort(PIC_COMMAND_PORT,PIC_END_OF_INTERRUPT);
+        /* Ctrl-Escape: the slot before the tail cleared, the queue emptied. */
+        tail=(uint8_t)((tail+COMBAT_KEY_QUEUE_SLOTS-1)%COMBAT_KEY_QUEUE_SLOTS);
+        combatKeyQueue[tail]=0;
+        combatKeyQueueHead=combatKeyQueueTail;
         BtechRequestTermination();return;
     }
-acknowledge:
-    btechHostWritePort(PIC_COMMAND_PORT,PIC_END_OF_INTERRUPT);
 }

@@ -172,7 +172,7 @@ uint16_t MwReadCampaignTextInput(uint16_t x,uint16_t y,uint16_t capacity,
             if (!mwCampaignInput.waitForInterrupt) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.waitForInterrupt");
             mwCampaignInput.waitForInterrupt();continue;
         }
-        uint16_t key=mwCampaignInput.readKeyboard();
+        uint16_t key=MwCampaignKeyWord(mwCampaignInput.readKeyboard());
         if (key==CAMPAIGN_KEY_ENTER)
         {
             if (mouseInstalled!=0) {if (!mwCampaignInput.resetMouse) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.resetMouse");mwCampaignInput.resetMouse();}
@@ -186,8 +186,8 @@ uint16_t MwReadCampaignTextInput(uint16_t x,uint16_t y,uint16_t capacity,
         }
         if (key==CAMPAIGN_KEY_ESCAPE)
         {
-            if (!mwCampaignInput.readKeyboardShiftFlags) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.readKeyboardShiftFlags");
-            if (mwCampaignInput.readKeyboardShiftFlags()&BIOS_SHIFT_CONTROL) return CAMPAIGN_CONTINUE_CLEANUP;
+            if (!mwCampaignInput.controlHeld) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.controlHeld");
+            if (mwCampaignInput.controlHeld()) return CAMPAIGN_CONTINUE_CLEANUP;
             continue;
         }
         uint8_t character=key;

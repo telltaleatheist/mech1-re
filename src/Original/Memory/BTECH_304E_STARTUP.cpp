@@ -32,6 +32,8 @@ BtechTimerCallback schedulerCallbacks[COMBAT_SCHEDULER_SLOTS];
 BtechSchedulerTiming schedulerTimings[COMBAT_SCHEDULER_SLOTS];
 uint8_t keyboardCapsLockRequested,keyboardBiosIntercept,keyboardScanTranslations[COMBAT_KEYBOARD_SCAN_CODES];
 uint16_t keyboardLastKey;
+uint16_t combatKeyQueue[COMBAT_KEY_QUEUE_SLOTS];
+uint8_t combatKeyQueueHead,combatKeyQueueTail,keyboardShiftFlags;
 uint8_t keyboardUnshiftedCharacters[COMBAT_KEYBOARD_SCAN_CODES],keyboardShiftedCharacters[COMBAT_KEYBOARD_SCAN_CODES];
 uint8_t keyboardCompatibilityScans[COMBAT_KEYBOARD_COMPATIBILITY_CODES],keyboardCompatibilityReplacements[COMBAT_KEYBOARD_COMPATIBILITY_CODES];
 
@@ -64,6 +66,10 @@ bool BtechImportStartupInitialData(const uint8_t *data,size_t bytes)
     }
     keyboardCapsLockRequested=data[0x4275];keyboardBiosIntercept=data[0x4403];
     keyboardLastKey=0; /*4276*/
+    /* Not in the image: the BIOS key ring and shift flags, empty and zero at
+     * each combat's start as the port's BIOS data was (H2). */
+    for (uint16_t slot=0;slot<COMBAT_KEY_QUEUE_SLOTS;++slot) combatKeyQueue[slot]=0;
+    combatKeyQueueHead=combatKeyQueueTail=0;keyboardShiftFlags=0;
     for (uint16_t scan=0;scan<COMBAT_KEYBOARD_SCAN_CODES;++scan)
     {keyboardUnshiftedCharacters[scan]=data[0x42C2+scan];keyboardShiftedCharacters[scan]=data[0x431B+scan];}
     for (uint16_t scan=0;scan<COMBAT_KEYBOARD_COMPATIBILITY_CODES;++scan)

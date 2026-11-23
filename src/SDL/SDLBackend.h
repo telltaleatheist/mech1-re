@@ -1,5 +1,6 @@
 #ifndef MECHWARRIOR_SDL_BACKEND_H
 #define MECHWARRIOR_SDL_BACKEND_H
+#include "mechwarrior/key_events.h"
 #include "mechwarrior/sdl_host.h"
 #include "mechwarrior/campaign_music.h"
 #include "mechwarrior/launcher.h"
@@ -24,7 +25,7 @@ void MwSdlInitializeDebugControl(void);
 void MwSdlPollDebugControl(void);
 bool MwSdlDebugPinnedBiosTicks(uint32_t *ticks);
 void MwSdlDebugNoteInputPoll(bool empty,bool blocking);
-bool MwSdlBiosKeyForScancode(SDL_Scancode scancode,SDL_Keymod mod,uint16_t *word,uint8_t *shift);
+bool MwSdlCampaignKeyForScancode(SDL_Scancode scancode,SDL_Keymod mod,MwCampaignKey *key);
 void MwSdlDebugNoteKeyRead(uint16_t key);
 void MwSdlDebugNoteCombatPoll(void);
 void MwSdlShutdownDebugControl(void);
@@ -33,8 +34,8 @@ bool MwSdlConfigureSupportPilot(const char *directory);
 void MwSdlPollSupportPilot(void);
 void MwSdlUpdateSupportPilot(void);
 void MwSdlStopSupportPilot(void);
-void MwSdlQueueCombatScan(uint8_t scan);
-void MwSdlQueueBiosKey(uint16_t key,uint8_t shift);
+void MwSdlQueueCombatKey(uint8_t key,bool released);
+void MwSdlQueueCampaignKey(MwCampaignKey key);
 void MwSdlInitializeTimer(void);
 /* Test clock (MECHWARRIOR_DEBUG_VIRTUAL_CLOCK): time advances only where the
  * host would wait, so the PIT timeline depends on the input alone. */
@@ -110,6 +111,5 @@ bool MwSdlInitializeCombatProcess(const char *directory);
 bool MwSdlExecuteCombatChild(const MwCampaignLaunch *launch,uint8_t audioCode,uint8_t *exitCode);
 bool MwSdlCombatKeyboardPending(void);
 uint16_t MwSdlCombatDosAllocationCount(void);
-void MwSdlDeliverCombatKeyboardInterrupt(void);
-uint8_t MwSdlReadKeyboardScanByte(void);
+void MwSdlDeliverCombatKeyEvent(void);
 #endif

@@ -185,6 +185,15 @@ Changes per piece:
 - **No video port is modelled.** The 3DAh retrace wait after a combat flip is never requested: all three callers pass no wait. It is gone, and the fixed combat tick paces frames. Combat's CRTC check (1BF5:00FD) runs only when the BIOS reports no EGA, to tell CGA or Tandy apart; it now stops with a message, as it already did at its end. A read or write of any video port reaches the port bus's unknown-port failure.
 - **The check.** The traces match (8/8 on 1990). The event logs match (12/12). A temporary log of every frame the host presented, over all eight traces and never committed, was byte-identical between G4 and G5: the same count, the same pages and the same pixels and colours, in order.
 
+**From H2** (the keyboard):
+- **Keys are typed events** (`key_events.h`). A key is its PC scan-code number (set 1), which both games' key tables are written in. The host turns SDL3 key events into them; no BIOS keyboard data, port 60h or 61h, or IRQ1 is modelled.
+- **The campaign reads typed presses**: the key, the character it types and whether Control was held. It composes the key word (key above character) it has always compared, so the event log's key reads are the same words. The Control test that used the BIOS shift flags asks the input calls whether Control is held. The host's queue keeps 15 keys, as the BIOS ring did.
+- **Combat's keyboard handler (1BF5:2CCB) handles one key event.** Its translation, held-key masks, shift flags and key queue are the game's own state now: the BIOS ring and shift-flag byte became `combatKeyQueue` and `keyboardShiftFlags`, empty and zero at each combat's start, as the port's BIOS data was. The queue keeps the original's room test, which drops a key while exactly one waits; that is the game's rule and stays. Ctrl-Escape and the cleanup empty the queue as before. The handler no longer acknowledges a port or the interrupt controller.
+- **Delivery keeps its point and its gate until H4.** A combat key event is delivered where the IRQ1 was, under the same interrupt flag and controller mask, and the test clock still charges the time the two port reads took (one before the child's handler is installed). H4 removes those with the rest of the port timing.
+- **Still read from the BIOS data:** install's keyboard-compatibility byte (40:96h), which only the PCjr/Tandy path uses.
+- **The sound-port goldens changed only by the acknowledges.** The three combat logs lost the handler's 56 port-61h read-and-write triples and nothing else: with them removed from the old goldens, every remaining line matches, the same values at the same cycles. They were re-recorded. The music logs are unchanged.
+- **The check.** The traces match (8/8 on 1990). The event logs match (12/12).
+
 ## 3. How we check "play identical"
 
 ### Sound

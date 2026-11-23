@@ -204,7 +204,6 @@ uint8_t MwSdlReadDevicePort(uint16_t port)
 }
 static uint8_t ReadDevicePort(uint16_t port)
 {
-    if (port==KEYBOARD_DATA_PORT) return MwSdlReadKeyboardScanByte();
     if (port==PIC_MASK_PORT) return picMask;
     if (port==MPU_DATA_PORT || port==MPU_STATUS_COMMAND_PORT)
         return mwSdlSoundSystem==MW_SOUND_MT32?MwMpuReadPort(port):UINT8_MAX;
@@ -256,7 +255,7 @@ void MwSdlPumpTimer(void)
     if (!inInterrupt && interruptsEnabled && !(picMask&PIC_KEYBOARD_IRQ_MASK) && MwSdlCombatKeyboardPending())
     {
         inInterrupt=true;interruptsEnabled=false;
-        MwSdlDeliverCombatKeyboardInterrupt();
+        MwSdlDeliverCombatKeyEvent();
         interruptsEnabled=true;inInterrupt=false;
     }
     double target=(double)(MwSdlNowNanoseconds()-startNanoseconds)*(double)HOST_PIT_CLOCK_HZ/(double)HOST_NS_PER_SECOND;

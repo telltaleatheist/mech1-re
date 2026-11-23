@@ -4,6 +4,7 @@
 #include "mechwarrior/combat_import.h"
 #include "mechwarrior/combat_platform.h"
 #include "mechwarrior/input_hardware.h"
+#include "mechwarrior/key_events.h"
 enum { COMBAT_DIRECTION_UP=1,COMBAT_DIRECTION_DOWN=2,COMBAT_DIRECTION_LEFT=4,COMBAT_DIRECTION_RIGHT=8,
     COMBAT_KEY_TAB=0x0F,COMBAT_KEY_Q=0x10,COMBAT_KEY_W=0x11,COMBAT_KEY_E=0x12,COMBAT_KEY_R=0x13,COMBAT_KEY_T=0x14,
     COMBAT_KEY_U=0x16,COMBAT_KEY_O=0x18,COMBAT_KEY_P=0x19,COMBAT_KEY_ENTER=0x1C,COMBAT_KEY_A=0x1E,
@@ -24,17 +25,23 @@ enum { COMBAT_DIRECTION_UP=1,COMBAT_DIRECTION_DOWN=2,COMBAT_DIRECTION_LEFT=4,COM
     COMBAT_KEY_ESCAPE=1,COMBAT_KEY_N=0x31,COMBAT_KEY_M=0x32,COMBAT_KEY_COMMA=0x33,COMBAT_KEY_PERIOD=0x34,
     COMBAT_KEY_HOME=0x47,COMBAT_KEY_UP=0x48,COMBAT_KEY_PAGE_UP=0x49,
     COMBAT_KEY_LEFT=0x4B,COMBAT_KEY_RIGHT=0x4D,COMBAT_KEY_END=0x4F,COMBAT_KEY_DOWN=0x50,COMBAT_KEY_PAGE_DOWN=0x51,
-    BIOS_KEYBOARD_START=0x80,BIOS_KEYBOARD_END=0x82,
-    BIOS_CONTROL_ESCAPE_KEY=(COMBAT_KEY_ESCAPE<<BIOS_KEY_SCAN_SHIFT)|('\x1B'|ASCII_CONTROL_MARKER) };
+    COMBAT_CONTROL_ESCAPE_KEY=(COMBAT_KEY_ESCAPE<<BIOS_KEY_SCAN_SHIFT)|('\x1B'|ASCII_CONTROL_MARKER),
+    COMBAT_KEY_QUEUE_SLOTS=16 };
 extern uint16_t terminationFlag,combatInputScanCode,combatInputDirectionMask;
 extern uint16_t combatInputButton1State,combatInputButton0State,combatInputReplayCancelLatched;
 extern uint8_t heldDirectionKeyMasks[2],heldDirectionMasks[0x10];
 extern uint16_t keyboardLastKey;
+/* Combat's key queue and shift flags (H2), where the original used the PC
+ * BIOS's 16-slot key ring and shift-flag byte: a key word is the scan above the
+ * character, and the flags keep the BIOS's bits (BIOS_SHIFT_*). Empty and zero
+ * at each combat's start, as the BIOS data the port gave each combat. */
+extern uint16_t combatKeyQueue[COMBAT_KEY_QUEUE_SLOTS];
+extern uint8_t combatKeyQueueHead,combatKeyQueueTail,keyboardShiftFlags;
 extern uint8_t keyboardUnshiftedCharacters[COMBAT_KEYBOARD_SCAN_CODES],keyboardShiftedCharacters[COMBAT_KEYBOARD_SCAN_CODES];
 extern uint8_t keyboardCompatibilityScans[COMBAT_KEYBOARD_COMPATIBILITY_CODES],keyboardCompatibilityReplacements[COMBAT_KEYBOARD_COMPATIBILITY_CODES];
-void BtechKeyboardInterrupt(void);
+void BtechHandleKeyEvent(MwKeyEvent event);
 void BtechRequestTermination(void);
-uint16_t BtechPopBiosKeyboardBuffer(void);
+uint16_t BtechPopKey(void);
 uint16_t BtechReadHeldDirectionMask(uint16_t keyGroup);
 uint16_t BtechReadHeldKeyState(uint16_t scanCode);
 uint8_t BtechReadJoystickDirectionMask(uint16_t joystick);

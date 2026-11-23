@@ -1,4 +1,5 @@
 #include "mechwarrior/video_mode.h"
+#include "mechwarrior/combat_input.h"
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/combat_startup.h"
 #include "mechwarrior/input_hardware.h"
@@ -30,13 +31,13 @@ void BtechSetBiosTextModeAndAdapterBits(uint16_t displayBits)
     MwSetVideoMode(BIOS_TEXT_MODE_80_COLUMN);
 }
 
-/*1BF5:2C8D. Flag clears before discarding queued BIOS keys and restoring IVT. */
+/*1BF5:2C8D. Flag clears before discarding queued keys and restoring IVT. */
 void BtechRestoreKeyboardAndTickVectors(void)
 {
     if (!keyboardHandlersInstalled) return;
     keyboardHandlersInstalled=0;
-    if (!btechHostReadBiosWord || !btechHostWriteBiosWord || !btechHostSetInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostReadBiosWord || !btechHostWriteBiosWord || !btechHostSetInterruptVector");
-    btechHostWriteBiosWord(BIOS_KEYBOARD_HEAD,btechHostReadBiosWord(BIOS_KEYBOARD_TAIL));
+    if (!btechHostSetInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterruptVector");
+    combatKeyQueueHead=combatKeyQueueTail;
     btechHostSetInterruptVector(KEYBOARD_INTERRUPT,savedKeyboardVector);
     btechHostSetInterruptVector(BIOS_TICK_INTERRUPT,savedBiosTickVector);
 }
