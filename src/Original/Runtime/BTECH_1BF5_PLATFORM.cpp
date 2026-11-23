@@ -27,13 +27,11 @@ void BtechFreeDosMemorySelector(uint8_t *allocation)
 
 /*1BF5:218B. One axis's reading (H3: the host's joystick, where the original
  * counted game-port reads between delay loops), or the timing limit when its
- * joystick is not connected. The original's timing wait is gone (H4a); its
- * PUSHF/CLI/POPF stay until the interrupt flag goes. */
+ * joystick is not connected. The original's timing wait is gone (H4a), and
+ * its PUSHF/CLI/POPF (H4c). */
 uint16_t BtechReadJoystickAxisTiming(uint8_t axisMask)
 {
-    if (!btechHostSetInterrupts || !btechHostReadJoystick) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterrupts || !btechHostReadJoystick");
-    uint8_t previousInterrupts=btechHostSetInterrupts(0);
-    btechHostSetInterrupts(previousInterrupts);
+    if (!btechHostReadJoystick) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostReadJoystick");
     MwJoystickState joystick=btechHostReadJoystick((axisMask&JOYSTICK_B_AXES_MASK)?JOYSTICK_B:JOYSTICK_A);
     if (!joystick.connected) return JOYSTICK_AXIS_TIMING_LIMIT;
     return MwJoystickAxisReading((axisMask&JOYSTICK_X_AXES_MASK)?joystick.x:joystick.y);
@@ -47,9 +45,6 @@ uint16_t BtechReadJoystickAxisTiming(uint8_t axisMask)
  * the time they took with them (H4a). */
 void BtechCalibrateJoystickAxisPairs(void)
 {
-    if (!btechHostSetInterrupts) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterrupts");
-    btechHostSetInterrupts(0);
-    btechHostSetInterrupts(1);
     for (uint16_t axis=0;axis<JOYSTICK_AXIS_COUNT;++axis)
     {
         uint16_t timing=BtechReadJoystickAxisTiming((uint8_t)(1<<axis));

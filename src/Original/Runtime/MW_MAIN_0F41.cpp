@@ -31,8 +31,11 @@ void MwCampaignTimerInterrupt(void)
     mwMusicHardware.writePort(PIC_COMMAND_PORT,PIC_END_OF_INTERRUPT);
     if (!(previousPhase&MUSIC_TIMER_PHASE_MASK))
     {
-        if (!mwMusicHardware.setInterruptsEnabled) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.setInterruptsEnabled");
-        mwMusicHardware.setInterruptsEnabled(true);
+        /* The original's STI in the coarse callback: the only place a timer
+         * handler takes nested edges (H4c's probe found nested pumps in every
+         * trace and event script only under this callback). */
+        if (!mwMusicHardware.allowNestedTicks) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.allowNestedTicks");
+        mwMusicHardware.allowNestedTicks();
         uint16_t slot=(previousPhase&MUSIC_TIMER_COARSE_MASK)>>5;
         if (timerCallbackSlots[slot]) timerCallbackSlots[slot]();
     }
@@ -51,9 +54,8 @@ void MwCampaignTimerInterrupt(void)
  * timer period since H4b, set where the high byte took effect. */
 void MwInstallMusicTimer(void)
 {
-    if (!mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.readIrq0Handler
-        || !mwMusicHardware.writeIrq0Handler || !mwMusicHardware.setTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.readIrq0Handler || !mwMusicHardware.writeIrq0Handler || !mwMusicHardware.setTimerPeriod");
-    mwMusicHardware.setInterruptsEnabled(false);
+    if (!mwMusicHardware.readIrq0Handler
+        || !mwMusicHardware.writeIrq0Handler || !mwMusicHardware.setTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.readIrq0Handler || !mwMusicHardware.writeIrq0Handler || !mwMusicHardware.setTimerPeriod");
     for (uint16_t slot=0;slot<MUSIC_TIMER_CALLBACK_COUNT;++slot) timerCallbackSlots[slot]=NULL;
     timerCallbackSlots[0]=mwMusicHardware.readIrq0Handler();
     mwMusicHardware.writeIrq0Handler(MwCampaignTimerInterrupt);
@@ -62,19 +64,16 @@ void MwInstallMusicTimer(void)
     timerClockHigh=0;
     mwMusicHardware.setTimerPeriod((uint32_t)MUSIC_TIMER_BASE_DIVISOR_HIGH<<8);
     pitDivisorHigh=MUSIC_TIMER_BASE_DIVISOR_HIGH;
-    mwMusicHardware.setInterruptsEnabled(true);
 }
 
 /* MW_MAIN0F41:00FA..0117. Restore writable slot0, not a second saved vector,
  * and the BIOS's period. */
 void MwRestoreBiosTimer(void)
 {
-    if (!mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.writeIrq0Handler
-        || !mwMusicHardware.setTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.writeIrq0Handler || !mwMusicHardware.setTimerPeriod");
-    mwMusicHardware.setInterruptsEnabled(false);
+    if (!mwMusicHardware.writeIrq0Handler
+        || !mwMusicHardware.setTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.writeIrq0Handler || !mwMusicHardware.setTimerPeriod");
     mwMusicHardware.writeIrq0Handler(timerCallbackSlots[0]);
     mwMusicHardware.setTimerPeriod(PIT_COUNTER_MODULUS);
-    mwMusicHardware.setInterruptsEnabled(true);
 }
 
 /* MW_MAIN0F41:0139..018F. Native AX is unused by actual callers. Rate is read
@@ -82,8 +81,7 @@ void MwRestoreBiosTimer(void)
 void MwTimerSetCallback(uint16_t slot,MwMusicTimerHandler handler,uint16_t rateShift)
 {
     if (slot>=MUSIC_TIMER_CALLBACK_COUNT) return;
-    if (!mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.setTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.setTimerPeriod");
-    mwMusicHardware.setInterruptsEnabled(false);
+    if (!mwMusicHardware.setTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.setTimerPeriod");
     timerCallbackSlots[slot]=handler;
     if (slot==MUSIC_TIMER_FAST_SLOT)
     {
@@ -93,7 +91,6 @@ void MwTimerSetCallback(uint16_t slot,MwMusicTimerHandler handler,uint16_t rateS
         pitDivisorHigh=divisorHigh;
         mwMusicHardware.setTimerPeriod((uint32_t)divisorHigh<<8);
     }
-    mwMusicHardware.setInterruptsEnabled(true);
 }
 
 /* MW_MAIN0F41:019A..01FF. Native unsigned shift/subtract division returns0
@@ -104,16 +101,13 @@ uint32_t MwDivideMidiTimingRatio(uint32_t numerator,uint32_t denominator)
     return numerator/denominator;
 }
 
-/* MW_MAIN0F41:022F..0244. STI is unconditional, not restoration of old IF. */
+/* MW_MAIN0F41:022F..0244. Its CLI/STI are gone (H4c). */
 uint16_t MwSetMidiTickDenominator(uint16_t denominator)
 {
     if (denominator)
     {
-        if (!mwMusicHardware.setInterruptsEnabled) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.setInterruptsEnabled");
-        mwMusicHardware.setInterruptsEnabled(false);
         midiTickDenominator=denominator;
         midiTickRemainder=0;
-        mwMusicHardware.setInterruptsEnabled(true);
     }
     return 0;
 }
@@ -122,11 +116,8 @@ uint16_t MwSetMidiTickDenominator(uint16_t denominator)
 void MwSetMidiTickNumerator(uint16_t division,uint16_t tempo)
 {
     uint16_t numerator=(uint32_t)division*tempo;
-    if (!mwMusicHardware.setInterruptsEnabled) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.setInterruptsEnabled");
-    mwMusicHardware.setInterruptsEnabled(false);
     midiTickNumerator=numerator;
     midiTickRemainder=0;
-    mwMusicHardware.setInterruptsEnabled(true);
 }
 
 /* MW_MAIN0F41:025A..0274. The bar store survives a subsequent native DIV

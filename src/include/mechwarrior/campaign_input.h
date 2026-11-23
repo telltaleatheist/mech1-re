@@ -14,7 +14,6 @@ typedef struct MwCampaignInputCalls
     bool (*keyboardAvailable)(void);
     MwCampaignKey (*readKeyboard)(void); /* The next key press (H2). */
     MwJoystickState (*readJoystick)(void); /* Joystick A (H3). */
-    void (*setInterruptsEnabled)(bool enabled);
     void (*waitForInterrupt)(void);
     uint8_t (*currentDefaultDrive)(void);
     void (*resetMouse)(void);

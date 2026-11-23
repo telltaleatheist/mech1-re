@@ -271,6 +271,6 @@ void MwSdlInitializeInput(void)
     MwSdlInitializeDebugControl();
     MwSdlInitializeJoysticks();
     mwCampaignInput=MwCampaignInputCalls{MouseRelease,Available,ReadKey,ReadJoystickA,
-        MwSdlSetInterrupts,MwSdlPump,CurrentDrive,MouseReset,MouseMotion,ControlHeld,
+        MwSdlPump,CurrentDrive,MouseReset,MouseMotion,ControlHeld,
         MwSdlSetMousePosition,MwSdlReadMousePosition};
 }

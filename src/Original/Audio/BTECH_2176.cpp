@@ -28,27 +28,24 @@ uint16_t BtechInstallMpuInterruptHandler(uint16_t unusedBasePort,uint8_t irq)
     }
     return combatMpuInstalled;
 }
-/* 2176:0089. All exits restore entry IF. Non-ACK bytes use the real handler. */
+/* 2176:0089. Non-ACK bytes use the real handler. Its CLI and the entry IF
+ * every exit restored are gone since H4c: nothing is delivered in between. */
 uint16_t BtechSendMpuCommandAndWaitAck(uint8_t command)
 {
-    if (!btechHostReadInterrupts) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostReadInterrupts");
-    uint8_t interrupts=btechHostReadInterrupts();
-    uint16_t accepted=0;
     for (uint16_t polls=UINT16_MAX;polls;--polls)
     {
         if (btechHostReadPort(combatMpuStatusPort)&BTECH_MPU_BUSY) continue;
-        btechHostSetInterrupts(0);btechHostWritePort(combatMpuCommandPort,command);
+        btechHostWritePort(combatMpuCommandPort,command);
         for (uint16_t acknowledgement=UINT16_MAX;acknowledgement;--acknowledgement)
         {
             if (btechHostReadPort(combatMpuStatusPort)&BTECH_MPU_INPUT_EMPTY) continue;
             uint8_t response=btechHostReadPort(combatMpuDataPort);
-            if (response==BTECH_MPU_ACK) {accepted=1;goto restoreInterrupts;}
+            if (response==BTECH_MPU_ACK) return 1;
             MpuHandleReceivedByte(response);
         }
-        btechHostSetInterrupts(1);break;
+        break;
     }
-restoreInterrupts:
-    btechHostSetInterrupts(interrupts);return accepted;
+    return 0;
 }
 /* 2176:00CA. Separate native FAR stack wrapper. */
 uint16_t BtechSendMpuCommandStack(uint8_t command) {return BtechSendMpuCommandAndWaitAck(command);}

@@ -26,7 +26,10 @@ enum { MUSIC_TIMER_CALLBACK_COUNT=9, MUSIC_TIMER_FAST_SLOT=8,
     MUSIC_TIMER_CLOCK_INCREMENT=0x01C2 };
 typedef struct MwMusicHardwareCalls
 {
-    void (*setInterruptsEnabled)(bool enabled);
+    /* The original's STI in the coarse callback (H4c): the running timer
+     * handler may take nested timer edges until it returns. The only place
+     * a handler does; the interrupt flag itself is gone. */
+    void (*allowNestedTicks)(void);
     MwMusicTimerHandler (*readIrq0Handler)(void);
     void (*writeIrq0Handler)(MwMusicTimerHandler handler);
     void (*writePort)(uint16_t port,uint8_t value);

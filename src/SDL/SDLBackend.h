@@ -68,7 +68,7 @@ void MwSdlSaveUserText(const char *key,const char *value);
 /* game_folder: the player's MW1 files, set up once by the setup screen when
  * the program starts without them (an installed copy, double-clicked). */
 extern char mwSdlGameFolder[4096];
-void MwSdlSetInterrupts(bool enabled);
+void MwSdlAllowNestedTicks(void);
 void MwSdlInstallCampaignInterrupts(void);
 void MwSdlRestoreCampaignInterrupts(void);
 uint32_t MwSdlReadBiosTicks(void);
@@ -98,10 +98,8 @@ void MwSdlShutdownAudio(void);
 extern bool mwSdlCombatActive;
 void MwSdlWriteDevicePort(uint16_t port,uint8_t value);
 uint8_t MwSdlReadDevicePort(uint16_t port);
-uint8_t MwSdlExchangeInterrupts(uint8_t enabled);
 void MwSdlRunDue(void);
 void MwSdlWaitIdle(void);
-uint8_t MwSdlReadInterrupts(void);
 void MwSdlDeliverCombatMpuInterrupt(void);
 double MwMpuNextEventTime(void);
 void MwMpuAdvance(double time);

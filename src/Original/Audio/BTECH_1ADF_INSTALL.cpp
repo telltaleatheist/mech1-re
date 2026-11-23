@@ -37,16 +37,15 @@ uint16_t BtechProbeAudioBackendMask(void)
     return available;
 }
 
-/*1ADF:109D. Busy timeout retains IF; after a command, both ACK outcomes
- * enable interrupts. Non-ACK input consumes a second byte without dispatch. */
+/*1ADF:109D. Non-ACK input consumes a second byte without dispatch. The
+ * original's CLI around the command and STI after it are gone (H4c). */
 uint16_t BtechSendMpuProbeCommandAndWaitAck(uint8_t command)
 {
-    if (!btechHostReadPort || !btechHostWritePort || !btechHostSetInterrupts) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostReadPort || !btechHostWritePort || !btechHostSetInterrupts");
+    if (!btechHostReadPort || !btechHostWritePort) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostReadPort || !btechHostWritePort");
     uint16_t statusPort=mpuProbeStatusPort;
     for (uint16_t ready=MPU_PROBE_READY_POLLS;ready;--ready)
     {
         if (btechHostReadPort(statusPort)&MPU_WRITE_BUSY) continue;
-        btechHostSetInterrupts(0);
         btechHostWritePort(mpuProbeCommandPort,command);
         for (uint16_t acknowledgement=MPU_PROBE_ACK_POLLS;acknowledgement;--acknowledgement)
         {
@@ -54,17 +53,17 @@ uint16_t BtechSendMpuProbeCommandAndWaitAck(uint8_t command)
             uint8_t response=btechHostReadPort(mpuProbeDataPort);
             if (response==MPU_ACK)
             {
-                btechHostSetInterrupts(1);
                 return ((uint16_t)command<<8)|response;
             }
             btechHostReadPort(mpuProbeDataPort);
         }
-        btechHostSetInterrupts(1);return 0;
+        return 0;
     }
     return 0;
 }
 
-/*1ADF:1010. Save IF after resets. A missing input IRQ does not turn an
+/*1ADF:1010. Its STI, saved IF and restore are gone (H4c); the version
+ * command's IRQ is delivered by the poll below. A missing input IRQ does not turn an
  * acknowledged version command into failure. Final PIC write masks IRQ2. */
 uint16_t BtechProbeMpuWithTemporaryInterrupt(void)
 {
@@ -72,7 +71,6 @@ uint16_t BtechProbeMpuWithTemporaryInterrupt(void)
     uint16_t response=BtechSendMpuProbeCommandAndWaitAck(MPU_RESET);
     if (!(uint8_t)response) return 0;
     btechHostReadPort(mpuProbeDataPort);
-    uint8_t savedInterrupts=btechHostSetInterrupts(1);
     if (!btechHostGetInterruptVector || !btechHostSetInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetInterruptVector || !btechHostSetInterruptVector");
     mpuProbePreviousIrq=btechHostGetInterruptVector(MPU_IRQ_VECTOR);
     btechHostSetInterruptVector(MPU_IRQ_VECTOR,0x1ADF1082);
@@ -88,7 +86,6 @@ uint16_t BtechProbeMpuWithTemporaryInterrupt(void)
         }
     btechHostWritePort(PIC_MASK_PORT,btechHostReadPort(PIC_MASK_PORT)|MPU_IRQ_MASK);
     btechHostSetInterruptVector(MPU_IRQ_VECTOR,mpuProbePreviousIrq);
-    btechHostSetInterrupts(savedInterrupts);
     return (uint8_t)response;
 }
 

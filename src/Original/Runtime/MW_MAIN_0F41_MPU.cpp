@@ -7,10 +7,9 @@ enum { MPU_WRITE_BUSY=0x40,MPU_INPUT_EMPTY=0x80,MPU_RESET_COMMAND=0xFF,
     MPU_UART_COMMAND=0x3F,MPU_ACK=0xFE,MPU_IRQ_VECTOR=0x0A,
     MPU_RECEIVE_HANDLER=0x0F410A01 };
 
-/* MW_MAIN0F41:0912. LOOPNE's last-read timeout and unconditional STI remain. */
+/* MW_MAIN0F41:0912. LOOPNE's last-read timeout remains; its CLI/STI are gone (H4c). */
 uint16_t MwProbeMpuBackend(void)
 {
-    mwMusicHardware.setInterruptsEnabled(false);
     uint16_t remaining=0;uint8_t status;
     do {status=mwMusicHardware.readPort(MPU_STATUS_COMMAND_PORT);--remaining;}
     while (remaining && (status&MPU_WRITE_BUSY));
@@ -25,15 +24,14 @@ uint16_t MwProbeMpuBackend(void)
     do {status=mwMusicHardware.readPort(MPU_STATUS_COMMAND_PORT);--remaining;}
     while (remaining && (status&MPU_INPUT_EMPTY));
     if (!remaining || mwMusicHardware.readPort(MPU_DATA_PORT)!=MPU_ACK) goto failed;
-    mwMusicHardware.setInterruptsEnabled(true);return 1;
+    return 1;
 failed:
-    mwMusicHardware.setInterruptsEnabled(true);return 0;
+    return 0;
 }
 /* MW_MAIN0F41:0946. Saved vector is a native identity, not a host pointer. */
 void MwInitializeMpuUartBackend(void)
 {
     if (!mwMusicHardware.readInterruptVector || !mwMusicHardware.writeInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.readInterruptVector || !mwMusicHardware.writeInterruptVector");
-    mwMusicHardware.setInterruptsEnabled(false);
     mwMusicHardware.writePort(MPU_STATUS_COMMAND_PORT,MPU_UART_COMMAND);
     mpuQueueByteCount=0; mpuQueueReadIndex=mpuQueueByteCount; mpuQueueWriteIndex=mpuQueueReadIndex; /* Each read back, as the chained assignment did. */
     mpuPreviousIrq=mwMusicHardware.readInterruptVector(MPU_IRQ_VECTOR);
@@ -41,26 +39,22 @@ void MwInitializeMpuUartBackend(void)
     for (uint16_t reads=10;reads;--reads) mwMusicHardware.readPort(MPU_DATA_PORT);
     mwMusicHardware.writePort(PIC_COMMAND_PORT,PIC_END_OF_INTERRUPT);
     mwMusicHardware.writePort(PIC_MASK_PORT,0);
-    mwMusicHardware.setInterruptsEnabled(true);
 }
 /* MW_MAIN0F41:098A. Waits for IRQ0 progress, never drains bytes synchronously. */
 void MwDrainAndShutdownMpuBackend(void)
 {
     while (mpuQueueByteCount) mwMusicHardware.waitForInterrupt();
-    mwMusicHardware.setInterruptsEnabled(false);
     mwMusicHardware.writeInterruptVector(MPU_IRQ_VECTOR,mpuPreviousIrq);
-    mwMusicHardware.setInterruptsEnabled(true);
 }
-/* MW_MAIN0F41:09A4. Producer's STI does not restore the incoming IF. */
+/* MW_MAIN0F41:09A4. The producer's CLI/STI are gone (H4c). */
 uint16_t MwQueueMpuByte(uint16_t midiWord)
 {
     while (mpuQueueByteCount>=MIDI_MPU_QUEUE_CAPACITY) mwMusicHardware.waitForInterrupt();
-    mwMusicHardware.setInterruptsEnabled(false);
     if (mpuQueueWriteIndex>=MIDI_MPU_QUEUE_CAPACITY) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mpuQueueWriteIndex>=MIDI_MPU_QUEUE_CAPACITY"); /* Unrepresented corrupt-index alias. */
     mpuTransmitQueue[mpuQueueWriteIndex]=(uint8_t)midiWord;
     { const uint16_t next=(uint16_t)(mpuQueueWriteIndex+1); mpuQueueWriteIndex=next; if (next>=MIDI_MPU_QUEUE_CAPACITY) mpuQueueWriteIndex=0; }
     mpuQueueByteCount=(uint16_t)(mpuQueueByteCount+1);
-    mwMusicHardware.setInterruptsEnabled(true);return 1;
+    return 1;
 }
 /* MW_MAIN0F41:09D0. Exactly one byte per ready fast callback. */
 void MwTickMpuTransmitQueue(void)

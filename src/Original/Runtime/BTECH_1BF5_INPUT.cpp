@@ -2,20 +2,18 @@
 #include "mechwarrior/combat_input.h"
 #include <stdlib.h>
 
-/*1BF5:2F58. PUSHF/CLI/POPF, not an unconditional STI. The next key word
+/*1BF5:2F58. The original's PUSHF/CLI/POPF are gone (H4c). The next key word
  * from the key queue (the BIOS ring in the original; H2), or 0 if none. */
 uint16_t BtechPopKey(void)
 {
-    if (!btechHostSetInterrupts || !btechHostRunDue) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterrupts || !btechHostRunDue");
+    if (!btechHostRunDue) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostRunDue");
     btechHostRunDue(); /* Keeps when the due ticks and key events land: the original took them as it reached the CLI. */
-    uint8_t savedInterrupts=btechHostSetInterrupts(0);
     uint16_t key=0;
     if (combatKeyQueueHead!=combatKeyQueueTail)
     {
         key=combatKeyQueue[combatKeyQueueHead];
         combatKeyQueueHead=(uint8_t)((combatKeyQueueHead+1)%COMBAT_KEY_QUEUE_SLOTS);
     }
-    btechHostSetInterrupts(savedInterrupts);
     return key;
 }
 
@@ -27,14 +25,12 @@ uint16_t BtechReadHeldDirectionMask(uint16_t keyGroup)
     return heldDirectionMasks[mask];
 }
 
-/*1BF5:2FA1. Unlike2F58, CLI/STI does not restore the incoming IF. */
+/*1BF5:2FA1. The original's CLI/STI are gone (H4c). */
 uint16_t BtechReadHeldKeyState(uint16_t scanCode)
 {
-    if (!btechHostSetInterrupts || !btechHostRunDue || scanCode>=sizeof(keyboardScanTranslations)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterrupts || !btechHostRunDue || scanCode>=sizeof(keyboardScanTranslations)");
+    if (!btechHostRunDue || scanCode>=sizeof(keyboardScanTranslations)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostRunDue || scanCode>=sizeof(keyboardScanTranslations)");
     btechHostRunDue(); /* Keeps when the due ticks and key events land: the original took them as it reached the CLI. */
-    btechHostSetInterrupts(0);
     uint16_t held=keyboardScanTranslations[scanCode]&KEYBOARD_ATTRIBUTE_HELD;
-    btechHostSetInterrupts(1);
     return held;
 }
 

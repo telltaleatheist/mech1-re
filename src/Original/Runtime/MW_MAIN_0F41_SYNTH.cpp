@@ -478,21 +478,16 @@ static void PlaySpeakerPeriod(uint16_t period)
 /* MW_MAIN0F41:0EE8..0F00. */
 void MwInitializeSpeakerBackend(void)
 {
-    if (!mwMusicHardware.setInterruptsEnabled) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.setInterruptsEnabled");
-    mwMusicHardware.setInterruptsEnabled(false);
     midiSysex.currentPeriod=SPEAKER_SILENT_PERIOD;
     speakerMusicSounding=true;
     PlaySpeakerPeriod(SPEAKER_SILENT_PERIOD);
-    mwMusicHardware.setInterruptsEnabled(true);
 }
 /* MW_MAIN0F41:0F01..0F09. */
 void MwShutdownSpeakerBackend(void)
 {
-    if (!mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.playTone) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.setInterruptsEnabled || !mwMusicHardware.playTone");
-    mwMusicHardware.setInterruptsEnabled(false);
+    if (!mwMusicHardware.playTone) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.playTone");
     speakerMusicSounding=false;
     mwMusicHardware.playTone(0);
-    mwMusicHardware.setInterruptsEnabled(true);
 }
 /* MW_MAIN0F41:0F0A..0F0C. Genuine XOR AX,AX /RET. */
 uint16_t MwIgnoreSpeakerRawMidiByte(void) {return 0;}
@@ -515,11 +510,8 @@ uint16_t MwStopSpeakerVoice(MwMidiVoice *voice)
 /* MW_MAIN0F41:0F3B..0F4E. Native MOV AL,BH preserves AH on return. */
 uint16_t MwWriteSpeakerPeriod(uint16_t period)
 {
-    if (!mwMusicHardware.setInterruptsEnabled) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.setInterruptsEnabled");
-    mwMusicHardware.setInterruptsEnabled(false);
     midiSysex.currentPeriod=period;
     PlaySpeakerPeriod(period);
-    mwMusicHardware.setInterruptsEnabled(true);
     return (period&0xFF00)|(period>>8);
 }
 /* MW_MAIN0F41:0F4F..0F71. */

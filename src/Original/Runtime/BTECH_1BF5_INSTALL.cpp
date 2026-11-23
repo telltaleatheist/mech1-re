@@ -5,7 +5,8 @@
 #include <stdlib.h>
 
 /*1BF5:24D3. First clear occupancy bit, not first NULL callback. Publish the
- * timing/callback BEFORE CLI; only the mask update is protected natively. */
+ * timing/callback before the mask update (the original's CLI/STI around
+ * that update are gone, H4c). */
 uint16_t BtechRegisterTimerCallback(BtechTimerCallback callback,uint16_t period)
 {
     if (!runtimeDelayActive || schedulerActiveSlots==UINT16_MAX) return 0;
@@ -14,10 +15,7 @@ uint16_t BtechRegisterTimerCallback(BtechTimerCallback callback,uint16_t period)
     schedulerTimings[slot].period=period;
     schedulerTimings[slot].ticksRemaining=period;
     schedulerCallbacks[slot]=callback;
-    if (!btechHostSetInterrupts) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterrupts");
-    btechHostSetInterrupts(0);
     schedulerActiveSlots|=slotMask;
-    btechHostSetInterrupts(1);
     return slot+1;
 }
 
@@ -27,10 +25,7 @@ uint16_t BtechUnregisterTimerCallback(uint16_t callbackHandle)
 {
     --callbackHandle;
     if ((uint8_t)callbackHandle&COMBAT_SCHEDULER_INVALID_SLOT_BITS) return 0;
-    if (!btechHostSetInterrupts) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterrupts");
-    btechHostSetInterrupts(0);
     schedulerActiveSlots&=(uint16_t)~(1u<<(uint8_t)callbackHandle);
-    btechHostSetInterrupts(1);
     return 1;
 }
 
@@ -113,14 +108,15 @@ void BtechInstallKeyboardAndTickHandlers(uint16_t installBiosTick)
     if (keyboardCapsLockRequested) keyboardShiftFlags|=BIOS_SHIFT_CAPS_LOCK;
 }
 
-/*1BF5:1F20. Saved offset/selector are captured before CLI; reinstallation
+/*1BF5:1F20. Saved offset/selector are captured first (the CLI/STI around
+ * the install are gone, H4c); reinstallation
  * overwrites them even if INT00 already points at this handler. */
 void BtechInstallDivideErrorHandler(void)
 {
-    if (!btechHostGetInterruptVector || !btechHostSetInterruptVector || !btechHostSetInterrupts) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetInterruptVector || !btechHostSetInterruptVector || !btechHostSetInterrupts");
+    if (!btechHostGetInterruptVector || !btechHostSetInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetInterruptVector || !btechHostSetInterruptVector");
     divideErrorHookMarkedActive=1;
     savedDivideErrorVector=btechHostGetInterruptVector(DIVIDE_ERROR_INTERRUPT);
-    btechHostSetInterrupts(0);btechHostSetInterruptVector(DIVIDE_ERROR_INTERRUPT,BTECH_DIVIDE_HANDLER_VECTOR);btechHostSetInterrupts(1);
+    btechHostSetInterruptVector(DIVIDE_ERROR_INTERRUPT,BTECH_DIVIDE_HANDLER_VECTOR);
 }
 
 /*1BF5:2540. JG is SIGNED: high-bit periods are accepted. Zero/positive>FF
@@ -136,11 +132,10 @@ void BtechInstallTimerScheduler(uint16_t period)
     if ((int16_t)period>COMBAT_SCHEDULER_MAX_POSITIVE_PERIOD || !period) return;
     schedulerPeriod=period;schedulerCountdown=period;
     pitChannel0DivisorShadow=UINT16_MAX/period;
-    if (!btechHostSetInterrupts || !btechHostWritePort || !btechHostSetInterruptVector || !btechHostSetTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterrupts || !btechHostWritePort || !btechHostSetInterruptVector || !btechHostSetTimerPeriod");
-    btechHostSetInterrupts(0);
+    if (!btechHostWritePort || !btechHostSetInterruptVector || !btechHostSetTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePort || !btechHostSetInterruptVector || !btechHostSetTimerPeriod");
     /* The PIT programming (43h, 40h low, 40h high) is the host's timer period since H4b. */
     btechHostSetTimerPeriod(pitChannel0DivisorShadow);
     btechHostWritePort(PIC_MASK_PORT,COMBAT_PIC_DEVICE_MASK);
     btechHostSetInterruptVector(TIMER_INTERRUPT,BTECH_TIMER_HANDLER_VECTOR);
-    btechHostSetInterrupts(1);runtimeDelayActive=1;
+    runtimeDelayActive=1;
 }

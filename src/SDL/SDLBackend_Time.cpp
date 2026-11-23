@@ -71,7 +71,11 @@ void MwSdlPaceCombatTick(void)
 }
 
 static MwMusicTimerHandler irq0;
-static bool interruptsEnabled,campaignInterruptsInstalled,inInterrupt;
+/* The original's interrupt flag is gone (H4c): outside a handler the host
+ * delivers only at its own points (the pumps, the key reads' due work), and a
+ * handler runs with nothing nested unless it allows nested ticks, as the
+ * campaign timer's coarse callback does (the original's STI there). */
+static bool campaignInterruptsInstalled,inInterrupt,nestingAllowed;
 static uint64_t startNanoseconds;
 static double hardwareTime,nextIrq;
 static uint32_t timerPeriod,biosTicks;
@@ -83,8 +87,20 @@ static void BiosTimerInterrupt(void)
     if (biosTicks>=BIOS_TICKS_PER_DAY) biosTicks=0;
     if (campaignInterruptsInstalled) MwCampaignTimerTick();
 }
-void MwSdlSetInterrupts(bool enabled) {interruptsEnabled=enabled;}
-uint8_t MwSdlReadInterrupts(void) {return interruptsEnabled;}
+void MwSdlAllowNestedTicks(void)
+{
+    if (!inInterrupt) MwSdlFail("Nested ticks allowed outside a timer handler");
+    nestingAllowed=true;
+}
+/* A handler as the original's IRQ ran it: nothing nested on entry, and the
+ * interrupted state back at its IRET. */
+template<class Handler> static void RunHandler(Handler handler)
+{
+    bool wasInInterrupt=inInterrupt,wasNesting=nestingAllowed;
+    inInterrupt=true;nestingAllowed=false;
+    handler();
+    inInterrupt=wasInInterrupt;nestingAllowed=wasNesting;
+}
 MwMusicTimerHandler MwSdlReadTimerHandler(void) {return irq0;}
 void MwSdlWriteTimerHandler(MwMusicTimerHandler handler) {irq0=handler;}
 uint32_t MwSdlBiosTicksValue(void) {return biosTicks;}
@@ -95,7 +111,7 @@ static bool pumpIdles=true,idleOwed;
 void MwSdlRunDue(void)
 {
     idleOwed=false;
-    if (!interruptsEnabled || inInterrupt) return;
+    if (inInterrupt) return;
     pumpIdles=false;MwSdlPump();pumpIdles=true;
 }
 /* The end of a pass of one of combat's waits for a key (H4c): the host's idle
@@ -104,11 +120,6 @@ void MwSdlWaitIdle(void)
 {
     if (idleOwed) MwSdlSpendNanoseconds(HOST_IDLE_WAIT_NS);
     idleOwed=false;
-}
-uint8_t MwSdlExchangeInterrupts(uint8_t enabled)
-{
-    uint8_t previous=interruptsEnabled;interruptsEnabled=enabled!=0;
-    return previous;
 }
 double MwSdlHardwareTime(void) {return hardwareTime;}
 double MwSdlTimerLagMilliseconds(void)
@@ -213,11 +224,11 @@ void MwSdlInitializeTimer(void)
     virtualClock=getenv("MECHWARRIOR_DEBUG_VIRTUAL_CLOCK")!=NULL;virtualNanoseconds=0;
     AudioLogOpen();
     startNanoseconds=MwSdlNowNanoseconds();hardwareTime=0;timerPeriod=PIT_COUNTER_MODULUS;
-    nextIrq=timerPeriod;irq0=BiosTimerInterrupt;interruptsEnabled=true;
+    nextIrq=timerPeriod;irq0=BiosTimerInterrupt;
     picMask=0;
-    campaignInterruptsInstalled=inInterrupt=false;
+    campaignInterruptsInstalled=inInterrupt=nestingAllowed=false;
     MwMpuReset();
-    mwMusicHardware=MwMusicHardwareCalls{MwSdlSetInterrupts,MwSdlReadTimerHandler,MwSdlWriteTimerHandler,MwSdlWriteDevicePort,MwSdlReadDevicePort,
+    mwMusicHardware=MwMusicHardwareCalls{MwSdlAllowNestedTicks,MwSdlReadTimerHandler,MwSdlWriteTimerHandler,MwSdlWriteDevicePort,MwSdlReadDevicePort,
         MwSdlPumpTimer,btechHostGetInterruptVector,btechHostSetInterruptVector,MwSdlPlayTone,MwSdlSetTimerPeriod};
     /* Same physical PIT/speaker, different original sequencer. No backend
      * selection or invented combat callback is installed at this boundary. */
@@ -225,22 +236,21 @@ void MwSdlInitializeTimer(void)
 }
 void MwSdlPumpTimer(void)
 {
-    if (inInterrupt && !interruptsEnabled) return;
-    if (!inInterrupt && interruptsEnabled && mwSdlCombatActive && mwSdlSoundSystem==MW_SOUND_MT32
+#if !defined(NDEBUG)
+    /* H4c removed the interrupt flag on a probe of every trace and event
+     * script: no pump ran inside a handler that hadn't allowed nested ticks,
+     * nor with the flag off outside one. A pump that does is a change the
+     * removal didn't cover; it must be looked at, not returned from. */
+    if (inInterrupt && !nestingAllowed) MwSdlFail("Pump inside a timer handler that didn't allow nested ticks");
+#endif
+    if (inInterrupt && !nestingAllowed) return;
+    if (!inInterrupt && mwSdlCombatActive && mwSdlSoundSystem==MW_SOUND_MT32
         && !(picMask&BTECH_MPU_IRQ_MASK) && !(MwMpuReadPort(MPU_STATUS_COMMAND_PORT)&BTECH_MPU_INPUT_EMPTY))
-    {
-        inInterrupt=true;interruptsEnabled=false;
-        MwSdlDeliverCombatMpuInterrupt();
-        interruptsEnabled=true;inInterrupt=false;
-    }
-    if (!inInterrupt && interruptsEnabled && !(picMask&PIC_KEYBOARD_IRQ_MASK) && MwSdlCombatKeyboardPending())
-    {
-        inInterrupt=true;interruptsEnabled=false;
-        MwSdlDeliverCombatKeyEvent();
-        interruptsEnabled=true;inInterrupt=false;
-    }
+        RunHandler(MwSdlDeliverCombatMpuInterrupt);
+    if (!inInterrupt && !(picMask&PIC_KEYBOARD_IRQ_MASK) && MwSdlCombatKeyboardPending())
+        RunHandler(MwSdlDeliverCombatKeyEvent);
     double target=(double)(MwSdlNowNanoseconds()-startNanoseconds)*(double)HOST_PIT_CLOCK_HZ/(double)HOST_NS_PER_SECOND;
-    while (interruptsEnabled)
+    for (;;)
     {
         double mpuEvent=mwSdlCombatActive && mwSdlSoundSystem==MW_SOUND_MT32?MwMpuNextEventTime():DBL_MAX;
         double timerEvent=(picMask&PIC_TIMER_IRQ_MASK)?DBL_MAX:nextIrq;
@@ -248,10 +258,7 @@ void MwSdlPumpTimer(void)
         {
             hardwareTime=mpuEvent;MwSdlAdvanceAudio(hardwareTime);MwMpuAdvance(hardwareTime);
             if (!(picMask&BTECH_MPU_IRQ_MASK) && !(MwMpuReadPort(MPU_STATUS_COMMAND_PORT)&BTECH_MPU_INPUT_EMPTY))
-            {
-                bool previousInInterrupt=inInterrupt;inInterrupt=true;interruptsEnabled=false;
-                MwSdlDeliverCombatMpuInterrupt();interruptsEnabled=true;inInterrupt=previousInInterrupt;
-            }
+                RunHandler(MwSdlDeliverCombatMpuInterrupt);
             continue;
         }
         if (timerEvent>target) break;
@@ -266,10 +273,8 @@ void MwSdlPumpTimer(void)
         uint32_t biosTicksBefore=biosTicks;
         hardwareTime=nextIrq;nextIrq+=timerPeriod;
         MwSdlAdvanceAudio(hardwareTime);
-        bool previousInInterrupt=inInterrupt;
-        inInterrupt=true;bool savedInterrupts=interruptsEnabled;interruptsEnabled=false;
         if (!irq0) MwSdlFail("Unmapped IRQ0 handler");
-        irq0();interruptsEnabled=savedInterrupts;inInterrupt=previousInInterrupt;
+        RunHandler(irq0);
         /* MPU slot8 runs much faster than the speaker. Catch up those hardware
          * edges, but expose at most one BIOS tick to campaign1610's equality
          * wait. Stopping after every fast edge would slow MIDI with poll rate. */

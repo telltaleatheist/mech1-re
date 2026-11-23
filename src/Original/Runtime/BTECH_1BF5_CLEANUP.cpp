@@ -51,28 +51,25 @@ void BtechShutdownMouseDriver(void)
     btechHostResetMouse();
 }
 
-/*1BF5:25AB. Preserve literal PIC mask28 and unconditional STI on active path. */
+/*1BF5:25AB. Preserve literal PIC mask28 on the active path (its CLI/STI are
+ * gone since H4c). */
 void BtechRestoreTimerScheduler(void)
 {
     if (!runtimeDelayActive) return;
-    if (!btechHostSetInterrupts || !btechHostWritePort || !btechHostSetInterruptVector || !btechHostSetTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterrupts || !btechHostWritePort || !btechHostSetInterruptVector || !btechHostSetTimerPeriod");
-    btechHostSetInterrupts(0);
+    if (!btechHostWritePort || !btechHostSetInterruptVector || !btechHostSetTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePort || !btechHostSetInterruptVector || !btechHostSetTimerPeriod");
     btechHostSetTimerPeriod(PIT_COUNTER_MODULUS); /* The BIOS's period (H4b; was 43h, 40h 0, 40h 0). */
     btechHostWritePort(PIC_MASK_PORT,COMBAT_PIC_DEVICE_MASK);
     btechHostSetInterruptVector(TIMER_INTERRUPT,savedTimerVector);
     runtimeDelayActive=0;
-    btechHostSetInterrupts(1);
 }
 
 /*1BF5:1F84. The shipped26 A1 instructions READ INT00; they do not restore it.
- * Keep that native defect and the active-path STI, not an idealized unhook. */
+ * Keep that native defect, not an idealized unhook (its CLI/STI are gone, H4c). */
 void BtechDeactivateDivideErrorHook(void)
 {
     if (!divideErrorHookMarkedActive) return;
     divideErrorHookMarkedActive=0;
-    if (!btechHostSetInterrupts || !btechHostGetInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetInterrupts || !btechHostGetInterruptVector");
-    btechHostSetInterrupts(0);
+    if (!btechHostGetInterruptVector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetInterruptVector");
     (void)savedDivideErrorVector;
     (void)btechHostGetInterruptVector(DIVIDE_ERROR_INTERRUPT);
-    btechHostSetInterrupts(1);
 }

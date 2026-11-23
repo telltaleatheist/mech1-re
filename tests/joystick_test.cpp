@@ -21,16 +21,10 @@ void Check(bool ok, const char *what) {
 }
 
 MwJoystickState sticks[2];
-bool interrupts = true;
 
 MwJoystickState ReadA() { return sticks[0]; }
 MwJoystickState ReadEither(uint16_t joystick) { return sticks[joystick != 0]; }
 bool MousePresent() { return false; }
-uint8_t SetInterrupts(uint8_t enabled) {
-  uint8_t previous = interrupts;
-  interrupts = enabled != 0;
-  return previous;
-}
 
 MwJoystickState Stick(int x, int y, bool one = false, bool two = false) {
   return MwJoystickState{true, (int8_t)x, (int8_t)y, one, two};
@@ -52,7 +46,6 @@ int main() {
   mwCampaignInput.readJoystick = ReadA;
   mwCampaignPlatform.mousePresent = MousePresent;
   btechHostReadJoystick = ReadEither;
-  btechHostSetInterrupts = SetInterrupts;
 
   // The axis reading.
   Check(MwJoystickAxisReading(0) == 127 && MwJoystickAxisReading(-127) == 0 && MwJoystickAxisReading(127) == 254
@@ -114,7 +107,6 @@ int main() {
   Check(joystickPairInstalled[0] == 1 && joystickPairInstalled[1] == 0, "A installed, B not");
   Check(joystickAxisCentres[0] == 127 && joystickAxisCentres[1] == 127 && joystickAxisReciprocals[0] == 256,
         "A's centres 127, scale 256ths of 7F00h/127");
-  Check(interrupts, "interrupts back on after calibration");
 
   Check(CombatAt(0, 0) == 0, "combat centred: no direction");
   Check(CombatAt(-127, 0) == COMBAT_DIRECTION_LEFT && joystickDirectionX == -127, "combat full left: left, -127");

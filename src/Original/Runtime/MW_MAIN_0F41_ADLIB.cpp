@@ -33,12 +33,10 @@ uint16_t MwProbeAdlibAndCalibrateDelays(void)
     MwWriteAdlibRegisterPair(OPL_CALIBRATION_LOAD,ADLIB_INDEX_PORT);
     mwMusicHardware.writePort(ADLIB_INDEX_PORT,OPL_TIMER_CONTROL);
     for (uint16_t reads=OPL_CALIBRATION_ADDRESS_READS;reads;--reads) mwMusicHardware.readPort(ADLIB_INDEX_PORT);
-    mwMusicHardware.setInterruptsEnabled(false);
     mwMusicHardware.writePort(ADLIB_DATA_PORT,OPL_CALIBRATION_START);
     uint16_t remaining=0;uint8_t status;
     do {status=mwMusicHardware.readPort(ADLIB_INDEX_PORT)&OPL_TIMER_STATUS_MASK;--remaining;}
     while (remaining && status!=OPL_TIMER_ONE_OVERFLOW);
-    mwMusicHardware.setInterruptsEnabled(true);
     if (status!=OPL_TIMER_ONE_OVERFLOW) return 0;
     uint16_t measuredReads=0-remaining;
     adlibDataDelayReads=measuredReads/OPL_DATA_CALIBRATION_SCALE+1;

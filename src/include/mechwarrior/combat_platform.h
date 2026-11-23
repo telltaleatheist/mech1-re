@@ -9,15 +9,14 @@ enum { DOS_MAX_PARAGRAPH_ALLOCATION_BYTES=0xFFFF0 };
 extern FILE *(*btechHostOpenStream)(const char *filename,const char *mode);
 extern uint8_t (*btechHostReadPort)(uint16_t port);
 extern void (*btechHostWritePort)(uint16_t port,uint8_t value);
-extern uint8_t (*btechHostSetInterrupts)(uint8_t enabled);
 /* The host's due work, run where combat reads its keys (H4c): the clock's due
  * ticks and the queued key and MPU events, as the original's CLI let them in
- * just before it read the queue. It takes no time. */
+ * just before it read the queue. It takes no time. The interrupt flag itself
+ * is gone (H4c): nothing is delivered anywhere else outside a handler. */
 extern void (*btechHostRunDue)(void);
 /* A pass of a wait for a key (H4c): the due work, and a short sleep if nothing
  * is due, so a wait doesn't spin. */
 extern void (*btechHostWaitIdle)(void);
-extern uint8_t (*btechHostReadInterrupts)(void);
 /* Joystick A (0) or B (1) as it is now (H3). */
 extern MwJoystickState (*btechHostReadJoystick)(uint16_t joystick);
 extern void (*btechHostPollInterrupts)(void);
