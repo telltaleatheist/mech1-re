@@ -23,8 +23,9 @@ std::string lower(std::string s) {
   return s;
 }
 
+// `dir` ending in a separator (this system's, so a path built on it reads as one, as SDL_GetPrefPath names it).
 std::string with_slash(std::string dir) {
-  if (!dir.empty() && dir.back() != '/' && dir.back() != '\\') dir += '/';
+  if (!dir.empty() && dir.back() != '/' && dir.back() != '\\') dir += static_cast<char>(fs::path::preferred_separator);
   return dir;
 }
 
@@ -100,7 +101,9 @@ std::string user_folder() {
   return pref_folder(kOrganisation, kApplication);
 }
 
-std::string default_install(const std::string& user) { return user.empty() ? "" : with_slash(user) + "install"; }
+std::string default_install(const std::string& user) {
+  return user.empty() ? "" : (fs::path(user).lexically_normal() / "install").lexically_normal().string();
+}
 
 Carried carry_over(const std::string& from, const std::string& to) {
   Carried c;
