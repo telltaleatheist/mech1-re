@@ -143,7 +143,7 @@ def platform_name():
 
 def configure_and_build(root, build, sdl):
     args = ["cmake", "-S", str(root), "-B", str(build),
-            "-DMECHWARRIOR_BUILD_SDL=ON", f"-DMECHWARRIOR_SDL_SOURCE_DIR={sdl}"]
+            "-DMECHWARRIOR_BUILD_SDL=ON", f"-DMECHWARRIOR_SDL_SOURCE_DIR={sdl}", "-DMECHWARRIOR_TRIM_PATHS=ON"]
     if os.name == "nt":
         args += ["-A", "x64", "-DMECHWARRIOR_WINDOWS_GUI=ON"]
     elif sys.platform == "darwin":
@@ -172,9 +172,11 @@ def stage_common(root, build, sdl, resources):
     (resources / "README.txt").write_text(README, encoding="utf-8")
 
 
-def check_paths(root, folder):
-    """No local path or user name in anything shipped (tools/package/check_paths.py)."""
-    run(sys.executable, "-I", str(root / "tools/package/check_paths.py"), str(folder))
+def check_paths(root, folder, *extra):
+    """No local path or user name in anything shipped (tools/package/check_paths.py), nor the folders
+    the build ran in (`extra`: the tree and SDL's source, which __FILE__ would name)."""
+    run(sys.executable, "-I", str(root / "tools/package/check_paths.py"), str(folder),
+        *[str(Path(p).resolve()) for p in extra])
 
 
 def package(root, build, sdl, output, label, game=None, installer=False, tools=None):
@@ -210,6 +212,7 @@ def package(root, build, sdl, output, label, game=None, installer=False, tools=N
         if not list(stage.glob(required)):
             raise RuntimeError(f"Missing runtime dependency: {required}")
     stage_common(root, build, sdl, stage)
+    check_paths(root, stage, root, sdl)
     archive = output / (name + (".zip" if windows else ".tar.gz"))
     if windows:
         with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as target:
@@ -238,9 +241,9 @@ def package(root, build, sdl, output, label, game=None, installer=False, tools=N
     print(f"Packaged and startup-checked {archive}")
     if installer:
         if windows:
-            windows_installer(root, stage, output, label)
+            windows_installer(root, stage, output, label, sdl)
         else:
-            appimage(root, stage, output, label, tools, game)
+            appimage(root, stage, output, label, tools, game, sdl)
     return archive
 
 
@@ -262,9 +265,8 @@ def find_iscc():
     raise RuntimeError("Inno Setup's ISCC.exe not found (scoop install inno-setup, or jrsoftware.org)")
 
 
-def windows_installer(root, stage, output, label):
+def windows_installer(root, stage, output, label, sdl):
     """MW1-Rebuild-<label>-Setup.exe from the staged folder (tools/package/installer.iss)."""
-    check_paths(root, stage)
     stem = f"{STEM}-{label}"
     run(find_iscc(), "/Qp", f"/DAppVersion={label}", f"/DDist={stage.resolve()}", f"/DStem={stem}",
         f"/O{output.resolve()}", str(root / "tools/package/installer.iss"))
@@ -275,7 +277,7 @@ def windows_installer(root, stage, output, label):
     print(f"Installer {setup}")
 
 
-def appimage(root, stage, output, label, tools, game):
+def appimage(root, stage, output, label, tools, game, sdl):
     """MW1-Rebuild-<label>-x86_64.AppImage: usr/bin/mechwarrior with data/ and MechWarrior.ini beside it
     (SDL_GetBasePath), the notices in usr/share/doc, the libraries by linuxdeploy. Needs `tools` holding
     linuxdeploy-x86_64.AppImage and appimagetool-x86_64.AppImage."""
@@ -299,7 +301,7 @@ def appimage(root, stage, output, label, tools, game):
     run(str(tools / "linuxdeploy-x86_64.AppImage"), "--appdir", str(appdir), "-e", str(bin_dir / "mechwarrior"),
         "-d", str(root / "tools/package/mechwarrior.desktop"), "-i", str(root / "tools/package/mechwarrior.png"), env=env)
     smoke(bin_dir / "mechwarrior", game)
-    check_paths(root, appdir)
+    check_paths(root, appdir, root, sdl)
     image = output / f"{STEM}-{label}-x86_64.AppImage"
     run(str(tools / "appimagetool-x86_64.AppImage"), str(appdir), str(image), env=env)
     result = subprocess.run([str(image.resolve()), "--help"], capture_output=True, text=True, timeout=60, env=env)
@@ -408,7 +410,7 @@ def package_mac(root, build, sdl, output, label, game):
     run("ditto", str(app), str(dmg_stage / app.name))
     (dmg_stage / "Applications").symlink_to("/Applications")
     shutil.copy2(resources / "README.txt", dmg_stage / "Read me.txt")
-    check_paths(root, dmg_stage)
+    check_paths(root, dmg_stage, root, sdl)
     run("hdiutil", "create", "-volname", APP_NAME, "-srcfolder", str(dmg_stage), "-ov", "-format", "UDZO", str(dmg),
         stdout=subprocess.DEVNULL)
     shutil.rmtree(dmg_stage)
