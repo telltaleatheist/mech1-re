@@ -322,6 +322,9 @@ Group B overlaps the fork plan's phases 3-6, which give the game's state its own
 | B5 | The C runtime: the standard library in place of the 1989 heap, streams and divide, keeping any game-visible limit as an explicit rule with a test | traces and frames |
 | B6 | DOS files: `std::filesystem` in place of the INT 21h handle layer and 8.3 names | traces; the setup and save tests |
 
+For later, when the callers become ours (group B, or H5 at the latest):
+- **The mode calls by what they do.** `MwSetVideoMode` and `MwGetVideoMode` (G5) still take the BIOS mode numbers, 0Dh and 3, because their callers are line-for-line conversions. Once those callers are ours, they set up the canvas and close it by name. The numbers stay only where the game's data stores them (the campaign's saved mode).
+
 ## 6. Risks
 
 1. **Instrument choice is taste.** No GM program is exactly an MT-32 timbre. The table is chosen by ear, and the listening pass signs it off. Until then, S3's first table plays the right notes at the right times with provisional instruments.
