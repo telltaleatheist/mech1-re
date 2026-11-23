@@ -302,11 +302,11 @@ Every slice below is its own branch with the full gate green: both setups, the t
 | S4 | The instrument table from the listening notes, per song: programs, levels, pans, the drum map. Re-rendered for a second listen if asked | note log identical; the project owner's sign-off | 2, plus listening |
 | S5 | `Effects`: 2134 outputs tone events to the tone voice, for the thirteen effects the game requests (9 and 12 never are) | tone log identical | 3 |
 | S6 | Speaker-style music on the tone voice. The PIT channel 2 and 61h decoding removed | note log identical | 2 |
-| H4 | Timers and interrupts: the game's millisecond clock calls the music tick at its rate and supplies the 18.2 Hz count where the game reads it. The interrupt flag, vector install and restore, the INT 8 handler's IRQ entry and BIOS chain, the PIT latch window and the per-read time charges removed | note log identical, timestamps included; game-event log identical | 5 |
+| H4 | Timers and interrupts: the game's millisecond clock calls the music tick at its rate and supplies the 18.2 Hz count where the game reads it. The interrupt flag, vector install and restore, the INT 8 handler's IRQ entry and BIOS chain and the per-read time charges removed (the PIT latch window went in H3) | note log identical, timestamps included; game-event log identical | 5 |
 | S8 | The campaign's AdLib and MPU backends and combat's 21CA and 2176 removed. 1ADF reports the rebuild's sound | logs and traces exact | 2 |
 | S9 | Nuked-OPL3, Munt and MPU401/Adlib/MT32 removed from the build. ROM settings dropped; `sound_system` replaced by `music`. Notices, AUDIO.md and packaging (no nukedopl or mt32emu library) updated. The AppImage tooling's licence confirmed | packaging tests; no LGPL in the package | 2 |
 | H5 | The port bus retired: `MwSdlWriteDevicePort`, `ReadDevicePort` and the port-word hooks removed with their last callers; the sound-port event log retired in favour of the note and tone logs | everything above exact | 2 |
-| R | The release gate: every gate on Windows, macOS and Linux from fresh builds. Packages from a local tag. The listening list and the visual acceptance list signed off on the packaged builds | all of the above | 2 |
+| R | The release gate: every gate on Windows, macOS and Linux from fresh builds. Packages from a local tag. The listening list and the visual acceptance list signed off on the packaged builds. A physical gamepad tried by hand in both games, if the project owner has one (H3's host read is otherwise untested by hand) | all of the above | 2 |
 
 **Group A total:** about 50-51 developer days plus the listening sessions. That is roughly 10 weeks, planned for **one developer, in order**.
 
