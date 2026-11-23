@@ -42,15 +42,18 @@ writes a `story/` folder into the save directory; from then on it plays from
 An installed copy is started with no arguments (a shortcut, a double-click).
 It plays from the `game_folder` line of the player's own `MechWarrior.ini`
 while that folder is still the game, else from the player's own copy
-(`install/` in the save directory). With neither, the setup runs first
-(re-setup-kit, `src/Setup`): the player picks their copy of MechWarrior (its
-`BTECH.EXE` or `MW_MAIN.EXE`, its folder through one of its files, or the
-archive it came in, such as a .zip), which is copied into `install/` in the
-save directory; the original, folder or archive, is only read. A copy needs
-`MW_MAIN.EXE` until the story is imported. The log (`mechwarrior.log`) and F12
-captures go beside the saves. With a game folder on the command line nothing
-changes. Until the kit's setup screen lands, the setup asks with the system's
-file picker alone.
+(`install/` in the save directory). With neither, re-setup-kit's setup
+screen opens first (`src/SDL/SDLSetup.cpp`, `src/Setup`), in the rebuild's
+theme (`data/setup`): FIND THE GAME looks on the computer, then asks; the
+player picks their copy of MechWarrior (its `BTECH.EXE` or `MW_MAIN.EXE`, its
+folder through one of its files, or the archive it came in, such as a .zip);
+"Use these game files?" copies it into `install/` in the save directory, or
+with CHANGE FOLDER into a folder of the game's own (marked `game=mw1r`). The
+original, folder or archive, is only read. A copy needs `MW_MAIN.EXE` until
+the story is imported. The log (`mechwarrior.log`) and F12 captures go beside
+the saves. With a game folder on the command line nothing changes. A hidden
+run never opens the screen, except a check's (`REKIT_SETUP_FRAMES`, driven by
+the kit's `REKIT_SETUP_*` hooks, still with no picker).
 
 The launcher asks the program through the kit's contract:
 `mechwarrior --status` prints one JSON line (game `mech1`; files `ready`,
