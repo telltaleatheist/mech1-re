@@ -1,5 +1,6 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/campaign_music.h"
+#include "mechwarrior/event_log.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -223,6 +224,7 @@ void MwSetCampaignMidiProgram(uint16_t channelIndex,uint16_t instrumentId)
  * The native second-data handlers deliberately DO NOT reset the parser. */
 void MwDispatchMidiByte(uint16_t midiWord)
 {
+    MwEventLogMidiByte((uint8_t)midiWord); /* Test instrument: the sequencer's output, before any backend. */
     if (MwSendMidiByteToSelectedBackend(midiWord)) return;
     uint8_t midiByte=midiWord;
     if (midiByte>=MIDI_STATUS_BYTE)

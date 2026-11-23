@@ -1,5 +1,6 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/combat_sound.h"
+#include "mechwarrior/event_log.h"
 #include <stdlib.h>
 
 /*2134:02BE. Native speaker bias is CH of a mask already reduced to2: zero. */
@@ -191,6 +192,8 @@ void BtechTickSpeakerToneChannels(void)
     }
     uint8_t gate=btechHostReadPort(TONE_SPEAKER_GATE_PORT);
     btechHostWritePort(TONE_SPEAKER_GATE_PORT,(gate&~TONE_SPEAKER_GATE_BITS)|gateBits);
+    /* Test instrument (event_log.h): what the effect player chose this tick. */
+    MwEventLogToneTick(selectedSpeakerState?selectedSpeakerState->outputPeriod:0,gateBits!=0);
 }
 
 /*2134:0086. Noise inherits transformed period AX for volume; masked/inactive

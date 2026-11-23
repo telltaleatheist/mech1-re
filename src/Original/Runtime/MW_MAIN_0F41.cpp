@@ -1,6 +1,7 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/campaign_music.h"
 #include "mechwarrior/native_address.h"
+#include "mechwarrior/event_log.h"
 #include <stdlib.h>
 
 MwMusicHardwareCalls mwMusicHardware;
@@ -195,6 +196,7 @@ uint16_t MwStartMidiTrack(uint16_t resourceSelector,uint16_t streamOffset,uint16
     streamOffset+=2;
     if (MwReadNativeWord(stream,streamOffset)!=MIDI_TRACK_SECOND_WORD) return 0;
     streamOffset+=6;
+    MwEventLogSong(stream,streamOffset); /* Test instrument (event_log.h), not game state. */
     midiStateUpdateInProgress=1;
     if (midiPlaybackFlags&MIDI_TRACK_ACTIVE) MwMidiAllNotesOff();
     midiPlaybackFlags=0;
@@ -268,6 +270,7 @@ void MwStopMidiTrack(void)
  * DIV failures retain prior stores/guard, and zero-delta processing is unbounded. */
 void MwTickMidiTrack(void)
 {
+    MwEventLogMusicTick(); /* Test instrument: the note log's clock is these calls. */
     if (midiTickInProgress==1) return;
     midiTickInProgress=1;
     if ((midiPlaybackFlags&(MIDI_TRACK_ACTIVE|MIDI_TRACK_PAUSED))!=MIDI_TRACK_ACTIVE) goto tickFinished;

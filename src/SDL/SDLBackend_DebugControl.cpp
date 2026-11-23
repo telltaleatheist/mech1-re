@@ -3,6 +3,7 @@
  * reads canonical owners; a feed's random: token (a test aid, as a rig poke)
  * is the one writer. Files are private local IPC, never a network server. */
 #include "SDLBackend.h"
+#include "mechwarrior/event_log.h"
 #include "mechwarrior/combat_startup.h"
 #include "mechwarrior/combat_import.h"
 #include "mechwarrior/combat_cockpit.h"
@@ -125,6 +126,7 @@ static void LoadFeed(void)
 static void Snap(const char *name)
 {
     MwSdlAudioLogSnap(name);
+    MwEventLogSnap(name);
     MwSdlPresentVideo(true);
     if (!MwSdlCapture(name)) {feedError="Snap failed (capture missing or name reused)";return;}
     char path[4200];
@@ -142,6 +144,7 @@ static void Snap(const char *name)
 }
 void MwSdlDebugNoteInputPoll(bool empty,bool blocking)
 {
+    MwEventLogPoll(false);
     if(!enabled)return;
     ++inputPolls;
     if(!feedActive || !empty || busy)return;
@@ -162,6 +165,7 @@ void MwSdlDebugNoteInputPoll(bool empty,bool blocking)
  * the keyboard interrupt as typed ones do, so the held-key masks see them. */
 void MwSdlDebugNoteCombatPoll(void)
 {
+    MwEventLogPoll(true);
     if(!enabled)return;
     ++combatPolls;
     if(!feedActive || busy)return;
@@ -186,6 +190,7 @@ void MwSdlDebugNoteCombatPoll(void)
 }
 void MwSdlDebugNoteKeyRead(uint16_t key)
 {
+    MwEventLogKeyRead(key);
     if(!enabled)return;
     feedPolls=0;feedWait=FEED_WAIT_POLLS;
     combatFeedPolls=0;combatFeedWait=0; /* combat's first poll takes the next combat item */

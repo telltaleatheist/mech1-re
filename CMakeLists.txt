@@ -214,6 +214,7 @@ add_library(mechwarrior_original STATIC
     src/Support/MidiAddress.cpp
     src/Support/Json.cpp
     src/Support/Sha256.cpp
+    src/Support/EventLog.cpp
     src/Support/Hmac.cpp
     src/Import/import_table.cpp
     src/Import/Story.cpp
@@ -420,6 +421,10 @@ if(MECHWARRIOR_BUILD_SDL)
             add_test(NAME exe_free COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tools/trace/exe_free.py"
                 --port $<TARGET_FILE:mechwarrior> --work "${CMAKE_CURRENT_BINARY_DIR}/exe_free_work")
             set_tests_properties(exe_free PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 3600)
+            # The game-event logs (docs/phase5/NO_EMULATION_PLAN.md, T1): opt-in, MW1O_EVENTS=1.
+            add_test(NAME events COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tools/trace/events.py"
+                check --opt-in --port $<TARGET_FILE:mechwarrior> --work "${CMAKE_CURRENT_BINARY_DIR}/events_work")
+            set_tests_properties(events PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 3600)
         endif()
     endif()
     if(MSVC)
