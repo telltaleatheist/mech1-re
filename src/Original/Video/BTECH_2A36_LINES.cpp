@@ -1,12 +1,17 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/combat_video.h"
+#include "BTECH_2A36_CANVAS.h"
 #include <stdlib.h>
+
+/* G3: drawn on the canvas through BtechEgaCanvasWriter (BTECH_2A36_CANVAS.h),
+ * which keeps the bit mask writes and latch reads for the register model. */
 
 /*2A36:0608. Native point/horizontal/vertical/diagonal/run paths. No new
  * clipping, raster-state reset or Bresenham replacement. */
 void BtechEgaDrawLine(uint16_t firstX,uint16_t firstY,uint16_t secondX,uint16_t secondY,uint16_t page)
 {
-    if (!btechHostWritePortWord || !btechHostReadVideoByte || !btechHostWriteVideoByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePortWord || !btechHostReadVideoByte || !btechHostWriteVideoByte");
+    if (!btechHostWritePortWord || !btechHostReadVideoByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePortWord || !btechHostReadVideoByte");
+    BtechEgaCanvasWriter ega(page);
     // Coordinates are native BX/CX/DX/SI; page denotes AMBIENT ES,
     // not a fifth pushed argument. DS=304E; all general registers are scratch.
     drawColourPattern=palettePrimarySlots[drawFillColour/COMBAT_PALETTE_WORDS][drawFillColour%COMBAT_PALETTE_WORDS];
@@ -18,9 +23,9 @@ void BtechEgaDrawLine(uint16_t firstX,uint16_t firstY,uint16_t secondX,uint16_t 
     uint8_t mask=egaLinePixelMask;
     if (firstX==secondX&&firstY==secondY)
     {
-        (void)btechHostReadVideoByte(page,cursor);
-        btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)mask<<0x0008));
-        btechHostWriteVideoByte(page,cursor,(uint8_t)drawColourPattern); // Pattern reread after OUT.
+        ega.load(cursor);
+        ega.setMask((uint8_t)(mask));
+        ega.write(cursor,(uint8_t)drawColourPattern); // Pattern reread after OUT.
         return;
     }
     uint8_t colour=drawColourPattern;
@@ -29,17 +34,17 @@ void BtechEgaDrawLine(uint16_t firstX,uint16_t firstY,uint16_t secondX,uint16_t 
     {
         //065E horizontal path: initial pixel then exactly DX rotations/writes.
         uint16_t pixelsRemaining=horizontalExtent;
-        (void)btechHostReadVideoByte(page,cursor);
-        btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)mask<<0x0008));
-        btechHostWriteVideoByte(page,cursor,colour);
+        ega.load(cursor);
+        ega.setMask((uint8_t)(mask));
+        ega.write(cursor,colour);
         do
         {
             uint16_t crossedByte=mask&0x01;
             mask=(uint8_t)((mask>>0x01)|(mask<<0x07)); // ROR, not SHR to zero.
             if (crossedByte)++cursor;
-            (void)btechHostReadVideoByte(page,cursor);
-            btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)mask<<0x0008));
-            btechHostWriteVideoByte(page,cursor,colour);
+            ega.load(cursor);
+            ega.setMask((uint8_t)(mask));
+            ega.write(cursor,colour);
         } while (--pixelsRemaining!=0x0000);
         return;
     }
@@ -52,11 +57,11 @@ void BtechEgaDrawLine(uint16_t firstX,uint16_t firstY,uint16_t secondX,uint16_t 
     if (firstX==secondX)
     {
         uint16_t pixelsRemaining=verticalExtent;
-        btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)mask<<0x0008));
+        ega.setMask((uint8_t)(mask));
         do
         {
-            (void)btechHostReadVideoByte(page,cursor);
-            btechHostWriteVideoByte(page,cursor,colour);
+            ega.load(cursor);
+            ega.write(cursor,colour);
             cursor += rowStep;
             --pixelsRemaining;
         } while ((pixelsRemaining&0x8000)==0x0000); // DEC CX/JS, NOT signed <=0.
@@ -65,23 +70,23 @@ void BtechEgaDrawLine(uint16_t firstX,uint16_t firstY,uint16_t secondX,uint16_t 
     if (verticalExtent==horizontalExtent)
     {
         uint16_t pixelsRemaining=horizontalExtent;
-        (void)btechHostReadVideoByte(page,cursor);
-        btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)mask<<0x0008));
-        btechHostWriteVideoByte(page,cursor,colour);
+        ega.load(cursor);
+        ega.setMask((uint8_t)(mask));
+        ega.write(cursor,colour);
         do
         {
             uint16_t crossedByte=mask&0x01;
             mask=(uint8_t)((mask>>0x01)|(mask<<0x07));
             if (crossedByte)++cursor;
-            (void)btechHostReadVideoByte(page,cursor);
-            btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)mask<<0x0008));
-            btechHostWriteVideoByte(page,cursor,colour);
+            ega.load(cursor);
+            ega.setMask((uint8_t)(mask));
+            ega.write(cursor,colour);
             // The two native branches order their final decrement differently.
             // Byte-wrap branch can finish without its otherwise matching Y step.
             if (crossedByte&&--pixelsRemaining==0x0000)break;
             cursor += rowStep;
-            (void)btechHostReadVideoByte(page,cursor);
-            btechHostWriteVideoByte(page,cursor,colour);
+            ega.load(cursor);
+            ega.write(cursor,colour);
             if (!crossedByte&&--pixelsRemaining==0x0000)break;
         } while (1);
         return;
@@ -95,9 +100,9 @@ void BtechEgaDrawLine(uint16_t firstX,uint16_t firstY,uint16_t secondX,uint16_t 
     egaLineFractionStep=(uint16_t)(((uint32_t)remainder<<0x0010)/divisor);
     egaLineFractionAccumulator=0x0000;
     uint16_t runPixels=egaLineRunLength+0x0001;
-    (void)btechHostReadVideoByte(page,cursor);
-    btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)mask<<0x0008));
-    btechHostWriteVideoByte(page,cursor,colour);
+    ega.load(cursor);
+    ega.setMask((uint8_t)(mask));
+    ega.write(cursor,colour);
     do
     {
         egaLineRemainingBeforeRun=remainingMajorPixels;
@@ -117,9 +122,9 @@ void BtechEgaDrawLine(uint16_t firstX,uint16_t firstY,uint16_t secondX,uint16_t 
                 mask=(uint8_t)((mask>>0x01)|(mask<<0x07));
                 if (crossedByte)++cursor;
             }
-            (void)btechHostReadVideoByte(page,cursor);
-            btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)mask<<0x0008));
-            btechHostWriteVideoByte(page,cursor,colour);
+            ega.load(cursor);
+            ega.setMask((uint8_t)(mask));
+            ega.write(cursor,colour);
         } while (--runPixels!=0x0000); // Native zero run would execute00010000 times.
         if (remainingMajorPixels==0x0000)break;
         if (steep)
@@ -127,15 +132,15 @@ void BtechEgaDrawLine(uint16_t firstX,uint16_t firstY,uint16_t secondX,uint16_t 
             uint16_t crossedByte=mask&0x01;
             mask=(uint8_t)((mask>>0x01)|(mask<<0x07));
             if (crossedByte)++cursor;
-            (void)btechHostReadVideoByte(page,cursor);
-            btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)mask<<0x0008));
+            ega.load(cursor);
+            ega.setMask((uint8_t)(mask));
         }
         else
         {
             cursor += rowStep;
-            (void)btechHostReadVideoByte(page,cursor); // Shallow Y step reuses current bit mask, no OUT.
+            ega.load(cursor); // Shallow Y step reuses current bit mask, no OUT.
         }
-        btechHostWriteVideoByte(page,cursor,colour);
+        ega.write(cursor,colour);
         uint16_t fractionStep=egaLineFractionStep;
         uint16_t oldFraction=egaLineFractionAccumulator;
         egaLineFractionAccumulator=(uint16_t)(oldFraction+fractionStep);

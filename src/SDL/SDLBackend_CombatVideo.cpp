@@ -114,6 +114,13 @@ static void ReadEgaWriteState(BtechEgaWriteState *state)
     state->writeMode=graphicsRegisters[EGA_MODE]&3;
     state->logicalFunction=(graphicsRegisters[EGA_DATA_ROTATE]>>3)&3;
     state->mapMask=sequencerRegisters[EGA_MAP_MASK]&0x0F;
+    state->bitMask=graphicsRegisters[EGA_BIT_MASK];
+    for (uint16_t bit=0;bit<8;++bit)
+    {
+        uint8_t colour=0;
+        for (uint16_t plane=0;plane<4;++plane) colour|=((latches[plane]>>(7-bit))&1)<<plane;
+        state->latchPixels[bit]=colour;
+    }
 }
 static void WritePortWord(uint16_t port,uint16_t value)
 {

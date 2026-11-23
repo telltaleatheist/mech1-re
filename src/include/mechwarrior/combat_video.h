@@ -170,7 +170,7 @@ extern void (*btechHostSetPaletteRegister)(uint8_t index,uint8_t colour); /* INT
 /* G2-G4 only (docs/phase5/NO_EMULATION_PLAN.md): the EGA write state a path
  * drawn through the canvas inherits from the paths still on the register model.
  * Goes with that model in G4. */
-typedef struct BtechEgaWriteState {uint8_t writeMode,logicalFunction,mapMask;} BtechEgaWriteState;
+typedef struct BtechEgaWriteState {uint8_t writeMode,logicalFunction,mapMask,bitMask,latchPixels[8];} BtechEgaWriteState;
 extern void (*btechHostReadEgaWriteState)(BtechEgaWriteState *state);
 bool BtechImportVideoInitialData(const uint8_t *data,size_t bytes);
 uint16_t BtechSelectCombatRenderer(uint8_t adapterOverride,uint8_t allowedMask);

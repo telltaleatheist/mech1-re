@@ -1,41 +1,46 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/combat_video.h"
+#include "BTECH_2A36_CANVAS.h"
 #include <stdlib.h>
+
+/* G3: drawn on the canvas through BtechEgaCanvasWriter (BTECH_2A36_CANVAS.h),
+ * which keeps the bit mask writes and latch reads for the register model. */
 
 /*2A36:1E32. Native mode2 writes, including inherited controller state and
  * latch reuse by REP STOSB. Forward game path; no added clip or mask restore. */
 void BtechEgaFillSolidSpan(uint16_t pattern,uint16_t x,int16_t count,uint16_t rowOffset,uint16_t page)
 {
     if (count<=0) return;
-    if (!btechHostWritePortWord || !btechHostReadVideoByte || !btechHostWriteVideoByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePortWord || !btechHostReadVideoByte || !btechHostWriteVideoByte");
+    if (!btechHostWritePortWord || !btechHostReadVideoByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePortWord || !btechHostReadVideoByte");
+    BtechEgaCanvasWriter ega(page);
     uint16_t cursor=rowOffset+(x>>3);
     uint16_t firstPixel=x&7,endPixel=(uint16_t)(firstPixel+(uint16_t)count);
     uint8_t mask=egaSpanLeadingMasks[firstPixel];
     if ((int16_t)endPixel<8)
     {
         mask&=egaSpanTrailingMasks[(uint8_t)endPixel];
-        btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)mask<<8));
-        (void)btechHostReadVideoByte(page,cursor);
-        btechHostWriteVideoByte(page,cursor,(uint8_t)pattern);
+        ega.setMask((uint8_t)(mask));
+        ega.load(cursor);
+        ega.write(cursor,(uint8_t)pattern);
         return;
     }
     uint16_t remaining=(uint16_t)count-(8-firstPixel);
-    btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)mask<<8));
-    (void)btechHostReadVideoByte(page,cursor);
-    btechHostWriteVideoByte(page,cursor++,(uint8_t)pattern);
+    ega.setMask((uint8_t)(mask));
+    ega.load(cursor);
+    ega.write(cursor++,(uint8_t)pattern);
     uint16_t wholeBytes=(remaining&0xFFF8)>>3;
     if (wholeBytes)
     {
-        btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_ALL_PIXEL_BITS);
-        do {btechHostWriteVideoByte(page,cursor++,(uint8_t)pattern);} while (--wholeBytes);
+        ega.setMask(0xFF);
+        do {ega.write(cursor++,(uint8_t)pattern);} while (--wholeBytes);
     }
     uint16_t tail=remaining&7;
     if (tail)
     {
         mask=egaSpanTrailingMasks[tail];
-        btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)mask<<8));
-        (void)btechHostReadVideoByte(page,cursor);
-        btechHostWriteVideoByte(page,cursor,(uint8_t)pattern);
+        ega.setMask((uint8_t)(mask));
+        ega.load(cursor);
+        ega.write(cursor,(uint8_t)pattern);
     }
 }
 
@@ -46,7 +51,8 @@ void BtechEgaFillAlternatingSpan(uint16_t primary,uint16_t x,int16_t count,uint1
     spanAlternationState^=1;
     uint16_t pattern=spanAlternationState?alternate:primary;
     if (count<=0) return;
-    if (!btechHostWritePortWord || !btechHostReadVideoByte || !btechHostWriteVideoByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePortWord || !btechHostReadVideoByte || !btechHostWriteVideoByte");
+    if (!btechHostWritePortWord || !btechHostReadVideoByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePortWord || !btechHostReadVideoByte");
+    BtechEgaCanvasWriter ega(page);
     egaSpanPrimaryColour=(uint8_t)(pattern>>8);
     egaSpanSecondaryColour=(uint8_t)pattern;
     uint16_t firstPixel=x&7,endPixel=(uint16_t)(firstPixel+(uint16_t)count);
@@ -60,29 +66,29 @@ void BtechEgaFillAlternatingSpan(uint16_t primary,uint16_t x,int16_t count,uint1
         if ((int16_t)endPixel<8)
         {
             uint8_t mask=leading&egaSpanTrailingMasks[(uint8_t)endPixel]&columns;
-            btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)mask<<8));
-            (void)btechHostReadVideoByte(page,cursor);
-            btechHostWriteVideoByte(page,cursor,colour);
+            ega.setMask((uint8_t)(mask));
+            ega.load(cursor);
+            ega.write(cursor,colour);
             continue;
         }
         uint16_t remaining=(uint16_t)count-(8-firstPixel);
-        btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)(leading&columns)<<8));
-        (void)btechHostReadVideoByte(page,cursor);
-        btechHostWriteVideoByte(page,cursor++,colour);
+        ega.setMask((uint8_t)((leading&columns)));
+        ega.load(cursor);
+        ega.write(cursor++,colour);
         uint16_t wholeBytes=(remaining&0xFFF8)>>3;
         if (wholeBytes)
         {
-            btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)columns<<8));
-            if (phase) (void)btechHostReadVideoByte(page,cursor);
-            do {btechHostWriteVideoByte(page,cursor++,colour);} while (--wholeBytes);
+            ega.setMask((uint8_t)(columns));
+            if (phase) ega.load(cursor);
+            do {ega.write(cursor++,colour);} while (--wholeBytes);
         }
         uint16_t tail=remaining&7;
         if (tail)
         {
             uint8_t mask=egaSpanTrailingMasks[tail]&columns;
-            btechHostWritePortWord(COMBAT_EGA_GRAPHICS_PORT,COMBAT_EGA_BIT_MASK_REGISTER|((uint16_t)mask<<8));
-            (void)btechHostReadVideoByte(page,cursor);
-            btechHostWriteVideoByte(page,cursor,colour);
+            ega.setMask((uint8_t)(mask));
+            ega.load(cursor);
+            ega.write(cursor,colour);
         }
     }
 }
