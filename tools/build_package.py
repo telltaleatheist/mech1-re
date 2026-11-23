@@ -48,7 +48,7 @@ def resources_of(executable):
 
 
 def check_usage(executable):
-    # --help, not a bare start: without a game folder an installed copy opens a folder dialog.
+    # --help, not a bare start: without a game folder an installed copy opens the setup.
     result = subprocess.run([str(executable), "--help"], cwd=executable.parent, capture_output=True, text=True, timeout=30)
     if result.returncode != 0 or "Usage: mechwarrior" not in result.stdout:
         raise RuntimeError(f"Packaged executable failed to load: {result.returncode}\n{result.stdout}\n{result.stderr}")
@@ -121,13 +121,15 @@ README = (
     "MechWarrior 1 Rebuild\n\n"
     "A rebuild of MechWarrior (1989)'s program. Your own copy of the game is required and is\n"
     "not included: no game data, saves or MT-32 ROMs are in this package.\n\n"
-    "The first time it starts it asks for the folder that holds your copy of MechWarrior (the\n"
-    "one with MW_MAIN.EXE), reads the game's programs once and remembers the folder. Your\n"
-    "settings (MechWarrior.ini), saves and the log (mechwarrior.log) live in your own folder:\n"
-    "  Windows: %APPDATA%\\BattleTechReverse\\MechWarrior\n"
-    "  macOS:   ~/Library/Application Support/BattleTechReverse/MechWarrior\n"
-    "  Linux:   ~/.local/share/BattleTechReverse/MechWarrior\n"
-    "To choose another game folder, delete the game_folder line from that MechWarrior.ini.\n\n"
+    "The first time it starts without your game, it asks for your copy of MechWarrior: its\n"
+    "BTECH.EXE, any file in its folder, or the archive it came in (a .zip, for example). It\n"
+    "copies the game into your own folder and plays from there; your copy is never changed.\n"
+    "Your settings (MechWarrior.ini), saves, the copied game and the log (mechwarrior.log)\n"
+    "live in your own folder:\n"
+    "  Windows: %APPDATA%\\MicroProse\\MechWarrior 1 Rebuild\n"
+    "  macOS:   ~/Library/Application Support/MicroProse/MechWarrior 1 Rebuild\n"
+    "  Linux:   ~/.local/share/MicroProse/MechWarrior 1 Rebuild\n"
+    "Saves from the earlier previews (BattleTechReverse/MechWarrior) are copied there once.\n\n"
     "Keys: arrows and Enter; in combat - and + change the speed (1x to 4x); F12 saves a\n"
     "screenshot beside your saves; Ctrl+Escape quits.\n\n"
     "From a command line: mechwarrior <game folder> [capture folder] starts on that folder.\n")

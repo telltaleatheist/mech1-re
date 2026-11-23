@@ -40,18 +40,36 @@ writes a `story/` folder into the save directory; from then on it plays from
 ## Starting without a game folder
 
 An installed copy is started with no arguments (a shortcut, a double-click).
-The game folder is then the `game_folder` line of the player's own
-`MechWarrior.ini` (in the save directory), or, the first time, the one the
-player picks in a folder dialog: it must hold `MW_MAIN.EXE` until the story
-is imported, and the game remembers it. The log (`mechwarrior.log`) and F12
-captures go beside the saves. Deleting the `game_folder` line asks again.
-With a game folder on the command line nothing changes.
+It plays from the `game_folder` line of the player's own `MechWarrior.ini`
+while that folder is still the game, else from the player's own copy
+(`install/` in the save directory). With neither, the setup runs first
+(re-setup-kit, `src/Setup`): the player picks their copy of MechWarrior (its
+`BTECH.EXE` or `MW_MAIN.EXE`, its folder through one of its files, or the
+archive it came in, such as a .zip), which is copied into `install/` in the
+save directory; the original, folder or archive, is only read. A copy needs
+`MW_MAIN.EXE` until the story is imported. The log (`mechwarrior.log`) and F12
+captures go beside the saves. With a game folder on the command line nothing
+changes. Until the kit's setup screen lands, the setup asks with the system's
+file picker alone.
+
+The launcher asks the program through the kit's contract:
+`mechwarrior --status` prints one JSON line (game `mech1`; files `ready`,
+`missing` or `incomplete`; `story import` pending until done), exits 0 and
+writes nothing; `mechwarrior --setup` sets the game up and exits 0 ready,
+1 cancelled or 2 failed (the reason as `{"error": ...}` on stdout).
+`tests/status_setup_test.py` checks both on the built program.
 
 The save directory is `MECHWARRIOR_SAVE_DIRECTORY`, or SDL's per-user folder:
-`%APPDATA%\BattleTechReverse\MechWarrior` on Windows,
-`~/Library/Application Support/BattleTechReverse/MechWarrior` on macOS and
-`~/.local/share/BattleTechReverse/MechWarrior` on Linux. Nothing is written
-into the install folder.
+`%APPDATA%\MicroProse\MechWarrior 1 Rebuild` on Windows,
+`~/Library/Application Support/MicroProse/MechWarrior 1 Rebuild` on macOS and
+`~/.local/share/MicroProse/MechWarrior 1 Rebuild` on Linux (or under
+`$XDG_DATA_HOME`). Nothing is written into the install folder. The previews'
+`BattleTechReverse/MechWarrior` is copied into it once on the first start
+(a marker file; nothing overwritten, the old folder left as it was).
+
+Packages link libarchive, zlib and liblzma statically, built from pinned
+sources: `tools/deps/build_archive.sh mac|linux` (into `build-deps/`) and
+`tools/windows/build_deps_archive.cmd` (into `deps\archive`, clang-cl).
 
 ## Names and installers
 
