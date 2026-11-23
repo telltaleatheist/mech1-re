@@ -87,6 +87,10 @@ static uint16_t latchedCounter;
 static bool counterReadHigh;
 static uint64_t counterLoadNanoseconds,lastLatchNanoseconds;
 static uint32_t gamePortReadsSinceLatch;
+/* Open from a channel-0 latch made with interrupts off until interrupts come
+ * back on: in play only the joystick calibration (1BF5:21FF) does that. */
+static bool latchWindowOpen;
+static void CloseLatchWindow(void) {latchWindowOpen=false;gamePortReadsSinceLatch=0;}
 
 static void BiosTimerInterrupt(void)
 {
@@ -94,7 +98,7 @@ static void BiosTimerInterrupt(void)
     if (biosTicks>=BIOS_TICKS_PER_DAY) biosTicks=0;
     if (campaignInterruptsInstalled) MwCampaignTimerTick();
 }
-void MwSdlSetInterrupts(bool enabled) {interruptsEnabled=enabled;}
+void MwSdlSetInterrupts(bool enabled) {interruptsEnabled=enabled;if (enabled) CloseLatchWindow();}
 uint8_t MwSdlReadInterrupts(void) {return interruptsEnabled;}
 MwMusicTimerHandler MwSdlReadTimerHandler(void) {return irq0;}
 void MwSdlWriteTimerHandler(MwMusicTimerHandler handler) {irq0=handler;}
@@ -102,7 +106,9 @@ uint32_t MwSdlBiosTicksValue(void) {return biosTicks;}
 uint8_t MwSdlExchangeInterrupts(uint8_t enabled)
 {
     if (interruptsEnabled && !enabled && !inInterrupt) MwSdlPump();
-    uint8_t previous=interruptsEnabled;interruptsEnabled=enabled!=0;return previous;
+    uint8_t previous=interruptsEnabled;interruptsEnabled=enabled!=0;
+    if (enabled) CloseLatchWindow();
+    return previous;
 }
 double MwSdlHardwareTime(void) {return hardwareTime;}
 double MwSdlTimerLagMilliseconds(void)
@@ -165,13 +171,14 @@ void MwSdlWriteDevicePort(uint16_t port,uint8_t value)
     if (port==0 || port==1 || port==GAME_PORT) return;
     if (port==PIT_CONTROL_PORT && !(value&PIT_CONTROL_LATCH_TEST_MASK))
     {
-        /* The joystick calibration (1BF5:21FF) times 1,000 game-port reads
-         * between two latches. Each counts a fixed 1 us, so its loop count, and
-         * the delay loops that use it, are the same on every host. */
+        /* The joystick calibration (1BF5:21FF), the only latches in play, times
+         * 1,000 game-port reads between two latches with interrupts off. Each
+         * read counts a fixed 1 us, so its loop count, and the delay loops that
+         * use it, are the same on every host. Any other latch reads the clock. */
         uint64_t latch=MwSdlNowNanoseconds();
-        if (gamePortReadsSinceLatch) latch=lastLatchNanoseconds+(uint64_t)gamePortReadsSinceLatch*HOST_GAME_PORT_READ_NS;
+        if (latchWindowOpen && gamePortReadsSinceLatch) latch=lastLatchNanoseconds+(uint64_t)gamePortReadsSinceLatch*HOST_GAME_PORT_READ_NS;
         if (latch<counterLoadNanoseconds) latch=counterLoadNanoseconds;
-        lastLatchNanoseconds=latch;gamePortReadsSinceLatch=0;
+        lastLatchNanoseconds=latch;gamePortReadsSinceLatch=0;latchWindowOpen=!interruptsEnabled;
         uint64_t cycles=(uint64_t)((double)(latch-counterLoadNanoseconds)*(double)HOST_PIT_CLOCK_HZ/(double)HOST_NS_PER_SECOND);
         latchedCounter=(uint16_t)(channel0Divisor-(cycles*2)%channel0Divisor);counterReadHigh=false;return;
     }
@@ -207,7 +214,7 @@ static uint8_t ReadDevicePort(uint16_t port)
         return mwSdlSoundSystem==MW_SOUND_ADLIB
             ?MwAdlibReadStatus(hardwareTime*1000000.0/(double)HOST_PIT_CLOCK_HZ):UINT8_MAX;
     if (port==0 || port==1) return 0; /* Only ignored calibrated-delay reads here. */
-    if (port==GAME_PORT) {++gamePortReadsSinceLatch;return UINT8_MAX;}
+    if (port==GAME_PORT) {if (latchWindowOpen) ++gamePortReadsSinceLatch;return UINT8_MAX;}
     if (port==PIT_CHANNEL0_PORT)
     {uint8_t value=counterReadHigh?(uint8_t)(latchedCounter>>8):(uint8_t)latchedCounter;counterReadHigh=!counterReadHigh;return value;}
     if (port!=SPEAKER_CONTROL_PORT) MwSdlFail("Unsupported hardware read");
@@ -228,7 +235,7 @@ void MwSdlInitializeTimer(void)
     AudioLogOpen();
     startNanoseconds=MwSdlNowNanoseconds();hardwareTime=0;channel0Divisor=PIT_COUNTER_MODULUS;
     nextIrq=channel0Divisor;irq0=BiosTimerInterrupt;interruptsEnabled=true;
-    counterLoadNanoseconds=lastLatchNanoseconds=startNanoseconds;gamePortReadsSinceLatch=0;
+    counterLoadNanoseconds=lastLatchNanoseconds=startNanoseconds;CloseLatchWindow();
     latchedCounter=0;counterReadHigh=false;picMask=0;
     campaignInterruptsInstalled=inInterrupt=channel0HighNext=false;
     MwMpuReset();
