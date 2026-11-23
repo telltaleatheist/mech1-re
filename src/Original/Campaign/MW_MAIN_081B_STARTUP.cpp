@@ -7,6 +7,8 @@
 #include "mechwarrior/campaign_handoff.h"
 #include "mechwarrior/campaign_pilots.h"
 #include "mechwarrior/campaign_events.h"
+#include "mechwarrior/video_mode.h"
+#include "Canvas.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -510,13 +512,11 @@ void MwRestoreCampaignInterruptHandlers(void)
 /* MW_MAIN081B:02E6..02ED /02EE..02F5. */
 void MwSaveCurrentVideoMode(void)
 {
-    if (!mwCampaignPlatform.getVideoMode) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignPlatform.getVideoMode");
-    savedVideoMode=mwCampaignPlatform.getVideoMode();
+    savedVideoMode=MwGetVideoMode();
 }
 void MwRestoreSavedVideoMode(void)
 {
-    if (!mwCampaignPlatform.setVideoMode) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignPlatform.setVideoMode");
-    mwCampaignPlatform.setVideoMode(savedVideoMode);
+    MwSetVideoMode(savedVideoMode);
 }
 /* MW_MAIN081B:245D..2478. The native saves no game arguments: selector and
  * DEATH.MUS offset are loaded here; DS is restored to1090 after FAR0186. */
@@ -628,8 +628,7 @@ bool MwWaitTicksOrInputInterruption(uint16_t delayTicks)
 /* MW_MAIN081B:1625..162D. BIOS palette register2, BH supplies its code. */
 void MwSetIntroTextPaletteColour(uint8_t paletteCode)
 {
-    if (!egaSetPaletteRegister) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !egaSetPaletteRegister");
-    egaSetPaletteRegister(Campaign_Pal_EGA_White,paletteCode);
+    mw1o::video::GameCanvas().setPaletteEntry(Campaign_Pal_EGA_White,mw1o::video::PaletteCodeColour(paletteCode));
 }
 /* MW_MAIN081B:162E..1643. Original record has X/Y then NUL text, no colour. */
 void MwDrawPositionedIntroText(const MwIntroPositionedText *text)

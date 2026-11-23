@@ -1,6 +1,6 @@
-// src/Video/Canvas (docs/phase5/NO_EMULATION_PLAN.md, G1-G4): the pages where
+// src/Video/Canvas (docs/phase5/NO_EMULATION_PLAN.md, G1-G5): the pages where
 // the game's page selectors put them, the palette codes' colours, the palette's
-// entries, present(), and drawing. Plain checks, no framework: exit 0 when all hold.
+// entries, present(), drawing, and set-up. Plain checks, no framework: exit 0 when all hold.
 #include "Canvas.h"
 
 #include <cstdio>
@@ -88,6 +88,24 @@ int main() {
   Check(Throws([&] { canvas.present(8); }) && shown == 1, "no page 8 presented");
   canvas.clear();
   Check(canvas.presentedPage() == 0 && shown == 1, "clear() (a mode set) makes page 0 the presented page, presenting nothing");
+
+  // Set-up (G5): the game's 320x200 mode set, and close(), its text mode set.
+  Check(!canvas.shown() && canvas.setUps() == 0, "a new canvas is not the screen");
+  canvas.present(3);
+  canvas.page(2)[100] = 7;
+  canvas.setPaletteEntry(4, Rgb{1, 2, 3});
+  canvas.setPaletteEntry(Canvas::BORDER, Rgb{4, 5, 6});
+  canvas.setUp();
+  Check(canvas.shown() && canvas.setUps() == 1 && canvas.presentedPage() == 0 && canvas.page(2)[100] == 0 && shown == 3,
+        "setUp() shows the canvas, cleared, page 0 presented, presenting nothing");
+  Check(canvas.paletteEntry(4) == PaletteCodeColour(0x04) && canvas.paletteEntry(6) == Rgb{170, 85, 0}
+            && canvas.paletteEntry(8) == PaletteCodeColour(0x10) && canvas.paletteEntry(15) == Rgb{255, 255, 255}
+            && canvas.paletteEntry(Canvas::BORDER) == Rgb{0, 0, 0},
+        "setUp(): the mode's default colours (codes 0-7, 10h-17h), a black border");
+  canvas.close();
+  Check(!canvas.shown() && canvas.setUps() == 1, "close() leaves the screen to text");
+  canvas.setUp();
+  Check(canvas.shown() && canvas.setUps() == 2, "each set-up counted");
 
   // Drawing (G2): pixels and eight-pixel bit patterns, by each function.
   using mw1o::video::Logic;

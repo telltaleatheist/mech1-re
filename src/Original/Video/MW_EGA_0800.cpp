@@ -1,24 +1,69 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/ega_campaign.h"
 #include "mechwarrior/dos_files.h"
+#include "mechwarrior/video_mode.h"
 #include "Canvas.h"
 #include <stdio.h>
 #include <stdlib.h>
 
-/* Logical hardware state owned by the EGA adapter, not additional CS/DS bytes.
- * One indexed aperture preserves overlapping page selectors without producing
- * CRT planes just to undo them for presentation. The hook is scanout only.
- * The aperture is the game's canvas (src/Video/Canvas.h): a selector's page is
- * a canvas page, (selector-A000h)*16 bytes = page*PAGE_STRIDE/8 into it. */
-static_assert(mw1o::video::Canvas::MEMORY_BYTES == EGA_VIDEO_PIXEL_COUNT, "The aperture is the canvas's memory");
-static_assert(mw1o::video::Canvas::PAGE_STRIDE == 0x200 * EGA_SELECTOR_PARAGRAPH_BYTES * EGA_PIXELS_PER_BYTE,
+using mw1o::video::Canvas;
+using mw1o::video::GameCanvas;
+using mw1o::video::Logic;
+
+/* The overlay draws on the game's canvas by pixel (src/Video/Canvas.h, G5).
+ * It keeps its own addressing: a page selector, a byte offset of eight pixels
+ * into the page, and a mask with the leftmost pixel at bit 7. A page selector
+ * (A000h, A200h) is a canvas page, and a byte offset is the eight pixels from
+ * (offset mod 40)*8 on row offset/40, so its 16-bit offsets run on past row
+ * 199 into the page's tail and the page after, as in the original's linear
+ * display memory. Past the canvas is refused. */
+static_assert(Canvas::MEMORY_BYTES == EGA_VIDEO_PIXEL_COUNT, "The overlay's pages fill the canvas");
+static_assert(Canvas::PAGE_STRIDE == 0x200 * EGA_SELECTOR_PARAGRAPH_BYTES * EGA_PIXELS_PER_BYTE,
     "A page selector step (200h) is one canvas page");
-uint8_t *const egaVideoPixels = mw1o::video::GameCanvas().memory();
+static_assert(Canvas::WIDTH == EGA_ROW_BYTES * EGA_PIXELS_PER_BYTE, "A row is 40 bytes of 8 pixels");
+enum { EGA_PAGE_SELECTOR_STEP = 0x200 };
+/* The function the overlay's next sprite or pixel draws by: what its last
+ * routine left, as the original leaves it in the adapter (copy after a mode
+ * set, OR after transparent text). */
 uint8_t egaLogicalFunction;
-void (*egaPresentPage)(uint16_t displayPage);
-void (*egaSetVideoMode)(uint8_t mode);
-void (*egaSetPaletteRegister)(uint8_t index,uint8_t paletteCode);
-void (*egaSetPaletteTable)(const uint8_t *paletteCodes);
+
+static int EgaCanvasPage(uint16_t selector)
+{
+    uint16_t paragraphs = (uint16_t)(selector - EGA_FIRST_PAGE_SELECTOR);
+    if (paragraphs % EGA_PAGE_SELECTOR_STEP) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("EGA page selector between canvas pages");
+    return paragraphs / EGA_PAGE_SELECTOR_STEP;
+}
+/* Eight pixels at a byte offset: `colour` where `mask` has a 1, by `logic`. */
+static void EgaDrawByte(int page, uint16_t byteOffset, uint8_t mask, uint8_t colour, Logic logic = Logic::Copy)
+{
+    GameCanvas().bitPattern(page, (byteOffset % EGA_ROW_BYTES) * EGA_PIXELS_PER_BYTE, byteOffset / EGA_ROW_BYTES,
+        mask, colour, logic);
+}
+/* Eight pixels at a byte offset from one page to another, all read first. */
+static void EgaCopyByte(int fromPage, int toPage, uint16_t byteOffset)
+{
+    Canvas &canvas = GameCanvas();
+    int x = (byteOffset % EGA_ROW_BYTES) * EGA_PIXELS_PER_BYTE, y = byteOffset / EGA_ROW_BYTES;
+    uint8_t pixels[EGA_PIXELS_PER_BYTE];
+    for (int pixel = 0; pixel < EGA_PIXELS_PER_BYTE; ++pixel) pixels[pixel] = canvas.pixelAt(fromPage, x + pixel, y);
+    for (int pixel = 0; pixel < EGA_PIXELS_PER_BYTE; ++pixel) canvas.pixel(toPage, x + pixel, y, pixels[pixel]);
+}
+static Logic EgaFunctionLogic(void)
+{
+    switch (egaLogicalFunction)
+    {
+    case EGA_COPY: return Logic::Copy;
+    case EGA_AND: return Logic::And;
+    case EGA_OR: return Logic::Or;
+    case EGA_XOR: return Logic::Xor;
+    default: /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Unknown EGA logical function");
+    }
+}
+static void EgaSetPaletteCodes(const uint8_t *paletteCodes)
+{
+    for (uint8_t entry = 0; entry < EGA_PALETTE_ENTRIES; ++entry)
+        GameCanvas().setPaletteEntry(entry, mw1o::video::PaletteCodeColour(paletteCodes[entry]));
+}
 
 /* The unchecked paths: a row past 200, a column past 320, a font index past
  * 5, a glyph outside the font storage, a font name at another offset. The
@@ -42,27 +87,22 @@ static uint8_t EgaUncheckedByte(int path, uint16_t offset)
 static uint16_t EgaUncheckedWord(int path, uint16_t offset)
 { EgaNoteUncheckedPath(path, offset); return EgaReadOverlayWord(offset); }
 
-/* MW_EGA0800:003D..0057. Scanline generation is a separate ordinal01. */
+/* MW_EGA0800:003D..0057. Scanline generation is a separate ordinal01. The
+ * mode set is the canvas's set-up, and the BIOS palette calls (INT 10h
+ * AX=1000h and 1002h) are the canvas's palette entries for the codes (G5). */
 void EgaInitializeGraphics(void)
 {
-    if (!egaSetVideoMode || !egaSetPaletteRegister) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !egaSetVideoMode || !egaSetPaletteRegister");
-    egaSetVideoMode(EGA_BIOS_MODE_320X200);
+    MwSetVideoMode(EGA_BIOS_MODE_320X200);
     EgaClearDrawPage(1);
-    egaSetPaletteRegister(Campaign_Pal_EGA_Black,EGA_PALETTE_BLACK);
+    GameCanvas().setPaletteEntry(Campaign_Pal_EGA_Black, mw1o::video::PaletteCodeColour(EGA_PALETTE_BLACK));
     EgaFlipPages();
     EgaLoadDefaultPalette();
 }
 /* MW_EGA0800:13CE..13D9;13DA..13DE is the alternate entry. */
 void EgaLoadDefaultPalette(void)
-{
-    if (!egaSetPaletteTable) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !egaSetPaletteTable");
-    egaSetPaletteTable(defaultPaletteCodes);
-}
+{ EgaSetPaletteCodes(defaultPaletteCodes); }
 void EgaLoadAlternatePalette(void)
-{
-    if (!egaSetPaletteTable) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !egaSetPaletteTable");
-    egaSetPaletteTable(alternatePaletteCodes);
-}
+{ EgaSetPaletteCodes(alternatePaletteCodes); }
 
 /* MW_EGA 0800:0233..0248, ordinal01; startup invokes it separately from mode setup. */
 void EgaBuildScanlineOffsets(void)
@@ -172,7 +212,7 @@ uint16_t EgaGetFontIndex(void)
 void EgaFillDrawPageRectangle(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t colour)
 { EgaFillRectangleOnPage(x,y,width,height,colour,egaDrawPage); }
 
-/* MW_EGA0800:08C7..09B0. Set/reset mode0 becomes indexed colour writes.
+/* MW_EGA0800:08C7..09B0. Set/reset mode0 becomes the colour drawn by mask.
  * First/last masks and the unsigned interior underflow are native, not clipping. */
 void EgaFillRectangleOnPage(uint16_t x, uint16_t y, uint16_t width, uint16_t height,
     uint16_t colour, uint16_t page)
@@ -188,7 +228,7 @@ void EgaFillRectangleOnPage(uint16_t x, uint16_t y, uint16_t width, uint16_t hei
     egaLogicalFunction = EGA_COPY;
     uint16_t interiorBytes = (uint16_t)(width - firstByteWidth - lastByteWidth) >> 3;
     uint16_t rowsRemaining = height;
-    uint32_t pageOffset = (uint32_t)(uint16_t)(page - EGA_FIRST_PAGE_SELECTOR) * EGA_SELECTOR_PARAGRAPH_BYTES;
+    int canvasPage = EgaCanvasPage(page);
     do
     {
         uint16_t destinationOffset = rowOffset;
@@ -196,11 +236,7 @@ void EgaFillRectangleOnPage(uint16_t x, uint16_t y, uint16_t width, uint16_t hei
         {
             uint8_t mask = byteIndex == 0 ? firstByteMask
                 : byteIndex == interiorBytes + 1 ? lastByteMask : 0xFF;
-            uint32_t apertureByte = pageOffset + destinationOffset;
-            if (apertureByte >= EGA_DATA_BYTE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: apertureByte >= EGA_DATA_BYTE_COUNT"); /* Unsupported aperture, not a native bounds check. */
-            uint8_t *pixels = &egaVideoPixels[apertureByte * EGA_PIXELS_PER_BYTE];
-            for (uint8_t pixel = 0; pixel < EGA_PIXELS_PER_BYTE; ++pixel)
-                if (mask & (EGA_BYTE_HIGH_BIT >> pixel)) pixels[pixel] = (uint8_t)rectangleColour & EGA_NIBBLE_MASK;
+            EgaDrawByte(canvasPage, destinationOffset, mask, (uint8_t)rectangleColour);
             destinationOffset++;
         }
         rowOffset += EGA_ROW_BYTES;
@@ -211,8 +247,7 @@ void EgaFillRectangleOnPage(uint16_t x, uint16_t y, uint16_t width, uint16_t hei
 void EgaFillDisplayPageRectangle(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t colour)
 { EgaFillRectangleOnPage(x,y,width,height,colour,egaDisplayPage); }
 
-/* MW_EGA0800:111C..1190. One read captures all four plane latches before
- * its write. Eight indexed pixels project that same byte transaction. */
+/* MW_EGA0800:111C..1190. Each byte's read and write copy its eight pixels. */
 void EgaCopyDrawPageToDisplay(uint16_t x, uint16_t y, uint16_t width, uint16_t height)
 {
     /* Native stores precede the scanline lookup, which can alias these words. */
@@ -221,20 +256,13 @@ void EgaCopyDrawPageToDisplay(uint16_t x, uint16_t y, uint16_t width, uint16_t h
     uint16_t rowOffset = (y < EGA_ROWS ? scanlineOffsets[y]
         : EgaUncheckedWord(EGA_UNCHECKED_ROW, (uint16_t)(EGA_SCANLINE_OFFSETS + (uint16_t)(y * 2)))) + (x >> 3);
     uint8_t rowsRemaining = height;
-    uint32_t sourcePage = (uint32_t)(uint16_t)(egaDrawPage - EGA_FIRST_PAGE_SELECTOR) * EGA_SELECTOR_PARAGRAPH_BYTES;
-    uint32_t destinationPage = (uint32_t)(uint16_t)(egaDisplayPage - EGA_FIRST_PAGE_SELECTOR) * EGA_SELECTOR_PARAGRAPH_BYTES;
+    int sourcePage = EgaCanvasPage(egaDrawPage), destinationPage = EgaCanvasPage(egaDisplayPage);
     do
     {
         uint16_t copyOffset = rowOffset, bytesRemaining = width >> 3;
         do
         {
-            uint32_t sourceByte = sourcePage + copyOffset, destinationByte = destinationPage + copyOffset;
-            if (sourceByte >= EGA_DATA_BYTE_COUNT || destinationByte >= EGA_DATA_BYTE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: sourceByte >= EGA_DATA_BYTE_COUNT || destinationByte >= EGA_DATA_BYTE_COUNT");
-            uint8_t latchedPixels[EGA_PIXELS_PER_BYTE];
-            for (uint8_t pixel = 0; pixel < EGA_PIXELS_PER_BYTE; ++pixel)
-                latchedPixels[pixel] = egaVideoPixels[sourceByte * EGA_PIXELS_PER_BYTE + pixel];
-            for (uint8_t pixel = 0; pixel < EGA_PIXELS_PER_BYTE; ++pixel)
-                egaVideoPixels[destinationByte * EGA_PIXELS_PER_BYTE + pixel] = latchedPixels[pixel];
+            EgaCopyByte(sourcePage, destinationPage, copyOffset);
             copyOffset++; bytesRemaining--;
         } while (bytesRemaining != 0); /* Zero bytes runs65536 copies. */
         rowOffset += EGA_ROW_BYTES; rowsRemaining--;
@@ -251,20 +279,13 @@ void EgaCopyDisplayToDrawPage(uint16_t x, uint16_t y, uint16_t width, uint16_t h
     uint16_t rowOffset = (y < EGA_ROWS ? scanlineOffsets[y]
         : EgaUncheckedWord(EGA_UNCHECKED_ROW, (uint16_t)(EGA_SCANLINE_OFFSETS + (uint16_t)(y * 2)))) + (x >> 3);
     uint8_t rowsRemaining = height;
-    uint32_t sourcePage = (uint32_t)(uint16_t)(egaDisplayPage - EGA_FIRST_PAGE_SELECTOR) * EGA_SELECTOR_PARAGRAPH_BYTES;
-    uint32_t destinationPage = (uint32_t)(uint16_t)(egaDrawPage - EGA_FIRST_PAGE_SELECTOR) * EGA_SELECTOR_PARAGRAPH_BYTES;
+    int sourcePage = EgaCanvasPage(egaDisplayPage), destinationPage = EgaCanvasPage(egaDrawPage);
     do
     {
         uint16_t copyOffset = rowOffset, bytesRemaining = width >> 3;
         do
         {
-            uint32_t sourceByte = sourcePage + copyOffset, destinationByte = destinationPage + copyOffset;
-            if (sourceByte >= EGA_DATA_BYTE_COUNT || destinationByte >= EGA_DATA_BYTE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: sourceByte >= EGA_DATA_BYTE_COUNT || destinationByte >= EGA_DATA_BYTE_COUNT");
-            uint8_t latchedPixels[EGA_PIXELS_PER_BYTE];
-            for (uint8_t pixel = 0; pixel < EGA_PIXELS_PER_BYTE; ++pixel)
-                latchedPixels[pixel] = egaVideoPixels[sourceByte * EGA_PIXELS_PER_BYTE + pixel];
-            for (uint8_t pixel = 0; pixel < EGA_PIXELS_PER_BYTE; ++pixel)
-                egaVideoPixels[destinationByte * EGA_PIXELS_PER_BYTE + pixel] = latchedPixels[pixel];
+            EgaCopyByte(sourcePage, destinationPage, copyOffset);
             copyOffset++; bytesRemaining--;
         } while (bytesRemaining != 0);
         rowOffset += EGA_ROW_BYTES; rowsRemaining--;
@@ -272,7 +293,7 @@ void EgaCopyDisplayToDrawPage(uint16_t x, uint16_t y, uint16_t width, uint16_t h
 }
 
 /* MW_EGA 0800:06B5..0764. SI is projected as the returned source cursor, not AX.
- * Mode2 colour expansion becomes direct indexed writes; original iteration,
+ * Mode2 colour expansion becomes the colour drawn by mask; original iteration,
  * odd-row padding, transparent zero, WORD wrap and inherited logic stay here. */
 uint16_t EgaDrawPackedSprite(uint16_t x, uint16_t y, uint8_t targetPage,
     uint16_t pictureOffset, uint16_t pictureBufferSelector)
@@ -300,8 +321,7 @@ uint16_t EgaDrawPackedSprite(uint16_t x, uint16_t y, uint8_t targetPage,
         spriteRowsRemaining = MwReadNativeWord(pictureData, pictureOffset);
         pictureOffset += EGA_WORD_BYTES;
     }
-    uint32_t pageByteOffset = ((uint32_t)(targetPage == EGA_DISPLAY_PAGE ? egaDisplayPage : egaDrawPage)
-        - EGA_FIRST_PAGE_SELECTOR) * EGA_SELECTOR_PARAGRAPH_BYTES;
+    int canvasPage = EgaCanvasPage(targetPage == EGA_DISPLAY_PAGE ? egaDisplayPage : egaDrawPage);
     do
     {
         uint16_t destinationOffset = rowStartOffset;
@@ -313,25 +333,9 @@ uint16_t EgaDrawPackedSprite(uint16_t x, uint16_t y, uint8_t targetPage,
             for (uint8_t pixelInPair = 0; pixelInPair < EGA_PACKED_PIXELS_PER_BYTE; ++pixelInPair)
             {
                 uint8_t color = pixelInPair == 0 ? packedPixels >> EGA_NIBBLE_SHIFT : packedPixels & EGA_NIBBLE_MASK;
+                /* Mode2 ignores rotate/set-reset, but inherits the function. */
                 if (color != 0)
-                {
-                    uint32_t apertureByte = pageByteOffset + destinationOffset;
-                    if (apertureByte >= EGA_DATA_BYTE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: apertureByte >= EGA_DATA_BYTE_COUNT"); /* Unsupported aperture, not clipping. */
-                    uint8_t *destinationPixels = &egaVideoPixels[apertureByte * EGA_PIXELS_PER_BYTE];
-                    for (uint8_t pixel = 0; pixel < EGA_PIXELS_PER_BYTE; ++pixel)
-                    {
-                        if (!(pixelMask & (EGA_BYTE_HIGH_BIT >> pixel))) continue;
-                        /* Mode2 ignores rotate/set-reset, but inherits this operation. */
-                        switch (egaLogicalFunction)
-                        {
-                        case EGA_COPY: destinationPixels[pixel] = color; break;
-                        case EGA_AND: destinationPixels[pixel] &= color; break;
-                        case EGA_OR: destinationPixels[pixel] |= color; break;
-                        case EGA_XOR: destinationPixels[pixel] ^= color; break;
-                        default: /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Fatal path under condition: color != 0");
-                        }
-                    }
-                }
+                    EgaDrawByte(canvasPage, destinationOffset, pixelMask, color, pixelMask ? EgaFunctionLogic() : Logic::Copy);
                 bool advanceByte = (pixelMask & 1) != 0;
                 pixelMask = (uint8_t)((pixelMask >> 1) | (pixelMask << EGA_BYTE_LAST_BIT));
                 if (advanceByte) destinationOffset++;
@@ -347,7 +351,8 @@ uint16_t EgaDrawPackedSprite(uint16_t x, uint16_t y, uint8_t targetPage,
 
 /* MW_EGA 0800:078B..089D. Native always paints eight glyph bits, even when the
  * advance is six. Enable-set/reset0 and full bit mask are caller preconditions.
- * The hardware clear/background/foreground passes become indexed colour writes. */
+ * The hardware clear/background/foreground passes become the two colours drawn
+ * by the glyph's bits and their complement within its coverage. */
 uint16_t EgaDrawCharacter(uint16_t x, uint16_t *y, uint8_t character,
     uint8_t foreground, uint8_t background)
 {
@@ -363,7 +368,7 @@ uint16_t EgaDrawCharacter(uint16_t x, uint16_t *y, uint8_t character,
     destinationOffset += glyphX >> EGA_PIXEL_BYTE_SHIFT;
     uint16_t glyphOffset = (uint8_t)(characterCode - EGA_FIRST_CHARACTER) * (uint8_t)selectedFontHeight + EGA_FONT_HEADER_BYTES
         + selectedFontBitmapOffset;
-    uint32_t pageByteOffset = ((uint32_t)egaDisplayPage - EGA_FIRST_PAGE_SELECTOR) * EGA_SELECTOR_PARAGRAPH_BYTES;
+    int canvasPage = EgaCanvasPage(egaDisplayPage);
     uint16_t rowsRemaining = selectedFontHeight;
     do
     {
@@ -372,20 +377,15 @@ uint16_t EgaDrawCharacter(uint16_t x, uint16_t *y, uint8_t character,
         glyphOffset++;
         shiftedGlyphBits >>= glyphBitOffset;
         uint16_t glyphCoverageMask = EGA_GLYPH_COVERAGE_WORD >> glyphBitOffset;
-        uint16_t pixelMask = (uint16_t)EGA_BYTE_HIGH_BIT << EGA_BYTE_BITS;
         for (uint8_t byteIndex = 0; byteIndex < EGA_WORD_BYTES; ++byteIndex)
         {
             /* SI wraps before the page base is added; adjacent bytes need not
-             * be adjacent host pointers at FFFF. This is not screen clipping. */
-            uint32_t apertureByte = pageByteOffset + (uint16_t)(destinationOffset + byteIndex);
-            if (apertureByte >= EGA_DATA_BYTE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: apertureByte >= EGA_DATA_BYTE_COUNT"); /* Unsupported aperture. */
-            uint8_t *destinationPixels = &egaVideoPixels[apertureByte * EGA_PIXELS_PER_BYTE];
-            for (uint8_t pixel = 0; pixel < EGA_PIXELS_PER_BYTE; ++pixel, pixelMask >>= 1)
-            {
-                if (glyphCoverageMask & pixelMask)
-                    destinationPixels[pixel] = ((shiftedGlyphBits & pixelMask)
-                        ? glyphForeground : glyphBackground) & EGA_NIBBLE_MASK;
-            }
+             * be adjacent pixels at FFFF. This is not screen clipping. */
+            uint16_t byteOffset = (uint16_t)(destinationOffset + byteIndex);
+            uint8_t shift = (uint8_t)(EGA_BYTE_BITS * (EGA_WORD_BYTES - 1 - byteIndex));
+            uint8_t coverage = (uint8_t)(glyphCoverageMask >> shift), bits = (uint8_t)(shiftedGlyphBits >> shift);
+            EgaDrawByte(canvasPage, byteOffset, coverage & bits, glyphForeground);
+            EgaDrawByte(canvasPage, byteOffset, coverage & (uint8_t)~bits, glyphBackground);
         }
         destinationOffset += EGA_ROW_BYTES; rowsRemaining--;
     } while (rowsRemaining != 0);
@@ -450,7 +450,7 @@ uint16_t EgaDrawTransparentCharacter(uint8_t character, uint16_t destinationOffs
 {
     uint16_t glyphOffset = (uint8_t)(character - EGA_FIRST_CHARACTER) * (uint8_t)selectedFontHeight + EGA_FONT_HEADER_BYTES
         + selectedFontBitmapOffset;
-    uint32_t pageByteOffset = ((uint32_t)egaDisplayPage - EGA_FIRST_PAGE_SELECTOR) * EGA_SELECTOR_PARAGRAPH_BYTES;
+    int canvasPage = EgaCanvasPage(egaDisplayPage);
     uint16_t rowDestinationOffset = destinationOffset, rowsRemaining = selectedFontHeight;
     do
     {
@@ -459,17 +459,10 @@ uint16_t EgaDrawTransparentCharacter(uint8_t character, uint16_t destinationOffs
         glyphOffset++;
         shiftedGlyphBits = glyphBitOffset < EGA_BYTE_BITS * EGA_WORD_BYTES
             ? (uint16_t)(shiftedGlyphBits >> glyphBitOffset) : 0;
-        uint16_t pixelMask = (uint16_t)EGA_BYTE_HIGH_BIT << EGA_BYTE_BITS;
         for (uint8_t byteIndex = 0; byteIndex < EGA_WORD_BYTES; ++byteIndex)
         {
-            uint32_t apertureByte = pageByteOffset + (uint16_t)(rowDestinationOffset + byteIndex);
-            if (apertureByte >= EGA_DATA_BYTE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: apertureByte >= EGA_DATA_BYTE_COUNT"); /* Unsupported aperture, not clipping. */
-            uint8_t *destinationPixels = &egaVideoPixels[apertureByte * EGA_PIXELS_PER_BYTE];
-            for (uint8_t pixel = 0; pixel < EGA_PIXELS_PER_BYTE; ++pixel, pixelMask >>= 1)
-            {
-                if (shiftedGlyphBits & pixelMask)
-                    destinationPixels[pixel] = egaTextColour & EGA_NIBBLE_MASK;
-            }
+            uint8_t shift = (uint8_t)(EGA_BYTE_BITS * (EGA_WORD_BYTES - 1 - byteIndex));
+            EgaDrawByte(canvasPage, (uint16_t)(rowDestinationOffset + byteIndex), (uint8_t)(shiftedGlyphBits >> shift), egaTextColour);
         }
         rowDestinationOffset += EGA_ROW_BYTES; rowsRemaining--;
     } while (rowsRemaining != 0);
@@ -480,11 +473,10 @@ uint16_t EgaDrawTransparentCharacter(uint8_t character, uint16_t destinationOffs
     egaLogicalFunction = EGA_OR;
     return destinationOffset;
 }
-/* MW_EGA 0800:005C..0094. Page identity retained; scanout/retrace is the host
- * output boundary and cannot silently be a success stub when unbound. */
+/* MW_EGA 0800:005C..0094. Page identity retained. The new display page is
+ * presented where the original sets the CRTC start (G5). */
 void EgaFlipPages(void)
 {
-    if (egaPresentPage == NULL) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: egaPresentPage == NULL"); /* Host boundary must exist before changing page state. */
     if (egaDisplayPage == EGA_FIRST_PAGE_SELECTOR)
     {
         egaDisplayPage = EGA_SECOND_PAGE_SELECTOR;
@@ -495,24 +487,19 @@ void EgaFlipPages(void)
         egaDisplayPage = EGA_FIRST_PAGE_SELECTOR;
         egaDrawPage = EGA_SECOND_PAGE_SELECTOR;
     }
-    egaPresentPage(egaDisplayPage);
+    GameCanvas().present(EgaCanvasPage(egaDisplayPage));
 }
 
-/* MW_EGA0800:0249..0280. This indexed projection represents mode0/full mask.
- * Non-COPY clear needs retained physical latches, not per-pixel destination reads. */
+/* MW_EGA0800:0249..0280. Mode0 with a full mask: every pixel of the draw
+ * page's 200 rows. A clear under another function is not converted. */
 void EgaClearDrawPage(uint8_t colour)
 {
-    if (egaLogicalFunction!=EGA_COPY) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: egaLogicalFunction!=EGA_COPY"); /* Unsupported inherited latch state. */
-    uint32_t page=(uint32_t)(uint16_t)(egaDrawPage-EGA_FIRST_PAGE_SELECTOR)*EGA_SELECTOR_PARAGRAPH_BYTES;
-    for (uint16_t offset=0;offset<EGA_ROWS*EGA_ROW_BYTES;++offset)
-    {
-        if (page+offset>=EGA_DATA_BYTE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: page+offset>=EGA_DATA_BYTE_COUNT");
-        for (uint8_t pixel=0;pixel<EGA_PIXELS_PER_BYTE;++pixel)
-            egaVideoPixels[(page+offset)*EGA_PIXELS_PER_BYTE+pixel]=colour&EGA_NIBBLE_MASK;
-    }
+    if (egaLogicalFunction!=EGA_COPY) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: egaLogicalFunction!=EGA_COPY"); /* Unsupported inherited function. */
+    int canvasPage=EgaCanvasPage(egaDrawPage);
+    for (uint16_t offset=0;offset<EGA_ROWS*EGA_ROW_BYTES;++offset) EgaDrawByte(canvasPage,offset,0xFF,colour);
 }
-/* MW_EGA0800:0641..06B0. Read/masked write then native COPY cleanup.
- * Multi-bit lookup masks and paragraph-selected overlapping pages remain live. */
+/* MW_EGA0800:0641..06B0. Masked write by the inherited function, then native
+ * COPY cleanup. Multi-bit lookup masks remain live. */
 void EgaDrawPixel(uint16_t x,uint16_t y,uint8_t targetPage,uint8_t colour)
 {
     uint16_t offset=y<EGA_ROWS?scanlineOffsets[y]:
@@ -521,20 +508,8 @@ void EgaDrawPixel(uint16_t x,uint16_t y,uint8_t targetPage,uint8_t colour)
         EgaUncheckedByte(EGA_UNCHECKED_COLUMN, (uint16_t)(EGA_PIXEL_MASKS+x));
     offset+=x<EGA_COLUMNS?xByteOffsets[x]:
         EgaUncheckedWord(EGA_UNCHECKED_COLUMN, (uint16_t)(EGA_PIXEL_BYTE_OFFSETS+(uint16_t)(x*EGA_WORD_BYTES)));
-    uint16_t page=targetPage==EGA_DISPLAY_PAGE?egaDisplayPage:egaDrawPage;
-    uint32_t aperture=(uint32_t)(uint16_t)(page-EGA_FIRST_PAGE_SELECTOR)*EGA_SELECTOR_PARAGRAPH_BYTES+offset;
-    if (aperture>=EGA_DATA_BYTE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: aperture>=EGA_DATA_BYTE_COUNT");
-    uint8_t *pixels=&egaVideoPixels[aperture*EGA_PIXELS_PER_BYTE];
-    for (uint8_t pixel=0;pixel<EGA_PIXELS_PER_BYTE;++pixel)
-        if (mask&(EGA_BYTE_HIGH_BIT>>pixel))
-            switch (egaLogicalFunction)
-            {
-            case EGA_COPY:pixels[pixel]=colour&EGA_NIBBLE_MASK;break;
-            case EGA_AND:pixels[pixel]&=colour&EGA_NIBBLE_MASK;break;
-            case EGA_OR:pixels[pixel]|=colour&EGA_NIBBLE_MASK;break;
-            case EGA_XOR:pixels[pixel]^=colour&EGA_NIBBLE_MASK;break;
-            default:/* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Fatal path under condition: mask&(EGA_BYTE_HIGH_BIT>>pixel)");
-            }
+    int canvasPage=EgaCanvasPage(targetPage==EGA_DISPLAY_PAGE?egaDisplayPage:egaDrawPage);
+    EgaDrawByte(canvasPage,offset,mask,colour,mask?EgaFunctionLogic():Logic::Copy);
     egaLogicalFunction=EGA_COPY;
 }
 

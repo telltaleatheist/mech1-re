@@ -42,6 +42,16 @@ void Canvas::clear()
     presented_ = 0;
 }
 
+void Canvas::setUp()
+{
+    clear();
+    for (int index = 0; index < COLOURS; ++index)
+        palette_[index] = PaletteCodeColour((uint8_t)((index & 7) | ((index & 8) ? 0x10 : 0)));
+    palette_[BORDER] = PaletteCodeColour(0);
+    shown_ = true;
+    ++setUps_;
+}
+
 uint8_t *Canvas::page(int index)
 {
     CheckPage(index);

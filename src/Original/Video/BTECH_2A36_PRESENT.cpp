@@ -4,19 +4,16 @@
 #include "BTECH_2A36_CANVAS.h"
 #include <stdlib.h>
 
-/*2A36:1D00. Exchange display/draw buffers and present the new front page
- * BEFORE the optional retrace wait (the original sets the CRTC start there; G4).
- * The separate copy-source and drawing selectors stay stale. */
+/*2A36:1D00. Exchange display/draw buffers and present the new front page,
+ * where the original sets the CRTC start (G4). The separate copy-source and
+ * drawing selectors stay stale. The original can then wait for the next
+ * vertical retrace on the status port (3DAh); no caller asks it to, and the
+ * fixed combat tick paces frames, so that wait is gone (G5). */
 void BtechEgaSwapScreenPages(uint16_t waitForRetrace)
 {
-    if (waitForRetrace && !btechHostReadPort) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: waitForRetrace && !btechHostReadPort");
+    (void)waitForRetrace;
     uint16_t previousFrontPage=frontPageSelector;
     frontPageSelector=backPageSelector;
     backPageSelector=previousFrontPage;
     mw1o::video::GameCanvas().present(BtechEgaCanvasPage(frontPageSelector));
-    if (waitForRetrace)
-    {
-        while (btechHostReadPort(COMBAT_EGA_STATUS_PORT)&COMBAT_EGA_VERTICAL_RETRACE) {}
-        while (!(btechHostReadPort(COMBAT_EGA_STATUS_PORT)&COMBAT_EGA_VERTICAL_RETRACE)) {}
-    }
 }

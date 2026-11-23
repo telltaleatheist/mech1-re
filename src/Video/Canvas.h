@@ -37,8 +37,11 @@ enum class Logic : uint8_t
  * A page starts every PAGE_STRIDE pixels, where the game's page selectors put
  * it, and the rest of each stride past row 199 is the page's off-screen tail,
  * which the game's documented unchecked drawing and reads (a row past 200 and
- * so on) still reach. Combat draws through the drawing operations (G2-G4); the
- * campaign overlay still writes memory() directly until G5. */
+ * so on) still reach. Combat and the campaign overlay both draw through the
+ * drawing operations (G2-G5).
+ *
+ * The game's mode sets are the canvas's set-up: setUp() for its 320x200 mode,
+ * close() for the text mode it leaves in. A closed canvas is not the screen. */
 class Canvas
 {
 public:
@@ -53,10 +56,17 @@ public:
     /* Every page's pixels to index 0, the whole memory with them, and page 0
      * the presented page (a mode set: the screen shows the start of memory). */
     void clear();
+    /* The game's 320x200 mode set: clear(), the mode's 16 default colours
+     * (codes 0-7 and 10h-17h) and a black border, and the canvas is the
+     * screen. Counted, so a presenter can tell a new screen from the last. */
+    void setUp();
+    /* The game's text mode set: the canvas is no longer the screen. */
+    void close() { shown_ = false; }
+    bool shown() const { return shown_; }
+    unsigned long setUps() const { return setUps_; }
     uint8_t *page(int index);
     const uint8_t *page(int index) const;
-    /* All pages, PAGE_STRIDE apart: the campaign overlay's view until G5. */
-    uint8_t *memory() { return memory_.data(); }
+    /* All pages, PAGE_STRIDE apart. */
     const uint8_t *memory() const { return memory_.data(); }
 
     /* Drawing, in pixel coordinates on a page. A position may run on past the
@@ -85,6 +95,8 @@ private:
     Palette palette_{};
     Presenter presenter_;
     int presented_ = 0;
+    bool shown_ = false;
+    unsigned long setUps_ = 0;
 };
 
 /* The game's one canvas, shared by the game's drawing and the host's presenter. */

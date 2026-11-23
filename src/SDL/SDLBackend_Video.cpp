@@ -14,36 +14,21 @@ using mw1o::video::Canvas;
 using mw1o::video::GameCanvas;
 static_assert(Canvas::WIDTH==EGA_COLUMNS && Canvas::HEIGHT==EGA_ROWS && Canvas::BORDER+1==EGA_PALETTE_ENTRIES,
     "The canvas is the EGA mode's frame");
-/* The game's palette codes as it set them: the trace captures' .palette, and
- * what decides a palette change, exactly as before the canvas. The canvas's
- * RGB palette is what the frame is drawn with. */
-static uint8_t videoMode=3,paletteCodes[EGA_PALETTE_ENTRIES];
-static uint8_t displayedIndices[EGA_COLUMNS*EGA_ROWS],lastPalette[EGA_PALETTE_ENTRIES];
+/* The game draws on the canvas and sets its palette and mode there (G5); the
+ * host shows the canvas's presented page, drawn with the canvas's palette,
+ * while the canvas is the screen (set up, not closed). */
+static uint8_t displayedIndices[EGA_COLUMNS*EGA_ROWS];
 static uint32_t rgbaPixels[EGA_COLUMNS*EGA_ROWS];
 static Canvas::Palette lastRgb; /* The canvas palette the presented frame was drawn with. */
 static int lastPage;
+static unsigned long lastSetUps; /* The canvas set-up the presented frame belongs to. */
 static char captureDirectory[4096];
 static bool haveFrame,presenting;
+bool mwSdlCombatActive;
 void (*mwSdlFrameObserver)(void);
 
-static void SetPaletteCode(uint8_t index,uint8_t code)
-{
-    paletteCodes[index]=code;GameCanvas().setPaletteEntry(index,mw1o::video::PaletteCodeColour(code));
-}
-void MwSdlSetVideoMode(uint8_t mode)
-{
-    if (mode!=3 && mode!=EGA_BIOS_MODE_320X200) MwSdlFail("Unsupported video mode");
-    videoMode=mode;
-    if (mode==EGA_BIOS_MODE_320X200)
-    {
-        GameCanvas().clear();egaLogicalFunction=EGA_COPY;
-        MwSdlResetCombatVideoHardware();
-        for (uint8_t i=0;i<16;++i) SetPaletteCode(i,(i&7)|((i&8)?0x10:0));
-        SetPaletteCode(Canvas::BORDER,EGA_PALETTE_BLACK);haveFrame=false;
-        MwSdlResetCombatTick();
-    }
-}
-uint8_t MwSdlGetVideoMode(void) {return videoMode;}
+/* A frame of the canvas as it is now set up: a mode set starts a new screen. */
+static bool HaveFrame(void) {return haveFrame && lastSetUps==GameCanvas().setUps();}
 void MwSdlSetMousePosition(uint16_t horizontalPosition,uint16_t verticalPosition)
 {
     float windowX,windowY;
@@ -74,29 +59,7 @@ void MwSdlConvertMouseMotion(float windowXMotion,float windowYMotion,
         MwSdlFail("Convert mouse motion to EGA coordinates");
     *logicalXMotion=movedX-originX;*logicalYMotion=movedY-originY;
 }
-static void PaletteRegister(uint8_t index,uint8_t code)
-{if (index>=EGA_PALETTE_ENTRIES) MwSdlFail("Unsupported EGA palette register");SetPaletteCode(index,code);}
-static void PaletteTable(const uint8_t *codes) {for (uint8_t i=0;i<EGA_PALETTE_ENTRIES;++i) SetPaletteCode(i,codes[i]);}
-static void OverscanRegister(uint8_t code) {SetPaletteCode(Canvas::BORDER,code);}
-/* The canvas page a campaign display page (a selector into the aperture) shows;
- * it always falls on a page. Combat's flips present their page (G4). */
-static int DisplayStartPage(uint16_t byteOffset)
-{
-    const uint32_t pageBytes=(uint32_t)(Canvas::PAGE_STRIDE/EGA_PIXELS_PER_BYTE);
-    if (byteOffset%pageBytes) MwSdlFail("EGA display start is not on a canvas page");
-    return (int)(byteOffset/pageBytes);
-}
-static int DisplayedPage(void)
-{
-    if (mwSdlCombatActive) return GameCanvas().presentedPage();
-    return DisplayStartPage((uint16_t)((egaDisplayPage-EGA_FIRST_PAGE_SELECTOR)*EGA_SELECTOR_PARAGRAPH_BYTES));
-}
 static void PresentCanvasPage(const Canvas &canvas,int page,bool force);
-static void PresentPage(uint16_t page)
-{
-    if (page!=egaDisplayPage) MwSdlFail("EGA display-page binding mismatch");
-    GameCanvas().present(DisplayedPage());
-}
 bool MwSdlInitializeVideo(const char *directory)
 {
     if (!directory) directory=".";
@@ -113,10 +76,7 @@ bool MwSdlInitializeVideo(const char *directory)
     texture=SDL_CreateTexture(renderer,SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_STREAMING,EGA_COLUMNS,EGA_ROWS);
     if (!texture || !SDL_SetTextureScaleMode(texture,SDL_SCALEMODE_NEAREST)) return false;
     GameCanvas().setPresenter([](const Canvas &canvas,int page) {PresentCanvasPage(canvas,page,true);});
-    egaSetVideoMode=MwSdlSetVideoMode;egaSetPaletteRegister=PaletteRegister;
-    egaSetPaletteTable=PaletteTable;egaPresentPage=PresentPage;
-    btechHostSetPaletteRegister=PaletteRegister;btechHostSetOverscanColour=OverscanRegister;
-    haveFrame=presenting=false;videoMode=3;
+    haveFrame=presenting=false;
     return true;
 }
 void MwSdlUpdateWindowTitle(void)
@@ -154,15 +114,15 @@ static uint64_t repeatPresentAt;
 void MwSdlRepeatPresent(void) {repeatPresentAt=1;}
 void MwSdlPresentVideo(bool force)
 {
-    if (!renderer || presenting || videoMode!=EGA_BIOS_MODE_320X200) return;
-    PresentCanvasPage(GameCanvas(),DisplayedPage(),force);
+    if (!renderer || presenting || !GameCanvas().shown()) return;
+    PresentCanvasPage(GameCanvas(),GameCanvas().presentedPage(),force);
 }
 /* The presenter: a canvas page, drawn with the canvas's palette. */
 static void PresentCanvasPage(const Canvas &canvas,int page,bool force)
 {
-    if (!renderer || presenting || videoMode!=EGA_BIOS_MODE_320X200) return;
+    if (!renderer || presenting || !canvas.shown()) return;
     const uint8_t *pixels=canvas.page(page);
-    bool changed=force || !haveFrame || lastPage!=page || memcmp(lastPalette,paletteCodes,sizeof(paletteCodes));
+    bool changed=force || !HaveFrame() || lastPage!=page || lastRgb!=canvas.palette();
     for (uint32_t pixel=0;pixel<EGA_COLUMNS*EGA_ROWS;++pixel)
     {
         uint8_t index=pixels[pixel];
@@ -178,7 +138,7 @@ static void PresentCanvasPage(const Canvas &canvas,int page,bool force)
     if (!changed)
     {
         uint64_t now=SDL_GetTicksNS();
-        if (!haveFrame || !repeatPresentAt || now<repeatPresentAt) return;
+        if (!HaveFrame() || !repeatPresentAt || now<repeatPresentAt) return;
         presenting=true;
         Render();
         if (showNotice) DrawNotice(notice);
@@ -199,7 +159,7 @@ static void PresentCanvasPage(const Canvas &canvas,int page,bool force)
     if (showNotice) DrawNotice(notice);
     noticeShown=showNotice;
     if (!SDL_RenderPresent(renderer)) MwSdlFail("Present EGA texture");
-    lastPage=page;memcpy(lastPalette,paletteCodes,sizeof(lastPalette));lastRgb=palette;haveFrame=true;
+    lastPage=page;lastRgb=palette;lastSetUps=canvas.setUps();haveFrame=true;
     repeatPresentAt=SDL_GetTicksNS()+HOST_REPEAT_SETTLE_NS;
     if (mwSdlFrameObserver) mwSdlFrameObserver();
     presenting=false;
@@ -207,7 +167,7 @@ static void PresentCanvasPage(const Canvas &canvas,int page,bool force)
 const char *MwSdlCaptureDirectory(void) {return captureDirectory;}
 bool MwSdlCapture(const char *stem)
 {
-    if (!haveFrame || !stem || strpbrk(stem,"/\\:")) return false;
+    if (!HaveFrame() || !stem || strpbrk(stem,"/\\:")) return false;
     char path[4096];
     if (snprintf(path,sizeof(path),"%s/%s.bmp",captureDirectory,stem)>=(int)sizeof(path)) return false;
     /* Reserve exclusively: never overwrite an earlier observation. */
@@ -221,9 +181,6 @@ bool MwSdlCapture(const char *stem)
     if (snprintf(path,sizeof(path),"%s/%s.indices",captureDirectory,stem)>=(int)sizeof(path)) return false;
     file=fopen(path,"wbx");if (!file) return false;
     saved=fwrite(displayedIndices,1,sizeof(displayedIndices),file)==sizeof(displayedIndices);if (fclose(file)) saved=false;
-    if (snprintf(path,sizeof(path),"%s/%s.palette",captureDirectory,stem)>=(int)sizeof(path)) return false;
-    file=fopen(path,"wbx");if (!file) return false;
-    saved=saved && fwrite(lastPalette,1,sizeof(lastPalette),file)==sizeof(lastPalette);if (fclose(file)) saved=false;
     /* The frame's colours: 17 entries (16, then the border) of red, green, blue. */
     if (snprintf(path,sizeof(path),"%s/%s.rgb",captureDirectory,stem)>=(int)sizeof(path)) return false;
     file=fopen(path,"wbx");if (!file) return false;

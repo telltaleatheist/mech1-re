@@ -99,13 +99,11 @@ uint16_t BtechDetectVideoAdapter(void)
     }
     else if (videoAdapterAllowedMask&5)
     {
-        /*00FD: write/read CRTC register0F, including the native0F restore. */
-        if (!btechHostReadPort || !btechHostWritePort || !btechHostDelayLoops) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostReadPort || !btechHostWritePort || !btechHostDelayLoops");
-        btechHostWritePort(0x3D4,0x0F);btechHostWritePort(0x3D5,0x66);
-        btechHostDelayLoops(0x64);
-        uint8_t readback=btechHostReadPort(0x3D5);
-        btechHostWritePort(0x3D5,0x0F);
-        if (readback==0x66) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: readback==0x66"); /* CGA/Tandy initialization not converted. */
+        /*00FD: without an EGA, the original writes 66h to CRTC register 0Fh,
+         * reads it back and restores 0Fh, to tell a CGA or Tandy adapter from
+         * none. The game runs only on its EGA path (the BIOS's EGA reply
+         * above), so this check and the CGA/Tandy set-up are not converted. */
+        /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("CGA/Tandy adapter check and initialization not converted");
     }
     return 0;
 }

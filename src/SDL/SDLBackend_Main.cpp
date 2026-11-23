@@ -45,7 +45,6 @@ static bool ExecuteChild(const char *filename,const MwCampaignLaunch *launch,uin
     ReleaseChildResources();
     return false;
 }
-static void ClearLauncherText(void) {MwSdlSetVideoMode(3);}
 
 [[noreturn]] void MwSdlFail(const char *operation)
 {
@@ -162,11 +161,11 @@ bool MwSdlInitialize(const char *gameDirectory,const char *captureDirectory)
     if (!MwSdlInitializeCombatProcess(gameDirectory)) {MwSdlShutdown();return false;}
     mwHostValidateFileDestination=ValidateFileDestination;
     mwCampaignPlatform=MwCampaignPlatformCalls{AllocateParagraphs,LoadOverlay,
-        MwSdlInstallCampaignInterrupts,MwSdlRestoreCampaignInterrupts,MwSdlGetVideoMode,MwSdlSetVideoMode,
+        MwSdlInstallCampaignInterrupts,MwSdlRestoreCampaignInterrupts,
         MwSdlReadBiosTicks,ResetMouse,DosString};
     campaignStartMusic=MwStartMidiTrackFar;campaignStopMusic=MwStopMidiTrackFar;
     campaignNearCallback=UnsupportedCampaignCall;
-    mwLauncherSystem=MwLauncherSystemCalls{ClearLauncherText,ExecuteChild};
+    mwLauncherSystem=MwLauncherSystemCalls{ExecuteChild};
     return true;
 }
 int MwSdlRunCampaign(void)

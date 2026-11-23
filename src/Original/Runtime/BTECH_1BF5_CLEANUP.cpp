@@ -1,3 +1,4 @@
+#include "mechwarrior/video_mode.h"
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/combat_startup.h"
 #include "mechwarrior/input_hardware.h"
@@ -23,10 +24,10 @@ void BtechRestoreTextVideoMode(void)
 /*1BF5:0287. Native BIOS equipment BYTE has two ordered read/modify/writes. */
 void BtechSetBiosTextModeAndAdapterBits(uint16_t displayBits)
 {
-    if (!btechHostReadBiosByte || !btechHostWriteBiosByte || !btechHostSetVideoMode) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostReadBiosByte || !btechHostWriteBiosByte || !btechHostSetVideoMode");
+    if (!btechHostReadBiosByte || !btechHostWriteBiosByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostReadBiosByte || !btechHostWriteBiosByte");
     btechHostWriteBiosByte(BIOS_VIDEO_EQUIPMENT,btechHostReadBiosByte(BIOS_VIDEO_EQUIPMENT)&BIOS_EQUIPMENT_CLEAR_DISPLAY_BITS);
     btechHostWriteBiosByte(BIOS_VIDEO_EQUIPMENT,btechHostReadBiosByte(BIOS_VIDEO_EQUIPMENT)|(uint8_t)(displayBits<<BIOS_EQUIPMENT_DISPLAY_SHIFT));
-    btechHostSetVideoMode(BIOS_TEXT_MODE_80_COLUMN);
+    MwSetVideoMode(BIOS_TEXT_MODE_80_COLUMN);
 }
 
 /*1BF5:2C8D. Flag clears before discarding queued BIOS keys and restoring IVT. */

@@ -1,6 +1,7 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/launcher.h"
 #include "mechwarrior/campaign.h"
+#include "mechwarrior/video_mode.h"
 
 MwLauncherSystemCalls mwLauncherSystem;
 
@@ -10,11 +11,11 @@ MwLauncherSystemCalls mwLauncherSystem;
  * fails loudly with its file name. Native termination is always code00. */
 uint8_t MwLauncherMain(uint8_t audioCode)
 {
-    if (!mwLauncherSystem.clearTextScreen || !mwLauncherSystem.executeChild) /* Port failsafe; not an original DOS exit. */
+    if (!mwLauncherSystem.executeChild) /* Port failsafe; not an original DOS exit. */
         MW_PORT_FAILSAFE("Launcher system calls are not bound");
     uint8_t childExitCode=0;
     uint8_t phase=CAMPAIGN_PHASE_NEW;
-    mwLauncherSystem.clearTextScreen();
+    MwSetVideoMode(MW_VIDEO_MODE_TEXT); /* The text screen cleared by a mode 3 set. */
     for (;;)
     {
         MwCampaignLaunch launch=MwCampaignLaunch{{launcherIdentity,0x07D4,sizeof(launcherIdentity)},

@@ -65,9 +65,6 @@ enum
 };
 extern uint8_t defaultPaletteCodes[EGA_PALETTE_ENTRIES];
 extern uint8_t alternatePaletteCodes[EGA_PALETTE_ENTRIES];
-extern void (*egaSetVideoMode)(uint8_t mode);
-extern void (*egaSetPaletteRegister)(uint8_t index,uint8_t paletteCode);
-extern void (*egaSetPaletteTable)(const uint8_t *paletteCodes);
 void EgaInitializeGraphics(void);
 void EgaLoadDefaultPalette(void);
 void EgaLoadAlternatePalette(void);
@@ -124,12 +121,10 @@ bool EgaLoadStartStoryBytes(void);
 typedef struct EgaOverlayRange { uint16_t offset, byteCount; } EgaOverlayRange;
 extern const EgaOverlayRange egaStartZeroedRanges[];
 extern const size_t egaStartZeroedRangeCount;
-/* Logical aperture/controller projection owned by Video/MW_EGA_0800.c,
- * not additional serialized overlay fields. The aperture's
- * EGA_VIDEO_PIXEL_COUNT pixels are the game canvas's memory (src/Video). */
-extern uint8_t *const egaVideoPixels;
+/* The function the overlay's next sprite or pixel draws by, as its last routine
+ * left it (Video/MW_EGA_0800.cpp; not a serialized overlay field). The overlay
+ * draws on the game canvas (src/Video), EGA_VIDEO_PIXEL_COUNT pixels. */
 extern uint8_t egaLogicalFunction;
-extern void (*egaPresentPage)(uint16_t displayPage);
 
 bool EgaLoadFonts(void);
 bool EgaLoadFontFile(uint16_t filenameOffset, uint16_t bufferOffset);

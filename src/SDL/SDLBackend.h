@@ -83,8 +83,6 @@ void MwSdlPresentVideo(bool force);
 /* Show the current frame again at the next pump (a window event). */
 void MwSdlRepeatPresent(void);
 void MwSdlShutdownVideo(void);
-uint8_t MwSdlGetVideoMode(void);
-void MwSdlSetVideoMode(uint8_t mode);
 void MwSdlSetMousePosition(uint16_t horizontalPosition,uint16_t verticalPosition);
 void MwSdlReadMousePosition(uint16_t *horizontalPosition,uint16_t *verticalPosition);
 void MwSdlConvertMouseMotion(float windowXMotion,float windowYMotion,
@@ -94,11 +92,8 @@ void MwSdlAdvanceAudio(double pitTime);
 void MwSdlWriteSpeakerPort(uint16_t port,uint8_t value);
 uint8_t MwSdlReadSpeakerControl(void);
 void MwSdlShutdownAudio(void);
-/* Shared physical EGA adapter. Game rasterizers remain in Original. */
+/* Combat is running (its frames are on the canvas like the campaign's). */
 extern bool mwSdlCombatActive;
-void MwSdlResetCombatVideoHardware(void);
-bool MwSdlWriteCombatVideoPort(uint16_t port,uint8_t value);
-bool MwSdlReadCombatVideoPort(uint16_t port,uint8_t *value);
 void MwSdlWriteDevicePort(uint16_t port,uint8_t value);
 uint8_t MwSdlReadDevicePort(uint16_t port);
 uint8_t MwSdlExchangeInterrupts(uint8_t enabled);

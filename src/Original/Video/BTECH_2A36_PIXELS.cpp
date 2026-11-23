@@ -39,11 +39,11 @@ uint16_t BtechEgaReadPixel(uint16_t x,uint16_t y)
     return mw1o::video::GameCanvas().pixelAt(BtechEgaCanvasPage(page),canvasX,canvasY);
 }
 
-/*2A36:233D. Original BIOS1001 colour mapping; hardware border, not a game UI. */
+/*2A36:233D. Original BIOS1001 colour mapping; the border, not a game UI. The
+ * overscan register write is the canvas's border entry (G5). */
 void BtechEgaSetOverscanColour(uint16_t colour)
 {
     uint8_t hardwareColour=(uint8_t)colour&0x0F;
     if (combatRendererKind==COMBAT_VIDEO_EGA && hardwareColour>=8) hardwareColour+=8;
-    if (!btechHostSetOverscanColour) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetOverscanColour");
-    btechHostSetOverscanColour(hardwareColour);
+    mw1o::video::GameCanvas().setPaletteEntry(mw1o::video::Canvas::BORDER,mw1o::video::PaletteCodeColour(hardwareColour));
 }

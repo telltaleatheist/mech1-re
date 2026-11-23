@@ -58,7 +58,6 @@ extern void (*btechHostWriteBiosWord)(uint16_t offset,uint16_t value);
 extern uint8_t (*btechHostReadBiosByte)(uint16_t offset);
 extern void (*btechHostWriteBiosByte)(uint16_t offset,uint8_t value);
 extern void (*btechHostResetMouse)(void);
-extern void (*btechHostSetVideoMode)(uint8_t mode);
 bool BtechImportStartupInitialData(const uint8_t *data,size_t bytes);
 void BtechResetCombatState(void);
 /* Native EGA1E84 returns after actual4176 briefing/input and26C5 cockpit

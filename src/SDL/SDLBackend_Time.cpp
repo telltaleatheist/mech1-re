@@ -151,7 +151,6 @@ void MwSdlWriteDevicePort(uint16_t port,uint8_t value)
     AudioLogEvent('w',port,value);
     /* Device writes occur at the delivered hardware time, including inside
      * an IRQ. No game state is ever touched by an SDL audio thread. */
-    if (MwSdlWriteCombatVideoPort(port,value)) return;
     MwSdlAdvanceAudio(hardwareTime);
     if (port==PIC_COMMAND_PORT && value==PIC_END_OF_INTERRUPT) return;
     if (port==PIC_MASK_PORT) {picMask=value;return;}
@@ -205,7 +204,6 @@ uint8_t MwSdlReadDevicePort(uint16_t port)
 }
 static uint8_t ReadDevicePort(uint16_t port)
 {
-    uint8_t videoValue;if (MwSdlReadCombatVideoPort(port,&videoValue)) return videoValue;
     if (port==KEYBOARD_DATA_PORT) return MwSdlReadKeyboardScanByte();
     if (port==PIC_MASK_PORT) return picMask;
     if (port==MPU_DATA_PORT || port==MPU_STATUS_COMMAND_PORT)

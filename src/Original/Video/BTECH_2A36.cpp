@@ -1,3 +1,4 @@
+#include "mechwarrior/video_mode.h"
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/combat_runtime.h"
 #include "mechwarrior/combat_video.h"
@@ -19,12 +20,11 @@ uint32_t BtechEgaGetCaptureStorageSize(uint16_t width,uint16_t height)
 void BtechInitializeEgaVideo(uint16_t paletteByteOffset)
 {
     if (paletteByteOffset) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: paletteByteOffset");
-    if (!btechHostSetVideoMode) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetVideoMode");
     videoColourCount=COMBAT_EGA_COLOURS;
     frontPageSelector=COMBAT_EGA_FRONT_PAGE;
     backPageSelector=COMBAT_EGA_BACK_PAGE;
     videoScratchPageSelector=COMBAT_EGA_SCRATCH_PAGE;
-    btechHostSetVideoMode(COMBAT_EGA_MODE_320X200);
+    MwSetVideoMode(COMBAT_EGA_MODE_320X200);
     uint16_t pattern=0;
     for (uint16_t colour=0;colour<COMBAT_EGA_COLOURS;++colour)
     {
@@ -262,13 +262,14 @@ uint16_t BtechEgaLoadPalette(BtechRuntimeStream *stream,uint16_t slot)
     return slot;
 }
 
-/*2A36:222D. Pattern publication and individual BIOS palette writes remain
- * interleaved per colour. Background patterns come from each bank's second
- * half; EGA bright colours skip hardware entries08..0F. */
+/*2A36:222D. Pattern publication and the palette entries remain interleaved
+ * per colour. Background patterns come from each bank's second half; EGA
+ * bright colours skip the codes 08..0F. Each BIOS palette register write
+ * (INT 10h AX=1000h) is the canvas's palette entry for that code (G5). */
 void BtechEgaSelectPalette(uint16_t slot)
 {
     if (!slot) return;
-    if (slot>=COMBAT_PALETTE_SLOTS || !btechHostSetPaletteRegister) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: slot>=COMBAT_PALETTE_SLOTS || !btechHostSetPaletteRegister");
+    if (slot>=COMBAT_PALETTE_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: slot>=COMBAT_PALETTE_SLOTS");
     for (uint16_t colour=0;colour<COMBAT_EGA_COLOURS;++colour)
     {
         palettePrimarySlots[0][colour]=colour;
@@ -278,6 +279,6 @@ void BtechEgaSelectPalette(uint16_t slot)
         paletteSecondarySlots[0][colour+COMBAT_EGA_COLOURS]=paletteSecondarySlots[slot][colour+COMBAT_EGA_COLOURS];
         uint8_t hardwareColour=palettePrimarySlots[slot][colour]&0x0F;
         if (hardwareColour>=8) hardwareColour+=8;
-        btechHostSetPaletteRegister((uint8_t)colour,hardwareColour);
+        mw1o::video::GameCanvas().setPaletteEntry(colour,mw1o::video::PaletteCodeColour(hardwareColour));
     }
 }

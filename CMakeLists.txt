@@ -202,6 +202,7 @@ add_library(mechwarrior_original STATIC
     src/Original/Memory/BTECH_1BF5_STATE.cpp
     src/Original/Memory/BTECH_22B6_DATA.cpp
     src/Support/CombatPlatform.cpp
+    src/Support/VideoMode.cpp
     src/Support/CombatInstallation.cpp
     src/Support/BtechImage.cpp
     src/Support/CombatNearHeap.cpp
@@ -380,7 +381,7 @@ if(MECHWARRIOR_BUILD_SDL)
         src/SDL/SDLBackend_Config.cpp src/MT32/MPU401.cpp
         src/SDL/SDLBackend_DebugControl.cpp
         src/SDL/SDLBackend_Pilot.cpp src/Support/SupportPilot.cpp src/Support/SupportPilotObservation.cpp
-        src/SDL/SDLBackend_Video.cpp src/SDL/SDLBackend_CombatVideo.cpp src/SDL/SDLBackend_CombatPlatform.cpp
+        src/SDL/SDLBackend_Video.cpp src/SDL/SDLBackend_CombatPlatform.cpp
         src/SDL/SDLBackend_CombatProcess.cpp src/SDL/SDLBackend_Audio.cpp)
     target_link_libraries(mechwarrior_sdl PUBLIC mechwarrior_original SDL3::SDL3 mechwarrior_audio mechwarrior_mt32 mechwarrior_adlib
                           mechwarrior_setup)  # the player's folder's names and order (src/Setup/Setup.h)

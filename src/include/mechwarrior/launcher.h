@@ -11,7 +11,6 @@ enum { LAUNCHER_MEMORY_512K=3,LAUNCHER_GRAPHICS_EGA='E' };
  * started (native Carry), never success. */
 typedef struct MwLauncherSystemCalls
 {
-    void (*clearTextScreen)(void);
     bool (*executeChild)(const char *filename,const MwCampaignLaunch *launch,uint8_t audioCode,uint8_t *exitCode);
 } MwLauncherSystemCalls;
 extern MwLauncherSystemCalls mwLauncherSystem;

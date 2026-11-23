@@ -34,8 +34,9 @@ A record:
             menu labels only as a 12-hex keyed hash, never MW1's text
     menu    each row's 081B callback offset, picture, links, enabled, label hash
     screenKey  a hash of the menu's shape
-    frame   SHA-256 of the indexed 320x200 frame, of its palette codes (raw, not
-            compared) and of its colours (rgb: 17 RGB triples, palette.py)
+    frame   SHA-256 of the indexed 320x200 frame and of its colours (rgb: 17
+            RGB triples); "palette", the codes' hash, is null since the port
+            stopped writing codes (G5), and is never compared
 The state ends with "state exchange <sha>", the hash of the whole campaign as
 the save format encodes it (0x718 bytes, NAME.exchange beside the frames).
 

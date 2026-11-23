@@ -23,8 +23,6 @@ typedef struct MwCampaignPlatformCalls
     bool (*loadGraphicsOverlay)(const char *filename,uint16_t selector);
     void (*installInterrupts)(void);
     void (*restoreInterrupts)(void);
-    uint8_t (*getVideoMode)(void);
-    void (*setVideoMode)(uint8_t mode);
     uint32_t (*readBiosTicks)(void);
     uint16_t (*resetMouse)(void);
     void (*displayDosString)(const char *text);

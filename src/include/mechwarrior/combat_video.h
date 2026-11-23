@@ -30,8 +30,7 @@ enum { COMBAT_EGA_MODE_320X200=0x0D, COMBAT_VIDEO_EGA=2,COMBAT_VIDEO_AUTO=0,COMB
     COMBAT_EGA_DATA_ROTATE_COPY=0x0003,COMBAT_EGA_SEQUENCER_MAP_MASK=2,
     COMBAT_EGA_SEQUENCER_DATA_PORT=0x3C5,COMBAT_EGA_PLANE_MASK_ALL=0x0F,
     COMBAT_SCHEDULER_PERIOD=0x0D,COMBAT_FATAL_TEXT_X=0x32,COMBAT_FATAL_TEXT_Y=0x64 };
-enum { COMBAT_BIOS_CRTC_PORT=0x63,COMBAT_EGA_CRTC_START_HIGH=0x0C,COMBAT_COLOUR_CRTC_INDEX_PORT=0x3D4,
-    COMBAT_EGA_STATUS_PORT=0x3DA,COMBAT_EGA_VERTICAL_RETRACE=8 };
+enum { COMBAT_BIOS_CRTC_PORT=0x63,COMBAT_COLOUR_CRTC_INDEX_PORT=0x3D4 };
 /* 1BF5:00C4's observable DI after copying35 native FAR dispatch entries. */
 enum { COMBAT_NATIVE_GRAPHICS_DISPATCH_START=0x3F34,COMBAT_NATIVE_GRAPHICS_DISPATCH_ENTRIES=0x23,
     COMBAT_NATIVE_FAR_POINTER_BYTES=4,
@@ -88,7 +87,6 @@ extern uint16_t egaLineRunLength,egaLineFractionStep,egaLineRemainingBeforeRun,e
 extern void (*graphicsWritePixel)(uint16_t x,uint16_t y,uint16_t colour);
 extern uint16_t (*graphicsReadPixel)(uint16_t x,uint16_t y);
 extern void (*graphicsSetOverscanColour)(uint16_t colour);
-extern void (*btechHostSetOverscanColour)(uint8_t colour);
 void BtechWriteClippedPixel(int16_t x,int16_t y,uint16_t colour);
 uint16_t BtechReadClippedPixel(int16_t x,int16_t y);
 void BtechSetOverscanColour(uint16_t colour);
@@ -163,7 +161,6 @@ uint32_t BtechEgaGetCaptureStorageSize(uint16_t width,uint16_t height);
  * canvas, G4); no renderer or game-decision callbacks. The live SDL BTECH entry remains gated. */
 extern uint16_t (*btechHostQueryEgaInfo)(void); /* INT10 AX1200/BX0010 -> BX. */
 extern uint8_t (*btechHostReadRomByte)(uint16_t selector,uint16_t offset);
-extern void (*btechHostSetPaletteRegister)(uint8_t index,uint8_t colour); /* INT10 AX1000. */
 bool BtechImportVideoInitialData(const uint8_t *data,size_t bytes);
 uint16_t BtechSelectCombatRenderer(uint8_t adapterOverride,uint8_t allowedMask);
 uint16_t BtechDetectVideoAdapter(void);
