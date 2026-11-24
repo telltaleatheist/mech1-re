@@ -166,6 +166,31 @@ def check_stamp(binary, label):
         raise RuntimeError(f"The program's version stamp is {sorted(stamps)}, wanted {sorted(wanted)}")
 
 
+def check_release_tree(root, label):
+    """A release's package is made from its tag and nothing else: the tree is at that tag, with no file changed,
+    added or missing (the submodules' too). Any other label packages whatever is there."""
+    tag = release_tag(label)
+    if not tag:
+        return
+
+    def git(*args):
+        try:
+            return subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True, check=True).stdout.strip()
+        except (OSError, subprocess.CalledProcessError) as e:
+            why = (getattr(e, "stderr", None) or str(e)).strip()
+            raise RuntimeError(f"{tag} can only be packaged from its tag in a git tree: {why}") from None
+
+    if Path(git("rev-parse", "--show-toplevel")).resolve() != Path(root).resolve():
+        raise RuntimeError(f"{tag} can only be packaged from its tag in a git tree: {root} is not the top of one")
+    head, tagged = git("rev-parse", "HEAD"), git("rev-parse", "--verify", f"refs/tags/{tag}^{{commit}}")
+    if head != tagged:
+        raise RuntimeError(f"{tag} is {tagged[:9]}, but the tree is at {head[:9]}")
+    changed = git("status", "--porcelain", "--untracked-files=normal").splitlines()
+    if changed:
+        raise RuntimeError(f"{tag} can't be packaged from a tree with changes: " + "; ".join(line.strip() for line in changed[:5])
+                           + (" ..." if len(changed) > 5 else ""))
+
+
 def configure_and_build(root, build, sdl, label):
     args = ["cmake", "-S", str(root), "-B", str(build),
             "-DMECHWARRIOR_BUILD_SDL=ON", f"-DMECHWARRIOR_SDL_SOURCE_DIR={sdl}", "-DMECHWARRIOR_TRIM_PATHS=ON",
@@ -233,6 +258,29 @@ def stage_soundfont(root, build, resources, notices):
 REMOVED_LIBRARIES = ("mt32emu", "nukedopl")
 
 
+def shipped_libraries(files):
+    """One name for each library: a versioned one's links (libSDL3.so, .so.0, .so.0.2.0) are one file, shipped under
+    the name the program loads it by (.so.0)."""
+    names = {}
+    for file in sorted(files):
+        if file.is_file():
+            names.setdefault(file.resolve(), []).append(file.name)
+    return {source: next((n for n in found if re.search(r"\.so\.\d+$", n)), found[0]) for source, found in names.items()}
+
+
+# What every package holds the licence or notice of, in its licenses/ folder.
+NOTICES = ("NOTICE.md", "THIRD_PARTY_NOTICES.md", "SDL-LICENSE.txt", "hidapi-LICENSE-bsd.txt", "re-setup-kit-LICENSE",
+           "stb-LICENSE", "miniz-LICENSE", "TinySoundFont-LICENSE")
+
+
+def check_notices(licenses):
+    """The notices are in the finished package itself (`licenses`, its folder), not only staged for it."""
+    wanted = [*NOTICES, *ARCHIVE_LICENCES.values(), *SOUNDFONT_LICENCES]
+    missing = [n for n in wanted if not (licenses / n).is_file() or not (licenses / n).stat().st_size]
+    if missing:
+        raise RuntimeError("Missing notices in the package: " + ", ".join(missing))
+
+
 def require_libraries(folder, sdl_name):
     """SDL3 is in `folder`, and none of REMOVED_LIBRARIES."""
     if not list(folder.glob(sdl_name)):
@@ -279,6 +327,7 @@ def check_paths(root, folder, *extra):
 def package(root, build, sdl, output, label, game=None, installer=False, tools=None):
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", label):
         raise ValueError("Invalid package label")
+    check_release_tree(root, label)
     if platform_name() == "mac":
         return package_mac(root, build, sdl, output, label, game)
     windows = platform_name() == "win64"
@@ -291,13 +340,11 @@ def package(root, build, sdl, output, label, game=None, installer=False, tools=N
     check_stamp(binary, label)
     program = PROGRAM + (".exe" if windows else "")
     shutil.copy2(binary, stage / program)
-    libraries = list(build.rglob("*.dll" if windows else "*.so*"))
-    for lib in libraries:
-        if lib.is_file():
-            destination = stage / lib.name
-            if destination.exists() and destination.read_bytes() != lib.read_bytes():
-                raise RuntimeError(f"Conflicting runtime libraries: {lib.name}")
-            shutil.copy2(lib.resolve(), destination)
+    for lib, library_name in shipped_libraries(build.rglob("*.dll" if windows else "*.so*")).items():
+        destination = stage / library_name
+        if destination.exists() and destination.read_bytes() != lib.read_bytes():
+            raise RuntimeError(f"Conflicting runtime libraries: {library_name}")
+        shutil.copy2(lib, destination)
     if windows:
         vswhere = Path(os.environ["ProgramFiles(x86)"]) / "Microsoft Visual Studio/Installer/vswhere.exe"
         vs = Path(subprocess.check_output([str(vswhere), "-latest", "-products", "*", "-requires",
@@ -331,6 +378,7 @@ def package(root, build, sdl, output, label, game=None, installer=False, tools=N
         with tarfile.open(archive) as source:
             source.extractall(extracted, filter="data")
     executable = extracted / name / program
+    check_notices(extracted / name / "licenses")
     if not windows:
         run("ldd", str(executable))
     smoke(executable, game)
@@ -435,6 +483,7 @@ def appimage(root, stage, output, label, tools, game, sdl):
     subprocess.run([str(image.resolve()), "--appimage-extract"], cwd=unpacked, stdout=subprocess.DEVNULL, check=True, timeout=600)
     program = unpacked / "squashfs-root/usr/bin" / PROGRAM
     check_stamp(program, label)
+    check_notices(unpacked / f"squashfs-root/usr/share/doc/{PROGRAM}/licenses")
     smoke(program, game)
     write_digest(image)
     print(f"AppImage {image}")
@@ -539,6 +588,7 @@ def package_mac(root, build, sdl, output, label, game):
     (dmg_stage / "Applications").symlink_to("/Applications")
     shutil.copy2(resources / "README.txt", dmg_stage / "Read me.txt")
     check_paths(root, dmg_stage, root, sdl)
+    check_notices(dmg_stage / app.name / "Contents/Resources/licenses")
     run("hdiutil", "create", "-volname", APP_NAME, "-srcfolder", str(dmg_stage), "-ov", "-format", "UDZO", str(dmg),
         stdout=subprocess.DEVNULL)
     shutil.rmtree(dmg_stage)
