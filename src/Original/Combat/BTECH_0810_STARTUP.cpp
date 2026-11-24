@@ -34,16 +34,16 @@ void BtechInitializeCombatRuntime(void)
     else BtechSelectActiveSoundBank(soundBank);
     BtechPrepareCampaignCombatStage(inheritedSoundStreamIdentity);
     BtechInitializeUnitControlRecords();
-    selectedObjectCount=0;
+    combatWorld.selectedObjectCount=0;
     for (uint16_t object=0;object<COMBAT_WORLD_OBJECTS;++object)
     {
-        BtechWorldObjectPrefix *registered=worldObjects[object];
+        BtechWorldObjectPrefix *registered=combatWorld.worldObjects[object];
         if (!registered) break;
         if ((int16_t)registered->resourceId<(int16_t)combatResources.surfaceResourceBank.resourceCount
             && (int16_t)registered->resourceId>=0)
         {
-            if (selectedObjectCount>=COMBAT_SELECTED_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedObjectCount>=COMBAT_SELECTED_WORLD_OBJECTS"); /* Next native store aliases7A2E. */
-            selectedWorldObjects[selectedObjectCount++]=worldObjects[object];
+            if (combatWorld.selectedObjectCount>=COMBAT_SELECTED_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedObjectCount>=COMBAT_SELECTED_WORLD_OBJECTS"); /* Next native store aliases7A2E. */
+            combatWorld.selectedWorldObjects[combatWorld.selectedObjectCount++]=combatWorld.worldObjects[object];
         }
     }
     combatVideo.playerCameraFillASuppressed=BtechRandomBelowBound(3)<1;
@@ -51,11 +51,11 @@ void BtechInitializeCombatRuntime(void)
     BtechLoadCockpitHudResources();
     BtechInitializeOrderPanelState();
     BtechResetMechInspectionState();
-    if (!playerMechTemplate) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechTemplate");
-    for (int16_t mount=0;mount<(int16_t)playerMechTemplate->weaponMountCount;++mount)
+    if (!combatWorld.playerMechTemplate) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechTemplate");
+    for (int16_t mount=0;mount<(int16_t)combatWorld.playerMechTemplate->weaponMountCount;++mount)
     {
-        if (mount>=COMBAT_WEAPON_MOUNTS || !playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mount>=COMBAT_WEAPON_MOUNTS || !playerMechState");
-        combatStartup.playerMountFireFlags[mount]=(int8_t)playerMechState->weapons[mount].operational;
+        if (mount>=COMBAT_WEAPON_MOUNTS || !combatWorld.playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mount>=COMBAT_WEAPON_MOUNTS || !playerMechState");
+        combatStartup.playerMountFireFlags[mount]=(int8_t)combatWorld.playerMechState->weapons[mount].operational;
     }
     combatImport.activeUnitControl=&combatMechs.unitControls[0];
     BtechSynchronizeMechRenderParts();

@@ -74,7 +74,7 @@ void BtechApplyJumpMotion(uint16_t desiredHeading,uint16_t movementDirection)
     if (movementDirection==MOTION_DIRECTION_STOP || (int16_t)combatPose.activeMechState->jumpCharge<requiredJumpCharge || jumpCapabilityLost)
     {
         uint32_t savedMechAltitude=jumpingMechObject->object.prefix.position.positionC;
-        uint16_t landingSurfaceClass=BtechResolveGroundSurfaceAndSlope(jumpingMechObject,0,selectedWorldObjects,selectedObjectCount);
+        uint16_t landingSurfaceClass=BtechResolveGroundSurfaceAndSlope(jumpingMechObject,0,combatWorld.selectedWorldObjects,combatWorld.selectedObjectCount);
         jumpingMechObject=combatPose.activeUnitPositionedObject;
         combatMovement.jumpGroundHeight=jumpingMechObject->object.prefix.position.positionC;
         jumpingMechObject->object.prefix.position.positionC=savedMechAltitude;
@@ -152,7 +152,7 @@ void BtechAdvanceActiveAiUnitMotion(void)
         combatMovement.unitMovementObstructionHistory[combatImport.activeUnitControl->unitSlot]=0;
         return;
     }
-    uint16_t groundSurfaceClass=BtechResolveGroundSurfaceAndSlope(combatPose.activeUnitPositionedObject,0,selectedWorldObjects,selectedObjectCount);
+    uint16_t groundSurfaceClass=BtechResolveGroundSurfaceAndSlope(combatPose.activeUnitPositionedObject,0,combatWorld.selectedWorldObjects,combatWorld.selectedObjectCount);
     movingMechObject=combatPose.activeUnitPositionedObject;
     if (movingMechObject->forwardStepScale)
     {

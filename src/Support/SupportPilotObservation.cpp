@@ -16,21 +16,21 @@ static PilotPoint ReadPosition(const BtechWorldObjectPrefix *object)
 void SupportPilotObserve(PilotObservation *view,bool combatActive)
 {
     memset(view,0,sizeof(*view));view->tick=combatStartup.combatTickCounter;
-    if(!combatActive || !playerUnitBinding || !playerMechState || !playerMechTemplate)return;
-    const BtechPooledWorldObject *body=playerUnitBinding->positionedLeftLeg;
-    if(!body || !playerUnitBinding->torso)return;
+    if(!combatActive || !combatWorld.playerUnitBinding || !combatWorld.playerMechState || !combatWorld.playerMechTemplate)return;
+    const BtechPooledWorldObject *body=combatWorld.playerUnitBinding->positionedLeftLeg;
+    if(!body || !combatWorld.playerUnitBinding->torso)return;
     view->cockpit=combatStartup.combatDispatchState==COMBAT_SCREEN_COCKPIT && combatStartup.combatTickCounter!=0;
     view->alive=combatMechs.unitControls[0].conditionScoreOrExitCode>COMBAT_CONDITION_SCORE_MINIMUM;
     view->missionComplete=combatStartup.sideCompletionFlags[0] || combatStartup.sideCompletionFlags[1];
     view->fallen=combatMechs.unitControls[0].movementMode==MOVEMENT_MODE_FALLEN_POSE;
-    view->heatInhibited=combatMechs.heatInhibitFlags[0]!=0;view->heat=playerMechState->heatUnits;
+    view->heatInhibited=combatMechs.heatInhibitFlags[0]!=0;view->heat=combatWorld.playerMechState->heatUnits;
     view->aws=combatStartup.mountGroupMode!=0;view->salvo=combatInput.fireCycleActive!=0;
     view->position=ReadPosition(&body->object.prefix);
     view->heading=body->object.prefix.orientationC;
-    view->torsoHeading=playerUnitBinding->torso->object.prefix.orientationC;
+    view->torsoHeading=combatWorld.playerUnitBinding->torso->object.prefix.orientationC;
     view->turnRate=body->orientationSteps[2];view->speed=body->forwardStepScale;
     view->requestedSpeed=(int16_t)combatStartup.requestedPlayerForwardStepScale;
-    view->maximumSpeed=(int16_t)playerMechTemplate->maximumSpeedScale;
+    view->maximumSpeed=(int16_t)combatWorld.playerMechTemplate->maximumSpeedScale;
     view->lockedTarget=combatStartup.playerTargetSlot;view->selectedWeapon=combatStartup.selectedWeaponMount;
     view->reticleX=combatRender.screenCentreA;view->reticleY=(int16_t)combatStartup.aimReticleScreenY;
     for(unsigned slot=1;slot<COMBAT_MECH_SLOTS;++slot)
@@ -61,27 +61,27 @@ void SupportPilotObserve(PilotObservation *view,bool combatActive)
             for(unsigned i=0;i<COMBAT_BODY_LOCATIONS;++i)target->internal+=binding->mech->currentInternalStructure[i];
         }
     }
-    if(specialTargetObject && objectiveVisibilityObject &&
-        (objectiveVisibilityObject->object.prefix.flags&WORLD_OBJECT_TARGET_PROBE_VISIBLE)
-        && (objectiveVisibilityObject->object.prefix.renderFlags&OBJECT_PROJECTED_VISIBLE))
+    if(combatWorld.specialTargetObject && combatWorld.objectiveVisibilityObject &&
+        (combatWorld.objectiveVisibilityObject->object.prefix.flags&WORLD_OBJECT_TARGET_PROBE_VISIBLE)
+        && (combatWorld.objectiveVisibilityObject->object.prefix.renderFlags&OBJECT_PROJECTED_VISIBLE))
     {
         PilotTarget *target=&view->targets[COMBAT_MECH_SLOTS];
-        target->known=target->visible=true;target->alive=specialTargetDamageRemaining!=0;
+        target->known=target->visible=true;target->alive=combatWorld.specialTargetDamageRemaining!=0;
         target->hostile=combatImport.sideObjectiveRules[0]==OBJECTIVE_SPECIAL_TARGET;
-        target->position=ReadPosition(&specialTargetObject->object.prefix);
-        target->screenX=objectiveVisibilityObject->object.projectedScreenA;
-        target->screenY=objectiveVisibilityObject->object.projectedScreenB;
-        target->underReticle=combatStartup.selectedHitObject==&specialTargetObject->object.prefix;
-        target->internal=specialTargetDamageRemaining;
+        target->position=ReadPosition(&combatWorld.specialTargetObject->object.prefix);
+        target->screenX=combatWorld.objectiveVisibilityObject->object.projectedScreenA;
+        target->screenY=combatWorld.objectiveVisibilityObject->object.projectedScreenB;
+        target->underReticle=combatStartup.selectedHitObject==&combatWorld.specialTargetObject->object.prefix;
+        target->internal=combatWorld.specialTargetDamageRemaining;
     }
-    for(unsigned mount=0;mount<playerMechTemplate->weaponMountCount && mount<COMBAT_WEAPON_MOUNTS;++mount)
+    for(unsigned mount=0;mount<combatWorld.playerMechTemplate->weaponMountCount && mount<COMBAT_WEAPON_MOUNTS;++mount)
     {
-        int kind=playerMechTemplate->weaponMounts[mount].weaponKind;
+        int kind=combatWorld.playerMechTemplate->weaponMounts[mount].weaponKind;
         if(kind<0 || kind>=COMBAT_WEAPON_KINDS)continue;
         const BtechWeaponDefinition *weapon=&combatMechs.weaponDefinitions[kind];
-        const BtechWeaponState *state=&playerMechState->weapons[mount];
+        const BtechWeaponState *state=&combatWorld.playerMechState->weapons[mount];
         bool ammunition=weapon->ammoFamily==-1 || (weapon->ammoFamily>=0 && weapon->ammoFamily<COMBAT_AMMO_FAMILIES &&
-            playerMechState->ammoSalvosRemaining[weapon->ammoFamily]!=0);
+            combatWorld.playerMechState->ammoSalvosRemaining[weapon->ammoFamily]!=0);
         view->weapons[mount]=PilotWeapon{state->operational && !state->reloadTicksRemaining && ammunition,
             weapon->heatUnits,(uint16_t)(weapon->longRangeBoundary*32*15)};
     }

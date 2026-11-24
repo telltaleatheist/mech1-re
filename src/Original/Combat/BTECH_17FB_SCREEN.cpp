@@ -41,44 +41,44 @@ void BtechRefreshLanceOrderScreen(void)
         BtechUpdateLanceOrderHighlight();
         combatOrders.orderMapPositionMask=BtechBuildOrderMapPositionMask();
     }
-    if (!orderMapCameraObject || !orderMapCameraContext || combatOrders.orderMapScaleIndex>=ORDER_MAP_SCALE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !orderMapCameraObject || !orderMapCameraContext || orderMapScaleIndex>=ORDER_MAP_SCALE_COUNT");
+    if (!combatWorld.orderMapCameraObject || !combatWorld.orderMapCameraContext || combatOrders.orderMapScaleIndex>=ORDER_MAP_SCALE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !orderMapCameraObject || !orderMapCameraContext || orderMapScaleIndex>=ORDER_MAP_SCALE_COUNT");
     if (combatOrders.orderMapScaleIndex==ORDER_MAP_FULL_SCALE)
     {
         if (combatOrders.previousOrderMapScaleIndex!=ORDER_MAP_FULL_SCALE || combatOrders.orderScreenFullRedrawPending)
         {
-            orderMapCameraObject->object.prefix.position.positionB=0;
-            orderMapCameraObject->object.prefix.position.positionA=0;
+            combatWorld.orderMapCameraObject->object.prefix.position.positionB=0;
+            combatWorld.orderMapCameraObject->object.prefix.position.positionA=0;
             redrawRequired=1;
         }
     }
     else
     {
-        BtechPosition3D *camera=&orderMapCameraObject->object.prefix.position;
-        if (!playerUnitBinding || !playerUnitBinding->positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->positionedLeftLeg");
-        camera->positionA=playerUnitBinding->positionedLeftLeg->object.prefix.position.positionA&combatOrders.orderMapPositionMask;
+        BtechPosition3D *camera=&combatWorld.orderMapCameraObject->object.prefix.position;
+        if (!combatWorld.playerUnitBinding || !combatWorld.playerUnitBinding->positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->positionedLeftLeg");
+        camera->positionA=combatWorld.playerUnitBinding->positionedLeftLeg->object.prefix.position.positionA&combatOrders.orderMapPositionMask;
         /* Native reloads camera/binding/object after the X write. */
-        camera=&orderMapCameraObject->object.prefix.position;
-        if (!playerUnitBinding || !playerUnitBinding->positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->positionedLeftLeg");
-        camera->positionB=playerUnitBinding->positionedLeftLeg->object.prefix.position.positionB&combatOrders.orderMapPositionMask;
+        camera=&combatWorld.orderMapCameraObject->object.prefix.position;
+        if (!combatWorld.playerUnitBinding || !combatWorld.playerUnitBinding->positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->positionedLeftLeg");
+        camera->positionB=combatWorld.playerUnitBinding->positionedLeftLeg->object.prefix.position.positionB&combatOrders.orderMapPositionMask;
         redrawRequired=1;
     }
-    orderMapCameraObject->object.prefix.position.positionC=
+    combatWorld.orderMapCameraObject->object.prefix.position.positionC=
         BtechShiftDwordLeftPair(1,combatOrders.orderMapScaleShifts[combatOrders.orderMapScaleIndex]);
     combatVideo.drawPolygonFilled=true;combatVideo.drawPageSelector=combatVideo.backPageSelector;
     if (redrawRequired)
     {
-        BtechRenderObjectListVeneer(orderMapCameraContext,selectedWorldObjects,(int16_t)selectedObjectCount);
+        BtechRenderObjectListVeneer(combatWorld.orderMapCameraContext,combatWorld.selectedWorldObjects,(int16_t)combatWorld.selectedObjectCount);
         if (combatOrders.orderMapScaleIndex==ORDER_MAP_FULL_SCALE)
         {
             combatVideo.copySourcePageSelector=combatVideo.backPageSelector;
-            const BtechCameraContext *viewport=orderMapCameraContext;
+            const BtechCameraContext *viewport=combatWorld.orderMapCameraContext;
             BtechCaptureScreenRectangle(combatOrders.orderPanelCaptureBuffer,(uint16_t)viewport->clipMinimumA,(uint16_t)viewport->clipMinimumB,
                 (uint16_t)(viewport->clipMaximumA-viewport->clipMinimumA),(uint16_t)(viewport->clipMaximumB-viewport->clipMinimumB+1));
         }
     }
     else
     {
-        const BtechCameraContext *viewport=orderMapCameraContext;
+        const BtechCameraContext *viewport=combatWorld.orderMapCameraContext;
         BtechRestoreScreenRectangle(combatOrders.orderPanelCaptureBuffer,(uint16_t)viewport->clipMinimumA,(uint16_t)viewport->clipMinimumB,
             (uint16_t)(viewport->clipMaximumA-viewport->clipMinimumA),(uint16_t)(viewport->clipMaximumB-viewport->clipMinimumB+1));
     }
@@ -129,7 +129,7 @@ void BtechRefreshLanceOrderScreen(void)
     }
     else
     {
-        const BtechCameraContext *viewport=orderMapCameraContext;
+        const BtechCameraContext *viewport=combatWorld.orderMapCameraContext;
         BtechPresentScreenRectangle(viewport->clipMinimumA,viewport->clipMinimumB,
             (uint16_t)(viewport->clipMaximumA-viewport->clipMinimumA),(uint16_t)(viewport->clipMaximumB-viewport->clipMinimumB+1));
     }

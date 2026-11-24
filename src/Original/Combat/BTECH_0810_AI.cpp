@@ -86,8 +86,8 @@ animate:
 void BtechCoordinateSpecialObjectiveUnits(void)
 {
     if ((int16_t)combatImport.sideObjectiveRules[0]<=OBJECTIVE_OPPOSE_WITHDRAWAL) return;
-    if (!specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
-    BtechPosition3D *objective=&specialTargetObject->object.prefix.position;
+    if (!combatWorld.specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
+    BtechPosition3D *objective=&combatWorld.specialTargetObject->object.prefix.position;
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
     {
         if (!combatMechs.unitBindings[slot].mech) {combatTactics.unitDistancesToSpecialTarget[slot]=0;continue;}
@@ -148,8 +148,8 @@ void BtechCoordinateSpecialObjectiveUnits(void)
         BtechPosition3D destination={0};
         if (combatImport.activeUnitControl->commandCode==COMBAT_ORDER_ACT_ON_OWN)
         {
-            destination.positionA=unitFormationPositions[slot].positionA;
-            destination.positionB=unitFormationPositions[slot].positionB;
+            destination.positionA=combatWorld.unitFormationPositions[slot].positionA;
+            destination.positionB=combatWorld.unitFormationPositions[slot].positionB;
             destination.positionC=(int16_t)BtechSampleTerrainOrSurfaceHeight(&destination);
         }
         else

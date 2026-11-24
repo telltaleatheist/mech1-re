@@ -32,13 +32,13 @@ void BtechPrepareCameraContext(BtechCameraContext *camera)
     combatRender.cameraReferencePosition.positionA=camera->viewObject->position.positionA;
     combatRender.cameraReferencePosition.positionB=camera->viewObject->position.positionB;
     combatRender.cameraReferencePosition.positionC=camera->viewObject->position.positionC;
-    uint16_t builderCx=BtechBuildOrientationMatrix(camera->relativeOrientation,&cameraOrientationBasis,0); /* REP MOVSW exhausted CX. */
+    uint16_t builderCx=BtechBuildOrientationMatrix(camera->relativeOrientation,&combatWorld.cameraOrientationBasis,0); /* REP MOVSW exhausted CX. */
     BtechWorldObjectPrefix *viewObject=combatRender.activeCameraContext->viewObject;
-    if (cameraOrientationBasis.mode)
+    if (combatWorld.cameraOrientationBasis.mode)
     {
         uint16_t orientation[]={viewObject->orientationA,viewObject->orientationB,viewObject->orientationC};
         builderCx=BtechBuildOrientationMatrix(orientation,&combatRender.composedTransformBasis,builderCx);
-        BtechComposeTransformBases(builderCx,&cameraOrientationBasis,&combatRender.composedTransformBasis,&combatRender.viewTransformBasis);
+        BtechComposeTransformBases(builderCx,&combatWorld.cameraOrientationBasis,&combatRender.composedTransformBasis,&combatRender.viewTransformBasis);
         BtechExtractOrientationFromBasis(&combatRender.viewTransformBasis,combatRender.cameraViewOrientation);
     }
     else
@@ -63,7 +63,7 @@ void BtechPrepareCameraContext(BtechCameraContext *camera)
     combatVideo.clipMaximumX=camera->clipMaximumA;
     combatVideo.clipMinimumY=camera->clipMinimumB;
     combatVideo.clipMaximumY=camera->clipMaximumB;
-    BtechTransformWordVectorFar(cameraReferenceVector,&combatRender.viewTransformBasis,combatRender.transformedReferenceVector);
+    BtechTransformWordVectorFar(combatWorld.cameraReferenceVector,&combatRender.viewTransformBasis,combatRender.transformedReferenceVector);
     combatRender.activeColourShadeClasses=camera->colourShadeClasses;
     combatRender.activePaletteRemap=camera->paletteRemap;
     if (!(camera->flags&CAMERA_KEEP_SCREEN_CENTRE))
@@ -121,10 +121,10 @@ void BtechCullAndRenderWorldObject(BtechHeapWorldObject *object)
     if (!(object->prefix.renderFlags&OBJECT_SKIP_ORIENTATION))
     {
         uint16_t orientation[]={object->prefix.orientationA,object->prefix.orientationB,object->prefix.orientationC};
-        builderCx=BtechBuildOrientationMatrix(orientation,&cameraOrientationBasis,builderCx);
-        if (cameraOrientationBasis.mode)
+        builderCx=BtechBuildOrientationMatrix(orientation,&combatWorld.cameraOrientationBasis,builderCx);
+        if (combatWorld.cameraOrientationBasis.mode)
         {
-            BtechComposeTransformBases(builderCx,&cameraOrientationBasis,&combatRender.viewTransformBasis,&combatRender.composedTransformBasis);
+            BtechComposeTransformBases(builderCx,&combatWorld.cameraOrientationBasis,&combatRender.viewTransformBasis,&combatRender.composedTransformBasis);
             combatRender.useViewBasisDirectly=0;
             combatRender.activeRenderBasis=&combatRender.composedTransformBasis;
         }

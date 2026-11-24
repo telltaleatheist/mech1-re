@@ -25,8 +25,6 @@ typedef struct BtechOrientationBasis {
 } BtechOrientationBasis;
 extern uint16_t orientationCosines[0x801]; /* Original CS22B6 Q14 table. */
 extern uint16_t coefficientAngles[0x402];
-extern BtechOrientationBasis cameraOrientationBasis;
-extern uint16_t cameraReferenceVector[3];
 /* CX transport is observed by native0DB1's planar-product quirk. It is not
  * another source stack argument or AX return in Reko metadata. */
 uint16_t BtechBuildOrientationMatrix(const uint16_t orientation[3],BtechOrientationBasis *basis,uint16_t incomingCx);
@@ -76,38 +74,13 @@ typedef union BtechChassisResourceBases {
     struct {uint16_t chassis[8],firstMech,otherShapes;} fields;
     uint16_t words[10];
 } BtechChassisResourceBases;
-extern BtechChassisResourceBases chassisResourceBases;
-#define mechResourceBaseIds chassisResourceBases.words
-#define firstMechShapeResourceId chassisResourceBases.fields.firstMech
-#define otherShapeResourceBase chassisResourceBases.fields.otherShapes
-extern BtechScenarioSelectors scenarioSelectors;
-extern BtechFormationPosition unitFormationPositions[8];
-extern uint8_t terrainHeightGrid[TERRAIN_GRID_ROWS][TERRAIN_GRID_COLUMNS];
-extern uint16_t terrainTileGridRowBases[4],terrainTileGridColumnBases[4];
-extern char terrainVariantFilenameSuffixes[16][8],sceneChassisBankNames[8][16];
-extern uint8_t sceneChassisResourcePresent[10]; /* Last two are authored suffix bytes, not cleared. */
-extern char terrainWorldFilename[12],terrainGridFilename[12];
-extern BtechPooledWorldObject pooledWorldObjects[COMBAT_POOLED_OBJECTS];
-extern BtechWorldObjectPrefix *worldObjects[COMBAT_WORLD_OBJECTS];
-extern BtechWorldObjectPrefix *selectedWorldObjects[COMBAT_SELECTED_WORLD_OBJECTS];
-extern uint16_t selectedObjectCount;
-extern uint8_t heapWorldObjectOwned[COMBAT_WORLD_OBJECTS];
-extern BtechWorldObjectPrefix *cockpitWorldObjects[COMBAT_WORLD_OBJECTS];
-extern uint16_t worldObjectCount,cockpitWorldObjectCount,distinctSceneMechChassisCount;
-extern uint16_t beforeObjectListCallbackOffset,afterObjectListCallbackOffset;
-extern BtechCameraContext cameraContexts[COMBAT_CAMERA_CONTEXTS];
+#define mechResourceBaseIds combatWorld.chassisResourceBases.words
+#define firstMechShapeResourceId combatWorld.chassisResourceBases.fields.firstMech
+#define otherShapeResourceBase combatWorld.chassisResourceBases.fields.otherShapes
 void BtechReleaseCameraContextFar(BtechCameraContext *camera);
 void BtechReleaseCombatChassisResourceBanks(void);
 void BtechReleaseHeapWorldObjectList(void);
 void BtechResetWorldObjectPool(void);
-extern BtechUnitBinding *playerUnitBinding;
-extern BtechMechState *playerMechState;
-extern BtechMechTemplate *playerMechTemplate;
-extern BtechPooledWorldObject *playerPoseObject,*orderMapCameraObject,*specialTargetObject;
-/* Separate render reference used for the objective's visibility and target box. */
-extern BtechPooledWorldObject *objectiveVisibilityObject;
-extern BtechCameraContext *orderMapCameraContext,*playerPoseCameraContext;
-extern uint16_t specialTargetDamageRemaining;
 extern uint16_t headingRatioAngles[0x200]; /* Authored CS22B6, not304E. */
 extern uint8_t vertexNearPlaneState[0xFF];
 bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t *segment22B6,size_t segmentBytes);
@@ -119,7 +92,39 @@ bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t 
  * pointer (a 0x55-byte unit control at DS:0000). Writes stay here, so the
  * two alias as they do natively. */
 enum { NULL_NEAR_SEGMENT_BYTES=0x60 };
-extern uint8_t nullNearSegment[NULL_NEAR_SEGMENT_BYTES];
+/* Combat state owned by combat_world.h (plan, slice B3d). */
+struct CombatWorldState
+{
+    BtechOrientationBasis cameraOrientationBasis;
+    uint16_t cameraReferenceVector[3];
+    BtechChassisResourceBases chassisResourceBases;
+    BtechScenarioSelectors scenarioSelectors;
+    BtechFormationPosition unitFormationPositions[8];
+    uint8_t terrainHeightGrid[TERRAIN_GRID_ROWS][TERRAIN_GRID_COLUMNS];
+    uint16_t terrainTileGridRowBases[4], terrainTileGridColumnBases[4];
+    char terrainVariantFilenameSuffixes[16][8], sceneChassisBankNames[8][16];
+    uint8_t sceneChassisResourcePresent[10]; /* Last two are authored suffix bytes, not cleared. */
+    char terrainWorldFilename[12], terrainGridFilename[12];
+    BtechPooledWorldObject pooledWorldObjects[COMBAT_POOLED_OBJECTS];
+    BtechWorldObjectPrefix *worldObjects[COMBAT_WORLD_OBJECTS];
+    BtechWorldObjectPrefix *selectedWorldObjects[COMBAT_SELECTED_WORLD_OBJECTS];
+    uint16_t selectedObjectCount;
+    uint8_t heapWorldObjectOwned[COMBAT_WORLD_OBJECTS];
+    BtechWorldObjectPrefix *cockpitWorldObjects[COMBAT_WORLD_OBJECTS];
+    uint16_t worldObjectCount, cockpitWorldObjectCount, distinctSceneMechChassisCount;
+    uint16_t beforeObjectListCallbackOffset, afterObjectListCallbackOffset;
+    BtechCameraContext cameraContexts[COMBAT_CAMERA_CONTEXTS];
+    BtechUnitBinding *playerUnitBinding;
+    BtechMechState *playerMechState;
+    BtechMechTemplate *playerMechTemplate;
+    BtechPooledWorldObject *playerPoseObject, *orderMapCameraObject, *specialTargetObject;
+    /* Separate render reference used for the objective's visibility and target box. */
+    BtechPooledWorldObject *objectiveVisibilityObject;
+    BtechCameraContext *orderMapCameraContext, *playerPoseCameraContext;
+    uint16_t specialTargetDamageRemaining;
+    uint8_t nullNearSegment[NULL_NEAR_SEGMENT_BYTES];
+};
+extern CombatWorldState combatWorld;
 BtechPosition3D BtechReadNullNearWorldObjectPosition(void);
 void BtechLoadScenarioAndWorld(uint16_t scenarioIndex);
 void BtechLoadTerrainWorldResources(void);

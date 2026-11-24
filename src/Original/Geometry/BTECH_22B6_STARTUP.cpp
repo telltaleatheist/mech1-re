@@ -7,14 +7,14 @@ void BtechBuildCameraReferenceVector(uint16_t orientation0,uint16_t orientation2
 {
     uint16_t orientation[3]={orientation0,0,orientation2};
     uint16_t reference[3]={0,0x0200,0};
-    BtechBuildOrientationMatrix(orientation,&cameraOrientationBasis,0); /* CX result unused. */
-    BtechTransformWordVectorFar(reference,&cameraOrientationBasis,cameraReferenceVector);
+    BtechBuildOrientationMatrix(orientation,&combatWorld.cameraOrientationBasis,0); /* CX result unused. */
+    BtechTransformWordVectorFar(reference,&combatWorld.cameraOrientationBasis,combatWorld.cameraReferenceVector);
 }
 
 /*22B6:0224. Only five BYTE flags are cleared, not the camera records. */
 void BtechResetCameraContextsAndReferenceVector(void)
 {
-    for (uint16_t camera=0;camera<COMBAT_CAMERA_CONTEXTS;++camera) cameraContexts[camera].flags=0;
+    for (uint16_t camera=0;camera<COMBAT_CAMERA_CONTEXTS;++camera) combatWorld.cameraContexts[camera].flags=0;
     BtechBuildCameraReferenceVector(0x2000,0xA000);
 }
 

@@ -24,10 +24,10 @@ uint16_t BtechSampleTerrainOrSurfaceHeight(const BtechPosition3D *position)
         numerator=COMBAT_BOUNDARY_LIMIT_B-position->positionB;
         uint16_t column=(int32_t)numerator/TERRAIN_WORLD_CELL_SIZE;
         if (row>=TERRAIN_GRID_ROWS || column>=TERRAIN_GRID_COLUMNS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: row>=TERRAIN_GRID_ROWS || column>=TERRAIN_GRID_COLUMNS"); /* Adjacent-owner wrapping alias. */
-        return (uint16_t)(terrainHeightGrid[row][column]<<TERRAIN_HEIGHT_SHIFT);
+        return (uint16_t)(combatWorld.terrainHeightGrid[row][column]<<TERRAIN_HEIGHT_SHIFT);
     }
     BtechSurfaceQueryResult surfaceQuery={0};
-    if (BtechQueryWorldSurface(&surfaceQuery,position,selectedWorldObjects,(int16_t)selectedObjectCount))
+    if (BtechQueryWorldSurface(&surfaceQuery,position,combatWorld.selectedWorldObjects,(int16_t)combatWorld.selectedObjectCount))
         return (uint16_t)surfaceQuery.surfacePositionC;
     return 0;
 }
@@ -76,13 +76,13 @@ uint8_t BtechTestTerrainLineOfSight(const BtechPosition3D *start,const BtechPosi
  * separate world object, not another BattleMech slot. */
 uint8_t BtechTestPlayerTargetRenderVisibility(int16_t targetSlot)
 {
-    if (targetSlot<=0 || targetSlot>COMBAT_SPECIAL_TARGET_SLOT || !playerUnitBinding
-        || !playerUnitBinding->positionedLeftLeg) return 0;
+    if (targetSlot<=0 || targetSlot>COMBAT_SPECIAL_TARGET_SLOT || !combatWorld.playerUnitBinding
+        || !combatWorld.playerUnitBinding->positionedLeftLeg) return 0;
     if (targetSlot!=COMBAT_SPECIAL_TARGET_SLOT && !combatMechs.unitBindings[targetSlot].mech) return 0;
-    if (targetSlot==COMBAT_SPECIAL_TARGET_SLOT && !specialTargetDamageRemaining) return 0;
-    const BtechPosition3D *player=&playerUnitBinding->positionedLeftLeg->object.prefix.position;
+    if (targetSlot==COMBAT_SPECIAL_TARGET_SLOT && !combatWorld.specialTargetDamageRemaining) return 0;
+    const BtechPosition3D *player=&combatWorld.playerUnitBinding->positionedLeftLeg->object.prefix.position;
     const BtechPooledWorldObject *target=targetSlot==COMBAT_SPECIAL_TARGET_SLOT
-        ?specialTargetObject:combatMechs.unitBindings[targetSlot].positionedLeftLeg;
+        ?combatWorld.specialTargetObject:combatMechs.unitBindings[targetSlot].positionedLeftLeg;
     if (!target) return 0;
     uint32_t deltaA=player->positionA-target->object.prefix.position.positionA;
     uint32_t deltaB=player->positionB-target->object.prefix.position.positionB;
@@ -90,7 +90,7 @@ uint8_t BtechTestPlayerTargetRenderVisibility(int16_t targetSlot)
     if (deltaB==0x8000) deltaB=0x7FFF;else if ((int32_t)deltaB<0) deltaB=0-deltaB;
     if ((int32_t)deltaA>=COMBAT_VISIBLE_PLANAR_LIMIT || (int32_t)deltaB>=COMBAT_VISIBLE_PLANAR_LIMIT) return 0;
     const BtechPooledWorldObject *lastDrawnPart=targetSlot==COMBAT_SPECIAL_TARGET_SLOT
-        ?objectiveVisibilityObject:combatStartup.unitLastDrawParts[targetSlot];
+        ?combatWorld.objectiveVisibilityObject:combatStartup.unitLastDrawParts[targetSlot];
     return lastDrawnPart?lastDrawnPart->object.prefix.flags&WORLD_OBJECT_TARGET_PROBE_VISIBLE:0;
 }
 

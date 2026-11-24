@@ -13,8 +13,8 @@
  * absolute C coordinate, not target-relative. All upper boundaries are strict. */
 uint8_t BtechTestPositionInsideSpecialTarget(const BtechPosition3D *contactPosition,uint16_t useNarrowContactBounds)
 {
-    if (!specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
-    const BtechWorldObjectPrefix *objectiveObject=&specialTargetObject->object.prefix;
+    if (!combatWorld.specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
+    const BtechWorldObjectPrefix *objectiveObject=&combatWorld.specialTargetObject->object.prefix;
     if (objectiveObject->renderFlags&COMBAT_WORLD_OBJECT_HIDDEN) return 0;
     uint32_t absoluteSeparationX=objectiveObject->position.positionA-contactPosition->positionA;
     uint32_t absoluteSeparationY=objectiveObject->position.positionB-contactPosition->positionB;
@@ -182,8 +182,8 @@ void BtechApplyUnitCollisionDamage(uint16_t movingUnitSlot,uint16_t contactedUni
  * Do not install player AI context before89F6: native only sets7752 at the end. */
 void BtechUpdatePlayerMechMotion(void)
 {
-    if (!playerUnitBinding || !playerUnitBinding->positionedLeftLeg || !playerMechTemplate || !playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->positionedLeftLeg || !playerMechTemplate || !playerMechState");
-    BtechPooledWorldObject *playerMechObject=playerUnitBinding->positionedLeftLeg;
+    if (!combatWorld.playerUnitBinding || !combatWorld.playerUnitBinding->positionedLeftLeg || !combatWorld.playerMechTemplate || !combatWorld.playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->positionedLeftLeg || !playerMechTemplate || !playerMechState");
+    BtechPooledWorldObject *playerMechObject=combatWorld.playerUnitBinding->positionedLeftLeg;
     BtechWorldObjectPrefix *playerMechPose=&playerMechObject->object.prefix;
     BtechPosition3D savedPosition=playerMechPose->position;
     uint16_t savedOrientation[3]={playerMechPose->orientationA,playerMechPose->orientationB,playerMechPose->orientationC};
@@ -192,14 +192,14 @@ void BtechUpdatePlayerMechMotion(void)
         playerMechObject->orientationSteps[1]=0;playerMechObject->orientationSteps[0]=0;combatStartup.playerSpecialTargetLandingLatch=0;
         BtechAdvancePooledObjectMotion(playerMechObject);
         uint32_t groundHeight=0;
-        if (BtechQueryWorldSurface(&playerMechObject->surfaceQuery,&playerMechPose->position,selectedWorldObjects,(int16_t)selectedObjectCount))
+        if (BtechQueryWorldSurface(&playerMechObject->surfaceQuery,&playerMechPose->position,combatWorld.selectedWorldObjects,(int16_t)combatWorld.selectedObjectCount))
             groundHeight=playerMechObject->surfaceQuery.surfacePositionC;
-        uint16_t chassisDisplayScale=playerMechTemplate->displayScale;
+        uint16_t chassisDisplayScale=combatWorld.playerMechTemplate->displayScale;
         int16_t chassisHalfHeight=(chassisDisplayScale>>1)|(chassisDisplayScale&0x8000);
         uint32_t feetAltitude=playerMechPose->position.positionC-(uint32_t)chassisHalfHeight;
         if ((int32_t)feetAltitude<=(int32_t)groundHeight)
         {
-            chassisDisplayScale=playerMechTemplate->displayScale;chassisHalfHeight=(int16_t)((chassisDisplayScale>>1)|(chassisDisplayScale&0x8000));
+            chassisDisplayScale=combatWorld.playerMechTemplate->displayScale;chassisHalfHeight=(int16_t)((chassisDisplayScale>>1)|(chassisDisplayScale&0x8000));
             playerMechPose->position.positionC=groundHeight+(uint32_t)chassisHalfHeight;
             if (playerMechObject->positionSteps[2]<PLAYER_HARD_LANDING_STEP)
             {
@@ -229,14 +229,14 @@ void BtechUpdatePlayerMechMotion(void)
             }
         }
     }
-    else if ((int16_t)playerMechState->gyroHits>=COMBAT_GYRO_DESTROYED_HITS
-        || (int16_t)playerMechState->engineHits>=COMBAT_ENGINE_HIT_LIMIT
+    else if ((int16_t)combatWorld.playerMechState->gyroHits>=COMBAT_GYRO_DESTROYED_HITS
+        || (int16_t)combatWorld.playerMechState->engineHits>=COMBAT_ENGINE_HIT_LIMIT
         || combatMechs.unitControls[0].movementMode==MOVEMENT_MODE_FALLEN_POSE)
     {playerMechObject->orientationSteps[1]=0;playerMechObject->orientationSteps[0]=0;}
     else
     {
         BtechAdvancePooledObjectMotion(playerMechObject);
-        uint16_t groundSurfaceClass=BtechResolveGroundSurfaceAndSlope(playerMechObject,0,selectedWorldObjects,(int16_t)selectedObjectCount);
+        uint16_t groundSurfaceClass=BtechResolveGroundSurfaceAndSlope(playerMechObject,0,combatWorld.selectedWorldObjects,(int16_t)combatWorld.selectedObjectCount);
         playerMechObject->orientationSteps[1]=0;playerMechPose->orientationB=0;
         if (playerMechObject->forwardStepScale)
         {
@@ -249,9 +249,9 @@ void BtechUpdatePlayerMechMotion(void)
             }
             else
             {
-                uint16_t chassisDisplayScale=playerMechTemplate->displayScale;
+                uint16_t chassisDisplayScale=combatWorld.playerMechTemplate->displayScale;
                 playerMechPose->position.positionC+=(uint32_t)(int16_t)((chassisDisplayScale>>1)|(chassisDisplayScale&0x8000));
-                playerMechState->doubleCoolingFlag=groundSurfaceClass==SURFACE_DOUBLE_COOLING;
+                combatWorld.playerMechState->doubleCoolingFlag=groundSurfaceClass==SURFACE_DOUBLE_COOLING;
             }
         }
         else

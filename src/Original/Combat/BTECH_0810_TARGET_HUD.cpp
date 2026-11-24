@@ -17,8 +17,8 @@ enum { TARGET_PANEL_DRAW_INSET=1, TARGET_DAMAGE_INSET_X=5,
  *53C4 is the last two bytes of689E's ten-byte scratch, not separate storage. */
 void BtechUpdateTargetPanelAndReticle(uint16_t targetUnitSlot)
 {
-    if (!playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
-    uint16_t layout=combatCockpit.mechCockpitLayoutIndices[playerMechState->templateIndex];
+    if (!combatWorld.playerMechState || combatWorld.playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
+    uint16_t layout=combatCockpit.mechCockpitLayoutIndices[combatWorld.playerMechState->templateIndex];
     if (layout>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: layout>=COMBAT_COCKPIT_LAYOUTS");
     const BtechScreenRectangle *panel=&combatCockpit.cockpitLayouts[layout].targetPanel;
     combatVideo.screenPolygonNeedsClip=false;combatVideo.drawPolygonFilled=true;
@@ -44,7 +44,7 @@ void BtechUpdateTargetPanelAndReticle(uint16_t targetUnitSlot)
     combatVideo.screenPolygonNeedsClip=true;combatVideo.drawPolygonFilled=false;
     if (combatImport.hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || combatImport.combatLandscapeIndex>=COMBAT_LANDSCAPES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || combatLandscapeIndex>=COMBAT_LANDSCAPES");
     combatVideo.drawFillColour=combatVideo.landscapeCameraColourRows[combatImport.hudColourSchemeIndex][combatImport.combatLandscapeIndex].hudReticleColour;
-    BtechPooledWorldObject *target=targetUnitSlot==COMBAT_SPECIAL_TARGET_SLOT?specialTargetObject:combatMechs.unitBindings[targetUnitSlot].torso;
+    BtechPooledWorldObject *target=targetUnitSlot==COMBAT_SPECIAL_TARGET_SLOT?combatWorld.specialTargetObject:combatMechs.unitBindings[targetUnitSlot].torso;
     if (!target || !combatMechs.unitBindings[0].torso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !target || !unitBindings[0].torso");
     uint32_t distance=BtechApproximatePlanarDistance(&combatMechs.unitBindings[0].torso->object.prefix.position,&target->object.prefix.position);
     int16_t scale;
@@ -60,7 +60,7 @@ void BtechUpdateTargetPanelAndReticle(uint16_t targetUnitSlot)
     int16_t width=(ratio-(ratio<0))/2+TARGET_RETICLE_MINIMUM_WIDTH;
     int16_t halfWidth=(width-(width<0))/2;
     /* NativeC958+slot8 aliases the existing C968 special projected object. */
-    BtechPooledWorldObject *projected=targetUnitSlot==COMBAT_SPECIAL_TARGET_SLOT?objectiveVisibilityObject:combatStartup.unitLastDrawParts[targetUnitSlot];
+    BtechPooledWorldObject *projected=targetUnitSlot==COMBAT_SPECIAL_TARGET_SLOT?combatWorld.objectiveVisibilityObject:combatStartup.unitLastDrawParts[targetUnitSlot];
     if (!projected) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !projected");
     uint16_t x=projected->object.projectedScreenA-halfWidth;
     uint16_t y=projected->object.projectedScreenB-width;
@@ -83,7 +83,7 @@ void BtechDrawTargetDamagePanel(uint16_t targetUnitSlot,const BtechScreenRectang
     uint16_t diagram;
     if (targetUnitSlot==COMBAT_SPECIAL_TARGET_SLOT)
     {
-        int16_t condition=specialTargetDamageRemaining;
+        int16_t condition=combatWorld.specialTargetDamageRemaining;
         const BtechHudColourScheme *colours=&combatCockpit.hudColourSchemes[combatImport.hudColourSchemeIndex];
         uint16_t colour=condition==SPECIAL_TARGET_INITIAL_DAMAGE?colours->undamaged:
             condition>SPECIAL_TARGET_INITIAL_DAMAGE/2?colours->aboveHalfCondition:condition?colours->damaged:colours->destroyed;

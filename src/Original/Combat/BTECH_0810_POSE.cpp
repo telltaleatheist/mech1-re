@@ -52,8 +52,8 @@ void BtechClearObjectMotionTail(BtechPooledWorldObject *object)
     object->positionSteps[2]=0;object->positionSteps[1]=0;object->positionSteps[0]=0;
     object->orientationSteps[2]=0;object->orientationSteps[1]=0;object->orientationSteps[0]=0;
     object->forwardStepScale=0;
-    if (!playerUnitBinding) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding");
-    if (playerUnitBinding->positionedLeftLeg==object)
+    if (!combatWorld.playerUnitBinding) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding");
+    if (combatWorld.playerUnitBinding->positionedLeftLeg==object)
     {combatStartup.requestedPlayerForwardStepScale=0;combatStartup.unidentifiedField21=0;}
 }
 
@@ -73,12 +73,12 @@ void BtechUpdatePlayerMechPose(const BtechWorldObjectPrefix *source)
         combatPose.playerPoseDistanceAccumulator=0;combatPose.unidentifiedField26=0;combatPose.playerPoseFrame=0;
         combatPose.playerPosePerturbationTicks=PLAYER_POSE_PERTURBATION_TICKS;
     }
-    if (!playerUnitBinding || !playerUnitBinding->positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->positionedLeftLeg");
-    uint16_t forwardStep=playerUnitBinding->positionedLeftLeg->forwardStepScale;
+    if (!combatWorld.playerUnitBinding || !combatWorld.playerUnitBinding->positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->positionedLeftLeg");
+    uint16_t forwardStep=combatWorld.playerUnitBinding->positionedLeftLeg->forwardStepScale;
     uint8_t requests=combatMechs.unitControls[0].animationRequestFlags;
     if ((requests&ANIMATION_REQUEST_FALL_POSE) && combatPose.playerPoseSequence!=ANIMATION_SEQUENCE_FALL)
     {
-        BtechClearObjectMotionTail(playerUnitBinding->positionedLeftLeg);
+        BtechClearObjectMotionTail(combatWorld.playerUnitBinding->positionedLeftLeg);
         combatPose.playerPoseSequence=ANIMATION_SEQUENCE_FALL;goto resetFrame;
     }
     if (requests&ANIMATION_REQUEST_RECOVER)
@@ -98,7 +98,7 @@ void BtechUpdatePlayerMechPose(const BtechWorldObjectPrefix *source)
     {
         if (combatPose.playerPoseSequence==ANIMATION_SEQUENCE_BEGIN_JUMP)
         {
-            BtechClearObjectMotionTail(playerUnitBinding->positionedLeftLeg);
+            BtechClearObjectMotionTail(combatWorld.playerUnitBinding->positionedLeftLeg);
             combatPose.playerPoseSequence=ANIMATION_SEQUENCE_LANDING;goto resetFrame;
         }
     }
@@ -106,7 +106,7 @@ void BtechUpdatePlayerMechPose(const BtechWorldObjectPrefix *source)
     {
         if (combatPose.playerPoseSequence==ANIMATION_SEQUENCE_IDLE || combatPose.playerPoseSequence==ANIMATION_SEQUENCE_WALK)
         {
-            BtechClearObjectMotionTail(playerUnitBinding->positionedLeftLeg);
+            BtechClearObjectMotionTail(combatWorld.playerUnitBinding->positionedLeftLeg);
             combatPose.playerPoseSequence=ANIMATION_SEQUENCE_BEGIN_JUMP;goto resetFrame;
         }
     }
@@ -127,42 +127,42 @@ drawPose:;
     {sequence=combatPose.playerPoseSequences[ANIMATION_SEQUENCE_IDLE];combatPose.playerPoseFrame=0;}
     else sequence=combatPose.playerPoseSequences[combatPose.playerPoseSequence];
     size_t frame=(size_t)(sequence-combatPose.playerPoseKeyframes)+(uint16_t)(combatPose.playerPoseFrame*PLAYER_POSE_KEYFRAME_BYTES)/PLAYER_POSE_KEYFRAME_BYTES;
-    if (frame>=PLAYER_POSE_KEYFRAMES || !source || !playerMechTemplate || !playerPoseObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: frame>=PLAYER_POSE_KEYFRAMES || !source || !playerMechTemplate || !playerPoseObject");
+    if (frame>=PLAYER_POSE_KEYFRAMES || !source || !combatWorld.playerMechTemplate || !combatWorld.playerPoseObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: frame>=PLAYER_POSE_KEYFRAMES || !source || !playerMechTemplate || !playerPoseObject");
     const BtechPoseKeyframe *keyframe=&combatPose.playerPoseKeyframes[frame];
     uint16_t displacement[3]={(uint16_t)keyframe->displacementA,(uint16_t)keyframe->displacementB,(uint16_t)keyframe->displacementC};
-    uint16_t height=playerMechTemplate->displayScale;
+    uint16_t height=combatWorld.playerMechTemplate->displayScale;
     height=(height>>1)|(height&0x8000);
     displacement[2]+=height-PLAYER_POSE_HEIGHT_REFERENCE;
-    playerPoseObject->object.prefix.orientationA=source->orientationA;
-    playerPoseObject->object.prefix.orientationB=source->orientationB;
-    playerPoseObject->object.prefix.orientationC=source->orientationC;
-    uint16_t orientation[3]={playerPoseObject->object.prefix.orientationA,
-        playerPoseObject->object.prefix.orientationB,playerPoseObject->object.prefix.orientationC};
+    combatWorld.playerPoseObject->object.prefix.orientationA=source->orientationA;
+    combatWorld.playerPoseObject->object.prefix.orientationB=source->orientationB;
+    combatWorld.playerPoseObject->object.prefix.orientationC=source->orientationC;
+    uint16_t orientation[3]={combatWorld.playerPoseObject->object.prefix.orientationA,
+        combatWorld.playerPoseObject->object.prefix.orientationB,combatWorld.playerPoseObject->object.prefix.orientationC};
     BtechOrientationBasis basis;uint16_t rotated[3];
     BtechBuildOrientationMatrix(orientation,&basis,0); /* Incoming CH changes only unused returned CX. */
     BtechTransformWordVectorFar(displacement,&basis,rotated);
-    playerPoseObject->object.prefix.position.positionA=source->position.positionA+(uint32_t)(int16_t)rotated[0];
-    playerPoseObject->object.prefix.position.positionB=source->position.positionB+(uint32_t)(int16_t)rotated[1];
-    playerPoseObject->object.prefix.position.positionC=source->position.positionC+(uint32_t)(int16_t)rotated[2];
-    playerPoseObject->object.prefix.orientationA+=keyframe->orientationStepA;
+    combatWorld.playerPoseObject->object.prefix.position.positionA=source->position.positionA+(uint32_t)(int16_t)rotated[0];
+    combatWorld.playerPoseObject->object.prefix.position.positionB=source->position.positionB+(uint32_t)(int16_t)rotated[1];
+    combatWorld.playerPoseObject->object.prefix.position.positionC=source->position.positionC+(uint32_t)(int16_t)rotated[2];
+    combatWorld.playerPoseObject->object.prefix.orientationA+=keyframe->orientationStepA;
     if (combatStartup.playerImpactThisTick) combatPose.playerPosePerturbationTicks=0;
     if ((int16_t)combatPose.playerPosePerturbationTicks<PLAYER_POSE_PERTURBATION_TICKS)
     {
         uint16_t perturbation=BtechRandomSignedSpread(PLAYER_POSE_PERTURBATION_RADIUS);
-        playerPoseObject->object.prefix.orientationA+=perturbation;
+        combatWorld.playerPoseObject->object.prefix.orientationA+=perturbation;
         perturbation=BtechRandomSignedSpread(PLAYER_POSE_PERTURBATION_RADIUS);
-        playerPoseObject->object.prefix.orientationB+=perturbation;
+        combatWorld.playerPoseObject->object.prefix.orientationB+=perturbation;
         perturbation=BtechRandomSignedSpread(PLAYER_POSE_PERTURBATION_RADIUS);
-        playerPoseObject->object.prefix.orientationC+=perturbation;
+        combatWorld.playerPoseObject->object.prefix.orientationC+=perturbation;
         ++combatPose.playerPosePerturbationTicks;
     }
     if (combatPose.playerPoseSequence==ANIMATION_SEQUENCE_WALK)
     {
-        uint16_t magnitude=playerUnitBinding->positionedLeftLeg->forwardStepScale;
+        uint16_t magnitude=combatWorld.playerUnitBinding->positionedLeftLeg->forwardStepScale;
         if (magnitude==0x8000) magnitude=0x7FFF;
         else if ((int16_t)magnitude<0) magnitude=0-magnitude;
         combatPose.playerPoseDistanceAccumulator+=magnitude;
-        uint16_t threshold=playerMechTemplate->maximumSpeedScale;
+        uint16_t threshold=combatWorld.playerMechTemplate->maximumSpeedScale;
         if ((int16_t)combatPose.playerPoseDistanceAccumulator>(int16_t)threshold)
         {
             combatPose.playerPoseDistanceAccumulator-=threshold;
@@ -182,9 +182,9 @@ drawPose:;
             combatPose.playerPoseFrame=0;break;
         case ANIMATION_SEQUENCE_BEGIN_JUMP:
             combatMechs.unitControls[0].movementMode=MOVEMENT_MODE_JUMP;
-            if (!playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState");
-            playerMechState->jumpCharge-=JUMP_LAUNCH_CHARGE_COST;
-            playerUnitBinding->positionedLeftLeg->positionSteps[2]=(int16_t)(playerMechTemplate->jumpSpeedLimit*JUMP_LAUNCH_VERTICAL_SPEED_MULTIPLIER);
+            if (!combatWorld.playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState");
+            combatWorld.playerMechState->jumpCharge-=JUMP_LAUNCH_CHARGE_COST;
+            combatWorld.playerUnitBinding->positionedLeftLeg->positionSteps[2]=(int16_t)(combatWorld.playerMechTemplate->jumpSpeedLimit*JUMP_LAUNCH_VERTICAL_SPEED_MULTIPLIER);
             combatPose.playerPoseFrame=0;
             BtechPlaySoundIfEnabled(PLAYER_JUMP_EVENT,PLAYER_JUMP_SOUND_DELAY);break;
         case ANIMATION_SEQUENCE_FALL:

@@ -16,9 +16,9 @@ void BtechRenderObjectListVeneer(BtechCameraContext *camera,BtechWorldObjectPref
 void BtechRenderObjectList(BtechCameraContext *camera,BtechWorldObjectPrefix *const *objects,int16_t count)
 {
     BtechPrepareCameraContext(camera);
-    if (beforeObjectListCallbackOffset)
+    if (combatWorld.beforeObjectListCallbackOffset)
     {
-        if (beforeObjectListCallbackOffset!=WORLD_LIST_BEFORE_CALLBACK) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: beforeObjectListCallbackOffset!=WORLD_LIST_BEFORE_CALLBACK");
+        if (combatWorld.beforeObjectListCallbackOffset!=WORLD_LIST_BEFORE_CALLBACK) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: beforeObjectListCallbackOffset!=WORLD_LIST_BEFORE_CALLBACK");
         BtechPrepareSelectionPixels(objects,count);
     }
     for (int16_t ordinal=0;ordinal<count;++ordinal)
@@ -74,9 +74,9 @@ void BtechRenderObjectList(BtechCameraContext *camera,BtechWorldObjectPrefix *co
             BtechUpdateObjectSelectionPixels(object,(uint16_t)ordinal);
         }
     }
-    if (afterObjectListCallbackOffset)
+    if (combatWorld.afterObjectListCallbackOffset)
     {
-        if (afterObjectListCallbackOffset!=WORLD_LIST_AFTER_CALLBACK) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: afterObjectListCallbackOffset!=WORLD_LIST_AFTER_CALLBACK");
+        if (combatWorld.afterObjectListCallbackOffset!=WORLD_LIST_AFTER_CALLBACK) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: afterObjectListCallbackOffset!=WORLD_LIST_AFTER_CALLBACK");
         BtechRestoreSelectionPixels(objects);
     }
 }
@@ -131,8 +131,8 @@ void BtechUpdateObjectSelectionPixels(BtechHeapWorldObject *object,uint16_t ordi
     {
         if (index>=SELECTION_LIST_PREFIX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: index>=SELECTION_LIST_PREFIX");
         uint16_t selectedOrdinal=combatRender.selectionObjectListIndices[index];
-        if (selectedOrdinal>=COMBAT_WORLD_OBJECTS || !cockpitWorldObjects[selectedOrdinal]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedOrdinal>=COMBAT_WORLD_OBJECTS || !cockpitWorldObjects[selectedOrdinal]");
-        BtechHeapWorldObject *selected=(BtechHeapWorldObject *)cockpitWorldObjects[selectedOrdinal];
+        if (selectedOrdinal>=COMBAT_WORLD_OBJECTS || !combatWorld.cockpitWorldObjects[selectedOrdinal]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedOrdinal>=COMBAT_WORLD_OBJECTS || !cockpitWorldObjects[selectedOrdinal]");
+        BtechHeapWorldObject *selected=(BtechHeapWorldObject *)combatWorld.cockpitWorldObjects[selectedOrdinal];
         combatRender.selectionCapturedPixels=BtechCaptureSelectionPixels(selected->projectedScreenA,selected->projectedScreenB);
         if (!BtechTestSelectionMarkerPixels(&combatRender.selectionCapturedPixels))
         {

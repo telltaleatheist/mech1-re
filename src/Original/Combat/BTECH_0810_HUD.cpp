@@ -22,19 +22,19 @@ void BtechRefreshCockpitAndSensorTarget(void)
     BtechPooledWorldObject *movementObject=combatMechs.unitBindings[0].positionedLeftLeg;
     if (!combatStartup.combatTickCounter) combatCockpit.rememberedSensorTargetSlot=0;
     combatVideo.drawPageSelector=combatVideo.backPageSelector;combatVideo.screenPolygonNeedsClip=false;combatVideo.drawPolygonFilled=true;
-    BtechDrawMechSubsystemLamps(playerMechState);
-    if (!playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState");
-    BtechUpdateHeatGauge((int16_t)playerMechState->heatUnits/COMBAT_HEAT_UNITS_PER_DISPLAY_POINT);
+    BtechDrawMechSubsystemLamps(combatWorld.playerMechState);
+    if (!combatWorld.playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState");
+    BtechUpdateHeatGauge((int16_t)combatWorld.playerMechState->heatUnits/COMBAT_HEAT_UNITS_PER_DISPLAY_POINT);
     if (!movementObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !movementObject");
     BtechDrawForwardMovementGauge(movementObject->forwardStepScale);
-    if (!playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
-    if (combatCockpit.mechCockpitLayoutIndices[playerMechState->templateIndex]!=2)
-        BtechUpdateJumpChargeGauge((int16_t)playerMechState->jumpCharge);
+    if (!combatWorld.playerMechState || combatWorld.playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
+    if (combatCockpit.mechCockpitLayoutIndices[combatWorld.playerMechState->templateIndex]!=2)
+        BtechUpdateJumpChargeGauge((int16_t)combatWorld.playerMechState->jumpCharge);
     BtechUpdateRadarPanel();
     uint16_t sensorAvailable=0;
-    if ((int16_t)playerMechState->sensorHits<2)
+    if ((int16_t)combatWorld.playerMechState->sensorHits<2)
         sensorAvailable=((uint8_t)(BtechRandomBelowBound(3)+(uint8_t)combatStartup.combatTickCounter)&8)!=0;
-    sensorAvailable|=playerMechState->sensorHits<1; /*069B is UNSIGNED. */
+    sensorAvailable|=combatWorld.playerMechState->sensorHits<1; /*069B is UNSIGNED. */
     if (!combatStartup.playerTargetSlot && sensorAvailable)
     {
         if (BtechTestPlayerTargetRenderVisibility((int16_t)combatCockpit.rememberedSensorTargetSlot)) combatStartup.playerTargetSlot=combatCockpit.rememberedSensorTargetSlot;
@@ -80,8 +80,8 @@ void BtechDrawCockpitBitmapPlacements(void)
 /*0810:0773. Bank1 has priority; clear its BYTE latch only after drawing. */
 void BtechDrawPendingFiringIndicator(void)
 {
-    if (!playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState");
-    int16_t pitch=playerMechState->aimPitch;
+    if (!combatWorld.playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState");
+    int16_t pitch=combatWorld.playerMechState->aimPitch;
     uint16_t pitchClass=(pitch<FIRING_INDICATOR_UPPER_PITCH)+(pitch<(int16_t)FIRING_INDICATOR_LOWER_PITCH);
     if (combatImport.activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS");
     const BtechCockpitLayout *layout=&combatCockpit.cockpitLayouts[combatImport.activeCockpitLayoutIndex];

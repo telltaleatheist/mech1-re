@@ -14,33 +14,8 @@
 #include "mechwarrior/rules.h"
 #include <string.h>
 
-BtechChassisResourceBases chassisResourceBases;
+CombatWorldState combatWorld;
 CombatTacticsState combatTactics;
-BtechScenarioSelectors scenarioSelectors;
-BtechFormationPosition unitFormationPositions[8];
-uint8_t terrainHeightGrid[TERRAIN_GRID_ROWS][TERRAIN_GRID_COLUMNS];
-uint16_t terrainTileGridRowBases[4],terrainTileGridColumnBases[4];
-char terrainVariantFilenameSuffixes[16][8],sceneChassisBankNames[8][16];
-uint8_t sceneChassisResourcePresent[10];
-char terrainWorldFilename[12],terrainGridFilename[12];
-BtechPooledWorldObject pooledWorldObjects[COMBAT_POOLED_OBJECTS];
-BtechWorldObjectPrefix *worldObjects[COMBAT_WORLD_OBJECTS];
-BtechWorldObjectPrefix *selectedWorldObjects[COMBAT_SELECTED_WORLD_OBJECTS];
-uint16_t selectedObjectCount;
-uint8_t heapWorldObjectOwned[COMBAT_WORLD_OBJECTS];
-BtechWorldObjectPrefix *cockpitWorldObjects[COMBAT_WORLD_OBJECTS];
-uint16_t worldObjectCount,cockpitWorldObjectCount,distinctSceneMechChassisCount;
-uint16_t beforeObjectListCallbackOffset,afterObjectListCallbackOffset;
-BtechCameraContext cameraContexts[COMBAT_CAMERA_CONTEXTS];
-BtechOrientationBasis cameraOrientationBasis;
-uint16_t cameraReferenceVector[3];
-BtechUnitBinding *playerUnitBinding;
-BtechMechState *playerMechState;
-BtechMechTemplate *playerMechTemplate;
-BtechPooledWorldObject *playerPoseObject,*orderMapCameraObject,*specialTargetObject;
-BtechPooledWorldObject *objectiveVisibilityObject;
-BtechCameraContext *orderMapCameraContext,*playerPoseCameraContext;
-uint16_t specialTargetDamageRemaining;
 uint8_t runtimeDelayActive,joystickPairInstalled[2],joystickAxisCentres[4];
 uint16_t runtimeDelayRemaining,joystickAxisReciprocals[4];
 int16_t joystickFirstAxisValue,joystickDirectionX,joystickDirectionY;
@@ -61,9 +36,8 @@ uint16_t *const effectResourceSequences[2]={combatEffects.defaultEffectResourceD
 
 /* Installation IO, not a runtime memory mirror. Strings are resolved exactly
  * once from authored near directories. Runtime consumers use real C strings. */
-uint8_t nullNearSegment[NULL_NEAR_SEGMENT_BYTES];
 static uint32_t NullSegmentDword(uint16_t offset)
-{return (uint32_t)MwReadNativeWord(nullNearSegment,offset)|((uint32_t)MwReadNativeWord(nullNearSegment,(uint16_t)(offset+2))<<16);}
+{return (uint32_t)MwReadNativeWord(combatWorld.nullNearSegment,offset)|((uint32_t)MwReadNativeWord(combatWorld.nullNearSegment,(uint16_t)(offset+2))<<16);}
 BtechPosition3D BtechReadNullNearWorldObjectPosition(void)
 {return BtechPosition3D{NullSegmentDword(0x0008),NullSegmentDword(0x000C),NullSegmentDword(0x0010)};}
 bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t *segment22B6,size_t segmentBytes)
@@ -71,7 +45,7 @@ bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t 
     if (!data || bytes<0x10000 || !segment22B6 || segmentBytes<0x6473) return false;
     if (MwReadNativeWord(data,0x4A6C) || MwReadNativeWord(data,0x4A6E)) return false;
     combatResources.borrowedArchiveWorkspace=NULL;
-    memcpy(nullNearSegment,data,sizeof(nullNearSegment));
+    memcpy(combatWorld.nullNearSegment,data,sizeof(combatWorld.nullNearSegment));
     memcpy(combatTactics.boundaryMaskByCode,data+0x0EB6,sizeof(combatTactics.boundaryMaskByCode));
     /* The rule tables come from data/rules (src/Rules), laid out as the exe's. */
     if (!MwRulesCopyWords("combat.opposing_side_first_unit_slots",combatTactics.opposingSideFirstUnitSlots,2,0)
@@ -134,24 +108,24 @@ bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t 
         || !MwRulesCopyWords("assets.machine_gun_effect_steps",combatEffects.machineGunEffectResourceDeltas,3,0)) return false;
     for (uint16_t tile=0;tile<TERRAIN_TILE_COUNT;++tile)
     {
-        terrainTileGridRowBases[tile]=MwReadNativeWord(data,0x07E4+tile*2);
-        terrainTileGridColumnBases[tile]=MwReadNativeWord(data,0x07EC+tile*2);
+        combatWorld.terrainTileGridRowBases[tile]=MwReadNativeWord(data,0x07E4+tile*2);
+        combatWorld.terrainTileGridColumnBases[tile]=MwReadNativeWord(data,0x07EC+tile*2);
     }
     for (uint16_t variant=0;variant<16;++variant)
     {
         uint16_t offset=MwReadNativeWord(data,0x07C4+variant*2);
         const uint8_t *end=static_cast<const uint8_t *>(memchr(data+offset,0,0x10000-offset));
-        if (!end || (size_t)(end-data-offset)>=sizeof(terrainVariantFilenameSuffixes[variant])) return false;
-        memcpy(terrainVariantFilenameSuffixes[variant],data+offset,(size_t)(end-data-offset)+1);
+        if (!end || (size_t)(end-data-offset)>=sizeof(combatWorld.terrainVariantFilenameSuffixes[variant])) return false;
+        memcpy(combatWorld.terrainVariantFilenameSuffixes[variant],data+offset,(size_t)(end-data-offset)+1);
     }
     for (uint16_t chassis=0;chassis<8;++chassis)
     {
         uint16_t offset=MwReadNativeWord(data,0x06DC+chassis*2);
         const uint8_t *end=static_cast<const uint8_t *>(memchr(data+offset,0,0x10000-offset));
-        if (!end || (size_t)(end-data-offset)>=sizeof(sceneChassisBankNames[chassis])) return false;
-        memcpy(sceneChassisBankNames[chassis],data+offset,(size_t)(end-data-offset)+1);
+        if (!end || (size_t)(end-data-offset)>=sizeof(combatWorld.sceneChassisBankNames[chassis])) return false;
+        memcpy(combatWorld.sceneChassisBankNames[chassis],data+offset,(size_t)(end-data-offset)+1);
     }
-    memset(sceneChassisResourcePresent,0,sizeof(sceneChassisResourcePresent)); /*06EC*/
+    memset(combatWorld.sceneChassisResourcePresent,0,sizeof(combatWorld.sceneChassisResourcePresent)); /*06EC*/
     memcpy(characterClassStorage.bytes,data+0x4C69,sizeof(characterClassStorage.bytes));
     for (uint16_t index=0;index<0x200;++index) headingRatioAngles[index]=MwReadNativeWord(segment22B6,0x6073+index*2);
     for (uint16_t index=0;index<0x801;++index) orientationCosines[index]=MwReadNativeWord(segment22B6,0x486D+index*2);
@@ -168,7 +142,7 @@ bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t 
     for (uint16_t axis=0;axis<5;++axis)
         for (uint16_t word=0;word<GEOMETRY_CACHE_VERTICES*2;++word)
             coordinateCaches[axis]->words[word]=MwReadNativeWord(segment22B6,0x322B+axis*0x3FC+word*2);
-    scenarioSelectors=BtechScenarioSelectors{}; /* 7D6A, past the file data. */
+    combatWorld.scenarioSelectors=BtechScenarioSelectors{}; /* 7D6A, past the file data. */
     return true;
 }
 
@@ -200,42 +174,42 @@ void BtechInitializeFreshWorldOwners(const uint8_t *data)
     for (uint16_t slot=0;slot<COMBAT_DESTRUCTION_EMITTER_SLOTS;++slot) bodyDestructionEmitters[slot]=BtechBodyDestructionEmitter{};
     for (uint16_t slot=0;slot<COMBAT_EFFECT_SLOTS;++slot) combatEffects.effectSequences[slot]=BtechEffectSequenceState{};
     for (uint16_t byte=0;byte<sizeof(combatResources.archiveStreamScratch);++byte) combatResources.archiveStreamScratch[byte]=0;
-    scenarioSelectors=BtechScenarioSelectors{};
+    combatWorld.scenarioSelectors=BtechScenarioSelectors{};
     for (uint16_t slot=0;slot<8;++slot)
-        unitFormationPositions[slot]=BtechFormationPosition{};
+        combatWorld.unitFormationPositions[slot]=BtechFormationPosition{};
     for (uint16_t slot=0;slot<TERRAIN_GRID_ROWS;++slot)
         for (uint16_t column=0;column<TERRAIN_GRID_COLUMNS;++column)
-            terrainHeightGrid[slot][column]=0;
+            combatWorld.terrainHeightGrid[slot][column]=0;
     for (uint16_t slot=0;slot<12;++slot)
-        terrainWorldFilename[slot]=0;
+        combatWorld.terrainWorldFilename[slot]=0;
     for (uint16_t slot=0;slot<12;++slot)
-        terrainGridFilename[slot]=0;
+        combatWorld.terrainGridFilename[slot]=0;
     for (uint16_t slot=0;slot<COMBAT_POOLED_OBJECTS;++slot)
-        pooledWorldObjects[slot]=BtechPooledWorldObject{};
+        combatWorld.pooledWorldObjects[slot]=BtechPooledWorldObject{};
     for (uint16_t slot=0;slot<COMBAT_WORLD_OBJECTS;++slot)
-        worldObjects[slot]=NULL;
+        combatWorld.worldObjects[slot]=NULL;
     for (uint16_t slot=0;slot<COMBAT_WORLD_OBJECTS;++slot)
-        heapWorldObjectOwned[slot]=0;
+        combatWorld.heapWorldObjectOwned[slot]=0;
     for (uint16_t slot=0;slot<COMBAT_WORLD_OBJECTS;++slot)
-        cockpitWorldObjects[slot]=NULL;
-    worldObjectCount=0;
-    cockpitWorldObjectCount=0;
-    distinctSceneMechChassisCount=0;
+        combatWorld.cockpitWorldObjects[slot]=NULL;
+    combatWorld.worldObjectCount=0;
+    combatWorld.cockpitWorldObjectCount=0;
+    combatWorld.distinctSceneMechChassisCount=0;
     for (uint16_t slot=0;slot<COMBAT_CAMERA_CONTEXTS;++slot)
-        cameraContexts[slot]=BtechCameraContext{};
-    cameraOrientationBasis=BtechOrientationBasis{};
+        combatWorld.cameraContexts[slot]=BtechCameraContext{};
+    combatWorld.cameraOrientationBasis=BtechOrientationBasis{};
     for (uint16_t slot=0;slot<3;++slot)
-        cameraReferenceVector[slot]=0;
-    playerUnitBinding=NULL;
-    playerMechState=NULL;
-    playerMechTemplate=NULL;
-    playerPoseObject=NULL;
-    orderMapCameraObject=NULL;
-    specialTargetObject=NULL;
-    objectiveVisibilityObject=NULL;
-    orderMapCameraContext=NULL;
-    playerPoseCameraContext=NULL;
-    specialTargetDamageRemaining=0;
+        combatWorld.cameraReferenceVector[slot]=0;
+    combatWorld.playerUnitBinding=NULL;
+    combatWorld.playerMechState=NULL;
+    combatWorld.playerMechTemplate=NULL;
+    combatWorld.playerPoseObject=NULL;
+    combatWorld.orderMapCameraObject=NULL;
+    combatWorld.specialTargetObject=NULL;
+    combatWorld.objectiveVisibilityObject=NULL;
+    combatWorld.orderMapCameraContext=NULL;
+    combatWorld.playerPoseCameraContext=NULL;
+    combatWorld.specialTargetDamageRemaining=0;
     for (uint16_t slot=0;slot<0x50;++slot)
         combatResources.resourceFilename[slot]=0;
     for (uint16_t slot=0;slot<RESOURCE_ARCHIVE_SLOTS;++slot)
@@ -255,9 +229,9 @@ void BtechInitializeFreshWorldOwners(const uint8_t *data)
     combatResources.lzwPreviousCode=0;
     combatResources.lzwIncomingCode=0;
     combatResources.lzwPhraseFirstByte=0;
-    for (uint16_t slot=0;slot<sizeof(sceneChassisResourcePresent)/sizeof(sceneChassisResourcePresent[0]);++slot) sceneChassisResourcePresent[slot]=0; /*06EC*/
-    beforeObjectListCallbackOffset=0; /*2CE8*/
-    afterObjectListCallbackOffset=0; /*2CEA*/
+    for (uint16_t slot=0;slot<sizeof(combatWorld.sceneChassisResourcePresent)/sizeof(combatWorld.sceneChassisResourcePresent[0]);++slot) combatWorld.sceneChassisResourcePresent[slot]=0; /*06EC*/
+    combatWorld.beforeObjectListCallbackOffset=0; /*2CE8*/
+    combatWorld.afterObjectListCallbackOffset=0; /*2CEA*/
     runtimeDelayActive=data[0x41E4];
     for (uint16_t slot=0;slot<sizeof(joystickPairInstalled)/sizeof(joystickPairInstalled[0]);++slot) joystickPairInstalled[slot]=data[0x41CA+slot*1];
     for (uint16_t slot=0;slot<sizeof(joystickAxisCentres)/sizeof(joystickAxisCentres[0]);++slot) joystickAxisCentres[slot]=data[0x41CC+slot*1];
@@ -272,7 +246,7 @@ void BtechInitializeFreshWorldOwners(const uint8_t *data)
     combatResources.lzwReverseReadOffset=0; /*4AAF*/
     for (uint16_t slot=0;slot<sizeof(combatResources.lzwPacketBytes)/sizeof(combatResources.lzwPacketBytes[0]);++slot) combatResources.lzwPacketBytes[slot]=data[0x4A9A+slot*1];
     combatInputReplayFilename=NULL;
-    chassisResourceBases=BtechChassisResourceBases{};
+    combatWorld.chassisResourceBases=BtechChassisResourceBases{};
     combatResources.surfaceResourceBank=BtechSurfaceBank{};
     combatResources.initialShapeResourceBank=BtechResourceBank{};
     combatResources.shapeResourceBanks=&combatResources.initialShapeResourceBank;

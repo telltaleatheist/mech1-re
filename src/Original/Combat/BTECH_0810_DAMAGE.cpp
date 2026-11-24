@@ -47,7 +47,7 @@ uint8_t BtechSelectAndApplyCriticalLoss(BtechMechState *mech,int16_t bodyLocatio
                 if (remainingEquipmentWeight<=0)
                 {
                     ++mech->engineHits;
-                    if (mech==playerMechState)
+                    if (mech==combatWorld.playerMechState)
                     {
                         if (mech->engineHits==COMBAT_ENGINE_HIT_LIMIT
                             && BtechRandomBelowBound(COMBAT_ENGINE_COCKPIT_ROLL_BOUND)==COMBAT_ENGINE_COCKPIT_LOSS_ROLL) mech->cockpitDisabled=1;
@@ -61,7 +61,7 @@ uint8_t BtechSelectAndApplyCriticalLoss(BtechMechState *mech,int16_t bodyLocatio
                 remainingEquipmentWeight-=(COMBAT_GYRO_CRITICAL_WEIGHT-mech->gyroHits);
                 if (remainingEquipmentWeight<=0)
                 {
-                    if (mech==playerMechState) BtechPlaySoundIfEnabled(COMBAT_CRITICAL_SOUND,COMBAT_CRITICAL_SOUND_PRIORITY);
+                    if (mech==combatWorld.playerMechState) BtechPlaySoundIfEnabled(COMBAT_CRITICAL_SOUND,COMBAT_CRITICAL_SOUND_PRIORITY);
                     ++mech->gyroHits;return 1;
                 }
             }
@@ -80,7 +80,7 @@ uint8_t BtechSelectAndApplyCriticalLoss(BtechMechState *mech,int16_t bodyLocatio
                 remainingEquipmentWeight-=(COMBAT_LIFE_SUPPORT_HIT_LIMIT-mech->lifeSupportHits);
                 if (remainingEquipmentWeight<=0)
                 {
-                    if (mech==playerMechState) BtechPlaySoundIfEnabled(COMBAT_CRITICAL_SOUND,COMBAT_CRITICAL_SOUND_PRIORITY);
+                    if (mech==combatWorld.playerMechState) BtechPlaySoundIfEnabled(COMBAT_CRITICAL_SOUND,COMBAT_CRITICAL_SOUND_PRIORITY);
                     ++mech->lifeSupportHits;return 1;
                 }
             }
@@ -89,7 +89,7 @@ uint8_t BtechSelectAndApplyCriticalLoss(BtechMechState *mech,int16_t bodyLocatio
                 remainingEquipmentWeight-=(COMBAT_SENSORS_DESTROYED_HITS-mech->sensorHits);
                 if (remainingEquipmentWeight<=0)
                 {
-                    if (mech==playerMechState) BtechPlaySoundIfEnabled(COMBAT_CRITICAL_SOUND,COMBAT_CRITICAL_SOUND_PRIORITY);
+                    if (mech==combatWorld.playerMechState) BtechPlaySoundIfEnabled(COMBAT_CRITICAL_SOUND,COMBAT_CRITICAL_SOUND_PRIORITY);
                     ++mech->sensorHits;return 1;
                 }
             }
@@ -199,12 +199,12 @@ void BtechQueueBodyDestructionEmitter(uint16_t unitSlot,int16_t armorLocation)
  * destruction effects use the original local position, not target mutations. */
 void BtechApplySpecialTargetDamage(int16_t damage)
 {
-    if (!specialTargetDamageRemaining || combatImport.specialTargetInteractionBlocked) return;
+    if (!combatWorld.specialTargetDamageRemaining || combatImport.specialTargetInteractionBlocked) return;
     combatDamagePanels.specialTargetDamagePanelDirty=1;
-    if (damage<(int16_t)specialTargetDamageRemaining) {specialTargetDamageRemaining-=(uint16_t)damage;return;}
-    specialTargetDamageRemaining=0;
-    if (!specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
-    BtechWorldObjectPrefix *target=&specialTargetObject->object.prefix;
+    if (damage<(int16_t)combatWorld.specialTargetDamageRemaining) {combatWorld.specialTargetDamageRemaining-=(uint16_t)damage;return;}
+    combatWorld.specialTargetDamageRemaining=0;
+    if (!combatWorld.specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
+    BtechWorldObjectPrefix *target=&combatWorld.specialTargetObject->object.prefix;
     target->renderFlags|=COMBAT_WORLD_OBJECT_HIDDEN;
     target->renderFlags&=(uint8_t)~WORLD_OBJECT_SPECIAL_TARGET;
     BtechPosition3D position=target->position;

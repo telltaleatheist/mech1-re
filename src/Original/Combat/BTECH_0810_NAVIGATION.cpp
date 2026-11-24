@@ -106,8 +106,8 @@ uint8_t BtechIsAvoidanceProbeBlocked(uint16_t probeIndex)
     int16_t sideObjectiveRule=combatImport.sideObjectiveRules[combatImport.activeUnitControl->sideIndex];
     if (sideObjectiveRule>OBJECTIVE_OPPOSE_WITHDRAWAL && (sideObjectiveRule!=OBJECTIVE_SPECIAL_TARGET || !combatImport.specialTargetInteractionBlocked))
     {
-        if (!specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
-        if (BtechIsPositionInForwardObstacleCorridor(&specialTargetObject->object.prefix.position,AVOIDANCE_SPECIAL_HALF_WIDTH)) return 1;
+        if (!combatWorld.specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
+        if (BtechIsPositionInForwardObstacleCorridor(&combatWorld.specialTargetObject->object.prefix.position,AVOIDANCE_SPECIAL_HALF_WIDTH)) return 1;
     }
     uint32_t lookaheadX=combatNavigation.avoidancePosition->positionA+(uint32_t)(int16_t)((uint16_t)probeDisplacementX<<AVOIDANCE_LOOKAHEAD_SHIFT);
     uint32_t lookaheadY=combatNavigation.avoidancePosition->positionB+(uint32_t)(int16_t)((uint16_t)probeDisplacementY<<AVOIDANCE_LOOKAHEAD_SHIFT);
@@ -143,7 +143,7 @@ uint8_t BtechIsAvoidanceProbeBlocked(uint16_t probeIndex)
                 {
                     int32_t gridColumn=firstTerrainColumn+columnOffset;
                     if (gridColumn<0 || gridColumn>=TERRAIN_GRID_COLUMNS) continue;
-                    if (terrainHeightGrid[gridRow][gridColumn]) return 1;
+                    if (combatWorld.terrainHeightGrid[gridRow][gridColumn]) return 1;
                 }
             }
         }

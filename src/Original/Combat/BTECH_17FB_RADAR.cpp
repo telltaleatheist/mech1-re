@@ -14,8 +14,8 @@ void BtechDrawTerrainRadar(void)
     combatCockpit.radarPreviousTick=combatStartup.combatTickCounter;
     combatCockpit.radarCachePage=combatImport.hudColourSchemeIndex?0:combatStartup.combatTickCounter&1;
     combatVideo.drawPageSelector=combatVideo.backPageSelector;
-    if (!playerUnitBinding) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding");
-    combatCockpit.radarPlayerObject=playerUnitBinding->positionedLeftLeg;
+    if (!combatWorld.playerUnitBinding) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding");
+    combatCockpit.radarPlayerObject=combatWorld.playerUnitBinding->positionedLeftLeg;
     if (combatImport.activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS");
     combatCockpit.radarRectangle=&combatCockpit.cockpitLayouts[combatImport.activeCockpitLayoutIndex].radarPanel;
     int16_t halfWidth=(combatCockpit.radarRectangle->width-(combatCockpit.radarRectangle->width<0))/2;
@@ -39,7 +39,7 @@ void BtechDrawTerrainRadar(void)
             for (uint16_t panelY=0;(int16_t)panelY<combatCockpit.radarRectangle->height;++panelY,++terrainY)
             {
                 if (mapX>=TERRAIN_GRID_ROWS || terrainY>=TERRAIN_GRID_COLUMNS) continue;
-                uint16_t height=terrainHeightGrid[mapX][terrainY];
+                uint16_t height=combatWorld.terrainHeightGrid[mapX][terrainY];
                 if (!height) continue;
                 uint16_t band=height>>5;if (band>3) band=3;
                 BtechWriteClippedPixel((int16_t)(combatCockpit.radarRectangle->x+panelX),
@@ -73,8 +73,8 @@ void BtechDrawTerrainRadar(void)
     }
     if (combatImport.sideObjectiveRules[0]==OBJECTIVE_SPECIAL_TARGET || combatImport.sideObjectiveRules[0]==OBJECTIVE_DEFEND_SPECIAL_TARGET)
     {
-        if (!specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
-        BtechDrawRadarPositionMarker(&specialTargetObject->object.prefix.position,combatCockpit.hudColourSchemes[combatImport.hudColourSchemeIndex].radarSpecialTarget);
+        if (!combatWorld.specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
+        BtechDrawRadarPositionMarker(&combatWorld.specialTargetObject->object.prefix.position,combatCockpit.hudColourSchemes[combatImport.hudColourSchemeIndex].radarSpecialTarget);
     }
     BtechDrawRadarPositionMarker(player,combatCockpit.hudColourSchemes[combatImport.hudColourSchemeIndex].radarPlayer);
     if (backdropChanged)

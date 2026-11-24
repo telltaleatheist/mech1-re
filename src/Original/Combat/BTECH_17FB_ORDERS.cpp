@@ -22,10 +22,10 @@ template<typename T> void Field(bool load,uint16_t offset,T &value)
     if (load)
     {
         uint32_t v=0;
-        for (unsigned i=0;i<sizeof(T);++i) v|=(uint32_t)nullNearSegment[offset+i]<<(8*i);
+        for (unsigned i=0;i<sizeof(T);++i) v|=(uint32_t)combatWorld.nullNearSegment[offset+i]<<(8*i);
         value=(T)v;
     }
-    else for (unsigned i=0;i<sizeof(T);++i) nullNearSegment[offset+i]=(uint8_t)((uint32_t)value>>(8*i));
+    else for (unsigned i=0;i<sizeof(T);++i) combatWorld.nullNearSegment[offset+i]=(uint8_t)((uint32_t)value>>(8*i));
 }
 void TransferNullControl(bool load)
 {
@@ -180,7 +180,7 @@ void BtechSeedSelectedOrderTracking(void)
     if (control->trackedUnitOrSpecialSlot==-1)
     {
         if (control->targetUnitSlot!=-1) control->trackedUnitOrSpecialSlot=control->targetUnitSlot;
-        else if (combatImport.sideObjectiveRules[0]==OBJECTIVE_SPECIAL_TARGET && (int16_t)specialTargetDamageRemaining>0)
+        else if (combatImport.sideObjectiveRules[0]==OBJECTIVE_SPECIAL_TARGET && (int16_t)combatWorld.specialTargetDamageRemaining>0)
             control->trackedUnitOrSpecialSlot=ORDER_SPECIAL_TARGET_SLOT;
         else
             for (uint16_t slot=COMBAT_LANCE_SLOTS;slot<COMBAT_MECH_SLOTS;++slot)
@@ -367,9 +367,9 @@ void BtechInitializeOrderPanelState(void)
 {
     if (!combatOrders.orderPanelCaptureBuffer.bytes)
     {
-        if (!orderMapCameraContext) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !orderMapCameraContext"); /* Native near-zero camera alias not represented. */
-        uint16_t height=orderMapCameraContext->clipMaximumB-orderMapCameraContext->clipMinimumB+1;
-        uint16_t width=orderMapCameraContext->clipMaximumA-orderMapCameraContext->clipMinimumA;
+        if (!combatWorld.orderMapCameraContext) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !orderMapCameraContext"); /* Native near-zero camera alias not represented. */
+        uint16_t height=combatWorld.orderMapCameraContext->clipMaximumB-combatWorld.orderMapCameraContext->clipMinimumB+1;
+        uint16_t width=combatWorld.orderMapCameraContext->clipMaximumA-combatWorld.orderMapCameraContext->clipMinimumA;
         uint16_t captureBytes=(uint16_t)BtechGetCaptureStorageSize(width,height);
         combatOrders.orderPanelCaptureBuffer.bytes=BtechAllocateDosMemoryBlock(captureBytes).bytes;
         combatOrders.orderPanelCaptureBuffer.byteCount=((uint32_t)captureBytes+0x0F)&~0x0Fu;

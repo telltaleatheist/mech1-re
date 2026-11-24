@@ -28,8 +28,8 @@ void BtechUpdateTacticalNavigation(void)
             uint16_t trackedTargetSlot=control->trackedUnitOrSpecialSlot;
             if (trackedTargetSlot==COMBAT_SPECIAL_TARGET_SLOT)
             {
-                if (!specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
-                BtechPosition3D *position=&specialTargetObject->object.prefix.position;
+                if (!combatWorld.specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
+                BtechPosition3D *position=&combatWorld.specialTargetObject->object.prefix.position;
                 control->trackedPosition[0]=(int32_t)position->positionA;
                 control->trackedPosition[1]=(int32_t)position->positionB;
                 control->trackedPosition[2]=(int32_t)position->positionC;
@@ -44,7 +44,7 @@ void BtechUpdateTacticalNavigation(void)
         {
             int16_t targetConditionOrBoundaryCode;
             if (control->targetUnitSlot==COMBAT_SPECIAL_TARGET_SLOT)
-                targetConditionOrBoundaryCode=specialTargetObject && specialTargetDamageRemaining?COMBAT_CONDITION_SCORE_MINIMUM:COMBAT_MECH_DISABLED_VALUE;
+                targetConditionOrBoundaryCode=combatWorld.specialTargetObject && combatWorld.specialTargetDamageRemaining?COMBAT_CONDITION_SCORE_MINIMUM:COMBAT_MECH_DISABLED_VALUE;
             else
             {
                 if ((uint16_t)control->targetUnitSlot>=COMBAT_MECH_SLOTS)
@@ -78,8 +78,8 @@ void BtechUpdateTacticalNavigation(void)
             if (control->trackedUnitOrSpecialSlot<0) BtechRefreshTargetAndNavigate();
             else if (control->trackedUnitOrSpecialSlot==COMBAT_SPECIAL_TARGET_SLOT)
             {
-                if (!specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
-                BtechNavigateActiveUnitTowardPosition(&specialTargetObject->object.prefix.position);
+                if (!combatWorld.specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
+                BtechNavigateActiveUnitTowardPosition(&combatWorld.specialTargetObject->object.prefix.position);
                 control->tacticalState=TACTICAL_CHARGING_BASE;
             }
             else
@@ -113,7 +113,7 @@ void BtechUpdateTacticalNavigation(void)
     {
         waypoint=combatPose.activeUnitPositionedObject->object.prefix.position;
         if (control->sideIndex>=2) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: control->sideIndex>=2");
-        uint8_t mask=scenarioSelectors.sideBoundaryMasks[control->sideIndex];
+        uint8_t mask=combatWorld.scenarioSelectors.sideBoundaryMasks[control->sideIndex];
         if (mask&1) waypoint.positionB=TACTICAL_RETREAT_Y;
         else if (mask&2) waypoint.positionB=(uint32_t)-TACTICAL_RETREAT_Y;
         if (mask&4) waypoint.positionA=(uint32_t)-TACTICAL_RETREAT_X;
@@ -122,8 +122,8 @@ void BtechUpdateTacticalNavigation(void)
     }
     case OBJECTIVE_SPECIAL_TARGET:
         control->tacticalState=TACTICAL_CHARGING_BASE;control->navigationReferenceSlot=COMBAT_SPECIAL_TARGET_SLOT;
-        if (!specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
-        waypoint=specialTargetObject->object.prefix.position;
+        if (!combatWorld.specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
+        waypoint=combatWorld.specialTargetObject->object.prefix.position;
         BtechNavigateActiveUnitTowardPosition(&waypoint);break;
     case OBJECTIVE_DEFEND_SPECIAL_TARGET:control->tacticalState=TACTICAL_DEFENDING;break;
     }
@@ -206,9 +206,9 @@ void BtechSelectUnitTacticalState(void)
     {
         if (control->tacticalState==TACTICAL_CHARGING_BASE)
         {
-            if (!specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
-            int32_t distance=(int32_t)BtechApproximatePlanarDistance(&root->position,&specialTargetObject->object.prefix.position);
-            if (distance<=TACTICAL_OBJECTIVE_COMMIT_RANGE && (int16_t)(BtechRandomBelowBound(TACTICAL_OBJECTIVE_COMMIT_ROLL)+TACTICAL_OBJECTIVE_COMMIT_ROLL)>=(int16_t)specialTargetDamageRemaining) goto steer;
+            if (!combatWorld.specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
+            int32_t distance=(int32_t)BtechApproximatePlanarDistance(&root->position,&combatWorld.specialTargetObject->object.prefix.position);
+            if (distance<=TACTICAL_OBJECTIVE_COMMIT_RANGE && (int16_t)(BtechRandomBelowBound(TACTICAL_OBJECTIVE_COMMIT_ROLL)+TACTICAL_OBJECTIVE_COMMIT_ROLL)>=(int16_t)combatWorld.specialTargetDamageRemaining) goto steer;
         }
         if (control->tacticalState==TACTICAL_CHARGING_BASE || control->tacticalState==TACTICAL_DEFENDING) control->tacticalState=TACTICAL_CHARGING;
         control->targetUnitSlot=strongestThreatSlot;selectedHeading=combatTactics.tacticalThreatHeadings[strongestThreatHeadingIndex];
@@ -220,8 +220,8 @@ void BtechSelectUnitTacticalState(void)
     }
     else if (control->tacticalState==TACTICAL_CHARGING_BASE)
     {
-        if (!specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
-        BtechPosition3D *position=&specialTargetObject->object.prefix.position;
+        if (!combatWorld.specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
+        BtechPosition3D *position=&combatWorld.specialTargetObject->object.prefix.position;
         selectedHeading=BtechCalculateVectorHeading(position->positionA-root->position.positionA,position->positionB-root->position.positionB);
         control->targetUnitSlot=COMBAT_SPECIAL_TARGET_SLOT;
     }
@@ -292,8 +292,8 @@ void BtechApplyActiveUnitTacticalSteering(uint16_t desiredHeading)
     }
     case TACTICAL_CHARGING_BASE:
     {
-        if (!specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
-        int32_t distance=(int32_t)BtechApproximatePlanarDistance(&combatPose.activeUnitPositionedObject->object.prefix.position,&specialTargetObject->object.prefix.position);
+        if (!combatWorld.specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
+        int32_t distance=(int32_t)BtechApproximatePlanarDistance(&combatPose.activeUnitPositionedObject->object.prefix.position,&combatWorld.specialTargetObject->object.prefix.position);
         if (control->readyWeaponRangeMinusMargin>=distance && !combatImport.specialTargetInteractionBlocked) BtechSetActiveUnitGroundOrJumpMotion(desiredHeading,MOTION_DIRECTION_STOP);
         else BtechSteerActiveUnitAroundObstacles(desiredHeading,1);
         break;

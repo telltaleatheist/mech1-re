@@ -11,10 +11,10 @@
 void BtechBuildPlayerDirectShotGeometry(int16_t shotDistance,const BtechWeaponMount *weaponMount,uint8_t spawnImpactEffect)
 {
     shotDistance=(int16_t)(shotDistance-DIRECT_SHOT_ENDPOINT_MARGIN);
-    if (!playerUnitBinding || !playerUnitBinding->positionedLeftLeg || !playerPoseObject || !playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->positionedLeftLeg || !playerPoseObject || !playerMechState");
-    const BtechWorldObjectPrefix *aimPose=&playerPoseObject->object.prefix;
+    if (!combatWorld.playerUnitBinding || !combatWorld.playerUnitBinding->positionedLeftLeg || !combatWorld.playerPoseObject || !combatWorld.playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->positionedLeftLeg || !playerPoseObject || !playerMechState");
+    const BtechWorldObjectPrefix *aimPose=&combatWorld.playerPoseObject->object.prefix;
     uint16_t shotOrientation[]={aimPose->orientationA,aimPose->orientationB,aimPose->orientationC};
-    shotOrientation[0]-=playerMechState->aimPitch;
+    shotOrientation[0]-=combatWorld.playerMechState->aimPitch;
     int16_t shotDirection[3];BtechBuildDirectionVectorFromOrientation(shotDirection,shotOrientation);
     BtechPosition3D impactPosition;
     uint32_t shotDisplacement=BtechShiftSignedDwordRight((uint32_t)BtechMultiplySignedWords(shotDirection[0],shotDistance),ORIENTATION_FRACTION_BITS);
@@ -27,8 +27,8 @@ void BtechBuildPlayerDirectShotGeometry(int16_t shotDistance,const BtechWeaponMo
     if (spawnImpactEffect) BtechSpawnSequencedWorldEffect(&impactPosition,isMachineGun);
     if (!isMachineGun)
     {
-        if (!playerUnitBinding || !playerUnitBinding->torso || weaponMount->bodyLocation>=COMBAT_BODY_LOCATIONS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->torso || weaponMount->bodyLocation>=COMBAT_BODY_LOCATIONS");
-        BtechPosition3D muzzlePosition=playerUnitBinding->torso->object.prefix.position;
+        if (!combatWorld.playerUnitBinding || !combatWorld.playerUnitBinding->torso || weaponMount->bodyLocation>=COMBAT_BODY_LOCATIONS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->torso || weaponMount->bodyLocation>=COMBAT_BODY_LOCATIONS");
+        BtechPosition3D muzzlePosition=combatWorld.playerUnitBinding->torso->object.prefix.position;
         int16_t muzzleLateralOffset=combatBallistics.muzzleLateralOffsetsByBodyLocation[weaponMount->bodyLocation];
         muzzlePosition.positionA-=BtechShiftSignedDwordRight((uint32_t)BtechMultiplySignedWords((int16_t)BtechLookupCosine(shotOrientation[2]),muzzleLateralOffset),ORIENTATION_FRACTION_BITS);
         muzzlePosition.positionB-=BtechShiftSignedDwordRight((uint32_t)BtechMultiplySignedWords((int16_t)BtechLookupSine(shotOrientation[2]),muzzleLateralOffset),ORIENTATION_FRACTION_BITS);
@@ -65,8 +65,8 @@ void BtechBuildDirectionVectorFromOrientation(int16_t direction[3],const uint16_
 /*0810:BC6A. One transient six-vector resource; vertex zero stays untouched. */
 void BtechBuildWeaponBeamGeometry(const BtechPosition3D *origin,const BtechPosition3D *endpoint,int16_t weaponKind)
 {
-    if (!playerUnitBinding || !playerUnitBinding->positionedLeftLeg || (uint16_t)weaponKind>=COMBAT_WEAPON_KINDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->positionedLeftLeg || (uint16_t)weaponKind>=COMBAT_WEAPON_KINDS");
-    const BtechPosition3D *viewPosition=&playerUnitBinding->positionedLeftLeg->object.prefix.position;
+    if (!combatWorld.playerUnitBinding || !combatWorld.playerUnitBinding->positionedLeftLeg || (uint16_t)weaponKind>=COMBAT_WEAPON_KINDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->positionedLeftLeg || (uint16_t)weaponKind>=COMBAT_WEAPON_KINDS");
+    const BtechPosition3D *viewPosition=&combatWorld.playerUnitBinding->positionedLeftLeg->object.prefix.position;
     uint16_t beamHalfWidth=combatBallistics.beamHalfWidths[weaponKind];
     for (uint16_t beamSlot=0;beamSlot<COMBAT_BEAM_SLOTS;++beamSlot)
     {
@@ -112,11 +112,11 @@ void BtechBuildWeaponBeamGeometry(const BtechPosition3D *origin,const BtechPosit
         beamObject->resourceId=beamResourceId;
         beamObject->resourceScaledValue=BtechGetResourceScaledValue(beamResourceId);
         beamObject->position=beamAnchor;beamObject->updateCallbackOffset=WORLD_OBJECT_SELECTION_PIXEL_CALLBACK;
-        if (worldObjectCount>=COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: worldObjectCount>=COMBAT_WORLD_OBJECTS");
-        heapWorldObjectOwned[worldObjectCount]=0;
-        worldObjects[worldObjectCount++]=beamObject;
-        if (cockpitWorldObjectCount>=COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: cockpitWorldObjectCount>=COMBAT_WORLD_OBJECTS");
-        cockpitWorldObjects[cockpitWorldObjectCount++]=beamObject;
+        if (combatWorld.worldObjectCount>=COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: worldObjectCount>=COMBAT_WORLD_OBJECTS");
+        combatWorld.heapWorldObjectOwned[combatWorld.worldObjectCount]=0;
+        combatWorld.worldObjects[combatWorld.worldObjectCount++]=beamObject;
+        if (combatWorld.cockpitWorldObjectCount>=COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: cockpitWorldObjectCount>=COMBAT_WORLD_OBJECTS");
+        combatWorld.cockpitWorldObjects[combatWorld.cockpitWorldObjectCount++]=beamObject;
         return;
     }
     BtechShowFatalErrorAndExit("no room left for a laser beam's geometry"); /*304E:279E. */

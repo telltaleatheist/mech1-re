@@ -66,7 +66,7 @@ void BtechUpdateSideCompletionFlags(void)
     /* Side 0 tests side 1, and vice versa; the callee can also set its own latch. */
     for (uint16_t benefitingSideIndex=0;benefitingSideIndex<2;++benefitingSideIndex)
         if (BtechTestSideEliminationOrExitObjective(benefitingSideIndex<1)
-            || (combatImport.sideObjectiveRules[benefitingSideIndex]==OBJECTIVE_SPECIAL_TARGET && !specialTargetDamageRemaining)) combatStartup.sideCompletionFlags[benefitingSideIndex]=1;
+            || (combatImport.sideObjectiveRules[benefitingSideIndex]==OBJECTIVE_SPECIAL_TARGET && !combatWorld.specialTargetDamageRemaining)) combatStartup.sideCompletionFlags[benefitingSideIndex]=1;
     if (combatStartup.sideCompletionFlags[1] || combatStartup.sideCompletionFlags[0]) return;
     combatStartup.sideCompletionFlags[1]=1;combatStartup.sideCompletionFlags[0]=1;
     for (uint16_t survivingUnitSlot=0;survivingUnitSlot<COMBAT_MECH_SLOTS;++survivingUnitSlot)
@@ -81,7 +81,7 @@ uint8_t BtechTestSideEliminationOrExitObjective(uint16_t sideIndex)
     if (sideIndex>=2) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: sideIndex>=2");
     uint8_t noMechsStillInBattle=1;
     uint16_t sideObjectiveRule=combatImport.sideObjectiveRules[sideIndex];
-    uint8_t allowedExitBoundaryMask=scenarioSelectors.sideBoundaryMasks[sideIndex];
+    uint8_t allowedExitBoundaryMask=combatWorld.scenarioSelectors.sideBoundaryMasks[sideIndex];
     for (uint16_t unitSlot=0;unitSlot<COMBAT_MECH_SLOTS;++unitSlot)
     {
         BtechUnitControlState *evaluatedUnitControl=&combatMechs.unitControls[unitSlot];

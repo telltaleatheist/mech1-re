@@ -137,15 +137,15 @@ void BtechExportCombatResultsAndTransition(uint16_t resultCode)
         BtechPrepareCampaignCombatStage(0);
         BtechInitializeUnitControlRecords();
         BtechLoadCockpitHudResources();
-        selectedObjectCount=0;
+        combatWorld.selectedObjectCount=0;
         for (uint16_t object=0;object<COMBAT_WORLD_OBJECTS;++object)
         {
-            BtechWorldObjectPrefix *registered=worldObjects[object];
+            BtechWorldObjectPrefix *registered=combatWorld.worldObjects[object];
             if (!registered) break;
             if ((int16_t)registered->resourceId<(int16_t)combatResources.surfaceResourceBank.resourceCount && (int16_t)registered->resourceId>=0)
             {
-                if (selectedObjectCount>=COMBAT_SELECTED_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedObjectCount>=COMBAT_SELECTED_WORLD_OBJECTS");
-                selectedWorldObjects[selectedObjectCount++]=worldObjects[object];
+                if (combatWorld.selectedObjectCount>=COMBAT_SELECTED_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedObjectCount>=COMBAT_SELECTED_WORLD_OBJECTS");
+                combatWorld.selectedWorldObjects[combatWorld.selectedObjectCount++]=combatWorld.worldObjects[object];
             }
         }
         combatVideo.playerCameraFillASuppressed=BtechRandomBelowBound(3)<1;

@@ -59,10 +59,10 @@ uint8_t BtechHasNearbyVisibleThreat(void)
 {
     if (!combatImport.activeUnitControl || combatImport.activeUnitControl->sideIndex>=2) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl || activeUnitControl->sideIndex>=2");
     BtechUnitControlState *control=combatImport.activeUnitControl;
-    if (combatImport.sideObjectiveRules[control->sideIndex]==OBJECTIVE_SPECIAL_TARGET && specialTargetDamageRemaining)
+    if (combatImport.sideObjectiveRules[control->sideIndex]==OBJECTIVE_SPECIAL_TARGET && combatWorld.specialTargetDamageRemaining)
     {
-        if (!combatPose.activeUnitPositionedObject || !specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject || !specialTargetObject");
-        int32_t distance=(int32_t)BtechApproximatePlanarDistance(&combatPose.activeUnitPositionedObject->object.prefix.position,&specialTargetObject->object.prefix.position);
+        if (!combatPose.activeUnitPositionedObject || !combatWorld.specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject || !specialTargetObject");
+        int32_t distance=(int32_t)BtechApproximatePlanarDistance(&combatPose.activeUnitPositionedObject->object.prefix.position,&combatWorld.specialTargetObject->object.prefix.position);
         if (control->readyWeaponRangeMinusMargin>distance
             && (control->commandCode==COMBAT_ORDER_ACT_ON_OWN || control->commandCode==TACTICAL_ORDER_ATTACK || control->commandCode==TACTICAL_ORDER_MOVE_ATTACK)) return 1;
     }

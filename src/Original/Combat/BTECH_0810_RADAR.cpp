@@ -9,8 +9,8 @@
 /*0810:65E2. Signed sensor damage chooses radar or an empty coloured panel. */
 void BtechUpdateRadarPanel(void)
 {
-    if (!playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState");
-    if ((int16_t)playerMechState->sensorHits<2)
+    if (!combatWorld.playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState");
+    if ((int16_t)combatWorld.playerMechState->sensorHits<2)
     {
         if (combatStartup.headingRadarSelected) BtechDrawHeadingRadar();
         else BtechDrawTerrainRadar();
@@ -48,9 +48,9 @@ void BtechDrawHeadingRadar(void)
     combatVideo.drawFillColour=combatImport.hudColourSchemeIndex?Combat_Pal_EGA_White:Combat_Pal_EGA_Green;
     BtechDrawClippedLine(panel->x,panel->y,(int16_t)centreX,(int16_t)centreY);
     BtechDrawClippedLine((int16_t)(panel->x+panel->width-1),panel->y,(int16_t)centreX,(int16_t)centreY);
-    if (!playerUnitBinding || !playerUnitBinding->torso || !playerUnitBinding->positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->torso || !playerUnitBinding->positionedLeftLeg");
-    BtechWorldObjectPrefix *player=&playerUnitBinding->positionedLeftLeg->object.prefix;
-    uint16_t heading=player->orientationC+playerUnitBinding->torso->object.prefix.orientationC;
+    if (!combatWorld.playerUnitBinding || !combatWorld.playerUnitBinding->torso || !combatWorld.playerUnitBinding->positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->torso || !playerUnitBinding->positionedLeftLeg");
+    BtechWorldObjectPrefix *player=&combatWorld.playerUnitBinding->positionedLeftLeg->object.prefix;
+    uint16_t heading=player->orientationC+combatWorld.playerUnitBinding->torso->object.prefix.orientationC;
     for (uint16_t slot=1;slot<COMBAT_MECH_SLOTS;++slot)
     {
         if (combatMechs.unitControls[slot].conditionScoreOrExitCode<=COMBAT_EXIT_CODE_THRESHOLD) continue;

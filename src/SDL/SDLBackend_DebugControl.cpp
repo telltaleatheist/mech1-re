@@ -343,10 +343,10 @@ static void WriteStatus(const char *path)
         Position(file,&body->object.prefix);
         fprintf(file,",\"movementMode\":%u,\"verticalStep\":%d,\"jumpCharge\":%u",
             combatMechs.unitControls[slot].movementMode,body->positionSteps[2],mech->jumpCharge);
-        if (!slot && playerPoseObject)
+        if (!slot && combatWorld.playerPoseObject)
         {
             fputs(",\"camera\":{",file);
-            Position(file,&playerPoseObject->object.prefix);
+            Position(file,&combatWorld.playerPoseObject->object.prefix);
             fputc('}',file);
         }
         fprintf(file,",\"torsoOrientation\":[%u,%u,%u],\"heat\":%u,\"engineHits\":%u,\"gyroHits\":%u,\"cockpitDisabled\":%u,\"armor\":",
@@ -362,12 +362,12 @@ static void WriteStatus(const char *path)
         fputs("]}",file);
     }
     fputs("],\"objective\":",file);
-    if(mwSdlCombatActive && specialTargetObject)
-    {fputc('{',file);Position(file,&specialTargetObject->object.prefix);fprintf(file,",\"damageRemaining\":%u}",specialTargetDamageRemaining);}
+    if(mwSdlCombatActive && combatWorld.specialTargetObject)
+    {fputc('{',file);Position(file,&combatWorld.specialTargetObject->object.prefix);fprintf(file,",\"damageRemaining\":%u}",combatWorld.specialTargetDamageRemaining);}
     else fputs("null",file);
     fputs(",\"worldObjects\":[",file);first=true;
-    if(mwSdlCombatActive) for(unsigned i=0;i<worldObjectCount && i<COMBAT_WORLD_OBJECTS;++i)
-    {if(!worldObjects[i])continue;fprintf(file,"%s{\"index\":%u,",first?"":",",i);first=false;Position(file,worldObjects[i]);fputc('}',file);}
+    if(mwSdlCombatActive) for(unsigned i=0;i<combatWorld.worldObjectCount && i<COMBAT_WORLD_OBJECTS;++i)
+    {if(!combatWorld.worldObjects[i])continue;fprintf(file,"%s{\"index\":%u,",first?"":",",i);first=false;Position(file,combatWorld.worldObjects[i]);fputc('}',file);}
     fprintf(file,"],\"radar\":{\"rangeShift\":%u,\"headingMode\":%u,\"origin\":[%u,%u],\"markers\":[",
         combatStartup.radarRangeShift,combatStartup.headingRadarSelected,combatCockpit.radarMapOriginX,combatCockpit.radarMapOriginY);
     unsigned page=combatCockpit.radarCachePage;

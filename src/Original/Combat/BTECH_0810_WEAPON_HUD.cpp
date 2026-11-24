@@ -16,8 +16,8 @@ enum { WEAPON_HUD_ROW_HEIGHT=8, WEAPON_HUD_ROWS_PER_BANK=5, WEAPON_HUD_FIRST_BAN
  * The marker resets Y from the anchor only for populated mounts, as native. */
 void BtechDrawWeaponStatusList(uint16_t selectedMountIndex,uint16_t targetUnitSlot)
 {
-    if (!playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
-    uint16_t layout=combatCockpit.mechCockpitLayoutIndices[playerMechState->templateIndex];
+    if (!combatWorld.playerMechState || combatWorld.playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
+    uint16_t layout=combatCockpit.mechCockpitLayoutIndices[combatWorld.playerMechState->templateIndex];
     if (layout>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: layout>=COMBAT_COCKPIT_LAYOUTS");
     const BtechCockpitLayout *cockpit=&combatCockpit.cockpitLayouts[layout];
     combatVideo.textTransparentBackground=false;combatVideo.textBackgroundColour=Combat_Pal_EGA_DarkGrey;
@@ -26,20 +26,20 @@ void BtechDrawWeaponStatusList(uint16_t selectedMountIndex,uint16_t targetUnitSl
     for (mount=0;mount<COMBAT_WEAPON_MOUNTS;++mount,rowY+=WEAPON_HUD_ROW_HEIGHT)
     {
         if (mount==WEAPON_HUD_ROWS_PER_BANK) rowY+=WEAPON_HUD_BANK_GAP;
-        if (playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
-        uint16_t weaponKind=combatMechs.mechTemplates[playerMechState->templateIndex].weaponMounts[mount].weaponKind;
+        if (combatWorld.playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
+        uint16_t weaponKind=combatMechs.mechTemplates[combatWorld.playerMechState->templateIndex].weaponMounts[mount].weaponKind;
         if (weaponKind==COMBAT_WEAPON_NONE) continue;
         if (weaponKind>=COMBAT_WEAPON_KINDS || combatImport.hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: weaponKind>=COMBAT_WEAPON_KINDS || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
         int16_t ammoFamily=combatMechs.weaponDefinitions[weaponKind].ammoFamily;
-        combatVideo.textForegroundColour=(uint8_t)(playerMechState->weapons[mount].reloadTicksRemaining?
+        combatVideo.textForegroundColour=(uint8_t)(combatWorld.playerMechState->weapons[mount].reloadTicksRemaining?
             combatCockpit.hudColourSchemes[combatImport.hudColourSchemeIndex].weaponReloading:combatCockpit.hudColourSchemes[combatImport.hudColourSchemeIndex].weaponReady);
         if (ammoFamily!=(int16_t)COMBAT_AMMO_NONE && (uint16_t)ammoFamily>=COMBAT_AMMO_FAMILIES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: ammoFamily!=(int16_t)COMBAT_AMMO_NONE && (uint16_t)ammoFamily>=COMBAT_AMMO_FAMILIES");
-        if ((ammoFamily!=(int16_t)COMBAT_AMMO_NONE && !playerMechState->ammoSalvosRemaining[ammoFamily]) || !playerMechState->weapons[mount].operational)
+        if ((ammoFamily!=(int16_t)COMBAT_AMMO_NONE && !combatWorld.playerMechState->ammoSalvosRemaining[ammoFamily]) || !combatWorld.playerMechState->weapons[mount].operational)
             combatVideo.textForegroundColour=(uint8_t)combatCockpit.hudColourSchemes[combatImport.hudColourSchemeIndex].weaponUnavailable;
         BtechDrawNearText(combatCockpit.weaponLabels[weaponKind],cockpit->weaponListX,(int16_t)rowY);
         combatVideo.textForegroundColour=(uint8_t)combatCockpit.hudColourSchemes[combatImport.hudColourSchemeIndex].ammoText;
         const char *ammoText=ammoFamily==(int16_t)COMBAT_AMMO_NONE?combatCockpit.energyAmmoPlaceholder:
-            BtechFormatSignedDecimalField((int16_t)playerMechState->ammoSalvosRemaining[ammoFamily],WEAPON_HUD_AMMO_DIGITS,' ');
+            BtechFormatSignedDecimalField((int16_t)combatWorld.playerMechState->ammoSalvosRemaining[ammoFamily],WEAPON_HUD_AMMO_DIGITS,' ');
         BtechDrawNearText(ammoText,(int16_t)(cockpit->weaponListX+WEAPON_HUD_AMMO_COLUMN),(int16_t)rowY);
         int16_t rangeBucket=targetUnitSlot?BtechClassifyWeaponRange(0,targetUnitSlot,weaponKind):4;
         if ((uint16_t)rangeBucket>=5) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)rangeBucket>=5");

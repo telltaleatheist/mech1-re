@@ -37,7 +37,7 @@ void BtechUpdateProjectiles(void)
             }
             if (BtechTestProjectileAgainstSpecialObject(projectile)) goto impact;
             uint32_t height;height=0;
-            if ((uint8_t)BtechQueryWorldSurface(&projectile->worldObject->surfaceQuery,&object->object.prefix.position,selectedWorldObjects,(int16_t)selectedObjectCount))
+            if ((uint8_t)BtechQueryWorldSurface(&projectile->worldObject->surfaceQuery,&object->object.prefix.position,combatWorld.selectedWorldObjects,(int16_t)combatWorld.selectedObjectCount))
                 height=object->surfaceQuery.surfacePositionC;
             if ((int32_t)height<(int32_t)object->object.prefix.position.positionC) continue;
 impact:
@@ -76,7 +76,7 @@ uint8_t BtechSteerProjectileAndTestOvershoot(BtechProjectileState *projectile)
 /*0810:5D3E. Special-target capacity is independent of Mech armour. */
 uint8_t BtechTestProjectileAgainstSpecialObject(BtechProjectileState *projectile)
 {
-    if (!specialTargetDamageRemaining) return 0;
+    if (!combatWorld.specialTargetDamageRemaining) return 0;
     if (!projectile->worldObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !projectile->worldObject");
     if (!BtechTestPositionInsideSpecialTarget(&projectile->worldObject->object.prefix.position,1)) return 0;
     int16_t damage=BtechCalculateProjectileImpactDamage(projectile);
@@ -104,9 +104,9 @@ int16_t BtechCalculateProjectileImpactDamage(const BtechProjectileState *project
 BtechProjectileState *BtechAllocateProjectileFromWeaponProfile(int16_t weaponKind,const BtechPosition3D *placement)
 {
     uint16_t freeObject=0;
-    while (freeObject<COMBAT_POOLED_OBJECTS && pooledWorldObjects[freeObject].occupied) ++freeObject;
-    if (freeObject==COMBAT_POOLED_OBJECTS || worldObjectCount>=COMBAT_WORLD_OBJECTS
-        || cockpitWorldObjectCount>=COMBAT_WORLD_OBJECTS) return NULL;
+    while (freeObject<COMBAT_POOLED_OBJECTS && combatWorld.pooledWorldObjects[freeObject].occupied) ++freeObject;
+    if (freeObject==COMBAT_POOLED_OBJECTS || combatWorld.worldObjectCount>=COMBAT_WORLD_OBJECTS
+        || combatWorld.cockpitWorldObjectCount>=COMBAT_WORLD_OBJECTS) return NULL;
     for (uint16_t slot=0;slot<COMBAT_PROJECTILE_SLOTS;++slot)
     {
         BtechProjectileState *projectile=&combatProjectiles.projectiles[slot];
@@ -160,8 +160,8 @@ void BtechResetProjectileHandles(void)
 /*0810:5A55. Body reference supplies origin; selected render part supplies target. */
 void BtechFirePlayerWeaponProjectile(uint16_t mountIndex)
 {
-    if (!playerMechTemplate || mountIndex>=COMBAT_WEAPON_MOUNTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechTemplate || mountIndex>=COMBAT_WEAPON_MOUNTS");
-    const BtechWeaponMount *weaponMount=&playerMechTemplate->weaponMounts[mountIndex];
+    if (!combatWorld.playerMechTemplate || mountIndex>=COMBAT_WEAPON_MOUNTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechTemplate || mountIndex>=COMBAT_WEAPON_MOUNTS");
+    const BtechWeaponMount *weaponMount=&combatWorld.playerMechTemplate->weaponMounts[mountIndex];
     if (weaponMount->bodyLocation>=COMBAT_BODY_LOCATIONS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: weaponMount->bodyLocation>=COMBAT_BODY_LOCATIONS");
     BtechPosition3D *launchPosition=BtechGetUnitBodyReferencePosition(0,(int16_t)combatProjectiles.bodyLocationReferenceIndices[weaponMount->bodyLocation]);
     BtechProjectileState *projectile=BtechSpawnUnitWeaponProjectile(0,weaponMount->weaponKind,launchPosition);

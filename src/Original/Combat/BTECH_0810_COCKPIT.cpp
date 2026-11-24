@@ -29,15 +29,15 @@ void BtechResetHudGaugeCaches(void)
 void BtechRefreshCockpitViewportAndGauges(void)
 {
     uint8_t savedClipping=combatVideo.screenPolygonNeedsClip;
-    if (!playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
-    combatImport.activeCockpitLayoutIndex=combatCockpit.mechCockpitLayoutIndices[playerMechState->templateIndex];
+    if (!combatWorld.playerMechState || combatWorld.playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
+    combatImport.activeCockpitLayoutIndex=combatCockpit.mechCockpitLayoutIndices[combatWorld.playerMechState->templateIndex];
     combatVideo.screenPolygonNeedsClip=false;
     combatVideo.drawPageSelector=combatVideo.backPageSelector;
     if (combatImport.activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS");
     BtechLoadScreenImage(combatCockpit.cockpitScreenFilenames[combatImport.activeCockpitLayoutIndex],NULL);
     combatVideo.screenPolygonNeedsClip=savedClipping;
     BtechResetHudGaugeCaches();
-    BtechSetCockpitCameraViewport(playerPoseCameraContext);
+    BtechSetCockpitCameraViewport(combatWorld.playerPoseCameraContext);
     combatCockpit.cockpitFullRedrawPending=1;
 }
 
@@ -59,10 +59,10 @@ void BtechResetMechInspectionState(void)
 void BtechApplyLandscapeCameraColours(void)
 {
     if (combatImport.combatLandscapeIndex>=COMBAT_LANDSCAPES || combatImport.hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES
-        || !playerPoseCameraContext || !orderMapCameraContext) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || !playerPoseCameraContext || !orderMapCameraContext"); /* Unrecovered unrelated-owner aliases. */
-    playerPoseCameraContext->fillPaletteA=combatVideo.playerCameraFillASuppressed?0:
+        || !combatWorld.playerPoseCameraContext || !combatWorld.orderMapCameraContext) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || !playerPoseCameraContext || !orderMapCameraContext"); /* Unrecovered unrelated-owner aliases. */
+    combatWorld.playerPoseCameraContext->fillPaletteA=combatVideo.playerCameraFillASuppressed?0:
         combatVideo.landscapeCameraColourRows[combatImport.hudColourSchemeIndex][combatImport.combatLandscapeIndex].playerFillPaletteA;
-    playerPoseCameraContext->fillPaletteB=orderMapCameraContext->fillPaletteB=
+    combatWorld.playerPoseCameraContext->fillPaletteB=combatWorld.orderMapCameraContext->fillPaletteB=
         combatVideo.landscapeCameraColourRows[combatImport.hudColourSchemeIndex][combatImport.combatLandscapeIndex].sharedFillPaletteB;
     BtechSelectPaletteSlot(combatVideo.landscapePaletteSlots[combatImport.combatLandscapeIndex]);
 }

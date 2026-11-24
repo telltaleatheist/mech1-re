@@ -19,10 +19,10 @@ static void RecordDiagnosticAudio(const float *samples,uint32_t count)
 static void TraceDiagnosticFrame(void)
 {
     uint64_t now=SDL_GetTicks();
-    if (!mwSdlCombatActive || now<nextDiagnosticFrame || !playerUnitBinding
-        || !playerUnitBinding->positionedLeftLeg) return;
+    if (!mwSdlCombatActive || now<nextDiagnosticFrame || !combatWorld.playerUnitBinding
+        || !combatWorld.playerUnitBinding->positionedLeftLeg) return;
     nextDiagnosticFrame=now+1000;
-    const BtechPooledWorldObject *body=playerUnitBinding->positionedLeftLeg;
+    const BtechPooledWorldObject *body=combatWorld.playerUnitBinding->positionedLeftLeg;
     fprintf(stderr,"Combat time=%llu tick=%u position=%ld,%ld step=%d pose=%u/%u gait=%u sound=%u timerLagMs=%.2f audioQueueMs=%u tickMs=%.1f speed=%u lateAudioFrames=%llu underrunFrames=%llu\n",
         (unsigned long long)now,combatStartup.combatTickCounter,
         (long)(int32_t)body->object.prefix.position.positionA,

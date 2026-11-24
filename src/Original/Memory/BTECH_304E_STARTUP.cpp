@@ -66,8 +66,8 @@ void BtechInitializeFreshStartupOwners(const uint8_t *data)
     combatCockpit.radarCentreX=combatCockpit.radarCentreY=combatCockpit.radarCachePage=combatCockpit.radarMapOriginX=combatCockpit.radarMapOriginY=0;
     combatInput.previousFireButtonState=combatInput.fireCycleActive=combatInput.requestedAimPitch=combatInput.unidentifiedField24=0;
     combatInput.combatInputScanCode=combatInput.combatInputDirectionMask=combatInput.combatInputButton1State=combatInput.combatInputButton0State=0;
-    selectedObjectCount=0;
-    for (uint16_t object=0;object<COMBAT_SELECTED_WORLD_OBJECTS;++object) selectedWorldObjects[object]=NULL;
+    combatWorld.selectedObjectCount=0;
+    for (uint16_t object=0;object<COMBAT_SELECTED_WORLD_OBJECTS;++object) combatWorld.selectedWorldObjects[object]=NULL;
     for (uint16_t mount=0;mount<COMBAT_WEAPON_MOUNTS;++mount) combatStartup.playerMountFireFlags[mount]=0;
     for (uint16_t slot=0;slot<COMBAT_MECH_TEMPLATES;++slot) combatMechs.templateMaximumCombatScores[slot]=0;
     for (uint16_t observer=0;observer<COMBAT_MECH_SLOTS;++observer)

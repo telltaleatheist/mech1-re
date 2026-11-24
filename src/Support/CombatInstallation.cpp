@@ -125,8 +125,8 @@ void BtechHostDiscardChildData(void)
         }
     BtechCloseRuntimeStreamFiles();
     for (uint16_t slot=0;slot<COMBAT_WORLD_OBJECTS;++slot)
-        if (heapWorldObjectOwned[slot])
-        {worldObjects[slot]=NULL;heapWorldObjectOwned[slot]=0;}
+        if (combatWorld.heapWorldObjectOwned[slot])
+        {combatWorld.worldObjects[slot]=NULL;combatWorld.heapWorldObjectOwned[slot]=0;}
     for (uint16_t bank=0;bank<COMBAT_AUDIO_BANK_ROOTS;++bank)
     {
         /* DOS and near allocator owners include detached/reused nodes. Process
