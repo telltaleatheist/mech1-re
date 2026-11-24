@@ -38,7 +38,7 @@ void BtechRestoreKeyboardAndTickVectors(void)
     keyboardHandlersInstalled=0;
     if (!btechHostSetKeyboardOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetKeyboardOwner");
     combatKeyQueueHead=combatKeyQueueTail;
-    btechHostSetKeyboardOwner(savedKeyboardOwner);
+    btechHostSetKeyboardOwner(combatHandlers.savedKeyboardOwner);
     /* INT 1Ch's restore is gone with its never-installed hook (H4c). */
 }
 
@@ -59,7 +59,7 @@ void BtechRestoreTimerScheduler(void)
     if (!btechHostEnableDeviceIrqs || !btechHostSetTimerOwner || !btechHostSetTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostEnableDeviceIrqs || !btechHostSetTimerOwner || !btechHostSetTimerPeriod");
     btechHostSetTimerPeriod(PIT_COUNTER_MODULUS); /* The BIOS's period (H4b; was 43h, 40h 0, 40h 0). */
     btechHostEnableDeviceIrqs(MwDeviceIrq::All);
-    btechHostSetTimerOwner(savedTimerOwner);
+    btechHostSetTimerOwner(combatHandlers.savedTimerOwner);
     runtimeDelayActive=0;
 }
 

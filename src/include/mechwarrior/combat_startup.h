@@ -31,9 +31,6 @@ extern BtechWorldObjectPrefix *selectedHitObject;
 extern uint8_t criticalErrorHandlerInstalled,keyboardHandlersInstalled,mouseDriverInstalled;
 extern uint8_t divideErrorHookMarkedActive,videoAdapter;
 extern MwDivideOwner savedDivideErrorOwner;
-/* Writable native CS storage belongs to1BF5, NOT to304E. */
-extern MwKeyboardOwner savedKeyboardOwner;
-extern MwTimerOwner savedTimerOwner;
 extern uint16_t pitChannel0DivisorShadow;
 extern uint16_t schedulerPeriod,schedulerCountdown,schedulerActiveSlots;
 enum { COMBAT_SCHEDULER_SLOTS=0x10 };
@@ -56,7 +53,15 @@ uint16_t BtechUnregisterTimerCallback(uint16_t callbackHandle);
 void BtechTimerSchedulerInterrupt(void);
 enum { COMBAT_KEYBOARD_SCAN_CODES=0x59,COMBAT_KEYBOARD_COMPATIBILITY_CODES=0x0B };
 extern uint8_t keyboardCapsLockRequested,keyboardBiosIntercept,keyboardScanTranslations[COMBAT_KEYBOARD_SCAN_CODES];
-extern uint8_t keyboardScanMask,keyboardExtendedScanMask;
+/* Combat state owned by combat_startup.h (plan, slice B3a). */
+struct CombatHandlerState
+{
+    /* Writable native CS storage belongs to1BF5, NOT to304E. */
+    MwKeyboardOwner savedKeyboardOwner;
+    MwTimerOwner savedTimerOwner;
+    uint8_t keyboardScanMask, keyboardExtendedScanMask;
+};
+extern CombatHandlerState combatHandlers;
 extern bool (*btechHostQueryKeyboardIntercept)(uint16_t ax); /* INT15 -> carry. */
 /* Interrupt ownership (H4c), where the original got and set vectors. */
 extern MwTimerOwner (*btechHostGetTimerOwner)(void);

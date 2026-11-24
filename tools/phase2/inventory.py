@@ -20,11 +20,11 @@ is a word. The offset shown is then the exe's, from those tables.
 import collections, glob, os, re, sys
 
 def owners():
-    """The campaign state's owner structs (plan slice B2): instance -> (type, member lines)."""
+    """The owner structs (plan slices B2 and B3: campaign and combat state): instance -> (type, member lines)."""
     out={}
     for p in glob.glob(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),'src','include','mechwarrior','*.h')):
         text=open(p).read()
-        for m in re.finditer(r'/\* Campaign state owned by [\w.]+ \(plan, slice B2\)\. \*/\nstruct (\w+)\n\{\n(.*?)\n\};\nextern \1 (\w+);',text,re.S):
+        for m in re.finditer(r'/\* (?:Campaign|Combat) state owned by [\w.]+ \(plan, slice B\d[a-e]?\)\. \*/\nstruct (\w+)\n\{\n(.*?)\n\};\nextern \1 (\w+);',text,re.S):
             members=[l.strip() for l in re.sub(r'/\*.*?\*/','',m.group(2),flags=re.S).split('\n') if l.strip()]
             out[m.group(3)]=(m.group(1),members)
     return out
@@ -53,8 +53,8 @@ def unfold(text):
             decls=[]
             for line in members:
                 t,rest=re.match(r'((?:(?:const|volatile|unsigned|signed|struct)\s+)*[\w:]+(?:\s+(?:const|volatile))*)\s*(.*)$',line.rstrip(';')).groups()
-                for part in [x.strip() for x in re.split(r',\s*(?![^\[]*\])',rest)]:
-                    n=re.match(r'\**\s*(\w+)',part).group(1)
+                for part in [x.strip() for x in top_level(rest)]:
+                    n=re.match(r'\(?\s*\**\s*(\w+)',part).group(1)  # also a function pointer, (*name)(...)
                     decls.append(f'{t} {part}'+(f' = {inits[n]}' if n in inits else '')+';')
             text=text[:m.start()]+'\n'.join(decls)+text[m.end():]
         text=re.sub(r'\b'+inst+r'\.','',text)

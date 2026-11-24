@@ -61,7 +61,7 @@ bool BtechImportSoundInitialData(const uint8_t *data,size_t bytes)
     selectedAudioBackendMask=0; /*28D4*/
     savedMusicTimerDivisor=MwReadNativeWord(data,0x28D6);
     savedMusicTimerOwner=MwTimerOwner::Previous; /*28D8: 0000:0000*/
-    musicTimerInstalled=data[0x28DC];musicTimerCallback=BtechAudioTimerNoOp;
+    musicTimerInstalled=data[0x28DC];combatSoundIrq.musicTimerCallback=BtechAudioTimerNoOp;
     soundEffectsEnableMask=data[0x28DD];
     /* These are the actual authored pairs, not a replacement empty tick. */
     if (MwReadNativeWord(data,0x2C9B)!=0x0020 || MwReadNativeWord(data,0x2C9D)!=0x229C

@@ -60,7 +60,7 @@ void BtechTimerSchedulerInterrupt(void)
          * the previous owner was ever saved; combat's music timer saved
          * under the scheduler is not converted. */
         schedulerCountdown=schedulerPeriod;
-        if (savedTimerOwner!=MwTimerOwner::Previous) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: savedTimerOwner!=MwTimerOwner::Previous");
+        if (combatHandlers.savedTimerOwner!=MwTimerOwner::Previous) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: savedTimerOwner!=MwTimerOwner::Previous");
         if (!btechHostRunPreviousTimerOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostRunPreviousTimerOwner");
         btechHostRunPreviousTimerOwner();
     }
@@ -85,7 +85,7 @@ void BtechInstallKeyboardAndTickHandlers(void)
         || !btechHostReadBiosByte || !btechHostWriteBiosByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetKeyboardOwner || !btechHostSetKeyboardOwner || !btechHostReadBiosByte || !btechHostWriteBiosByte");
     if (!keyboardHandlersInstalled)
     {
-        savedKeyboardOwner=btechHostGetKeyboardOwner();
+        combatHandlers.savedKeyboardOwner=btechHostGetKeyboardOwner();
         btechHostSetKeyboardOwner(MwKeyboardOwner::Combat);
         keyboardBiosIntercept=0;
         int16_t compatibility=BtechProbePcjrTandyRomSignatures();
@@ -97,7 +97,7 @@ void BtechInstallKeyboardAndTickHandlers(void)
                 && btechHostReadBiosByte(BIOS_KEYBOARD_COMPATIBILITY_STATE)==KEYBOARD_COMPATIBILITY_INTERCEPT_STATE) keyboardBiosIntercept=1;
             else
             {
-                keyboardScanMask=KEYBOARD_ATTRIBUTE_CLEAR_HELD;keyboardExtendedScanMask=KEYBOARD_ATTRIBUTE_CLEAR_HELD;
+                combatHandlers.keyboardScanMask=KEYBOARD_ATTRIBUTE_CLEAR_HELD;combatHandlers.keyboardExtendedScanMask=KEYBOARD_ATTRIBUTE_CLEAR_HELD;
                 keyboardScanTranslations[COMBAT_KEY_GRAVE]=keyboardScanTranslations[COMBAT_KEY_UP];
                 keyboardScanTranslations[COMBAT_KEY_BACKSLASH]=keyboardScanTranslations[COMBAT_KEY_LEFT];
                 keyboardScanTranslations[COMBAT_KEY_KEYPAD_PLUS]=keyboardScanTranslations[COMBAT_KEY_RIGHT];
@@ -130,7 +130,7 @@ void BtechInstallTimerScheduler(uint16_t period)
     schedulerActiveSlots=0;
     BtechProbePcjrTandyRomSignatures();
     if (!btechHostGetTimerOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetTimerOwner");
-    savedTimerOwner=btechHostGetTimerOwner();
+    combatHandlers.savedTimerOwner=btechHostGetTimerOwner();
     if ((int16_t)period>COMBAT_SCHEDULER_MAX_POSITIVE_PERIOD || !period) return;
     schedulerPeriod=period;schedulerCountdown=period;
     pitChannel0DivisorShadow=UINT16_MAX/period;

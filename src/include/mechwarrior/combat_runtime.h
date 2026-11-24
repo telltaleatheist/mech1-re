@@ -16,18 +16,23 @@ typedef struct BtechRuntimePrefix {
     uint16_t ambientFallbackWords[4];
     uint8_t copyrightBytes[COMBAT_RUNTIME_CHECKSUM_BYTES-8];
 } BtechRuntimePrefix;
-extern BtechRuntimePrefix runtimePrefix;
 /* Missing ITM node0 dereferences these SAME authored prefix WORDs. */
-#define missingSoundFallbackOffsetAlias (runtimePrefix.ambientFallbackWords[0])
-#define missingSoundFallbackSelectorAlias (runtimePrefix.ambientFallbackWords[1])
-extern BtechRuntimeCallback runtimeExitCallbacks[1],runtimeDiagnosticCallback;
-extern void (*runtimeDeviceCleanup)(uint16_t operation);
-extern MwDivideOwner runtimeSavedDivideOwner;
-extern uint16_t runtimeHandleLimit;
-extern uint8_t runtimeHandleFlags[COMBAT_DOS_HANDLES];
-extern uint16_t runtimeTemporaryFileIds[COMBAT_STREAM_SLOTS];
-extern uint8_t runtimeStreamAuxiliaryFlags[COMBAT_STREAM_SLOTS];
-extern BtechRuntimeMessage runtimeMessages[COMBAT_RUNTIME_MESSAGES];
+#define missingSoundFallbackOffsetAlias (combatRuntime.runtimePrefix.ambientFallbackWords[0])
+#define missingSoundFallbackSelectorAlias (combatRuntime.runtimePrefix.ambientFallbackWords[1])
+/* Combat state owned by combat_runtime.h (plan, slice B3a). */
+struct CombatRuntimeState
+{
+    BtechRuntimePrefix runtimePrefix;
+    BtechRuntimeCallback runtimeExitCallbacks[1], runtimeDiagnosticCallback;
+    void (*runtimeDeviceCleanup)(uint16_t operation);
+    MwDivideOwner runtimeSavedDivideOwner;
+    uint16_t runtimeHandleLimit;
+    uint8_t runtimeHandleFlags[COMBAT_DOS_HANDLES];
+    uint16_t runtimeTemporaryFileIds[COMBAT_STREAM_SLOTS];
+    uint8_t runtimeStreamAuxiliaryFlags[COMBAT_STREAM_SLOTS];
+    BtechRuntimeMessage runtimeMessages[COMBAT_RUNTIME_MESSAGES];
+};
+extern CombatRuntimeState combatRuntime;
 /* Actual DOS IO/process boundaries. Termination must leave the child (the
  * launcher may implement that by a nonlocal return); it must not return here. */
 extern int16_t (*btechHostCloseHandle)(uint16_t handle);

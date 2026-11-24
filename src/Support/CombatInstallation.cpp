@@ -196,8 +196,8 @@ bool BtechHostLoadInitialData(void)
      * previous owner. INT 1Ch's (2BC4) is checked though the hook is gone. */
     RequireEmptySavedVector(platform,0x1BF5,0x2BC0);RequireEmptySavedVector(platform,0x1BF5,0x2BC4);
     RequireEmptySavedVector(platform,0x1BF5,0x253C);RequireEmptySavedVector(audio,0x1ADF,0x0E7D);
-    savedKeyboardOwner=MwKeyboardOwner::System;savedTimerOwner=MwTimerOwner::Previous;savedSampleIrqOwner=MwTimerOwner::Previous;
-    keyboardScanMask=platform[0x2D51];keyboardExtendedScanMask=platform[0x2D5E];
+    combatHandlers.savedKeyboardOwner=MwKeyboardOwner::System;combatHandlers.savedTimerOwner=MwTimerOwner::Previous;combatSoundIrq.savedSampleIrqOwner=MwTimerOwner::Previous;
+    combatHandlers.keyboardScanMask=platform[0x2D51];combatHandlers.keyboardExtendedScanMask=platform[0x2D5E];
     /* 0810:CE9A, INT 24's saved vector, is gone with that hook (H4c). It held
      * code bytes in the 1990 revision and zero in the reference: dead either
      * way, as startup saved INT 24 into it before any read. */

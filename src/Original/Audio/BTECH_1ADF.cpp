@@ -116,15 +116,15 @@ void BtechRestoreSoundTimerInterrupt(void)
     if (!btechHostSetTimerPeriod || !btechHostSetTimerOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetTimerPeriod || !btechHostSetTimerOwner");
     btechHostSetTimerPeriod(savedSoundTimerDivisor); /* Was 40h's low and high bytes (H4b). */
     soundTimerInstalled=0;
-    btechHostSetTimerOwner(savedSampleIrqOwner);
+    btechHostSetTimerOwner(combatSoundIrq.savedSampleIrqOwner);
 }
 
 /*1ADF:0F39. The native private IRQ stack becomes the C call frame. There is
  * no STI or previous-handler chain; its EOI is gone (H4c). */
 void BtechMusicTimerInterrupt(void)
 {
-    if (!musicTimerCallback) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !musicTimerCallback");
-    musicTimerCallback();
+    if (!combatSoundIrq.musicTimerCallback) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !musicTimerCallback");
+    combatSoundIrq.musicTimerCallback();
 }
 
 /*1ADF:0F76. Reinstallation changes the callback/divisor, not the saved vector.
@@ -141,7 +141,7 @@ void BtechInstallMusicTimerCallback(BtechAudioTick callback,uint16_t divisor)
         btechHostSetTimerOwner(MwTimerOwner::CombatMusic);
         savedMusicTimerDivisor=pitChannel0DivisorShadow;
     }
-    musicTimerCallback=callback;
+    combatSoundIrq.musicTimerCallback=callback;
     pitChannel0DivisorShadow=divisor;
     btechHostSetTimerPeriod(divisor);
 }

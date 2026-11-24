@@ -24,8 +24,8 @@ const char *BtechFindRuntimeMessageByCode(uint16_t messageCode)
 {
     for (uint16_t message=0;message<COMBAT_RUNTIME_MESSAGES;++message)
     {
-        if (runtimeMessages[message].code==messageCode) return runtimeMessages[message].text;
-        if (runtimeMessages[message].code==UINT16_MAX) return NULL;
+        if (combatRuntime.runtimeMessages[message].code==messageCode) return combatRuntime.runtimeMessages[message].text;
+        if (combatRuntime.runtimeMessages[message].code==UINT16_MAX) return NULL;
     }
     /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Unsupported table without its native terminator."); /* Unsupported table without its native terminator. */
 }
@@ -43,7 +43,7 @@ void BtechWriteRuntimeMessageToStderr(uint16_t messageCode)
 void BtechReportRuntimeFatalState(void)
 {
     BtechWriteRuntimeMessageToStderr(COMBAT_RUNTIME_MESSAGE_NEWLINE);
-    if (runtimeDiagnosticCallback) runtimeDiagnosticCallback();
+    if (combatRuntime.runtimeDiagnosticCallback) combatRuntime.runtimeDiagnosticCallback();
     BtechWriteRuntimeMessageToStderr(COMBAT_RUNTIME_MESSAGE_PREFIX);
 }
 
@@ -54,12 +54,12 @@ uint16_t BtechCheckRuntimeDataChecksum(void)
     uint8_t checksum=0,lastByte=0;
     for (uint16_t word=0;word<4;++word)
     {
-        checksum^=(uint8_t)runtimePrefix.ambientFallbackWords[word];
-        checksum^=(uint8_t)(runtimePrefix.ambientFallbackWords[word]>>8);
+        checksum^=(uint8_t)combatRuntime.runtimePrefix.ambientFallbackWords[word];
+        checksum^=(uint8_t)(combatRuntime.runtimePrefix.ambientFallbackWords[word]>>8);
     }
-    for (uint16_t byte=0;byte<sizeof(runtimePrefix.copyrightBytes);++byte)
+    for (uint16_t byte=0;byte<sizeof(combatRuntime.runtimePrefix.copyrightBytes);++byte)
     {
-        lastByte=runtimePrefix.copyrightBytes[byte];checksum^=lastByte;
+        lastByte=combatRuntime.runtimePrefix.copyrightBytes[byte];checksum^=lastByte;
     }
     checksum^=COMBAT_RUNTIME_CHECKSUM_XOR;
     if (!checksum) return lastByte;
@@ -73,9 +73,9 @@ uint16_t BtechCheckRuntimeDataChecksum(void)
 void BtechRestoreRuntimeVectors(void)
 {
     /*4DF0 is the selector HALF of4DEE, not another enable-flag owner. */
-    if (runtimeDeviceCleanup) runtimeDeviceCleanup(COMBAT_RUNTIME_DEVICE_EXIT);
+    if (combatRuntime.runtimeDeviceCleanup) combatRuntime.runtimeDeviceCleanup(COMBAT_RUNTIME_DEVICE_EXIT);
     if (!btechHostSetDivideOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetDivideOwner");
-    btechHostSetDivideOwner(runtimeSavedDivideOwner);
+    btechHostSetDivideOwner(combatRuntime.runtimeSavedDivideOwner);
     /* The extra vector's restore is gone: the import rejects an image with it active (H4c). */
 }
 
@@ -84,13 +84,13 @@ void BtechRestoreRuntimeVectors(void)
 void BtechRuntimeExitAndCloseHandles(uint16_t exitCode)
 {
     BtechRunNearCallbacksReverse(NULL,0); /*774C..774C*/
-    BtechRunNearCallbacksReverse(runtimeExitCallbacks,1);
+    BtechRunNearCallbacksReverse(combatRuntime.runtimeExitCallbacks,1);
     BtechRunNearCallbacksReverse(NULL,0); /*4DFC..4DFC*/
     BtechRunFarCallbacksReverse(NULL,0); /*4DFC..4DFC*/
     if (BtechCheckRuntimeDataChecksum() && !exitCode) exitCode=COMBAT_RUNTIME_ERROR_EXIT;
     for (uint16_t handle=COMBAT_STANDARD_HANDLES;handle<COMBAT_DOS_HANDLES;++handle)
     {
-        if (!(runtimeHandleFlags[handle]&1)) continue;
+        if (!(combatRuntime.runtimeHandleFlags[handle]&1)) continue;
         if (!btechHostCloseHandle) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostCloseHandle");
         btechHostCloseHandle(handle); /* Raw INT21 close: no runtime table write. */
     }

@@ -32,8 +32,8 @@ void BtechHandleKeyEvent(MwKeyEvent event)
         &((scan&KEYBOARD_BREAK_FLAG)?UINT8_MAX:KEYBOARD_ATTRIBUTE_CLEAR_HELD))^KEYBOARD_ATTRIBUTE_HELD;
     if (keyboardBiosIntercept==1)
     {
-        if (scanIndex==COMBAT_KEY_CAPS_LOCK) {scan=scanIndex;attributes&=keyboardScanMask;}
-        else if (scanIndex==COMBAT_KEY_NUM_LOCK) {scan=scanIndex;attributes&=keyboardExtendedScanMask;}
+        if (scanIndex==COMBAT_KEY_CAPS_LOCK) {scan=scanIndex;attributes&=combatHandlers.keyboardScanMask;}
+        else if (scanIndex==COMBAT_KEY_NUM_LOCK) {scan=scanIndex;attributes&=combatHandlers.keyboardExtendedScanMask;}
     }
     if (scan&KEYBOARD_BREAK_FLAG)
     {

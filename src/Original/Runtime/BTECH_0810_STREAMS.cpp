@@ -29,12 +29,12 @@ BtechRuntimeStream *BtechRuntimeStreamOpen(const char *filename,const char *mode
     if (!stream) return NULL;
     if ((mode[0]!='r' && mode[0]!='w') || mode[1]!='b' || mode[2]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (mode[0]!='r' && mode[0]!='w') || mode[1]!='b' || mode[2]");
     uint16_t handle=0;
-    while (handle<runtimeHandleLimit && (runtimeHandleFlags[handle]&1)) ++handle;
-    if (handle>=runtimeHandleLimit) return NULL;
+    while (handle<combatRuntime.runtimeHandleLimit && (combatRuntime.runtimeHandleFlags[handle]&1)) ++handle;
+    if (handle>=combatRuntime.runtimeHandleLimit) return NULL;
     if (!btechHostOpenStream) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostOpenStream");
     stream->file=btechHostOpenStream(filename,mode);
     if (!stream->file) return NULL;
-    runtimeHandleFlags[handle]=1;
+    combatRuntime.runtimeHandleFlags[handle]=1;
     stream->dosHandle=(uint8_t)handle;
     stream->flags=mode[0]=='r'?COMBAT_STREAM_READ:COMBAT_STREAM_WRITE;
     ++streamSetupCounter;
@@ -50,7 +50,7 @@ int16_t BtechRuntimeStreamClose(BtechRuntimeStream *stream)
     if ((stream->flags&COMBAT_STREAM_ACTIVE_MASK) && !(stream->flags&COMBAT_STREAM_PROTECTED))
     {
         size_t slot=(size_t)(stream-runtimeStreams);
-        if (slot>=COMBAT_STREAM_SLOTS || runtimeTemporaryFileIds[slot]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: slot>=COMBAT_STREAM_SLOTS || runtimeTemporaryFileIds[slot]");
+        if (slot>=COMBAT_STREAM_SLOTS || combatRuntime.runtimeTemporaryFileIds[slot]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: slot>=COMBAT_STREAM_SLOTS || runtimeTemporaryFileIds[slot]");
         closeStatus=BtechRuntimeStreamFlush(stream);
         BtechRuntimeStreamReleaseBuffer(stream);
         int16_t closed;
@@ -64,7 +64,7 @@ int16_t BtechRuntimeStreamClose(BtechRuntimeStream *stream)
         else
         {
             if (stream->dosHandle>=COMBAT_DOS_HANDLES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: stream->dosHandle>=COMBAT_DOS_HANDLES");
-            runtimeHandleFlags[stream->dosHandle]=0;
+            combatRuntime.runtimeHandleFlags[stream->dosHandle]=0;
         }
     }
     stream->flags=0;
@@ -121,7 +121,7 @@ int16_t BtechRuntimeStreamFlush(BtechRuntimeStream *stream)
     if (slot>=COMBAT_STREAM_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: slot>=COMBAT_STREAM_SLOTS");
     if ((stream->flags&(COMBAT_STREAM_READ|COMBAT_STREAM_WRITE))==COMBAT_STREAM_WRITE &&
         ((stream->flags&COMBAT_STREAM_OWNS_BUFFER) ||
-        (runtimeStreamAuxiliaryFlags[slot]&COMBAT_STREAM_AUX_EXTERNAL_BUFFER))) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (stream->flags&(COMBAT_STREAM_READ|COMBAT_STREAM_WRITE))==COMBAT_STREAM_WRITE && ((stream->flags&COMBAT_STREAM_OWNS_BUFFER) || (runtimeStreamAuxiliaryFlags[slot]&COMBAT_STREAM_AUX_EXTERNAL_BUFFER))");
+        (combatRuntime.runtimeStreamAuxiliaryFlags[slot]&COMBAT_STREAM_AUX_EXTERNAL_BUFFER))) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (stream->flags&(COMBAT_STREAM_READ|COMBAT_STREAM_WRITE))==COMBAT_STREAM_WRITE && ((stream->flags&COMBAT_STREAM_OWNS_BUFFER) || (runtimeStreamAuxiliaryFlags[slot]&COMBAT_STREAM_AUX_EXTERNAL_BUFFER))");
     return 0;
 }
 

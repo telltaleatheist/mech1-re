@@ -16,9 +16,14 @@ typedef enum BtechNearOwner {
     BTECH_NEAR_BITMAP_LIST,BTECH_NEAR_BITMAP_IMAGES,BTECH_NEAR_WORLD_OBJECT,
     BTECH_NEAR_STREAM_BUFFER,BTECH_NEAR_SHAPE_BANKS
 } BtechNearOwner;
-/* Native304E CRT control words; definitions stay in the runtime memory owner. */
-extern uint16_t nearHeapFirstHeader,nearHeapSearchHeader,nearHeapEnd;
-extern uint16_t nearHeapProgramBreak,nearHeapGrowthAlignment;
+/* Combat state owned by combat_heap.h (plan, slice B3a). */
+struct CombatNearHeapState
+{
+    /* Native304E CRT control words; definitions stay in the runtime memory owner. */
+    uint16_t nearHeapFirstHeader, nearHeapSearchHeader, nearHeapEnd;
+    uint16_t nearHeapProgramBreak, nearHeapGrowthAlignment;
+};
+extern CombatNearHeapState combatNearHeap;
 
 /* CDBC/CE5D projections. Native lengths drive heap placement; host sizes and
  * owner kinds describe widened C records, never additional game arguments. */

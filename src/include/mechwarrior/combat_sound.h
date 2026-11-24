@@ -91,7 +91,6 @@ void BtechStartSoftwareMusicTrack(MwNativeByteView musicHeader,uint16_t headerOf
 void BtechTickSoftwareMusic(void);
 uint8_t BtechDecodeNextMidiEvent(uint8_t inheritedDeltaHighByte);
 typedef void (*BtechAudioTick)(void);
-extern BtechAudioTick musicTimerCallback;
 extern uint8_t musicTimerInstalled;
 extern uint16_t savedMusicTimerDivisor;
 extern MwTimerOwner savedMusicTimerOwner;
@@ -118,7 +117,13 @@ extern uint16_t sampleSoundPriority;
 extern uint16_t timerSoundEventIndex,savedSoundTimerDivisor;
 extern uint8_t soundTimerInstalled;
 extern uint16_t *samplePriorityOwner;
-extern MwTimerOwner savedSampleIrqOwner;
+/* Combat state owned by combat_sound.h (plan, slice B3a). */
+struct CombatSoundIrqState
+{
+    BtechAudioTick musicTimerCallback;
+    MwTimerOwner savedSampleIrqOwner;
+};
+extern CombatSoundIrqState combatSoundIrq;
 bool BtechImportToneInitialData(const uint8_t *data,size_t bytes,const uint8_t *toneData,size_t toneBytes);
 void BtechStopMatchingToneChannels(uint16_t soundEventIndex,uint8_t activityMask);
 uint16_t BtechStopSoundEventAndTimer(uint16_t soundEventIndex);

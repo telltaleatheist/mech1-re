@@ -52,21 +52,21 @@ void BtechHostDiscardNearHeap(void)
 {
     while (records) {NearHeapRecord *record=records;records=record->next;free(record->object);free(record);}
     while (headers) {NearHeapHeader *header=headers;headers=header->next;free(header);}
-    nearHeapFirstHeader=nearHeapSearchHeader=nearHeapEnd=0;
-    nearHeapProgramBreak=BTECH_NEAR_INITIAL_BREAK;nearHeapGrowthAlignment=BTECH_NEAR_GROWTH_ALIGNMENT;
+    combatNearHeap.nearHeapFirstHeader=combatNearHeap.nearHeapSearchHeader=combatNearHeap.nearHeapEnd=0;
+    combatNearHeap.nearHeapProgramBreak=BTECH_NEAR_INITIAL_BREAK;combatNearHeap.nearHeapGrowthAlignment=BTECH_NEAR_GROWTH_ALIGNMENT;
 }
 void BtechInitializeNearHeap(uint16_t first,uint16_t search,uint16_t end,uint16_t nextBreak,uint16_t alignment)
 {
-    BtechHostDiscardNearHeap();nearHeapFirstHeader=first;nearHeapSearchHeader=search;nearHeapEnd=end;
-    nearHeapProgramBreak=nextBreak;nearHeapGrowthAlignment=alignment;
+    BtechHostDiscardNearHeap();combatNearHeap.nearHeapFirstHeader=first;combatNearHeap.nearHeapSearchHeader=search;combatNearHeap.nearHeapEnd=end;
+    combatNearHeap.nearHeapProgramBreak=nextBreak;combatNearHeap.nearHeapGrowthAlignment=alignment;
 }
 
 /* FBEC->FD38/FDA6, the supported near DS resident block: additions that wrap
  * fail. DFCE has already retained all64KiB, so no DOS resize is needed here. */
 static bool ExtendProgramBreak(uint16_t bytes,uint16_t *previous)
 {
-    if ((uint32_t)nearHeapProgramBreak+bytes>UINT16_MAX) return false;
-    *previous=nearHeapProgramBreak;nearHeapProgramBreak+=bytes;return true;
+    if ((uint32_t)combatNearHeap.nearHeapProgramBreak+bytes>UINT16_MAX) return false;
+    *previous=combatNearHeap.nearHeapProgramBreak;combatNearHeap.nearHeapProgramBreak+=bytes;return true;
 }
 /* FBCA. A zero-length query returns the break without touching heap headers.
  * Transient odd/overlapping header writes are significant during alignment. */
@@ -77,7 +77,7 @@ static bool ExtendNearHeap(uint16_t bytes,uint16_t *position,uint16_t *payload,u
     if (!bytes) {*oldPayload=previous;return true;} /* FBEC returns ZF from the requested length. */
     *oldPayload=*payload;*payload=*position;*position=previous+bytes;
     BtechSetNearHeapHeader((uint16_t)(*position-2),0xFFFE);
-    nearHeapEnd=*position;
+    combatNearHeap.nearHeapEnd=*position;
     BtechSetNearHeapHeader((uint16_t)(*payload-2),(uint16_t)(*position-*payload-1));
     return true;
 }
@@ -89,7 +89,7 @@ static bool GrowNearHeap(uint16_t requested,uint16_t *position,uint16_t *payload
     if (header&1) needed=(uint16_t)(needed-header-1);
     needed+=2;
     uint16_t mask=0x7FFF;
-    while (mask>nearHeapGrowthAlignment && mask) mask>>=1;
+    while (mask>combatNearHeap.nearHeapGrowthAlignment && mask) mask>>=1;
     for (;;)
     {
         uint32_t end=(uint32_t)needed+*position;
@@ -108,13 +108,13 @@ static uint16_t FindNearHeapBlock(uint16_t bytes);
 /* E980. Initialize the shared heap only on its first allocation request. */
 uint16_t BtechAllocateNearHeapBlock(uint16_t bytes)
 {
-    if (!nearHeapFirstHeader)
+    if (!combatNearHeap.nearHeapFirstHeader)
     {
         uint16_t previous;
         if (!ExtendProgramBreak(5,&previous)) return 0;
-        nearHeapFirstHeader=nearHeapSearchHeader=(uint16_t)((previous+1)&0xFFFE);
-        BtechSetNearHeapHeader(nearHeapFirstHeader,1);
-        nearHeapEnd=nearHeapFirstHeader+4;BtechSetNearHeapHeader((uint16_t)(nearHeapEnd-2),0xFFFE);
+        combatNearHeap.nearHeapFirstHeader=combatNearHeap.nearHeapSearchHeader=(uint16_t)((previous+1)&0xFFFE);
+        BtechSetNearHeapHeader(combatNearHeap.nearHeapFirstHeader,1);
+        combatNearHeap.nearHeapEnd=combatNearHeap.nearHeapFirstHeader+4;BtechSetNearHeapHeader((uint16_t)(combatNearHeap.nearHeapEnd-2),0xFFFE);
     }
     return FindNearHeapBlock(bytes);
 }
@@ -123,9 +123,9 @@ uint16_t BtechAllocateNearHeapBlock(uint16_t bytes)
 static uint16_t FindNearHeapBlock(uint16_t bytes)
 {
     uint16_t requested=bytes+1;
-    if (!requested || (requested&0xFFFE)>=0xFFEE) {nearHeapSearchHeader=nearHeapFirstHeader;return 0;}
+    if (!requested || (requested&0xFFFE)>=0xFFEE) {combatNearHeap.nearHeapSearchHeader=combatNearHeap.nearHeapFirstHeader;return 0;}
     requested&=0xFFFE;
-    uint16_t position=nearHeapSearchHeader,payload=position+2;
+    uint16_t position=combatNearHeap.nearHeapSearchHeader,payload=position+2;
     uint16_t header=BtechNearHeapHeader(position);
     position+=2;
     bool restarted=false;
@@ -143,7 +143,7 @@ static uint16_t FindNearHeapBlock(uint16_t bytes)
                     BtechSetNearHeapHeader((uint16_t)(position-2),requested);
                     BtechSetNearHeapHeader(next,(uint16_t)(available-requested-1));
                 }
-                nearHeapSearchHeader=next;return position;
+                combatNearHeap.nearHeapSearchHeader=next;return position;
             }
             uint16_t following=position+available;
             uint16_t nextHeader=BtechNearHeapHeader(following);
@@ -163,20 +163,20 @@ static uint16_t FindNearHeapBlock(uint16_t bytes)
         }
         if (!restarted)
         {
-            restarted=true;position=nearHeapFirstHeader;
+            restarted=true;position=combatNearHeap.nearHeapFirstHeader;
             header=BtechNearHeapHeader(position);position+=2;payload=position;continue;
         }
-        position=nearHeapEnd;
+        position=combatNearHeap.nearHeapEnd;
         uint16_t oldEnd;
-        if (!ExtendNearHeap(0,&position,&payload,&oldEnd)) {nearHeapSearchHeader=nearHeapFirstHeader;return 0;}
+        if (!ExtendNearHeap(0,&position,&payload,&oldEnd)) {combatNearHeap.nearHeapSearchHeader=combatNearHeap.nearHeapFirstHeader;return 0;}
         if (oldEnd!=position)
         {
             uint16_t alignmentBytes=(oldEnd&1)+2;
-            if (!ExtendNearHeap(alignmentBytes,&position,&payload,&oldEnd)) {nearHeapSearchHeader=nearHeapFirstHeader;return 0;}
+            if (!ExtendNearHeap(alignmentBytes,&position,&payload,&oldEnd)) {combatNearHeap.nearHeapSearchHeader=combatNearHeap.nearHeapFirstHeader;return 0;}
             uint16_t at=(uint16_t)(payload-2),value=BtechNearHeapHeader(at);
             BtechSetNearHeapHeader(at,(value&0xFF00)|(uint8_t)(value-1));
         }
-        if (!GrowNearHeap(requested,&position,&payload,&oldEnd)) {nearHeapSearchHeader=nearHeapFirstHeader;return 0;}
+        if (!GrowNearHeap(requested,&position,&payload,&oldEnd)) {combatNearHeap.nearHeapSearchHeader=combatNearHeap.nearHeapFirstHeader;return 0;}
         position=oldEnd-2;header=BtechNearHeapHeader(position);position+=2;payload=position;
     }
 }
