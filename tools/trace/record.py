@@ -30,15 +30,17 @@ These call the game, so a game-state trace may never use them: without
 A record:
     snap    the snap's name
     keys    the tokens since the previous snap
-    state   the compared state, as lines ("state random 1234 5678", ...);
-            menu labels only as a 12-hex keyed hash, never MW1's text
+    fields  the compared state by name (schema.py): campaign.*, menu.N.*, and
+            in a battle combat.*, unit.S.* and objective.*; menu labels only
+            as a 12-hex keyed hash, never MW1's text
     menu    each row's 081B callback offset, picture, links, enabled, label hash
     screenKey  a hash of the menu's shape
     frame   SHA-256 of the indexed 320x200 frame and of its colours (rgb: 17
             RGB triples); "palette", the codes' hash, is null since the port
             stopped writing codes (G5), and is never compared
-The state ends with "state exchange <sha>", the hash of the whole campaign as
-the save format encodes it (0x718 bytes, NAME.exchange beside the frames).
+On a campaign snap the fields end with the whole campaign as the save
+format encodes it (0x718 bytes, NAME.exchange beside the frames), by the
+save format's own fields: exchange.<name> (schema.py).
 
 Frames are MW1 art: the recorder copies them to --frames, outside the repo.
 
@@ -52,7 +54,10 @@ MW_MAIN.EXE keys the labels (default --game).
         --script scripts/campaign_contract.keys --out traces/campaign_contract.jsonl \\
         --frames /tmp/frames
 """
-import argparse, hashlib, hmac, json, os, re, shutil, signal, subprocess, sys, tempfile, time
+import argparse, hashlib, json, os, re, shutil, signal, subprocess, sys, tempfile, time
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import schema  # noqa: E402  (the fields by name)
 
 POLL_S = 0.05
 SNAP_NAME = re.compile(r"^[A-Za-z0-9_-]{1,47}$")
@@ -131,52 +136,7 @@ def label_key(game_dir):
 
 def label_hash(row, key):
     """A 12-hex HMAC-SHA-256 of the row's label under `key` (label_key)."""
-    label = row.get("label", "")
-    return hmac.new(key, label.encode("latin-1"), hashlib.sha256).hexdigest()[:12] if label else ""
-
-
-def picture(row):
-    """A text row's picture word is where its label lives in the original's
-    data segment, not a picture: the label hash stands for it ("-")."""
-    return "-" if row.get("label") else row["picture"]
-
-
-def state_lines(status, key):
-    """The state the rebuild must match, one fact per line; `key` hashes the labels."""
-    c = status.get("campaign", {})
-    r = c.get("random", [0, 0])
-    lines = [f"state random {r[0]:04x} {r[1]:04x}",
-             "state campaign planet {planet} contract {contractActive} category {missionCategory} scenario {scenario}"
-             " destination {destination} house {targetHouse} payment {paymentThousands} result {result}".format(**c),
-             f"state funds {c.get('funds')} months {c.get('months')}",
-             f"state row {c.get('selectedRow')}",
-             f"state combat {1 if status.get('combat') else 0}"]
-    if status.get("combat"):
-        lines += combat_lines(status)
-        return lines
-    for row in c.get("menu", []):
-        lines.append("state menu {} enabled {} callback {:04x} picture {} links {} label {}".format(
-            row["index"], row["enabled"], row["callback"], picture(row), " ".join(map(str, row["links"])),
-            label_hash(row, key) or "-"))
-    return lines
-
-
-def combat_lines(status):
-    """The battle: the tick and screen, then each unit on the field."""
-    words = lambda v: " ".join(map(str, v))
-    lines = [f"state tick {status.get('tick')} screen {status.get('screen')} target {status.get('target')}"]
-    for u in status.get("units", []):
-        lines.append(f"state unit {u['slot']} side {u['side']} chassis {u['chassis']} position {words(u['position'])}"
-                     f" orientation {words(u['orientation'])} step {u['step']} mode {u['movementMode']}"
-                     f" jump {u['jumpCharge']} torso {words(u['torsoOrientation'])}")
-        lines.append(f"state unit {u['slot']} heat {u['heat']} engine {u['engineHits']} gyro {u['gyroHits']}"
-                     f" cockpit {u['cockpitDisabled']} armor {words(u['armor'])} internal {words(u['internal'])}"
-                     f" ammo {words(u['ammo'])} weapons "
-                     + " ".join(f"{w['operational']}/{w['reload']}" for w in u["weapons"]))
-    obj = status.get("objective")
-    if obj:
-        lines.append(f"state objective position {words(obj['position'])} damage {obj['damageRemaining']}")
-    return lines
+    return schema.label_hash(row, key)
 
 
 def menu_rows(status, key):
@@ -280,19 +240,25 @@ def main():
                 except OSError:
                     frame[ext] = None
             exchange = frame.pop("exchange", None)
+            block = None
+            if exchange:
+                with open(base + ".exchange", "rb") as f:
+                    block = f.read()
             if st is None or not frame.get("indices"):
                 failures += 1
                 print(f"{seq:3d} {name}: MISSING", flush=True)
                 continue
             menu = menu_rows(st, key)
-            lines = state_lines(st, key) + ([f"state exchange {exchange}"] if exchange else [])
-            record = {"snap": name, "keys": keys_before[name], "state": lines, "menu": menu,
+            fields = schema.status_fields(st, key)
+            if block is not None:
+                fields.update(schema.exchange_fields(block, key))
+            record = {"snap": name, "keys": keys_before[name], "fields": fields, "menu": menu,
                       "screenKey": sha(json.dumps([(r["callback"], r["picture"], r["links"], r["label"])
                                                    for r in menu]).encode(), 12),
                       "frame": frame}
             out.write(json.dumps(record) + "\n")
-            print(f"{seq:3d} {name:<24} screen {record['screenKey']} {record['state'][3]} rows {len(menu)}"
-                  f" {record['state'][0]} frame {frame['indices'][:12]}", flush=True)
+            print(f"{seq:3d} {name:<24} screen {record['screenKey']} row {fields['campaign.row']} rows {len(menu)}"
+                  f" random {' '.join(f'{w:04x}' for w in fields['campaign.random'])} frame {frame['indices'][:12]}", flush=True)
     return 1 if failures else 0
 
 

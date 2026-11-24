@@ -57,7 +57,7 @@ def guard_lines(work, names):
 
 def has_battle(trace):
     with open(trace, encoding="utf-8") as f:
-        return any("state combat 1" in json.loads(line)["state"] for line in f if line.strip())
+        return any(json.loads(line)["fields"].get("combat") == 1 for line in f if line.strip())
 
 
 def main():

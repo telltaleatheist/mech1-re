@@ -21,7 +21,8 @@ imports the same offsets, src/Original/Memory/MW_MAIN_1090.cpp):
     03E5  the selected row
     03F5, 03F7  the random words
     0448  the campaign exchange block, 0x718 bytes; the port's
-          MwEncodeCampaignExchange writes the same layout (MW_MAIN_SAVE_FORMAT.cpp)
+          MwEncodeCampaignExchange writes the same layout (MW_MAIN_SAVE_FORMAT.cpp),
+          so schema.py's one decoder gives both the same exchange.* names
 The original stores no row count, so a menu's rows are counted by its
 record table (MENU_ROWS, from the port's imports); an unknown table is
 reported, never guessed.
@@ -37,7 +38,8 @@ import argparse, json, os, struct, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import record  # noqa: E402  (state_lines, menu_rows, read_script, sha)
+import record  # noqa: E402  (menu_rows, read_script, label_key, sha)
+import schema  # noqa: E402  (the fields by name)
 from palette import rgb_palette  # noqa: E402  (the codes' colours, our own rule)
 
 PLANE = 8000
@@ -172,7 +174,7 @@ def combat_status(cap):
 
 
 def campaign_status(cap, frozen):
-    """The status dict record.state_lines reads, from MW_MAIN's memory. In
+    """The status dict schema.status_fields reads, from MW_MAIN's memory. In
     combat MW_MAIN is gone: the campaign is the exchange block MW.EXE keeps
     for BTECH (MW_EXCHANGE past its PSP), and the random words and the row are
     those MW_MAIN left (FROZEN, from the last campaign capture), as the port
@@ -239,11 +241,11 @@ def main():
             status, ex, problems = campaign_status(cap, frozen)
             if not cap.combat:
                 frozen = {"row": status["campaign"]["selectedRow"], "random": status["campaign"]["random"]}
-            lines = record.state_lines(status, key)
+            fields = schema.status_fields(status, key)
             if not cap.combat:
-                lines.append(f"state exchange {record.sha(ex, 32)}")
+                fields.update(schema.exchange_fields(ex, key))
             menu = record.menu_rows(status, key)
-            rec = {"snap": name, "keys": keys_before[name], "state": lines, "menu": menu,
+            rec = {"snap": name, "keys": keys_before[name], "fields": fields, "menu": menu,
                    "screenKey": record.sha(json.dumps([(r["callback"], r["picture"], r["links"], r["label"])
                                                       for r in menu]).encode(), 12),
                    "frame": {"indices": record.sha(indices, 32), "palette": record.sha(palette, 32),
@@ -253,7 +255,8 @@ def main():
                 for ext, data in (("indices", indices), ("palette", palette), ("rgb", rgb_palette(palette))):
                     with open(os.path.join(a.frames, f"{seq:03d}-{name}.{ext}"), "wb") as f:
                         f.write(data)
-            print(f"{seq:3d} {name:<24} {lines[0]} {'combat' if cap.combat else lines[3]}"
+            print(f"{seq:3d} {name:<24} random {' '.join(f'{w:04x}' for w in fields['campaign.random'])}"
+                  f" {'combat' if cap.combat else 'row ' + str(fields['campaign.row'])}"
                   + "".join(f"  [{p}]" for p in problems), flush=True)
     return 1 if missing else 0
 

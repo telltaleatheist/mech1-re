@@ -9,9 +9,10 @@ For every golden trace in traces/ (or those named with --only), the candidate
 runs the same key script from scripts/, and each snap is compared: the frame
 (indexed pixels and the colours they show, rgb, by hash; the palette codes
 are kept but not compared: codes that show the same colour are the same
-screen) and every state line. A known
-difference (known/<trace>.json) is reported, not failed, so each one is
-fixed on purpose. The style follows crescent-hawks-rebuild's
+screen) and every field, by name (schema.py): a field that differs, or is
+missing or extra, fails, and is named with the first element or byte that
+differs. A known difference (known/<trace>.json) is reported, not failed, so
+each one is fixed on purpose. The style follows crescent-hawks-rebuild's
 tools/reference/check.py.
 
 --story and --label-game pass to record.py (a folder without the exes:
@@ -23,6 +24,8 @@ Exit status: 0 all match, 1 a mismatch, 77 skipped (no candidate or game).
 import argparse, json, os, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import schema  # noqa: E402  (how a field differs)
 SKIP = 77
 
 
@@ -32,7 +35,7 @@ def load(path):
 
 
 def load_known(name):
-    """known/<trace>.json: {"<snap>": {"frame": "why", "state": {"<line prefix>": "why"}}}"""
+    """known/<trace>.json: {"<snap>": {"frame": "why", "fields": {"<field name prefix>": "why"}}}"""
     path = os.path.join(HERE, "known", name + ".json")
     if not os.path.exists(path):
         return {}
@@ -67,18 +70,22 @@ def compare(name, golden, ours, say, strict=False):
         else:
             say("  FAIL the screen: " + ", ".join(w for w, same in (("pixels", same_frame), ("colours", same_palette)) if not same))
             ok = False
-        differ, known_lines = [], []
-        ref_lines, got_lines = ref["state"], got.get("state", [])
-        for i in range(max(len(ref_lines), len(got_lines))):
-            r = ref_lines[i] if i < len(ref_lines) else "(none)"
-            c = got_lines[i] if i < len(got_lines) else "(none)"
-            if r == c:
+        differ, known_fields = [], []
+        ref_fields, got_fields = ref["fields"], got.get("fields", {})
+        for field in list(ref_fields) + [n for n in got_fields if n not in ref_fields]:
+            if field not in got_fields:
+                line = f"{field}: missing (golden {ref_fields[field]})"
+            elif field not in ref_fields:
+                line = f"{field}: not in the golden (ours {got_fields[field]})"
+            elif ref_fields[field] == got_fields[field]:
                 continue
-            why = next((w for p, w in k.get("state", {}).items() if r.startswith(p)), None)
-            (known_lines if why else differ).append(f"golden: {r}\n         ours: {c}" + (f"\n         known: {why}" if why else ""))
-        say(f"  {'ok  ' if not differ else 'FAIL'} the state: {len(differ)} lines differ"
-            + (f", {len(known_lines)} known" if known_lines else ""))
-        for d in differ + known_lines:
+            else:
+                line = schema.difference(field, ref_fields[field], got_fields[field])
+            why = next((w for p, w in k.get("fields", {}).items() if field.startswith(p)), None)
+            (known_fields if why else differ).append(line + (f"\n         known: {why}" if why else ""))
+        say(f"  {'ok  ' if not differ else 'FAIL'} the fields: {len(differ)} differ"
+            + (f", {len(known_fields)} known" if known_fields else ""))
+        for d in differ + known_fields:
             say("    " + d)
         ok = ok and not differ
     extra = [r["snap"] for r in ours if r["snap"] not in {g["snap"] for g in golden}]

@@ -85,10 +85,7 @@ def read_uses(root, names):
 
 
 def selected_row(record):
-    for line in record.get("state", []):
-        if line.startswith("state row "):
-            return int(line.split()[2])
-    return None
+    return record.get("fields", {}).get("campaign.row")
 
 
 def read_traces(paths):
