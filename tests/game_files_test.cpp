@@ -14,6 +14,13 @@
 #include <set>
 #include <string>
 
+#if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
+
 namespace fs = std::filesystem;
 using namespace mw1o::files;
 
@@ -126,6 +133,14 @@ void Saves(const fs::path &game, const fs::path &saves) {
       order.push_back(stem);
   }
   Check(listed == order, "in the file system's own order");
+#if defined(_WIN32)
+  for (const DWORD attribute : {DWORD(FILE_ATTRIBUTE_HIDDEN), DWORD(FILE_ATTRIBUTE_SYSTEM)}) {
+    Check(SetFileAttributesW((saves / "EIGHTCHR.GAM").c_str(), attribute) != 0, "the attribute is set");
+    const std::vector<std::string> left = list_saves();
+    Check(left.size() == 2 && std::find(left.begin(), left.end(), "EIGHTCHR") == left.end(), "a hidden or system save is not listed");
+  }
+  SetFileAttributesW((saves / "EIGHTCHR.GAM").c_str(), FILE_ATTRIBUTE_NORMAL);
+#endif
   Check(Contents("LOWER.GAM") == "x", "a listed lower-case save opens by its listed name");
 }
 
