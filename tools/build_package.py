@@ -259,13 +259,14 @@ REMOVED_LIBRARIES = ("mt32emu", "nukedopl")
 
 
 def shipped_libraries(files):
-    """One name for each library: a versioned one's links (libSDL3.so, .so.0, .so.0.2.0) are one file, shipped under
-    the name the program loads it by (.so.0)."""
-    names = {}
+    """One name for each library: a versioned one's links and copies (libSDL3.so, .so.0, .so.0.2.0; the build has a
+    second .so.0.2.0 beside the program) are one file, shipped under the name the program loads it by (.so.0)."""
+    copies = {}
     for file in sorted(files):
         if file.is_file():
-            names.setdefault(file.resolve(), []).append(file.name)
-    return {source: next((n for n in found if re.search(r"\.so\.\d+$", n)), found[0]) for source, found in names.items()}
+            copies.setdefault(file.read_bytes(), []).append(file)
+    return {found[0].resolve(): next((f.name for f in found if re.search(r"\.so\.\d+$", f.name)), found[0].name)
+            for found in copies.values()}
 
 
 # What every package holds the licence or notice of, in its licenses/ folder.

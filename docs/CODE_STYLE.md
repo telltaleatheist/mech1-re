@@ -1,6 +1,6 @@
 # Coding style
 
-Write readable, assembly-loyal C17. Preserve the original procedure boundaries
+Write readable, assembly-loyal C++20. Preserve the original procedure boundaries
 and gameplay decisions rather than replacing them with a new engine.
 
 - Use descriptive function and variable names. Use BattleTech terminology for

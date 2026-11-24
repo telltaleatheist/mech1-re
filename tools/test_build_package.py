@@ -34,9 +34,12 @@ class PackageTests(unittest.TestCase):
         exe = root / "build/mechwarrior"
         exe.write_text('#!/bin/sh\n[ "$1" = --help ] && { echo "Usage: mw1r [<game folder>]"; exit 0; }\nexit 2\n')
         exe.chmod(0o755)
+        # SDL's build has the library with its links; the build copies the library itself beside the program.
+        (root / "build/sdl3").mkdir()
+        (root / "build/sdl3/libSDL3.so.0.2.0").write_bytes(b"fixture library")
+        (root / "build/sdl3/libSDL3.so.0").symlink_to("libSDL3.so.0.2.0")
+        (root / "build/sdl3/libSDL3.so").symlink_to("libSDL3.so.0")
         (root / "build/libSDL3.so.0.2.0").write_bytes(b"fixture library")
-        (root / "build/libSDL3.so.0").symlink_to("libSDL3.so.0.2.0")
-        (root / "build/libSDL3.so").symlink_to("libSDL3.so.0")
 
     def test_extracted_archive_starts_and_libraries_are_portable(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -69,7 +72,7 @@ class PackageTests(unittest.TestCase):
                 root = Path(directory)
                 self.fixture(root)
                 if broken == "missing":
-                    for lib in (root / "build").glob("libSDL3.so*"):
+                    for lib in (root / "build").rglob("libSDL3.so*"):
                         lib.unlink()
                 else:
                     (root / "build" / broken).parent.mkdir(exist_ok=True)
