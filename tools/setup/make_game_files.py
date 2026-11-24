@@ -14,8 +14,13 @@ below is the list, with where each name is opened:
   some    opened only in some plays or battles, or under a setting (the terrain
           detail; the 'Mechs that fight; the ending)
 
-51 of them were seen opened on 2026-11-24, in the 12 event scripts on the
-1990-01-22 release; the rest are there by reading the named function.
+How each was checked, 2026-11-24: 51 were seen opened in the 12 event scripts
+on the 1990-01-22 release, and nothing that isn't in the list was, but
+BTECH.EXE and MW_MAIN.EXE. Of the other 66, 56 (tiles and 'Mech banks) were
+opened by calling the named loaders after the import, on both releases; 9 (the
+inspection pictures and cockpit screens) are in the name tables the import
+fills, which the named function opens; MW_FPICS.BIN, the ending's, is by
+reading alone. SNARIO.DAT's scenarios use all 16 terrain variants.
 HUD_CYAN.BMP is not: BtechLoadCockpitHudResources (BTECH_0810_COCKPIT.cpp) asks
 for it only when the display isn't an EGA, and this program's always is
 (QueryEgaInfo in SDLBackend_CombatPlatform.cpp; BtechDetectVideoAdapter stops on
