@@ -1,5 +1,5 @@
 #include "mechwarrior/port_diagnostics.h"
-#include "mechwarrior/native_address.h"
+#include "mechwarrior/read_word.h"
 #include "mechwarrior/campaign_continuations.h"
 #include "mechwarrior/campaign_mechanics.h"
 #include "mechwarrior/campaign_travel.h"
@@ -202,7 +202,7 @@ void MwDrawTravelDestinationDetails(void)
     const char *landscape=campaignTravel.travelLandscapeLabels[classification%TRAVEL_LANDSCAPE_LABEL_COUNT];
     MwText landscapeView=MwTerminatedText(landscape);
     EgaDrawTransparentText(TRAVEL_LANDSCAPE_TEXT_X,TRAVEL_HEADER_TEXT_Y,Campaign_Pal_EGA_White,landscapeView);
-    uint16_t population=MwReadNativeWord(planet->populationMillions,0);
+    uint16_t population=MwReadWord(planet->populationMillions);
     campaignCore.numericGroupingEnabled++;
     MwDrawSignedDecimalField(population,TRAVEL_POPULATION_TEXT_X,0,TRAVEL_POPULATION_DIGITS,Campaign_Pal_EGA_White,Campaign_Pal_EGA_LightGrey,TRAVEL_HEADER_TEXT_Y);
     MwText suffix=MwArrayText(campaignTravel.travelPopulationSuffix);

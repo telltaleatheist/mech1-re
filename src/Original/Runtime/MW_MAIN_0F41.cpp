@@ -1,6 +1,6 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/campaign_music.h"
-#include "mechwarrior/native_address.h"
+#include "mechwarrior/campaign_buffer.h"
 #include "mechwarrior/event_log.h"
 #include "mechwarrior/music_out.h"
 #include <stdlib.h>
@@ -165,20 +165,20 @@ uint16_t MwStartMidiTrack(MwCampaignBuffer *resource,uint16_t streamOffset,uint1
         MIDI_ENCODED_96_PPQN=0x6000 };
     if (!(playbackFlags&MIDI_TRACK_ACTIVE)) return 0;
     const uint8_t *stream=MwCampaignBufferBytes(resource);
-    if (MwReadNativeWord(stream,streamOffset)!=MIDI_HEADER_FIRST_WORD) return 0;
+    if (MwCampaignBufferWord(stream,streamOffset)!=MIDI_HEADER_FIRST_WORD) return 0;
     streamOffset+=2;
-    if (MwReadNativeWord(stream,streamOffset)!=MIDI_HEADER_SECOND_WORD) return 0;
+    if (MwCampaignBufferWord(stream,streamOffset)!=MIDI_HEADER_SECOND_WORD) return 0;
     streamOffset+=4;
-    uint16_t headerLength=MwReadNativeWord(stream,streamOffset);
+    uint16_t headerLength=MwCampaignBufferWord(stream,streamOffset);
     headerLength=(uint16_t)((headerLength<<8)|(headerLength>>8));
     streamOffset+=2;
-    if (MwReadNativeWord(stream,streamOffset)!=0
-        || MwReadNativeWord(stream,(uint16_t)(streamOffset+2))!=MIDI_ENCODED_ONE_TRACK
-        || MwReadNativeWord(stream,(uint16_t)(streamOffset+4))!=MIDI_ENCODED_96_PPQN) return 0;
+    if (MwCampaignBufferWord(stream,streamOffset)!=0
+        || MwCampaignBufferWord(stream,(uint16_t)(streamOffset+2))!=MIDI_ENCODED_ONE_TRACK
+        || MwCampaignBufferWord(stream,(uint16_t)(streamOffset+4))!=MIDI_ENCODED_96_PPQN) return 0;
     streamOffset+=headerLength;
-    if (MwReadNativeWord(stream,streamOffset)!=MIDI_HEADER_FIRST_WORD) return 0;
+    if (MwCampaignBufferWord(stream,streamOffset)!=MIDI_HEADER_FIRST_WORD) return 0;
     streamOffset+=2;
-    if (MwReadNativeWord(stream,streamOffset)!=MIDI_TRACK_SECOND_WORD) return 0;
+    if (MwCampaignBufferWord(stream,streamOffset)!=MIDI_TRACK_SECOND_WORD) return 0;
     streamOffset+=6;
     MwEventLogSong(stream,streamOffset); /* Test instrument (event_log.h), not game state. */
     if (mwMusicOut.songStarted) /* The rebuild's music (music_out.h), not game state. */
@@ -321,7 +321,7 @@ metaEvent: ;
     if (metaType==MIDI_META_TEMPO)
     {
         uint32_t microseconds=(uint32_t)stream[streamOffset]<<16;
-        uint16_t tempoLow=MwReadNativeWord(stream,(uint16_t)(streamOffset+1));
+        uint16_t tempoLow=MwCampaignBufferWord(stream,(uint16_t)(streamOffset+1));
         microseconds|=(uint16_t)((tempoLow<<8)|(tempoLow>>8));
         enum { MICROSECONDS_PER_MINUTE=60000000 };
         uint16_t beatsPerMinute=(uint16_t)MwDivideMidiTimingRatio(MICROSECONDS_PER_MINUTE,microseconds);
@@ -330,7 +330,7 @@ metaEvent: ;
     else if (metaType==MIDI_META_TIME_SIGNATURE)
     {
         uint8_t numerator=stream[streamOffset];
-        uint16_t signature=MwReadNativeWord(stream,(uint16_t)(streamOffset+1));
+        uint16_t signature=MwCampaignBufferWord(stream,(uint16_t)(streamOffset+1));
         uint8_t exponent=signature;
         uint8_t denominator=exponent<8 ? 1u<<exponent : 0;
         uint16_t signatureDivisor=(uint16_t)denominator*(uint8_t)(signature>>8);

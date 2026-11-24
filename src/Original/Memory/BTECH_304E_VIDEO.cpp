@@ -1,5 +1,5 @@
 #include "mechwarrior/combat_video.h"
-#include "mechwarrior/native_address.h"
+#include "mechwarrior/read_word.h"
 #include "mechwarrior/btech_start_image.h"
 #include "mechwarrior/ui_layout.h"
 
@@ -66,11 +66,11 @@ bool BtechImportVideoInitialData(void)
             row->playerFillPaletteA=ui[offset];row->unidentifiedField2=ui[offset+1];
             row->sharedFillPaletteB=ui[offset+2];
             row->unidentifiedField3=ui[offset+3];row->unidentifiedField4[0]=ui[offset+4];row->unidentifiedField4[1]=ui[offset+5];
-            row->mapBoundaryColour=MwReadNativeWord(ui,offset+6);row->mapRetreatBoundaryColour=MwReadNativeWord(ui,offset+8);
-            for (uint16_t unit=0;unit<5;++unit) row->unitMarkerColours[unit]=MwReadNativeWord(ui,offset+0x0A+unit*2);
-            row->orderTrackingLineColour=MwReadNativeWord(ui,offset+0x14);
+            row->mapBoundaryColour=MwReadWord(ui+offset+6);row->mapRetreatBoundaryColour=MwReadWord(ui+offset+8);
+            for (uint16_t unit=0;unit<5;++unit) row->unitMarkerColours[unit]=MwReadWord(ui+offset+0x0A+unit*2);
+            row->orderTrackingLineColour=MwReadWord(ui+offset+0x14);
             row->hudReticleColour=ui[offset+0x16];row->unidentifiedField11=ui[offset+0x17];
-            row->headingTickPaletteIndex=MwReadNativeWord(ui,offset+0x18);
+            row->headingTickPaletteIndex=MwReadWord(ui+offset+0x18);
             for (uint16_t byte=0;byte<sizeof(row->unidentifiedField12);++byte) row->unidentifiedField12[byte]=ui[offset+0x1A+byte];
         }
     for (uint16_t landscape=0;landscape<COMBAT_LANDSCAPES;++landscape) combatVideo.landscapePaletteSlots[landscape]=0;

@@ -425,7 +425,7 @@ Names such as planetSelector, houseSelector, scenarioSelectors and the trace sch
 - **The tone fallback.** A bank with no ITM reads its modulation from 0000: of the DOS machine. `BtechToneFallback` says which of the two a channel reads, and DOS memory has one source, `btechHostReadToneDosByte`: INT 0's owner live at each read, as before. A selector other than 0 is refused when the channel starts.
 - **The allocations** are freed by their bytes, not a selector, so the two selector hooks and the host's control block segments are gone. DOS's memory list and its sizes stay. Two differences, neither reachable, as nothing calls the unloads: a second release of a chain no longer frees a node's old selector again, and freeing a node whose append failed is refused, where DOS ignored it.
 - **`midiStreamPresent`** (was `midiStreamSelectorPresent`) is whether the track has bytes, which is when its selector was not 0.
-- **native_address.h** keeps `MwReadNativeWord` and two constants. `MwCampaignBuffer` is in campaign_buffer.h. The files that read words include native_address.h themselves.
+- **native_address.h** kept `MwReadNativeWord` and two constants until B4f. `MwCampaignBuffer` is in campaign_buffer.h. The files that read words include native_address.h themselves.
 - **Also.** `ReleaseChildResources` clears its pointers before it frees the buffers again (B4b had freed first). The music tick runs on the main thread, so neither order could show. A start with an unknown option writes no launcher record.
 
 **From B4f, combat** (the start rows read by id; the campaign's windows are a branch of their own):
@@ -438,7 +438,18 @@ Names such as planetSelector, houseSelector, scenarioSelectors and the trace sch
 - **The bounds reports.** Of the 18 places the bounds sanitizer named, 15 were combat's (BTECH_304E_COCKPIT 6, _ORDERS 9). Two went with the row reads. The other 13 formed a label's pointer past its array before taking the base off; the offset is now worked out first, and so at two more places of the same form that the sanitizer can't see. Of MW_MAIN_1090's three, B4a took one; the campaign branch has the other two.
 - **Still there.** Importers still return false on a table value they don't know (a directory's shape, the tone channels), and BtechHostLoadInitialData on an unknown revision name, so the failure that stops the launcher there (`MwFailGameFileRead` with combat's file name, a file play never opens) has not gone with the image. No caller used false as an ordinary answer.
 - **Rows read in more than one place** stay so: runtime.prefix, runtime.exit_flush, runtime.stream_and_character_tables, startup.mouse_and_delay and video.adapter. Each reader fetches its own copy.
-- **native_address.h** stays for `MwReadNativeWord` and two constants until the campaign branch.
+- **native_address.h** stayed for `MwReadNativeWord` and two constants until the campaign branch.
+
+**From B4f, campaign** (the words by id; the last of B4f):
+- **What changed.** MW_MAIN_1090 read the campaign's words through a 64 KiB window, filled so that each word lay at the exe's address. `mainWords` and that window are gone: nearly every read was exactly one word, and those name it. Where a read runs over several words, `MwStorySpan` (mechwarrior/story_span.h) fetches the run, checks that the words tile it, and bounds every read by it. Combat's cockpit and order words are read the same way. MW_MAIN_28BE's music driver is its native span, at its own length.
+- **native_address.h is gone.** A word out of bytes is `MwReadWord` (read_word.h), in one place instead of three. `MwCampaignBufferWord` keeps an offset that wraps at 64K, in the three places the original's could: the picture banks, the MIDI stream and the packed sprites. `MwWordsCopyInto`, left without a caller, is gone too.
+- **A stop names its run or its word,** gives the player no advice, and is a fault of the program: the player's folders are checked at start, before any of this runs.
+- **The landscape labels.** Each label's copy ran on into the next one's first two letters, which nothing reads (the one reader, MW_MAIN_081B_TRAVEL, stops at the NUL). Each is now its own word, and those two bytes of `campaignTravel` (offsets 1824 and 1825) are zero.
+- **The equality check** (scratch, not committed; B4f combat's way: A5 fill, import, compare) on 01493ca against 8319f34, both revisions, 95,402 and 95,400 bytes filled: the only differences are `mainWords`, gone, and the two bytes above. 3,258 bytes are A5 after it on both sides: the import doesn't write them, as before. For combat's words: 162 symbols the same. It compares with main, not with the original. Not run again after the merge with the story repair, which doesn't change an importer.
+- **The fill's rule.** All of the zero data is filled, but of the initialised owners only the bytes that the first import changed: filling them whole broke constants.
+- **The bounds reports.** The two left in MW_MAIN_1090 (956 and 957) are gone: the sanitizer, over all traces and both revisions, has none.
+- **Left as they are:** the layout pieces (data/ui) that COCKPIT, ORDERS and VIDEO place at their native offsets.
+- **docs/phase2/INVENTORY.md** differs by `mainWords`, and by `acceptContractCaption`, whose source is now named right: tools/phase2/inventory.py reads the runs too.
 
 
 ## 3. How we check "play identical"

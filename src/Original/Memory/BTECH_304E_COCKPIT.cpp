@@ -1,7 +1,8 @@
 #include "mechwarrior/story.h"
+#include "mechwarrior/story_span.h"
 #include <stdio.h>
 #include "mechwarrior/combat_cockpit.h"
-#include "mechwarrior/native_address.h"
+#include "mechwarrior/read_word.h"
 #include "mechwarrior/btech_start_image.h"
 #include "mechwarrior/ui_layout.h"
 #include <string.h>
@@ -33,12 +34,10 @@ bool BtechImportCockpitInitialData(void)
     const BtechStartRowData namesMechTemplateDirectoryRow("names.mech_template_directory");
     const BtechStartRowData namesPilotDirectoryRow("names.pilot_directory");
     const BtechStartRowData cockpitRadarPreviousTickRow("cockpit.radar_previous_tick");
-    /* The layout's pieces, at their native offsets (304E:04D8..2426), and the
-     * UI words (story/words.json, cockpit.word.* and briefing.word.*) at
-     * theirs (304E:0052..241C), so the reads below keep the exe's addresses. */
-    static uint8_t ui[0x2426],words[0x241C];
-    memset(ui,0,sizeof(ui));memset(words,0,sizeof(words));
-    if (!MwWordsCopyInto("cockpit.word.",words,sizeof(words)) || !MwWordsCopyInto("briefing.word.",words,sizeof(words))) return false;
+    /* The layout's pieces, at their native offsets (304E:04D8..2426), so
+     * the reads below keep the exe's addresses. The words come by id. */
+    static uint8_t ui[0x2426];
+    memset(ui,0,sizeof(ui));
     if (!CopyLayoutPiece(ui,sizeof(ui),"cockpit.inspection_diagram_origins",0x1878)
         || !CopyLayoutPiece(ui,sizeof(ui),"cockpit.inspection_diagram_regions",0x1898)
         || !CopyLayoutPiece(ui,sizeof(ui),"cockpit.target_diagram_anchors",0x1AD8)
@@ -62,41 +61,38 @@ bool BtechImportCockpitInitialData(void)
         uint16_t offset=fileInspectionBitmapOffsetsRow.word(chassis*2);
         fileInspectionBitmapsRow.text(fileInspectionBitmapsRow.index(offset)); /* Its name ends in the row. */
         combatCockpit.inspectionDamageBitmapFilenames[chassis]=inspectionBitmapNames+fileInspectionBitmapsRow.index(offset);
-        combatCockpit.inspectionDiagramOrigins[chassis]=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(ui,0x1878+chassis*4),(int16_t)MwReadNativeWord(ui,0x187A+chassis*4)};
+        combatCockpit.inspectionDiagramOrigins[chassis]=BtechHudGaugeAnchor{(int16_t)MwReadWord(ui+0x1878+chassis*4),(int16_t)MwReadWord(ui+0x187A+chassis*4)};
         for (uint16_t armor=0;armor<COMBAT_ARMOR_LOCATIONS;++armor)
         {
             uint16_t at=0x1898+chassis*0x48+armor*8;
-            combatCockpit.inspectionDiagramRegions[chassis][armor]=BtechScreenRectangle{(int16_t)MwReadNativeWord(ui,at),(int16_t)MwReadNativeWord(ui,at+2),
-                (int16_t)MwReadNativeWord(ui,at+4),(int16_t)MwReadNativeWord(ui,at+6)};
+            combatCockpit.inspectionDiagramRegions[chassis][armor]=BtechScreenRectangle{(int16_t)MwReadWord(ui+at),(int16_t)MwReadWord(ui+at+2),
+                (int16_t)MwReadWord(ui+at+4),(int16_t)MwReadWord(ui+at+6)};
         }
     }
-    memcpy(combatCockpit.bodyLocationLabels,words+0x038E,sizeof(combatCockpit.bodyLocationLabels));
-    memcpy(combatCockpit.inspectionConditionLabels,words+0x03A6,sizeof(combatCockpit.inspectionConditionLabels));
-    memcpy(combatCockpit.actuatorLabels,words+0x046C,sizeof(combatCockpit.actuatorLabels));
-    memcpy(combatCockpit.inspectionSubsystemLabels,words+0x0520,sizeof(combatCockpit.inspectionSubsystemLabels));
-    memcpy(combatCockpit.heatSinksOfText,words+0x0566,sizeof(combatCockpit.heatSinksOfText));
-    memcpy(combatCockpit.jumpJetsText,words+0x0569,sizeof(combatCockpit.jumpJetsText));
-    memcpy(combatCockpit.jumpJetsOfText,words+0x0577,sizeof(combatCockpit.jumpJetsOfText));
-    memcpy(combatCockpit.inspectionWeaponHeading,words+0x057A,sizeof(combatCockpit.inspectionWeaponHeading));
-    memcpy(combatCockpit.inspectionBlankWeaponRow,words+0x0590,sizeof(combatCockpit.inspectionBlankWeaponRow));
+    MwStorySpan::words({"cockpit.word.body_location."}).copyAll(combatCockpit.bodyLocationLabels,sizeof(combatCockpit.bodyLocationLabels));
+    MwStorySpan::words({"cockpit.word.condition."}).copyAll(combatCockpit.inspectionConditionLabels,sizeof(combatCockpit.inspectionConditionLabels));
+    MwStorySpan::words({"cockpit.word.actuator."}).copyAll(combatCockpit.actuatorLabels,sizeof(combatCockpit.actuatorLabels));
+    MwStorySpan::words({"cockpit.word.subsystem."}).copyAll(combatCockpit.inspectionSubsystemLabels,sizeof(combatCockpit.inspectionSubsystemLabels));
+    MwStorySpan::words({"cockpit.word.heat_sinks_of"}).copyAll(combatCockpit.heatSinksOfText,sizeof(combatCockpit.heatSinksOfText));
+    MwStorySpan::words({"cockpit.word.jump_jets"}).copyAll(combatCockpit.jumpJetsText,sizeof(combatCockpit.jumpJetsText));
+    MwStorySpan::words({"cockpit.word.jump_jets_of"}).copyAll(combatCockpit.jumpJetsOfText,sizeof(combatCockpit.jumpJetsOfText));
+    MwStorySpan::words({"cockpit.word.weapon_heading"}).copyAll(combatCockpit.inspectionWeaponHeading,sizeof(combatCockpit.inspectionWeaponHeading));
+    MwStorySpan::words({"cockpit.word.blank_weapon_row"}).copyAll(combatCockpit.inspectionBlankWeaponRow,sizeof(combatCockpit.inspectionBlankWeaponRow));
     for (uint16_t legend=0;legend<2;++legend)
     {
-        uint16_t offset=MwReadNativeWord(ui,0x04F4+legend*2);
-        if (offset>=sizeof(words)) return false;
-        const uint8_t *end=static_cast<const uint8_t *>(memchr(words+offset,0,sizeof(words)-offset));
-        if (!end || (size_t)(end-words-offset)>=sizeof(combatCockpit.inspectionLegendText[legend])) return false;
-        memcpy(combatCockpit.inspectionLegendText[legend],words+offset,(size_t)(end-words-offset)+1);
+        uint16_t offset=MwReadWord(ui+0x04F4+legend*2);
+        if (!MwWordsCopyTextAt("cockpit.word.",offset,combatCockpit.inspectionLegendText[legend],sizeof(combatCockpit.inspectionLegendText[legend]))) return false;
     }
-    for (uint16_t index=0;index<3;++index) combatCockpit.twoHitSystemConditionLabelIndices[index]=MwReadNativeWord(ui,0x04D8+index*2);
-    for (uint16_t index=0;index<4;++index) combatCockpit.engineConditionLabelIndices[index]=MwReadNativeWord(ui,0x04DE +index*2);
-    for (uint16_t index=0;index<5;++index) combatCockpit.actuatorConditionLabelIndices[index]=MwReadNativeWord(ui,0x04E6+index*2);
-    memcpy(combatCockpit.simulationText,words+0x0076,sizeof(combatCockpit.simulationText));
-    memcpy(combatCockpit.pausedText,words+0x0081,sizeof(combatCockpit.pausedText));
-    memcpy(combatCockpit.retreatQuestionText,words+0x082F,sizeof(combatCockpit.retreatQuestionText)); /* 14 characters and their NUL (083E starts the next) */
-    memcpy(combatCockpit.retreatChoiceText,words+0x083E,sizeof(combatCockpit.retreatChoiceText));
-    memcpy(combatCockpit.briefingMissionLabel,words+0x0D96,sizeof(combatCockpit.briefingMissionLabel));
-    memcpy(combatCockpit.briefingCrewLabel,words+0x0DA9,sizeof(combatCockpit.briefingCrewLabel));
-    memcpy(combatCockpit.briefingMechLabel,words+0x0DB6,sizeof(combatCockpit.briefingMechLabel));
+    for (uint16_t index=0;index<3;++index) combatCockpit.twoHitSystemConditionLabelIndices[index]=MwReadWord(ui+0x04D8+index*2);
+    for (uint16_t index=0;index<4;++index) combatCockpit.engineConditionLabelIndices[index]=MwReadWord(ui+0x04DE +index*2);
+    for (uint16_t index=0;index<5;++index) combatCockpit.actuatorConditionLabelIndices[index]=MwReadWord(ui+0x04E6+index*2);
+    MwStorySpan::words({"cockpit.word.simulation"}).copyAll(combatCockpit.simulationText,sizeof(combatCockpit.simulationText));
+    MwStorySpan::words({"cockpit.word.paused"}).copyAll(combatCockpit.pausedText,sizeof(combatCockpit.pausedText));
+    MwStorySpan::words({"cockpit.word.retreat_question"}).copyAll(combatCockpit.retreatQuestionText,sizeof(combatCockpit.retreatQuestionText)); /* 14 characters and their NUL (083E starts the next) */
+    MwStorySpan::words({"cockpit.word.retreat_choice"}).copyAll(combatCockpit.retreatChoiceText,sizeof(combatCockpit.retreatChoiceText));
+    MwStorySpan::words({"briefing.word.mission"}).copyAll(combatCockpit.briefingMissionLabel,sizeof(combatCockpit.briefingMissionLabel));
+    MwStorySpan::words({"briefing.word.crew"}).copyAll(combatCockpit.briefingCrewLabel,sizeof(combatCockpit.briefingCrewLabel));
+    MwStorySpan::words({"briefing.word.mechs"}).copyAll(combatCockpit.briefingMechLabel,sizeof(combatCockpit.briefingMechLabel));
     if (combatCockpit.briefingMissionLabel[sizeof(combatCockpit.briefingMissionLabel)-1] || combatCockpit.briefingCrewLabel[sizeof(combatCockpit.briefingCrewLabel)-1]
         || combatCockpit.briefingMechLabel[sizeof(combatCockpit.briefingMechLabel)-1]) return false;
     combatCockpit.savedLineColour=0; /*4F7E*/combatCockpit.savedFillColour=0; /*4F80*/
@@ -105,41 +101,44 @@ bool BtechImportCockpitInitialData(void)
     combatCockpit.savedPolygonFilled=0; /*4F8A*/combatCockpit.savedPolygonClip=0; /*4F8C*/
     combatCockpit.rememberedSensorTargetSlot=0; /*4EDC*/
     combatCockpit.radarPreviousTick=cockpitRadarPreviousTickRow.word();
-    memcpy(weaponLabelText,words+0x2004,sizeof(weaponLabelText));
-    memcpy(weaponRangeAndAmmoText,words+0x2410,sizeof(weaponRangeAndAmmoText));
+    const MwStorySpan weaponLabels=MwStorySpan::words({"cockpit.word.weapon."});
+    weaponLabels.copyAll(weaponLabelText,sizeof(weaponLabelText));
+    const MwStorySpan rangeAndAmmo=MwStorySpan::words({"cockpit.word.range_class.","cockpit.word.energy_ammo","cockpit.word.range_text_end"});
+    rangeAndAmmo.copyAll(weaponRangeAndAmmoText,sizeof(weaponRangeAndAmmoText));
     for (uint16_t weapon=0;weapon<COMBAT_WEAPON_KINDS;++weapon)
     {
-        uint16_t offset=MwReadNativeWord(ui,0x2286+weapon*2);
-        if (offset<0x2004 || offset>=0x2040 || !memchr(words+offset,0,0x2040-offset)) return false;
-        combatCockpit.weaponLabels[weapon]=weaponLabelText+(offset-0x2004);
+        uint16_t offset=MwReadWord(ui+0x2286+weapon*2);
+        if (!weaponLabels.holdsText(offset)) return false;
+        combatCockpit.weaponLabels[weapon]=weaponLabelText+weaponLabels.index(offset);
     }
     for (uint16_t range=0;range<4;++range)
     {
-        uint16_t offset=MwReadNativeWord(ui,0x241C+range*2);
-        if (offset<0x2410 || offset>=0x241C || !memchr(words+offset,0,0x241C-offset)) return false;
-        combatCockpit.weaponRangeClassLabels[range]=weaponRangeAndAmmoText+(offset-0x2410);
+        uint16_t offset=MwReadWord(ui+0x241C+range*2);
+        if (!rangeAndAmmo.holdsText(offset)) return false;
+        combatCockpit.weaponRangeClassLabels[range]=weaponRangeAndAmmoText+rangeAndAmmo.index(offset);
     }
-    uint16_t ammoOffset=MwReadNativeWord(ui,0x2424);
-    if (ammoOffset<0x2410 || ammoOffset>=0x241C || !memchr(words+ammoOffset,0,0x241C-ammoOffset)) return false;
-    combatCockpit.energyAmmoPlaceholder=weaponRangeAndAmmoText+(ammoOffset-0x2410);
-    memcpy(radarRangeText,words+0x23EA,sizeof(radarRangeText));
+    uint16_t ammoOffset=MwReadWord(ui+0x2424);
+    if (!rangeAndAmmo.holdsText(ammoOffset)) return false;
+    combatCockpit.energyAmmoPlaceholder=weaponRangeAndAmmoText+rangeAndAmmo.index(ammoOffset);
+    const MwStorySpan radarRanges=MwStorySpan::words({"cockpit.word.radar_range."});
+    radarRanges.copyAll(radarRangeText,sizeof(radarRangeText));
     for (uint16_t range=0;range<COMBAT_RADAR_RANGE_LABELS;++range)
     {
-        uint16_t offset=MwReadNativeWord(ui,0x2406+range*2);
-        if (offset<0x23EA || offset>=0x2406 || !memchr(words+offset,0,0x2406-offset)) return false;
-        combatCockpit.radarRangeLabels[range]=radarRangeText+(offset-0x23EA);
+        uint16_t offset=MwReadWord(ui+0x2406+range*2);
+        if (!radarRanges.holdsText(offset)) return false;
+        combatCockpit.radarRangeLabels[range]=radarRangeText+radarRanges.index(offset);
     }
-    memcpy(combatCockpit.zoomLabel,words+0x0052,sizeof(combatCockpit.zoomLabel));
-    memcpy(combatCockpit.automaticWeaponsLabel,words+0x0059,sizeof(combatCockpit.automaticWeaponsLabel));
-    memcpy(combatCockpit.reactorShutdownText,words+0x005D,sizeof(combatCockpit.reactorShutdownText));
+    MwStorySpan::words({"cockpit.word.zoom"}).copyAll(combatCockpit.zoomLabel,sizeof(combatCockpit.zoomLabel));
+    MwStorySpan::words({"cockpit.word.automatic_weapons"}).copyAll(combatCockpit.automaticWeaponsLabel,sizeof(combatCockpit.automaticWeaponsLabel));
+    MwStorySpan::words({"cockpit.word.reactor_shutdown"}).copyAll(combatCockpit.reactorShutdownText,sizeof(combatCockpit.reactorShutdownText));
     if (combatCockpit.zoomLabel[6] || combatCockpit.automaticWeaponsLabel[3] || combatCockpit.reactorShutdownText[24]) return false;
-    memcpy(combatCockpit.subsystemLampLabels,words+0x23BE,sizeof(combatCockpit.subsystemLampLabels));
+    MwStorySpan::words({"cockpit.word.lamp."}).copyAll(combatCockpit.subsystemLampLabels,sizeof(combatCockpit.subsystemLampLabels));
     for (uint16_t label=0;label<4;++label) if (combatCockpit.subsystemLampLabels[label][1]) return false;
-    for (uint16_t word=0;word<14;++word) combatCockpit.subsystemLampColourTables.words[word]=MwReadNativeWord(ui,0x23CE +word*2);
+    for (uint16_t word=0;word<14;++word) combatCockpit.subsystemLampColourTables.words[word]=MwReadWord(ui+0x23CE +word*2);
     for (uint16_t scheme=0;scheme<COMBAT_HUD_COLOUR_SCHEMES;++scheme)
     {
         BtechHudColourScheme *colours=&combatCockpit.hudColourSchemes[scheme];uint16_t base=0x1F3C+scheme*0x64;
-#define HUD_COLOUR(field,offset) colours->field=MwReadNativeWord(ui,base+(offset))
+#define HUD_COLOUR(field,offset) colours->field=MwReadWord(ui+base+(offset))
         HUD_COLOUR(inspectionBackground,0x00);HUD_COLOUR(inspectionSubsystemText,0x02);
         HUD_COLOUR(inspectionEquipmentText,0x04);HUD_COLOUR(inspectionEquipmentHeading,0x06);
         HUD_COLOUR(inspectionFooter,0x08);HUD_COLOUR(inspectionMechName,0x0A);
@@ -205,13 +204,13 @@ bool BtechImportCockpitInitialData(void)
     }
     for (uint16_t chassis=0;chassis<COMBAT_MECH_TEMPLATES;++chassis)
     {
-        combatCockpit.mechCockpitLayoutIndices[chassis]=MwReadNativeWord(ui,0x1D38+chassis*2);
-        combatCockpit.targetDiagramAnchors[chassis]=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(ui,0x1AD8+chassis*4),(int16_t)MwReadNativeWord(ui,0x1ADA+chassis*4)};
+        combatCockpit.mechCockpitLayoutIndices[chassis]=MwReadWord(ui+0x1D38+chassis*2);
+        combatCockpit.targetDiagramAnchors[chassis]=BtechHudGaugeAnchor{(int16_t)MwReadWord(ui+0x1AD8+chassis*4),(int16_t)MwReadWord(ui+0x1ADA+chassis*4)};
         for (uint16_t armor=0;armor<COMBAT_ARMOR_LOCATIONS;++armor)
         {
             uint16_t offset=0x1AF8+chassis*0x48+armor*8;
-            combatCockpit.targetDiagramRegions[chassis][armor]=BtechScreenRectangle{(int16_t)MwReadNativeWord(ui,offset),(int16_t)MwReadNativeWord(ui,offset+2),
-                (int16_t)MwReadNativeWord(ui,offset+4),(int16_t)MwReadNativeWord(ui,offset+6)};
+            combatCockpit.targetDiagramRegions[chassis][armor]=BtechScreenRectangle{(int16_t)MwReadWord(ui+offset),(int16_t)MwReadWord(ui+offset+2),
+                (int16_t)MwReadWord(ui+offset+4),(int16_t)MwReadWord(ui+offset+6)};
         }
     }
     for (uint16_t index=0;index<COMBAT_COCKPIT_LAYOUTS;++index)
@@ -221,22 +220,22 @@ bool BtechImportCockpitInitialData(void)
         combatCockpit.cockpitScreenFilenames[index]=cockpitScreenNames+fileCockpitScreensRow.index(offset);
         offset=0x1D48+index*0x6A;
         BtechCockpitLayout *layout=&combatCockpit.cockpitLayouts[index];
-        layout->viewport=BtechScreenRectangle{(int16_t)MwReadNativeWord(ui,offset),(int16_t)MwReadNativeWord(ui,offset+2),(int16_t)MwReadNativeWord(ui,offset+4),(int16_t)MwReadNativeWord(ui,offset+6)};
-        layout->radarPanel=BtechScreenRectangle{(int16_t)MwReadNativeWord(ui,offset+8),(int16_t)MwReadNativeWord(ui,offset+0x0A),(int16_t)MwReadNativeWord(ui,offset+0x0C),(int16_t)MwReadNativeWord(ui,offset+0x0E)};
-        layout->targetPanel=BtechScreenRectangle{(int16_t)MwReadNativeWord(ui,offset+0x10),(int16_t)MwReadNativeWord(ui,offset+0x12),(int16_t)MwReadNativeWord(ui,offset+0x14),(int16_t)MwReadNativeWord(ui,offset+0x16)};
-        layout->weaponListX=(int16_t)MwReadNativeWord(ui,offset+0x18);layout->weaponListY=(int16_t)MwReadNativeWord(ui,offset+0x1A);
-        layout->heatGauge=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(ui,offset+0x1C),(int16_t)MwReadNativeWord(ui,offset+0x1E)};
-        layout->movementGauge=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(ui,offset+0x20),(int16_t)MwReadNativeWord(ui,offset+0x22)};
-        layout->jumpChargeGauge=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(ui,offset+0x24),(int16_t)MwReadNativeWord(ui,offset+0x26)};
+        layout->viewport=BtechScreenRectangle{(int16_t)MwReadWord(ui+offset),(int16_t)MwReadWord(ui+offset+2),(int16_t)MwReadWord(ui+offset+4),(int16_t)MwReadWord(ui+offset+6)};
+        layout->radarPanel=BtechScreenRectangle{(int16_t)MwReadWord(ui+offset+8),(int16_t)MwReadWord(ui+offset+0x0A),(int16_t)MwReadWord(ui+offset+0x0C),(int16_t)MwReadWord(ui+offset+0x0E)};
+        layout->targetPanel=BtechScreenRectangle{(int16_t)MwReadWord(ui+offset+0x10),(int16_t)MwReadWord(ui+offset+0x12),(int16_t)MwReadWord(ui+offset+0x14),(int16_t)MwReadWord(ui+offset+0x16)};
+        layout->weaponListX=(int16_t)MwReadWord(ui+offset+0x18);layout->weaponListY=(int16_t)MwReadWord(ui+offset+0x1A);
+        layout->heatGauge=BtechHudGaugeAnchor{(int16_t)MwReadWord(ui+offset+0x1C),(int16_t)MwReadWord(ui+offset+0x1E)};
+        layout->movementGauge=BtechHudGaugeAnchor{(int16_t)MwReadWord(ui+offset+0x20),(int16_t)MwReadWord(ui+offset+0x22)};
+        layout->jumpChargeGauge=BtechHudGaugeAnchor{(int16_t)MwReadWord(ui+offset+0x24),(int16_t)MwReadWord(ui+offset+0x26)};
         for (uint16_t anchor=0;anchor<3;++anchor)
         {
-            layout->firingIndicatorBank0[anchor]=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(ui,offset+0x28+anchor*4),(int16_t)MwReadNativeWord(ui,offset+0x2A+anchor*4)};
-            layout->firingIndicatorBank1[anchor]=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(ui,offset+0x34+anchor*4),(int16_t)MwReadNativeWord(ui,offset+0x36+anchor*4)};
+            layout->firingIndicatorBank0[anchor]=BtechHudGaugeAnchor{(int16_t)MwReadWord(ui+offset+0x28+anchor*4),(int16_t)MwReadWord(ui+offset+0x2A+anchor*4)};
+            layout->firingIndicatorBank1[anchor]=BtechHudGaugeAnchor{(int16_t)MwReadWord(ui+offset+0x34+anchor*4),(int16_t)MwReadWord(ui+offset+0x36+anchor*4)};
         }
         memcpy(layout->unidentifiedField15,ui+offset+0x40,sizeof(layout->unidentifiedField15));
-        layout->headingStripY=(int16_t)MwReadNativeWord(ui,offset+0x44);
+        layout->headingStripY=(int16_t)MwReadWord(ui+offset+0x44);
         for (uint16_t placement=0;placement<COMBAT_COCKPIT_PLACEMENTS;++placement)
-            layout->bitmapPlacements[placement]=BtechCockpitBitmapPlacement{MwReadNativeWord(ui,offset+0x46+placement*6),(int16_t)MwReadNativeWord(ui,offset+0x48+placement*6),(int16_t)MwReadNativeWord(ui,offset+0x4A+placement*6)};
+            layout->bitmapPlacements[placement]=BtechCockpitBitmapPlacement{MwReadWord(ui+offset+0x46+placement*6),(int16_t)MwReadWord(ui+offset+0x48+placement*6),(int16_t)MwReadWord(ui+offset+0x4A+placement*6)};
     }
     combatCockpit.cachedJumpChargeGaugeLevel=0; /*5338*/
     combatCockpit.cachedHeatGaugeLevel=0; /*533A*/combatCockpit.unidentifiedField25=0; /*533C*/

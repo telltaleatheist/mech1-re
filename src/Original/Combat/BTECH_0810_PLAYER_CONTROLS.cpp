@@ -1,5 +1,4 @@
 #include "mechwarrior/port_diagnostics.h"
-#include "mechwarrior/native_address.h"
 #include "mechwarrior/combat_input.h"
 #include "mechwarrior/combat_ballistics.h"
 #include "mechwarrior/combat_projectiles.h"
@@ -8,6 +7,8 @@
 #include "mechwarrior/combat_sound.h"
 #include "mechwarrior/combat_render.h"
 #include <stdlib.h>
+
+enum { WORD_SIGN_BIT=0x8000 };
 
 enum { PLAYER_THROTTLE_STEP=4,PLAYER_GROUND_TURN_STEP=0x80,PLAYER_GROUND_TURN_LIMIT=0x280,
     PLAYER_JUMP_TURN_STEP=0xB6,PLAYER_JUMP_FORWARD_STEP=2,PLAYER_JUMP_CHARGE_THRESHOLD=500,
@@ -235,12 +236,12 @@ dampTurn:
         uint16_t product=(uint16_t)((int32_t)limit*actuator),sign=(int16_t)product<0?UINT16_MAX:0;
         uint16_t magnitude=(product^sign)-sign;
         /* SAR of signed8000 remains negative; use unsigned sign extension. */
-        uint16_t quarter=(magnitude>>COMBAT_ACTUATOR_SPEED_SHIFT)|((magnitude&NATIVE_WORD_SIGN_BIT)?PLAYER_QUARTER_SIGN_EXTENSION:0);
+        uint16_t quarter=(magnitude>>COMBAT_ACTUATOR_SPEED_SHIFT)|((magnitude&WORD_SIGN_BIT)?PLAYER_QUARTER_SIGN_EXTENSION:0);
         limit=(int16_t)((quarter^sign)-sign);
         if (directions&COMBAT_DIRECTION_DOWN)
         {
             uint16_t reverse=limit-(limit<0?UINT16_MAX:0);
-            reverse=(reverse>>1)|((reverse&NATIVE_WORD_SIGN_BIT)?NATIVE_WORD_SIGN_BIT:0);
+            reverse=(reverse>>1)|((reverse&WORD_SIGN_BIT)?WORD_SIGN_BIT:0);
             int16_t reverseLimit=(int16_t)(0-reverse),requested=(int16_t)(forward-PLAYER_THROTTLE_STEP);
             combatStartup.requestedPlayerForwardStepScale=(uint16_t)(requested<reverseLimit?reverseLimit:requested);
             if (directions&COMBAT_DIRECTION_LEFT) turn=(int16_t)(turn-PLAYER_GROUND_TURN_STEP);
@@ -259,7 +260,7 @@ dampTurn:
         if (!(directions&(COMBAT_DIRECTION_LEFT|COMBAT_DIRECTION_RIGHT))) motion->orientationSteps[2]=0;
         else
         {
-            int16_t turnMagnitude=(uint16_t)turn==NATIVE_WORD_SIGN_BIT?INT16_MAX:turn<0?-turn:turn;
+            int16_t turnMagnitude=(uint16_t)turn==WORD_SIGN_BIT?INT16_MAX:turn<0?-turn:turn;
             if (turnMagnitude<PLAYER_GROUND_TURN_LIMIT) motion->orientationSteps[2]=turn;
         }
     }
@@ -303,16 +304,16 @@ aiming:;
         aimPitch=(int16_t)combatWorld.playerMechState->aimPitch;
         torsoHeading=(int16_t)torso->orientationC;
         int16_t target=combatInput.requestedAimPitch;
-        int16_t step=(uint16_t)(aimPitch-target)==NATIVE_WORD_SIGN_BIT?INT16_MAX:(int16_t)(aimPitch<target?target-aimPitch:aimPitch-target);
+        int16_t step=(uint16_t)(aimPitch-target)==WORD_SIGN_BIT?INT16_MAX:(int16_t)(aimPitch<target?target-aimPitch:aimPitch-target);
         if (step>PLAYER_AIM_STEP) step=PLAYER_AIM_STEP;
         combatWorld.playerMechState->aimPitch=(uint16_t)(aimPitch+(aimPitch>target?-step:step));
         target=(int16_t)combatInput.requestedTorsoAngle;
-        step=(uint16_t)(torsoHeading-target)==NATIVE_WORD_SIGN_BIT?INT16_MAX:(int16_t)(torsoHeading<target?target-torsoHeading:torsoHeading-target);
+        step=(uint16_t)(torsoHeading-target)==WORD_SIGN_BIT?INT16_MAX:(int16_t)(torsoHeading<target?target-torsoHeading:torsoHeading-target);
         if (step>PLAYER_TORSO_STEP) step=PLAYER_TORSO_STEP;
         torso->orientationC=(uint16_t)(torsoHeading+(torsoHeading>target?-step:step));
     }
     int16_t forward=motion->forwardStepScale,target=(int16_t)combatStartup.requestedPlayerForwardStepScale;
-    int16_t step=(uint16_t)(forward-target)==NATIVE_WORD_SIGN_BIT?INT16_MAX:(int16_t)(forward<target?target-forward:forward-target);
+    int16_t step=(uint16_t)(forward-target)==WORD_SIGN_BIT?INT16_MAX:(int16_t)(forward<target?target-forward:forward-target);
     if (step>PLAYER_THROTTLE_STEP) step=PLAYER_THROTTLE_STEP;
     motion->forwardStepScale=(int16_t)(forward+(forward>target?-step:step));
     if (!combatWorld.playerMechState->currentInternalStructure[COMBAT_BODY_LEFT_LEG] || !combatWorld.playerMechState->currentInternalStructure[COMBAT_BODY_RIGHT_LEG])

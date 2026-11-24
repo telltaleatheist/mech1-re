@@ -61,4 +61,4 @@ const uint8_t *CombatRecord::list(uint32_t at, uint8_t end, const char *what) co
 }
 
 uint8_t CombatRecord::byte(uint32_t at) const { return part(at, 1, "a field").bytes_[0]; }
-uint16_t CombatRecord::word(uint32_t at) const { return BtechRecordWord(part(at, 2, "a field").bytes_); }
+uint16_t CombatRecord::word(uint32_t at) const { return MwReadWord(part(at, 2, "a field").bytes_); }

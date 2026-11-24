@@ -3,7 +3,7 @@
 #include "mechwarrior/combat_runtime.h"
 #include "mechwarrior/combat_startup.h"
 #include "mechwarrior/combat_video.h"
-#include "mechwarrior/native_address.h"
+#include "mechwarrior/read_word.h"
 #include "mechwarrior/combat_heap.h"
 #include <stdlib.h>
 #include <string.h>
@@ -161,8 +161,8 @@ uint16_t BtechLoadSoundBank(const char *filename,BtechRuntimeStream *stream,uint
         eventCount[0]=(uint8_t)bank->eventCount;eventCount[1]=(uint8_t)(bank->eventCount>>8);
         unknown[0]=(uint8_t)bank->unidentifiedField9;unknown[1]=(uint8_t)(bank->unidentifiedField9>>8);
         BtechReadStreamElements(ignoredHeader,2,1,stream->file);
-        BtechReadStreamElements(eventCount,2,1,stream->file);bank->eventCount=MwReadNativeWord(eventCount,0);
-        BtechReadStreamElements(unknown,2,1,stream->file);bank->unidentifiedField9=MwReadNativeWord(unknown,0);
+        BtechReadStreamElements(eventCount,2,1,stream->file);bank->eventCount=MwReadWord(eventCount);
+        BtechReadStreamElements(unknown,2,1,stream->file);bank->unidentifiedField9=MwReadWord(unknown);
         failed=1;
         if (combatSound.selectedAudioBackendMask&COMBAT_SOUND_SPEAKER)
             failed&=BtechMergeSoundBackendDirectory(bank,stream,"SND:IBM:")==0;
@@ -194,8 +194,8 @@ uint16_t BtechMergeSoundBackendDirectory(BtechSoundBank *bank,BtechRuntimeStream
     {
         uint32_t entry=(uint16_t)((uint16_t)event<<2);
         if (entry+4>node->allocation.byteCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: entry+4>node->allocation.byteCount");
-        uint16_t offset=MwReadNativeWord(node->allocation.bytes,(uint16_t)entry);
-        uint16_t paragraph=MwReadNativeWord(node->allocation.bytes,(uint16_t)(entry+2));
+        uint16_t offset=MwReadWord(node->allocation.bytes+(uint16_t)entry);
+        uint16_t paragraph=MwReadWord(node->allocation.bytes+entry+2);
         if (!(offset|paragraph)) continue;
         uint32_t eventOffset=(uint32_t)paragraph*0x10+offset;
         if (eventOffset>=node->allocation.byteCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: eventOffset>=node->allocation.byteCount");
@@ -214,7 +214,7 @@ BtechSoundAllocationNode *BtechLoadTaggedSoundAllocation(BtechSoundBank *bank,Bt
     BtechReadStreamByte(stream->file);
     uint8_t lengthBytes[4];
     if (BtechReadStreamElements(lengthBytes,4,1,stream->file)!=1) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: BtechReadStreamElements(lengthBytes,4,1,stream->file)!=1");
-    uint32_t remaining=(uint32_t)MwReadNativeWord(lengthBytes,0)|((uint32_t)MwReadNativeWord(lengthBytes,2)<<16);
+    uint32_t remaining=(uint32_t)MwReadWord(lengthBytes)|((uint32_t)MwReadWord(lengthBytes+2)<<16);
     fseek(stream->file,-5,SEEK_CUR);
     BtechResourceAllocation allocation=combatSound.soundAllocationOverride;
     if (!allocation.bytes)
@@ -292,9 +292,9 @@ uint16_t BtechLoadMusicBank(const char *filename,BtechRuntimeStream *stream)
     if (BtechFindResourceTagPosition(stream,"MUS:INF:",0)&0x80000000) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: BtechFindResourceTagPosition(stream,\"MUS:INF:\",0)&0x80000000");
     uint8_t header[2];
     if (BtechReadStreamElements(header,1,2,stream->file)!=2) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: BtechReadStreamElements(header,1,2,stream->file)!=2");
-    if (MwReadNativeWord(header,0)!=MUSIC_INFORMATION_MAGIC) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: MwReadNativeWord(header,0)!=MUSIC_INFORMATION_MAGIC"); /* Count is still stack residue. */
+    if (MwReadWord(header)!=MUSIC_INFORMATION_MAGIC) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: MwReadWord(header)!=MUSIC_INFORMATION_MAGIC"); /* Count is still stack residue. */
     if (BtechReadStreamElements(header,1,2,stream->file)!=2) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: BtechReadStreamElements(header,1,2,stream->file)!=2");
-    uint16_t trackCount=MwReadNativeWord(header,0);
+    uint16_t trackCount=MwReadWord(header);
     for (int16_t track=0;track<(int16_t)trackCount;++track)
     {
         uint16_t sequenceWord=bankIndex*COMBAT_MUSIC_SEQUENCE_WORDS+track;
@@ -303,7 +303,7 @@ uint16_t BtechLoadMusicBank(const char *filename,BtechRuntimeStream *stream)
         int16_t *next=&combatSound.musicSequences[sequenceWord/COMBAT_MUSIC_SEQUENCE_WORDS][sequenceWord%COMBAT_MUSIC_SEQUENCE_WORDS];
         header[0]=(uint8_t)*next;header[1]=(uint8_t)((uint16_t)*next>>8);
         BtechReadStreamElements(header,1,2,stream->file); /* Native partial reads preserve unwritten destination bytes. */
-        *next=(int16_t)MwReadNativeWord(header,0);
+        *next=(int16_t)MwReadWord(header);
     }
     BtechSoundBank *bank=&combatSound.soundBanks[COMBAT_MUSIC_FIRST_ROOT+bankIndex];
     bank->eventCount=trackCount;bank->unidentifiedField9=trackCount;

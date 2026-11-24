@@ -1,5 +1,6 @@
 #include "mechwarrior/port_diagnostics.h"
-#include "mechwarrior/native_address.h"
+#include "mechwarrior/read_word.h"
+#include "mechwarrior/campaign_buffer.h"
 #include "mechwarrior/campaign.h"
 #include "mechwarrior/ega_campaign.h"
 #include "mechwarrior/game_files.h"
@@ -28,12 +29,12 @@ MwCampaignBuffer *MwLoadIndexedPicture(uint16_t pictureIndex)
     /* Outside this proved directory object is unresolved live DS storage,
      * not a safe out-of-bounds C access or a silently clamped index. */
     if (offsetEntry + PICTURE_OFFSET_ENTRY_BYTES > INDEXED_PICTURE_DIRECTORY_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: offsetEntry + PICTURE_OFFSET_ENTRY_BYTES > INDEXED_PICTURE_DIRECTORY_BYTES");
-    uint32_t fileOffset = ((uint32_t)MwReadNativeWord(campaignCore.indexedPictureDirectory, offsetEntry) << NATIVE_WORD_BITS)
-        | MwReadNativeWord(campaignCore.indexedPictureDirectory, (uint16_t)(offsetEntry + PICTURE_BANK_LOW_OFFSET_WORD));
+    uint32_t fileOffset = ((uint32_t)MwReadWord(campaignCore.indexedPictureDirectory+offsetEntry) << NATIVE_WORD_BITS)
+        | MwReadWord(campaignCore.indexedPictureDirectory+offsetEntry + PICTURE_BANK_LOW_OFFSET_WORD);
     if (!file.seek(fileOffset)) MwFailGameFileRead(indexedPictureFilename);
     uint16_t sizeEntry = INDEXED_PICTURE_SIZE_TABLE + (uint16_t)(campaignCore.indexedPictureCachedIndex * 2);
     if (sizeEntry + PICTURE_BANK_LOW_OFFSET_WORD > INDEXED_PICTURE_DIRECTORY_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: sizeEntry + PICTURE_BANK_LOW_OFFSET_WORD > INDEXED_PICTURE_DIRECTORY_BYTES");
-    campaignCore.indexedPictureStoredBytes = MwReadNativeWord(campaignCore.indexedPictureDirectory, sizeEntry);
+    campaignCore.indexedPictureStoredBytes = MwReadWord(campaignCore.indexedPictureDirectory+sizeEntry);
     if (!file.read(MwCampaignBufferBytes(campaignCore.compressedPictureBuffer), campaignCore.indexedPictureStoredBytes))
         MwFailGameFileRead(indexedPictureFilename);
     /* 081B:113E..1152: a failed close is an unreadable file too. */
@@ -105,7 +106,7 @@ void MwDrawIndexedPicture(uint16_t x, uint16_t y, uint16_t pictureIndex)
 uint16_t MwDrawGeneralPicture(uint16_t x, uint16_t y, uint8_t page, uint16_t pictureIndex)
 {
     uint8_t *pictureBank = MwCampaignBufferBytes(campaignCore.generalPictureBank);
-    uint16_t pictureOffset = MwReadNativeWord(pictureBank, (uint16_t)((uint16_t)(pictureIndex * PICTURE_OFFSET_ENTRY_BYTES) + PICTURE_BANK_LOW_OFFSET_WORD));
+    uint16_t pictureOffset = MwCampaignBufferWord(pictureBank,(uint16_t)((uint16_t)(pictureIndex * PICTURE_OFFSET_ENTRY_BYTES) + PICTURE_BANK_LOW_OFFSET_WORD));
     return EgaDrawPackedSprite(x, y, page, pictureOffset, campaignCore.generalPictureBank);
 }
 /* MW_MAIN081B:07B6..07CD. SI doubles twice as a WORD; only directory+02
@@ -113,14 +114,14 @@ uint16_t MwDrawGeneralPicture(uint16_t x, uint16_t y, uint8_t page, uint16_t pic
 uint16_t MwDrawAlternateBankPicture(uint16_t x, uint16_t y, uint8_t page, uint16_t pictureIndex)
 {
     uint8_t *pictureBank=MwCampaignBufferBytes(campaignCore.cockpitPictureBank);
-    uint16_t pictureOffset=MwReadNativeWord(pictureBank,(uint16_t)((uint16_t)(pictureIndex*PICTURE_OFFSET_ENTRY_BYTES)+PICTURE_BANK_LOW_OFFSET_WORD));
+    uint16_t pictureOffset=MwCampaignBufferWord(pictureBank,(uint16_t)((uint16_t)(pictureIndex*PICTURE_OFFSET_ENTRY_BYTES)+PICTURE_BANK_LOW_OFFSET_WORD));
     return EgaDrawPackedSprite(x,y,page,pictureOffset,campaignCore.cockpitPictureBank);
 }
 /* MW_MAIN 081B:07CE..07E5. */
 uint16_t MwDrawActivePicture(uint16_t x, uint16_t y, uint8_t page, uint16_t pictureIndex)
 {
     uint8_t *pictureBank = MwCampaignBufferBytes(campaignCore.activePictureBank);
-    uint16_t pictureOffset = MwReadNativeWord(pictureBank, (uint16_t)((uint16_t)(pictureIndex * PICTURE_OFFSET_ENTRY_BYTES) + PICTURE_BANK_LOW_OFFSET_WORD));
+    uint16_t pictureOffset = MwCampaignBufferWord(pictureBank,(uint16_t)((uint16_t)(pictureIndex * PICTURE_OFFSET_ENTRY_BYTES) + PICTURE_BANK_LOW_OFFSET_WORD));
     return EgaDrawPackedSprite(x, y, page, pictureOffset, campaignCore.activePictureBank);
 }
 /* MW_MAIN 081B:07E6..07FD. The native bank identity is selector0169; keep the
@@ -128,7 +129,6 @@ uint16_t MwDrawActivePicture(uint16_t x, uint16_t y, uint8_t page, uint16_t pict
 uint16_t MwDrawFourthBankPicture(uint16_t x, uint16_t y, uint8_t page, uint16_t pictureIndex)
 {
     uint8_t *pictureBank=MwCampaignBufferBytes(campaignCore.secondaryPictureBank);
-    uint16_t pictureOffset=MwReadNativeWord(pictureBank,
-        (uint16_t)((uint16_t)(pictureIndex*PICTURE_OFFSET_ENTRY_BYTES)+PICTURE_BANK_LOW_OFFSET_WORD));
+    uint16_t pictureOffset=MwCampaignBufferWord(pictureBank,(uint16_t)((uint16_t)(pictureIndex*PICTURE_OFFSET_ENTRY_BYTES)+PICTURE_BANK_LOW_OFFSET_WORD));
     return EgaDrawPackedSprite(x,y,page,pictureOffset,campaignCore.secondaryPictureBank);
 }

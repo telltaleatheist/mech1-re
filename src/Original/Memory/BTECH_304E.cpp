@@ -1,7 +1,7 @@
 #include "mechwarrior/story.h"
 #include "mechwarrior/rules.h"
 #include "mechwarrior/combat_mechs.h"
-#include "mechwarrior/native_address.h"
+#include "mechwarrior/read_word.h"
 #include "mechwarrior/btech_start_image.h"
 #include "mechwarrior/combat_import.h"
 #include "mechwarrior/combat_installation.h"
@@ -89,44 +89,44 @@ bool BtechImportMechInitialData(void)
         uint8_t bytes[0xE0];
         if (!MwRulesCopyBytes("mechs.templates",bytes,sizeof(bytes),index*0x00E0)) return false;
         BtechMechTemplate *mech=&combatMechs.mechTemplates[index];
-        mech->tonnage=MwReadNativeWord(bytes,0);
-        mech->displayScale=MwReadNativeWord(bytes,2);
-        mech->firingMovementThreshold=MwReadNativeWord(bytes,4);
-        mech->maximumSpeedScale=MwReadNativeWord(bytes,6);
-        mech->jumpJetGroupCount=MwReadNativeWord(bytes,8);
-        mech->jumpAcceleration=MwReadNativeWord(bytes,0x000A);
-        mech->jumpSpeedLimit=MwReadNativeWord(bytes,0x000C);
-        mech->unidentifiedField8=MwReadNativeWord(bytes,0x000E);
-        mech->heatSinkCount=MwReadNativeWord(bytes,0x0010);
-        mech->weaponMountCount=MwReadNativeWord(bytes,0x0012);
+        mech->tonnage=MwReadWord(bytes);
+        mech->displayScale=MwReadWord(bytes+2);
+        mech->firingMovementThreshold=MwReadWord(bytes+4);
+        mech->maximumSpeedScale=MwReadWord(bytes+6);
+        mech->jumpJetGroupCount=MwReadWord(bytes+8);
+        mech->jumpAcceleration=MwReadWord(bytes+0x000A);
+        mech->jumpSpeedLimit=MwReadWord(bytes+0x000C);
+        mech->unidentifiedField8=MwReadWord(bytes+0x000E);
+        mech->heatSinkCount=MwReadWord(bytes+0x0010);
+        mech->weaponMountCount=MwReadWord(bytes+0x0012);
         for (uint16_t location=0;location<COMBAT_ARMOR_LOCATIONS;++location)
         {
             BtechBodyReferencePoint *point=&mech->bodyReferencePoints[location];
-            point->componentA=(int16_t)MwReadNativeWord(bytes,0x0014+location*6);
-            point->componentB=(int16_t)MwReadNativeWord(bytes,0x0016+location*6);
-            point->componentC=(int16_t)MwReadNativeWord(bytes,0x0018+location*6);
-            mech->maximumArmor[location]=MwReadNativeWord(bytes,0x00B2+location*2);
+            point->componentA=(int16_t)MwReadWord(bytes+0x0014+location*6);
+            point->componentB=(int16_t)MwReadWord(bytes+0x0016+location*6);
+            point->componentC=(int16_t)MwReadWord(bytes+0x0018+location*6);
+            mech->maximumArmor[location]=MwReadWord(bytes+0x00B2+location*2);
         }
         for (uint16_t mount=0;mount<COMBAT_WEAPON_MOUNTS;++mount)
         {
             BtechWeaponMount *weapon=&mech->weaponMounts[mount];
-            weapon->weaponKind=(int16_t)MwReadNativeWord(bytes,0x004A+mount*8);
-            weapon->bodyLocation=MwReadNativeWord(bytes,0x004C+mount*8);
-            weapon->unidentifiedField4=MwReadNativeWord(bytes,0x004E +mount*8);
-            weapon->unidentifiedField6=MwReadNativeWord(bytes,0x0050+mount*8);
+            weapon->weaponKind=(int16_t)MwReadWord(bytes+0x004A+mount*8);
+            weapon->bodyLocation=MwReadWord(bytes+0x004C+mount*8);
+            weapon->unidentifiedField4=MwReadWord(bytes+0x004E +mount*8);
+            weapon->unidentifiedField6=MwReadWord(bytes+0x0050+mount*8);
         }
         for (uint16_t family=0;family<COMBAT_AMMO_FAMILIES;++family)
         {
-            mech->ammoBodyLocations[family]=(int16_t)MwReadNativeWord(bytes,0x009A+family*2);
-            mech->initialAmmoSalvos[family]=MwReadNativeWord(bytes,0x00D4+family*2);
+            mech->ammoBodyLocations[family]=(int16_t)MwReadWord(bytes+0x009A+family*2);
+            mech->initialAmmoSalvos[family]=MwReadWord(bytes+0x00D4+family*2);
         }
         for (uint16_t group=0;group<COMBAT_JET_GROUPS;++group)
         {
-            mech->jumpJetGroups[group].bodyLocation=(int16_t)MwReadNativeWord(bytes,0x00A6+group*4);
-            mech->jumpJetGroups[group].criticalSlots=MwReadNativeWord(bytes,0x00A8+group*4);
+            mech->jumpJetGroups[group].bodyLocation=(int16_t)MwReadWord(bytes+0x00A6+group*4);
+            mech->jumpJetGroups[group].criticalSlots=MwReadWord(bytes+0x00A8+group*4);
         }
         for (uint16_t location=0;location<COMBAT_BODY_LOCATIONS;++location)
-            mech->maximumInternalStructure[location]=MwReadNativeWord(bytes,0x00C4+location*2);
+            mech->maximumInternalStructure[location]=MwReadWord(bytes+0x00C4+location*2);
     }
     for (uint16_t index=0;index<COMBAT_RANDOM_WORDS;++index)
         combatMechs.randomStateWords[index]=combatStartRandomStateRow.word(index*2);

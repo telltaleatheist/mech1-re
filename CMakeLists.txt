@@ -209,6 +209,7 @@ add_library(mechwarrior_original STATIC
     src/Support/GameFiles.cpp
     src/Support/PortDiagnostics.cpp
     src/Support/Problem.cpp
+    src/Support/StorySpan.cpp
     src/Support/MidiAddress.cpp
     src/Support/Sha256.cpp
     src/Support/EventLog.cpp
@@ -314,6 +315,10 @@ if(MECHWARRIOR_BUILD_TESTS)
         add_test(NAME save_roundtrip COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tests/save_roundtrip.py"
             --program $<TARGET_FILE:save_roundtrip_test> --data "${CMAKE_CURRENT_SOURCE_DIR}/data" --work "${CMAKE_CURRENT_BINARY_DIR}/save_roundtrip_work")
     endif()
+    # The story's runs of words (story_span.h): bounds, gaps and stops. No game files.
+    add_executable(story_span_test tests/story_span_test.cpp)
+    target_link_libraries(story_span_test PRIVATE mechwarrior_original)
+    add_test(NAME story_span COMMAND story_span_test)
     # Combat's start rows (B4f): each by its id, and every stop of their reader by its message.
     add_executable(start_rows_test tests/start_rows_test.cpp)
     target_link_libraries(start_rows_test PRIVATE mechwarrior_original)

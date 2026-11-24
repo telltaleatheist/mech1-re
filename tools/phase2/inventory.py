@@ -12,10 +12,9 @@ new_campaign.json (src/Rules/new_campaign_fields.cpp) is the new campaign,
 a layout piece (src/Ui/ui_pieces.txt) is layout, and a UI word
 (src/Import/word_pieces.txt, as src/Import/import_table.cpp lists them with
 the captions' texts) is a word: one a words door fills (MwWordsCopyText,
-MwWordsCopyBlock), one read from an importer's view of the words (`words`,
-`mainWords`) at an offset a word covers, directly, through a pointer table
-or past a range check, a pointer into such an item, or a caption whose text
-is a word. The offset shown is then the exe's, from those tables.
+MwWordsCopyBlock), one read from a run of words (MwStorySpan) at an offset a
+word covers, directly, through a pointer table or past a range check, a
+pointer into such an item, or a caption whose text is a word. The offset shown is then the exe's, from those tables.
 """
 import collections, glob, os, re, sys
 
@@ -60,6 +59,23 @@ def unfold(text):
         text=re.sub(r'\b'+inst+r'\.','',text)
     return text
 
+SPANVAR=re.compile(r'const MwStorySpan (\w+)=MwStorySpan::words\(\{"([\w.]+)"[^}]*\}\);')
+SPANNATIVE=re.compile(r'const MwStorySpan (\w+)=MwStorySpan::native\("[\w.]+",\w+\);')
+def span_start(id_):
+    """The data-segment offset of a run of words (story_span.h): its first id's first word."""
+    return min(o for k,(_,_,o,_) in WORD.items() if k==id_ or id_.endswith('.') and k.startswith(id_))
+def unspan(text):
+    """`text` with its story spans read as views of the exe's data, as they were before they had ids."""
+    text=re.sub(r'MwStorySpan::words\(\{"([\w.]+)"[^}]*\}\)\.copyAll\(([\w.]+),',lambda m:f'memcpy({m[2]},words+0x{span_start(m[1]):04X},',text)
+    text=re.sub(r'MwWordsCopyTextAt\("[\w.]+",','ImportInitialString(words,',text)
+    text=re.sub(r'(snprintf\(id,sizeof\(id\),"([\w.]+\.word\.[\w.]+)%u",[^\n]*\n\s*if \(!MwWordsCopyText\()id,',r'\1"\g<2>1",',text)
+    for var,id_ in SPANVAR.findall(text):
+        text=re.sub(r'\b'+var+r'\.copyAll\(([\w.]+),',lambda m:f'memcpy({m[1]},words+0x{span_start(id_):04X},',text)
+        text=re.sub(r'\b'+var+r'\.index\(','(',text)
+    for var in SPANNATIVE.findall(text):
+        text=re.sub(r'\b'+var+r'\.copy\(&?([\w.]+),sizeof\([\w.]+\),',r'\1=data+(',text)
+        text=re.sub(r'\b'+var+r'\.(?:word|byte)\(','data+(',text)
+    return text
 STARTROW=re.compile(r'const BtechStartRowData (\w+)\("([\w.]+)"\);')
 def unrow(text):
     """A memory file as it read before B4f: a start row's reads by id are
@@ -79,7 +95,7 @@ def scan(memory_dir):
     decl=re.compile(r'^'+TYPES+r'(.+);\s*(?:/\*.*)?$')
     rows=[]
     for path in sorted(glob.glob(os.path.join(memory_dir,'*.cpp'))):
-        f=os.path.basename(path);lines=unrow(unfold(open(path).read())).split('\n');depth=0;names=[]
+        f=os.path.basename(path);lines=unspan(unrow(unfold(open(path).read()))).split('\n');depth=0;names=[]
         for l in lines:
             l=l.replace('(int)','')  # a cast in an array bound
             if depth==0 and not l.startswith((' ','#','/','}','{','\t','static_assert','typedef','enum','extern','namespace','using')) and '(' not in l.split('=')[0]:
@@ -136,6 +152,7 @@ VIA={'randomStateWord0':'rule new_campaign.start.random_seed','randomStateWord1'
      'pilotDefinitions':'builder MwStoryBuildPilots','unitAmmoProfileEntries':'rule units.ammo_profile_entries',
      'unitAmmoProfiles':'rule units.ammo_profiles','weaponRepairPricesByKind':'rule units.weapon_repair_price_lists',
      **{f'eventPlanetChoicePool{i}':'builder MwStoryCopyPlanetPools' for i in range(6)},
+     'repairWeaponLabelStorage':'word complex.word.repair_weapons.1',
      # Layout pieces read at computed offsets or through a local table.
      'inspectionDiagramRegions':'ui cockpit.inspection_diagram_regions','targetDiagramRegions':'ui cockpit.target_diagram_regions',
      'cockpitLayouts':'ui cockpit.layouts','hudColourSchemes':'ui cockpit.hud_colour_schemes',
@@ -173,7 +190,7 @@ def ui_source(name,lines):
                 if start<=off<start+UISIZE.get(id_,0): return 'ui '+id_
     return ''
 WORDDOOR=re.compile(r'MwWordsCopy(?:Text|Block)\(\s*"([\w.]+)"\s*,\s*(?:\([^)]*\)\s*)?([^,;]*)')
-VIEWOFF=re.compile(r'\b(?:mainWords|words)\s*(?:\+|,)\s*(0x[0-9A-Fa-f]+|\w+(?:\[\w+\])?)')
+VIEWOFF=re.compile(r'\bwords\s*(?:\+|,)\s*(0x[0-9A-Fa-f]+|\w+(?:\[\w+\])?)')
 def covering(exe,off):
     """The word whose bytes hold offset `off` of `exe`'s data segment."""
     return next((k for k,(e,_,o,n) in sorted(WORD.items(),key=lambda kv:kv[1][2]) if e==exe and o<=off<o+n),None)
@@ -184,7 +201,7 @@ def table_word(text,var):
     return f'{m.group(1)}.word.{entries[0]}' if entries and isinstance(entries,list) and isinstance(entries[0],str) else None
 def word_source(name,lines,f):
     """'word <id>' or '' for the words door or words view that fills `name`."""
-    if name in ('words','mainWords'): return ''  # the views themselves
+    if name=='words': return ''  # a view itself
     exe='BTECH' if f.startswith('BTECH') else 'MW_MAIN'
     text='\n'.join(lines);hit=lambda l:re.search(r'\b'+name+r'\b',l)
     for i,l in enumerate(lines):

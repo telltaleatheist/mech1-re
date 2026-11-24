@@ -1,5 +1,6 @@
 #ifndef MECHWARRIOR_COMBAT_RECORD_H
 #define MECHWARRIOR_COMBAT_RECORD_H
+#include "mechwarrior/read_word.h"
 #include <stdint.h>
 #include <stdio.h>
 
@@ -16,13 +17,6 @@ void BtechReadFileRecord(void *record, uint16_t bytes, FILE *stream, const char 
 /* The same for a list that ends with its file: false when the file ends
  * before the record's first byte. */
 bool BtechReadNextFileRecord(void *record, uint16_t bytes, FILE *stream, const char *file, const char *what, int number);
-
-/* A little-endian word and double word of bytes the caller owns. */
-inline uint16_t BtechRecordWord(const uint8_t *bytes) { return (uint16_t)(bytes[0] | ((uint16_t)bytes[1] << 8)); }
-inline uint32_t BtechRecordDword(const uint8_t *bytes)
-{
-    return (uint32_t)BtechRecordWord(bytes) | ((uint32_t)BtechRecordWord(bytes + 2) << 16);
-}
 
 /* Part of a file in memory, and the file's name for a refusal. */
 class CombatRecord
