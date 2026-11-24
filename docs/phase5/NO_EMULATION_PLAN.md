@@ -331,6 +331,12 @@ Changes per piece:
 - **Reads across the layout** (risk 6). Searched for memory calls, casts, pointer arithmetic, and addresses taken of a moved global, and read each hit: none depends on the order of globals. The stream identity is a difference inside `runtimeStreams`, the memset is `musicSequences`' own, and `samplePriorityOwner` points at `combatTones.sampleSoundPriority`, as it pointed at the global.
 - **The check.** `tools/phase5/owner_structs.py` compares 24 and 36 variables; INVENTORY.md is identical; the -Wshadow list is the same before and after; no unprefixed use is left outside comments and strings.
 
+**From B4a** (the campaign's text as bounded references; no golden re-recorded):
+- **What changed.** The (view, offset) pair every campaign text call took is an `MwText` (campaign_text.h): the first byte and the storage's end. The drawing reads to the NUL, refuses to read past the end as before, and returns a pointer to the NUL. The event pages take their next page from it, and the offsets the news, options, save and event text were given beside their view's base are gone with it. The launch's identity is the launcher's eleven bytes themselves.
+- **The month names.** Their view was 0x10000 bytes wide. The reference ends with `calendarMonthText` (0x6E bytes). The import refuses a name with no NUL inside those bytes, so nothing a script can reach reads further. The importer's pointer is formed after the subtraction, one of the places the bounds sanitizer reported.
+- **A notification's text offset** is checked against its storage before the pointer is formed; the view refused the same offset at the first read.
+- **The inventory tool** reads an `MwText`'s cursor as it read a plain pointer; its output is unchanged.
+
 **From B3c** (combat's video, render, polygons, scene, pose and cockpit state as owner structs; a pure move, no golden re-recorded):
 - **What changed.** 287 globals are now the fields of six structs, one per memory file: `combatVideo` (101 fields, combat_video.h), `combatRender` (63, combat_render.h), `combatPolygons` (26, combat_polygons.h), `combatScene` (8, combat_scene.h), `combatPose` (18, combat_pose.h), `combatCockpit` (71, combat_cockpit.h). Every name is kept, and the macros that name fields point at the instances. No field has an initialiser.
 - **Left outside.** The constants `glyphTailMasks`, `errorCardNotFound` and `errorInspectionShapeMemory`, and the cockpit importer's six private text buffers.
