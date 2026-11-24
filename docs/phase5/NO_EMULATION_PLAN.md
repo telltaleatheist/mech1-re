@@ -292,6 +292,12 @@ Changes per piece:
 - **The tone log is identical** (the event logs match, 12/12). The sound-port goldens' combat logs lost 2134's port I/O and nothing else: per tick one 61h read and one 61h write (4,975 ticks), and the 42h divisor's two bytes on the ticks that chose a channel (2,146 writes). All of them fall between the deploy and results snaps, and every other line matches in order, including the campaign's speaker shutdown and restart around combat. They were re-recorded. The music logs are unchanged.
 - **The check.** The traces match (8/8 on 1990). The event logs match (12/12), the tone log with them. `tests/tone_voice_test.cpp` checks the voice.
 
+**From S4** (the listening; signed off as it stands, no change):
+- **Signed off as it stands.** The project owner listened to the listening set (the five songs and the thirteen effects, on the soundfont and speaker-style) and signed off S3's instrument table and levels: no program, level, pan or drum-map change, and no second listen.
+- **Against AdLib and speaker.** The comparison was with the original's AdLib and speaker versions.
+- **MT-32: not comparable.** The project has no MT-32 ROMs, so the original's MT-32 version can't be played for a comparison. That is recorded as not compared, not as matched, and the project works with the two versions it can hear.
+- **What it unblocks.** S8 (the AdLib and MT-32 backends removed), S9 (their libraries), then the rest of H5.
+
 ## 3. How we check "play identical"
 
 ### Sound
@@ -387,7 +393,7 @@ Every slice below is its own branch with the full gate green: both setups, the t
 | H2 | Keyboard: SDL3 key events into a typed input queue. The BIOS keyboard words, shift flags and the INT 9 scancode ring removed, along with the IRQ1 handler | game-event log identical; traces 8/8 and 6/8 | 4 |
 | H3 | Mouse and joystick: SDL3 mouse scaled to the frame; SDL3 axes for the joystick; the calibration screen reads axes. Game-port read counting and the delay loops that only timed hardware removed | game-event log identical | 3 |
 | H3b | Controllers through the real SDL host: SDL3 virtual gamepads and joysticks plugged in, moved and taken out, read by both games. A joystick taken out mid-battle reads centred | `sdl_joystick` test; traces and event logs identical | 1 |
-| S4 | The instrument table from the listening notes, per song: programs, levels, pans, the drum map. Re-rendered for a second listen if asked | note log identical; the project owner's sign-off | 2, plus listening |
+| S4 | The instrument table from the listening notes, per song: programs, levels, pans, the drum map. Re-rendered for a second listen if asked | note log identical; the project owner's sign-off. Signed off as it stands, against the AdLib and speaker versions; MT-32 not comparable (no ROMs) | 2, plus listening |
 | S5 | `Effects`: 2134 outputs tone events to the tone voice, for the thirteen effects the game requests (9 and 12 never are) | tone log identical | 3 |
 | S6 | Speaker-style music on the tone voice. The PIT channel 2 and 61h decoding removed | note log identical | 2 |
 | H4a | The test clock's charges removed: the per-port-read 1 µs, combat's game-port waits, the key-event reads, the effect tick's read (the PIT latch window went in H3). The one deliberate re-record | traces identical; note and game streams identical; the tone goldens and the sound goldens re-recorded, every move attributed to a removed charge | 1 |
