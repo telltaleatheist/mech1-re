@@ -55,12 +55,12 @@ void BtechShutdownMouseDriver(void)
  * devices (its CLI/STI and the mask port are gone since H4c). */
 void BtechRestoreTimerScheduler(void)
 {
-    if (!runtimeDelayActive) return;
+    if (!combatPlatform.runtimeDelayActive) return;
     if (!btechHostEnableDeviceIrqs || !btechHostSetTimerOwner || !btechHostSetTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostEnableDeviceIrqs || !btechHostSetTimerOwner || !btechHostSetTimerPeriod");
     btechHostSetTimerPeriod(PIT_COUNTER_MODULUS); /* The BIOS's period (H4b; was 43h, 40h 0, 40h 0). */
     btechHostEnableDeviceIrqs(MwDeviceIrq::All);
     btechHostSetTimerOwner(combatHandlers.savedTimerOwner);
-    runtimeDelayActive=0;
+    combatPlatform.runtimeDelayActive=0;
 }
 
 /*1BF5:1F84. The shipped26 A1 instructions READ INT00; they do not restore it.

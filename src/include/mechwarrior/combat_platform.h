@@ -39,21 +39,26 @@ struct BtechPosition3D;
  * BX/SI. A nonzero physical priority proves that D5CE discards that cache.
  * Missing/zero bytes are unresolved, not permission to invent an empty cache. */
 typedef struct BtechDosAllocation {uint8_t *bytes;uint32_t availableBytes;} BtechDosAllocation;
-extern uint8_t runtimeDelayActive;
-extern uint16_t runtimeDelayRemaining;
-extern uint8_t joystickPairInstalled[2],joystickAxisCentres[4];
-extern uint16_t joystickAxisReciprocals[4];
-/* 304E:41D9, 41DD, 41DF: the first axis's value while 1BF5:22F9 reads the
- * second, and the X and Y values 1BF5:2376 tests. */
-extern int16_t joystickFirstAxisValue,joystickDirectionX,joystickDirectionY;
-extern const char *combatInputReplayFilename;
-extern uint16_t combatInputReplayMode;
 typedef union BtechCharacterClassStorage {
     struct {uint8_t precedingBytes[0x80],classes[0x100];} fields;
     uint8_t bytes[0x180];
 } BtechCharacterClassStorage;
-extern BtechCharacterClassStorage characterClassStorage;
-#define characterClasses characterClassStorage.fields.classes
+/* Combat state owned by combat_platform.h (plan, slice B3d). */
+struct CombatPlatformState
+{
+    uint8_t runtimeDelayActive;
+    uint16_t runtimeDelayRemaining;
+    uint8_t joystickPairInstalled[2], joystickAxisCentres[4];
+    uint16_t joystickAxisReciprocals[4];
+    /* 304E:41D9, 41DD, 41DF: the first axis's value while 1BF5:22F9 reads the
+     * second, and the X and Y values 1BF5:2376 tests. */
+    int16_t joystickFirstAxisValue, joystickDirectionX, joystickDirectionY;
+    const char *combatInputReplayFilename;
+    uint16_t combatInputReplayMode;
+    BtechCharacterClassStorage characterClassStorage;
+};
+extern CombatPlatformState combatPlatform;
+#define characterClasses combatPlatform.characterClassStorage.fields.classes
 FILE *BtechOpenStreamWithRetry(const char *filename,const char *mode);
 uint16_t BtechGetActiveRuntimeDelayFar(void);
 uint16_t BtechReadJoystickAxisTiming(uint8_t axisMask);

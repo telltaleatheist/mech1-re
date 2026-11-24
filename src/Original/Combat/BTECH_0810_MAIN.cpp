@@ -34,7 +34,7 @@ void BtechProgramMain(uint16_t argumentCount,const char *const *arguments)
          * Not a game clock: the logic reads none. Unbound in pure C fixtures. */
         if (btechHostPaceCombatTick) btechHostPaceCombatTick();
         if (combatInput.terminationFlag) BtechTerminateToLauncher(1);
-        runtimeDelayRemaining=COMBAT_FRAME_DELAY_TICKS;
+        combatPlatform.runtimeDelayRemaining=COMBAT_FRAME_DELAY_TICKS;
         BtechPollCombatCommandInput();
         BtechRefreshOpposingUnitVisibility();
         BtechRefreshUnitDistanceMatrix();

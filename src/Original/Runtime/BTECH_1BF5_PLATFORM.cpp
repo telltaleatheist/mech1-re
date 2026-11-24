@@ -48,8 +48,8 @@ void BtechCalibrateJoystickAxisPairs(void)
     for (uint16_t axis=0;axis<JOYSTICK_AXIS_COUNT;++axis)
     {
         uint16_t timing=BtechReadJoystickAxisTiming((uint8_t)(1<<axis));
-        joystickAxisCentres[axis]=(uint8_t)timing;
-        if (!(axis&JOYSTICK_AXIS_PAIR_POSITION_MASK)) joystickPairInstalled[axis/JOYSTICK_AXES_PER_PAIR]=timing!=JOYSTICK_AXIS_TIMING_LIMIT;
-        if (timing) joystickAxisReciprocals[axis]=JOYSTICK_AXIS_RECIPROCAL_NUMERATOR/timing;
+        combatPlatform.joystickAxisCentres[axis]=(uint8_t)timing;
+        if (!(axis&JOYSTICK_AXIS_PAIR_POSITION_MASK)) combatPlatform.joystickPairInstalled[axis/JOYSTICK_AXES_PER_PAIR]=timing!=JOYSTICK_AXIS_TIMING_LIMIT;
+        if (timing) combatPlatform.joystickAxisReciprocals[axis]=JOYSTICK_AXIS_RECIPROCAL_NUMERATOR/timing;
     }
 }

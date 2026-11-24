@@ -16,12 +16,7 @@
 
 CombatWorldState combatWorld;
 CombatTacticsState combatTactics;
-uint8_t runtimeDelayActive,joystickPairInstalled[2],joystickAxisCentres[4];
-uint16_t runtimeDelayRemaining,joystickAxisReciprocals[4];
-int16_t joystickFirstAxisValue,joystickDirectionX,joystickDirectionY;
-const char *combatInputReplayFilename;
-uint16_t combatInputReplayMode;
-BtechCharacterClassStorage characterClassStorage;
+CombatPlatformState combatPlatform;
 CombatResourceState combatResources;
 CombatEffectState combatEffects;
 BtechBodyDestructionEmitter bodyDestructionEmitters[COMBAT_DESTRUCTION_EMITTER_SLOTS];
@@ -126,7 +121,7 @@ bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t 
         memcpy(combatWorld.sceneChassisBankNames[chassis],data+offset,(size_t)(end-data-offset)+1);
     }
     memset(combatWorld.sceneChassisResourcePresent,0,sizeof(combatWorld.sceneChassisResourcePresent)); /*06EC*/
-    memcpy(characterClassStorage.bytes,data+0x4C69,sizeof(characterClassStorage.bytes));
+    memcpy(combatPlatform.characterClassStorage.bytes,data+0x4C69,sizeof(combatPlatform.characterClassStorage.bytes));
     for (uint16_t index=0;index<0x200;++index) headingRatioAngles[index]=MwReadNativeWord(segment22B6,0x6073+index*2);
     for (uint16_t index=0;index<0x801;++index) orientationCosines[index]=MwReadNativeWord(segment22B6,0x486D+index*2);
     for (uint16_t index=0;index<0x402;++index) coefficientAngles[index]=MwReadNativeWord(segment22B6,0x586F+index*2);
@@ -232,20 +227,20 @@ void BtechInitializeFreshWorldOwners(const uint8_t *data)
     for (uint16_t slot=0;slot<sizeof(combatWorld.sceneChassisResourcePresent)/sizeof(combatWorld.sceneChassisResourcePresent[0]);++slot) combatWorld.sceneChassisResourcePresent[slot]=0; /*06EC*/
     combatWorld.beforeObjectListCallbackOffset=0; /*2CE8*/
     combatWorld.afterObjectListCallbackOffset=0; /*2CEA*/
-    runtimeDelayActive=data[0x41E4];
-    for (uint16_t slot=0;slot<sizeof(joystickPairInstalled)/sizeof(joystickPairInstalled[0]);++slot) joystickPairInstalled[slot]=data[0x41CA+slot*1];
-    for (uint16_t slot=0;slot<sizeof(joystickAxisCentres)/sizeof(joystickAxisCentres[0]);++slot) joystickAxisCentres[slot]=data[0x41CC+slot*1];
-    runtimeDelayRemaining=0; /*41E5*/
+    combatPlatform.runtimeDelayActive=data[0x41E4];
+    for (uint16_t slot=0;slot<sizeof(combatPlatform.joystickPairInstalled)/sizeof(combatPlatform.joystickPairInstalled[0]);++slot) combatPlatform.joystickPairInstalled[slot]=data[0x41CA+slot*1];
+    for (uint16_t slot=0;slot<sizeof(combatPlatform.joystickAxisCentres)/sizeof(combatPlatform.joystickAxisCentres[0]);++slot) combatPlatform.joystickAxisCentres[slot]=data[0x41CC+slot*1];
+    combatPlatform.runtimeDelayRemaining=0; /*41E5*/
     /* 41DB, the delay-loop count 1BF5:21FF calibrated, timed game-port reads
      * only and is gone (H3). */
-    joystickFirstAxisValue=0; /*41D9*/
-    joystickDirectionX=0; /*41DD*/
-    joystickDirectionY=0; /*41DF*/
-    for (uint16_t slot=0;slot<sizeof(joystickAxisReciprocals)/sizeof(joystickAxisReciprocals[0]);++slot) joystickAxisReciprocals[slot]=0; /*41D0*/
-    combatInputReplayMode=0; /*084C*/
+    combatPlatform.joystickFirstAxisValue=0; /*41D9*/
+    combatPlatform.joystickDirectionX=0; /*41DD*/
+    combatPlatform.joystickDirectionY=0; /*41DF*/
+    for (uint16_t slot=0;slot<sizeof(combatPlatform.joystickAxisReciprocals)/sizeof(combatPlatform.joystickAxisReciprocals[0]);++slot) combatPlatform.joystickAxisReciprocals[slot]=0; /*41D0*/
+    combatPlatform.combatInputReplayMode=0; /*084C*/
     combatResources.lzwReverseReadOffset=0; /*4AAF*/
     for (uint16_t slot=0;slot<sizeof(combatResources.lzwPacketBytes)/sizeof(combatResources.lzwPacketBytes[0]);++slot) combatResources.lzwPacketBytes[slot]=data[0x4A9A+slot*1];
-    combatInputReplayFilename=NULL;
+    combatPlatform.combatInputReplayFilename=NULL;
     combatWorld.chassisResourceBases=BtechChassisResourceBases{};
     combatResources.surfaceResourceBank=BtechSurfaceBank{};
     combatResources.initialShapeResourceBank=BtechResourceBank{};

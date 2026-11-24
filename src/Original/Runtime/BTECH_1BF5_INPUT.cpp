@@ -55,31 +55,31 @@ static int16_t ScaleJoystickAxis(uint16_t timing,uint8_t centre,uint16_t recipro
 static void ReadJoystickAxes(uint16_t joystick,int16_t *x,int16_t *y)
 {
     uint16_t pair=joystick!=0;
-    if (!joystickPairInstalled[pair]) return;
+    if (!combatPlatform.joystickPairInstalled[pair]) return;
     /* H3b, a project decision: a joystick taken out since calibration reads
      * centred. The original's game port would time out to the limit, full
      * right and down, a held turn. */
     if (!btechHostReadJoystick) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostReadJoystick");
-    if (!btechHostReadJoystick(pair).connected) {joystickFirstAxisValue=*x=*y=0;return;}
+    if (!btechHostReadJoystick(pair).connected) {combatPlatform.joystickFirstAxisValue=*x=*y=0;return;}
     uint16_t xAxis=pair*JOYSTICK_AXES_PER_PAIR,yAxis=xAxis+1;
-    joystickFirstAxisValue=ScaleJoystickAxis(BtechReadJoystickAxisTiming((uint8_t)(1<<xAxis)),
-        joystickAxisCentres[xAxis],joystickAxisReciprocals[xAxis]);
+    combatPlatform.joystickFirstAxisValue=ScaleJoystickAxis(BtechReadJoystickAxisTiming((uint8_t)(1<<xAxis)),
+        combatPlatform.joystickAxisCentres[xAxis],combatPlatform.joystickAxisReciprocals[xAxis]);
     int16_t second=ScaleJoystickAxis(BtechReadJoystickAxisTiming((uint8_t)(1<<yAxis)),
-        joystickAxisCentres[yAxis],joystickAxisReciprocals[yAxis]);
-    *y=second;*x=joystickFirstAxisValue;
+        combatPlatform.joystickAxisCentres[yAxis],combatPlatform.joystickAxisReciprocals[yAxis]);
+    *y=second;*x=combatPlatform.joystickFirstAxisValue;
 }
 
 /*1BF5:2376. An installed joystick's direction bits from its values; zero
  * when it is not installed. */
 uint8_t BtechReadJoystickDirectionMask(uint16_t joystick)
 {
-    if (!joystickPairInstalled[joystick!=0]) return 0;
-    ReadJoystickAxes(joystick,&joystickDirectionX,&joystickDirectionY);
+    if (!combatPlatform.joystickPairInstalled[joystick!=0]) return 0;
+    ReadJoystickAxes(joystick,&combatPlatform.joystickDirectionX,&combatPlatform.joystickDirectionY);
     uint8_t direction=0;
-    if (joystickDirectionX<JOYSTICK_DIRECTION_LOW) direction|=COMBAT_DIRECTION_LEFT;
-    else if (joystickDirectionX>=JOYSTICK_DIRECTION_HIGH) direction|=COMBAT_DIRECTION_RIGHT;
-    if (joystickDirectionY<JOYSTICK_DIRECTION_LOW) direction|=COMBAT_DIRECTION_UP;
-    else if (joystickDirectionY>=JOYSTICK_DIRECTION_HIGH) direction|=COMBAT_DIRECTION_DOWN;
+    if (combatPlatform.joystickDirectionX<JOYSTICK_DIRECTION_LOW) direction|=COMBAT_DIRECTION_LEFT;
+    else if (combatPlatform.joystickDirectionX>=JOYSTICK_DIRECTION_HIGH) direction|=COMBAT_DIRECTION_RIGHT;
+    if (combatPlatform.joystickDirectionY<JOYSTICK_DIRECTION_LOW) direction|=COMBAT_DIRECTION_UP;
+    else if (combatPlatform.joystickDirectionY>=JOYSTICK_DIRECTION_HIGH) direction|=COMBAT_DIRECTION_DOWN;
     return direction;
 }
 
@@ -89,7 +89,7 @@ uint8_t BtechReadJoystickDirectionMask(uint16_t joystick)
 uint16_t BtechReadJoystickPresenceState(uint16_t button)
 {
     uint16_t pair=(button&JOYSTICK_BUTTON_PAIR_MASK)!=0;
-    if (!joystickPairInstalled[pair]) return 0;
+    if (!combatPlatform.joystickPairInstalled[pair]) return 0;
     if (!btechHostReadJoystick) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostReadJoystick");
     MwJoystickState joystick=btechHostReadJoystick(pair);
     return (button&JOYSTICK_BUTTON_SECOND_MASK)?joystick.buttonTwo:joystick.buttonOne;
