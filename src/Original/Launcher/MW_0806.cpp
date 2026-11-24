@@ -18,13 +18,13 @@ uint8_t MwLauncherMain(uint8_t audioCode)
     MwSetVideoMode(MW_VIDEO_MODE_TEXT); /* The text screen cleared by a mode 3 set. */
     for (;;)
     {
-        MwCampaignLaunch launch=MwCampaignLaunch{{launcherIdentity,0x07D4,sizeof(launcherIdentity)},
+        MwCampaignLaunch launch=MwCampaignLaunch{{launcherResident.launcherIdentity,0x07D4,sizeof(launcherResident.launcherIdentity)},
             0x0004,phase,(uint8_t)LAUNCHER_GRAPHICS_EGA,(uint8_t)LAUNCHER_MEMORY_512K};
-        if (mwLauncherSystem.executeChild(launcherCampaignFilename,&launch,audioCode,&childExitCode))
-            MwFailGameFileRead(launcherCampaignFilename);
+        if (mwLauncherSystem.executeChild(launcherResident.launcherCampaignFilename,&launch,audioCode,&childExitCode))
+            MwFailGameFileRead(launcherResident.launcherCampaignFilename);
         if (childExitCode==0) return 0; /* Any NONZERO AL enters combat; AH ignored. */
-        if (mwLauncherSystem.executeChild(launcherCombatFilename,&launch,audioCode,&childExitCode))
-            MwFailGameFileRead(launcherCombatFilename);
+        if (mwLauncherSystem.executeChild(launcherResident.launcherCombatFilename,&launch,audioCode,&childExitCode))
+            MwFailGameFileRead(launcherResident.launcherCombatFilename);
         if (childExitCode==0) return 0;
         phase=CAMPAIGN_PHASE_COMBAT_RETURN;
     }

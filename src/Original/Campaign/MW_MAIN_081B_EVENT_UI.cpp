@@ -67,17 +67,17 @@ uint16_t MwRestartCampaignContinuation(void)
     campaignMission.returnedDisabledEnemyCount=0;
     campaignMission.combatTransitionResult=0;
     campaignMission.acceptedContractActive=0;
-    currentPlanetIndex=0;
-    currentPlanetLandscapeIndex=0;
-    currentPlanetHouseIndex=0;
-    currentPlanetMarketTier=0;
-    currentPlanetFacilityDisplayFlag=0;
-    currentPlanetMapPositionX=0;
-    currentPlanetMapPositionY=0;
-    planetMarketPremiumPercent=0;
+    campaignCore.currentPlanetIndex=0;
+    campaignCore.currentPlanetLandscapeIndex=0;
+    campaignCore.currentPlanetHouseIndex=0;
+    campaignCore.currentPlanetMarketTier=0;
+    campaignCore.currentPlanetFacilityDisplayFlag=0;
+    campaignCore.currentPlanetMapPositionX=0;
+    campaignCore.currentPlanetMapPositionY=0;
+    campaignCore.planetMarketPremiumPercent=0;
     campaignEconomy.calendarSubmonthUnits=0;
-    calendarMonthIndex=0;
-    calendarYear=0;
+    campaignCore.calendarMonthIndex=0;
+    campaignCore.calendarYear=0;
     campaignEconomy.marketRefreshUnits=0;
     campaignEconomy.elapsedBillingMonths=0;
     for (size_t i=0;i<sizeof(campaignMission.commanderNameBytes)/sizeof(campaignMission.commanderNameBytes[0]);++i) campaignMission.commanderNameBytes[i]=0;
@@ -126,7 +126,7 @@ uint16_t MwRestartCampaignContinuation(void)
     for (size_t i=0;i<sizeof(campaignEconomy.missionPaymentCeilingsThousands)/sizeof(campaignEconomy.missionPaymentCeilingsThousands[0]);++i) campaignEconomy.missionPaymentCeilingsThousands[i]=0;
     for (size_t i=0;i<sizeof(campaignEconomy.missionSalvagePercentageCeilings)/sizeof(campaignEconomy.missionSalvagePercentageCeilings[0]);++i) campaignEconomy.missionSalvagePercentageCeilings[i]=0;
     for (size_t i=0;i<sizeof(campaignEconomy.missionAdvancePercentageCeilings)/sizeof(campaignEconomy.missionAdvancePercentageCeilings[0]);++i) campaignEconomy.missionAdvancePercentageCeilings[i]=0;
-    contractNegotiationAttemptLimit=0;
+    campaignCore.contractNegotiationAttemptLimit=0;
     campaignMission.requestedContractPaymentThousands=0;
     campaignMission.requestedContractSalvagePercent=0;
     campaignMission.requestedContractAdvancePercent=0;
@@ -146,7 +146,7 @@ uint16_t MwRestartCampaignContinuation(void)
     for (size_t i=0;i<sizeof(campaignMechanics.pilotExperienceCounts)/sizeof(campaignMechanics.pilotExperienceCounts[0]);++i) campaignMechanics.pilotExperienceCounts[i]=0;
     campaignEvents.eventDirectoryIndex=0;
     for (size_t i=0;i<sizeof(campaignEvents.eventSeenFlags)/sizeof(campaignEvents.eventSeenFlags[0]);++i) campaignEvents.eventSeenFlags[i]=0;
-    for (size_t i=0;i<sizeof(campaignEventPlanetSelectors)/sizeof(campaignEventPlanetSelectors[0]);++i) campaignEventPlanetSelectors[i]=0;
+    for (size_t i=0;i<sizeof(campaignStartup.campaignEventPlanetSelectors)/sizeof(campaignStartup.campaignEventPlanetSelectors[0]);++i) campaignStartup.campaignEventPlanetSelectors[i]=0;
     campaignEconomy.majorCampaignMissionRollThreshold=0;
     campaignMission.acceptedContractTargetHouseIndex=0;
     campaignMission.campaignTerrainDetailLevel=0;
@@ -154,7 +154,7 @@ uint16_t MwRestartCampaignContinuation(void)
     campaignEconomy.unitsSoldSinceMarketRefresh=0;
     campaignMission.playerSkillProgress=0;
     campaignEvents.darkWingBaseVictoryRecorded=0;
-    campaignEconomy.calendarSubmonthUnits=1;calendarMonthIndex=3;calendarYear=0x0BD0;
+    campaignEconomy.calendarSubmonthUnits=1;campaignCore.calendarMonthIndex=3;campaignCore.calendarYear=0x0BD0;
     campaignMission.commanderAgeYears=COMMANDER_INITIAL_AGE_YEARS;
     campaignEconomy.campaignFundsLow=(uint16_t)DECIMAL_MILLION;campaignEconomy.campaignFundsHigh=DECIMAL_MILLION>>NATIVE_WORD_BITS;
     pilotRosterCount=1;
@@ -203,11 +203,11 @@ void MwEventSubstitutePlanetName(const MwEventCommand *command)
         uint16_t reference=(uint16_t)command->operand.planetSelector^UINT16_MAX;
         if (reference>=6 || campaignEvents.currentEventId>=EVENT_TEXT_DIRECTORY_COUNT
             || !campaignEventText.eventTextRecords[campaignEvents.currentEventId]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: reference>=6 || currentEventId>=EVENT_TEXT_DIRECTORY_COUNT || !eventTextRecords[currentEventId]");
-        uint16_t planetIndex=campaignEventPlanetSelectors[reference]-1;
+        uint16_t planetIndex=campaignStartup.campaignEventPlanetSelectors[reference]-1;
         if (planetIndex>=CAMPAIGN_PLANET_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetIndex>=CAMPAIGN_PLANET_COUNT");
-        uint16_t planetOffset=planetRecordOffsets[planetIndex];
+        uint16_t planetOffset=campaignCore.planetRecordOffsets[planetIndex];
         if (planetOffset<PLANET_RECORDS_START || planetOffset+PLANET_NAME_HEADER_BYTES>=PLANET_RECORDS_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetOffset<PLANET_RECORDS_START || planetOffset+PLANET_NAME_HEADER_BYTES>=PLANET_RECORDS_END");
-        const uint8_t *planetName=&planetRecordStorage[planetOffset-PLANET_RECORDS_START+PLANET_NAME_HEADER_BYTES];
+        const uint8_t *planetName=&campaignCore.planetRecordStorage[planetOffset-PLANET_RECORDS_START+PLANET_NAME_HEADER_BYTES];
         uint8_t *write=campaignEventText.eventTextRecords[campaignEvents.currentEventId]+2;
         while (*write!=EVENT_TEXT_PLACEHOLDER)
         {
@@ -218,7 +218,7 @@ void MwEventSubstitutePlanetName(const MwEventCommand *command)
         while (*planetName)
         {
             if (write==campaignEventText.eventTextStorage+sizeof(campaignEventText.eventTextStorage)
-                || planetName==planetRecordStorage+sizeof(planetRecordStorage)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: write==eventTextStorage+sizeof(eventTextStorage) || planetName==planetRecordStorage+sizeof(planetRecordStorage)");
+                || planetName==campaignCore.planetRecordStorage+sizeof(campaignCore.planetRecordStorage)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: write==eventTextStorage+sizeof(eventTextStorage) || planetName==planetRecordStorage+sizeof(planetRecordStorage)");
             *write++=*planetName++;
             --padding;
         }
@@ -331,15 +331,15 @@ uint16_t MwQuitFromEventContinuation(void)
 {
     if (!campaignStopMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStopMusic");
     campaignStopMusic();
-    launcherExitCode=CAMPAIGN_EXIT_QUIT;
+    campaignStartup.launcherExitCode=CAMPAIGN_EXIT_QUIT;
     return CAMPAIGN_CONTINUE_CLEANUP;
 }
 
 /* MW_MAIN081B:6913..692A. INC BL wraps independently of the planet WORD. */
 uint16_t MwPrepareEventSpecialCombatContinuation(void)
 {
-    campaignMission.combatPlanetSelector=(uint8_t)(currentPlanetIndex+1);
-    campaignMission.deploymentLandscapeIndex=(uint8_t)currentPlanetLandscapeIndex;
+    campaignMission.combatPlanetSelector=(uint8_t)(campaignCore.currentPlanetIndex+1);
+    campaignMission.deploymentLandscapeIndex=(uint8_t)campaignCore.currentPlanetLandscapeIndex;
     campaignMission.combatScenarioCode=COMBAT_SCENARIO_DARK_WING_BASE;
     return CAMPAIGN_CONTINUE_EVENT_DEPLOYMENT;
 }

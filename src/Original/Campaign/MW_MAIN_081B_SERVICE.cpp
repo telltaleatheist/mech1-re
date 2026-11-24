@@ -32,11 +32,11 @@ uint16_t MwRepairSelectedMechComponentCallback(void)
         savedDamage=(slotProduct&0xFF00)|tier;
         uint16_t damageIndex=campaignUi.selectedUiRecordIndex;
         if (campaignUi.selectedUiRecordIndex>REPAIR_BODY) --damageIndex;
-        bool failed=repairAttemptFailuresByKind[(uint8_t)campaignMechanics.selectedOwnedUnitKind].failedByDamageIndex[damageIndex]!=0;
+        bool failed=campaignCore.repairAttemptFailuresByKind[(uint8_t)campaignMechanics.selectedOwnedUnitKind].failedByDamageIndex[damageIndex]!=0;
         if (!failed)
         {
             uint16_t roll=MwRandomUpTo(REPAIR_ATTEMPT_ROLL_MAXIMUM);
-            uint16_t marketTier=currentPlanetMarketTier;
+            uint16_t marketTier=campaignCore.currentPlanetMarketTier;
             uint8_t limit=campaignService.repairSuccessRollLimitsByMarketTier[marketTier];
             if (limit==0 || roll/limit>UINT8_MAX) /* Port emulation of a native CPU fault. */ MW_NATIVE_FAULT("Rejected condition: limit==0 || roll/limit>UINT8_MAX"); /* Native DIV BYTE fault. */
             failed=roll/limit!=0;
@@ -48,7 +48,7 @@ uint16_t MwRepairSelectedMechComponentCallback(void)
             {
                 damageIndex=category;
                 if (category>REPAIR_BODY) --damageIndex;
-                repairAttemptFailuresByKind[(uint8_t)campaignMechanics.selectedOwnedUnitKind].failedByDamageIndex[damageIndex]=1;
+                campaignCore.repairAttemptFailuresByKind[(uint8_t)campaignMechanics.selectedOwnedUnitKind].failedByDamageIndex[damageIndex]=1;
             }
             MwNativeByteView text={(const uint8_t *)campaignService.repairFailedText,0,sizeof(campaignService.repairFailedText)};
             MwShowMonospaceTextPanel(REPAIR_MESSAGE_X,REPAIR_MESSAGE_Y,REPAIR_FAILURE_COLUMNS,REPAIR_MESSAGE_ROWS,&text,0);
@@ -98,7 +98,7 @@ uint16_t MwRepairAllSelectedMechComponentsCallback(void)
     funds-=quote;campaignEconomy.campaignFundsLow=(uint16_t)funds;campaignEconomy.campaignFundsHigh=(uint16_t)(funds>>NATIVE_WORD_BITS);
     CampaignUnitDamage *damage=&campaignMechanics.ownedUnitDamage[(uint8_t)campaignService.selectedOwnedUnitSlot];
     uint8_t *damagedComponent=(uint8_t *)damage;
-    CampaignRepairAttemptRow *failedRepairs=&repairAttemptFailuresByKind[(uint8_t)campaignMechanics.selectedOwnedUnitKind];
+    CampaignRepairAttemptRow *failedRepairs=&campaignCore.repairAttemptFailuresByKind[(uint8_t)campaignMechanics.selectedOwnedUnitKind];
     campaignService.repairWorkIncomplete=0;
     for (uint16_t damageIndex=0;damageIndex<CAMPAIGN_DAMAGE_BYTES;++damageIndex,++damagedComponent)
         if (*damagedComponent!=0)
@@ -110,7 +110,7 @@ uint16_t MwRepairAllSelectedMechComponentsCallback(void)
                 if (!failed)
                 {
                     uint16_t roll=MwRandomUpTo(REPAIR_ATTEMPT_ROLL_MAXIMUM);
-                    uint16_t marketTier=currentPlanetMarketTier;
+                    uint16_t marketTier=campaignCore.currentPlanetMarketTier;
                     uint8_t limit=campaignService.repairSuccessRollLimitsByMarketTier[marketTier];
                     if (limit==0 || roll/limit>UINT8_MAX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: limit==0 || roll/limit>UINT8_MAX");
                     if (roll/limit!=0)
@@ -163,13 +163,13 @@ uint16_t MwOpenMechComponentRepairMenuCallback(void)
             uint16_t kind=campaignMechanics.selectedOwnedUnitKind;
             uint8_t maximum=campaignService.unitHeatSinkCounts[kind];
             MwBuildDecimalDigitBuffer((uint8_t)(maximum-tier));
-            row->caption.columns.condition[0]=numericDecimalDigits[8]==0?ASCII_SPACE:numericDecimalDigits[8]+ASCII_DIGIT_ZERO;
-            row->caption.columns.condition[1]=numericDecimalDigits[9]+ASCII_DIGIT_ZERO;
+            row->caption.columns.condition[0]=campaignCore.numericDecimalDigits[8]==0?ASCII_SPACE:campaignCore.numericDecimalDigits[8]+ASCII_DIGIT_ZERO;
+            row->caption.columns.condition[1]=campaignCore.numericDecimalDigits[9]+ASCII_DIGIT_ZERO;
             kind=campaignMechanics.selectedOwnedUnitKind;
             maximum=campaignService.unitHeatSinkCounts[kind];
             MwBuildDecimalDigitBuffer(maximum);
-            row->caption.columns.condition[6]=numericDecimalDigits[8]+ASCII_DIGIT_ZERO;
-            row->caption.columns.condition[7]=numericDecimalDigits[9]+ASCII_DIGIT_ZERO;
+            row->caption.columns.condition[6]=campaignCore.numericDecimalDigits[8]+ASCII_DIGIT_ZERO;
+            row->caption.columns.condition[7]=campaignCore.numericDecimalDigits[9]+ASCII_DIGIT_ZERO;
         }
         else if (category==REPAIR_JUMP_JETS)
         {
@@ -178,11 +178,11 @@ uint16_t MwOpenMechComponentRepairMenuCallback(void)
             uint16_t kind=campaignMechanics.selectedOwnedUnitKind;
             uint8_t maximum=campaignEconomy.unitJumpJetGroupCounts[kind];
             MwBuildDecimalDigitBuffer((uint8_t)(maximum-tier));
-            row->caption.columns.condition[1]=numericDecimalDigits[9]+ASCII_DIGIT_ZERO;
+            row->caption.columns.condition[1]=campaignCore.numericDecimalDigits[9]+ASCII_DIGIT_ZERO;
             kind=campaignMechanics.selectedOwnedUnitKind;
             maximum=campaignEconomy.unitJumpJetGroupCounts[kind];
             if (maximum!=0)
-            {MwBuildDecimalDigitBuffer(maximum);row->caption.columns.condition[6]=numericDecimalDigits[9]+ASCII_DIGIT_ZERO;}
+            {MwBuildDecimalDigitBuffer(maximum);row->caption.columns.condition[6]=campaignCore.numericDecimalDigits[9]+ASCII_DIGIT_ZERO;}
             else for (uint16_t letter=0;letter<sizeof(campaignService.repairNoJumpJetsTextBytes);++letter)
                 row->caption.columns.condition[letter]=campaignService.repairNoJumpJetsTextBytes[letter];
         }
@@ -200,9 +200,9 @@ uint16_t MwOpenMechComponentRepairMenuCallback(void)
     campaignService.repairBodyCondition.display.colour=bodyDamage==0?REPAIR_CONDITION_HEALTHY_COLOUR:REPAIR_CONDITION_DAMAGED_COLOUR;
     uint16_t bodyProtection=(uint16_t)(REPAIR_BODY_TOTAL_TIERS-bodyDamage)*PERCENT_DIVISOR/REPAIR_BODY_TOTAL_TIERS;
     MwBuildDecimalDigitBuffer(bodyProtection);
-    campaignService.repairBodyCondition.caption.columns.protectionPercent[0]=numericDecimalDigits[7]==0?ASCII_SPACE:numericDecimalDigits[7]+ASCII_DIGIT_ZERO;
-    campaignService.repairBodyCondition.caption.columns.protectionPercent[1]=numericDecimalDigits[8]==0 && numericDecimalDigits[7]==0?ASCII_SPACE:numericDecimalDigits[8]+ASCII_DIGIT_ZERO;
-    campaignService.repairBodyCondition.caption.columns.protectionPercent[2]=numericDecimalDigits[9]+ASCII_DIGIT_ZERO;
+    campaignService.repairBodyCondition.caption.columns.protectionPercent[0]=campaignCore.numericDecimalDigits[7]==0?ASCII_SPACE:campaignCore.numericDecimalDigits[7]+ASCII_DIGIT_ZERO;
+    campaignService.repairBodyCondition.caption.columns.protectionPercent[1]=campaignCore.numericDecimalDigits[8]==0 && campaignCore.numericDecimalDigits[7]==0?ASCII_SPACE:campaignCore.numericDecimalDigits[8]+ASCII_DIGIT_ZERO;
+    campaignService.repairBodyCondition.caption.columns.protectionPercent[2]=campaignCore.numericDecimalDigits[9]+ASCII_DIGIT_ZERO;
     uint16_t y=REPAIR_WEAPON_FIRST_Y;
     for (uint16_t mount=0;mount<CAMPAIGN_WEAPON_SLOTS;++mount)
     {
@@ -255,7 +255,7 @@ uint16_t MwOpenMechComponentRepairMenuCallback(void)
     MwDrawDescriptorTextPanel(&campaignService.componentRepairPanel);
     campaignUi.uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_REFRESH_COMPONENT_QUOTE;
     uint32_t funds=((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow;
-    ++numericGroupingEnabled;
+    ++campaignCore.numericGroupingEnabled;
     MwDrawSignedDecimalField(funds,REPAIR_FUNDS_X,1,0,REPAIR_CONDITION_HEALTHY_COLOUR,MECH_DETAIL_BACKGROUND,REPAIR_FUNDS_Y);
     MwSelectUiRecordTable(campaignService.repairMenuSelectedCategory,&campaignService.componentRepairMenu);
     return CAMPAIGN_CONTINUE_UI;
@@ -267,7 +267,7 @@ void MwRefreshSelectedComponentRepairQuote(void)
     CampaignUnitDamage *damage=&campaignMechanics.ownedUnitDamage[(uint8_t)campaignService.selectedOwnedUnitSlot];
     MwQuoteRepairComponent(damage);
     uint32_t quote=((uint32_t)campaignMechanics.componentRepairPriceHigh<<NATIVE_WORD_BITS)|campaignMechanics.componentRepairPriceLow;
-    ++numericGroupingEnabled;
+    ++campaignCore.numericGroupingEnabled;
     MwDrawSignedDecimalField(quote,REPAIR_COMPONENT_PRICE_X,0,REPAIR_PRICE_DIGITS,REPAIR_CONDITION_HEALTHY_COLOUR,MECH_DETAIL_BACKGROUND,REPAIR_COMPONENT_PRICE_Y);
 }
 
@@ -315,7 +315,7 @@ uint16_t MwDrawSelectedMechDetailContinuation(uint16_t entryOffset)
     damage=&campaignMechanics.ownedUnitDamage[(uint8_t)campaignService.selectedOwnedUnitSlot];
     MwQuoteMechRepairTotal(campaignMechanics.selectedOwnedUnitKind,damage);
     uint32_t quote;quote=((uint32_t)campaignMechanics.unitRepairQuoteHigh<<NATIVE_WORD_BITS)|campaignMechanics.unitRepairQuoteLow;
-    numericGroupingEnabled=1;
+    campaignCore.numericGroupingEnabled=1;
     /*3763 ends with CX0; decimal division and saved-CX glyph calls retain CH0.
      * Native callers set CL1 only. No guessed fixed-width formatting. */
     MwDrawSignedDecimalField(quote,MECH_DETAIL_REPAIR_PRICE_X,1,0,MECH_DETAIL_TEXT_COLOUR,MECH_DETAIL_BACKGROUND,MECH_DETAIL_REPAIR_PRICE_Y);

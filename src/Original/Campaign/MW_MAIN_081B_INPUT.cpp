@@ -132,7 +132,7 @@ uint16_t MwReadCampaignTextInput(uint16_t x,uint16_t y,uint16_t capacity,
 {
     campaignInput.textInputCursorX=x;campaignInput.textInputCursorY=y;campaignInput.textInputMaximumIndex=(uint16_t)(capacity-1);
     campaignInput.textInputForeground=foreground;campaignInput.textInputBackground=background;
-    memset(campaignTextInputBuffer,0,sizeof(campaignTextInputBuffer));campaignInput.textInputLength=0;
+    memset(campaignStartup.campaignTextInputBuffer,0,sizeof(campaignStartup.campaignTextInputBuffer));campaignInput.textInputLength=0;
     for (;;)
     {
         if (!mwCampaignInput.keyboardAvailable || !mwCampaignInput.readKeyboard) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.keyboardAvailable || !mwCampaignInput.readKeyboard");
@@ -157,7 +157,7 @@ uint16_t MwReadCampaignTextInput(uint16_t x,uint16_t y,uint16_t capacity,
         if (key==CAMPAIGN_KEY_BACKSPACE)
         {
             if (campaignInput.textInputLength==0) continue;
-            campaignTextInputBuffer[--campaignInput.textInputLength]=0;MwEraseTextInputCursor();
+            campaignStartup.campaignTextInputBuffer[--campaignInput.textInputLength]=0;MwEraseTextInputCursor();
             campaignInput.textInputCursorX -= egaOverlay.selectedGlyphAdvance;continue;
         }
         if (key==CAMPAIGN_KEY_ESCAPE)
@@ -171,7 +171,7 @@ uint16_t MwReadCampaignTextInput(uint16_t x,uint16_t y,uint16_t capacity,
         if (character>='a') character -= ASCII_CASE_DISTANCE;
         if (campaignInput.textInputLength==campaignInput.textInputMaximumIndex) continue;
         if (character>='a') character -= CAMPAIGN_TEXT_SECOND_CASE_ADJUSTMENT;
-        campaignTextInputBuffer[campaignInput.textInputLength++]=character;
+        campaignStartup.campaignTextInputBuffer[campaignInput.textInputLength++]=character;
         MwEraseTextInputCursor();
         campaignInput.textInputCursorX=EgaDrawCharacter(campaignInput.textInputCursorX,&campaignInput.textInputCursorY,
             character,campaignInput.textInputForeground,campaignInput.textInputBackground);

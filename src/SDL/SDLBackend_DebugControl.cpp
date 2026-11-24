@@ -101,7 +101,7 @@ static void FeedSong(uint16_t row)
     const FeedSongRow *song=&feedSongs[row];
     if (song->load) (void)song->load();
     if (song->offset==DEATH_MUSIC_OFFSET) MwStartDeathMusic();
-    else if (campaignStartMusic) campaignStartMusic(campaignMusicBufferSelector,song->offset);
+    else if (campaignStartMusic) campaignStartMusic(campaignStartup.campaignMusicBufferSelector,song->offset);
 }
 /* sound:N: BtechPlaySoundIfEnabled at the priority the game requests effect N
  * with, from its call sites (the same 16 in both BTECH revisions). Priority
@@ -234,7 +234,7 @@ void MwSdlDebugNoteInputPoll(bool empty,bool blocking)
         if (item->kind==FEED_IDLE) feedWait+=item->word;
         else if (item->kind==FEED_SONG) FeedSong(item->word);
         else if (item->kind==FEED_SNAP) Snap(item->name);
-        else if (item->kind==FEED_RANDOM) {randomStateWord0=item->word;randomStateWord1=item->word2;}
+        else if (item->kind==FEED_RANDOM) {campaignCore.randomStateWord0=item->word;campaignCore.randomStateWord1=item->word2;}
         if (++feedIndex==feedCount) feedActive=false;
         if (item->kind==FEED_KEY) {MwSdlQueueCampaignKey(item->key);break;}
         if (item->kind==FEED_IDLE && !blocking) break; /* the extra polls start now */
@@ -256,7 +256,7 @@ void MwSdlDebugNoteCombatPoll(void)
         uint8_t key=item->key.key;
         if (++feedIndex==feedCount) feedActive=false;
         if (item->kind==FEED_SNAP) Snap(item->name);
-        else if (item->kind==FEED_RANDOM) {randomStateWord0=item->word;randomStateWord1=item->word2;}
+        else if (item->kind==FEED_RANDOM) {campaignCore.randomStateWord0=item->word;campaignCore.randomStateWord1=item->word2;}
         else if (item->kind==FEED_MAKE) MwSdlQueueCombatKey(key,false);
         else if (item->kind==FEED_BREAK) MwSdlQueueCombatKey(key,true);
         else if (item->kind==FEED_SOUND) FeedSound(item->word);
@@ -276,7 +276,7 @@ void MwSdlDebugNoteKeyRead(uint16_t key)
     combatFeedPolls=0;combatFeedWait=0; /* combat's first poll takes the next combat item */
     ++totalKeyReads;
     if(keyReadCount<DEBUG_MAX_KEY_READS)
-    {keyReads[keyReadCount].key=key;keyReads[keyReadCount].random0=randomStateWord0;keyReads[keyReadCount].random1=randomStateWord1;++keyReadCount;}
+    {keyReads[keyReadCount].key=key;keyReads[keyReadCount].random0=campaignCore.randomStateWord0;keyReads[keyReadCount].random1=campaignCore.randomStateWord1;++keyReadCount;}
 }
 
 static void JsonString(FILE *file,const char *text)
@@ -309,10 +309,10 @@ static void WriteStatus(const char *path)
         (unsigned long long)SDL_GetTicks(),(unsigned long long)activeId,(unsigned long long)completedId,busy?"true":"false");
     JsonString(file,commandError);
     fprintf(file,",\"combat\":%s,\"campaign\":{\"planet\":%u,\"contractActive\":%u,\"missionCategory\":%u,\"scenario\":%u,\"destination\":%u,\"targetHouse\":%u,\"paymentThousands\":%u,\"result\":%u,\"selectedRow\":%u,\"random\":[%u,%u],\"funds\":%lu,\"months\":%u,\"menu\":[",
-        mwSdlCombatActive?"true":"false",currentPlanetIndex,campaignMission.acceptedContractActive,campaignMission.missionCategoryOrMemoryTier,
+        mwSdlCombatActive?"true":"false",campaignCore.currentPlanetIndex,campaignMission.acceptedContractActive,campaignMission.missionCategoryOrMemoryTier,
         campaignMission.combatScenarioCode,campaignMission.combatPlanetSelector,campaignMission.acceptedContractTargetHouseIndex,
         campaignMission.acceptedContractPaymentThousands,campaignMission.combatTransitionResult,campaignUi.selectedUiRecordIndex,
-        randomStateWord0,randomStateWord1,
+        campaignCore.randomStateWord0,campaignCore.randomStateWord1,
         ((unsigned long)campaignEconomy.campaignFundsHigh<<16)|campaignEconomy.campaignFundsLow,campaignEconomy.elapsedBillingMonths);
     if (!mwSdlCombatActive && campaignUi.uiMenu)
         for(unsigned i=0;i<campaignUi.uiMenu->recordCount;++i)

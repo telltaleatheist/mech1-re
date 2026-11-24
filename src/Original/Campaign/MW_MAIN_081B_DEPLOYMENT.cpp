@@ -43,7 +43,7 @@ uint16_t MwResolveDeploymentOrExportCombatExchangeContinuation(void)
         }
     }
     MwWaitForRequiredResourceFile();
-    campaignMission.missionCategoryOrMemoryTier=(uint8_t)launcherMemoryTier;
+    campaignMission.missionCategoryOrMemoryTier=(uint8_t)campaignStartup.launcherMemoryTier;
     campaignMission.deploymentTerrainDetailLevel=campaignMission.campaignTerrainDetailLevel;
     /* Real launcher and child allocations are disjoint. Encode at their
      * transfer boundary; do not fabricate a live1090 image for this copy.
@@ -51,6 +51,6 @@ uint16_t MwResolveDeploymentOrExportCombatExchangeContinuation(void)
      * for that actual allocation. Arbitrary aliased foreign PSPs are not a
      * supported launcher configuration, nor silently treated as memcpy. */
     MwEncodeCampaignExchange(campaignCombatExchange);
-    launcherExitCode=CAMPAIGN_EXIT_COMBAT;
+    campaignStartup.launcherExitCode=CAMPAIGN_EXIT_COMBAT;
     return CAMPAIGN_CONTINUE_CLEANUP;
 }

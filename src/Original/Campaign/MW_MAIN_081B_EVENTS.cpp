@@ -174,15 +174,15 @@ void MwEventTestScheduledDate(const MwEventCommand *command)
     campaignEvents.eventOperandCursor=command->next;
     year+=EVENT_DATE_YEAR_BASE;
     campaignEvents.eventScheduledYearScratch=year;
-    bool arrived=year<calendarYear || (year==calendarYear
-        && (month<calendarMonthIndex || (month==calendarMonthIndex && submonth<=campaignEconomy.calendarSubmonthUnits)));
+    bool arrived=year<campaignCore.calendarYear || (year==campaignCore.calendarYear
+        && (month<campaignCore.calendarMonthIndex || (month==campaignCore.calendarMonthIndex && submonth<=campaignEconomy.calendarSubmonthUnits)));
     if (arrived && campaignEvents.campaignEventClass==EVENT_CLASS_REPEATABLE)
     {
         month=campaignEvents.eventScheduledMonthScratch+6;
         if (month>=CAMPAIGN_MONTH_COUNT) {++campaignEvents.eventScheduledYearScratch;month-=CAMPAIGN_MONTH_COUNT;}
         submonth=campaignEvents.eventExpirySubmonthScratch;year=campaignEvents.eventScheduledYearScratch;
-        arrived=year>calendarYear || (year==calendarYear
-            && (month>calendarMonthIndex || (month==calendarMonthIndex && submonth>=campaignEconomy.calendarSubmonthUnits)));
+        arrived=year>campaignCore.calendarYear || (year==campaignCore.calendarYear
+            && (month>campaignCore.calendarMonthIndex || (month==campaignCore.calendarMonthIndex && submonth>=campaignEconomy.calendarSubmonthUnits)));
     }
     MwCombineEventCondition(arrived);
 }
@@ -198,9 +198,9 @@ void MwEventTestCurrentPlanet(const MwEventCommand *command)
     {
         uint16_t reference=(uint16_t)selector^UINT16_MAX;
         if (reference>=6) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: reference>=6"); /* Unrepresented adjacent reference aliases. */
-        planet=campaignEventPlanetSelectors[reference]-1;
+        planet=campaignStartup.campaignEventPlanetSelectors[reference]-1;
     }
-    MwCombineEventCondition(planet==currentPlanetIndex);
+    MwCombineEventCondition(planet==campaignCore.currentPlanetIndex);
 }
 void MwEventTestDifferentPlanet(const MwEventCommand *command)
 {
@@ -212,9 +212,9 @@ void MwEventTestDifferentPlanet(const MwEventCommand *command)
     {
         uint16_t reference=(uint16_t)selector^UINT16_MAX;
         if (reference>=6) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: reference>=6");
-        planet=campaignEventPlanetSelectors[reference]-1;
+        planet=campaignStartup.campaignEventPlanetSelectors[reference]-1;
     }
-    MwCombineEventCondition(planet!=currentPlanetIndex);
+    MwCombineEventCondition(planet!=campaignCore.currentPlanetIndex);
 }
 /* MW_MAIN081B:64ED..6502. ANY nonzero seen flag, not dispatcher equality01. */
 void MwEventTestSeenEvent(const MwEventCommand *command)
@@ -232,7 +232,7 @@ void MwEventTestControllingHouseStanding(const MwEventCommand *command)
     campaignEvents.eventOperandCursor=command->next;
     --house;
     bool matches=false;
-    if (house==currentPlanetHouseIndex)
+    if (house==campaignCore.currentPlanetHouseIndex)
     {
         if (house>=CAMPAIGN_HOUSE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: house>=CAMPAIGN_HOUSE_COUNT");
         int16_t standing=campaignEconomy.houseFavorPoints[house]-campaignEconomy.houseGrievancePoints[house];
@@ -251,7 +251,7 @@ void MwEventQueueCampaignRestart(void)
     if (campaignEvents.eventConditionResult!=1) return;
     campaignEvents.campaignRestartPending=1;
     if (!campaignStartMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStartMusic");
-    campaignStartMusic(campaignMusicBufferSelector,0x2328);
+    campaignStartMusic(campaignStartup.campaignMusicBufferSelector,0x2328);
 }
 /* MW_MAIN081B:65B1..662B. Later end month STILL tests submonth, as shipped. */
 void MwEventRestrictToDateWindow(const MwEventCommand *command)
@@ -261,15 +261,15 @@ void MwEventRestrictToDateWindow(const MwEventCommand *command)
         uint16_t month=(uint8_t)(command->operand.dateWindow.start.monthCode-1);
         uint16_t submonth=(uint8_t)((uint8_t)(command->operand.dateWindow.start.submonthCode-1)<<1);
         uint16_t year=EVENT_DATE_YEAR_BASE+command->operand.dateWindow.start.yearOffset;
-        bool reached=year<calendarYear || (year==calendarYear
-            && (month<calendarMonthIndex || (month==calendarMonthIndex && submonth<=campaignEconomy.calendarSubmonthUnits)));
+        bool reached=year<campaignCore.calendarYear || (year==campaignCore.calendarYear
+            && (month<campaignCore.calendarMonthIndex || (month==campaignCore.calendarMonthIndex && submonth<=campaignEconomy.calendarSubmonthUnits)));
         if (reached)
         {
             month=(uint8_t)(command->operand.dateWindow.end.monthCode-1);
             submonth=(uint8_t)((uint8_t)(command->operand.dateWindow.end.submonthCode-1)<<1);
             year=EVENT_DATE_YEAR_BASE+command->operand.dateWindow.end.yearOffset;
-            if (year>calendarYear || (year==calendarYear
-                && month>=calendarMonthIndex && submonth>=campaignEconomy.calendarSubmonthUnits))
+            if (year>campaignCore.calendarYear || (year==campaignCore.calendarYear
+                && month>=campaignCore.calendarMonthIndex && submonth>=campaignEconomy.calendarSubmonthUnits))
             {campaignEvents.eventConditionResult=1;campaignEvents.eventOperandCursor=command->next;return;}
         }
     }

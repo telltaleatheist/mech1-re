@@ -15,7 +15,7 @@ uint16_t MwEnterOptionsMenuContinuation(uint16_t entryOffset)
     campaignUi.hubSelectedRecordIndex=OPTIONS_HUB_ROW;
     EgaSelectFont(TEXT_PANEL_MONOSPACE_FONT);
     EgaClearDrawPage(Campaign_Pal_EGA_Magenta);
-    MwDrawIndexedPicture(0,0,(uint16_t)(currentPlanetLandscapeIndex+OPTIONS_LANDSCAPE_PICTURE_BASE));
+    MwDrawIndexedPicture(0,0,(uint16_t)(campaignCore.currentPlanetLandscapeIndex+OPTIONS_LANDSCAPE_PICTURE_BASE));
 publishMenu:
     EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
     MwUpdateAudioOptionLabel();

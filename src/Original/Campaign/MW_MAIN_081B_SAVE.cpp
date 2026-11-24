@@ -44,18 +44,18 @@ readName:
     uint16_t transfer=MwReadCampaignTextInput(SAVE_NAME_FIELD_X,SAVE_NAME_FIELD_Y,CAMPAIGN_SAVE_STEM_BYTES+1,SAVE_NAME_FIELD_COLOUR,SAVE_PANEL_BACKGROUND);
     if (transfer) return transfer;
     uint16_t leadingSpaces=0;
-    while (campaignTextInputBuffer[leadingSpaces]==' ') ++leadingSpaces;
-    if (!campaignTextInputBuffer[leadingSpaces]) return CAMPAIGN_CONTINUE_OPTIONS;
+    while (campaignStartup.campaignTextInputBuffer[leadingSpaces]==' ') ++leadingSpaces;
+    if (!campaignStartup.campaignTextInputBuffer[leadingSpaces]) return CAMPAIGN_CONTINUE_OPTIONS;
     uint16_t nameLength=0;
-    while (campaignTextInputBuffer[nameLength])
+    while (campaignStartup.campaignTextInputBuffer[nameLength])
     {
-        if (campaignTextInputBuffer[nameLength]==' ') goto readName;
+        if (campaignStartup.campaignTextInputBuffer[nameLength]==' ') goto readName;
         ++nameLength;
     }
-    memcpy(campaignTextInputBuffer+nameLength,".GAM",sizeof(".GAM"));
+    memcpy(campaignStartup.campaignTextInputBuffer+nameLength,".GAM",sizeof(".GAM"));
     /* The original asked for a save disk on drives A and B ; dropped. */
     uint16_t handleOrError;
-    if (MwDosCreateSaveFile((const char *)campaignTextInputBuffer+leadingSpaces,&handleOrError))
+    if (MwDosCreateSaveFile((const char *)campaignStartup.campaignTextInputBuffer+leadingSpaces,&handleOrError))
     {
         MwNativeByteView text={campaignOptions.saveDiskErrorText,SAVE_ERROR_TEXT_OFFSET,sizeof(campaignOptions.saveDiskErrorText)};
         return MwShowOptionsMessageAndReturnContinuation(&text,text.nativeBase);

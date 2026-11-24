@@ -5,8 +5,7 @@
 /* Native resident exchange outlives both child executables. Only transport
  * owns these encoded bytes; campaign and combat use their own typed objects. */
 MwCampaignTransferStorage campaignTransfer;
-uint8_t launcherIdentity[11];
-char launcherCampaignFilename[12],launcherCombatFilename[10];
+LauncherResidentState launcherResident;
 
 /* The resident data's start (MW.EXE 0806), set in code: MW.EXE is not read.
  * The exchange (0004..07D3) is zero in the exe. Of the identity (07D4, 11
@@ -16,8 +15,8 @@ char launcherCampaignFilename[12],launcherCombatFilename[10];
 void MwImportLauncherInitialData(void)
 {
     memset(campaignCombatExchange,0,sizeof(campaignCombatExchange)); /*0004*/
-    memset(launcherIdentity,0,sizeof(launcherIdentity));
-    launcherIdentity[0]='M';launcherIdentity[4]='W';launcherIdentity[10]='R';
-    memcpy(launcherCampaignFilename,mwLauncherCampaignFilename,sizeof(launcherCampaignFilename)); /*07E3*/
-    memcpy(launcherCombatFilename,mwLauncherCombatFilename,sizeof(launcherCombatFilename)); /*07EF*/
+    memset(launcherResident.launcherIdentity,0,sizeof(launcherResident.launcherIdentity));
+    launcherResident.launcherIdentity[0]='M';launcherResident.launcherIdentity[4]='W';launcherResident.launcherIdentity[10]='R';
+    memcpy(launcherResident.launcherCampaignFilename,mwLauncherCampaignFilename,sizeof(launcherResident.launcherCampaignFilename)); /*07E3*/
+    memcpy(launcherResident.launcherCombatFilename,mwLauncherCombatFilename,sizeof(launcherResident.launcherCombatFilename)); /*07EF*/
 }

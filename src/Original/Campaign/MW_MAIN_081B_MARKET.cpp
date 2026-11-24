@@ -130,13 +130,13 @@ uint16_t MwOpenMarketMechComponentInspectionCallback(void)
             uint16_t kind=campaignMechanics.selectedMarketUnitKind;
             uint8_t maximum=campaignService.unitHeatSinkCounts[kind];
             MwBuildDecimalDigitBuffer((uint8_t)(maximum-tier));
-            row->caption.columns.condition[0]=numericDecimalDigits[8]==0?ASCII_SPACE:numericDecimalDigits[8]+ASCII_DIGIT_ZERO;
-            row->caption.columns.condition[1]=numericDecimalDigits[9]+ASCII_DIGIT_ZERO;
+            row->caption.columns.condition[0]=campaignCore.numericDecimalDigits[8]==0?ASCII_SPACE:campaignCore.numericDecimalDigits[8]+ASCII_DIGIT_ZERO;
+            row->caption.columns.condition[1]=campaignCore.numericDecimalDigits[9]+ASCII_DIGIT_ZERO;
             kind=campaignMechanics.selectedMarketUnitKind;
             maximum=campaignService.unitHeatSinkCounts[kind];
             MwBuildDecimalDigitBuffer(maximum);
-            row->caption.columns.condition[6]=numericDecimalDigits[8]+ASCII_DIGIT_ZERO;
-            row->caption.columns.condition[7]=numericDecimalDigits[9]+ASCII_DIGIT_ZERO;
+            row->caption.columns.condition[6]=campaignCore.numericDecimalDigits[8]+ASCII_DIGIT_ZERO;
+            row->caption.columns.condition[7]=campaignCore.numericDecimalDigits[9]+ASCII_DIGIT_ZERO;
         }
         else if (category==REPAIR_JUMP_JETS)
         {
@@ -145,11 +145,11 @@ uint16_t MwOpenMarketMechComponentInspectionCallback(void)
             uint16_t kind=campaignMechanics.selectedMarketUnitKind;
             uint8_t maximum=campaignEconomy.unitJumpJetGroupCounts[kind];
             MwBuildDecimalDigitBuffer((uint8_t)(maximum-tier));
-            row->caption.columns.condition[1]=numericDecimalDigits[9]+ASCII_DIGIT_ZERO;
+            row->caption.columns.condition[1]=campaignCore.numericDecimalDigits[9]+ASCII_DIGIT_ZERO;
             kind=campaignMechanics.selectedMarketUnitKind;
             maximum=campaignEconomy.unitJumpJetGroupCounts[kind];
             if (maximum!=0)
-            {MwBuildDecimalDigitBuffer(maximum);row->caption.columns.condition[6]=numericDecimalDigits[9]+ASCII_DIGIT_ZERO;}
+            {MwBuildDecimalDigitBuffer(maximum);row->caption.columns.condition[6]=campaignCore.numericDecimalDigits[9]+ASCII_DIGIT_ZERO;}
             else for (uint16_t letter=0;letter<sizeof(campaignService.repairNoJumpJetsTextBytes);++letter)
                 row->caption.columns.condition[letter]=campaignService.repairNoJumpJetsTextBytes[letter];
         }
@@ -167,9 +167,9 @@ uint16_t MwOpenMarketMechComponentInspectionCallback(void)
     campaignMarket.marketBodyCondition.display.colour=bodyDamage==0?REPAIR_CONDITION_HEALTHY_COLOUR:REPAIR_CONDITION_DAMAGED_COLOUR;
     uint16_t bodyProtection=(uint16_t)(REPAIR_BODY_TOTAL_TIERS-bodyDamage)*PERCENT_DIVISOR/REPAIR_BODY_TOTAL_TIERS;
     MwBuildDecimalDigitBuffer(bodyProtection);
-    campaignMarket.marketBodyCondition.caption.columns.protectionPercent[0]=numericDecimalDigits[7]==0?ASCII_SPACE:numericDecimalDigits[7]+ASCII_DIGIT_ZERO;
-    campaignMarket.marketBodyCondition.caption.columns.protectionPercent[1]=numericDecimalDigits[8]==0 && numericDecimalDigits[7]==0?ASCII_SPACE:numericDecimalDigits[8]+ASCII_DIGIT_ZERO;
-    campaignMarket.marketBodyCondition.caption.columns.protectionPercent[2]=numericDecimalDigits[9]+ASCII_DIGIT_ZERO;
+    campaignMarket.marketBodyCondition.caption.columns.protectionPercent[0]=campaignCore.numericDecimalDigits[7]==0?ASCII_SPACE:campaignCore.numericDecimalDigits[7]+ASCII_DIGIT_ZERO;
+    campaignMarket.marketBodyCondition.caption.columns.protectionPercent[1]=campaignCore.numericDecimalDigits[8]==0 && campaignCore.numericDecimalDigits[7]==0?ASCII_SPACE:campaignCore.numericDecimalDigits[8]+ASCII_DIGIT_ZERO;
+    campaignMarket.marketBodyCondition.caption.columns.protectionPercent[2]=campaignCore.numericDecimalDigits[9]+ASCII_DIGIT_ZERO;
     uint16_t y=REPAIR_WEAPON_FIRST_Y;
     for (uint16_t mount=0;mount<CAMPAIGN_WEAPON_SLOTS;++mount)
     {
@@ -259,7 +259,7 @@ marketStatus:
     damage=&campaignMechanics.marketUnitDamage[(uint8_t)campaignMarket.selectedMarketUnitSlot];
     MwQuoteMechRepairTotal(campaignMechanics.selectedMarketUnitKind,damage); /* Also writes shared2AD5. */
     uint32_t repairQuote;repairQuote=((uint32_t)campaignMechanics.unitRepairQuoteHigh<<NATIVE_WORD_BITS)|campaignMechanics.unitRepairQuoteLow;
-    numericGroupingEnabled=1;
+    campaignCore.numericGroupingEnabled=1;
     MwDrawSignedDecimalField(repairQuote,MECH_DETAIL_REPAIR_PRICE_X,1,0,MECH_DETAIL_TEXT_COLOUR,MECH_DETAIL_BACKGROUND,MECH_DETAIL_REPAIR_PRICE_Y);
     kind=campaignMechanics.selectedMarketUnitKind;
     uint8_t tonnage;tonnage=campaignService.unitDisplayTonnages[kind];
@@ -290,10 +290,10 @@ marketStatus:
 purchasePrice:
     MwCalculateMarketPurchasePrice(); /* DropShip intentionally uses the stale repair quote. */
     uint32_t price=((uint32_t)campaignMechanics.unitTransactionPriceHigh<<NATIVE_WORD_BITS)|campaignMechanics.unitTransactionPriceLow;
-    ++numericGroupingEnabled;
+    ++campaignCore.numericGroupingEnabled;
     MwDrawSignedDecimalField(price,DEALER_PRICE_X,1,0,MECH_DETAIL_TEXT_COLOUR,MECH_DETAIL_BACKGROUND,DEALER_PRICE_Y);
     uint32_t funds=((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow;
-    ++numericGroupingEnabled;
+    ++campaignCore.numericGroupingEnabled;
     MwDrawSignedDecimalField(funds,DEALER_FUNDS_X,1,0,MECH_DETAIL_TEXT_COLOUR,MECH_DETAIL_BACKGROUND,DEALER_FUNDS_Y);
     if (campaignMechanics.selectedMarketUnitKind==CAMPAIGN_UNIT_DROPSHIP) MwSelectUiRecordTable(0,&campaignMarket.marketDropShipMenu);
     else
@@ -426,8 +426,8 @@ uint16_t MwCancelOwnedUnitSale(void)
  * Repair-quote subtraction wraps; DIV overflow precedes either price store. */
 void MwCalculateSelectedUnitNetPrice(void)
 {
-    if (currentPlanetMarketTier>=UNIT_PRICE_TIER_COUNT || campaignMechanics.selectedOwnedUnitKind>=CAMPAIGN_UNIT_KIND_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: currentPlanetMarketTier>=UNIT_PRICE_TIER_COUNT || selectedOwnedUnitKind>=CAMPAIGN_UNIT_KIND_COUNT"); /* Unrepresented adjacent tables. */
-    uint8_t saleMultiplier=campaignMechanics.unitPriceTierMultipliers[currentPlanetMarketTier];
+    if (campaignCore.currentPlanetMarketTier>=UNIT_PRICE_TIER_COUNT || campaignMechanics.selectedOwnedUnitKind>=CAMPAIGN_UNIT_KIND_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: currentPlanetMarketTier>=UNIT_PRICE_TIER_COUNT || selectedOwnedUnitKind>=CAMPAIGN_UNIT_KIND_COUNT"); /* Unrepresented adjacent tables. */
+    uint8_t saleMultiplier=campaignMechanics.unitPriceTierMultipliers[campaignCore.currentPlanetMarketTier];
     --saleMultiplier;
     uint32_t salePrice=(uint32_t)(saleMultiplier*PERCENT_DIVISOR)*campaignMechanics.unitBasePrices[campaignMechanics.selectedOwnedUnitKind];
     salePrice-=((uint32_t)campaignMechanics.unitRepairQuoteHigh<<NATIVE_WORD_BITS)|campaignMechanics.unitRepairQuoteLow;
@@ -442,7 +442,7 @@ uint16_t MwBeginOwnedUnitSaleCallback(void)
 {
     campaignService.mechServiceMenuSelectedRow=MECH_SERVICE_ROW_SELL;
     MwAdvanceCampaignTimeAndChargeWages(SALE_QUOTE_TIME_UNITS);
-    if ((int16_t)currentPlanetMarketTier>=DEALER_QUOTA_RESTRICTED_TIER
+    if ((int16_t)campaignCore.currentPlanetMarketTier>=DEALER_QUOTA_RESTRICTED_TIER
         && campaignEconomy.unitsSoldSinceMarketRefresh==campaignEconomy.dealerUnitPurchaseLimit)
     {
         MwNativeByteView text={(const uint8_t *)campaignMarket.dealerPurchaseLimitText,0,sizeof(campaignMarket.dealerPurchaseLimitText)};
@@ -454,7 +454,7 @@ uint16_t MwBeginOwnedUnitSaleCallback(void)
     MwDrawDescriptorTextPanel(&campaignMarket.saleConfirmationPanel);
     MwCalculateSelectedUnitNetPrice();
     uint32_t salePrice=((uint32_t)campaignMechanics.unitTransactionPriceHigh<<NATIVE_WORD_BITS)|campaignMechanics.unitTransactionPriceLow;
-    ++numericGroupingEnabled;
+    ++campaignCore.numericGroupingEnabled;
     MwDrawSignedDecimalField(salePrice,SALE_QUOTE_X,0,MARKET_PRICE_FIELD_DIGITS,TEXT_PANEL_FOREGROUND,TEXT_PANEL_BACKGROUND,SALE_QUOTE_Y);
     MwSelectUiRecordTable(0,&campaignMarket.saleConfirmationMenu);
     return CAMPAIGN_CONTINUE_UI;
@@ -476,7 +476,7 @@ uint16_t MwRearmSelectedMech(void)
         uint16_t purchasesRemaining=profile->quantityMaximum-campaignEconomy.ownedAmmoQuantitiesByGroup[quantityIndex];
         if (purchasesRemaining!=0)
         {
-            uint16_t pricePerAmmoUnit=ammunitionTransactionPrices[ammoFamily];
+            uint16_t pricePerAmmoUnit=campaignCore.ammunitionTransactionPrices[ammoFamily];
             uint32_t funds=((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow;
             do
             {
@@ -523,7 +523,7 @@ uint16_t MwQuoteSelectedMechRearm(void)
         uint16_t ammoFamily=profile->ammoFamily;
         uint16_t quantityToBuy=profile->quantityMaximum-campaignEconomy.ownedAmmoQuantitiesByGroup[quantityIndex];
         uint32_t rearmCost=((uint32_t)campaignService.selectedMechRearmQuoteHigh<<NATIVE_WORD_BITS)|campaignService.selectedMechRearmQuoteLow;
-        rearmCost+=(uint32_t)quantityToBuy*ammunitionTransactionPrices[ammoFamily];
+        rearmCost+=(uint32_t)quantityToBuy*campaignCore.ammunitionTransactionPrices[ammoFamily];
         campaignService.selectedMechRearmQuoteLow=(uint16_t)rearmCost;
         campaignService.selectedMechRearmQuoteHigh=(uint16_t)(rearmCost>>NATIVE_WORD_BITS);
         ++profile;quantityIndex+=CAMPAIGN_OWNED_UNIT_SLOTS;
@@ -537,11 +537,11 @@ uint16_t MwQuoteSelectedMechRearm(void)
     EgaCopyDisplayToDrawPage(REARM_DIALOG_X,REARM_DIALOG_Y,REARM_DIALOG_WIDTH,REARM_DIALOG_HEIGHT);
     MwDrawDescriptorTextPanel(&campaignMarket.rearmConfirmationPanel);
     uint32_t rearmCost=((uint32_t)campaignService.selectedMechRearmQuoteHigh<<NATIVE_WORD_BITS)|campaignService.selectedMechRearmQuoteLow;
-    ++numericGroupingEnabled;
+    ++campaignCore.numericGroupingEnabled;
     /*09B2 completes its WORD line loop with CX0;3516 changes CL only. */
     MwDrawSignedDecimalField(rearmCost,REARM_QUOTE_X,1,0,TEXT_PANEL_FOREGROUND,TEXT_PANEL_BACKGROUND,REARM_QUOTE_Y);
     uint32_t funds=((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow;
-    ++numericGroupingEnabled;
+    ++campaignCore.numericGroupingEnabled;
     MwDrawSignedDecimalField(funds,REARM_FUNDS_X,1,MARKET_PRICE_FIELD_DIGITS,TEXT_PANEL_FOREGROUND,TEXT_PANEL_BACKGROUND,REARM_FUNDS_Y);
     MwSelectUiRecordTable(0,&campaignMarket.rearmConfirmationMenu);
     return CAMPAIGN_CONTINUE_UI;
@@ -575,7 +575,7 @@ void MwFormatReserveAmmunitionQuantity(uint16_t family,uint16_t quantity)
     bool leading=true;
     for (uint16_t digit=0;digit<5;++digit)
     {
-        uint8_t value=numericDecimalDigits[DECIMAL_DIGIT_COUNT-5+digit];
+        uint8_t value=campaignCore.numericDecimalDigits[DECIMAL_DIGIT_COUNT-5+digit];
         if (digit!=4 && value==0 && leading) campaignMarket.reserveAmmoQuantityRows[family].text[digit]=ASCII_SPACE;
         else {leading=false;campaignMarket.reserveAmmoQuantityRows[family].text[digit]=(char)(value+ASCII_DIGIT_ZERO);}
     }
@@ -584,14 +584,14 @@ void MwFormatReserveAmmunitionQuantity(uint16_t family,uint16_t quantity)
 void MwDrawReserveAmmunitionPrices(bool selling)
 {
     for (uint16_t family=0;family<CAMPAIGN_AMMO_FAMILY_COUNT;++family)
-        MwDrawSignedDecimalField(ammunitionTransactionPrices[family+(selling?CAMPAIGN_AMMO_FAMILY_COUNT:0)],
+        MwDrawSignedDecimalField(campaignCore.ammunitionTransactionPrices[family+(selling?CAMPAIGN_AMMO_FAMILY_COUNT:0)],
             RESERVE_AMMO_PRICE_X,0,4,TEXT_PANEL_FOREGROUND,TEXT_PANEL_BACKGROUND,
             RESERVE_AMMO_ROW_Y+family*RESERVE_AMMO_ROW_HEIGHT);
 }
 /* MW_MAIN081B:485A..4877. Grouping stays enabled after drawing company funds. */
 void MwDrawAmmunitionShopCompanyFunds(void)
 {
-    ++numericGroupingEnabled;
+    ++campaignCore.numericGroupingEnabled;
     MwDrawSignedDecimalField(((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow,
         0xA1,0,9,TEXT_PANEL_FOREGROUND,TEXT_PANEL_BACKGROUND,0xB8);
 }
@@ -606,7 +606,7 @@ void MwBuyReserveAmmunition(void)
     do
     {
         uint32_t funds=((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow;
-        uint16_t price=ammunitionTransactionPrices[family];
+        uint16_t price=campaignCore.ammunitionTransactionPrices[family];
         if (funds<price) break;
         funds-=price;campaignEconomy.campaignFundsLow=(uint16_t)funds;campaignEconomy.campaignFundsHigh=(uint16_t)(funds>>NATIVE_WORD_BITS);
         ++campaignMechanics.reserveAmmoQuantitiesByFamily[family];
@@ -683,7 +683,7 @@ uint16_t MwSellReserveAmmunition(void)
     {
         if (!campaignMechanics.reserveAmmoQuantitiesByFamily[family]) break;
         uint32_t funds=((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow;
-        funds+=ammunitionTransactionPrices[family+CAMPAIGN_AMMO_FAMILY_COUNT];
+        funds+=campaignCore.ammunitionTransactionPrices[family+CAMPAIGN_AMMO_FAMILY_COUNT];
         campaignEconomy.campaignFundsLow=(uint16_t)funds;campaignEconomy.campaignFundsHigh=(uint16_t)(funds>>NATIVE_WORD_BITS);
         --campaignMechanics.reserveAmmoQuantitiesByFamily[family];
     } while (--remaining);

@@ -14,8 +14,13 @@ typedef struct MwLauncherSystemCalls
     bool (*executeChild)(const char *filename,const MwCampaignLaunch *launch,uint8_t audioCode,uint8_t *exitCode);
 } MwLauncherSystemCalls;
 extern MwLauncherSystemCalls mwLauncherSystem;
-extern uint8_t launcherIdentity[11];
-extern char launcherCampaignFilename[12],launcherCombatFilename[10];
+/* Campaign state owned by launcher.h (plan, slice B2). */
+struct LauncherResidentState
+{
+    uint8_t launcherIdentity[11];
+    char launcherCampaignFilename[12], launcherCombatFilename[10];
+};
+extern LauncherResidentState launcherResident;
 void MwImportLauncherInitialData(void);
 /* audioCode is MW.EXE's S/T/A/R; the result is the native terminate code. */
 uint8_t MwLauncherMain(uint8_t audioCode);

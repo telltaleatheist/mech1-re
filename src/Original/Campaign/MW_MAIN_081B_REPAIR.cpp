@@ -6,7 +6,7 @@
  * caller uses it as an accumulator, which this native procedure overwrites. */
 uint32_t MwCalculateUnitConditionPrice(uint8_t condition, uint16_t unitKind, uint16_t *marketTier)
 {
-    *marketTier = currentPlanetMarketTier;
+    *marketTier = campaignCore.currentPlanetMarketTier;
     if (*marketTier >= UNIT_PRICE_TIER_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: *marketTier >= UNIT_PRICE_TIER_COUNT"); /* Unmapped adjacent DS. */
     uint8_t priceMultiplier = campaignMechanics.unitPriceTierMultipliers[*marketTier];
     priceMultiplier--;
@@ -27,8 +27,8 @@ uint32_t MwCalculateUnitConditionPrice(uint8_t condition, uint16_t unitKind, uin
  * Repair discount subtraction wraps as a DWORD, with no zero-price clamp. */
 void MwCalculateMarketPurchasePrice(void)
 {
-    if (currentPlanetMarketTier >= UNIT_PRICE_TIER_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: currentPlanetMarketTier >= UNIT_PRICE_TIER_COUNT");
-    uint16_t priceFactor = campaignMechanics.unitPriceTierMultipliers[currentPlanetMarketTier] * PERCENT_DIVISOR;
+    if (campaignCore.currentPlanetMarketTier >= UNIT_PRICE_TIER_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: currentPlanetMarketTier >= UNIT_PRICE_TIER_COUNT");
+    uint16_t priceFactor = campaignMechanics.unitPriceTierMultipliers[campaignCore.currentPlanetMarketTier] * PERCENT_DIVISOR;
     uint16_t kindByteOffset = campaignMechanics.selectedMarketUnitKind * sizeof(uint16_t);
     if (kindByteOffset >= sizeof(campaignMechanics.unitBasePrices)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: kindByteOffset >= sizeof(unitBasePrices)");
     uint32_t price = (uint32_t)priceFactor * campaignMechanics.unitBasePrices[kindByteOffset / sizeof(uint16_t)];
@@ -84,7 +84,7 @@ void MwQuoteRepairComponent(CampaignUnitDamage *damage)
         if (!campaignMechanics.weaponRepairPricesByKind[campaignMechanics.selectedOwnedUnitKind]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !weaponRepairPricesByKind[selectedOwnedUnitKind]");
         basePrice = campaignMechanics.weaponRepairPricesByKind[campaignMechanics.selectedOwnedUnitKind][category - REPAIR_FIRST_WEAPON];
     }
-    uint32_t surcharge = (uint32_t)basePrice * planetMarketPremiumPercent / PERCENT_DIVISOR;
+    uint32_t surcharge = (uint32_t)basePrice * campaignCore.planetMarketPremiumPercent / PERCENT_DIVISOR;
     if (surcharge > UINT16_MAX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: surcharge > UINT16_MAX");
     uint16_t adjustedPrice = surcharge + basePrice;
     uint16_t priceMultiplier = category == REPAIR_HEAT_SINKS || category == REPAIR_JUMP_JETS || category == REPAIR_BODY

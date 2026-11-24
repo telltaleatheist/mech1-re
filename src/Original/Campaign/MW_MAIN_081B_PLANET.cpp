@@ -30,15 +30,15 @@ uint16_t MwEnterCampaignPlanetHub(uint16_t entryOffset)
     if (!campaignStopMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStopMusic");
     campaignStopMusic();
     EgaSelectFont(0);
-    MwDrawIndexedPicture(0,0,currentPlanetLandscapeIndex+HUB_LANDSCAPE_PICTURE_BASE);
+    MwDrawIndexedPicture(0,0,campaignCore.currentPlanetLandscapeIndex+HUB_LANDSCAPE_PICTURE_BASE);
     MwDrawGeneralPicture(HUB_LEFT_ICON_X,HUB_UPPER_ICON_Y,EGA_DRAW_PAGE,HUB_LEFT_UPPER_PICTURE);
     MwDrawGeneralPicture(HUB_LEFT_ICON_X,HUB_MIDDLE_ICON_Y,EGA_DRAW_PAGE,HUB_MECH_COMPLEX_PICTURE);
     if (campaignMission.acceptedContractActive==1)
         MwDrawGeneralPicture(HUB_LEFT_ICON_X,HUB_LOWER_ICON_Y,EGA_DRAW_PAGE,HUB_DEPLOYMENT_PICTURE);
     else
     {
-        if (currentPlanetFacilityDisplayFlag)
-            MwDrawGeneralPicture(HUB_LEFT_ICON_X,HUB_LOWER_ICON_Y,EGA_DRAW_PAGE,currentPlanetHouseIndex+HUB_HOUSE_FACILITY_PICTURE_BASE);
+        if (campaignCore.currentPlanetFacilityDisplayFlag)
+            MwDrawGeneralPicture(HUB_LEFT_ICON_X,HUB_LOWER_ICON_Y,EGA_DRAW_PAGE,campaignCore.currentPlanetHouseIndex+HUB_HOUSE_FACILITY_PICTURE_BASE);
         MwDrawGeneralPicture(HUB_RIGHT_ICON_X,HUB_UPPER_ICON_Y,EGA_DRAW_PAGE,HUB_RIGHT_UPPER_PICTURE);
         MwDrawGeneralPicture(HUB_RIGHT_ICON_X,HUB_MIDDLE_ICON_Y,EGA_DRAW_PAGE,HUB_RIGHT_MIDDLE_PICTURE);
         MwDrawGeneralPicture(HUB_RIGHT_ICON_X,HUB_LOWER_ICON_Y,EGA_DRAW_PAGE,HUB_RIGHT_LOWER_PICTURE);
@@ -46,7 +46,7 @@ uint16_t MwEnterCampaignPlanetHub(uint16_t entryOffset)
     MwDrawGeneralPicture(HUB_LEFT_TITLE_X,HUB_TITLE_Y,EGA_DRAW_PAGE,HUB_TITLE_PLATE_PICTURE);
     MwDrawGeneralPicture(HUB_RIGHT_TITLE_X,HUB_TITLE_Y,EGA_DRAW_PAGE,HUB_TITLE_PLATE_PICTURE);
     EgaFlipPages();
-    MwDrawPlanetNameCentered(HUB_PLANET_NAME_X,HUB_HEADER_TEXT_Y,HUB_TEXT_COLOUR,currentPlanetIndex);
+    MwDrawPlanetNameCentered(HUB_PLANET_NAME_X,HUB_HEADER_TEXT_Y,HUB_TEXT_COLOUR,campaignCore.currentPlanetIndex);
     /* Native font0's final nonempty name glyph leaves CX0 at0AAE LOOP. All
      * installed planet names take it; CH is not a separate game argument. */
     MwDrawCampaignCalendar(HUB_CALENDAR_X,0,1,HUB_TEXT_COLOUR,HUB_HEADER_TEXT_Y);
@@ -60,7 +60,7 @@ selectHubMenu:
     campaignEvents.planetArrivalEventsPending=0; /* AFTER dispatch/choice return. */
     MwUiMenu *menu;
     if (campaignMission.acceptedContractActive) menu=&campaignUi.contractHubMenu;
-    else if (currentPlanetFacilityDisplayFlag) menu=&campaignUi.planetHubMenu;
+    else if (campaignCore.currentPlanetFacilityDisplayFlag) menu=&campaignUi.planetHubMenu;
     else menu=&campaignUi.remotePlanetHubMenu;
     MwSelectUiRecordTable(campaignUi.hubSelectedRecordIndex,menu);
     return CAMPAIGN_CONTINUE_UI;
@@ -70,35 +70,35 @@ selectHubMenu:
  * further offers/recruits are generated. Two RNG draws, in the native order. */
 void MwApplyCurrentPlanetState(void)
 {
-    uint16_t directoryByteOffset = currentPlanetIndex * sizeof(uint16_t);
-    if (directoryByteOffset >= sizeof(planetRecordOffsets)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: directoryByteOffset >= sizeof(planetRecordOffsets)"); /* Unmapped adjacent DS, not a clamp. */
-    uint16_t planetOffset = planetRecordOffsets[directoryByteOffset / sizeof(uint16_t)];
+    uint16_t directoryByteOffset = campaignCore.currentPlanetIndex * sizeof(uint16_t);
+    if (directoryByteOffset >= sizeof(campaignCore.planetRecordOffsets)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: directoryByteOffset >= sizeof(planetRecordOffsets)"); /* Unmapped adjacent DS, not a clamp. */
+    uint16_t planetOffset = campaignCore.planetRecordOffsets[directoryByteOffset / sizeof(uint16_t)];
     if (planetOffset < PLANET_RECORDS_START
         || (uint32_t)planetOffset + sizeof(MwPlanetHeader) > PLANET_RECORDS_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetOffset < PLANET_RECORDS_START || (uint32_t)planetOffset + sizeof(MwPlanetHeader) > PLANET_RECORDS_END");
-    const MwPlanetHeader *planet = (const MwPlanetHeader *)&planetRecordStorage[planetOffset - PLANET_RECORDS_START];
+    const MwPlanetHeader *planet = (const MwPlanetHeader *)&campaignCore.planetRecordStorage[planetOffset - PLANET_RECORDS_START];
     uint8_t classification = planet->landscapeAndMarketCode;
     classification--; /* DEC AL wraps before the unsigned BYTE divide. */
-    currentPlanetMarketTier = classification / PLANET_LANDSCAPE_COUNT;
-    currentPlanetLandscapeIndex = classification % PLANET_LANDSCAPE_COUNT;
-    currentPlanetHouseIndex = planet->houseIndex;
-    currentPlanetFacilityDisplayFlag = planet->facilityDisplayFlag;
-    currentPlanetMapPositionX = planet->mapPositionX;
-    currentPlanetMapPositionY = planet->mapPositionY;
-    uint16_t basePremium = (uint8_t)(currentPlanetMarketTier + 1) * PLANET_MARKET_PREMIUM_STEP;
-    planetMarketPremiumPercent = MwRandomUpTo(PLANET_PREMIUM_RANDOM_MAX) + basePremium;
+    campaignCore.currentPlanetMarketTier = classification / PLANET_LANDSCAPE_COUNT;
+    campaignCore.currentPlanetLandscapeIndex = classification % PLANET_LANDSCAPE_COUNT;
+    campaignCore.currentPlanetHouseIndex = planet->houseIndex;
+    campaignCore.currentPlanetFacilityDisplayFlag = planet->facilityDisplayFlag;
+    campaignCore.currentPlanetMapPositionX = planet->mapPositionX;
+    campaignCore.currentPlanetMapPositionY = planet->mapPositionY;
+    uint16_t basePremium = (uint8_t)(campaignCore.currentPlanetMarketTier + 1) * PLANET_MARKET_PREMIUM_STEP;
+    campaignCore.planetMarketPremiumPercent = MwRandomUpTo(PLANET_PREMIUM_RANDOM_MAX) + basePremium;
     for (uint16_t priceIndex = 0; priceIndex < AMMUNITION_PRICE_COUNT; ++priceIndex)
     {
-        uint32_t pricePremium = (uint32_t)ammunitionBasePrices[priceIndex] * planetMarketPremiumPercent;
+        uint32_t pricePremium = (uint32_t)campaignCore.ammunitionBasePrices[priceIndex] * campaignCore.planetMarketPremiumPercent;
         pricePremium /= PERCENT_DIVISOR;
         if (pricePremium > UINT16_MAX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: pricePremium > UINT16_MAX"); /* Unbound native INT0; earlier prices remain written. */
         /* The succeeding ADD/store wraps as a WORD, unlike DIV overflow. */
-        ammunitionTransactionPrices[priceIndex] = pricePremium + ammunitionBasePrices[priceIndex];
+        campaignCore.ammunitionTransactionPrices[priceIndex] = pricePremium + campaignCore.ammunitionBasePrices[priceIndex];
     }
     uint16_t attemptLimit = MwRandomUpTo(PLANET_NEGOTIATION_RANDOM_MAX);
-    if (currentPlanetHouseIndex >= CAMPAIGN_HOUSE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: currentPlanetHouseIndex >= CAMPAIGN_HOUSE_COUNT"); /* Unmapped House byte, at its native use. */
+    if (campaignCore.currentPlanetHouseIndex >= CAMPAIGN_HOUSE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: currentPlanetHouseIndex >= CAMPAIGN_HOUSE_COUNT"); /* Unmapped House byte, at its native use. */
     /* ADD AL only: wrap the low byte without carrying into AH. */
-    contractNegotiationAttemptLimit = (attemptLimit & NATIVE_WORD_HIGH_BYTE_MASK)
-        | (uint8_t)((uint8_t)attemptLimit + houseNegotiationAttemptBase[currentPlanetHouseIndex]);
+    campaignCore.contractNegotiationAttemptLimit = (attemptLimit & NATIVE_WORD_HIGH_BYTE_MASK)
+        | (uint8_t)((uint8_t)attemptLimit + campaignCore.houseNegotiationAttemptBase[campaignCore.currentPlanetHouseIndex]);
 }
 
 /* MW_MAIN 081B:3FFD..400B. Hub 1A01 calls this once per hub entry, not repair.
@@ -107,5 +107,5 @@ void MwResetRepairAttemptFailures(void)
 {
     for (uint16_t mechKind = 0; mechKind < REPAIR_ATTEMPT_KIND_COUNT; ++mechKind)
         for (uint16_t damageIndex = 0; damageIndex < REPAIR_ATTEMPT_SLOTS_PER_KIND; ++damageIndex)
-            repairAttemptFailuresByKind[mechKind].failedByDamageIndex[damageIndex] = 0;
+            campaignCore.repairAttemptFailuresByKind[mechKind].failedByDamageIndex[damageIndex] = 0;
 }

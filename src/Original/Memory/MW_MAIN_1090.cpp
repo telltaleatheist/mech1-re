@@ -36,34 +36,12 @@ CampaignHandoffState campaignHandoff={
 };
 CampaignMissionState campaignMission;
 CampaignEconomyState campaignEconomy;
-
-/* Original 1090:016D. The allocator/loader assigns this selector later. */
-uint16_t compressedPictureBufferSelector;
-
-/* Original 1090:03F5/03F7 executable initializers. Do not substitute libc rand
- * or randomize these before the native BIOS seed call. */
-uint16_t randomStateWord0 = 0x0615;
-uint16_t randomStateWord1 = 0x1988;
-
-/* Original 1090:0F6D..0F76; decoder-private storage. BYTE phases remain BYTEs,
- * not bools: direct helpers treat every nonzero phase alike. One canonical
- * owner, not a second copy of a raw DS image or serialized host structure. */
-uint16_t pictureCompressedByteCount;
-uint16_t pictureOutputSelector;
-uint8_t pictureReadHighNibbleNext;
-uint16_t pictureReadByteOffset;
-uint8_t pictureWriteLowNibbleNext;
-uint16_t pictureWriteByteOffset;
-
-/* Native allocated-buffer WORDs; backing buffers belong to the allocator. */
-uint16_t indexedPictureOutputSelector, generalPictureBankSelector;
-uint16_t cockpitPictureBankSelector, activePictureBankSelector;
-uint16_t secondaryPictureBankSelector;
-uint8_t indexedPictureDirectoryLoaded;
-uint16_t indexedPictureCachedIndex, indexedPictureStoredBytes;
-uint8_t indexedPictureDirectory[INDEXED_PICTURE_DIRECTORY_BYTES];
-uint16_t indexedPictureFileHandle, generalPictureFileHandle;
-uint16_t selectedPictureFileHandle;
+CampaignCoreState campaignCore={
+    /* Original 1090:03F5/03F7 executable initializers. Do not substitute libc rand
+     * or randomize these before the native BIOS seed call. */
+    .randomStateWord0=0x0615,
+    .randomStateWord1=0x1988
+};
 const char indexedPictureFilename[] = "MW_PICS.BIN";
 const char generalPictureFilename[] = "MW_GPICS.BIN";
 const char cockpitPictureFilename[] = "MW_CPICS.BIN";
@@ -72,52 +50,18 @@ const char secondaryPictureFilename[] = "MW_2PICS.BIN";
 const char tPictureFilename[] = "MW_TPICS.BIN";
 const char alternatePictureFilename[] = "MW_APICS.BIN";
 const char fPictureFilename[] = "MW_FPICS.BIN";
-/* Native private filename pointer; identity is tested only against 0E2C.
- * Host pointer keeps that identity; never serialize this as a native WORD. */
-const char *selectedPictureFilename;
-
-/* Native record region, not another full DS mirror. Initial data/near offsets
- * come from the original image; future mutable views must use this same owner. */
-uint16_t planetRecordOffsets[CAMPAIGN_PLANET_COUNT];
-uint8_t planetRecordStorage[PLANET_RECORDS_END - PLANET_RECORDS_START];
-const uint8_t *calendarMonthNames[CAMPAIGN_MONTH_COUNT];
-uint16_t calendarMonthNameWidths[CAMPAIGN_MONTH_COUNT];
-uint16_t calendarMonthIndex, calendarYear;
-uint16_t calendarTextX, calendarTextY;
-uint8_t calendarBackground, calendarForeground;
-uint8_t numericLeadingDigitSeen, numericGroupingEnabled;
-uint8_t numericDecimalDigits[DECIMAL_DIGIT_COUNT];
-uint16_t numericRemainderHigh, numericRemainderLow;
-uint8_t numericSuppressLeadingZeros, numericNegativeSign;
-uint16_t numericFieldDigitCount, numericCursorX, numericCursorY;
-uint8_t numericBackgroundColour, numericForegroundColour;
-
-/* 1ACE's planet/market outputs are original WORDs even for BYTE record fields.
- * Original image tables are populated by native data initialization, not by a
- * substitute safe/default market. The compiled startup is still unconverted. */
-uint16_t currentPlanetIndex, currentPlanetLandscapeIndex;
-uint16_t currentPlanetHouseIndex, currentPlanetMarketTier;
-uint16_t currentPlanetFacilityDisplayFlag;
-uint16_t currentPlanetMapPositionX, currentPlanetMapPositionY;
-uint16_t planetMarketPremiumPercent, contractNegotiationAttemptLimit;
-uint8_t houseNegotiationAttemptBase[CAMPAIGN_HOUSE_COUNT];
-uint16_t ammunitionBasePrices[AMMUNITION_PRICE_COUNT];
-uint16_t ammunitionTransactionPrices[AMMUNITION_PRICE_COUNT];
-/* Shared by kind/component, NOT by owned Mech slot. 3FFD clears all 00DC bytes,
- * including the two trailing slots per row not reached by normal repair work. */
-CampaignRepairAttemptRow repairAttemptFailuresByKind[REPAIR_ATTEMPT_KIND_COUNT];
-static_assert(sizeof(repairAttemptFailuresByKind) == 0x00DC, "Native reset extent");
+static_assert(sizeof(campaignCore.repairAttemptFailuresByKind) == 0x00DC, "Native reset extent");
 CampaignMechanicsState campaignMechanics;
 static MwUiRecord travelHouseBrowserRecords[TRAVEL_HOUSE_BROWSER_RECORD_COUNT];
 static MwUiRecord travelHousePlanetRecords[TRAVEL_HOUSE_PLANET_RECORD_COUNT];
 static MwUiRecord travelMapRecords[TRAVEL_MAP_MENU_RECORD_COUNT];
 CampaignTravelState campaignTravel={
     .travelHouseBrowserMenu={travelHouseBrowserRecords,TRAVEL_HOUSE_BROWSER_RECORD_COUNT,
-    &planetRecordStorage[0x686D-PLANET_RECORDS_START]},
+    &campaignCore.planetRecordStorage[0x686D-PLANET_RECORDS_START]},
     .travelHousePlanetMenu={travelHousePlanetRecords,TRAVEL_HOUSE_PLANET_RECORD_COUNT,
-    NULL,&planetRecordOffsets[(0x65FA-0x6570)/sizeof(uint16_t)],8},
+    NULL,&campaignCore.planetRecordOffsets[(0x65FA-0x6570)/sizeof(uint16_t)],8},
     .travelMapMenu={travelMapRecords,TRAVEL_MAP_MENU_RECORD_COUNT,
-    &planetRecordStorage[0x697E -PLANET_RECORDS_START]}
+    &campaignCore.planetRecordStorage[0x697E -PLANET_RECORDS_START]}
 };
 /* Private backing arrays; shared access goes through the typed menus below. */
 static MwUiRecord mechServiceUiRecords[0x0005];
@@ -131,38 +75,20 @@ CampaignServiceState campaignService={
     /* FF probes alias362D (record15 X high),3B45 (kind9 failure8), and3B8B
      * (sensor price for kind8 low). Keep typed aliases, not host-endian BYTE casts. */
     .ownedUnitListMenu={ campaignService.ownedUnitListUiRecords, 0x0D, NULL, &campaignService.componentRepairUiRecords[15].x, 8 },
-    .mechServiceMenu={ mechServiceUiRecords, 5, &repairAttemptFailuresByKind[9].failedByDamageIndex[8] },
+    .mechServiceMenu={ mechServiceUiRecords, 5, &campaignCore.repairAttemptFailuresByKind[9].failedByDamageIndex[8] },
     .dropShipServiceMenu={ dropShipServiceUiRecords, 2, NULL, &campaignMechanics.systemRepairBasePrices[REPAIR_SENSORS].basePriceByMechKind[CAMPAIGN_UNIT_MARAUDER], 0 },
     .componentRepairMenu={ campaignService.componentRepairUiRecords, REPAIR_UI_RECORD_COUNT, &marketCapacityNavigationProbe }
 };
 static MwUiRecord rearmConfirmationRecords[2], saleConfirmationRecords[2], marketUnitListRecords[0x0D];
 static MwUiRecord marketMechRecords[3], marketDropShipRecords[2], marketComponentRecords[1], mechComplexRecords[4];
-
-uint16_t campaignMusicBufferSelector, graphicsOverlaySelector;
-uint16_t launcherMemoryTier;
-uint8_t launcherExitCode, savedVideoMode;
-uint8_t keyboardInterruptState;
-uint16_t musicFileHandle;
-char introNarrationLines[10][0x50];
-MwIntroPositionedText introFirstLeftText,introFirstRightText;
-MwIntroPositionedText introSecondLeftText,introSecondRightText;
-MwIntroPositionedText introThirdLeftText,introThirdRightText;
-MwIntroPositionedText introFourthLeftText,introFourthRightText;
-MwIntroPositionedText introFifthLeftText,introFifthRightText;
-MwIntroPositionedText introSixthLeftText,introSixthRightText;
-MwIntroPositionedText introSeventhLeftText,introSeventhRightText;
-uint8_t campaignTextInputBuffer[0x29];
-uint16_t campaignEventPlanetSelectors[6];
-uint8_t eventPlanetChoicePool0[8],eventPlanetChoicePool1[3];
-uint8_t eventPlanetChoicePool2[4],eventPlanetChoicePool3[3];
-uint8_t eventPlanetChoicePool4[4],eventPlanetChoicePool5[3];
+CampaignStartupState campaignStartup;
 CampaignEventsState campaignEvents={
     .eventClassHandlers={MwShowCampaignEventText,MwShowCampaignEventText,
     MwShowCampaignEventText,MwShowClassThreeEventPages,MwShowCampaignEventText,
     MwShowCampaignEventText,MwShowCampaignEventText},
     /* FF-link probes alias existing planet text bytes, NOT new globals at6C0E/2A. */
-    .eventTwoChoiceMenu={campaignEvents.eventTwoChoiceRecords,2,&planetRecordStorage[0x6C0E -PLANET_RECORDS_START],NULL,0},
-    .eventThreeChoiceMenu={campaignEvents.eventThreeChoiceRecords,3,&planetRecordStorage[0x6C2A-PLANET_RECORDS_START],NULL,0}
+    .eventTwoChoiceMenu={campaignEvents.eventTwoChoiceRecords,2,&campaignCore.planetRecordStorage[0x6C0E -PLANET_RECORDS_START],NULL,0},
+    .eventThreeChoiceMenu={campaignEvents.eventThreeChoiceRecords,3,&campaignCore.planetRecordStorage[0x6C2A-PLANET_RECORDS_START],NULL,0}
 };
 
 /* Installation data import. Decode once into the canonical C objects;
@@ -397,53 +323,53 @@ bool MwImportCampaignInitialData(void)
     /* The notification texts (hub.word.notification.*) and the pointers to them (hub.json's notification_words). */
     if (!MwUiCopyWords("hub.table.notification_words",campaignUi.notificationTextOffsets,4,0)) return false; /*5ED3*/
     memcpy(campaignUi.notificationTextStorage,mainWords+0x5EDB,sizeof(campaignUi.notificationTextStorage));
-    compressedPictureBufferSelector=0; /*016D*/
+    campaignCore.compressedPictureBufferSelector=0; /*016D*/
     /* 03F5, 03F7: the random generator's words as an EXEC starts them (data/rules/new_campaign.json "start"). */
     uint16_t randomSeed[2];
     if (!ImportRuleWords("new_campaign.start.random_seed",randomSeed,2)) return false;
-    randomStateWord0=randomSeed[0];randomStateWord1=randomSeed[1];
-    pictureCompressedByteCount=0; /*0F6D*/
-    pictureOutputSelector=0; /*0F6F*/
-    memset(&pictureReadHighNibbleNext,0,sizeof(pictureReadHighNibbleNext)); /*0F71*/
-    pictureReadByteOffset=0; /*0F72*/
-    memset(&pictureWriteLowNibbleNext,0,sizeof(pictureWriteLowNibbleNext)); /*0F74*/
-    pictureWriteByteOffset=0; /*0F75*/
-    indexedPictureOutputSelector=0; /*0161*/
-    generalPictureBankSelector=0; /*0163*/
-    cockpitPictureBankSelector=0; /*0165*/
-    activePictureBankSelector=0; /*0167*/
-    secondaryPictureBankSelector=0; /*0169*/
-    memset(&indexedPictureDirectoryLoaded,0,sizeof(indexedPictureDirectoryLoaded)); /*0B62*/
-    indexedPictureCachedIndex=MW_INDEXED_PICTURE_NO_CACHED_INDEX;
-    indexedPictureStoredBytes=0; /*0B65*/
-    memset(indexedPictureDirectory,0,sizeof(indexedPictureDirectory)); /*0B67*/
-    indexedPictureFileHandle=0; /*0DBF*/
-    generalPictureFileHandle=0; /*0DDA*/
-    selectedPictureFileHandle=0; /*0DE9*/
+    campaignCore.randomStateWord0=randomSeed[0];campaignCore.randomStateWord1=randomSeed[1];
+    campaignCore.pictureCompressedByteCount=0; /*0F6D*/
+    campaignCore.pictureOutputSelector=0; /*0F6F*/
+    memset(&campaignCore.pictureReadHighNibbleNext,0,sizeof(campaignCore.pictureReadHighNibbleNext)); /*0F71*/
+    campaignCore.pictureReadByteOffset=0; /*0F72*/
+    memset(&campaignCore.pictureWriteLowNibbleNext,0,sizeof(campaignCore.pictureWriteLowNibbleNext)); /*0F74*/
+    campaignCore.pictureWriteByteOffset=0; /*0F75*/
+    campaignCore.indexedPictureOutputSelector=0; /*0161*/
+    campaignCore.generalPictureBankSelector=0; /*0163*/
+    campaignCore.cockpitPictureBankSelector=0; /*0165*/
+    campaignCore.activePictureBankSelector=0; /*0167*/
+    campaignCore.secondaryPictureBankSelector=0; /*0169*/
+    memset(&campaignCore.indexedPictureDirectoryLoaded,0,sizeof(campaignCore.indexedPictureDirectoryLoaded)); /*0B62*/
+    campaignCore.indexedPictureCachedIndex=MW_INDEXED_PICTURE_NO_CACHED_INDEX;
+    campaignCore.indexedPictureStoredBytes=0; /*0B65*/
+    memset(campaignCore.indexedPictureDirectory,0,sizeof(campaignCore.indexedPictureDirectory)); /*0B67*/
+    campaignCore.indexedPictureFileHandle=0; /*0DBF*/
+    campaignCore.generalPictureFileHandle=0; /*0DDA*/
+    campaignCore.selectedPictureFileHandle=0; /*0DE9*/
     /* The planets from story/planets.json, laid out as the exe holds them
      * (offsets at 6570, storage 67B6.., the alphabetical table at 6694). */
-    if (!MwStoryBuildPlanets(planetRecordStorage,sizeof(planetRecordStorage),PLANET_RECORDS_START,
-        planetRecordOffsets,CAMPAIGN_PLANET_COUNT,campaignMechanics.alphabeticPlanetRecordOffsets,TRAVEL_PLANET_DIRECTORY_COUNT)) return false;
-    if (!MwUiCopyWords("hub.table.calendar_month_name_widths",calendarMonthNameWidths,CAMPAIGN_MONTH_COUNT,0)) return false; /*11BA*/
+    if (!MwStoryBuildPlanets(campaignCore.planetRecordStorage,sizeof(campaignCore.planetRecordStorage),PLANET_RECORDS_START,
+        campaignCore.planetRecordOffsets,CAMPAIGN_PLANET_COUNT,campaignMechanics.alphabeticPlanetRecordOffsets,TRAVEL_PLANET_DIRECTORY_COUNT)) return false;
+    if (!MwUiCopyWords("hub.table.calendar_month_name_widths",campaignCore.calendarMonthNameWidths,CAMPAIGN_MONTH_COUNT,0)) return false; /*11BA*/
     /* 117E..1183: the calendar's place and colours. Written before it's read; zero where the exe reloaded it. */
-    calendarTextX=0;calendarTextY=0;calendarBackground=0;calendarForeground=0;
-    memset(&numericLeadingDigitSeen,0,sizeof(numericLeadingDigitSeen)); /*A136*/
-    memset(&numericGroupingEnabled,0,sizeof(numericGroupingEnabled)); /*A137*/
-    memset(numericDecimalDigits,0,sizeof(numericDecimalDigits)); /*A138*/
-    numericRemainderHigh=0; /*A142*/
-    numericRemainderLow=0; /*A144*/
-    memset(&numericSuppressLeadingZeros,0,sizeof(numericSuppressLeadingZeros)); /*A146*/
-    memset(&numericNegativeSign,0,sizeof(numericNegativeSign)); /*A149*/
-    numericFieldDigitCount=0; /*A147*/
-    numericCursorX=0; /*A14A*/
-    numericCursorY=0; /*A14C*/
-    memset(&numericBackgroundColour,0,sizeof(numericBackgroundColour)); /*A14E*/
-    memset(&numericForegroundColour,0,sizeof(numericForegroundColour)); /*A14F*/
-    if (!ImportRuleBytes("houses.negotiation_attempt_base",houseNegotiationAttemptBase,sizeof(houseNegotiationAttemptBase))) return false;
-    if (!ImportRuleWords("market.ammunition_prices",(uint16_t *)ammunitionBasePrices,sizeof(ammunitionBasePrices)/sizeof(uint16_t))) return false;
-    if (!ImportRuleWords("market.start.ammunition_transaction_prices",(uint16_t *)ammunitionTransactionPrices,sizeof(ammunitionTransactionPrices)/sizeof(uint16_t))) return false;
+    campaignCore.calendarTextX=0;campaignCore.calendarTextY=0;campaignCore.calendarBackground=0;campaignCore.calendarForeground=0;
+    memset(&campaignCore.numericLeadingDigitSeen,0,sizeof(campaignCore.numericLeadingDigitSeen)); /*A136*/
+    memset(&campaignCore.numericGroupingEnabled,0,sizeof(campaignCore.numericGroupingEnabled)); /*A137*/
+    memset(campaignCore.numericDecimalDigits,0,sizeof(campaignCore.numericDecimalDigits)); /*A138*/
+    campaignCore.numericRemainderHigh=0; /*A142*/
+    campaignCore.numericRemainderLow=0; /*A144*/
+    memset(&campaignCore.numericSuppressLeadingZeros,0,sizeof(campaignCore.numericSuppressLeadingZeros)); /*A146*/
+    memset(&campaignCore.numericNegativeSign,0,sizeof(campaignCore.numericNegativeSign)); /*A149*/
+    campaignCore.numericFieldDigitCount=0; /*A147*/
+    campaignCore.numericCursorX=0; /*A14A*/
+    campaignCore.numericCursorY=0; /*A14C*/
+    memset(&campaignCore.numericBackgroundColour,0,sizeof(campaignCore.numericBackgroundColour)); /*A14E*/
+    memset(&campaignCore.numericForegroundColour,0,sizeof(campaignCore.numericForegroundColour)); /*A14F*/
+    if (!ImportRuleBytes("houses.negotiation_attempt_base",campaignCore.houseNegotiationAttemptBase,sizeof(campaignCore.houseNegotiationAttemptBase))) return false;
+    if (!ImportRuleWords("market.ammunition_prices",(uint16_t *)campaignCore.ammunitionBasePrices,sizeof(campaignCore.ammunitionBasePrices)/sizeof(uint16_t))) return false;
+    if (!ImportRuleWords("market.start.ammunition_transaction_prices",(uint16_t *)campaignCore.ammunitionTransactionPrices,sizeof(campaignCore.ammunitionTransactionPrices)/sizeof(uint16_t))) return false;
     /* 3A77: zero in the exe, written in play; not a rule (docs/phase2/PLAN.md 5.1). */
-    memset(repairAttemptFailuresByKind,0,sizeof(repairAttemptFailuresByKind));
+    memset(campaignCore.repairAttemptFailuresByKind,0,sizeof(campaignCore.repairAttemptFailuresByKind));
     memset(&campaignMechanics.generatedMechDamage,0,sizeof(campaignMechanics.generatedMechDamage)); /*3A41*/
     if (!ImportRuleBytes("units.weapons",campaignMechanics.unitWeaponCounts,sizeof(campaignMechanics.unitWeaponCounts))) return false;
     if (!ImportRuleBytes("market.price_tier_multipliers",campaignMechanics.unitPriceTierMultipliers,sizeof(campaignMechanics.unitPriceTierMultipliers))) return false;
@@ -578,12 +504,12 @@ bool MwImportCampaignInitialData(void)
     campaignMarket.marketSystemRowIndex=0; /*44EF*/
     campaignMarket.purchaseOwnedSlotByteOffset=0; /*481D*/
     if (!MwUiCopyWords("complex.table.animation_frames",(uint16_t *)campaignMarket.mechComplexAnimationFrames,sizeof(campaignMarket.mechComplexAnimationFrames)/sizeof(uint16_t),0)) return false; /*318D*/
-    campaignMusicBufferSelector=0; /*016F*/
-    graphicsOverlaySelector=0; /*002E*/
-    memset(&launcherExitCode,0,sizeof(launcherExitCode)); /*0006*/
-    memset(&keyboardInterruptState,0,sizeof(keyboardInterruptState)); /*02AB*/
-    musicFileHandle=0; /*0E39*/
-    memset(campaignTextInputBuffer,0,sizeof(campaignTextInputBuffer)); /*03A5*/
+    campaignStartup.campaignMusicBufferSelector=0; /*016F*/
+    campaignStartup.graphicsOverlaySelector=0; /*002E*/
+    memset(&campaignStartup.launcherExitCode,0,sizeof(campaignStartup.launcherExitCode)); /*0006*/
+    memset(&campaignStartup.keyboardInterruptState,0,sizeof(campaignStartup.keyboardInterruptState)); /*02AB*/
+    campaignStartup.musicFileHandle=0; /*0E39*/
+    memset(campaignStartup.campaignTextInputBuffer,0,sizeof(campaignStartup.campaignTextInputBuffer)); /*03A5*/
     campaignInput.textInputCursorX=0; /*03CE*/
     campaignInput.textInputCursorY=0; /*03D0*/
     campaignInput.textInputMaximumIndex=0; /*03D2*/
@@ -593,10 +519,10 @@ bool MwImportCampaignInitialData(void)
     campaignInput.textInputLength=0; /*03D6*/
     {
         /* The story-planet pools from story/events.json (1090:8FDA..8FF3). */
-        uint8_t *const pools[6]={eventPlanetChoicePool0,eventPlanetChoicePool1,eventPlanetChoicePool2,
-            eventPlanetChoicePool3,eventPlanetChoicePool4,eventPlanetChoicePool5};
-        const size_t sizes[6]={sizeof(eventPlanetChoicePool0),sizeof(eventPlanetChoicePool1),sizeof(eventPlanetChoicePool2),
-            sizeof(eventPlanetChoicePool3),sizeof(eventPlanetChoicePool4),sizeof(eventPlanetChoicePool5)};
+        uint8_t *const pools[6]={campaignStartup.eventPlanetChoicePool0,campaignStartup.eventPlanetChoicePool1,campaignStartup.eventPlanetChoicePool2,
+            campaignStartup.eventPlanetChoicePool3,campaignStartup.eventPlanetChoicePool4,campaignStartup.eventPlanetChoicePool5};
+        const size_t sizes[6]={sizeof(campaignStartup.eventPlanetChoicePool0),sizeof(campaignStartup.eventPlanetChoicePool1),sizeof(campaignStartup.eventPlanetChoicePool2),
+            sizeof(campaignStartup.eventPlanetChoicePool3),sizeof(campaignStartup.eventPlanetChoicePool4),sizeof(campaignStartup.eventPlanetChoicePool5)};
         if (!MwStoryCopyPlanetPools(pools,sizes,6)) return false;
     }
     campaignEvents.campaignEventClass=0; /*5E62*/
@@ -620,36 +546,36 @@ bool MwImportCampaignInitialData(void)
     for (unsigned line=0;line<10;++line)
     {
         char id[24];snprintf(id,sizeof(id),"intro.narration.%u",line+1);
-        if (!MwStoryCopyText(id,introNarrationLines[line],sizeof(introNarrationLines[line]))) return false;
+        if (!MwStoryCopyText(id,campaignStartup.introNarrationLines[line],sizeof(campaignStartup.introNarrationLines[line]))) return false;
     }
-    if (!ImportIntroCaptionAt("intro.caption.1.left.at",&introFirstLeftText)) return false;
-    if (!MwStoryCopyText("intro.caption.1.left",introFirstLeftText.text,sizeof(introFirstLeftText.text))) return false;
-    if (!ImportIntroCaptionAt("intro.caption.1.right.at",&introFirstRightText)) return false;
-    if (!MwStoryCopyText("intro.caption.1.right",introFirstRightText.text,sizeof(introFirstRightText.text))) return false;
-    if (!ImportIntroCaptionAt("intro.caption.2.left.at",&introSecondLeftText)) return false;
-    if (!MwStoryCopyText("intro.caption.2.left",introSecondLeftText.text,sizeof(introSecondLeftText.text))) return false;
-    if (!ImportIntroCaptionAt("intro.caption.2.right.at",&introSecondRightText)) return false;
-    if (!MwStoryCopyText("intro.caption.2.right",introSecondRightText.text,sizeof(introSecondRightText.text))) return false;
-    if (!ImportIntroCaptionAt("intro.caption.3.left.at",&introThirdLeftText)) return false;
-    if (!MwStoryCopyText("intro.caption.3.left",introThirdLeftText.text,sizeof(introThirdLeftText.text))) return false;
-    if (!ImportIntroCaptionAt("intro.caption.3.right.at",&introThirdRightText)) return false;
-    if (!MwStoryCopyText("intro.caption.3.right",introThirdRightText.text,sizeof(introThirdRightText.text))) return false;
-    if (!ImportIntroCaptionAt("intro.caption.4.left.at",&introFourthLeftText)) return false;
-    if (!MwStoryCopyText("intro.caption.4.left",introFourthLeftText.text,sizeof(introFourthLeftText.text))) return false;
-    if (!ImportIntroCaptionAt("intro.caption.4.right.at",&introFourthRightText)) return false;
-    if (!MwStoryCopyText("intro.caption.4.right",introFourthRightText.text,sizeof(introFourthRightText.text))) return false;
-    if (!ImportIntroCaptionAt("intro.caption.5.left.at",&introFifthLeftText)) return false;
-    if (!MwStoryCopyText("intro.caption.5.left",introFifthLeftText.text,sizeof(introFifthLeftText.text))) return false;
-    if (!ImportIntroCaptionAt("intro.caption.5.right.at",&introFifthRightText)) return false;
-    if (!MwStoryCopyText("intro.caption.5.right",introFifthRightText.text,sizeof(introFifthRightText.text))) return false;
-    if (!ImportIntroCaptionAt("intro.caption.6.left.at",&introSixthLeftText)) return false;
-    if (!MwStoryCopyText("intro.caption.6.left",introSixthLeftText.text,sizeof(introSixthLeftText.text))) return false;
-    if (!ImportIntroCaptionAt("intro.caption.6.right.at",&introSixthRightText)) return false;
-    if (!MwStoryCopyText("intro.caption.6.right",introSixthRightText.text,sizeof(introSixthRightText.text))) return false;
-    if (!ImportIntroCaptionAt("intro.caption.7.left.at",&introSeventhLeftText)) return false;
-    if (!MwStoryCopyText("intro.caption.7.left",introSeventhLeftText.text,sizeof(introSeventhLeftText.text))) return false;
-    if (!ImportIntroCaptionAt("intro.caption.7.right.at",&introSeventhRightText)) return false;
-    if (!MwStoryCopyText("intro.caption.7.right",introSeventhRightText.text,sizeof(introSeventhRightText.text))) return false;
+    if (!ImportIntroCaptionAt("intro.caption.1.left.at",&campaignStartup.introFirstLeftText)) return false;
+    if (!MwStoryCopyText("intro.caption.1.left",campaignStartup.introFirstLeftText.text,sizeof(campaignStartup.introFirstLeftText.text))) return false;
+    if (!ImportIntroCaptionAt("intro.caption.1.right.at",&campaignStartup.introFirstRightText)) return false;
+    if (!MwStoryCopyText("intro.caption.1.right",campaignStartup.introFirstRightText.text,sizeof(campaignStartup.introFirstRightText.text))) return false;
+    if (!ImportIntroCaptionAt("intro.caption.2.left.at",&campaignStartup.introSecondLeftText)) return false;
+    if (!MwStoryCopyText("intro.caption.2.left",campaignStartup.introSecondLeftText.text,sizeof(campaignStartup.introSecondLeftText.text))) return false;
+    if (!ImportIntroCaptionAt("intro.caption.2.right.at",&campaignStartup.introSecondRightText)) return false;
+    if (!MwStoryCopyText("intro.caption.2.right",campaignStartup.introSecondRightText.text,sizeof(campaignStartup.introSecondRightText.text))) return false;
+    if (!ImportIntroCaptionAt("intro.caption.3.left.at",&campaignStartup.introThirdLeftText)) return false;
+    if (!MwStoryCopyText("intro.caption.3.left",campaignStartup.introThirdLeftText.text,sizeof(campaignStartup.introThirdLeftText.text))) return false;
+    if (!ImportIntroCaptionAt("intro.caption.3.right.at",&campaignStartup.introThirdRightText)) return false;
+    if (!MwStoryCopyText("intro.caption.3.right",campaignStartup.introThirdRightText.text,sizeof(campaignStartup.introThirdRightText.text))) return false;
+    if (!ImportIntroCaptionAt("intro.caption.4.left.at",&campaignStartup.introFourthLeftText)) return false;
+    if (!MwStoryCopyText("intro.caption.4.left",campaignStartup.introFourthLeftText.text,sizeof(campaignStartup.introFourthLeftText.text))) return false;
+    if (!ImportIntroCaptionAt("intro.caption.4.right.at",&campaignStartup.introFourthRightText)) return false;
+    if (!MwStoryCopyText("intro.caption.4.right",campaignStartup.introFourthRightText.text,sizeof(campaignStartup.introFourthRightText.text))) return false;
+    if (!ImportIntroCaptionAt("intro.caption.5.left.at",&campaignStartup.introFifthLeftText)) return false;
+    if (!MwStoryCopyText("intro.caption.5.left",campaignStartup.introFifthLeftText.text,sizeof(campaignStartup.introFifthLeftText.text))) return false;
+    if (!ImportIntroCaptionAt("intro.caption.5.right.at",&campaignStartup.introFifthRightText)) return false;
+    if (!MwStoryCopyText("intro.caption.5.right",campaignStartup.introFifthRightText.text,sizeof(campaignStartup.introFifthRightText.text))) return false;
+    if (!ImportIntroCaptionAt("intro.caption.6.left.at",&campaignStartup.introSixthLeftText)) return false;
+    if (!MwStoryCopyText("intro.caption.6.left",campaignStartup.introSixthLeftText.text,sizeof(campaignStartup.introSixthLeftText.text))) return false;
+    if (!ImportIntroCaptionAt("intro.caption.6.right.at",&campaignStartup.introSixthRightText)) return false;
+    if (!MwStoryCopyText("intro.caption.6.right",campaignStartup.introSixthRightText.text,sizeof(campaignStartup.introSixthRightText.text))) return false;
+    if (!ImportIntroCaptionAt("intro.caption.7.left.at",&campaignStartup.introSeventhLeftText)) return false;
+    if (!MwStoryCopyText("intro.caption.7.left",campaignStartup.introSeventhLeftText.text,sizeof(campaignStartup.introSeventhLeftText.text))) return false;
+    if (!ImportIntroCaptionAt("intro.caption.7.right.at",&campaignStartup.introSeventhRightText)) return false;
+    if (!MwStoryCopyText("intro.caption.7.right",campaignStartup.introSeventhRightText.text,sizeof(campaignStartup.introSeventhRightText.text))) return false;
     for (uint16_t row=0;row<CAMPAIGN_SYSTEM_COUNT;++row)
         if (!ImportRuleWords("repair.system_prices",campaignMechanics.systemRepairBasePrices[row].basePriceByMechKind,CAMPAIGN_MECH_KIND_COUNT,row*0x14)) return false;
     /* 2F3C, 2F28 and 3C1B come from the rules (data/rules/units.json). */
@@ -715,7 +641,7 @@ bool MwImportCampaignInitialData(void)
     {
         uint16_t text=monthWords[month];
         if (text<0x4AAC || text>=0x4B1A || !memchr(mainWords+text,0,0x4B1A-text)) return false;
-        calendarMonthNames[month]=calendarMonthText+text-0x4AAC;
+        campaignCore.calendarMonthNames[month]=calendarMonthText+text-0x4AAC;
     }
     /* The eighth planet row's caption (travel.caption.planet_8, 55EC): its head from the layout bytes, its 18-byte text from the words. */
     uint16_t positionedAt[2];
@@ -1147,8 +1073,8 @@ static bool CheckTextBoundTables(void)
     enum { CONTRACT_GLYPH_ADVANCE = 8 };
     for (uint16_t month=0;month<CAMPAIGN_MONTH_COUNT;++month)
     {
-        const size_t length=strlen((const char *)calendarMonthNames[month]);
-        if (!length || calendarMonthNameWidths[month]!=(length-1)*CAMPAIGN_GLYPH_ADVANCE)
+        const size_t length=strlen((const char *)campaignCore.calendarMonthNames[month]);
+        if (!length || campaignCore.calendarMonthNameWidths[month]!=(length-1)*CAMPAIGN_GLYPH_ADVANCE)
             return fprintf(stderr,"MechWarrior: hub.json's calendar_month_name_widths doesn't fit month %u's name\n",month+1),false;
         if (campaignContracts.contractDateYearXOffsets[month]!=(length-1)*CONTRACT_GLYPH_ADVANCE)
             return fprintf(stderr,"MechWarrior: contract_office.json's date_year_x_offsets doesn't fit month %u's name\n",month+1),false;

@@ -32,12 +32,12 @@ void (*campaignStartMusic)(uint16_t selector,uint16_t offset);
 uint8_t MwRunCampaign(const MwCampaignLaunch *launch)
 {
     uint16_t continuation;
-    launcherMemoryTier=launch->memoryTier;
+    campaignStartup.launcherMemoryTier=launch->memoryTier;
     if (MwReadNativeViewByte(&launch->resident,(uint16_t)(launch->transferOffset+0x07D0))!='M'
         || MwReadNativeViewByte(&launch->resident,(uint16_t)(launch->transferOffset+0x07D4))!='W'
         || MwReadNativeViewByte(&launch->resident,(uint16_t)(launch->transferOffset+0x07DA))!='R')
     {
-        launcherExitCode=CAMPAIGN_EXIT_QUIT;
+        campaignStartup.launcherExitCode=CAMPAIGN_EXIT_QUIT;
         goto finish;
     }
     MwInstallCampaignInterruptHandlers();
@@ -45,29 +45,29 @@ uint8_t MwRunCampaign(const MwCampaignLaunch *launch)
     uint16_t errorIndex,selectorOrError;
     if (mwCampaignPlatform.allocateParagraphs(0x0FFF,&selectorOrError))
     {errorIndex=4;goto allocationFailed;}
-    activePictureBankSelector=selectorOrError;
+    campaignCore.activePictureBankSelector=selectorOrError;
     if (mwCampaignPlatform.allocateParagraphs(0x0909,&selectorOrError))
     {errorIndex=5;goto allocationFailed;}
-    secondaryPictureBankSelector=selectorOrError;
+    campaignCore.secondaryPictureBankSelector=selectorOrError;
     if (mwCampaignPlatform.allocateParagraphs(0x084D,&selectorOrError))
     {errorIndex=2;goto allocationFailed;}
-    generalPictureBankSelector=selectorOrError;
+    campaignCore.generalPictureBankSelector=selectorOrError;
     if (mwCampaignPlatform.allocateParagraphs(0x0D6D,&selectorOrError))
     {errorIndex=3;goto allocationFailed;}
-    cockpitPictureBankSelector=selectorOrError;
+    campaignCore.cockpitPictureBankSelector=selectorOrError;
     if (mwCampaignPlatform.allocateParagraphs(0x0800,&selectorOrError))
     {errorIndex=1;goto allocationFailed;}
-    indexedPictureOutputSelector=selectorOrError;
+    campaignCore.indexedPictureOutputSelector=selectorOrError;
     if (mwCampaignPlatform.allocateParagraphs(0x0800,&selectorOrError))
     {errorIndex=1;goto allocationFailed;}
-    compressedPictureBufferSelector=selectorOrError;
+    campaignCore.compressedPictureBufferSelector=selectorOrError;
     if (mwCampaignPlatform.allocateParagraphs(0x0338,&selectorOrError))
     {errorIndex=6;goto allocationFailed;}
-    campaignMusicBufferSelector=selectorOrError;
+    campaignStartup.campaignMusicBufferSelector=selectorOrError;
     if (mwCampaignPlatform.allocateParagraphs(0x0177,&selectorOrError))
     {errorIndex=0;goto allocationFailed;}
-    graphicsOverlaySelector=selectorOrError;
-    if (mwCampaignPlatform.loadGraphicsOverlay("MW_EGA.EXE",graphicsOverlaySelector)) /* Tandy dropped. */
+    campaignStartup.graphicsOverlaySelector=selectorOrError;
+    if (mwCampaignPlatform.loadGraphicsOverlay("MW_EGA.EXE",campaignStartup.graphicsOverlaySelector)) /* Tandy dropped. */
     {errorIndex=1;goto allocationFailed;}
     EgaBuildScanlineOffsets();
     if (EgaLoadFonts()) {errorIndex=5;goto allocationFailed;}
@@ -113,18 +113,18 @@ uint8_t MwRunCampaign(const MwCampaignLaunch *launch)
     MwSetIntroTextPaletteColour(EGA_PALETTE_WHITE);
     if (MwWaitTicksOrInputInterruption(0x0024)) goto initializeCampaign;
     if (!campaignStartMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStartMusic");
-    campaignStartMusic(campaignMusicBufferSelector,0);
+    campaignStartMusic(campaignStartup.campaignMusicBufferSelector,0);
     if (MwWaitTicksOrInputInterruption(0x019E)) goto initializeCampaign;
     MwDrawActivePicture(0,0,EGA_DRAW_PAGE,1);
     EgaFlipPages();
     EgaCopyDisplayToDrawPage(0,0,EGA_COLUMNS,EGA_ROWS);
-    if (MwDrawTimedPictureAndTextTransition(0x0084,&introFirstLeftText,&introFirstRightText)) goto initializeCampaign;
-    if (MwDrawTimedPictureAndTextTransition(0x0084,&introSecondLeftText,&introSecondRightText)) goto initializeCampaign;
-    if (MwDrawTimedPictureAndTextTransition(0x0084,&introThirdLeftText,&introThirdRightText)) goto initializeCampaign;
-    if (MwDrawTimedPictureAndTextTransition(0x0084,&introFourthLeftText,&introFourthRightText)) goto initializeCampaign;
-    if (MwDrawTimedPictureAndTextTransition(0x0084,&introFifthLeftText,&introFifthRightText)) goto initializeCampaign;
-    if (MwDrawTimedPictureAndTextTransition(0x0084,&introSixthLeftText,&introSixthRightText)) goto initializeCampaign;
-    if (MwDrawTimedPictureAndTextTransition(0x00CC,&introSeventhLeftText,&introSeventhRightText)) goto initializeCampaign;
+    if (MwDrawTimedPictureAndTextTransition(0x0084,&campaignStartup.introFirstLeftText,&campaignStartup.introFirstRightText)) goto initializeCampaign;
+    if (MwDrawTimedPictureAndTextTransition(0x0084,&campaignStartup.introSecondLeftText,&campaignStartup.introSecondRightText)) goto initializeCampaign;
+    if (MwDrawTimedPictureAndTextTransition(0x0084,&campaignStartup.introThirdLeftText,&campaignStartup.introThirdRightText)) goto initializeCampaign;
+    if (MwDrawTimedPictureAndTextTransition(0x0084,&campaignStartup.introFourthLeftText,&campaignStartup.introFourthRightText)) goto initializeCampaign;
+    if (MwDrawTimedPictureAndTextTransition(0x0084,&campaignStartup.introFifthLeftText,&campaignStartup.introFifthRightText)) goto initializeCampaign;
+    if (MwDrawTimedPictureAndTextTransition(0x0084,&campaignStartup.introSixthLeftText,&campaignStartup.introSixthRightText)) goto initializeCampaign;
+    if (MwDrawTimedPictureAndTextTransition(0x00CC,&campaignStartup.introSeventhLeftText,&campaignStartup.introSeventhRightText)) goto initializeCampaign;
     (void)MwWaitTicksOrInputInterruption(0x006C);
 initializeCampaign:
     continuation=MwStartNewCampaign(CAMPAIGN_CONTINUE_NEW_CAMPAIGN);
@@ -147,7 +147,7 @@ beginDebrief:
         goto darkWingVictory;
     MwDrawAlternatePicturePanelBorder(2,0x008D,0x013A,0x0039);
     {
-        uint16_t picture=MwLoadIndexedPicture(currentPlanetHouseIndex+AFTER_ACTION_HOUSE_PICTURE_BASE);
+        uint16_t picture=MwLoadIndexedPicture(campaignCore.currentPlanetHouseIndex+AFTER_ACTION_HOUSE_PICTURE_BASE);
         (void)EgaDrawPackedSprite(0x0100,0x008E,EGA_DISPLAY_PAGE,0,picture);
     }
     MwDrawAlternatePicturePanelBorder(2,2,0x013B,0x0088);
@@ -239,7 +239,7 @@ beginDebrief:
     if (campaignMission.combatScenarioCode!=COMBAT_SCENARIO_DARK_WING_BASE)
     {
         uint16_t deductionRoll=MwRandomUpTo(PERCENT_DIVISOR);
-        uint16_t house=currentPlanetHouseIndex;
+        uint16_t house=campaignCore.currentPlanetHouseIndex;
         if (house>=CAMPAIGN_HOUSE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: house>=CAMPAIGN_HOUSE_COUNT");
         if (deductionRoll<=campaignHandoff.houseDeductionRollThresholds[house])
             campaignHandoff.settlementPayoutPercent=campaignHandoff.houseReducedPayoutPercentages[house];
@@ -282,7 +282,7 @@ beginDebrief:
         uint32_t funds=((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow;
         funds+=salvagePayment;
         campaignEconomy.campaignFundsLow=(uint16_t)funds;campaignEconomy.campaignFundsHigh=(uint16_t)(funds>>NATIVE_WORD_BITS);
-        numericGroupingEnabled=1;
+        campaignCore.numericGroupingEnabled=1;
         MwDrawSignedDecimalField(salvagePayment,AFTER_ACTION_PAYMENT_X,1,0,
             AFTER_ACTION_FOREGROUND,AFTER_ACTION_BACKGROUND,AFTER_ACTION_SALVAGE_Y);
         uint32_t contractPayment=0;
@@ -295,7 +295,7 @@ beginDebrief:
         funds=((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow;
         funds+=contractPayment;
         campaignEconomy.campaignFundsLow=(uint16_t)funds;campaignEconomy.campaignFundsHigh=(uint16_t)(funds>>NATIVE_WORD_BITS);
-        numericGroupingEnabled=1;
+        campaignCore.numericGroupingEnabled=1;
         MwDrawSignedDecimalField(contractPayment,AFTER_ACTION_PAYMENT_X,1,0,
             AFTER_ACTION_FOREGROUND,AFTER_ACTION_BACKGROUND,AFTER_ACTION_PAYMENT_Y);
     }
@@ -354,17 +354,17 @@ beginDebrief:
             uint16_t distance=MwCalculatePlanetTravelDistance(planetIndex);
             uint16_t travelUnits=(uint16_t)(distance*DEPLOYMENT_TRAVEL_MULTIPLIER)<<1;
             MwAdvanceCampaignTimeAndChargeWages(travelUnits);
-            planetIndex=currentPlanetIndex;
+            planetIndex=campaignCore.currentPlanetIndex;
             if (planetIndex>=CAMPAIGN_PLANET_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetIndex>=CAMPAIGN_PLANET_COUNT");
-            uint16_t recordOffset=planetRecordOffsets[planetIndex];
+            uint16_t recordOffset=campaignCore.planetRecordOffsets[planetIndex];
             if (recordOffset<PLANET_RECORDS_START || (uint32_t)recordOffset+sizeof(MwPlanetHeader)>PLANET_RECORDS_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: recordOffset<PLANET_RECORDS_START || (uint32_t)recordOffset+sizeof(MwPlanetHeader)>PLANET_RECORDS_END");
-            const MwPlanetHeader *planet=(const MwPlanetHeader *)&planetRecordStorage[recordOffset-PLANET_RECORDS_START];
+            const MwPlanetHeader *planet=(const MwPlanetHeader *)&campaignCore.planetRecordStorage[recordOffset-PLANET_RECORDS_START];
             MwAdvanceCampaignTimeAndChargeWages((uint16_t)(planet->travelTimeWeight<<2));
             planetIndex=(uint16_t)((uint16_t)campaignMission.combatPlanetSelector-1); /* Re-read after the time call. */
             if (planetIndex>=CAMPAIGN_PLANET_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetIndex>=CAMPAIGN_PLANET_COUNT");
-            recordOffset=planetRecordOffsets[planetIndex];
+            recordOffset=campaignCore.planetRecordOffsets[planetIndex];
             if (recordOffset<PLANET_RECORDS_START || (uint32_t)recordOffset+sizeof(MwPlanetHeader)>PLANET_RECORDS_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: recordOffset<PLANET_RECORDS_START || (uint32_t)recordOffset+sizeof(MwPlanetHeader)>PLANET_RECORDS_END");
-            planet=(const MwPlanetHeader *)&planetRecordStorage[recordOffset-PLANET_RECORDS_START];
+            planet=(const MwPlanetHeader *)&campaignCore.planetRecordStorage[recordOffset-PLANET_RECORDS_START];
             MwAdvanceCampaignTimeAndChargeWages((uint16_t)(planet->travelTimeWeight<<1));
             if (campaignMission.combatScenarioCode>=DEPLOYMENT_SCENARIO_TIME_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatScenarioCode>=DEPLOYMENT_SCENARIO_TIME_COUNT");
             elapsedUnits=campaignHandoff.missionDeploymentUnitsByScenario[campaignMission.combatScenarioCode];
@@ -384,7 +384,7 @@ beginDebrief:
         {
             if (campaignMission.acceptedContractTargetHouseIndex<CAMPAIGN_HOUSE_COUNT)
                 campaignEconomy.houseGrievancePoints[campaignMission.acceptedContractTargetHouseIndex]+=2;
-            uint16_t house=currentPlanetHouseIndex;
+            uint16_t house=campaignCore.currentPlanetHouseIndex;
             if (house>=CAMPAIGN_HOUSE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: house>=CAMPAIGN_HOUSE_COUNT");
             if (campaignHandoff.deploymentResolvedWithoutCombat!=0)
             {
@@ -400,7 +400,7 @@ beginDebrief:
             else
             {
                 if (!campaignStartMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStartMusic");
-                campaignStartMusic(campaignMusicBufferSelector,LAUNCH_MUSIC_OFFSET);
+                campaignStartMusic(campaignStartup.campaignMusicBufferSelector,LAUNCH_MUSIC_OFFSET);
                 campaignEconomy.houseFavorPoints[house]+=2;
                 outcome=campaignHandoff.afterActionSuccessMessages[house];
             }
@@ -435,7 +435,7 @@ darkWingVictory:
     (void)MwLoadFPictureBank();
     (void)MwLoadVictoryMusic();
     if (!campaignStartMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStartMusic");
-    campaignStartMusic(campaignMusicBufferSelector,0);
+    campaignStartMusic(campaignStartup.campaignMusicBufferSelector,0);
     MwDrawActivePicture(0,0x003B,EGA_DRAW_PAGE,9);
     MwDrawActivePicture(0x007C,0x002D,EGA_DRAW_PAGE,1);
     EgaFlipPages();
@@ -478,7 +478,7 @@ finishVictory:
 campaignExit:
     /*015F..0178 remains part of0002, not a manufactured exit procedure. */
     MwIndexedPictureCloseHook();
-    if (launcherExitCode==CAMPAIGN_EXIT_QUIT) MwRestoreSavedVideoMode();
+    if (campaignStartup.launcherExitCode==CAMPAIGN_EXIT_QUIT) MwRestoreSavedVideoMode();
     MwRestoreCampaignInterruptHandlers();
     if (!mwCampaignInput.keyboardAvailable || !mwCampaignInput.readKeyboard) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.keyboardAvailable || !mwCampaignInput.readKeyboard");
     if (mwCampaignInput.keyboardAvailable()) (void)mwCampaignInput.readKeyboard(); /* ONE pending BIOS key, not a drain. */
@@ -495,7 +495,7 @@ allocationFailed:
 finish:
     if (!campaignStopMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStopMusic");
     campaignStopMusic();
-    return launcherExitCode;
+    return campaignStartup.launcherExitCode;
 }
 
 /* MW_MAIN081B:019A..0209 /020A..0261. The original saves/restores four
@@ -514,26 +514,26 @@ void MwRestoreCampaignInterruptHandlers(void)
 /* MW_MAIN081B:02E6..02ED /02EE..02F5. */
 void MwSaveCurrentVideoMode(void)
 {
-    savedVideoMode=MwGetVideoMode();
+    campaignStartup.savedVideoMode=MwGetVideoMode();
 }
 void MwRestoreSavedVideoMode(void)
 {
-    MwSetVideoMode(savedVideoMode);
+    MwSetVideoMode(campaignStartup.savedVideoMode);
 }
 /* MW_MAIN081B:245D..2478. The native saves no game arguments: selector and
  * DEATH.MUS offset are loaded here; DS is restored to1090 after FAR0186. */
 void MwStartDeathMusic(void)
 {
     if (!campaignStartMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStartMusic");
-    campaignStartMusic(campaignMusicBufferSelector,DEATH_MUSIC_OFFSET);
+    campaignStartMusic(campaignStartup.campaignMusicBufferSelector,DEATH_MUSIC_OFFSET);
 }
 /* MW_MAIN081B:0C0A..0C16. BIOS CX:DX ticks mix into BOTH native RNG words. */
 void MwMixBiosTicksIntoRandomState(void)
 {
     if (!mwCampaignPlatform.readBiosTicks) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignPlatform.readBiosTicks");
     uint32_t ticks=mwCampaignPlatform.readBiosTicks();
-    randomStateWord0^=(uint16_t)(ticks>>16);
-    randomStateWord1^=(uint16_t)ticks;
+    campaignCore.randomStateWord0^=(uint16_t)(ticks>>16);
+    campaignCore.randomStateWord1^=(uint16_t)ticks;
 }
 /* MW_MAIN081B:05FE..0640. A mouse if the host has one; a joystick if one is
  * connected. The original reset INT 33h (FFFFh meaning a mouse) and counted
@@ -550,7 +550,7 @@ void MwDetectMouseAndJoystick(void)
 void MwDetectAndCalibrateInputDevices(void)
 {
     MwDetectMouseAndJoystick();
-    keyboardInterruptState=0;
+    campaignStartup.keyboardInterruptState=0;
     if (campaignInput.joystickInstalled) MwCalibrateJoystickA();
 }
 
@@ -572,10 +572,10 @@ bool MwOpenAndLoadMusicFile(const char *filename)
 }
 bool MwReadMusicStreamIntoBuffer(uint16_t fileHandle)
 {
-    musicFileHandle=fileHandle;
+    campaignStartup.musicFileHandle=fileHandle;
     uint16_t bytesReadOrError;
-    if (MwDosReadFile(MwResolveNativeSegment(campaignMusicBufferSelector),UINT16_MAX,fileHandle,&bytesReadOrError)) return true;
-    (void)MwDosCloseFile(musicFileHandle);
+    if (MwDosReadFile(MwResolveNativeSegment(campaignStartup.campaignMusicBufferSelector),UINT16_MAX,fileHandle,&bytesReadOrError)) return true;
+    (void)MwDosCloseFile(campaignStartup.musicFileHandle);
     return false;
 }
 /* MW_MAIN081B:15EA..160F. Ten strings, fixed X and thirteen-pixel row step.
@@ -585,7 +585,7 @@ void MwDrawIntroNarrationLines(uint8_t colour)
     uint16_t y=0x002C;
     for (uint16_t line=0;line<10;++line)
     {
-        MwNativeByteView text={(const uint8_t *)introNarrationLines[line],0,sizeof(introNarrationLines[line])};
+        MwNativeByteView text={(const uint8_t *)campaignStartup.introNarrationLines[line],0,sizeof(campaignStartup.introNarrationLines[line])};
         (void)EgaDrawTransparentText(0x002B,y,colour,&text,0);
         y+=0x000D;
     }
@@ -645,17 +645,17 @@ bool MwLoadBarDeathAndLaunchMusic(void)
 {
     uint16_t handleOrError,bytesReadOrError;
     if (MwDosOpenResourceReadWrite("MECHBAR.MUS",&handleOrError)) return true;
-    musicFileHandle=handleOrError;
-    if (MwDosReadFile(MwResolveNativeSegment(campaignMusicBufferSelector),UINT16_MAX,handleOrError,&bytesReadOrError)) return true;
-    (void)MwDosCloseFile(musicFileHandle);
+    campaignStartup.musicFileHandle=handleOrError;
+    if (MwDosReadFile(MwResolveNativeSegment(campaignStartup.campaignMusicBufferSelector),UINT16_MAX,handleOrError,&bytesReadOrError)) return true;
+    (void)MwDosCloseFile(campaignStartup.musicFileHandle);
     if (MwDosOpenResourceReadWrite("DEATH.MUS",&handleOrError)) return true;
-    musicFileHandle=handleOrError;
-    if (MwDosReadFile(MwResolveNativeSegment(campaignMusicBufferSelector)+0x2328,UINT16_MAX,handleOrError,&bytesReadOrError)) return true;
-    (void)MwDosCloseFile(musicFileHandle);
+    campaignStartup.musicFileHandle=handleOrError;
+    if (MwDosReadFile(MwResolveNativeSegment(campaignStartup.campaignMusicBufferSelector)+0x2328,UINT16_MAX,handleOrError,&bytesReadOrError)) return true;
+    (void)MwDosCloseFile(campaignStartup.musicFileHandle);
     if (MwDosOpenResourceReadWrite("LAUNCH.MUS",&handleOrError)) return true;
-    musicFileHandle=handleOrError;
-    if (MwDosReadFile(MwResolveNativeSegment(campaignMusicBufferSelector)+0x2AF8,UINT16_MAX,handleOrError,&bytesReadOrError)) return true;
-    (void)MwDosCloseFile(musicFileHandle);
+    campaignStartup.musicFileHandle=handleOrError;
+    if (MwDosReadFile(MwResolveNativeSegment(campaignStartup.campaignMusicBufferSelector)+0x2AF8,UINT16_MAX,handleOrError,&bytesReadOrError)) return true;
+    (void)MwDosCloseFile(campaignStartup.musicFileHandle);
     return false;
 }
 
@@ -678,16 +678,16 @@ uint16_t MwStartNewCampaign(uint16_t entryOffset)
     else if (entryOffset!=CAMPAIGN_CONTINUE_INITIALIZE_COMPANY) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: entryOffset is neither new-campaign entry"); /* Only the two proven shared entries. */
     /* The start-world check (event_log.h): the 18.2 Hz count and the random
      * words the start world is drawn from, kept before the draw. */
-    const uint16_t startTicks=campaignInput.campaignTimerTicks,startWord0=randomStateWord0,startWord1=randomStateWord1;
-    campaignEventPlanetSelectors[0]=eventPlanetChoicePool0[MwRandomUpTo(7)];
-    currentPlanetIndex=campaignEventPlanetSelectors[0]-1;
-    MwEventLogCampaignStart(startTicks,startWord0,startWord1,currentPlanetIndex);
+    const uint16_t startTicks=campaignInput.campaignTimerTicks,startWord0=campaignCore.randomStateWord0,startWord1=campaignCore.randomStateWord1;
+    campaignStartup.campaignEventPlanetSelectors[0]=campaignStartup.eventPlanetChoicePool0[MwRandomUpTo(7)];
+    campaignCore.currentPlanetIndex=campaignStartup.campaignEventPlanetSelectors[0]-1;
+    MwEventLogCampaignStart(startTicks,startWord0,startWord1,campaignCore.currentPlanetIndex);
     MwApplyCurrentPlanetState();
-    campaignEventPlanetSelectors[1]=eventPlanetChoicePool1[MwRandomUpTo(2)];
-    campaignEventPlanetSelectors[2]=eventPlanetChoicePool2[MwRandomUpTo(3)];
-    campaignEventPlanetSelectors[3]=eventPlanetChoicePool3[MwRandomUpTo(2)];
-    campaignEventPlanetSelectors[4]=eventPlanetChoicePool4[MwRandomUpTo(3)];
-    campaignEventPlanetSelectors[5]=eventPlanetChoicePool5[MwRandomUpTo(2)];
+    campaignStartup.campaignEventPlanetSelectors[1]=campaignStartup.eventPlanetChoicePool1[MwRandomUpTo(2)];
+    campaignStartup.campaignEventPlanetSelectors[2]=campaignStartup.eventPlanetChoicePool2[MwRandomUpTo(3)];
+    campaignStartup.campaignEventPlanetSelectors[3]=campaignStartup.eventPlanetChoicePool3[MwRandomUpTo(2)];
+    campaignStartup.campaignEventPlanetSelectors[4]=campaignStartup.eventPlanetChoicePool4[MwRandomUpTo(3)];
+    campaignStartup.campaignEventPlanetSelectors[5]=campaignStartup.eventPlanetChoicePool5[MwRandomUpTo(2)];
     MwInitializePilotRatingsFromDefinitions();
     MwRefreshMarketUnitStock();
     MwRefreshAvailablePilotRecruits();

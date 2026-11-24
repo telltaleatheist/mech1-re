@@ -19,7 +19,7 @@ uint16_t MwEnterBarContinuation(uint16_t entryOffset)
     if (campaignMission.audioOptionLabelIndex!=AUDIO_LABEL_OFF)
     {
         if (!campaignStartMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStartMusic");
-        campaignStartMusic(campaignMusicBufferSelector,0);
+        campaignStartMusic(campaignStartup.campaignMusicBufferSelector,0);
     }
 drawBackground:
     campaignUi.hubSelectedRecordIndex=BAR_HUB_ROW;
@@ -27,8 +27,8 @@ drawBackground:
     EgaClearDrawPage(BAR_BACKGROUND_COLOUR);
     MwDrawIndexedPicture(0,0,BAR_BACKGROUND_PICTURE);
     EgaSelectFont(BAR_FONT);
-    if (currentPlanetLandscapeIndex!=0)
-        MwDrawIndexedPicture(0,0,(uint16_t)(currentPlanetLandscapeIndex+BAR_LANDSCAPE_PICTURE_BASE));
+    if (campaignCore.currentPlanetLandscapeIndex!=0)
+        MwDrawIndexedPicture(0,0,(uint16_t)(campaignCore.currentPlanetLandscapeIndex+BAR_LANDSCAPE_PICTURE_BASE));
 refreshMenu:
     EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
     MwShowPendingNotifications();
@@ -103,7 +103,7 @@ uint16_t MwOpenRecruitInterviewContinuation(void)
     MwDrawRecruitStatText(campaignPilots.pilotSkillLabels[campaignMechanics.pilotGunneryTiers[campaignPilots.selectedRecruitPilotId]],RECRUIT_GUNNERY_Y);
     MwDrawRecruitStatText(campaignPilots.pilotSkillLabels[campaignMechanics.pilotPilotingTiers[campaignPilots.selectedRecruitPilotId]],RECRUIT_PILOTING_Y);
     uint16_t wage=campaignEconomy.pilotWageAmounts[campaignMechanics.pilotGunneryTiers[campaignPilots.selectedRecruitPilotId]];
-    ++numericGroupingEnabled;
+    ++campaignCore.numericGroupingEnabled;
     MwDrawSignedDecimalField(wage,RECRUIT_STATS_X,1,0,PILOT_CARD_TEXT_COLOUR,PILOT_CARD_BACKGROUND,RECRUIT_WAGE_Y);
     /* Native POP/PUSH DI retains this definition, not a later selection. */
     MwNativeByteView dialogue={(const uint8_t *)(pilot+1),0,(uint32_t)strlen((const char *)(pilot+1))+1};
@@ -126,10 +126,10 @@ uint16_t MwHireSelectedRecruitContinuation(void)
 {
     if (campaignPilots.recruitOfferSlot>=RECRUIT_OFFER_SLOTS) return CAMPAIGN_CONTINUE_BAR_REFRESH;
     uint16_t rosterSlot=pilotRosterCount;
-    if (rosterSlot==(uint16_t)(launcherMemoryTier+1))
+    if (rosterSlot==(uint16_t)(campaignStartup.launcherMemoryTier+1))
     {
         EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
-        const char *message=launcherMemoryTier==FOUR_PILOT_MEMORY_TIER?campaignPilots.fullFourPilotRosterText:campaignPilots.fullThreePilotRosterText;
+        const char *message=campaignStartup.launcherMemoryTier==FOUR_PILOT_MEMORY_TIER?campaignPilots.fullFourPilotRosterText:campaignPilots.fullThreePilotRosterText;
         MwNativeByteView text={(const uint8_t *)message,0,(uint32_t)strlen(message)+1};
         MwShowMonospaceTextPanel(FULL_ROSTER_PANEL_X,FULL_ROSTER_PANEL_Y,FULL_ROSTER_PANEL_WIDTH,FULL_ROSTER_PANEL_HEIGHT,&text,0);
     }
@@ -170,7 +170,7 @@ uint16_t MwEnterCompanyMenuContinuation(uint16_t entryOffset)
     if (entryOffset==CAMPAIGN_CONTINUE_COMPANY_MENU) campaignUi.hubSelectedRecordIndex=0;
     EgaSelectFont(COMPANY_MENU_FONT);
     if (entryOffset==CAMPAIGN_CONTINUE_COMPANY_MENU_WITHOUT_PROFILE) EgaClearDrawPage(BAR_BACKGROUND_COLOUR);
-    MwDrawIndexedPicture(0,0,(uint16_t)(currentPlanetLandscapeIndex+COMPANY_LANDSCAPE_PICTURE_BASE));
+    MwDrawIndexedPicture(0,0,(uint16_t)(campaignCore.currentPlanetLandscapeIndex+COMPANY_LANDSCAPE_PICTURE_BASE));
     EgaFlipPages();
     if (entryOffset==CAMPAIGN_CONTINUE_COMPANY_MENU) MwDrawCommanderProfile();
     MwDrawDescriptorTextPanel(&campaignPilots.companyMenuPanel);
@@ -195,10 +195,10 @@ void MwDrawCommanderProfile(void)
     if (commanderReputationTier>=COMMANDER_REPUTATION_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: commanderReputationTier>=COMMANDER_REPUTATION_COUNT");
     MwNativeByteView reputationText={(const uint8_t *)campaignPilots.commanderReputationLabels[commanderReputationTier],0,sizeof(campaignPilots.commanderReputationLabels[commanderReputationTier])};
     EgaDrawTransparentText((uint16_t)(campaignPilots.commanderProfilePanel.x+COMPANY_REPUTATION_X),COMPANY_REPUTATION_Y,PILOT_CARD_TEXT_COLOUR,&reputationText,0);
-    campaignMission.commanderAgeYears=calendarYear-COMMANDER_AGE_YEAR_BIAS;
-    if (calendarMonthIndex>=COMMANDER_AGE_MONTH_THRESHOLD) ++campaignMission.commanderAgeYears;
+    campaignMission.commanderAgeYears=campaignCore.calendarYear-COMMANDER_AGE_YEAR_BIAS;
+    if (campaignCore.calendarMonthIndex>=COMMANDER_AGE_MONTH_THRESHOLD) ++campaignMission.commanderAgeYears;
     MwDrawSignedDecimalField(campaignMission.commanderAgeYears,(uint16_t)(campaignPilots.commanderProfilePanel.x+COMPANY_AGE_X),1,0,PILOT_CARD_TEXT_COLOUR,PILOT_CARD_BACKGROUND,COMPANY_AGE_Y);
-    ++numericGroupingEnabled;
+    ++campaignCore.numericGroupingEnabled;
     MwDrawSignedDecimalField(((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow,
         (uint16_t)(campaignPilots.commanderProfilePanel.x+COMPANY_WEALTH_X),1,0,PILOT_CARD_TEXT_COLOUR,PILOT_CARD_BACKGROUND,COMPANY_WEALTH_Y);
     for (uint16_t house=0;house<CAMPAIGN_HOUSE_COUNT;++house)
@@ -231,7 +231,7 @@ uint16_t MwEnterCrewMenuContinuation(void)
     MwDrawAlternateBankPicture(0,0,EGA_DISPLAY_PAGE,PILOT_CARD_LABEL_PICTURE);
     MwDrawAlternateBankPicture(0,PILOT_CARD_MECH_Y,EGA_DISPLAY_PAGE,PILOT_CARD_LABEL_PICTURE);
     campaignPilots.crewScreenRightEdge=CREW_FULL_RIGHT_EDGE;
-    if (launcherMemoryTier!=FOUR_PILOT_MEMORY_TIER)
+    if (campaignStartup.launcherMemoryTier!=FOUR_PILOT_MEMORY_TIER)
     {
         campaignPilots.crewMenu.records[THREE_PILOT_ROSTER_CAPACITY].rightRecordIndex=CREW_NO_NEIGHBOUR;
         campaignPilots.crewScreenRightEdge=CREW_SMALL_RIGHT_EDGE;
@@ -250,7 +250,7 @@ uint16_t MwEnterCrewMenuContinuation(void)
 void MwDrawPilotRosterCard(uint16_t pilotRosterSlot)
 {
     campaignPilots.pilotCardRosterSlot=pilotRosterSlot;
-    if (pilotRosterSlot==LAST_PILOT_CARD_SLOT && launcherMemoryTier!=FOUR_PILOT_MEMORY_TIER) return;
+    if (pilotRosterSlot==LAST_PILOT_CARD_SLOT && campaignStartup.launcherMemoryTier!=FOUR_PILOT_MEMORY_TIER) return;
     if (pilotRosterSlot>=PILOT_CARD_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: pilotRosterSlot>=PILOT_CARD_COUNT");
     campaignPilots.pilotCardTextX=campaignPilots.pilotCardColumnOrigins[pilotRosterSlot]+PILOT_CARD_TEXT_INSET;
     MwDrawPilotCardSeparators();
@@ -274,7 +274,7 @@ void MwDrawPilotRosterCard(uint16_t pilotRosterSlot)
     if (campaignPilots.pilotCardRosterSlot!=0)
     {
         uint16_t wage=campaignEconomy.pilotWageAmounts[campaignPilots.pilotCardQuotedWageTier];
-        ++numericGroupingEnabled;
+        ++campaignCore.numericGroupingEnabled;
         MwDrawSignedDecimalField(wage,campaignPilots.pilotCardTextX,1,0,Campaign_Pal_EGA_LightGrey,Campaign_Pal_EGA_DarkGrey,PILOT_CARD_WAGE_Y);
     }
     uint16_t assignedSlot=campaignPilots.pilotCardOwnedUnitSlot;

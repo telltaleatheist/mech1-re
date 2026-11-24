@@ -31,10 +31,6 @@ extern MwCampaignPlatformCalls mwCampaignPlatform;
  * forward to the converted sequencer; they do not choose cues or play files. */
 extern void (*campaignStopMusic)(void);
 extern void (*campaignStartMusic)(uint16_t selector,uint16_t offset);
-extern uint16_t campaignMusicBufferSelector, graphicsOverlaySelector;
-extern uint16_t launcherMemoryTier;
-extern uint8_t launcherExitCode, savedVideoMode;
-extern uint8_t keyboardInterruptState;
 uint8_t MwRunCampaign(const MwCampaignLaunch *launch);
 void MwInstallCampaignInterruptHandlers(void);
 void MwRestoreCampaignInterruptHandlers(void);
@@ -48,15 +44,6 @@ typedef struct MwIntroPositionedText
     uint16_t x,y;
     char text[0x80];
 } MwIntroPositionedText;
-extern char introNarrationLines[10][0x50];
-extern MwIntroPositionedText introFirstLeftText,introFirstRightText;
-extern MwIntroPositionedText introSecondLeftText,introSecondRightText;
-extern MwIntroPositionedText introThirdLeftText,introThirdRightText;
-extern MwIntroPositionedText introFourthLeftText,introFourthRightText;
-extern MwIntroPositionedText introFifthLeftText,introFifthRightText;
-extern MwIntroPositionedText introSixthLeftText,introSixthRightText;
-extern MwIntroPositionedText introSeventhLeftText,introSeventhRightText;
-extern uint16_t musicFileHandle;
 bool MwLoadMechMusic(void);
 bool MwOpenAndLoadMusicFile(const char *filename);
 bool MwReadMusicStreamIntoBuffer(uint16_t fileHandle);
@@ -67,12 +54,30 @@ void MwDrawPositionedIntroText(const MwIntroPositionedText *text);
 /* Host projection of a native nonlocal transfer, NOT an AX result ABI. */
 uint16_t MwDrawTimedPictureAndTextTransition(uint16_t delayTicks,
     const MwIntroPositionedText *leftText,const MwIntroPositionedText *rightText);
-extern uint8_t campaignTextInputBuffer[0x29];
 bool MwLoadBarDeathAndLaunchMusic(void);
 /* Folded166D/181A flow. Returned code offset is host JMP transport, not AX. */
 uint16_t MwStartNewCampaign(uint16_t entryOffset);
-extern uint16_t campaignEventPlanetSelectors[6];
-extern uint8_t eventPlanetChoicePool0[8],eventPlanetChoicePool1[3];
-extern uint8_t eventPlanetChoicePool2[4],eventPlanetChoicePool3[3];
-extern uint8_t eventPlanetChoicePool4[4],eventPlanetChoicePool5[3];
+/* Campaign state owned by campaign_startup.h (plan, slice B2). */
+struct CampaignStartupState
+{
+    uint16_t campaignMusicBufferSelector, graphicsOverlaySelector;
+    uint16_t launcherMemoryTier;
+    uint8_t launcherExitCode, savedVideoMode;
+    uint8_t keyboardInterruptState;
+    char introNarrationLines[10][0x50];
+    MwIntroPositionedText introFirstLeftText, introFirstRightText;
+    MwIntroPositionedText introSecondLeftText, introSecondRightText;
+    MwIntroPositionedText introThirdLeftText, introThirdRightText;
+    MwIntroPositionedText introFourthLeftText, introFourthRightText;
+    MwIntroPositionedText introFifthLeftText, introFifthRightText;
+    MwIntroPositionedText introSixthLeftText, introSixthRightText;
+    MwIntroPositionedText introSeventhLeftText, introSeventhRightText;
+    uint16_t musicFileHandle;
+    uint8_t campaignTextInputBuffer[0x29];
+    uint16_t campaignEventPlanetSelectors[6];
+    uint8_t eventPlanetChoicePool0[8], eventPlanetChoicePool1[3];
+    uint8_t eventPlanetChoicePool2[4], eventPlanetChoicePool3[3];
+    uint8_t eventPlanetChoicePool4[4], eventPlanetChoicePool5[3];
+};
+extern CampaignStartupState campaignStartup;
 #endif

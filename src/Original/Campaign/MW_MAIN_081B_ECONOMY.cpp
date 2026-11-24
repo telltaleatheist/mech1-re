@@ -65,7 +65,7 @@ void MwGenerateUnitStock(uint16_t stockKindRangeIndex, uint16_t tierThreeRolls,
  * the live count. Each generator call retains its complete RNG sequence. */
 void MwRefreshMarketUnitStock(void)
 {
-    campaignEconomy.dealerUnitPurchaseLimit = MwRandomUpTo((uint16_t)(DEALER_PURCHASE_ROLL_BASE - currentPlanetMarketTier)) + 1;
+    campaignEconomy.dealerUnitPurchaseLimit = MwRandomUpTo((uint16_t)(DEALER_PURCHASE_ROLL_BASE - campaignCore.currentPlanetMarketTier)) + 1;
     campaignEconomy.unitsSoldSinceMarketRefresh = 0;
     campaignEconomy.marketUnitCount = 0;
     for (uint16_t marketSlot = 0; marketSlot < CAMPAIGN_MARKET_UNIT_SLOTS; ++marketSlot)
@@ -74,14 +74,14 @@ void MwRefreshMarketUnitStock(void)
         uint8_t *damageBytes = (uint8_t *)&campaignMechanics.marketUnitDamage[marketSlot];
         for (uint16_t index = 0; index < sizeof(CampaignUnitDamage); ++index) damageBytes[index] = 0;
     }
-    uint8_t stockDivisor = currentPlanetMarketTier + 1;
+    uint8_t stockDivisor = campaignCore.currentPlanetMarketTier + 1;
     if (stockDivisor == 0) /* Port emulation of a native CPU fault. */ MW_NATIVE_FAULT("Rejected condition: stockDivisor == 0"); /* Native DIV fault AFTER the clear. */
     campaignEconomy.marketUnitCount = MwRandomUpTo(CAMPAIGN_MARKET_UNIT_SLOTS / stockDivisor);
     if (campaignEconomy.marketUnitCount == 0) return;
     uint16_t marketSlot = 0;
     do
     {
-        uint16_t damageRollMaximum = currentPlanetMarketTier + 1;
+        uint16_t damageRollMaximum = campaignCore.currentPlanetMarketTier + 1;
         uint16_t tierOneRolls = MwRandomUpTo(damageRollMaximum);
         uint16_t tierTwoRolls = MwRandomUpTo(damageRollMaximum);
         uint16_t tierThreeRolls = MwRandomUpTo(damageRollMaximum);
@@ -108,7 +108,7 @@ void MwRefreshMarketUnitStock(void)
 void MwRefreshAvailablePilotRecruits(void)
 {
     for (uint16_t slot = 0; slot < RECRUIT_OFFER_SLOTS; ++slot) campaignEconomy.availableRecruitIds[slot] = 0;
-    uint16_t recruitRollMaximum = RECRUIT_COUNT_ROLL_BASE - (uint16_t)((currentPlanetMarketTier + 1) << 1);
+    uint16_t recruitRollMaximum = RECRUIT_COUNT_ROLL_BASE - (uint16_t)((campaignCore.currentPlanetMarketTier + 1) << 1);
     uint16_t desiredRecruitCount = MwRandomUpTo(recruitRollMaximum) + 1;
     campaignEconomy.availableRecruitCount = 0;
     uint16_t searchState = 0;
@@ -155,7 +155,7 @@ nextCandidate:
 bool MwGenerateMissionOffer(uint16_t missionOfferSlot)
 {
     campaignEconomy.generatingMissionOfferSlot = missionOfferSlot;
-    uint16_t employerHouse = currentPlanetHouseIndex;
+    uint16_t employerHouse = campaignCore.currentPlanetHouseIndex;
     if (employerHouse >= CAMPAIGN_HOUSE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: employerHouse >= CAMPAIGN_HOUSE_COUNT");
     if (campaignEconomy.houseGrievancePoints[employerHouse] >= HOUSE_GRIEVANCE_REFUSAL) return true;
     uint16_t combatCreditBand = 0;
@@ -225,7 +225,7 @@ bool MwGenerateMissionOffer(uint16_t missionOfferSlot)
     }
     campaignEconomy.missionPaymentBaseThousands = (uint8_t)((campaignEconomy.missionForceBudget >> 1) + 1) * PERCENT_DIVISOR;
     uint16_t paymentRoll = MwRandomUpTo(MISSION_PAYMENT_ROLL_MAXIMUM);
-    employerHouse = currentPlanetHouseIndex;
+    employerHouse = campaignCore.currentPlanetHouseIndex;
     uint16_t biasedPaymentRoll = paymentRoll + 1 + campaignEconomy.housePaymentRollBias[employerHouse];
     uint16_t paymentProductLow = (uint32_t)biasedPaymentRoll * campaignEconomy.missionPaymentBaseThousands;
     int32_t paymentAdjustment = (int32_t)(int16_t)paymentProductLow * campaignEconomy.housePaymentAdjustmentPercent[employerHouse] / PERCENT_DIVISOR;
@@ -251,7 +251,7 @@ bool MwGenerateMissionOffer(uint16_t missionOfferSlot)
     campaignEconomy.missionAdvancePercentageCeilings[offerSlot] = advanceCeiling;
     campaignEconomy.missionAdvancePercentages[offerSlot] = advanceCeiling >> 2;
 retryTarget:
-    employerHouse = currentPlanetHouseIndex;
+    employerHouse = campaignCore.currentPlanetHouseIndex;
     uint16_t policyStart = (uint16_t)(employerHouse << 3), policyOffset = policyStart;
     uint16_t eligibleTargetSteps = MwRandomUpTo(MISSION_TARGET_STEP_ROLL_MAXIMUM) + 1;
     uint16_t columnsRemaining = MISSION_TARGET_COLUMNS;
@@ -311,9 +311,9 @@ retryTarget:
             uint16_t directoryByteOffset = (uint16_t)(MwRandomUpTo(rangeMaximum) + rangeStart) << 1;
             uint16_t planetIndex = directoryByteOffset / sizeof(uint16_t);
             if (planetIndex >= CAMPAIGN_PLANET_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetIndex >= CAMPAIGN_PLANET_COUNT");
-            uint16_t planetOffset = planetRecordOffsets[planetIndex];
+            uint16_t planetOffset = campaignCore.planetRecordOffsets[planetIndex];
             if (planetOffset < PLANET_RECORDS_START || (uint32_t)planetOffset + sizeof(MwPlanetHeader) > PLANET_RECORDS_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetOffset < PLANET_RECORDS_START || (uint32_t)planetOffset + sizeof(MwPlanetHeader) > PLANET_RECORDS_END");
-            const MwPlanetHeader *planet = (const MwPlanetHeader *)&planetRecordStorage[planetOffset - PLANET_RECORDS_START];
+            const MwPlanetHeader *planet = (const MwPlanetHeader *)&campaignCore.planetRecordStorage[planetOffset - PLANET_RECORDS_START];
             if (planet->maximumMissionType == 0 || (uint8_t)category > planet->maximumMissionType) continue;
             campaignEconomy.missionPlanetRecordIndices[offerSlot] = planetIndex;
             break;
@@ -321,7 +321,7 @@ retryTarget:
     }
     else
     {
-        uint16_t policyOffset = campaignEconomy.houseMissionPlanetTableOffsets[currentPlanetHouseIndex];
+        uint16_t policyOffset = campaignEconomy.houseMissionPlanetTableOffsets[campaignCore.currentPlanetHouseIndex];
         if (policyOffset < HOUSE_PLANET_POLICIES_START || (policyOffset - HOUSE_PLANET_POLICIES_START) % sizeof(MwHouseMissionPlanetPolicy) != 0
             || (policyOffset - HOUSE_PLANET_POLICIES_START) / sizeof(MwHouseMissionPlanetPolicy) >= CAMPAIGN_HOUSE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: policyOffset < HOUSE_PLANET_POLICIES_START || (policyOffset - HOUSE_PLANET_POLICIES_START) % sizeof(MwHouseMissionPlanetPolicy) != 0 || (policyOffset - HOUSE_PLANET_POLICIES_START) / sizeof(MwHouseMissionPlanetPolicy) >= CAMPAIGN_HOUSE_COUNT");
         const MwHouseMissionPlanetPolicy *policy = &campaignEconomy.houseMissionPlanetPolicies[(policyOffset - HOUSE_PLANET_POLICIES_START) / sizeof(MwHouseMissionPlanetPolicy)];
@@ -339,13 +339,13 @@ void MwRefreshMissionOffers(void)
 {
     campaignEconomy.majorCampaignMissionRollThreshold = 0;
     bool middleStoryWindow = false;
-    if ((int16_t)calendarYear >= MAJOR_CAMPAIGN_MIDDLE_YEAR)
+    if ((int16_t)campaignCore.calendarYear >= MAJOR_CAMPAIGN_MIDDLE_YEAR)
     {
-        if (calendarYear == MAJOR_CAMPAIGN_MIDDLE_YEAR)
-            middleStoryWindow = (int16_t)calendarMonthIndex > MAJOR_CAMPAIGN_START_MONTH
-                || ((int16_t)calendarMonthIndex == MAJOR_CAMPAIGN_START_MONTH
+        if (campaignCore.calendarYear == MAJOR_CAMPAIGN_MIDDLE_YEAR)
+            middleStoryWindow = (int16_t)campaignCore.calendarMonthIndex > MAJOR_CAMPAIGN_START_MONTH
+                || ((int16_t)campaignCore.calendarMonthIndex == MAJOR_CAMPAIGN_START_MONTH
                     && (int16_t)campaignEconomy.calendarSubmonthUnits >= MAJOR_CAMPAIGN_START_SUBMONTH_UNIT);
-        else if ((int16_t)calendarYear < MAJOR_CAMPAIGN_LATE_YEAR) middleStoryWindow = true;
+        else if ((int16_t)campaignCore.calendarYear < MAJOR_CAMPAIGN_LATE_YEAR) middleStoryWindow = true;
         else campaignEconomy.majorCampaignMissionRollThreshold = MAJOR_CAMPAIGN_LATE_THRESHOLD;
     }
     uint16_t offerCount;
@@ -399,15 +399,15 @@ void MwAdvanceCampaignTimeAndChargeWages(uint16_t elapsedUnits)
         if (months > UINT8_MAX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: months > UINT8_MAX");
         uint16_t submonthRemainder = campaignEconomy.calendarSubmonthUnits % CAMPAIGN_UNITS_PER_BILLING_MONTH;
         campaignEconomy.elapsedBillingMonths = months;
-        calendarMonthIndex += months;
+        campaignCore.calendarMonthIndex += months;
         campaignEconomy.calendarSubmonthUnits = submonthRemainder;
-        if (calendarMonthIndex >= CAMPAIGN_MONTH_COUNT)
+        if (campaignCore.calendarMonthIndex >= CAMPAIGN_MONTH_COUNT)
         {
-            uint16_t years = calendarMonthIndex / CAMPAIGN_MONTH_COUNT;
+            uint16_t years = campaignCore.calendarMonthIndex / CAMPAIGN_MONTH_COUNT;
             if (years > UINT8_MAX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: years > UINT8_MAX");
-            uint16_t monthRemainder = calendarMonthIndex % CAMPAIGN_MONTH_COUNT;
-            calendarYear += years;
-            calendarMonthIndex = monthRemainder;
+            uint16_t monthRemainder = campaignCore.calendarMonthIndex % CAMPAIGN_MONTH_COUNT;
+            campaignCore.calendarYear += years;
+            campaignCore.calendarMonthIndex = monthRemainder;
             if (years != 0) MwAdvanceDropShipConditionDeterioration(); /* Once, not once per year. */
         }
     }
