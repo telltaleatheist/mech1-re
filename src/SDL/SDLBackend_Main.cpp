@@ -59,7 +59,10 @@ static bool ExecuteChild(const char *filename,const MwCampaignLaunch *launch,uin
     fprintf(stderr,"MechWarrior: %s",operation);
     const char *error=SDL_GetError();
     if (error && *error) fprintf(stderr,". SDL: %s",error);
-    fputc('\n',stderr);/* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("SDL backend operation failed; see the preceding operation and SDL diagnostic.");
+    fputc('\n',stderr);
+    static char reason[1024];
+    snprintf(reason,sizeof(reason),error && *error?"%s. SDL: %s":"%s",operation,error);
+    /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE(reason);
 }
 static MwCampaignBuffer *AllocateParagraphs(uint16_t paragraphs)
 {

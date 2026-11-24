@@ -8,7 +8,10 @@
 #include "mechwarrior/combat_cockpit.h"
 #include "mechwarrior/combat_startup.h"
 #include "mechwarrior/combat_import.h"
+#include "SDLNotice.h"
 #include "SDLSetup.h"
+#include "mechwarrior/problem.h"
+#include <string>
 static FILE *diagnosticAudio;
 static uint64_t nextDiagnosticFrame;
 static void RecordDiagnosticAudio(const float *samples,uint32_t count)
@@ -43,34 +46,6 @@ static void TraceDiagnosticFrame(void)
     }
     fflush(stderr);
 }
-#if defined(_MSC_VER)
-#include <stdlib.h>
-#include <signal.h>
-#include <windows.h>
-#include <dbghelp.h>
-
-/* Host diagnostics only. Port failsafes print their reason before SIGABRT;
- * add a stack trace to the launcher's runtime.log. PDBs improve frame names,
- * but explicit reason/function/source diagnostics do not depend on symbols. */
-static void ReportFatalAbort(int signalNumber)
-{
-    (void)signalNumber;
-    HANDLE process=GetCurrentProcess();
-    SymSetOptions(SYMOPT_LOAD_LINES|SYMOPT_UNDNAME|SYMOPT_DEFERRED_LOADS);
-    BOOL symbols=SymInitialize(process,NULL,TRUE);
-    void *frames[40];USHORT count=CaptureStackBackTrace(0,40,frames,NULL);
-    fprintf(stderr,"MechWarrior fatal abort (combat active=%u).\n",mwSdlCombatActive?1:0);
-    for (USHORT index=0;index<count;++index)
-    {
-        IMAGEHLP_LINE64 line={0};line.SizeOfStruct=sizeof(line);DWORD displacement;
-        if (symbols && SymGetLineFromAddr64(process,(DWORD64)frames[index],&displacement,&line))
-            fprintf(stderr,"%s:%lu\n",line.FileName,(unsigned long)line.LineNumber);
-        else
-            fprintf(stderr,"frame %u: %p\n",index,frames[index]);
-    }
-    fflush(stderr);_Exit(3);
-}
-#endif
 static bool JoinWriteDirectory(const char *name,char *path,size_t size)
 {
     char directory[4096];
@@ -79,23 +54,29 @@ static bool JoinWriteDirectory(const char *name,char *path,size_t size)
     const char *separator=length && (directory[length-1]=='/' || directory[length-1]=='\\')?"":"/";
     return snprintf(path,size,"%s%s%s",directory,separator,name)<(int)size;
 }
+/* Why the last step failed: the problem noted, else SDL's words. */
+static std::string Because(void)
+{
+    const char *problem=MwLastProblem();
+    if (!*problem) problem=SDL_GetError();
+    return problem && *problem?problem:"the log says why.";
+}
+static int Refuse(int code,const std::string &why) {MwSdlRefuseStart(why);return code;}
 int main(int argc,char **argv)
 {
-#if defined(_MSC_VER)
-    signal(SIGABRT,ReportFatalAbort);
-#endif
+    MwSdlPrepareNotices(!MwSetupUnattended() && !MwSdlScriptedRun());
     /* A run with no player (a test's, a hidden one) is a background app on
      * macOS: SDL then never makes it a foreground app or activates it, so it
      * can't take the keyboard from whoever is at the machine. It comes before
      * every SDL_Init, the setup screen's too. */
     if (MwSetupUnattended()) SDL_SetHint(SDL_HINT_MAC_BACKGROUND_APP,"1");
     const char *pilotDirectory=NULL;
+    bool badData=false;
     /* --data DIR, anywhere: where our data/ folder is. */
     for (int index=1;index<argc;++index)
     {
         if (strcmp(argv[index],"--data")) continue;
-        if (index+1>=argc || !MwSdlSetDataDirectory(argv[index+1]))
-        {fprintf(stderr,"--data needs a folder.\n");return 2;}
+        if (index+1>=argc || !MwSdlSetDataDirectory(argv[index+1])) {badData=true;break;}
         for (int rest=index;rest+2<=argc;++rest) argv[rest]=argv[rest+2];
         argc-=2;break;
     }
@@ -108,19 +89,17 @@ int main(int argc,char **argv)
     if (argc==2 && !strcmp(argv[1],"--status")) return MwSetupPrintStatus();
     bool setupOnly=argc==2 && !strcmp(argv[1],"--setup");
     bool installed=argc==1 || setupOnly;
+    if (help || setupOnly) MwSdlPrepareNotices(false); /* Their answer is what they print. */
     if (!help) MwSetupSettleUserFolder();
     /* Not for a start that is refused its arguments: too many, or an unknown option. */
     if (!help && argc<=3 && (argc==1 || argv[1][0]!='-')) MwSetupRecordProgram();
-    if (argc==1)
+    if (!help && !setupOnly)
     {
         /* No console when double-clicked: the log goes beside the saves. */
         char logPath[4200];
-        if (JoinWriteDirectory("mechwarrior.log",logPath,sizeof(logPath)))
-        {
-            if (!freopen(logPath,"w",stdout) || !freopen(logPath,"a",stderr)) {}
-            setvbuf(stderr,NULL,_IONBF,0);
-        }
+        if (JoinWriteDirectory("mechwarrior.log",logPath,sizeof(logPath))) MwSdlOpenLog(logPath,argc==1);
     }
+    if (badData) return Refuse(2,"--data needs a folder.");
     if (help || argc>3)
     {const char *name="mw1r";  /* the shipped program's name (an AppImage starts it as AppRun) */
     fprintf(help?stdout:stderr,"Usage: %s [<game folder> [existing capture directory]] [--support-pilot DIRECTORY | --no-support-pilot] [--data DIRECTORY]\n"
@@ -129,23 +108,25 @@ int main(int argc,char **argv)
         "setup (pick your copy, its folder or the archive it came in: it is copied beside the saves); the log and F12\n"
         "captures then go beside the saves. --status prints what is found as JSON; --setup only sets the game up.\n"
         "EGA; music= in MechWarrior.ini; arrows and Enter; Ctrl+Escape quits; F12 captures; F11 stops Support pilot;\n"
-        "- and + change the combat speed.\n",name,name);return help?0:2;}
+        "- and + change the combat speed.\n",name,name);
+    return help?0:Refuse(2,"It was started with more arguments than it knows.");}
     SDL_SetMainReady();
     if(!MwSdlConfigureSupportPilot(pilotDirectory))
-    {fprintf(stderr,"Cannot open Support pilot directory.\n");return 2;}
+        return Refuse(2,"Cannot open Support pilot directory.");
     const char *timingPath=getenv("MECHWARRIOR_TIMING_CONFIG");
     bool optionalTiming=timingPath==NULL;
     char defaultTimingPath[4096];
     if (!timingPath)
     {
         const char *base=SDL_GetBasePath();
-        if (!base || snprintf(defaultTimingPath,sizeof(defaultTimingPath),"%sMechWarrior.ini",base)>=(int)sizeof(defaultTimingPath)) return 2;
+        if (!base || snprintf(defaultTimingPath,sizeof(defaultTimingPath),"%sMechWarrior.ini",base)>=(int)sizeof(defaultTimingPath))
+            return Refuse(2,"The program's own folder can't be read.");
         timingPath=defaultTimingPath;
     }
     if (!MwSdlLoadTimingConfiguration(timingPath,optionalTiming))
-    {fprintf(stderr,"Invalid MechWarrior configuration: %s (combat tick, speed or music).\n",timingPath);return 2;}
+        return Refuse(2,std::string("Invalid MechWarrior configuration: ")+timingPath+" (combat tick, speed or music).");
     if (!MwSdlLoadUserConfiguration())
-    {fprintf(stderr,"Invalid player configuration: MechWarrior.ini in the save directory (combat tick, speed or music).\n");return 2;}
+        return Refuse(2,"Invalid player configuration: MechWarrior.ini in the save directory (combat tick, speed or music).");
     printf("Combat tick: %u ms at 1x, speed %ux (- and + in combat); PIT/audio keep hardware rate.\n",
         mwSdlCombatTickMs,(unsigned)mwSdlCombatSpeed);
     fflush(stdout); /* Keep startup information live when the launcher logs it. */
@@ -153,14 +134,24 @@ int main(int argc,char **argv)
     if (installed)
     {
         /* F12 captures go beside the saves too. */
-        if (!MwSdlResolveWriteDirectory(captures,sizeof(captures))) return 1;
+        if (!MwSdlResolveWriteDirectory(captures,sizeof(captures))) return Refuse(1,"The folder for saves can't be made: "+Because());
         int ready=MwSetupResolveGame(setupOnly,installedFolder,sizeof(installedFolder));
-        if (setupOnly || ready) {SDL_Quit();return setupOnly?ready:ready==1?0:1;}
+        if (setupOnly || ready)
+        {
+            /* The setup has printed why; 1 is the player's own cancel. */
+            const std::string why=Because();
+            SDL_Quit();
+            if (setupOnly || ready==1) return setupOnly?ready:0;
+            return Refuse(1,"The setup failed: "+why);
+        }
         if (!MwSdlInitialize(installedFolder,captures))
-        {fprintf(stderr,"MechWarrior could not start from %s: %s\n",installedFolder,SDL_GetError());SDL_Quit();return 1;}
+        {
+            const std::string why="MechWarrior could not start from "+std::string(installedFolder)+": "+Because();
+            SDL_Quit();return Refuse(1,why);
+        }
     }
     else if (!MwSdlInitialize(argv[1],argc==3?argv[2]:"."))
-    {fprintf(stderr,"Cannot initialize the private installation/SDL: %s\n",SDL_GetError());return 1;}
+        return Refuse(1,"Cannot initialize the private installation/SDL: "+Because());
     if (getenv("MECHWARRIOR_DIAGNOSTICS") && argc==3)
     {
         char audioPath[4096];

@@ -59,14 +59,20 @@ def stamps(a, work, base):
     check(stamp(a.stamped) == {b"mw1r-v0.0.1"}, "the stamped program holds its tag")
     check(stamp(a.program) == ({a.tag.encode()} if a.tag else set()), "this build's program holds %s" % (a.tag or "no stamp"))
 
+    shown = {}
+
     def start(name, program, args, hidden, **more):
         user = os.path.join(work, "record-" + name)
         os.makedirs(user)
+        # The reason is shown to the player (src/SDL/SDLNotice.h): into a file here, so no box opens on Windows.
+        notice = os.path.join(work, "notice-%s.txt" % name)
         env = dict(base, MECHWARRIOR_SAVE_DIRECTORY=user, MECHWARRIOR_TIMING_CONFIG=os.path.join(work, "absent.ini"),
-                   SDL_MAC_BACKGROUND_APP="1", **more)
+                   MECHWARRIOR_NOTICE_FILE=notice, SDL_MAC_BACKGROUND_APP="1")
+        env.update(more)
         if not hidden:
             env.pop("MW1O_HIDDEN"), env.pop("SDL_VIDEO_DRIVER")
         p, _ = run(program, args, env)
+        shown[name] = open(notice, encoding="utf-8").read() if os.path.exists(notice) else None
         record = os.path.join(user, "rebuild-program.txt")
         return p.returncode, open(record, encoding="utf-8").read() if os.path.exists(record) else None
 
@@ -83,6 +89,21 @@ def stamps(a, work, base):
     code, text = start("usage", a.stamped, ["a", "b", "c", "d"], False)
     check(code == 2 and text is None, "break: a start that is refused its arguments records nothing")
     check(start("option", a.stamped, ["--no-such-option"], False)[1] is None, "break: an unknown option records nothing")
+    check(all(shown[n] is not None for n in ("plays", "usage", "option")), "a refused start shows its reason")
+    check(shown["plays"] is not None and "absent.ini" in shown["plays"], "and what is wrong")
+    check(all(shown[n] is None for n in ("hidden", "status", "help", "setup")), "break: a hidden start, --status, --help and --setup show nothing")
+    # Paths with any character in them: the program's folder, the player's, a file it can't open.
+    far = os.path.join(work, "Spiel \u00e9\u00df\u65e5\u672c")
+    os.makedirs(far)
+    copy = shutil.copy2(a.stamped, far)
+    for f in os.listdir(os.path.dirname(a.stamped)):
+        if f.lower().endswith(".dll"):
+            shutil.copy2(os.path.join(os.path.dirname(a.stamped), f), far)
+    code, text = start("far \u00e9\u65e5", copy, [absent], False, MECHWARRIOR_TIMING_CONFIG=os.path.join(far, "absent.ini"))
+    lines = (text or "").splitlines()
+    check(code == 2 and len(lines) == 4 and lines[2].startswith("program=") and os.path.samefile(lines[2][8:], copy),
+          "a program and a player's folder with other characters: the record names the program in UTF-8")
+    check(far in (shown["far \u00e9\u65e5"] or ""), "and the reason names the folder")
     if not a.tag:
         check(start("untagged", a.program, [absent], False) == (2, None), "break: a build that is no release records nothing")
 

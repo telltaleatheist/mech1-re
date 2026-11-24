@@ -1,5 +1,6 @@
 // The game's door to the layout: read once at start, then held as the exe's
 // bytes for the importers in Original/Memory, which run again on every EXEC.
+#include "mechwarrior/problem.h"
 #include "mechwarrior/ui_layout.h"
 
 #include <cstdio>
@@ -19,7 +20,7 @@ bool MwHostPrepareUi(const char *dataDirectory)
         g_layout.hold(mw1o::ui::load_layout(dataDirectory));
         return true;
     } catch (const std::exception &e) {
-        std::fprintf(stderr, "MechWarrior: %s\n", e.what());
+        MwReportProblem(e.what());
         return false;
     }
 }
