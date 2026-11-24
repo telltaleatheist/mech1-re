@@ -1,6 +1,6 @@
 # Building the port
 
-The public project needs a C17 compiler and CMake 3.20 or later. A playable build
+The public project needs a C++20 compiler and CMake 3.20 or later. A playable build
 also needs SDL3 3.2 or later, supplied as an installed CMake package or an existing
 source checkout. Dependencies are never downloaded automatically. Windows x64
 is the currently qualified runtime target.
