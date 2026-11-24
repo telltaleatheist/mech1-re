@@ -1,5 +1,6 @@
 #ifndef MECHWARRIOR_EGA_CAMPAIGN_H
 #define MECHWARRIOR_EGA_CAMPAIGN_H
+#include "mechwarrior/game_files.h"
 #include "mechwarrior/native_address.h"
 #include <stdbool.h>
 #include <stddef.h>
@@ -34,6 +35,9 @@ enum
     EGA_TEXT_X = 0x09BB, EGA_TEXT_Y = 0x09BD,
     EGA_TEXT_COLOR = 0x09BF, EGA_TEXT_LEADING = 0x09C0,
     EGA_FONT_BUFFER = 0x0AD0, EGA_FONT_HANDLE = 0x0AD2,
+    /* The overlay's font-handle word: DOS's first free handle. Glyph and column reads that run
+     * past their tables can reach overlay bytes, so the word keeps the value it had. */
+    EGA_FONT_HANDLE_VALUE = 0x0005,
     EGA_SMALL_FONT_NAME = 0x0AD4, EGA_LARGE_FONT_NAME = 0x0AEE,
     EGA_SMALL_FONT_BITMAP = 0x0B03, EGA_LARGE_FONT_BITMAP = 0x0D5D,
     EGA_FONT_INDEX = 0x10CF, EGA_FONT_HEIGHTS = 0x10D1,
@@ -89,9 +93,8 @@ extern uint8_t egaLogicalFunction;
 
 bool EgaLoadFonts(void);
 bool EgaLoadFontFile(uint16_t filenameOffset, uint16_t bufferOffset);
-bool EgaDosOpenFontFile(uint16_t filenameOffset, uint16_t *handleOrError);
-bool EgaDosReadFontFile(uint16_t bufferOffset, uint16_t byteCount, uint16_t fileHandle);
-bool EgaDosCloseFontFile(uint16_t fileHandle);
+mw1o::files::GameFile EgaOpenFontFile(uint16_t filenameOffset);
+bool EgaReadFontFile(mw1o::files::GameFile &file, uint16_t bufferOffset, uint16_t byteCount);
 void EgaBuildScanlineOffsets(void);
 void EgaSelectFont(uint16_t fontIndex);
 uint16_t EgaGetFontIndex(void);
@@ -152,7 +155,7 @@ struct EgaOverlayState
     uint8_t egaTextColour;
     uint16_t textExtraLeading;
     uint16_t fontReadBufferOffset;
-    uint16_t fontFileHandle;
+    uint16_t fontHandleBytes; /* 0AD2, EGA_FONT_HANDLE_VALUE once a font has loaded */
     char smallFontFilename[0x001A];
     char largeFontFilename[0x0015];
     uint8_t fontBitmapStorage[0x057B];

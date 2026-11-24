@@ -2,8 +2,8 @@
 #include "mechwarrior/campaign_continuations.h"
 #include "mechwarrior/campaign_options.h"
 #include "mechwarrior/campaign_input.h"
-#include "mechwarrior/dos_files.h"
 #include "mechwarrior/ega_campaign.h"
+#include "mechwarrior/game_files.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -16,17 +16,17 @@ enum { SAVE_NAME_TEXT_OFFSET=0xA031,
     SAVE_ERROR_TEXT_OFFSET=0xA0B3, SAVE_FULL_TEXT_OFFSET=0xA088,
     LOAD_ERROR_TEXT_OFFSET=0xA0E3 };
 
-/* MW_MAIN081B:104C..1055. Attributes CX=0 at the DOS boundary. */
-bool MwDosCreateSaveFile(const char *filename,uint16_t *handleOrError)
+/* The file half of 081B:6D52..6E6D. The create truncates an existing save
+ * before the write, as the original's does, and a write that stops short
+ * leaves what it wrote: the original neither restores nor deletes it. */
+CampaignSaveWrite MwWriteCampaignSaveFile(const char *filename)
 {
-    if (!mwDosFiles.create) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwDosFiles.create");
-    return mwDosFiles.create(filename,handleOrError);
-}
-/* MW_MAIN081B:1066..106C. True means native CF set; no retries. */
-bool MwDosWriteFile(const uint8_t *buffer,uint16_t byteCount,uint16_t fileHandle,uint16_t *bytesWrittenOrError)
-{
-    if (!mwDosFiles.write) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwDosFiles.write");
-    return mwDosFiles.write(buffer,byteCount,fileHandle,bytesWrittenOrError);
+    mw1o::files::GameFile file=mw1o::files::create_save(filename);
+    if (!file) return CampaignSaveWrite::NotCreated;
+    uint8_t bytes[CAMPAIGN_SAVE_BYTES];MwEncodeCampaignExchange(bytes);
+    const bool written=file.write(bytes,CAMPAIGN_SAVE_BYTES);
+    (void)file.close(); /* Native ignores the close result. */
+    return written?CampaignSaveWrite::Written:CampaignSaveWrite::DiskFull;
 }
 
 /* MW_MAIN081B:6D52..6E6D; invalid embedded/leading spaces return6D53.
@@ -54,21 +54,19 @@ readName:
     }
     memcpy(campaignStartup.campaignTextInputBuffer+nameLength,".GAM",sizeof(".GAM"));
     /* The original asked for a save disk on drives A and B ; dropped. */
-    uint16_t handleOrError;
-    if (MwDosCreateSaveFile((const char *)campaignStartup.campaignTextInputBuffer+leadingSpaces,&handleOrError))
+    switch (MwWriteCampaignSaveFile((const char *)campaignStartup.campaignTextInputBuffer+leadingSpaces))
+    {
+    case CampaignSaveWrite::Written: break;
+    case CampaignSaveWrite::NotCreated:
     {
         MwNativeByteView text={campaignOptions.saveDiskErrorText,SAVE_ERROR_TEXT_OFFSET,sizeof(campaignOptions.saveDiskErrorText)};
         return MwShowOptionsMessageAndReturnContinuation(&text,text.nativeBase);
     }
-    campaignOptions.saveFileHandle=handleOrError;
-    uint8_t bytes[CAMPAIGN_SAVE_BYTES];MwEncodeCampaignExchange(bytes);
-    uint16_t bytesWrittenOrError;
-    (void)MwDosWriteFile(bytes,CAMPAIGN_SAVE_BYTES,handleOrError,&bytesWrittenOrError);
-    (void)MwDosCloseFile(campaignOptions.saveFileHandle);
-    if (bytesWrittenOrError!=CAMPAIGN_SAVE_BYTES) /* Native ignores write CF and close result. */
+    case CampaignSaveWrite::DiskFull:
     {
         MwNativeByteView text={campaignOptions.saveDiskFullText,SAVE_FULL_TEXT_OFFSET,sizeof(campaignOptions.saveDiskFullText)};
         return MwShowOptionsMessageAndReturnContinuation(&text,text.nativeBase);
+    }
     }
     return CAMPAIGN_CONTINUE_OPTIONS;
 }
@@ -96,29 +94,37 @@ uint16_t MwShowLoadCampaignCallback(void)
     return CAMPAIGN_CONTINUE_UI;
 }
 
-/* MW_MAIN081B:6EEB..6F4B. One DOS DTA filename owner is updated by every
- * FindNext. Keep its reference, not copies of selector/offset artifacts. */
+/* MW_MAIN081B:6EEB..6F4B. The stems in the file system's own order, at most
+ * the list's twelve rows. True: no save. */
 bool MwEnumerateCampaignSaves(void)
 {
-    if (!mwDosFiles.getDtaFilename || !mwDosFiles.findFirst || !mwDosFiles.findNext) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwDosFiles.getDtaFilename || !mwDosFiles.findFirst || !mwDosFiles.findNext");
-    campaignOptions.saveSearchFilename=mwDosFiles.getDtaFilename();
     campaignOptions.saveFileCount=0;
-    if (mwDosFiles.findFirst(campaignOptions.saveFindPattern,0)) return true;
+    const std::vector<std::string> stems=mw1o::files::list_saves();
+    if (stems.empty()) return true;
     campaignOptions.saveListWriteRow=campaignOptions.saveListRows;
-    do
+    for (const std::string &stem : stems)
     {
-        const char *filename=campaignOptions.saveSearchFilename;
-        char *stem=campaignOptions.saveListWriteRow->caption.columns.filename;
-        while (*filename!='.') *stem++=*filename++;
-        *stem='\0';
+        memcpy(campaignOptions.saveListWriteRow->caption.columns.filename,stem.c_str(),stem.size()+1);
         ++campaignOptions.saveListWriteRow;
         if (++campaignOptions.saveFileCount==CAMPAIGN_SAVE_ROWS) break;
-    } while (!mwDosFiles.findNext());
-    return false; /* Native swallows every FindNext end/error. */
+    }
+    return false;
 }
 
-/* Restore a complete GAM record without replacing the company on failed IO.
- * The extra read byte detects oversized files; it is not campaign data. */
+/* The file half of the load callback below: the whole record, or false with the company
+ * untouched. The extra read byte detects oversized files. */
+bool MwReadCampaignSaveFile(const char *filename)
+{
+    mw1o::files::GameFile file=mw1o::files::open_game_file(filename);
+    if (!file) return false;
+    uint8_t bytes[CAMPAIGN_SAVE_BYTES+1];
+    const std::optional<uint16_t> bytesRead=file.read(bytes,sizeof(bytes));
+    if (!file.close() || bytesRead!=CAMPAIGN_SAVE_BYTES) return false;
+    MwDecodeCampaignExchange(bytes);
+    return true;
+}
+
+/* Restore a complete GAM record without replacing the company on failed IO. */
 uint16_t MwLoadSelectedCampaignCallback(void)
 {
     uint16_t row=(uint8_t)campaignUi.selectedUiRecordIndex; /* Native MUL BL uses AL only. */
@@ -131,21 +137,12 @@ uint16_t MwLoadSelectedCampaignCallback(void)
         campaignOptions.selectedSaveFilename[character]=stem[character];++character;
     }
     memcpy(campaignOptions.selectedSaveFilename+character,".GAM",sizeof(".GAM"));
-    uint16_t handleOrError;
-    if (MwDosOpenResourceReadWrite(campaignOptions.selectedSaveFilename,&handleOrError)) goto diskError;
-    campaignOptions.saveFileHandle=handleOrError;
-    uint8_t bytes[CAMPAIGN_SAVE_BYTES+1];
-    uint16_t bytesReadOrError;bytesReadOrError=0;
-    bool readError;readError=MwDosReadFile(bytes,sizeof(bytes),handleOrError,&bytesReadOrError);
-    bool closeError;closeError=MwDosCloseFile(campaignOptions.saveFileHandle);
-    if (readError || closeError || bytesReadOrError!=CAMPAIGN_SAVE_BYTES) goto diskError;
-    MwDecodeCampaignExchange(bytes);
-    campaignUi.hubSelectedRecordIndex=0;
-    MwIndexedPictureCloseHook(); /* RET-only: retain actual directory/cache state. */
-    return CAMPAIGN_CONTINUE_PLANET_HUB;
-diskError:
+    if (!MwReadCampaignSaveFile(campaignOptions.selectedSaveFilename))
     {
         MwNativeByteView text={campaignOptions.loadDiskErrorText,LOAD_ERROR_TEXT_OFFSET,sizeof(campaignOptions.loadDiskErrorText)};
         return MwShowOptionsMessageAndReturnContinuation(&text,text.nativeBase);
     }
+    campaignUi.hubSelectedRecordIndex=0;
+    MwIndexedPictureCloseHook(); /* RET-only: retain actual directory/cache state. */
+    return CAMPAIGN_CONTINUE_PLANET_HUB;
 }

@@ -46,7 +46,6 @@ typedef struct MwIntroPositionedText
 } MwIntroPositionedText;
 bool MwLoadMechMusic(void);
 bool MwOpenAndLoadMusicFile(const char *filename);
-bool MwReadMusicStreamIntoBuffer(uint16_t fileHandle);
 void MwDrawIntroNarrationLines(uint8_t colour);
 bool MwWaitTicksOrInputInterruption(uint16_t delayTicks);
 void MwSetIntroTextPaletteColour(uint8_t paletteCode);
@@ -72,7 +71,6 @@ struct CampaignStartupState
     MwIntroPositionedText introFifthLeftText, introFifthRightText;
     MwIntroPositionedText introSixthLeftText, introSixthRightText;
     MwIntroPositionedText introSeventhLeftText, introSeventhRightText;
-    uint16_t musicFileHandle;
     uint8_t campaignTextInputBuffer[0x29];
     uint16_t campaignEventPlanetSelectors[6];
     uint8_t eventPlanetChoicePool0[8], eventPlanetChoicePool1[3];

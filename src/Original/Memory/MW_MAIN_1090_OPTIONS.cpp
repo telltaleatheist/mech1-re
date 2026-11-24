@@ -55,7 +55,7 @@ bool MwImportCampaignOptionsData(void)
         || !MwStoryCopyBytes("probe.restore",&restoreNavigationProbe,1)
         || !MwStoryCopyBytes("probe.confirmation",&confirmationNavigationProbe,1)
         || !MwStoryCopyBytes("probe.news",&newsNavigationProbe,1)) return false;
-    campaignOptions.saveFileHandle=0; /*A04C*/campaignOptions.saveFileCount=0; /*A04E*/
+    campaignOptions.saveFileCount=0; /*A04E*/
     memset(campaignOptions.selectedSaveFilename,0,sizeof(campaignOptions.selectedSaveFilename)); /*A064*/
     memcpy(campaignOptions.saveFindPattern,mwSaveFindPattern,sizeof(campaignOptions.saveFindPattern)); /*A056*/
     /* The screen's words, from story/words.json (options.word.*), as the exe holds them. */
@@ -69,6 +69,6 @@ bool MwImportCampaignOptionsData(void)
         return false;
     campaignOptions.newsAtStart=0; /*257F*/campaignOptions.newsAtEnd=0; /*2580*/campaignOptions.newsLastArticleId=0; /*2562*/
     campaignOptions.newsArticleCursor=NULL;campaignOptions.newsArticleListStart=NULL;
-    campaignOptions.saveSearchFilename=NULL;campaignOptions.saveListWriteRow=NULL;
+    campaignOptions.saveListWriteRow=NULL;
     return true;
 }

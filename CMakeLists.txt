@@ -196,7 +196,6 @@ add_library(mechwarrior_original STATIC
     src/Support/VideoMode.cpp
     src/Support/CombatInstallation.cpp
     src/Support/BtechImage.cpp
-    src/Support/CombatNearHeap.cpp
     src/Original/Memory/MW_MAIN_1090_EVENTS.cpp
     src/Original/Memory/MW_MAIN_1AA5.cpp
     src/Original/Memory/MW_MAIN_28BE.cpp
@@ -206,7 +205,7 @@ add_library(mechwarrior_original STATIC
     src/Original/Runtime/MW_MAIN_0800.cpp
     src/Original/Memory/MW_EGA_0800_STATE.cpp
     src/Original/Video/MW_EGA_0800.cpp
-    src/SDL/SDLBackend_Files.cpp
+    src/Support/GameFiles.cpp
     src/Support/NativeAddress.cpp
     src/Support/PortDiagnostics.cpp
     src/Support/MidiAddress.cpp
@@ -303,6 +302,17 @@ if(MECHWARRIOR_BUILD_TESTS)
     add_executable(runtime_test tests/runtime_test.cpp)
     target_link_libraries(runtime_test PRIVATE mechwarrior_original)
     add_test(NAME runtime COMMAND runtime_test)
+    # The game's files at play (B6): each rule, on files the test makes; the save's file half, by field.
+    add_executable(game_files_test tests/game_files_test.cpp)
+    target_link_libraries(game_files_test PRIVATE mechwarrior_original)
+    add_test(NAME game_files COMMAND game_files_test "${CMAKE_CURRENT_BINARY_DIR}/game_files_work")
+    add_executable(save_roundtrip_test tests/save_roundtrip_test.cpp)
+    target_link_libraries(save_roundtrip_test PRIVATE mechwarrior_original)
+    find_package(Python3 COMPONENTS Interpreter)
+    if(Python3_FOUND)
+        add_test(NAME save_roundtrip COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tests/save_roundtrip.py"
+            --program $<TARGET_FILE:save_roundtrip_test> --data "${CMAKE_CURRENT_SOURCE_DIR}/data" --work "${CMAKE_CURRENT_BINARY_DIR}/save_roundtrip_work")
+    endif()
     # A connected joystick in both games (H3): calibration and reads on fake axes.
     add_executable(joystick_test tests/joystick_test.cpp)
     target_link_libraries(joystick_test PRIVATE mechwarrior_original)
@@ -465,6 +475,9 @@ if(MECHWARRIOR_BUILD_SDL)
         if(Python3_FOUND)
             add_test(NAME status_setup COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tests/status_setup_test.py"
                 --program $<TARGET_FILE:mechwarrior> --work "${CMAKE_CURRENT_BINARY_DIR}/status_setup_work")
+            add_test(NAME read_only_install COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tests/read_only_install_test.py"
+                --port $<TARGET_FILE:mechwarrior> --work "${CMAKE_CURRENT_BINARY_DIR}/read_only_install_work")
+            set_tests_properties(read_only_install PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 600)
             add_test(NAME exe_free COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tools/trace/exe_free.py"
                 --port $<TARGET_FILE:mechwarrior> --work "${CMAKE_CURRENT_BINARY_DIR}/exe_free_work")
             set_tests_properties(exe_free PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 3600)

@@ -1,5 +1,6 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/ega_campaign.h"
+#include "mechwarrior/original_data.h"
 #include "mechwarrior/story.h"
 #include <stddef.h>
 #include <stdlib.h>
@@ -75,7 +76,7 @@ static const EgaOverlayByteSpan overlayByteSpans[] =
     { 0x09C0, 0x0002, NULL, &egaOverlay.textExtraLeading },
     { 0x09C2, 0x010E, egaTextColourCodeBytes, NULL },
     { 0x0AD0, 0x0002, NULL, &egaOverlay.fontReadBufferOffset },
-    { 0x0AD2, 0x0002, NULL, &egaOverlay.fontFileHandle },
+    { 0x0AD2, 0x0002, NULL, &egaOverlay.fontHandleBytes },
     { 0x0AD4, 0x001A, (uint8_t *)egaOverlay.smallFontFilename, NULL },
     { 0x0AEE, 0x0015, (uint8_t *)egaOverlay.largeFontFilename, NULL },
     { 0x0B03, 0x057B, egaOverlay.fontBitmapStorage, NULL },
@@ -159,6 +160,13 @@ void EgaLoadStartState(void)
 bool EgaLoadStartStoryBytes(void)
 {
     return MwStoryCopyBytes("ega.row_200_offset", egaPaletteCodeBytes, EGA_WORD_BYTES);
+}
+/* Play never opens MW_EGA.EXE: the overlay's owners start as the exe holds
+ * them, from code (slice 6e). */
+bool MwHostLoadEgaInitialData(void)
+{
+    EgaLoadStartState();
+    return EgaLoadStartStoryBytes();
 }
 /* The overlay's machine-code spans and the font names' unread tails, which
  * the start state leaves zero (start_exe_test skips them; the row-200 word
