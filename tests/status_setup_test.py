@@ -111,6 +111,18 @@ def main():
     check(any(l.startswith("setup: font ") and l.endswith("SairaCondensed-Bold.ttf") for l in out),
           "the theme's face read")
     check(not os.path.exists(os.path.join(user, "install")), "break: nothing installed from the screen either")
+    kit_words = "No copy of MechWarrior 1 was found in"
+    check(any(kit_words in l for l in out), "break: no recognise answer: the kit's sentence")
+    # What the recogniser knows a pick to be is said on the screen, plain.
+    fake = os.path.join(work, "fakebtech")
+    os.makedirs(fake)
+    open(os.path.join(fake, "BTECH.EXE"), "wb").write(b"x" * 1000)
+    p, _ = run(a.program, ["--setup"], dict(screen, REKIT_SETUP_PICKER="path:" + os.path.join(fake, "BTECH.EXE")))
+    out = p.stdout.splitlines()
+    said = [l for l in out if "BTECH.EXE was found there, but it is a revision this program doesn't know" in l]
+    check(p.returncode == 1 and said and not any(kit_words in l for l in out), "an unknown BTECH.EXE is named on the screen")
+    p, _ = run(a.program, ["--setup"], dict(env, MECHWARRIOR_SETUP_PICK=fake))
+    check(p.returncode == 2 and "a revision this program doesn't know" in p.stdout, "a scripted pick of it says so too")
 
     game = os.environ.get("MW1O_GAME")
     btech = os.environ.get("MW1O_BTECH_1990")

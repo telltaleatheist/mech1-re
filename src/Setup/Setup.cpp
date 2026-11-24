@@ -4,8 +4,10 @@
 
 #include <rekit/archive.h>
 #include <rekit/files.h>
+#include <rekit/installshield.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cctype>
 #include <cstdlib>
 #include <filesystem>
@@ -208,6 +210,71 @@ rekit::SourceRules rules() {
   r.clues.push_back(std::move(btech));
   r.programs = {"btech.exe", "mw_main.exe"};
   return r;
+}
+
+std::string recognise(const std::string& path) try {
+  // The other games this program is asked for by mistake, each told by a file of its own; found by the kit's walk.
+  const auto other = [](const char* game, int rank) {
+    rekit::Identity id;
+    id.game = game, id.rank = rank;
+    return id;
+  };
+  rekit::SourceRules r;
+  const auto add = [&r](rekit::Clue::Kind kind, const char* file, std::function<rekit::Identity(const std::vector<uint8_t>&)> judge,
+                        size_t limit = 1u << 20) { r.clues.push_back({kind, file, limit, std::move(judge)}); };
+  // A BTECH.EXE, not a known revision (a known one is the game, and was found).
+  add(rekit::Clue::kInstall, "btech.exe", [other](const std::vector<uint8_t>& b) {
+    return btech_revision(b).empty() ? other("btech", 30) : rekit::Identity{};
+  });
+  // MechWarrior 3's and Pirate's Moon's installed data: the archive's last words name the version. A disc's
+  // InstallShield header lists that file, Pirate's Moon's its own missions.
+  const auto mw3 = [other](const std::vector<uint8_t>& b) {
+    const auto word = [&b](size_t from_end) {
+      const uint8_t* p = b.data() + b.size() - from_end;
+      return uint32_t(p[0]) | uint32_t(p[1]) << 8 | uint32_t(p[2]) << 16 | uint32_t(p[3]) << 24;
+    };
+    if (b.size() < 12) return rekit::Identity{};
+    if (word(8) == 1) return other("mw3", 20);
+    if (word(12) == 2) return other("pm", 20);
+    return rekit::Identity{};
+  };
+  add(rekit::Clue::kInstall, "zbd/reader.zbd", mw3, 64u << 20);
+  add(rekit::Clue::kDisc, "data1.hdr", [other](const std::vector<uint8_t>& b) {
+    std::vector<std::pair<std::string, uint64_t>> files;
+    std::string error;
+    if (!rekit::list_installshield(b, &files, &error)) return rekit::Identity{};
+    bool reader = false, moon = false;
+    for (const auto& [name, size] : files) {
+      const std::string l = lower(name);
+      reader |= l == "zbd/reader.zbd";
+      moon |= l.find("readersa1.zbd") != std::string::npos;
+    }
+    return moon ? other("pm", 20) : reader ? other("mw3", 20) : rekit::Identity{};
+  }, 8u << 20);
+  // MechWarrior 2's project file (it starts with PROJ) and its database, in the game's folder, its disc's MECH2
+  // folder or the disc image's top.
+  const auto project = [other](const std::vector<uint8_t>& b) {
+    return b.size() >= 4 && std::equal(b.begin(), b.begin() + 4, "PROJ") ? other("mw2", 10) : rekit::Identity{};
+  };
+  const auto database = [other](const std::vector<uint8_t>& b) { return b.empty() ? rekit::Identity{} : other("mw2", 10); };
+  for (const char* folder : {"", "mech2/"}) {
+    add(rekit::Clue::kInstall, folder == std::string() ? "mw2.prj" : "mech2/mw2.prj", project);
+    add(rekit::Clue::kInstall, folder == std::string() ? "database.mw2" : "mech2/database.mw2", database);
+  }
+  r.programs = {"btech.exe", "mw_main.exe", "mech2.exe", "mw2.exe", "mech3.exe"};
+
+  const auto stop = std::chrono::steady_clock::now() + std::chrono::seconds(kRecogniseSeconds);
+  const rekit::Found f = rekit::find_source(path, r, [stop](double, const std::string&) { return std::chrono::steady_clock::now() < stop; });
+  if (f.kind == rekit::Found::kNothing) return "";
+  const std::string plays = std::string(" This program plays ") + kTitle + ", the 1989 game whose program is BTECH.EXE.";
+  if (f.game == "btech")
+    return "BTECH.EXE was found there, but it is a revision this program doesn't know. It knows the 1989 release's and the 1990-01-22 one's.";
+  if (f.game == "mw2") return "That is MechWarrior 2, another game." + plays;
+  if (f.game == "mw3") return "That is MechWarrior 3, another game." + plays;
+  if (f.game == "pm") return "That is MechWarrior 3: Pirate's Moon, another game." + plays;
+  return "";
+} catch (...) {
+  return "";
 }
 
 rekit::SearchHints hints() {

@@ -84,6 +84,12 @@ std::string btech_revision(const std::vector<uint8_t>& bytes);
 // What the kit's walk looks for: BTECH.EXE judged by its revision; a pick of BTECH.EXE or MW_MAIN.EXE stands
 // for its folder.
 rekit::SourceRules rules();
+// What a pick holds when the walk found no copy in it, in one sentence for the setup screen (rekit::sdl::Game::
+// recognise): a BTECH.EXE of a revision this program doesn't know, or another MechWarrior (2, 3, Pirate's Moon), by
+// the files each is known by. "" when it is none of those (the kit's own sentence stands) or the pick can't be read.
+// Given any path; never throws; the look is stopped after a while (kRecogniseSeconds).
+std::string recognise(const std::string& path);
+inline constexpr int kRecogniseSeconds = 20;
 // Where a DOS game's copy is usually kept: no installer, so no registry; the usual folder names under the system
 // drive, the home folder and any Wine prefix, and a folder dropped beside the program.
 rekit::SearchHints hints();

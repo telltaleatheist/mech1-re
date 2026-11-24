@@ -142,6 +142,57 @@ void family_folder(const fs::path& base) {
   fs::remove_all(base, ec);
 }
 
+// What recognise() says of a pick the walk found no copy in: one case each, "" when it is none of them. The other
+// games' files are made here, a few bytes each, in the shape the recogniser judges (nothing of any game's).
+void recognise_picks(const fs::path& work) {
+  const fs::path base = work / "recognise";
+  const auto has = [](const std::string& s, const std::string& w) { return s.find(w) != std::string::npos; };
+  // Trailing words: the version at 8 from the end is 1 for MechWarrior 3, the one 12 from the end is 2 for Pirate's Moon.
+  std::string mw3(64, 'x'), pm(64, 'x');
+  for (int i = 0; i < 4; ++i) mw3[56 + i] = i == 0 ? 1 : 0, pm[52 + i] = i == 0 ? 2 : 0, pm[56 + i] = 9;
+  write(base / "btech" / "BTECH.EXE", std::string(1000, 'x'));
+  write(base / "mw2prj" / "MW2.PRJ", "PROJ the rest");
+  write(base / "mw2cd" / "MECH2" / "MW2.PRJ", "PROJ the rest");
+  write(base / "mw2data" / "Database.mw2", "x");
+  write(base / "notmw2" / "MW2.PRJ", "another file");
+  write(base / "mw3" / "zbd" / "reader.zbd", mw3);
+  write(base / "pm" / "ZBD" / "READER.ZBD", pm);
+  write(base / "othergame" / "zbd" / "reader.zbd", std::string(64, 'x'));
+  write(base / "nothing" / "README.TXT", "x");
+  write(base / "loose" / "README.TXT", "x");
+  write(base / "both" / "MW2.PRJ", "PROJ the rest");
+  write(base / "both" / "BTECH.EXE", std::string(1000, 'x'));
+
+  const std::string unknown = setup::recognise((base / "btech").string());
+  check(has(unknown, "BTECH.EXE was found there") && has(unknown, "1990-01-22") && !has(unknown, "another game"),
+        "recognise: a BTECH.EXE of another revision says so");
+  check(setup::recognise((base / "btech" / "BTECH.EXE").string()) == unknown, "recognise: the file picked itself says the same");
+  for (const char* d : {"mw2prj", "mw2cd", "mw2data"})
+    check(has(setup::recognise((base / d).string()), "That is MechWarrior 2, another game."),
+          std::string("recognise: MechWarrior 2 by ") + d);
+  check(has(setup::recognise((base / "mw3").string()), "That is MechWarrior 3, another game."), "recognise: MechWarrior 3");
+  check(has(setup::recognise((base / "pm").string()), "Pirate's Moon, another game."), "recognise: Pirate's Moon");
+  check(setup::recognise((base / "both").string()) == unknown, "recognise: the BTECH.EXE is named before another game's file");
+  check(setup::recognise((base / "notmw2").string()).empty(), "break: an MW2.PRJ that is not one says nothing (the kit's sentence)");
+  check(setup::recognise((base / "othergame").string()).empty(), "break: a reader.zbd of neither version says nothing");
+  check(setup::recognise((base / "nothing").string()).empty(), "break: a folder with nothing known says nothing (the kit's sentence)");
+  for (const std::string& odd : {(base / "absent").string(), std::string(), std::string("\0x", 2), (base / "nothing" / "README.TXT").string()})
+    check(setup::recognise(odd).empty(), "break: an unreadable or absent pick says nothing and throws nothing");
+#if REKIT_HAVE_LIBARCHIVE
+  const fs::path zips = base / "zips";
+  fs::create_directories(zips);
+  const auto text = [&](const char* name, const std::string& in) { write(base / "src" / name, in); return (base / "src" / name); };
+  make_zip(zips / "btech.zip", {{"GAMES/MECH/BTECH.EXE", text("b.bin", std::string(1000, 'x'))}});
+  make_zip(zips / "mw2.zip", {{"cd/MECH2/MW2.PRJ", text("p.bin", "PROJ the rest")}});
+  make_zip(zips / "mw3.zip", {{"MW3/zbd/reader.zbd", text("r.bin", mw3)}});
+  make_zip(zips / "none.zip", {{"README.TXT", fs::path()}});
+  check(setup::recognise((zips / "btech.zip").string()) == unknown, "recognise: in an archive, a BTECH.EXE of another revision");
+  check(has(setup::recognise((zips / "mw2.zip").string()), "MechWarrior 2"), "recognise: in an archive, MechWarrior 2");
+  check(has(setup::recognise((zips / "mw3.zip").string()), "MechWarrior 3"), "recognise: in an archive, MechWarrior 3");
+  check(setup::recognise((zips / "none.zip").string()).empty(), "break: an archive with nothing known says nothing");
+#endif
+}
+
 void game_free(const fs::path& work) {
   // The player's folder's name, without making it.
   const std::string pf = setup::pref_folder(setup::kOrganisation, setup::kApplication);
@@ -168,6 +219,7 @@ void game_free(const fs::path& work) {
         "no old folder: nothing made");
 
   family_folder(work / "family");
+  recognise_picks(work);
 
   // MechWarrior.ini's game_folder.
   write(work / "ini" / "MechWarrior.ini", "; a comment\ncombat_speed=2\n  game_folder = /some/where  \n");
@@ -213,6 +265,8 @@ void with_game(const fs::path& work, const char* game_env, const char* ref_env, 
   check(f.kind == rekit::Found::kInstall && f.game == "mech1" && f.version == v_1990, "find_source: the folder is mech1 " + v_1990);
   const rekit::Found by_program = rekit::find_source((copy / "MW_MAIN.EXE").string(), setup::rules());
   check(by_program.kind == rekit::Found::kInstall, "a pick of MW_MAIN.EXE stands for its folder");
+  check(setup::recognise(copy.string()).empty() && setup::recognise((copy / "BTECH.EXE").string()).empty(),
+        "break: a copy of the game is nothing to recognise");
   const fs::path out = work / "user" / "install";
   setup::Installed r = setup::install(f, out.string());
   check(r.ok && setup::check_install(out.string(), false).state == rekit::Status::kReady, "installed from a folder: ready");

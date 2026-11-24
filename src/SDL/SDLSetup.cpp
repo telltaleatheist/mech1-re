@@ -87,6 +87,7 @@ std::string run_screen(bool setupOnly, const std::string& found, bool searched, 
     return setup::find_install("", user, pdir, &s);
   };
   g.describe = describe;
+  g.recognise = setup::recognise;
   g.install = [](const rekit::Found& f, const std::string& out, const std::string&, const rekit::sdl::ProgressFn& progress) {
     const setup::Installed r = setup::install(f, out, [&](double at, const std::string& file) {
       return progress(rekit::sdl::Progress{"Copying the game files", at, file});
@@ -115,7 +116,8 @@ std::string take_copy(const std::string& picked, const std::string& user, std::s
   std::printf("setup: looked at %s: %s\n", picked.c_str(), f.kind == rekit::Found::kNothing ? "nothing" : f.version.c_str());
   if (!f.detail.empty()) std::fprintf(stderr, "%s", f.detail.c_str());
   if (f.kind != rekit::Found::kInstall) {
-    *why = "No copy of " + std::string(setup::kTitle) + " this program knows was found in " + picked + ".";
+    *why = setup::recognise(picked);
+    if (why->empty()) *why = "No copy of " + std::string(setup::kTitle) + " this program knows was found in " + picked + ".";
     return "";
   }
   const setup::Installed r = setup::install(f, setup::default_install(user));
