@@ -8,7 +8,7 @@ A project decision (2026-11-22) sets the direction:
 - **SDL3.** Stay on SDL3 for output.
 - **The bar is "play identical", not "byte identical".** That means the same songs, cues, timing, pictures and game, drawn and played by our own code rather than by a model of 1989 hardware.
 
-mw1r-v1.0.0 is tagged only after sound, graphics and the hardware layer under them are rebuilt without emulation and gated (group A in section 5), and the memory images are rebuilt as typed state (group B, a later project decision). Section 5 is the single path. Its slices are sized for checking, not speed: each one changes one thing that its check can see.
+mw1r-v1.0.0 is tagged only after sound, graphics and the hardware layer under them are rebuilt without emulation and gated (group A in section 5), and the memory images are rebuilt as typed state (group B, a project decision). Section 5 is the single path. Its slices are sized for checking, not speed: each one changes one thing that its check can see.
 
 This plan replaces two parts of [the phase 5 audio plan](AUDIO_PLAN.md): its own FM synth (`FmChip`, a YM3812 model, so chip emulation) and its MT-32 options. That plan's finished work stays the base:
 - its slice 1, the port-event log and golden audio traces;
@@ -358,7 +358,7 @@ Every slice below is its own branch with the full gate green: both setups, the t
 | H5 | The port bus retired: `MwSdlWriteDevicePort`, `ReadDevicePort` and the port-word hooks removed with their last callers; the sound-port event log retired in favour of the note and tone logs | everything above exact | 2 |
 | R | The release gate: every gate on Windows, macOS and Linux from fresh builds. Packages from a local tag. The listening list and the visual acceptance list signed off on the packaged builds. The controller path is covered by the SDL virtual-device test (H3b); no physical controller is available | all of the above | 2 |
 
-**Group A total:** about 50-51 developer days plus the listening sessions. That is roughly 10 weeks, planned for **one developer, in order**.
+**Group A total:** about 51-52 developer days plus the listening sessions. That is roughly 10 weeks, planned for **one developer, in order**.
 
 (A note for later, not part of the plan: G1-G5 and H2-H3 touch different files from T1-S4, so a second developer could take them in parallel, with the gate order unchanged. The lead revisits this when a second developer is free.)
 
@@ -402,7 +402,7 @@ Every B slice keeps the group A logs exact (the note, tone and game-event logs, 
 | B5 | The C runtime: the standard library in place of the 1989 heap (0810's allocator and combat's near heap), streams (0810's) and divide (0810's and 1BF5's), keeping any game-visible limit as an explicit rule with a test. The near heap's native sizes decide when it runs out, and that is the limit to keep | traces and frames | 4 |
 | B6 | DOS files: `std::filesystem` in place of the INT 21h handle layer and 8.3 names: `dos_files.h` and its three campaign callers (resources, saves, start-up), and combat's file streams. The save test is new in this slice: a save written and read back gives the same exchange block, field by field | traces; the setup and save tests | 3 |
 
-**Group B total:** about 35 developer days, roughly 7 weeks. **With group A:** about 85-86 developer days plus the listening sessions, roughly 17 weeks, for one developer, in order.
+**Group B total:** about 35 developer days, roughly 7 weeks. **With group A:** about 86-87 developer days plus the listening sessions, roughly 17 weeks, for one developer, in order.
 
 For later, when the callers become ours (group B, or H5 at the latest):
 - **The mode calls by what they do.** `MwSetVideoMode` and `MwGetVideoMode` (G5) still take the BIOS mode numbers, 0Dh and 3, because their callers are line-for-line conversions. Once those callers are ours, they set up the canvas and close it by name. The numbers stay only where the game's data stores them (the campaign's saved mode).
