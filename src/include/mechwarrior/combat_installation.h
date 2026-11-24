@@ -31,7 +31,7 @@ bool BtechDecodeImage(const uint8_t *packed,size_t packedBytes,uint8_t **image,B
 bool BtechHostLoadInitialData(void);
 /* Host EXEC/CRT data projections, NOT additional native game procedures. */
 void BtechInitializeFreshMechOwners(const uint8_t *data);
-void BtechInitializeFreshWorldOwners(const uint8_t *data);
+void BtechInitializeFreshWorldOwners(void);
 void BtechInitializeFreshStartupOwners(const uint8_t *data);
 void BtechHostDiscardChildData(void);
 struct BtechResourceBank;

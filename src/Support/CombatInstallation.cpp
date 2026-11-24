@@ -185,7 +185,7 @@ bool BtechHostLoadInitialData(void)
     memcpy(data,image+BTECH_DATA_IMAGE_OFFSET,BTECH_BSS_START);
     memset(data+BTECH_BSS_START,0,BTECH_BSS_END-BTECH_BSS_START);
     BtechHostDiscardChildData();
-    BtechInitializeFreshMechOwners(data);BtechInitializeFreshWorldOwners(data);BtechInitializeFreshStartupOwners(data);
+    BtechInitializeFreshMechOwners(data);BtechInitializeFreshWorldOwners();BtechInitializeFreshStartupOwners(data);
     BtechInitializeFreshSceneOwners();
     /* Reload writable CS owners as well as DS; handlers can patch their bytes. */
     const uint8_t *platform=image+(0x1BF5-BTECH_IMAGE_LOAD_SELECTOR)*0x10;
@@ -201,7 +201,7 @@ bool BtechHostLoadInitialData(void)
      * code bytes in the 1990 revision and zero in the reference: dead either
      * way, as startup saved INT 24 into it before any read. */
     bool loaded=BtechImportCombatStageInitialData(data,0x10000)
-        && BtechImportWorldInitialData(data,0x10000,image+BTECH_GEOMETRY_IMAGE_OFFSET,BTECH_IMAGE_BYTES-BTECH_GEOMETRY_IMAGE_OFFSET)
+        && BtechImportWorldInitialData()
         && BtechImportStartupInitialData(data,0x10000)
         && BtechImportSoundInitialData(data,0x10000)
         && BtechImportToneInitialData(data,0x10000,image+BTECH_TONE_IMAGE_OFFSET,BTECH_IMAGE_BYTES-BTECH_TONE_IMAGE_OFFSET)

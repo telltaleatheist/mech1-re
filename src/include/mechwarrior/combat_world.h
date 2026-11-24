@@ -90,7 +90,7 @@ struct CombatGeometryTableState
     uint8_t vertexNearPlaneState[0xFF];
 };
 extern CombatGeometryTableState combatGeometryTables;
-bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t *segment22B6,size_t segmentBytes);
+bool BtechImportWorldInitialData(void);
 /* DS:0000, what a null near pointer reads and writes in the original. It is
  * the C runtime's null segment (eight zero bytes, then its copyright bytes,
  * checked at exit), loaded from the image. Two original paths go through it:
