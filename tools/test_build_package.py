@@ -13,7 +13,7 @@ import build_package
 class PackageTests(unittest.TestCase):
     def fixture(self, root):
         for name in ["LICENSE", "MechWarrior.ini", "docs/LICENSES/MIT.txt", "docs/NOTICE.md",
-                     "docs/THIRD_PARTY_NOTICES.md", "sdl/LICENSE.txt",
+                     "docs/THIRD_PARTY_NOTICES.md", "sdl/LICENSE.txt", "sdl/src/hidapi/LICENSE-bsd.txt",
                      "data/rules/units.json", "data/ui/hub.json", "data/music/soundfont_programs.txt", "extern/re-setup-kit/LICENSE",
                      "extern/re-setup-kit/third_party/stb/LICENSE", "extern/re-setup-kit/third_party/miniz/LICENSE",
                      "extern/TinySoundFont/LICENSE"]:
@@ -52,6 +52,7 @@ class PackageTests(unittest.TestCase):
             self.assertFalse([f for f in extracted.rglob("*") if any(n in f.name.lower() for n in build_package.REMOVED_LIBRARIES)])
             self.assertTrue((extracted / "licenses/stb-LICENSE").exists() and (extracted / "licenses/miniz-LICENSE").exists())
             self.assertTrue((extracted / "licenses/TinySoundFont-LICENSE").exists())
+            self.assertTrue((extracted / "licenses/hidapi-LICENSE-bsd.txt").exists())
             for name in ["libarchive-COPYING", "zlib-LICENSE", "xz-COPYING", "xz-COPYING.0BSD"]:
                 self.assertTrue((extracted / "licenses" / name).exists(), name)
             self.assertTrue((extracted / "data/rules/units.json").exists())
@@ -76,14 +77,15 @@ class PackageTests(unittest.TestCase):
                     build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
                 self.assertFalse(list((root / "dist").glob("*.tar.gz")))
 
-    def test_missing_kit_licence_blocks_packaging(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            self.fixture(root)
-            (root / "extern/re-setup-kit/third_party/stb/LICENSE").unlink()
-            with patch.object(build_package, "run"), patch.object(build_package, "platform_name", return_value="linux-x86_64"), self.assertRaisesRegex(RuntimeError, "Missing licence"):
-                build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
-            self.assertFalse(list((root / "dist").glob("*.tar.gz")))
+    def test_missing_kit_or_hidapi_licence_blocks_packaging(self):
+        for licence in ("extern/re-setup-kit/third_party/stb/LICENSE", "sdl/src/hidapi/LICENSE-bsd.txt"):
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                self.fixture(root)
+                (root / licence).unlink()
+                with patch.object(build_package, "run"), patch.object(build_package, "platform_name", return_value="linux-x86_64"), self.assertRaisesRegex(RuntimeError, "Missing licence"):
+                    build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
+                self.assertFalse(list((root / "dist").glob("*.tar.gz")))
 
     def test_missing_archive_licence_or_library_blocks_packaging(self):
         for broken in ("licence", "library"):
