@@ -69,5 +69,5 @@ void BtechSeedSelectedOrderTracking(void);
 uint16_t BtechClassifyOrderSelection(uint16_t commandCode);
 void BtechDrawUnitOrderPanels(void);
 void BtechRefreshLanceOrderScreen(void);
-bool BtechImportOrderInitialData(const uint8_t *data,size_t bytes);
+bool BtechImportOrderInitialData(void);
 #endif
