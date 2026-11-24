@@ -50,8 +50,8 @@ BtechSoundEvent BtechAdvanceMusicSequence(void)
 uint16_t BtechProbePlatformAudioMask(void)
 {
     if (!btechHostReadRomByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostReadRomByte");
-    if (btechHostReadRomByte(0xFFFF,0x000E)!=0xFF) return COMBAT_SOUND_SPEAKER;
-    if (btechHostReadRomByte(0xFC00,0)!=0x21) return COMBAT_SOUND_SPEAKER;
+    if (btechHostReadRomByte(CombatRomByte::Model)!=BIOS_PCJR_MODEL_BYTE) return COMBAT_SOUND_SPEAKER;
+    if (btechHostReadRomByte(CombatRomByte::TandySignature)!=TANDY_ROM_SIGNATURE_BYTE) return COMBAT_SOUND_SPEAKER;
     if (!btechHostQuerySystemConfiguration) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostQuerySystemConfiguration");
     return btechHostQuerySystemConfiguration(0xC021)?0x03:0x07;
 }

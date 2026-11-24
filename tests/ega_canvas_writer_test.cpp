@@ -3,9 +3,20 @@
 // game's planar form (one colour bit of eight pixels per byte). Plain checks:
 // exit 0 when all hold.
 #include "BTECH_2A36_CANVAS.h"
+#include "mechwarrior/port_diagnostics.h"
 
 #include <cstdio>
+#include <string>
 #include <vector>
+
+// The library's stop, as an exception: it is the only symbol in its object, so
+// the linker takes this one and a refusal can be checked.
+struct Refused {
+  std::string reason;
+};
+[[noreturn]] void MwAbortWithReason(const char *, const char *reason, const char *, int, const char *) {
+  throw Refused{reason};
+}
 
 namespace {
 
@@ -15,6 +26,17 @@ void Check(bool ok, const char *what) {
     std::printf("FAIL %s\n", what);
     ++failures;
   }
+}
+
+// What the call was refused for, or nothing.
+template <class Call>
+std::string RefusedFor(Call call) {
+  try {
+    call();
+  } catch (const Refused &refused) {
+    return refused.reason;
+  }
+  return {};
 }
 
 mw1o::video::Canvas &canvas = mw1o::video::GameCanvas();
@@ -74,6 +96,27 @@ int main() {
     ega.setMask(0xFF);
     ega.write(205 * 40, 12);
     Check(canvas.page(1)[205 * 320 - mw1o::video::Canvas::PAGE_STRIDE] == 12, "row 205 of page 0 is page 1's");
+  }
+  // No page: refused at the first byte drawn, not before.
+  {
+    BtechEgaCanvasWriter ega(CombatPage::None);
+    ega.setMask(0xFF);
+    Check(RefusedFor([&] { ega.write(0, 1); }) == "Rejected condition: a drawing on no page", "no page refused");
+    Check(RefusedFor([] { BtechEgaCanvasPage(CombatPage::None); }) == "Rejected condition: a drawing on no page",
+          "no page has no number");
+  }
+  // A captured or restored word at the segment's last byte carries past the pages.
+  {
+    const std::string carried = "Rejected condition: a captured word carries past the canvas's pages";
+    uint8_t bytes[8] = {};
+    BtechResourceAllocation buffer = {bytes, sizeof(bytes)};
+    combatVideo.copySourcePage = combatVideo.drawPage = CombatPage::First;
+    for (const uint16_t start : {(uint16_t)0xFFFE, (uint16_t)0xFFFF}) {
+      combatVideo.graphicsRowOffsets[0] = start;
+      const std::string want = start == 0xFFFF ? carried : std::string();
+      Check(RefusedFor([&] { BtechEgaCaptureScreenRectangle(buffer, 0, 0, 8, 1); }) == want, "the capture's last word");
+      Check(RefusedFor([&] { BtechEgaRestoreScreenRectangle(buffer, 0, 0, 8, 1); }) == want, "the restore's last word");
+    }
   }
   std::printf("ega_canvas_writer: %s\n", failures ? "FAILED" : "ok");
   return failures ? 1 : 0;

@@ -206,7 +206,7 @@ void BtechAllocateShapeBankRegistry(uint16_t count)
  * query between release/reload is supported. Count is deliberately retained. */
 void BtechReleaseCollisionBankAllocation(void)
 {
-    BtechFreeDosMemorySelector(combatResources.surfaceResourceBank.allocation.bytes);
+    BtechFreeDosMemoryBlock(combatResources.surfaceResourceBank.allocation.bytes);
     BtechHostDiscardDecodedSurfaceBank(&combatResources.surfaceResourceBank);
     combatResources.surfaceResourceBank.allocation.bytes=NULL; /* Released host ownership only. */
 }
@@ -215,7 +215,7 @@ void BtechReleaseCollisionBankAllocation(void)
  * only its selector. The wider C bank also carries host decoded ownership. */
 void BtechReleaseResourceBankSelector(BtechResourceBank bank)
 {
-    BtechFreeDosMemorySelector(bank.allocation.bytes);
+    BtechFreeDosMemoryBlock(bank.allocation.bytes);
     BtechHostDiscardDecodedShapeBank(&bank);
 }
 

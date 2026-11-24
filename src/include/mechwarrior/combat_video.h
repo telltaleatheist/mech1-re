@@ -21,21 +21,9 @@ enum { COMBAT_EGA_MODE_320X200=0x0D, COMBAT_VIDEO_EGA=2,COMBAT_VIDEO_AUTO=0,COMB
     COMBAT_EGA_COLOURS=16,COMBAT_PALETTE_SLOTS=10,COMBAT_PALETTE_WORDS=32,
     COMBAT_FONT_SLOTS=20,COMBAT_FONT_READ_BYTES=0x50,COMBAT_PALETTE_FILE_BYTES=0x80,
     COMBAT_BITMAP_LISTS=40,COMBAT_BITMAP_WORKSPACE_BYTES=0x3AC4,COMBAT_BITMAP_READ_BYTES=0x7FFF,
-    COMBAT_EGA_PLANES=4,
-    COMBAT_EGA_SEQUENCER_PORT=0x3C4,
-    COMBAT_EGA_GRAPHICS_PORT=0x3CE,COMBAT_EGA_GRAPHICS_DATA_PORT=0x3CF,COMBAT_EGA_MAP_ALL_PLANES=0x0F02,
-    COMBAT_EGA_WRITE_MODE_TWO=0x0205,COMBAT_EGA_BIT_MASK_REGISTER=8,
-    COMBAT_EGA_WRITE_MODE_ZERO=0x0005,COMBAT_EGA_WRITE_MODE_ONE=0x0105,COMBAT_EGA_ALL_PIXEL_BITS=0xFF08,
-    COMBAT_EGA_MAP_PLANE_ZERO=0x0102,COMBAT_EGA_READ_MAP_REGISTER=4,
-    COMBAT_EGA_DATA_ROTATE_COPY=0x0003,COMBAT_EGA_SEQUENCER_MAP_MASK=2,
-    COMBAT_EGA_SEQUENCER_DATA_PORT=0x3C5,COMBAT_EGA_PLANE_MASK_ALL=0x0F,
+    COMBAT_EGA_PLANES=4,COMBAT_EGA_PLANE_MASK_ALL=0x0F,
     COMBAT_SCHEDULER_PERIOD=0x0D,COMBAT_FATAL_TEXT_X=0x32,COMBAT_FATAL_TEXT_Y=0x64 };
 enum { COMBAT_BIOS_CRTC_PORT=0x63,COMBAT_COLOUR_CRTC_INDEX_PORT=0x3D4 };
-/* 1BF5:00C4's observable DI after copying35 native FAR dispatch entries. */
-enum { COMBAT_NATIVE_GRAPHICS_DISPATCH_START=0x3F34,COMBAT_NATIVE_GRAPHICS_DISPATCH_ENTRIES=0x23,
-    COMBAT_NATIVE_FAR_POINTER_BYTES=4,
-    COMBAT_NATIVE_GRAPHICS_DISPATCH_END=COMBAT_NATIVE_GRAPHICS_DISPATCH_START
-        +COMBAT_NATIVE_GRAPHICS_DISPATCH_ENTRIES*COMBAT_NATIVE_FAR_POINTER_BYTES };
 void BtechSwapScreenPages(uint16_t waitForRetrace);
 void BtechEgaSwapScreenPages(uint16_t waitForRetrace);
 extern const uint8_t glyphTailMasks[8];
@@ -103,7 +91,13 @@ uint32_t BtechEgaGetCaptureStorageSize(uint16_t width,uint16_t height);
 /* BIOS register replies and physical ROM accesses only (combat draws on the
  * canvas, G4); no renderer or game-decision callbacks. The live SDL BTECH entry remains gated. */
 extern uint16_t (*btechHostQueryEgaInfo)(void); /* INT10 AX1200/BX0010 -> BX. */
-extern uint8_t (*btechHostReadRomByte)(uint16_t selector,uint16_t offset);
+/* The two ROM bytes combat looks at to tell a PCjr or Tandy from the rest. */
+enum class CombatRomByte : uint8_t
+{
+    Model,         /* FFFF:000E, the same byte as F000:FFFE: the PC's model. */
+    TandySignature /* F000:C000, the same byte as FC00:0000. */
+};
+extern uint8_t (*btechHostReadRomByte)(CombatRomByte byte);
 bool BtechImportVideoInitialData(const uint8_t *data,size_t bytes);
 uint16_t BtechSelectCombatRenderer(uint8_t adapterOverride,uint8_t allowedMask);
 uint16_t BtechDetectVideoAdapter(void);

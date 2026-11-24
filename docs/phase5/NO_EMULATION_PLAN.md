@@ -393,6 +393,13 @@ Names such as planetSelector, houseSelector, scenarioSelectors and the trace sch
 - **Kept as it was.** The debug capture's JSON prints the segment numbers it printed before (A000h and up, 0 for none). MW_EGA's own page numbers (egaDisplayPage and egaDrawPage) are campaign state and not in this slice.
 - **What stores a page as a number.** Only the places above. Neither the trace schema, nor the state tool, nor the event log holds one.
 
+**From B4d** (combat's DOS identities outside sound):
+- **The archive's selectors.** `workspaceSelector` was written once and never read, `sourceSelector` neither, so both fields are gone. The descriptor isn't copied or compared as bytes, and the near heap accounts it by its native 21h bytes.
+- **The free call** took the allocation, not a selector: `BtechFreeDosMemorySelector` (1BF5:1F10) is now `BtechFreeDosMemoryBlock`. The calls that really free by selector, and the hook that looks a selector up, are the sound allocations' (B4g).
+- **The ROM bytes.** `btechHostReadRomByte` took a selector and an offset. The four addresses its callers gave are two bytes, the model and the Tandy signature (`CombatRomByte`), and the host answers for those.
+- **Also.** 14 unused EGA register constants and the end of the graphics dispatch table are gone from combat_video.h. ega_canvas_writer_test covers B4c's two refusals (a drawing on no page, a captured or restored word at cursor FFFF).
+- **Kept as it was.** DOS's memory list itself (first fit, one paragraph a block): how much memory is free decides what the game loads, so its sizes stay.
+
 ## 3. How we check "play identical"
 
 ### Sound

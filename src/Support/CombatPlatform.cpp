@@ -40,6 +40,6 @@ void (*btechHostResetMouse)(void);
 void (*btechHostWriteStderr)(const char *,uint16_t);
 void (*btechHostTerminateChild)(uint8_t);
 uint16_t (*btechHostQueryEgaInfo)(void);
-uint8_t (*btechHostReadRomByte)(uint16_t,uint16_t);
+uint8_t (*btechHostReadRomByte)(CombatRomByte);
 bool (*btechHostQueryKeyboardIntercept)(uint16_t);
 bool (*btechHostQuerySystemConfiguration)(uint16_t);
