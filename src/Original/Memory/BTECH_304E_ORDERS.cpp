@@ -51,17 +51,17 @@ bool BtechImportOrderInitialData(void)
         {
             uint16_t offset=MwReadNativeWord(ui,bases[directory]+entry*2);
             if (offset<ORDER_PANEL_TEXT_START || offset>=ORDER_PANEL_TEXT_END || !memchr(words+offset,0,ORDER_PANEL_TEXT_END-offset)) return false;
-            destinations[directory][entry]=orderPanelText+offset-ORDER_PANEL_TEXT_START;
+            destinations[directory][entry]=orderPanelText+(offset-ORDER_PANEL_TEXT_START);
         }
     }
-    combatOrders.orderWeaponHeading=orderPanelText+0x026C-ORDER_PANEL_TEXT_START;
-    combatOrders.orderOfText=orderPanelText+0x027A-ORDER_PANEL_TEXT_START;
-    combatOrders.orderColon=orderPanelText+0x027D-ORDER_PANEL_TEXT_START;
-    combatOrders.orderSelectionHeading=orderPanelText+0x027F-ORDER_PANEL_TEXT_START;
-    combatOrders.orderLocationText=orderPanelText+0x028D-ORDER_PANEL_TEXT_START;
-    combatOrders.orderBaseText=orderPanelText+0x029A-ORDER_PANEL_TEXT_START;
-    combatOrders.orderDamageText=orderPanelText+0x02A7-ORDER_PANEL_TEXT_START;
-    combatOrders.orderWeaponsText=orderPanelText+0x02AE -ORDER_PANEL_TEXT_START;
+    combatOrders.orderWeaponHeading=orderPanelText+(0x026C-ORDER_PANEL_TEXT_START);
+    combatOrders.orderOfText=orderPanelText+(0x027A-ORDER_PANEL_TEXT_START);
+    combatOrders.orderColon=orderPanelText+(0x027D-ORDER_PANEL_TEXT_START);
+    combatOrders.orderSelectionHeading=orderPanelText+(0x027F-ORDER_PANEL_TEXT_START);
+    combatOrders.orderLocationText=orderPanelText+(0x028D-ORDER_PANEL_TEXT_START);
+    combatOrders.orderBaseText=orderPanelText+(0x029A-ORDER_PANEL_TEXT_START);
+    combatOrders.orderDamageText=orderPanelText+(0x02A7-ORDER_PANEL_TEXT_START);
+    combatOrders.orderWeaponsText=orderPanelText+(0x02AE -ORDER_PANEL_TEXT_START);
     for (uint16_t code=0;code<ORDER_DISPLAY_CODES;++code) combatOrders.orderDisplayIndices[code]=MwReadNativeWord(ui,0x02C4+code*2);
     for (uint16_t scheme=0;scheme<2;++scheme)
         for (uint16_t condition=0;condition<4;++condition)
