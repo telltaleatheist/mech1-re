@@ -423,6 +423,9 @@ Every B slice keeps the group A logs exact (the note, tone and game-event logs, 
 For later, when the callers become ours (group B, or H5 at the latest):
 - **The mode calls by what they do.** `MwSetVideoMode` and `MwGetVideoMode` (G5) still take the BIOS mode numbers, 0Dh and 3, because their callers are line-for-line conversions. Once those callers are ours, they set up the canvas and close it by name. The numbers stay only where the game's data stores them (the campaign's saved mode).
 
+Candidates, not scheduled:
+- **Present only a changed frame (after H4d).** Every pump presents, and a present compares all 64,000 indices of the shown page with the last frame (and range-checks each one) even when nothing changed: a remaining per-pump cost, not yet measured. A dirty mark would skip the comparison: the canvas's writers, page flips and palette changes set it. The mark must never miss a write, because the frame observer, and so the traces, see a frame only when this comparison finds a change. Until B4, a writer that reaches the canvas through a byte window has to set it too. The index range check moves to the writers, or stays on the changed path. The check: every log identical, and the CPU of a held pause measured before and after.
+
 ## 6. Risks
 
 1. **Instrument choice is taste.** No GM program is exactly an MT-32 timbre. The table is chosen by ear, and the listening pass signs it off. Until then, S3's first table plays the right notes at the right times with provisional instruments.
