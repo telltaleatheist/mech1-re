@@ -52,29 +52,37 @@ and no host speed or load changes it.
 ## A record
 
 - `snap`: its name; `keys`: the tokens since the previous snap.
-- `state`: the compared state, one fact per line, in the style of
-  crescent-hawks-rebuild's `chr --state`:
+- `fields`: the compared state by name, an ordered object (`schema.py`):
 
-      state random 70a0 7653
-      state campaign planet 11 contract 1 category 2 scenario 11 destination 142 house 4 payment 120 result 0
-      state row 2
-      state combat 0
-      state menu 0 enabled 1 callback 247a picture 1 links 5 1 255 3 label 3f1c...
+      "campaign.random": [28832, 30291], "campaign.planet": 11, "campaign.contract": 1,
+      "campaign.category": 2, ... "campaign.funds": 1000000, "campaign.row": 2, "combat": 0,
+      "menu.0.enabled": 1, "menu.0.callback": 9338, "menu.0.picture": "-",
+      "menu.0.links": [5, 1, 255, 3], "menu.0.label": "3f1c...",
+      "exchange.currentPlanetIndex": 11, "exchange.campaignFundsLow": 16960, ...
 
-  In combat the menu lines give way to the battle:
+  In combat the menu gives way to the battle: `combat.tick`, `combat.screen`,
+  `combat.target`; `unit.S.side`, `.chassis`, `.position`, `.orientation`,
+  `.step`, `.mode`, `.jump`, `.torso`, `.heat`, `.engine`, `.gyro`,
+  `.cockpit`, `.armor`, `.internal`, `.ammo` and `.weapons` (operational and
+  reload) for each unit on the field; and `objective.position` and
+  `objective.damage` when the mission has one.
 
-      state tick 88 screen 0 target 0
-      state unit 0 side 0 chassis 1 position X Y Z orientation A B C step 66 mode 0 jump 800 torso A B C
-      state unit 0 heat 229 engine 0 gyro 0 cockpit 0 armor ... internal ... ammo ... weapons 1/0 1/29 ...
-      state objective position X Y Z damage D      (when the mission has one)
+  On a campaign snap the fields end with the campaign as the save format
+  encodes it (0x718 bytes, `MW_MAIN_SAVE_FORMAT.cpp`), by its own fields:
+  `exchange.<name>`, named as `MwEncodeCampaignExchange` names them. Words
+  are numbers or lists; byte arrays are hex; the salvage and unit-damage
+  arrays are one hex field per record (`exchange.ownedUnitDamage.3`). The
+  ctest `snap_schema` (`test_schema.py`) checks the schema against the
+  encoder, statement by statement, and that its fields cover every byte.
 
   `callback` is the original 081B code offset the row activates. `label` is a
   12-hex HMAC-SHA-256 of the row's text, keyed by the SHA-256 of MW_MAIN.EXE's
   key region (081B:0100, 0x1400 bytes, as the import table's hashes) in the
   `--game` folder: MW1's own text never enters a trace, and a short label
   can't be found from its hash by trying a dictionary. A row with a label
-  prints `picture -`: its picture word is only where the label lives in the
-  original's data segment.
+  has `picture` "-": its picture word is only where the label lives in the
+  original's data segment. A field that can hold text (`schema.HASHED`, the
+  commander's name) is the same keyed hash, never its bytes.
 - `menu`: the same rows as data; `screenKey`: a hash of the menu's shape
   (each row's callback, picture, links and label hash).
 - `frame`: SHA-256 (32 hex) of the indexed 320x200 frame (`indices`), of the
@@ -86,8 +94,13 @@ and no host speed or load changes it.
   The frames are MW1 art: the recorder copies them to `--frames`, outside the
   repo.
 
-The rebuild's test runs the same script, prints the same `state` lines and
-frame hashes at each snap, and compares.
+The rebuild's test runs the same script, writes the same fields and frame
+hashes at each snap, and compares. check.py compares field by field: a field
+that differs, or is missing or extra, fails by its name, with the first
+element or byte that differs (and, in a record, the record's field):
+
+    FAIL the fields: 1 differ
+      exchange.ownedUnitDamage.0 byte 6 (actuatorDamageTiers[1]): golden 0x00 ours 0x02
 
 ## Without the exes (the gate's step, slice 6f)
 
@@ -126,10 +139,11 @@ seconds.
 
 `state.py` reads a run of MWSNAP captures (`MW1Snnnn.BIN`, in the script's
 `@snap` order) and writes the trace the port would have written: the frame
-from the four planes and the attribute registers, and the state from
+from the four planes and the attribute registers, and the fields from
 MW_MAIN's data segment (the menu table at 03E3, the row at 03E5, the random
 words at 03F5/03F7, the 0x718-byte exchange block at 0448, which is the
-save format byte for byte). In combat the state is BTECH's (tick D244, screen
+save format byte for byte, so `schema.py`'s one decoder gives it the port's
+`exchange.*` names). In combat the state is BTECH's (tick D244, screen
 0E1C, target CD36, the unit bindings at CD5A and controls at D374, the
 objective at CD2E/CD30) and the campaign is the exchange block MW.EXE keeps
 for BTECH; the random words and row are those MW_MAIN left. Then
@@ -153,7 +167,7 @@ BTECH.EXE) in `~/mwsnap/game`:
 
 It runs every golden script against the original, headless and one run at a
 time (about 3.5 minutes for all seven), and prints check.py's verdict; exit 0
-means every frame and state line matches. `--dosbox-x PATH` names an unpacked
+means every frame and field matches. `--dosbox-x PATH` names an unpacked
 DOSBox-X (set `LD_LIBRARY_PATH` to its library folder). Last run (main
 3b226e8): 7 of 7, no MWSNAP flags.
 
@@ -163,4 +177,4 @@ DOSBox-X (set `LD_LIBRARY_PATH` to its library folder). Last run (main
   port loads since upstream 621961a. Game files are found whatever their
   case, as DOS finds them, so an upper-case install works on Linux too.
 - A key script is fixed: if a screen gains or loses rows, the script needs
-  editing. Check `state row` and `screenKey` in a fresh recording.
+  editing. Check `campaign.row` and `screenKey` in a fresh recording.

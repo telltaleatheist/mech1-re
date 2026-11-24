@@ -250,6 +250,16 @@ Changes per piece:
 - **What's left of the port bus** is the MPU's two ports and the AdLib's two. Their callers are the MT-32 and AdLib backends S8 removes, so the rest of H5 follows S4, S8 and S9.
 - **The check.** Every log identical: traces, events and start worlds on both revisions, and the sound logs.
 
+**From B1** (snaps by name; went ahead while S4 waited; the goldens converted, not re-recorded):
+- **The schema.** `tools/trace/schema.py` names every compared fact of a trace record. The status: `campaign.*`, `menu.N.*`, and in a battle `combat.*`, `unit.S.*` and `objective.*`. The campaign exchange block, by the save format's own fields: `exchange.<name>`, as `MwEncodeCampaignExchange` names them. Words are numbers or lists, byte arrays hex, and the salvage and unit-damage arrays one hex field per record. `record.py` (from the port's status and `.exchange` file) and `state.py` (from the original's memory) use the one decoder, so the original's block maps onto the same names.
+- **The schema can't drift from the save format.** The ctest `snap_schema` parses the encoder statement by statement and fails on any form it doesn't know. The schema's table must be exactly the parsed one, the fields must tile 0..0x718, the records must be the structs' fields, and decoding then encoding a block gives it back.
+- **No text.** A field that can hold text is a keyed hash, as the menu labels are. A scan of all 116 exchange blocks in the goldens for printable runs of 4 or more flagged one field, the commander's name, which is hashed. No other byte field holds even two printable bytes in a row.
+- **check.py compares by name.** A field that differs, or is missing or extra, fails by its name, with the first element or byte that differs and, in a record, the record's field. `known/` is keyed by field-name prefix.
+- **The goldens were converted, with proof.** The status lines of all 158 snaps parse to fields, and the old line format rendered from those fields gives back all 1,826 lines byte for byte. Each of the 116 campaign snaps' `.exchange` files from a recording at ab9f3ff has the hash its golden held, and its bytes became the exchange fields, which encode back to the same bytes. The exchange hash is gone. The goldens grow from 240 KB to 1.25 MB.
+- **The new recorder gives what the old one gave.** On the same binary, on both revisions, every snap's lines from the old recorder parse to exactly the new recorder's status fields, and every exchange hash is that of the block the new fields decode. 1989's two known failures fail on the same snaps, now with their fields named (in combat_retreat, `combat.tick` one tick late, and from the orders screen `unit.0.armor[2]`).
+- **Not checked: the original through `state.py`.** No captures of the original were at hand, and the capture rig wasn't set up again for this slice. `state.py` builds its fields with the same two functions `record.py` uses.
+- **The check.** The traces match by name: 8/8 on 1990, 6/8 on 1989 with the same two. `snap_schema` passes, and a changed field fails by its name.
+
 **From S6** (the campaign's speaker music as tones):
 - **The speaker backend plays tones.** The campaign's speaker music (0F41's backend) hands the host each period as a tone, where it programmed PIT channel 2. It sounds from the backend's start to its shutdown, as the 61h gate did. The backend's silent period (14h, an inaudible 59.7 kHz on the speaker) is silence. Voice rotation, the period table and the single-voice path are 0F41's own and unchanged. The CLI/STI pairs stay until H4.
 - **The host has no speaker ports any more.** The PIT channel 2 and 61h decoding is gone, and any write to them, or a read of 61h, is now a failure. One host entry, `MwSdlPlayTone`, plays both games' tones; combat's binding still charges its per-tick 61h read on the test clock until H4. The period-to-Hz rule both games use is `mechwarrior/tone.h`.
@@ -401,7 +411,7 @@ Note timing isn't on the sheet: the note log already checks it.
 
 ### Group B, memory images to typed state: before the tag, after H5
 
-**On the path to the tag** (a project decision). Group B runs after group A's H5 and before R, so R gates both groups. It starts the work the fork plan's phases 3-6 would have done (giving the game's state its owners), so it is sized here, by the code each slice touches on main at 786fc8e.
+**On the path to the tag** (a project decision). Group B runs after group A's H5 and before R, so R gates both groups. B1 went ahead, after H5's first part, while S4 waited for the listening: it touches no sound path, so it doesn't meet S8. The rest of group B keeps its place after H5. It starts the work the fork plan's phases 3-6 would have done (giving the game's state its owners), so it is sized here, by the code each slice touches on main at 786fc8e.
 
 **The order, and why:**
 1. **Snaps by name first (B1),** so every later B slice is compared by field name, and a mismatch names its field.

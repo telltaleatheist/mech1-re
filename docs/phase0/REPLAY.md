@@ -42,30 +42,30 @@ polls give the same draws. Startup mixes the BIOS clock into the random words
 once (081B:0C0A); the traces pin that clock at 0x10000, and so must the
 rebuild.
 
-**A record** (`check.py` compares `frame` and `state`; the rest is for people):
+**A record** (`check.py` compares `frame` and `fields`; the rest is for people):
 
-    {"snap": "hub", "keys": ["Return"], "state": [...], "frame": {"indices": "...", "palette": "..."}}
+    {"snap": "hub", "keys": ["Return"], "fields": {...}, "frame": {"indices": "...", "palette": "..."}}
 
 - `frame.indices`: SHA-256, first 32 hex digits, of the displayed 320x200
   frame as 64,000 EGA colour indices (0-15), one byte per pixel, rows top to
   bottom. `frame.palette`: the same hash of the 17 palette bytes (16 EGA
   palette registers, then the overscan register), as 6-bit EGA colour codes.
-- `state`: these lines, in this order:
+- `fields`: the state by name (`tools/trace/schema.py`), in this order:
 
-      state random W0 W1           the two random words, 4 hex digits each
-      state campaign planet P contract C category M scenario S destination D house H payment K result R
-      state funds F months N       C-Bills; billing months elapsed
-      state row R                  the selected menu row
-      state combat 0|1
-      state menu I enabled E callback XXXX picture P links U D L R label HASH   (one per row;
-                                   P is "-" on a row with a label)
-      state exchange HASH          the save image's SHA-256 (32 hex)
+      campaign.random              the two random words
+      campaign.planet, .contract, .category, .scenario, .destination, .house, .payment, .result
+      campaign.funds, .months      C-Bills; billing months elapsed
+      campaign.row                 the selected menu row
+      combat                       0 or 1
+      menu.I.enabled, .callback, .picture, .links, .label   (each row; picture
+                                   is "-" on a row with a label)
+      exchange.<name>              the save image's own fields (campaign snaps)
 
-  In combat the menu lines give way to the battle (`tools/trace/README.md`):
-  `state tick T screen S target X`, two `state unit` lines per unit on the
-  field (position, orientation, step, movement mode, jump charge, torso; heat,
-  engine, gyro, cockpit, armour, internal structure, ammunition and each
-  weapon's operational/reload), and `state objective` when there is one.
+  In combat the menu gives way to the battle (`tools/trace/README.md`):
+  `combat.tick`, `.screen` and `.target`; each unit on the field
+  (`unit.S.*`: position, orientation, step, movement mode, jump charge,
+  torso; heat, engine, gyro, cockpit, armour, internal structure, ammunition
+  and each weapon's operational/reload); and `objective.*` when there is one.
   The combat keys are `make:KEY`, `break:KEY` and `ticks:N`, fed at counted
   combat input polls (0810:2A17), one per tick; combat uses no clock.
 
@@ -74,16 +74,16 @@ rebuild.
   first 12 hex digits of the HMAC-SHA-256 of the row's text bytes, as the
   original holds them, up to the terminating zero (at most 512), keyed by the
   SHA-256 of MW_MAIN.EXE's key region (081B:0100, 0x1400 bytes, as the import
-  table's hashes); `-` for a row without text. `exchange` hashes the campaign
-  as the save format encodes it (0x718 bytes, MW_MAIN_SAVE_FORMAT.c), so the
-  rebuild's saves must keep that format byte for byte.
+  table's hashes); `-` for a row without text. The `exchange.*` fields are the
+  campaign as the save format encodes it (0x718 bytes, MW_MAIN_SAVE_FORMAT.cpp),
+  field by field, so the rebuild's saves must keep that format byte for byte.
 
 ## Known differences
 
 `tools/trace/known/<trace>.json` lists differences that are understood and
 not yet fixed, so they are reported rather than failed:
 
-    {"hub": {"frame": "the rebuild draws the clock later", "state": {"state menu 3": "why"}}}
+    {"hub": {"frame": "the rebuild draws the clock later", "fields": {"menu.3.": "why"}}}
 
-`state` keys are line prefixes. Each entry should name its cause and go when
+`fields` keys are field-name prefixes. Each entry should name its cause and go when
 it is fixed.
