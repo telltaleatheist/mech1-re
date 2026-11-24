@@ -53,20 +53,23 @@ static void MusicByte(uint8_t value)
     MwSdlAdvanceAudio(MwSdlHardwareTime());
     music.midiByte(value);
 }
+/* The player's way out of a missing or damaged bank: the files come with the
+ * game, and the speaker's music needs none of them. */
+static const char *const SOUNDFONT_REMEDY="Reinstall the game, or set music=speaker in MechWarrior.ini.";
 static bool LoadMusic(void)
 {
     const std::string folder=std::string(MwSdlDataDirectory())+"/music/";
     size_t bankSize=0,tableSize=0;
     void *bank=SDL_LoadFile((folder+"FluidR3_GM-subset.sf2").c_str(),&bankSize);
-    if (!bank) return SDL_SetError("music=soundfont: cannot read %sFluidR3_GM-subset.sf2: %s",folder.c_str(),SDL_GetError());
+    if (!bank) return SDL_SetError("music=soundfont: cannot read %sFluidR3_GM-subset.sf2 (%s). %s",folder.c_str(),std::string(SDL_GetError()).c_str(),SOUNDFONT_REMEDY);
     char *table=(char *)SDL_LoadFile((folder+"instruments.json").c_str(),&tableSize);
-    if (!table) {SDL_free(bank);return SDL_SetError("music=soundfont: cannot read %sinstruments.json: %s",folder.c_str(),SDL_GetError());}
+    if (!table) {SDL_free(bank);return SDL_SetError("music=soundfont: cannot read %sinstruments.json (%s). %s",folder.c_str(),std::string(SDL_GetError()).c_str(),SOUNDFONT_REMEDY);}
     std::string error;
     bool loaded=false;
     try {loaded=music.load(bank,bankSize,mw1o::audio::ParseInstrumentTable(std::string_view(table,tableSize)),HOST_AUDIO_SAMPLE_RATE,error);}
     catch (const std::exception &failure) {error=failure.what();}
     SDL_free(bank);SDL_free(table);
-    if (!loaded) return SDL_SetError("music=soundfont: %s",error.c_str());
+    if (!loaded) return SDL_SetError("music=soundfont: %s. %s",error.c_str(),SOUNDFONT_REMEDY);
     mwMusicOut=MwMusicOutCalls{MusicSongStarted,MusicByte};
     return true;
 }
