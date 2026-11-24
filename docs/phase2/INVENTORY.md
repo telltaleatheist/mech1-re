@@ -10,7 +10,7 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 | Ours: rules and constants (data/rules/*.json) | 102 |
 | Ours: the new campaign's starting state (data/rules/new_campaign.json) | 103 |
 | Dropped | 6 |
-| Code: runtime state and renderer tables (no file) | 891 |
+| Code: runtime state and renderer tables (no file) | 890 |
 
 ## Extracted: the original's creative content (the story file, first run)
 
@@ -607,7 +607,7 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 
 ## Code: runtime state and renderer tables (no file)
 
-Not listed one by one: BTECH_1ADF_STATE.cpp 2, BTECH_1BF5_STATE.cpp 4, BTECH_22B6_DATA.cpp 15, BTECH_2FEB.cpp 24, BTECH_304E.cpp 31, BTECH_304E_COCKPIT.cpp 36, BTECH_304E_ORDERS.cpp 24, BTECH_304E_POLYGONS.cpp 24, BTECH_304E_POSE.cpp 12, BTECH_304E_RENDER.cpp 61, BTECH_304E_RUNTIME.cpp 10, BTECH_304E_SCENE.cpp 8, BTECH_304E_SOUND.cpp 35, BTECH_304E_STARTUP.cpp 55, BTECH_304E_VIDEO.cpp 86, BTECH_304E_WORLD.cpp 107, BtechStartImage.cpp 4, MW_0806_STATE.cpp 1, MW_EGA_0800_STATE.cpp 72, MW_MAIN_0F41_STATE.cpp 5, MW_MAIN_1090.cpp 246, MW_MAIN_1090_OPTIONS.cpp 9, MW_MAIN_1AA5.cpp 1, MW_MAIN_28BE.cpp 14, NativeStart.cpp 5.
+Not listed one by one: BTECH_1ADF_STATE.cpp 2, BTECH_1BF5_STATE.cpp 4, BTECH_22B6_DATA.cpp 15, BTECH_2FEB.cpp 24, BTECH_304E.cpp 31, BTECH_304E_COCKPIT.cpp 36, BTECH_304E_ORDERS.cpp 24, BTECH_304E_POLYGONS.cpp 24, BTECH_304E_POSE.cpp 12, BTECH_304E_RENDER.cpp 61, BTECH_304E_RUNTIME.cpp 10, BTECH_304E_SCENE.cpp 8, BTECH_304E_SOUND.cpp 35, BTECH_304E_STARTUP.cpp 55, BTECH_304E_VIDEO.cpp 85, BTECH_304E_WORLD.cpp 107, BtechStartImage.cpp 4, MW_0806_STATE.cpp 1, MW_EGA_0800_STATE.cpp 72, MW_MAIN_0F41_STATE.cpp 5, MW_MAIN_1090.cpp 246, MW_MAIN_1090_OPTIONS.cpp 9, MW_MAIN_1AA5.cpp 1, MW_MAIN_28BE.cpp 14, NativeStart.cpp 5.
 
 Still read from the exe (slice 6 moves them): none.
 

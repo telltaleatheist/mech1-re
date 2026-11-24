@@ -32,7 +32,7 @@ int main() {
 
   // The pen: a byte offset of eight pixels from the page's start, row 2 at 80.
   {
-    BtechEgaCanvasWriter ega(COMBAT_EGA_BACK_PAGE);  // A200h: page 1
+    BtechEgaCanvasWriter ega(CombatPage::Second);  // A200h: page 1
     ega.setMask(0xF0);
     ega.write(80, 9);
     Check(Row(1, 0, 2, {9, 9, 9, 9, 4, 5, 6, 7}), "the colour where the mask has a 1, the rest as it was");
@@ -42,11 +42,11 @@ int main() {
     ega.write(80, 3);
     Check(Row(1, 0, 2, {9, 3, 9, 3, 4, 3, 6, 3}), "a dithered mask");
   }
-  // Eight pixels set, copied between pages; the scratch and page selectors.
+  // Eight pixels set, copied between pages; the scratch and the pages.
   {
     const uint8_t colours[8] = {1, 2, 3, 4, 5, 6, 7, 8};
-    BtechEgaCanvasSetPixels(BtechEgaCanvasPage(COMBAT_EGA_BITMAP_SCRATCH_PAGE), 41, colours);
-    Check(BtechEgaCanvasPage(COMBAT_EGA_BITMAP_SCRATCH_PAGE) == 3 && Row(3, 8, 1, {1, 2, 3, 4, 5, 6, 7, 8}),
+    BtechEgaCanvasSetPixels(BtechEgaCanvasPage(CombatPage::BitmapScratch), 41, colours);
+    Check(BtechEgaCanvasPage(CombatPage::BitmapScratch) == 3 && Row(3, 8, 1, {1, 2, 3, 4, 5, 6, 7, 8}),
           "eight colours on the scratch page (A600h, page 3), byte 41 at (8, 1)");
     BtechEgaCanvasCopy(3, 0, 41);
     Check(Row(0, 8, 1, {1, 2, 3, 4, 5, 6, 7, 8}), "copied to page 0");
@@ -70,7 +70,7 @@ int main() {
   }
   // Past row 199 into the next page, as the game's unchecked drawing runs.
   {
-    BtechEgaCanvasWriter ega(COMBAT_EGA_FRONT_PAGE);
+    BtechEgaCanvasWriter ega(CombatPage::First);
     ega.setMask(0xFF);
     ega.write(205 * 40, 12);
     Check(canvas.page(1)[205 * 320 - mw1o::video::Canvas::PAGE_STRIDE] == 12, "row 205 of page 0 is page 1's");

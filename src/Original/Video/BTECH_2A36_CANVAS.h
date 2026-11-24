@@ -4,7 +4,7 @@
 #include "mechwarrior/combat_video.h"
 
 /* Combat's drawing on the canvas (docs/phase5/NO_EMULATION_PLAN.md, G2-G4).
- * 2A36 keeps its own addressing (a page selector, a byte offset of eight pixels
+ * 2A36 keeps its own addressing (a page, a byte offset of eight pixels
  * from the page's start, a mask of those eight with the leftmost at bit 7) and
  * draws through these, by pixel. Nothing here models a card.
  *
@@ -15,8 +15,8 @@
  * the pixels as they were elsewhere; the order of the original's reads and
  * writes inside a routine no longer shows. */
 
-/* A page selector's canvas page (A000h page 0, A200h page 1, ...). */
-int BtechEgaCanvasPage(uint16_t selector);
+/* A page's number on the canvas, 0 to 7. None has none: refused. */
+int BtechEgaCanvasPage(CombatPage page);
 /* A byte offset's first pixel on its page (it may run past row 199). */
 void BtechEgaCanvasPosition(uint16_t byteOffset, int *x, int *y);
 
@@ -41,12 +41,12 @@ void BtechEgaCanvasAddColourBits(int page, uint16_t byteOffset, int bit, uint8_t
 class BtechEgaCanvasWriter
 {
 public:
-    explicit BtechEgaCanvasWriter(uint16_t selector) : selector_(selector) {}
+    explicit BtechEgaCanvasWriter(CombatPage page) : selected_(page) {}
     void setMask(uint8_t mask) { mask_ = mask; maskSet_ = true; }
     void write(uint16_t byteOffset, uint8_t colour);
 
 private:
-    uint16_t selector_;
+    CombatPage selected_;
     bool resolved_ = false, maskSet_ = false;
     int page_ = 0;
     uint8_t mask_ = 0;

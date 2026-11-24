@@ -21,7 +21,7 @@ void BtechRefreshCockpitAndSensorTarget(void)
 {
     BtechPooledWorldObject *movementObject=combatMechs.unitBindings[0].positionedLeftLeg;
     if (!combatStartup.combatTickCounter) combatCockpit.rememberedSensorTargetSlot=0;
-    combatVideo.drawPageSelector=combatVideo.backPageSelector;combatVideo.screenPolygonNeedsClip=false;combatVideo.drawPolygonFilled=true;
+    combatVideo.drawPage=combatVideo.backPage;combatVideo.screenPolygonNeedsClip=false;combatVideo.drawPolygonFilled=true;
     BtechDrawMechSubsystemLamps(combatWorld.playerMechState);
     if (!combatWorld.playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState");
     BtechUpdateHeatGauge((int16_t)combatWorld.playerMechState->heatUnits/COMBAT_HEAT_UNITS_PER_DISPLAY_POINT);
@@ -53,7 +53,7 @@ void BtechRefreshCockpitAndSensorTarget(void)
 void BtechDrawCockpitAimReticle(uint16_t x,uint16_t y)
 {
     if (combatStartup.viewScaleShift!=AIM_RETICLE_VIEW_SHIFT) return;
-    combatVideo.drawPageSelector=combatVideo.backPageSelector;
+    combatVideo.drawPage=combatVideo.backPage;
     if (combatImport.combatLandscapeIndex>=COMBAT_LANDSCAPES || combatImport.hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
     combatVideo.drawFillColour=combatVideo.landscapeCameraColourRows[combatImport.hudColourSchemeIndex][combatImport.combatLandscapeIndex].hudReticleColour;
     BtechDrawClippedLine((int16_t)x,(int16_t)(y-AIM_RETICLE_OUTER_RADIUS),(int16_t)x,(int16_t)(y-AIM_RETICLE_INNER_RADIUS));

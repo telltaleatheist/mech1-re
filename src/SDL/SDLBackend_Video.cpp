@@ -164,6 +164,10 @@ static void PresentCanvasPage(const Canvas &canvas,int page,bool force)
     presenting=false;
 }
 const char *MwSdlCaptureDirectory(void) {return captureDirectory;}
+/* A combat page as the capture's file has always printed it: the original's
+ * segment (A000h and 200h more a page), 0 for none. */
+static uint16_t CombatPageSegment(CombatPage page)
+{return page==CombatPage::None?0:(uint16_t)(0xA000+((int)page-(int)CombatPage::First)*0x200);}
 bool MwSdlCapture(const char *stem)
 {
     if (!HaveFrame() || !stem || strpbrk(stem,"/\\:")) return false;
@@ -191,7 +195,7 @@ bool MwSdlCapture(const char *stem)
     if (fclose(file)) saved=false;
     if (snprintf(path,sizeof(path),"%s/%s.json",captureDirectory,stem)>=(int)sizeof(path)) return false;
     file=fopen(path,"wx");if (!file) return false;
-    fprintf(file,"{\"kind\":\"Actual SDL renderer readback; not a matched original replay\",\"mode\":13,\"logicalWidth\":320,\"logicalHeight\":200,\"combat\":%s,\"displayPage\":%u,\"drawPage\":%u,\"displayByteOffset\":%u,\"SDL\":\"%s\",\"acceptance\":\"Pending\"}\n",mwSdlCombatActive?"true":"false",mwSdlCombatActive?combatVideo.frontPageSelector:egaOverlay.egaDisplayPage,mwSdlCombatActive?combatVideo.drawPageSelector:egaOverlay.egaDrawPage,
+    fprintf(file,"{\"kind\":\"Actual SDL renderer readback; not a matched original replay\",\"mode\":13,\"logicalWidth\":320,\"logicalHeight\":200,\"combat\":%s,\"displayPage\":%u,\"drawPage\":%u,\"displayByteOffset\":%u,\"SDL\":\"%s\",\"acceptance\":\"Pending\"}\n",mwSdlCombatActive?"true":"false",mwSdlCombatActive?CombatPageSegment(combatVideo.frontPage):egaOverlay.egaDisplayPage,mwSdlCombatActive?CombatPageSegment(combatVideo.drawPage):egaOverlay.egaDrawPage,
         (unsigned)(lastPage*(Canvas::PAGE_STRIDE/EGA_PIXELS_PER_BYTE)),SDL_GetRevision());
     if (fclose(file)) saved=false;
     return saved;

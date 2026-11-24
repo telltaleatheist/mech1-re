@@ -5,13 +5,10 @@
 using mw1o::video::Canvas;
 using mw1o::video::GameCanvas;
 
-int BtechEgaCanvasPage(uint16_t selector)
+int BtechEgaCanvasPage(CombatPage page)
 {
-    const uint16_t pageParagraphs=(uint16_t)(Canvas::PAGE_STRIDE/8/0x10);
-    if (selector<COMBAT_EGA_FRONT_PAGE || (selector-COMBAT_EGA_FRONT_PAGE)%pageParagraphs
-        || (selector-COMBAT_EGA_FRONT_PAGE)/pageParagraphs>=Canvas::PAGES)
-        /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: a page selector off the canvas's pages");
-    return (selector-COMBAT_EGA_FRONT_PAGE)/pageParagraphs;
+    if (page==CombatPage::None) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: a drawing on no page");
+    return (int)page-(int)CombatPage::First;
 }
 
 void BtechEgaCanvasPosition(uint16_t byteOffset, int *x, int *y)
@@ -68,6 +65,6 @@ void BtechEgaCanvasAddColourBits(int page, uint16_t byteOffset, int bit, uint8_t
 void BtechEgaCanvasWriter::write(uint16_t byteOffset, uint8_t colour)
 {
     if (!maskSet_) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: a combat write before its mask");
-    if (!resolved_) {page_=BtechEgaCanvasPage(selector_);resolved_=true;}
+    if (!resolved_) {page_=BtechEgaCanvasPage(selected_);resolved_=true;}
     BtechEgaCanvasDraw(page_,byteOffset,mask_,colour);
 }

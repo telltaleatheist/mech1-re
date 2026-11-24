@@ -87,13 +87,13 @@ bool BtechImportVideoInitialData(const uint8_t *data,size_t bytes)
     combatVideo.graphicsFillSolidSpan=NULL;combatVideo.graphicsFillAlternatingSpan=NULL;combatVideo.shapeSpanCallback=BtechShapeSpanCallback{};
     combatVideo.clipMinimumX=0; /*2E53*/combatVideo.clipMaximumX=(int16_t)MwReadNativeWord(data,0x2E55);
     combatVideo.clipMinimumY=0; /*2E57*/combatVideo.clipMaximumY=(int16_t)MwReadNativeWord(data,0x2E59);
-    combatVideo.videoScratchPageSelector=0; /*2E60*/combatVideo.backPageSelector=0; /*2E62*/
-    combatVideo.frontPageSelector=0; /*2E64*/combatVideo.copySourcePageSelector=0; /*2E66*/
-    combatVideo.drawPageSelector=0; /*2E68*/combatVideo.videoColourCount=0; /*2E71*/
+    combatVideo.backPage=CombatPage::None; /*2E62*/
+    combatVideo.frontPage=CombatPage::None; /*2E64*/combatVideo.copySourcePage=CombatPage::None; /*2E66*/
+    combatVideo.drawPage=CombatPage::None; /*2E68*/combatVideo.videoColourCount=0; /*2E71*/
     combatVideo.pcjrTandyCompatible=data[0x2E6C];combatVideo.combatRendererKind=data[0x2E6D];
     combatVideo.textForegroundPattern=data[0x2E78];combatVideo.textBackgroundPattern=data[0x2E79];
     combatVideo.glyphTailMask=data[0x46D2];combatVideo.videoAdapterAllowedMask=data[0x3FC5];
-    combatVideo.ellipsePageSelector=0; /*4151*/
+    combatVideo.ellipsePage=CombatPage::None; /*4151*/
     for (uint16_t row=0;row<COMBAT_ELLIPSE_ROWS;++row)
     {combatVideo.ellipseLeftInsets[row]=data[0x401C+row];combatVideo.ellipseBorderWidths[row]=data[0x4083+row];combatVideo.ellipseInteriorWidths[row]=data[0x40EA+row];}
     for (uint16_t row=0;row<COMBAT_SCREEN_HEIGHT;++row) combatVideo.graphicsRowOffsets[row]=0; /*334E*/

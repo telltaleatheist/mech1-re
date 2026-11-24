@@ -13,7 +13,7 @@ void BtechDrawTerrainRadar(void)
     uint16_t tickDiscontinuity=(uint16_t)(combatCockpit.radarPreviousTick+1)!=combatStartup.combatTickCounter;
     combatCockpit.radarPreviousTick=combatStartup.combatTickCounter;
     combatCockpit.radarCachePage=combatImport.hudColourSchemeIndex?0:combatStartup.combatTickCounter&1;
-    combatVideo.drawPageSelector=combatVideo.backPageSelector;
+    combatVideo.drawPage=combatVideo.backPage;
     if (!combatWorld.playerUnitBinding) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding");
     combatCockpit.radarPlayerObject=combatWorld.playerUnitBinding->positionedLeftLeg;
     if (combatImport.activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS");

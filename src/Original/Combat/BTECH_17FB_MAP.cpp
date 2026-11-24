@@ -11,10 +11,10 @@ void BtechCopyHudRectangleIfReady(uint16_t x,uint16_t y,uint16_t width,uint16_t 
 {
     if (!combatCockpit.cockpitFullRedrawPending)
     {
-        combatVideo.copySourcePageSelector=combatVideo.backPageSelector;
-        combatVideo.drawPageSelector=combatVideo.frontPageSelector;
+        combatVideo.copySourcePage=combatVideo.backPage;
+        combatVideo.drawPage=combatVideo.frontPage;
         BtechCopyScreenRectangle(x,y,width,height);
-        combatVideo.drawPageSelector=combatVideo.backPageSelector;
+        combatVideo.drawPage=combatVideo.backPage;
     }
 }
 

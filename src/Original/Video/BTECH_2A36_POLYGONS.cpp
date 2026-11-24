@@ -11,7 +11,7 @@
  * where its mask has a 1 (BTECH_2A36_CANVAS.h). */
 void BtechEgaFillPolygonSpans(const BtechPolygonSpan *header)
 {
-    uint16_t page=combatVideo.drawPageSelector,row=header->header.firstRow;
+    CombatPage page=combatVideo.drawPage;uint16_t row=header->header.firstRow;
     BtechEgaCanvasWriter ega(page);
     combatPolygons.egaSpanRowsRemaining=header->header.rowCount;
     const BtechPolygonSpan *span=header+1;

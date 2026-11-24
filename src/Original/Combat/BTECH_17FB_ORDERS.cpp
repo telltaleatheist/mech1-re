@@ -120,7 +120,7 @@ uint16_t BtechGetMechConditionColour(int16_t unitSlot)
 void BtechUpdateLanceOrderHighlight(void)
 {
     if (!combatMechs.unitBindings[1].mech) return;
-    combatVideo.drawPolygonFilled=false;combatVideo.drawPageSelector=combatVideo.backPageSelector;
+    combatVideo.drawPolygonFilled=false;combatVideo.drawPage=combatVideo.backPage;
     if ((int16_t)combatOrders.previousOrderHighlightRow>=0)
     {
         combatVideo.drawFillColour=Combat_Pal_EGA_Black;
@@ -148,7 +148,7 @@ void BtechUpdateLanceOrderHighlight(void)
 /*17FB:16A7. Clear panel body but not its heading; leave outline mode set. */
 void BtechClearLanceOrderPanel(uint16_t panelIndex)
 {
-    combatVideo.drawPageSelector=combatVideo.backPageSelector;combatVideo.drawPolygonFilled=true;
+    combatVideo.drawPage=combatVideo.backPage;combatVideo.drawPolygonFilled=true;
     combatVideo.drawFillColour=Combat_Pal_EGA_Black;combatVideo.drawLineColour=Combat_Pal_EGA_Black;
     if (panelIndex>=ORDER_WINGMATE_PANELS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: panelIndex>=ORDER_WINGMATE_PANELS");
     BtechDrawStyledRectangle((uint16_t)(combatOrders.lanceOrderPanelTextX[panelIndex]-ORDER_PANEL_INSET),ORDER_PANEL_TOP,ORDER_PANEL_WIDTH,ORDER_PANEL_HEIGHT);

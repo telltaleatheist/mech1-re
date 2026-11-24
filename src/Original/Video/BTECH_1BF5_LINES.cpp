@@ -34,7 +34,7 @@ void BtechDrawClippedLine(int16_t firstX,int16_t firstY,int16_t secondX,int16_t 
         }
     if (x0>x1) {uint16_t saved=x0;x0=x1;x1=saved;saved=y0;y0=y1;y1=saved;}
     if (!combatPolygons.graphicsDrawLine) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsDrawLine"); /* Real EGA line backend remains a dependency. */
-    combatPolygons.graphicsDrawLine(x0,y0,x1,y1,combatVideo.drawPageSelector);
+    combatPolygons.graphicsDrawLine(x0,y0,x1,y1,combatVideo.drawPage);
 }
 
 /*1BF5:082E. Native register entry; next endpoint is passed before previous. */

@@ -32,7 +32,7 @@ void BtechRefreshCockpitViewportAndGauges(void)
     if (!combatWorld.playerMechState || combatWorld.playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
     combatImport.activeCockpitLayoutIndex=combatCockpit.mechCockpitLayoutIndices[combatWorld.playerMechState->templateIndex];
     combatVideo.screenPolygonNeedsClip=false;
-    combatVideo.drawPageSelector=combatVideo.backPageSelector;
+    combatVideo.drawPage=combatVideo.backPage;
     if (combatImport.activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS");
     BtechLoadScreenImage(combatCockpit.cockpitScreenFilenames[combatImport.activeCockpitLayoutIndex],NULL);
     combatVideo.screenPolygonNeedsClip=savedClipping;

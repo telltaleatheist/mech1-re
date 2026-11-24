@@ -93,7 +93,7 @@ bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
     if (combatCockpit.briefingMissionLabel[sizeof(combatCockpit.briefingMissionLabel)-1] || combatCockpit.briefingCrewLabel[sizeof(combatCockpit.briefingCrewLabel)-1]
         || combatCockpit.briefingMechLabel[sizeof(combatCockpit.briefingMechLabel)-1]) return false;
     combatCockpit.savedLineColour=0; /*4F7E*/combatCockpit.savedFillColour=0; /*4F80*/
-    combatCockpit.savedCopySourcePage=0; /*4F82*/combatCockpit.savedDrawPage=0; /*4F84*/
+    combatCockpit.savedCopySourcePage=CombatPage::None; /*4F82*/combatCockpit.savedDrawPage=CombatPage::None; /*4F84*/
     combatCockpit.savedTextBackground=0; /*4F86*/combatCockpit.savedTextForeground=0; /*4F88*/
     combatCockpit.savedPolygonFilled=0; /*4F8A*/combatCockpit.savedPolygonClip=0; /*4F8C*/
     combatCockpit.rememberedSensorTargetSlot=0; /*4EDC*/

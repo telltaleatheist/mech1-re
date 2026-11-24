@@ -12,7 +12,7 @@ void BtechEgaCopyScreenRectangle(uint16_t x,uint16_t y,uint16_t width,uint16_t h
     uint16_t bytes=(uint16_t)(end-first)>>3,row=(uint16_t)(y*2)>>1;
     if (row>=COMBAT_SCREEN_HEIGHT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: row>=COMBAT_SCREEN_HEIGHT");
     uint16_t cursor=combatVideo.graphicsRowOffsets[row]+(first>>3);
-    const int destinationPage=BtechEgaCanvasPage(combatVideo.drawPageSelector),sourcePage=BtechEgaCanvasPage(combatVideo.copySourcePageSelector);
+    const int destinationPage=BtechEgaCanvasPage(combatVideo.drawPage),sourcePage=BtechEgaCanvasPage(combatVideo.copySourcePage);
     do
     {
         uint16_t nextRow=cursor+COMBAT_SCREEN_ROW_BYTES;
@@ -37,7 +37,7 @@ void BtechEgaUploadPackedScreenRegion(BtechResourceAllocation source,uint16_t le
 {
     if (top>=COMBAT_SCREEN_HEIGHT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: top>=COMBAT_SCREEN_HEIGHT"); /* Native row-table adjacent-owner alias not represented. */
     uint16_t destination=combatVideo.graphicsRowOffsets[top]+(left>>3);
-    const int page=BtechEgaCanvasPage(combatVideo.drawPageSelector);
+    const int page=BtechEgaCanvasPage(combatVideo.drawPage);
     combatVideo.egaScreenUploadRowsRemaining=height;
     combatVideo.egaScreenUploadColumns=width>>3;
     uint16_t columnsRemaining=combatVideo.egaScreenUploadColumns;
