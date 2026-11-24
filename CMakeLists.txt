@@ -488,6 +488,8 @@ if(MECHWARRIOR_BUILD_SDL)
             # song: and sound: (event-log test aids) stay out of the game checks.
             add_test(NAME feed_calls COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tools/trace/test_feed_calls.py")
             set_tests_properties(feed_calls PROPERTIES ENVIRONMENT "MW1O_FEED_PORT=$<TARGET_FILE:mechwarrior>" TIMEOUT 600)
+            # An unknown --only name is refused, so a run never tests less than was asked for.
+            add_test(NAME trace_selection COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tools/trace/test_selection.py")
             # The snapshot schema (B1): its exchange fields are the save format's encoder's and cover every byte.
             add_test(NAME snap_schema COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tools/trace/test_schema.py")
             # The soundfont subset: the tool on a bank it builds, then the real subset against the pinned source

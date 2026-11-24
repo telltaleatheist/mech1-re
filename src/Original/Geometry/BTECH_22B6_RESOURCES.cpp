@@ -129,7 +129,7 @@ BtechResourceBank BtechDecodeAndRelocateResourceBank(const char *filename)
 void BtechLoadCollisionResourceBank(const char *filename)
 {
     BtechResourceAllocation allocation=BtechAllocateAndDecodeResource(filename);
-    surfaceResourceBank.allocation=allocation;
+    combatResources.surfaceResourceBank.allocation=allocation;
     uint16_t count=0;
     for (;;)
     {
@@ -138,8 +138,8 @@ void BtechLoadCollisionResourceBank(const char *filename)
         if (!(MwReadNativeWord(allocation.bytes,cursor)|MwReadNativeWord(allocation.bytes,cursor+2))) break;
         if (++count==0x4000) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: ++count==0x4000");
     }
-    surfaceResourceBank.surfaces=static_cast<BtechSurfaceDefinition **>(calloc((size_t)count+1,sizeof(BtechSurfaceDefinition *)));
-    if (!surfaceResourceBank.surfaces) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !surfaceResourceBank.surfaces");
+    combatResources.surfaceResourceBank.surfaces=static_cast<BtechSurfaceDefinition **>(calloc((size_t)count+1,sizeof(BtechSurfaceDefinition *)));
+    if (!combatResources.surfaceResourceBank.surfaces) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !surfaceResourceBank.surfaces");
     for (uint16_t index=0;index<count;++index)
     {
         uint16_t offset=MwReadNativeWord(allocation.bytes,index*4),paragraph=MwReadNativeWord(allocation.bytes,index*4+2);
@@ -149,11 +149,11 @@ void BtechLoadCollisionResourceBank(const char *filename)
          * descriptor identity in cached surface queries. This is IO only. */
         for (uint16_t prior=0;prior<index;++prior)
             if (MwReadNativeWord(allocation.bytes,prior*4)==offset && MwReadNativeWord(allocation.bytes,prior*4+2)==paragraph)
-            {surfaceResourceBank.surfaces[index]=surfaceResourceBank.surfaces[prior];break;}
-        if (surfaceResourceBank.surfaces[index]) continue;
+            {combatResources.surfaceResourceBank.surfaces[index]=combatResources.surfaceResourceBank.surfaces[prior];break;}
+        if (combatResources.surfaceResourceBank.surfaces[index]) continue;
         const uint8_t *base=allocation.bytes+paragraphBytes,*header=base+offset;
         BtechSurfaceDefinition *surface=static_cast<BtechSurfaceDefinition *>(calloc(1,sizeof(*surface)));if (!surface) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !surface");
-        surfaceResourceBank.surfaces[index]=surface;
+        combatResources.surfaceResourceBank.surfaces[index]=surface;
         surface->extentA=MwReadNativeWord(header,0);surface->extentB=MwReadNativeWord(header,2);
         surface->directResultFlag=header[4];surface->priorityClass=header[5];
         surface->surfaceClass=header[6];surface->patchCount=header[7];
@@ -185,20 +185,20 @@ void BtechLoadCollisionResourceBank(const char *filename)
             }
         }
     }
-    surfaceResourceBank.resourceCount=count;
+    combatResources.surfaceResourceBank.resourceCount=count;
 }
 
 /*22B6:04FA. Initial bank is copied; remaining slots are all cleared. */
 void BtechAllocateShapeBankRegistry(uint16_t count)
 {
     BtechHostRetainDetachedShapeRegistry(); /* Host ownership of the native orphan, no early free. */
-    shapeResourceBankCount=count;
+    combatResources.shapeResourceBankCount=count;
     if (!count || (uint32_t)count*6>UINT16_MAX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !count || (uint32_t)count*6>UINT16_MAX");
     enum { NATIVE_SHAPE_BANK_BYTES=6 };
-    shapeResourceBanks=static_cast<BtechResourceBank *>(BtechAllocateNearBytes((uint16_t)(count*NATIVE_SHAPE_BANK_BYTES),(size_t)count*sizeof(*shapeResourceBanks),BTECH_NEAR_SHAPE_BANKS));
-    if (!shapeResourceBanks) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !shapeResourceBanks");
-    shapeResourceBanks[0]=initialShapeResourceBank;
-    for (uint16_t slot=1;slot<count;++slot) shapeResourceBanks[slot]=BtechResourceBank{};
+    combatResources.shapeResourceBanks=static_cast<BtechResourceBank *>(BtechAllocateNearBytes((uint16_t)(count*NATIVE_SHAPE_BANK_BYTES),(size_t)count*sizeof(*combatResources.shapeResourceBanks),BTECH_NEAR_SHAPE_BANKS));
+    if (!combatResources.shapeResourceBanks) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !shapeResourceBanks");
+    combatResources.shapeResourceBanks[0]=combatResources.initialShapeResourceBank;
+    for (uint16_t slot=1;slot<count;++slot) combatResources.shapeResourceBanks[slot]=BtechResourceBank{};
 }
 
 /*22B6:034E. Native leaves its far pair/count stale until the next load.
@@ -206,9 +206,9 @@ void BtechAllocateShapeBankRegistry(uint16_t count)
  * query between release/reload is supported. Count is deliberately retained. */
 void BtechReleaseCollisionBankAllocation(void)
 {
-    BtechFreeDosMemorySelector(surfaceResourceBank.allocation.bytes);
-    BtechHostDiscardDecodedSurfaceBank(&surfaceResourceBank);
-    surfaceResourceBank.allocation.bytes=NULL; /* Released host ownership only. */
+    BtechFreeDosMemorySelector(combatResources.surfaceResourceBank.allocation.bytes);
+    BtechHostDiscardDecodedSurfaceBank(&combatResources.surfaceResourceBank);
+    combatResources.surfaceResourceBank.allocation.bytes=NULL; /* Released host ownership only. */
 }
 
 /*22B6:064A. Native forwards the original two WORD far pair;1F10 consumes
@@ -223,18 +223,18 @@ void BtechReleaseResourceBankSelector(BtechResourceBank bank)
  * decoded owner travels with that detached allocation, not another live bank. */
 BtechResourceBank BtechDetachShapeResourceBank(uint16_t bankSlot)
 {
-    if ((int16_t)bankSlot<0 || (int16_t)bankSlot>=(int16_t)shapeResourceBankCount)
+    if ((int16_t)bankSlot<0 || (int16_t)bankSlot>=(int16_t)combatResources.shapeResourceBankCount)
         BtechShowFatalErrorAndExit("a shape list in the combat resources is damaged"); /*304E:2D83*/
-    BtechResourceBank bank=shapeResourceBanks[bankSlot];
-    shapeResourceBanks[bankSlot]=BtechResourceBank{};
+    BtechResourceBank bank=combatResources.shapeResourceBanks[bankSlot];
+    combatResources.shapeResourceBanks[bankSlot]=BtechResourceBank{};
     return bank;
 }
 
 /*22B6:056A. Counts until the zero far pair, independent of cached count. */
 uint16_t BtechCountShapeResourceBankEntries(uint16_t bankSlot)
 {
-    if (bankSlot&0x8000 || bankSlot>=shapeResourceBankCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: bankSlot&0x8000 || bankSlot>=shapeResourceBankCount");
-    const BtechResourceBank *bank=&shapeResourceBanks[bankSlot];
+    if (bankSlot&0x8000 || bankSlot>=combatResources.shapeResourceBankCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: bankSlot&0x8000 || bankSlot>=shapeResourceBankCount");
+    const BtechResourceBank *bank=&combatResources.shapeResourceBanks[bankSlot];
     uint16_t count=0;
     if (bank->resources) while (bank->resources[count]) ++count;
     return count;
@@ -243,17 +243,17 @@ uint16_t BtechCountShapeResourceBankEntries(uint16_t bankSlot)
 /*22B6:065E. Validating and storing the directory precedes counting it. */
 void BtechBindShapeBankDirectory(BtechResourceBank bank,uint16_t bankSlot)
 {
-    if (bankSlot&0x8000 || bankSlot>=shapeResourceBankCount || shapeResourceBanks[bankSlot].resources) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: bankSlot&0x8000 || bankSlot>=shapeResourceBankCount || shapeResourceBanks[bankSlot].resources");
-    shapeResourceBanks[bankSlot]=bank;
-    shapeResourceBanks[bankSlot].resourceCount=BtechCountShapeResourceBankEntries(bankSlot);
+    if (bankSlot&0x8000 || bankSlot>=combatResources.shapeResourceBankCount || combatResources.shapeResourceBanks[bankSlot].resources) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: bankSlot&0x8000 || bankSlot>=shapeResourceBankCount || shapeResourceBanks[bankSlot].resources");
+    combatResources.shapeResourceBanks[bankSlot]=bank;
+    combatResources.shapeResourceBanks[bankSlot].resourceCount=BtechCountShapeResourceBankEntries(bankSlot);
 }
 
 /*22B6:0714. Null banks still subtract their counts. Signed live bank bound. */
 const BtechShapeResource *BtechLookupBankResource(uint16_t resourceId)
 {
-    for (uint16_t slot=0;!(shapeResourceBankCount&0x8000) && slot<shapeResourceBankCount;++slot)
+    for (uint16_t slot=0;!(combatResources.shapeResourceBankCount&0x8000) && slot<combatResources.shapeResourceBankCount;++slot)
     {
-        const BtechResourceBank *bank=&shapeResourceBanks[slot];
+        const BtechResourceBank *bank=&combatResources.shapeResourceBanks[slot];
         if (bank->resources && resourceId<bank->resourceCount) return bank->resources[resourceId];
         resourceId-=bank->resourceCount;
     }
@@ -264,9 +264,9 @@ const BtechShapeResource *BtechLookupBankResource(uint16_t resourceId)
  * Null banks still consume their counts; selector:offset becomes a typed ref. */
 void BtechSetShapeResourceEntryAddress(uint16_t resourceId,BtechShapeResource *resource)
 {
-    for (uint16_t slot=0;(int16_t)slot<(int16_t)shapeResourceBankCount;++slot)
+    for (uint16_t slot=0;(int16_t)slot<(int16_t)combatResources.shapeResourceBankCount;++slot)
     {
-        BtechResourceBank *bank=&shapeResourceBanks[slot];
+        BtechResourceBank *bank=&combatResources.shapeResourceBanks[slot];
         if (bank->resources && resourceId<bank->resourceCount)
         {bank->resources[resourceId]=resource;return;}
         resourceId-=bank->resourceCount;

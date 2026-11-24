@@ -17,7 +17,7 @@ FILE *BtechOpenStreamWithRetry(const char *filename,const char *mode)
 /*0810:293C/2953. IRQ delivery is the host boundary, not a replacement delay. */
 void BtechWaitScaledRuntimeDelay(uint16_t delayUnits)
 {
-    runtimeDelayRemaining=(uint16_t)(delayUnits<<2);
+    combatPlatform.runtimeDelayRemaining=(uint16_t)(delayUnits<<2);
     while (BtechGetActiveRuntimeDelayFar())
     {
         if (!btechHostPollInterrupts) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostPollInterrupts");
@@ -26,15 +26,15 @@ void BtechWaitScaledRuntimeDelay(uint16_t delayUnits)
 }
 uint16_t BtechGetActiveRuntimeDelayFar(void)
 {
-    return runtimeDelayActive?runtimeDelayRemaining:0;
+    return combatPlatform.runtimeDelayActive?combatPlatform.runtimeDelayRemaining:0;
 }
 
 /*0810:29CD. Filename changes even when requested00 leaves the old mode. */
 void BtechConfigureCombatInputReplay(uint16_t requestedMode,const char *filename)
 {
-    combatInputReplayFilename=filename;
+    combatPlatform.combatInputReplayFilename=filename;
     if (!requestedMode) return;
-    combatInputReplayMode=requestedMode;
+    combatPlatform.combatInputReplayMode=requestedMode;
     if (requestedMode==COMBAT_INPUT_RECORD) BtechCloseStreamFile(BtechOpenStreamWithRetry(filename,"wb"));
 }
 
@@ -43,6 +43,6 @@ void BtechConfigureCombatInputReplay(uint16_t requestedMode,const char *filename
 uint16_t BtechLowercaseCharacterByClassTable(uint16_t character)
 {
     uint16_t index=character+0x80;
-    if (index>=sizeof(characterClassStorage.bytes)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: index>=sizeof(characterClassStorage.bytes)");
-    return characterClassStorage.bytes[index]&1?character+0x20:character;
+    if (index>=sizeof(combatPlatform.characterClassStorage.bytes)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: index>=sizeof(characterClassStorage.bytes)");
+    return combatPlatform.characterClassStorage.bytes[index]&1?character+0x20:character;
 }

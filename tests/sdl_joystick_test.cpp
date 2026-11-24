@@ -150,12 +150,12 @@ int main() {
   Pad(pad, 0, 0);
   Stick(stick, 0, 0);
   BtechCalibrateJoystickAxisPairs();
-  Check(joystickPairInstalled[0] == 1 && joystickPairInstalled[1] == 1, "combat: A and B installed");
+  Check(combatPlatform.joystickPairInstalled[0] == 1 && combatPlatform.joystickPairInstalled[1] == 1, "combat: A and B installed");
   Pad(pad, 32767, 0, true);
   Stick(stick, 0, -32768, false, true);
-  Check(BtechReadJoystickDirectionMask(JOYSTICK_A) == COMBAT_DIRECTION_RIGHT && joystickDirectionX == 127,
+  Check(BtechReadJoystickDirectionMask(JOYSTICK_A) == COMBAT_DIRECTION_RIGHT && combatPlatform.joystickDirectionX == 127,
         "combat: A right");
-  Check(BtechReadJoystickDirectionMask(JOYSTICK_B) == COMBAT_DIRECTION_UP && joystickDirectionY == -127, "combat: B up");
+  Check(BtechReadJoystickDirectionMask(JOYSTICK_B) == COMBAT_DIRECTION_UP && combatPlatform.joystickDirectionY == -127, "combat: B up");
   Check(BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_ONE) == 1 && BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_TWO) == 0,
         "combat: A's first button held");
   Check(BtechReadJoystickPresenceState(JOYSTICK_BUTTON_PAIR_MASK) == 0
@@ -173,7 +173,7 @@ int main() {
   // B goes on.
   Detach(pad);
   Check(Reads(JOYSTICK_A, false, 0, 0, false, false), "pad taken out: A not connected, centred, released");
-  Check(BtechReadJoystickDirectionMask(JOYSTICK_A) == 0 && joystickDirectionX == 0 && joystickDirectionY == 0,
+  Check(BtechReadJoystickDirectionMask(JOYSTICK_A) == 0 && combatPlatform.joystickDirectionX == 0 && combatPlatform.joystickDirectionY == 0,
         "combat: no held turn once the pad is gone");
   Check(BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_ONE) == 0, "combat: no held fire once the pad is gone");
   MwPollJoystickA();

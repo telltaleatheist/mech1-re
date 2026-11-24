@@ -25,8 +25,6 @@ typedef union BtechGeometryCoordinateCache {
     uint16_t words[GEOMETRY_CACHE_VERTICES*2];
     uint32_t wide[GEOMETRY_CACHE_VERTICES];
 } BtechGeometryCoordinateCache;
-extern BtechGeometryCoordinateCache geometryViewX,geometryViewDepth,geometryViewZ;
-extern BtechGeometryCoordinateCache geometryProjectedX,geometryProjectedY;
 /*1F7C fractions alias the same three WORDs used by19CE/2227 as rotated values. */
 #define geometryTransformFractions combatRender.transformedEntryVector
 void BtechTransformWordVector(const uint16_t source[3],const BtechOrientationBasis *basis,uint16_t destination[3]);
@@ -35,14 +33,21 @@ void BtechCacheTransformedGeometryVector(uint8_t vectorIndex);
 void BtechCacheRotatedGeometryVector(uint8_t vectorIndex);
 uint64_t BtechGetWidePolygonFacingDotHighWord(uint8_t normalIndex,uint8_t firstVertexIndex);
 void BtechCachePolygonShadeNormal(uint8_t normalIndex);
-extern uint8_t polygonShadeDeltas[POLYGON_SHADE_CLASSES][POLYGON_SHADE_STEPS];
 void BtechSelectPolygonColoursAndShade(const BtechRenderPolygon *polygon);
 enum { GEOMETRY_VERTEX_UNTOUCHED=0,GEOMETRY_VERTEX_TRANSFORMED=1,GEOMETRY_VERTEX_PROJECTED=2,GEOMETRY_VERTEX_BEHIND=3,
     WIDE_POLYGON_VERTICES=20,POLYGON_VERTEX_INDEX_BYTES=22,
     POLYGON_LEFT=0x01,POLYGON_RIGHT=0x02,POLYGON_BOTTOM=0x04,POLYGON_TOP=0x08 };
-extern uint8_t polygonVertexIndices[POLYGON_VERTEX_INDEX_BYTES];
-extern uint32_t wideScreenX[WIDE_POLYGON_VERTICES],wideScreenY[WIDE_POLYGON_VERTICES];
-extern uint32_t widePolygonWorkX[WIDE_POLYGON_VERTICES],widePolygonWorkY[WIDE_POLYGON_VERTICES];
+/* Combat state owned by combat_render.h (plan, slice B3e). */
+struct CombatGeometryState
+{
+    BtechGeometryCoordinateCache geometryViewX, geometryViewDepth, geometryViewZ;
+    BtechGeometryCoordinateCache geometryProjectedX, geometryProjectedY;
+    uint8_t polygonShadeDeltas[POLYGON_SHADE_CLASSES][POLYGON_SHADE_STEPS];
+    uint8_t polygonVertexIndices[POLYGON_VERTEX_INDEX_BYTES];
+    uint32_t wideScreenX[WIDE_POLYGON_VERTICES], wideScreenY[WIDE_POLYGON_VERTICES];
+    uint32_t widePolygonWorkX[WIDE_POLYGON_VERTICES], widePolygonWorkY[WIDE_POLYGON_VERTICES];
+};
+extern CombatGeometryState combatGeometry;
 void BtechDrawPolygonPayload(const BtechRenderPolygonPayload *payload);
 void BtechCacheTransformedPolygonVertex(uint8_t vectorIndex);
 void BtechCacheTransformedPolygonNormal(uint8_t vectorIndex);

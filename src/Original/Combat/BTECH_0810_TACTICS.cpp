@@ -14,13 +14,13 @@
 void BtechSelectActiveUnitContext(uint16_t unitSlot)
 {
     if (unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitSlot>=COMBAT_MECH_SLOTS");
-    BtechUnitBinding *binding=&unitBindings[unitSlot];
+    BtechUnitBinding *binding=&combatMechs.unitBindings[unitSlot];
     combatPose.activeMechState=binding->mech;
     if (!combatPose.activeMechState || combatPose.activeMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeMechState || activeMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
-    combatPose.activeMechTemplate=&mechTemplates[combatPose.activeMechState->templateIndex];
+    combatPose.activeMechTemplate=&combatMechs.mechTemplates[combatPose.activeMechState->templateIndex];
     combatPose.activeUnitPositionedObject=binding->positionedLeftLeg;
     combatPose.activeUnitTorsoObject=binding->torso;
-    activeUnitControl=&unitControls[unitSlot];
+    combatImport.activeUnitControl=&combatMechs.unitControls[unitSlot];
 }
 
 /*0810:7A80. Reload is deliberately ignored. WORD sums wrap before SAR;
@@ -34,7 +34,7 @@ uint16_t BtechShouldDisengageForWeaponsOrStructure(void)
         if (mountIndex>=COMBAT_WEAPON_MOUNTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mountIndex>=COMBAT_WEAPON_MOUNTS");
         int16_t weaponKind=combatPose.activeMechTemplate->weaponMounts[mountIndex].weaponKind;
         if (weaponKind<0 || weaponKind>=COMBAT_WEAPON_KINDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: weaponKind<0 || weaponKind>=COMBAT_WEAPON_KINDS");
-        int16_t ammoFamily=weaponDefinitions[weaponKind].ammoFamily;
+        int16_t ammoFamily=combatMechs.weaponDefinitions[weaponKind].ammoFamily;
         if ((uint16_t)ammoFamily!=COMBAT_AMMO_NONE)
         {
             if ((uint16_t)ammoFamily>=COMBAT_AMMO_FAMILIES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)ammoFamily>=COMBAT_AMMO_FAMILIES");
@@ -57,20 +57,20 @@ uint16_t BtechShouldDisengageForWeaponsOrStructure(void)
  * Signed thresholds are sign-extended WORDs; equality is not nearby. */
 uint8_t BtechHasNearbyVisibleThreat(void)
 {
-    if (!activeUnitControl || activeUnitControl->sideIndex>=2) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl || activeUnitControl->sideIndex>=2");
-    BtechUnitControlState *control=activeUnitControl;
-    if (sideObjectiveRules[control->sideIndex]==OBJECTIVE_SPECIAL_TARGET && specialTargetDamageRemaining)
+    if (!combatImport.activeUnitControl || combatImport.activeUnitControl->sideIndex>=2) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl || activeUnitControl->sideIndex>=2");
+    BtechUnitControlState *control=combatImport.activeUnitControl;
+    if (combatImport.sideObjectiveRules[control->sideIndex]==OBJECTIVE_SPECIAL_TARGET && combatWorld.specialTargetDamageRemaining)
     {
-        if (!combatPose.activeUnitPositionedObject || !specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject || !specialTargetObject");
-        int32_t distance=(int32_t)BtechApproximatePlanarDistance(&combatPose.activeUnitPositionedObject->object.prefix.position,&specialTargetObject->object.prefix.position);
+        if (!combatPose.activeUnitPositionedObject || !combatWorld.specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject || !specialTargetObject");
+        int32_t distance=(int32_t)BtechApproximatePlanarDistance(&combatPose.activeUnitPositionedObject->object.prefix.position,&combatWorld.specialTargetObject->object.prefix.position);
         if (control->readyWeaponRangeMinusMargin>distance
             && (control->commandCode==COMBAT_ORDER_ACT_ON_OWN || control->commandCode==TACTICAL_ORDER_ATTACK || control->commandCode==TACTICAL_ORDER_MOVE_ATTACK)) return 1;
     }
     if (control->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: control->unitSlot>=COMBAT_MECH_SLOTS");
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
-        if (unitBindings[slot].mech && unitControls[slot].sideIndex!=control->sideIndex
-            && unitVisibility[control->unitSlot][slot] && unitControls[slot].conditionScoreOrExitCode>COMBAT_CONDITION_SCORE_MINIMUM
-            && (int32_t)unitDistances[control->unitSlot][slot]<(int16_t)control->twiceReadyWeaponRange)
+        if (combatMechs.unitBindings[slot].mech && combatMechs.unitControls[slot].sideIndex!=control->sideIndex
+            && combatMechs.unitVisibility[control->unitSlot][slot] && combatMechs.unitControls[slot].conditionScoreOrExitCode>COMBAT_CONDITION_SCORE_MINIMUM
+            && (int32_t)combatBallistics.unitDistances[control->unitSlot][slot]<(int16_t)control->twiceReadyWeaponRange)
         {
             return 1;
         }
@@ -82,14 +82,14 @@ uint8_t BtechHasNearbyVisibleThreat(void)
 void BtechRefreshTargetAndNavigate(void)
 {
     BtechScoreAndSelectTacticalTarget();
-    if (activeUnitControl->targetUnitSlot>=0)
+    if (combatImport.activeUnitControl->targetUnitSlot>=0)
     {
-        uint16_t targetUnitSlot=activeUnitControl->targetUnitSlot;
+        uint16_t targetUnitSlot=combatImport.activeUnitControl->targetUnitSlot;
         if (targetUnitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: targetUnitSlot>=COMBAT_MECH_SLOTS"); /* Native special/adjacent-control alias. */
-        const int32_t *lastSeen=unitControls[targetUnitSlot].lastVisiblePosition;
+        const int32_t *lastSeen=combatMechs.unitControls[targetUnitSlot].lastVisiblePosition;
         BtechPosition3D destination={(uint32_t)lastSeen[0],(uint32_t)lastSeen[1],(uint32_t)lastSeen[2]};
         BtechNavigateActiveUnitTowardPosition(&destination);
-        activeUnitControl->navigationReferenceSlot=activeUnitControl->targetUnitSlot;
+        combatImport.activeUnitControl->navigationReferenceSlot=combatImport.activeUnitControl->targetUnitSlot;
     }
     else
     {
@@ -104,10 +104,10 @@ void BtechUpdateUnitWeaponRangeThresholds(void)
 {
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
     {
-        BtechMechState *mech=unitBindings[slot].mech;
+        BtechMechState *mech=combatMechs.unitBindings[slot].mech;
         if (!mech) continue;
         if (mech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mech->templateIndex>=COMBAT_MECH_TEMPLATES");
-        BtechMechTemplate *chassis=&mechTemplates[mech->templateIndex];
+        BtechMechTemplate *chassis=&combatMechs.mechTemplates[mech->templateIndex];
         int16_t longestReadyWeaponRange=0;
         for (int16_t mount=0;mount<(int16_t)chassis->weaponMountCount;++mount)
         {
@@ -115,10 +115,10 @@ void BtechUpdateUnitWeaponRangeThresholds(void)
             if (!mech->weapons[mount].operational || mech->weapons[mount].reloadTicksRemaining) continue;
             int16_t weaponKind=chassis->weaponMounts[mount].weaponKind;
             if (weaponKind<0 || weaponKind>=COMBAT_WEAPON_KINDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: weaponKind<0 || weaponKind>=COMBAT_WEAPON_KINDS");
-            int16_t longRangeBoundary=weaponDefinitions[weaponKind].longRangeBoundary;
+            int16_t longRangeBoundary=combatMechs.weaponDefinitions[weaponKind].longRangeBoundary;
             if (longRangeBoundary>longestReadyWeaponRange) longestReadyWeaponRange=longRangeBoundary;
         }
-        BtechUnitControlState *control=&unitControls[slot];
+        BtechUnitControlState *control=&combatMechs.unitControls[slot];
         control->twiceReadyWeaponRange=(uint16_t)(longestReadyWeaponRange*TACTICAL_RANGE_SCALE*2);
         control->readyWeaponRangeMinusMargin=(int16_t)(longestReadyWeaponRange*TACTICAL_RANGE_SCALE-TACTICAL_RANGE_MARGIN);
         uint16_t readyWeaponRange=longestReadyWeaponRange*TACTICAL_RANGE_SCALE;

@@ -26,7 +26,7 @@ void BtechProgramMain(uint16_t argumentCount,const char *const *arguments)
 {
     uint8_t outcomeCountdownActive=0;
     uint16_t outcomeCountdownStartTick; /* Assigned before every first active-countdown use. */
-    savedArgumentCount=argumentCount;savedArguments=arguments;
+    combatImport.savedArgumentCount=argumentCount;combatImport.savedArguments=arguments;
     BtechInitializeCombatRuntime();
     for (;;)
     {
@@ -34,7 +34,7 @@ void BtechProgramMain(uint16_t argumentCount,const char *const *arguments)
          * Not a game clock: the logic reads none. Unbound in pure C fixtures. */
         if (btechHostPaceCombatTick) btechHostPaceCombatTick();
         if (combatInput.terminationFlag) BtechTerminateToLauncher(1);
-        runtimeDelayRemaining=COMBAT_FRAME_DELAY_TICKS;
+        combatPlatform.runtimeDelayRemaining=COMBAT_FRAME_DELAY_TICKS;
         BtechPollCombatCommandInput();
         BtechRefreshOpposingUnitVisibility();
         BtechRefreshUnitDistanceMatrix();
@@ -53,8 +53,8 @@ void BtechProgramMain(uint16_t argumentCount,const char *const *arguments)
         else
         {
             BtechApplyBodyHeadingToMechParts();
-            if (!playerUnitBinding || !playerUnitBinding->torso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->torso");
-            BtechUpdatePlayerMechPose(&playerUnitBinding->torso->object.prefix);
+            if (!combatWorld.playerUnitBinding || !combatWorld.playerUnitBinding->torso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->torso");
+            BtechUpdatePlayerMechPose(&combatWorld.playerUnitBinding->torso->object.prefix);
             BtechRemoveBodyHeadingFromMechParts();
             if (combatStartup.combatDispatchState==PLAYER_SCREEN_ORDERS) BtechRefreshLanceOrderScreen();
             else if (combatStartup.combatDispatchState==PLAYER_SCREEN_INSPECTION) BtechUpdateMechInspectionScreen(0);
@@ -62,7 +62,7 @@ void BtechProgramMain(uint16_t argumentCount,const char *const *arguments)
         }
         BtechUnregisterTransientWorldObjects();
         BtechDampJumpMotion();
-        int16_t playerConditionOrExitCode=unitControls[0].conditionScoreOrExitCode;
+        int16_t playerConditionOrExitCode=combatMechs.unitControls[0].conditionScoreOrExitCode;
         if (playerConditionOrExitCode<COMBAT_CONDITION_SCORE_MINIMUM)
         {
             uint16_t missionResult=COMBAT_RESULT_UNRESOLVED;
@@ -70,19 +70,19 @@ void BtechProgramMain(uint16_t argumentCount,const char *const *arguments)
             {
                 uint16_t exitBoundaryIndex=-((int32_t)playerConditionOrExitCode+COMBAT_EXIT_CODE_OFFSET);
                 missionResult=COMBAT_RESULT_RETREAT;
-                if (sideObjectiveRules[0]==OBJECTIVE_WITHDRAW)
+                if (combatImport.sideObjectiveRules[0]==OBJECTIVE_WITHDRAW)
                 {
                     /* Use the same four-edge decoding as the withdrawal
                      * objective check. Other game state is not an exit mask. */
                     if (exitBoundaryIndex<TACTICAL_BOUNDARY_CODES
-                        && (scenarioSelectors.sideBoundaryMasks[0]&boundaryMaskByCode[exitBoundaryIndex]))
+                        && (combatWorld.scenarioSelectors.sideBoundaryMasks[0]&combatTactics.boundaryMaskByCode[exitBoundaryIndex]))
                         missionResult=COMBAT_RESULT_SUCCESS;
                 }
             }
             else
             {
-                if (!playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState");
-                if (playerMechState->lifeSupportHits==COMBAT_LIFE_SUPPORT_HIT_LIMIT || playerMechState->cockpitDisabled)
+                if (!combatWorld.playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState");
+                if (combatWorld.playerMechState->lifeSupportHits==COMBAT_LIFE_SUPPORT_HIT_LIMIT || combatWorld.playerMechState->cockpitDisabled)
                 {BtechFlashPlayerMechLoss();missionResult=COMBAT_RESULT_FAILURE;}
             }
             if (missionResult!=COMBAT_RESULT_UNRESOLVED)
@@ -118,8 +118,8 @@ void BtechFlashPlayerMechLoss(void)
         if (combatStartup.combatDispatchState==COMBAT_SCREEN_COCKPIT)
         {
             combatVideo.drawFillColour=(uint8_t)colour;combatVideo.drawLineColour=(uint8_t)colour;
-            if (!playerPoseCameraContext) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerPoseCameraContext");
-            BtechCameraContext *camera=playerPoseCameraContext;
+            if (!combatWorld.playerPoseCameraContext) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerPoseCameraContext");
+            BtechCameraContext *camera=combatWorld.playerPoseCameraContext;
             BtechDrawStyledRectangle((uint16_t)camera->clipMinimumA,(uint16_t)camera->clipMinimumB,
                 (uint16_t)(camera->clipMaximumA-camera->clipMinimumA),(uint16_t)(camera->clipMaximumB-camera->clipMinimumB));
             BtechDrawCockpitBitmapPlacements();

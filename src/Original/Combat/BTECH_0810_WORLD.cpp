@@ -14,14 +14,14 @@
 BtechWorldObjectPrefix *BtechAllocateHeapWorldObject(uint16_t resourceId,const BtechPosition3D *placement)
 {
     BtechHeapWorldObject *object=static_cast<BtechHeapWorldObject *>(BtechAllocateNearBytes(BTECH_NEAR_WORLD_OBJECT_BYTES,sizeof(*object),BTECH_NEAR_WORLD_OBJECT));
-    if (!object || worldObjectCount>=COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !object || worldObjectCount>=COMBAT_WORLD_OBJECTS");
+    if (!object || combatWorld.worldObjectCount>=COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !object || worldObjectCount>=COMBAT_WORLD_OBJECTS");
     *object=BtechHeapWorldObject{};
     object->prefix.updateCallbackOffset=WORLD_OBJECT_SELECTION_PIXEL_CALLBACK;
     object->prefix.resourceId=resourceId;
     if (placement) object->prefix.position=*placement;
-    uint16_t registryIndex=worldObjectCount;
-    heapWorldObjectOwned[registryIndex]=1;++worldObjectCount;
-    worldObjects[registryIndex]=&object->prefix;
+    uint16_t registryIndex=combatWorld.worldObjectCount;
+    combatWorld.heapWorldObjectOwned[registryIndex]=1;++combatWorld.worldObjectCount;
+    combatWorld.worldObjects[registryIndex]=&object->prefix;
     return &object->prefix;
 }
 
@@ -30,17 +30,17 @@ BtechPooledWorldObject *BtechAllocatePooledWorldObject(uint16_t resourceId,const
 {
     for (uint16_t slot=0;slot<COMBAT_POOLED_OBJECTS;++slot)
     {
-        BtechPooledWorldObject *object=&pooledWorldObjects[slot];
+        BtechPooledWorldObject *object=&combatWorld.pooledWorldObjects[slot];
         if (object->occupied) continue;
         BtechWorldObjectPrefix *prefix=&object->object.prefix;
         prefix->flags|=WORLD_OBJECT_POOLED;object->occupied=1;
         prefix->resourceId=resourceId;prefix->updateCallbackOffset=WORLD_OBJECT_SELECTION_PIXEL_CALLBACK;
         if (!(resourceId&0x8000)) prefix->resourceScaledValue=BtechGetResourceScaledValue(resourceId);
         if (placement) prefix->position=*placement;
-        if (worldObjectCount>=COMBAT_WORLD_OBJECTS || cockpitWorldObjectCount>=COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: worldObjectCount>=COMBAT_WORLD_OBJECTS || cockpitWorldObjectCount>=COMBAT_WORLD_OBJECTS");
-        heapWorldObjectOwned[worldObjectCount]=0;
-        worldObjects[worldObjectCount++]=prefix;
-        cockpitWorldObjects[cockpitWorldObjectCount++]=&object->object.prefix;
+        if (combatWorld.worldObjectCount>=COMBAT_WORLD_OBJECTS || combatWorld.cockpitWorldObjectCount>=COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: worldObjectCount>=COMBAT_WORLD_OBJECTS || cockpitWorldObjectCount>=COMBAT_WORLD_OBJECTS");
+        combatWorld.heapWorldObjectOwned[combatWorld.worldObjectCount]=0;
+        combatWorld.worldObjects[combatWorld.worldObjectCount++]=prefix;
+        combatWorld.cockpitWorldObjects[combatWorld.cockpitWorldObjectCount++]=&object->object.prefix;
         return object;
     }
     /* B203 passes304E:2778 to the game's fatal renderer/cleanup, not CRT abort. */
@@ -53,20 +53,20 @@ BtechPooledWorldObject *BtechAllocatePooledWorldObject(uint16_t resourceId,const
 void BtechUnregisterWorldObject(BtechWorldObjectPrefix *object)
 {
     uint16_t slot=0;
-    while (slot<COMBAT_WORLD_OBJECTS && worldObjects[slot]!=object) ++slot;
+    while (slot<COMBAT_WORLD_OBJECTS && combatWorld.worldObjects[slot]!=object) ++slot;
     if (slot==COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: slot==COMBAT_WORLD_OBJECTS");
-    --worldObjectCount;
-    if (worldObjectCount>=COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: worldObjectCount>=COMBAT_WORLD_OBJECTS");
-    worldObjects[slot]=worldObjects[worldObjectCount];
+    --combatWorld.worldObjectCount;
+    if (combatWorld.worldObjectCount>=COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: worldObjectCount>=COMBAT_WORLD_OBJECTS");
+    combatWorld.worldObjects[slot]=combatWorld.worldObjects[combatWorld.worldObjectCount];
     /* Host allocation provenance travels with the reference, never native game state. */
-    heapWorldObjectOwned[slot]=heapWorldObjectOwned[worldObjectCount];
-    for (uint16_t cockpitSlot=0;(int16_t)cockpitSlot<(int16_t)cockpitWorldObjectCount;++cockpitSlot)
+    combatWorld.heapWorldObjectOwned[slot]=combatWorld.heapWorldObjectOwned[combatWorld.worldObjectCount];
+    for (uint16_t cockpitSlot=0;(int16_t)cockpitSlot<(int16_t)combatWorld.cockpitWorldObjectCount;++cockpitSlot)
     {
         if (cockpitSlot>=COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: cockpitSlot>=COMBAT_WORLD_OBJECTS");
-        if (cockpitWorldObjects[cockpitSlot]!=object) continue;
-        --cockpitWorldObjectCount;
-        if (cockpitWorldObjectCount>=COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: cockpitWorldObjectCount>=COMBAT_WORLD_OBJECTS");
-        cockpitWorldObjects[cockpitSlot]=cockpitWorldObjects[cockpitWorldObjectCount];
+        if (combatWorld.cockpitWorldObjects[cockpitSlot]!=object) continue;
+        --combatWorld.cockpitWorldObjectCount;
+        if (combatWorld.cockpitWorldObjectCount>=COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: cockpitWorldObjectCount>=COMBAT_WORLD_OBJECTS");
+        combatWorld.cockpitWorldObjects[cockpitSlot]=combatWorld.cockpitWorldObjects[combatWorld.cockpitWorldObjectCount];
         return;
     }
 }
@@ -75,35 +75,35 @@ void BtechUnregisterWorldObject(BtechWorldObjectPrefix *object)
  * pooled list references remain stale after the final count reset. */
 void BtechReleaseHeapWorldObjectList(void)
 {
-    for (int16_t slot=0;slot<(int16_t)worldObjectCount;++slot)
+    for (int16_t slot=0;slot<(int16_t)combatWorld.worldObjectCount;++slot)
     {
         if (slot>=COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: slot>=COMBAT_WORLD_OBJECTS");
-        if (heapWorldObjectOwned[slot])
+        if (combatWorld.heapWorldObjectOwned[slot])
         {
-            BtechReleaseNearHeapBlock(worldObjects[slot]);
-            worldObjects[slot]=NULL;heapWorldObjectOwned[slot]=0;
+            BtechReleaseNearHeapBlock(combatWorld.worldObjects[slot]);
+            combatWorld.worldObjects[slot]=NULL;combatWorld.heapWorldObjectOwned[slot]=0;
         }
     }
-    worldObjectCount=0;
+    combatWorld.worldObjectCount=0;
 }
 
 /*0810:B215. Occupancy-clear phase precedes the whole native1720-byte pool
  * fill. Host pointer members widen the same records; no unregister calls. */
 void BtechResetWorldObjectPool(void)
 {
-    for (uint16_t slot=0;slot<COMBAT_POOLED_OBJECTS;++slot) pooledWorldObjects[slot].occupied=0;
-    for (uint16_t slot=0;slot<COMBAT_POOLED_OBJECTS;++slot) pooledWorldObjects[slot]=BtechPooledWorldObject{};
+    for (uint16_t slot=0;slot<COMBAT_POOLED_OBJECTS;++slot) combatWorld.pooledWorldObjects[slot].occupied=0;
+    for (uint16_t slot=0;slot<COMBAT_POOLED_OBJECTS;++slot) combatWorld.pooledWorldObjects[slot]=BtechPooledWorldObject{};
 }
 
 /*0810:228B. Detach/release every bank before collision and two cameras.
  * Wrapped count+2 and signed loop bound retained. */
 void BtechReleaseCombatChassisResourceBanks(void)
 {
-    for (int16_t bank=0;bank<(int16_t)(distinctSceneMechChassisCount+2);++bank)
+    for (int16_t bank=0;bank<(int16_t)(combatWorld.distinctSceneMechChassisCount+2);++bank)
         BtechReleaseResourceBankSelector(BtechDetachShapeResourceBank((uint16_t)bank));
     BtechReleaseCollisionBankAllocation();
-    BtechReleaseCameraContextFar(orderMapCameraContext);
-    BtechReleaseCameraContextFar(playerPoseCameraContext);
+    BtechReleaseCameraContextFar(combatWorld.orderMapCameraContext);
+    BtechReleaseCameraContextFar(combatWorld.playerPoseCameraContext);
 }
 
 /*0810:B246. Clear occupancy before unregistering, then clear the whole record. */
@@ -117,10 +117,10 @@ void BtechReleasePooledWorldObject(BtechPooledWorldObject *object)
 /*0810:B0BB. Signed count, live reread; no negative-resource shortcut here. */
 void BtechRefreshWorldObjectResourceScales(void)
 {
-    for (uint16_t index=0;!(worldObjectCount&0x8000) && index<worldObjectCount;++index)
+    for (uint16_t index=0;!(combatWorld.worldObjectCount&0x8000) && index<combatWorld.worldObjectCount;++index)
     {
-        if (index>=COMBAT_WORLD_OBJECTS || !worldObjects[index]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: index>=COMBAT_WORLD_OBJECTS || !worldObjects[index]");
-        BtechWorldObjectPrefix *object=worldObjects[index];
+        if (index>=COMBAT_WORLD_OBJECTS || !combatWorld.worldObjects[index]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: index>=COMBAT_WORLD_OBJECTS || !worldObjects[index]");
+        BtechWorldObjectPrefix *object=combatWorld.worldObjects[index];
         object->resourceScaledValue=BtechGetResourceScaledValue(object->resourceId);
     }
 }
@@ -141,22 +141,22 @@ BtechCameraContext *BtechCreateHiddenCameraContext(BtechPooledWorldObject *objec
  * separate owners; they are not combined into a new player context. */
 void BtechInitializePlayerCameras(void)
 {
-    playerUnitBinding=&unitBindings[0];
-    playerMechState=playerUnitBinding->mech;
-    if (!playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
-    playerMechTemplate=&mechTemplates[playerMechState->templateIndex];
-    playerUnitBinding->torso->object.prefix.renderFlags|=COMBAT_WORLD_OBJECT_HIDDEN;
-    playerUnitBinding->rightLeg->object.prefix.renderFlags|=COMBAT_WORLD_OBJECT_HIDDEN;
-    playerUnitBinding->positionedLeftLeg->object.prefix.renderFlags|=COMBAT_WORLD_OBJECT_HIDDEN;
-    playerUnitBinding->rightArm->object.prefix.renderFlags|=COMBAT_WORLD_OBJECT_HIDDEN;
-    playerUnitBinding->leftArm->object.prefix.renderFlags|=COMBAT_WORLD_OBJECT_HIDDEN;
-    playerUnitBinding->head->object.prefix.renderFlags|=COMBAT_WORLD_OBJECT_HIDDEN;
-    playerPoseObject=BtechAllocatePooledWorldObject(otherShapeResourceBase,NULL);
-    orderMapCameraObject=BtechAllocatePooledWorldObject(otherShapeResourceBase,NULL);
-    BtechWorldObjectPrefix *mapCamera=&orderMapCameraObject->object.prefix;
+    combatWorld.playerUnitBinding=&combatMechs.unitBindings[0];
+    combatWorld.playerMechState=combatWorld.playerUnitBinding->mech;
+    if (!combatWorld.playerMechState || combatWorld.playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
+    combatWorld.playerMechTemplate=&combatMechs.mechTemplates[combatWorld.playerMechState->templateIndex];
+    combatWorld.playerUnitBinding->torso->object.prefix.renderFlags|=COMBAT_WORLD_OBJECT_HIDDEN;
+    combatWorld.playerUnitBinding->rightLeg->object.prefix.renderFlags|=COMBAT_WORLD_OBJECT_HIDDEN;
+    combatWorld.playerUnitBinding->positionedLeftLeg->object.prefix.renderFlags|=COMBAT_WORLD_OBJECT_HIDDEN;
+    combatWorld.playerUnitBinding->rightArm->object.prefix.renderFlags|=COMBAT_WORLD_OBJECT_HIDDEN;
+    combatWorld.playerUnitBinding->leftArm->object.prefix.renderFlags|=COMBAT_WORLD_OBJECT_HIDDEN;
+    combatWorld.playerUnitBinding->head->object.prefix.renderFlags|=COMBAT_WORLD_OBJECT_HIDDEN;
+    combatWorld.playerPoseObject=BtechAllocatePooledWorldObject(otherShapeResourceBase,NULL);
+    combatWorld.orderMapCameraObject=BtechAllocatePooledWorldObject(otherShapeResourceBase,NULL);
+    BtechWorldObjectPrefix *mapCamera=&combatWorld.orderMapCameraObject->object.prefix;
     mapCamera->orientationB=0;mapCamera->orientationC=0;mapCamera->orientationA=0xC000;
-    orderMapCameraContext=BtechCreateHiddenCameraContext(orderMapCameraObject);
-    playerPoseCameraContext=BtechCreateHiddenCameraContext(playerPoseObject);
+    combatWorld.orderMapCameraContext=BtechCreateHiddenCameraContext(combatWorld.orderMapCameraObject);
+    combatWorld.playerPoseCameraContext=BtechCreateHiddenCameraContext(combatWorld.playerPoseObject);
 }
 
 /*0810:211B. Count slots01..07; the player-only chassis is deliberately not
@@ -164,19 +164,19 @@ void BtechInitializePlayerCameras(void)
 void BtechLoadCombatChassisResourceBanks(void)
 {
     uint16_t chassisBankSlot=2;
-    distinctSceneMechChassisCount=0;
-    beforeObjectListCallbackOffset=WORLD_LIST_BEFORE_CALLBACK;afterObjectListCallbackOffset=WORLD_LIST_AFTER_CALLBACK;
-    memset(sceneChassisResourcePresent,0,8);
+    combatWorld.distinctSceneMechChassisCount=0;
+    combatWorld.beforeObjectListCallbackOffset=WORLD_LIST_BEFORE_CALLBACK;combatWorld.afterObjectListCallbackOffset=WORLD_LIST_AFTER_CALLBACK;
+    memset(combatWorld.sceneChassisResourcePresent,0,8);
     for (uint16_t slot=1;slot<COMBAT_MECH_SLOTS;++slot)
     {
-        const BtechMechState *mech=unitBindings[slot].mech;
+        const BtechMechState *mech=combatMechs.unitBindings[slot].mech;
         if (!mech) continue;
         uint16_t chassis=mech->templateIndex;
         if (chassis>=10) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: chassis>=10");
-        if (!sceneChassisResourcePresent[chassis])
-        {sceneChassisResourcePresent[chassis]=1;++distinctSceneMechChassisCount;}
+        if (!combatWorld.sceneChassisResourcePresent[chassis])
+        {combatWorld.sceneChassisResourcePresent[chassis]=1;++combatWorld.distinctSceneMechChassisCount;}
     }
-    BtechAllocateShapeBankRegistry(distinctSceneMechChassisCount+2);
+    BtechAllocateShapeBankRegistry(combatWorld.distinctSceneMechChassisCount+2);
     BtechResourceBank bank=BtechDecodeAndRelocateResourceBank(BtechBuildFilenameWithExtension("terpck","tbl"));
     BtechBindShapeBankDirectory(bank,0);
     BtechLoadCollisionResourceBank(BtechBuildFilenameWithExtension("terpck","gi"));
@@ -187,10 +187,10 @@ void BtechLoadCombatChassisResourceBanks(void)
     firstMechShapeResourceId=nextResourceBase;
     for (uint16_t chassis=0;chassis<10;++chassis)
     {
-        if (!sceneChassisResourcePresent[chassis]) continue;
+        if (!combatWorld.sceneChassisResourcePresent[chassis]) continue;
         mechResourceBaseIds[chassis]=nextResourceBase;
         if (chassis>=8) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: chassis>=8"); /* Native basename aliases presence WORDs; no invented ninth/tenth chassis. */
-        bank=BtechDecodeAndRelocateResourceBank(BtechBuildFilenameWithExtension(sceneChassisBankNames[chassis],"tbl"));
+        bank=BtechDecodeAndRelocateResourceBank(BtechBuildFilenameWithExtension(combatWorld.sceneChassisBankNames[chassis],"tbl"));
         BtechBindShapeBankDirectory(bank,chassisBankSlot);
         uint16_t previousSlot=chassisBankSlot++;
         nextResourceBase+=BtechCountShapeResourceBankEntries(previousSlot);
@@ -203,18 +203,18 @@ void BtechLoadCombatChassisResourceBanks(void)
  * native stack residue and is explicitly unsupported, not zero-filled. */
 void BtechLoadTerrainWorldResources(void)
 {
-    if (combatTerrainDetailLevel==TERRAIN_DETAIL_LOW) return;
+    if (combatImport.combatTerrainDetailLevel==TERRAIN_DETAIL_LOW) return;
     uint8_t resourceBytes[2],positionBytes[12];
     uint8_t haveResource=0,havePosition=0;
     for (uint16_t tile=0;tile<TERRAIN_TILE_COUNT;++tile)
     {
-        uint8_t variant=scenarioSelectors.terrainSelectors[tile];
+        uint8_t variant=combatWorld.scenarioSelectors.terrainSelectors[tile];
         if (variant>=16) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: variant>=16");
-        strcpy(terrainWorldFilename,"TILE");strcat(terrainWorldFilename,terrainVariantFilenameSuffixes[variant]);
-        if (combatTerrainDetailLevel==TERRAIN_DETAIL_MEDIUM) strcat(terrainWorldFilename,"B");
-        strcpy(terrainGridFilename,terrainWorldFilename);
-        strcat(terrainWorldFilename,".WLD");strcat(terrainGridFilename,".GRD");
-        FILE *stream=BtechOpenStreamWithRetry(terrainWorldFilename,"rb");
+        strcpy(combatWorld.terrainWorldFilename,"TILE");strcat(combatWorld.terrainWorldFilename,combatWorld.terrainVariantFilenameSuffixes[variant]);
+        if (combatImport.combatTerrainDetailLevel==TERRAIN_DETAIL_MEDIUM) strcat(combatWorld.terrainWorldFilename,"B");
+        strcpy(combatWorld.terrainGridFilename,combatWorld.terrainWorldFilename);
+        strcat(combatWorld.terrainWorldFilename,".WLD");strcat(combatWorld.terrainGridFilename,".GRD");
+        FILE *stream=BtechOpenStreamWithRetry(combatWorld.terrainWorldFilename,"rb");
         size_t read;
         while ((read=BtechReadStreamElements(resourceBytes,1,2,stream))!=0)
         {
@@ -231,12 +231,12 @@ void BtechLoadTerrainWorldResources(void)
             object->renderFlags=WORLD_OBJECT_SURFACE_QUERY_CANDIDATE;
         }
         BtechCloseStreamFile(stream);
-        stream=BtechOpenStreamWithRetry(terrainGridFilename,"rb");
-        uint16_t rowBase=terrainTileGridRowBases[tile],columnBase=terrainTileGridColumnBases[tile];
+        stream=BtechOpenStreamWithRetry(combatWorld.terrainGridFilename,"rb");
+        uint16_t rowBase=combatWorld.terrainTileGridRowBases[tile],columnBase=combatWorld.terrainTileGridColumnBases[tile];
         for (uint16_t row=0;row<TERRAIN_TILE_ROWS;++row)
         {
             if (rowBase+row>=TERRAIN_GRID_ROWS || columnBase+TERRAIN_TILE_COLUMNS>TERRAIN_GRID_COLUMNS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: rowBase+row>=TERRAIN_GRID_ROWS || columnBase+TERRAIN_TILE_COLUMNS>TERRAIN_GRID_COLUMNS");
-            BtechReadStreamElements(&terrainHeightGrid[rowBase+row][columnBase],TERRAIN_TILE_COLUMNS,1,stream);
+            BtechReadStreamElements(&combatWorld.terrainHeightGrid[rowBase+row][columnBase],TERRAIN_TILE_COLUMNS,1,stream);
         }
         BtechCloseStreamFile(stream);
     }
@@ -276,11 +276,11 @@ void BtechLoadScenarioAndWorld(uint16_t scenarioIndex)
     FILE *stream=BtechOpenStreamWithRetry("snario.dat","rb");
     uint16_t offset=scenarioIndex<<4;
     fseek(stream,offset<0x8000?offset:(long)offset-0x10000,SEEK_SET);
-    BtechReadStreamElements(&scenarioSelectors,1,sizeof(scenarioSelectors),stream);BtechCloseStreamFile(stream);
+    BtechReadStreamElements(&combatWorld.scenarioSelectors,1,sizeof(combatWorld.scenarioSelectors),stream);BtechCloseStreamFile(stream);
     BtechLoadTerrainWorldResources();
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
     {
-        BtechUnitBinding *binding=&unitBindings[slot];
+        BtechUnitBinding *binding=&combatMechs.unitBindings[slot];
         if (!binding->mech) continue;
         binding->torso=BtechAllocatePooledWorldObject(UINT16_MAX,NULL);
         binding->rightLeg=BtechAllocatePooledWorldObject(UINT16_MAX,NULL);
@@ -294,27 +294,27 @@ void BtechLoadScenarioAndWorld(uint16_t scenarioIndex)
     int16_t specialTerrain=-1;
     for (uint16_t side=0;side<2;++side)
     {
-        if (sideObjectiveRules[0]>=5) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: sideObjectiveRules[0]>=5");
-        uint8_t terrainSlot=scenarioSelectors.formationSelectors[side][sideObjectiveRules[0]];
+        if (combatImport.sideObjectiveRules[0]>=5) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: sideObjectiveRules[0]>=5");
+        uint8_t terrainSlot=combatWorld.scenarioSelectors.formationSelectors[side][combatImport.sideObjectiveRules[0]];
         if (terrainSlot>=4) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: terrainSlot>=4");
-        uint16_t variant=scenarioSelectors.terrainSelectors[terrainSlot];
-        offset=(uint16_t)((sideObjectiveRules[side]<<5)+variant*0xA0+0x03C0);
+        uint16_t variant=combatWorld.scenarioSelectors.terrainSelectors[terrainSlot];
+        offset=(uint16_t)((combatImport.sideObjectiveRules[side]<<5)+variant*0xA0+0x03C0);
         fseek(stream,offset<0x8000?offset:(long)offset-0x10000,SEEK_SET);
         uint8_t formationBytes[0x20];
         for (uint16_t unit=0;unit<4;++unit)
         {
-            const BtechFormationPosition *position=&unitFormationPositions[side*4+unit];
+            const BtechFormationPosition *position=&combatWorld.unitFormationPositions[side*4+unit];
             for (uint16_t byte=0;byte<4;++byte)
             {formationBytes[unit*8+byte]=(uint8_t)(position->positionA>>(byte*8));formationBytes[unit*8+4+byte]=(uint8_t)(position->positionB>>(byte*8));}
         }
         BtechReadStreamElements(formationBytes,1,sizeof(formationBytes),stream);
         for (uint16_t unit=0;unit<4;++unit)
         {
-            BtechFormationPosition *position=&unitFormationPositions[side*4+unit];
+            BtechFormationPosition *position=&combatWorld.unitFormationPositions[side*4+unit];
             position->positionA=(uint32_t)MwReadNativeWord(formationBytes,unit*8)|((uint32_t)MwReadNativeWord(formationBytes,unit*8+2)<<16);
             position->positionB=(uint32_t)MwReadNativeWord(formationBytes,unit*8+4)|((uint32_t)MwReadNativeWord(formationBytes,unit*8+6)<<16);
         }
-        if (sideObjectiveRules[side]==OBJECTIVE_DEFEND_SPECIAL_TARGET) specialTerrain=(int16_t)variant;
+        if (combatImport.sideObjectiveRules[side]==OBJECTIVE_DEFEND_SPECIAL_TARGET) specialTerrain=(int16_t)variant;
     }
     if (specialTerrain>=0)
     {
@@ -325,46 +325,46 @@ void BtechLoadScenarioAndWorld(uint16_t scenarioIndex)
         BtechPosition3D position={
             (uint32_t)MwReadNativeWord(positionBytes,0)|((uint32_t)MwReadNativeWord(positionBytes,2)<<16),
             (uint32_t)MwReadNativeWord(positionBytes,4)|((uint32_t)MwReadNativeWord(positionBytes,6)<<16),SPECIAL_TARGET_ALTITUDE};
-        specialTargetDamageRemaining=SPECIAL_TARGET_INITIAL_DAMAGE;
-        specialTargetObject=BtechAllocatePooledWorldObject(otherShapeResourceBase+SPECIAL_TARGET_SHAPE_DELTA,&position);
-        specialTargetObject->object.prefix.renderFlags|=WORLD_OBJECT_SPECIAL_TARGET;
-        objectiveVisibilityObject=specialTargetObject;
+        combatWorld.specialTargetDamageRemaining=SPECIAL_TARGET_INITIAL_DAMAGE;
+        combatWorld.specialTargetObject=BtechAllocatePooledWorldObject(otherShapeResourceBase+SPECIAL_TARGET_SHAPE_DELTA,&position);
+        combatWorld.specialTargetObject->object.prefix.renderFlags|=WORLD_OBJECT_SPECIAL_TARGET;
+        combatWorld.objectiveVisibilityObject=combatWorld.specialTargetObject;
     }
     BtechCloseStreamFile(stream);
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
-        if (unitBindings[slot].mech)
+        if (combatMechs.unitBindings[slot].mech)
         {
-            BtechWorldObjectPrefix *object=&unitBindings[slot].positionedLeftLeg->object.prefix;
-            object->position.positionA=unitFormationPositions[slot].positionA;
-            object->position.positionB=unitFormationPositions[slot].positionB;
+            BtechWorldObjectPrefix *object=&combatMechs.unitBindings[slot].positionedLeftLeg->object.prefix;
+            object->position.positionA=combatWorld.unitFormationPositions[slot].positionA;
+            object->position.positionB=combatWorld.unitFormationPositions[slot].positionB;
             object->position.positionC=COMBAT_INITIAL_ALTITUDE;
         }
     /* Face the opposing deployment area. These are the positions just copied
      * into each lance leader's leg object; no enemy object is needed here. */
-    const BtechFormationPosition *friendly=&unitFormationPositions[0];
-    const BtechFormationPosition *opposing=&unitFormationPositions[COMBAT_LANCE_SLOTS];
+    const BtechFormationPosition *friendly=&combatWorld.unitFormationPositions[0];
+    const BtechFormationPosition *opposing=&combatWorld.unitFormationPositions[COMBAT_LANCE_SLOTS];
     uint16_t heading=BtechCalculateVectorHeading(opposing->positionA-friendly->positionA,
         opposing->positionB-friendly->positionB);
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
     {
-        if (!unitBindings[slot].mech) continue;
+        if (!combatMechs.unitBindings[slot].mech) continue;
         uint16_t side=slot<COMBAT_LANCE_SLOTS?0:1;
-        BtechWorldObjectPrefix *object=&unitBindings[slot].positionedLeftLeg->object.prefix;
-        switch (sideObjectiveRules[side])
+        BtechWorldObjectPrefix *object=&combatMechs.unitBindings[slot].positionedLeftLeg->object.prefix;
+        switch (combatImport.sideObjectiveRules[side])
         {
         case OBJECTIVE_ELIMINATE_OPPOSITION:case OBJECTIVE_OPPOSE_WITHDRAWAL:case OBJECTIVE_DEFEND_SPECIAL_TARGET:
             object->orientationC=heading+(side?0x7FF8:0);break;
         case OBJECTIVE_WITHDRAW:;
-            uint8_t mask;mask=scenarioSelectors.sideBoundaryMasks[side];
+            uint8_t mask;mask=combatWorld.scenarioSelectors.sideBoundaryMasks[side];
             if (mask&1) object->orientationC=0;
             else if (mask&2) object->orientationC=0x7FF8;
             else if (mask&4) object->orientationC=0x3FFC;
             else if (mask&8) object->orientationC=0xC004;
             break;
         case OBJECTIVE_SPECIAL_TARGET:;
-            if (!specialTargetObject || !unitBindings[side*4].positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject || !unitBindings[side*4].positionedLeftLeg");
-            const BtechPosition3D *target=&specialTargetObject->object.prefix.position;
-            const BtechPosition3D *reference=&unitBindings[side*4].positionedLeftLeg->object.prefix.position;
+            if (!combatWorld.specialTargetObject || !combatMechs.unitBindings[side*4].positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject || !unitBindings[side*4].positionedLeftLeg");
+            const BtechPosition3D *target=&combatWorld.specialTargetObject->object.prefix.position;
+            const BtechPosition3D *reference=&combatMechs.unitBindings[side*4].positionedLeftLeg->object.prefix.position;
             object->orientationC=BtechCalculateVectorHeading(target->positionA-reference->positionA,target->positionB-reference->positionB);
             break;
         }

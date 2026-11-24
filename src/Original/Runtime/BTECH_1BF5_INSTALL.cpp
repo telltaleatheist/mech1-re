@@ -9,7 +9,7 @@
  * that update are gone, H4c). */
 uint16_t BtechRegisterTimerCallback(BtechTimerCallback callback,uint16_t period)
 {
-    if (!runtimeDelayActive || combatStartup.schedulerActiveSlots==UINT16_MAX) return 0;
+    if (!combatPlatform.runtimeDelayActive || combatStartup.schedulerActiveSlots==UINT16_MAX) return 0;
     uint16_t slot=0,slotMask=1,pendingSlots=combatStartup.schedulerActiveSlots;
     while (pendingSlots&1) {++slot;slotMask<<=1;pendingSlots>>=1;}
     combatStartup.schedulerTimings[slot].period=period;
@@ -34,8 +34,8 @@ uint16_t BtechUnregisterTimerCallback(uint16_t callbackHandle)
  * callbacks must preserve the original scheduler's SI/BP/DS register owners. */
 void BtechTimerSchedulerInterrupt(void)
 {
-    uint16_t remaining=runtimeDelayRemaining-1;
-    runtimeDelayRemaining=remaining^((remaining&NATIVE_WORD_SIGN_BIT)?UINT16_MAX:0);
+    uint16_t remaining=combatPlatform.runtimeDelayRemaining-1;
+    combatPlatform.runtimeDelayRemaining=remaining^((remaining&NATIVE_WORD_SIGN_BIT)?UINT16_MAX:0);
     uint16_t pendingSlots=combatStartup.schedulerActiveSlots;
     for (uint16_t slot=0;pendingSlots;++slot,pendingSlots>>=1)
     {
@@ -126,7 +126,7 @@ void BtechInstallDivideErrorHandler(void)
  * check or a guard that changes those preceding effects. */
 void BtechInstallTimerScheduler(uint16_t period)
 {
-    if (runtimeDelayActive) return;
+    if (combatPlatform.runtimeDelayActive) return;
     combatStartup.schedulerActiveSlots=0;
     BtechProbePcjrTandyRomSignatures();
     if (!btechHostGetTimerOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetTimerOwner");
@@ -139,5 +139,5 @@ void BtechInstallTimerScheduler(uint16_t period)
     btechHostSetTimerPeriod(combatStartup.pitChannel0DivisorShadow);
     btechHostEnableDeviceIrqs(MwDeviceIrq::All); /* Mask 28h: off only IRQ3 and 5, which the host has no device on. */
     btechHostSetTimerOwner(MwTimerOwner::CombatScheduler);
-    runtimeDelayActive=1;
+    combatPlatform.runtimeDelayActive=1;
 }

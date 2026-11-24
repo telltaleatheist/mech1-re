@@ -95,13 +95,13 @@ void BtechPollCombatCommandInput(void)
     case COMBAT_KEY_COMMA:direction=COMBAT_DIRECTION_LEFT;button1=1;break;
     case COMBAT_KEY_PERIOD:direction=COMBAT_DIRECTION_RIGHT;button1=1;break;
     }
-    if (combatInputReplayMode==COMBAT_INPUT_PLAYBACK)
+    if (combatPlatform.combatInputReplayMode==COMBAT_INPUT_PLAYBACK)
     {
         if (scanCode|button1|button0|combatInput.combatInputReplayCancelLatched)
         {scanCode=COMBAT_KEY_ESCAPE;combatInput.combatInputReplayCancelLatched=1;}
         else /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Native replay IO/short-read stack residue is not converted."); /* Native replay IO/short-read stack residue is not converted. */
     }
-    else if (combatInputReplayMode==COMBAT_INPUT_RECORD) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatInputReplayMode==COMBAT_INPUT_RECORD"); /* Native append-stream writer dependency. */
+    else if (combatPlatform.combatInputReplayMode==COMBAT_INPUT_RECORD) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatInputReplayMode==COMBAT_INPUT_RECORD"); /* Native append-stream writer dependency. */
     combatInput.combatInputScanCode=scanCode;
     combatInput.combatInputDirectionMask=direction;
     combatInput.combatInputButton1State=button1;

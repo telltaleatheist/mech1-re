@@ -22,13 +22,15 @@ build on the host's clock instead of record.py's test clock: a check that
 real time still gives the goldens, not a gate (a slow build can snap an
 animation a frame further on).
 
-Exit status: 0 all match, 1 a mismatch, 77 skipped (no candidate or game).
+Exit status: 0 all match, 1 a mismatch, 2 an unknown --only name, 77 skipped (no
+candidate or game).
 """
 import argparse, json, os, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import schema  # noqa: E402  (how a field differs)
+from selection import check_only  # noqa: E402
 SKIP = 77
 
 
@@ -132,7 +134,9 @@ def main():
                     help="with --port: the host's clock, not the test clock (a check, not a gate)")
     a = ap.parse_args()
 
-    names = a.only or sorted(f[:-6] for f in os.listdir(a.golden) if f.endswith(".jsonl"))
+    valid = sorted(f[:-6] for f in os.listdir(a.golden) if f.endswith(".jsonl"))
+    check_only(a.only, valid)
+    names = a.only or valid
     if not a.traces:
         exe = a.port or a.rebuild
         missing = [w for w, p in (("the candidate", exe), ("the game folder", a.game)) if not p or not os.path.exists(p)]

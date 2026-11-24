@@ -104,21 +104,21 @@ int main() {
   sticks[0] = Stick(0, 0);
   sticks[1] = MwJoystickState{false, 0, 0, false, false};
   BtechCalibrateJoystickAxisPairs();
-  Check(joystickPairInstalled[0] == 1 && joystickPairInstalled[1] == 0, "A installed, B not");
-  Check(joystickAxisCentres[0] == 127 && joystickAxisCentres[1] == 127 && joystickAxisReciprocals[0] == 256,
+  Check(combatPlatform.joystickPairInstalled[0] == 1 && combatPlatform.joystickPairInstalled[1] == 0, "A installed, B not");
+  Check(combatPlatform.joystickAxisCentres[0] == 127 && combatPlatform.joystickAxisCentres[1] == 127 && combatPlatform.joystickAxisReciprocals[0] == 256,
         "A's centres 127, scale 256ths of 7F00h/127");
 
   Check(CombatAt(0, 0) == 0, "combat centred: no direction");
-  Check(CombatAt(-127, 0) == COMBAT_DIRECTION_LEFT && joystickDirectionX == -127, "combat full left: left, -127");
-  Check(CombatAt(127, 0) == COMBAT_DIRECTION_RIGHT && joystickDirectionX == 127, "combat full right: right, 127");
+  Check(CombatAt(-127, 0) == COMBAT_DIRECTION_LEFT && combatPlatform.joystickDirectionX == -127, "combat full left: left, -127");
+  Check(CombatAt(127, 0) == COMBAT_DIRECTION_RIGHT && combatPlatform.joystickDirectionX == 127, "combat full right: right, 127");
   Check(CombatAt(0, -127) == COMBAT_DIRECTION_UP && CombatAt(0, 127) == COMBAT_DIRECTION_DOWN, "combat up and down");
   Check(CombatAt(-127, -127) == (COMBAT_DIRECTION_UP | COMBAT_DIRECTION_LEFT), "combat up left");
   Check(CombatAt(-52, 52) == 0 && CombatAt(-53, 53) == (COMBAT_DIRECTION_LEFT | COMBAT_DIRECTION_DOWN),
         "combat's thresholds: past -52, from 53");
   CombatAt(5, -7);
-  Check(joystickDirectionX == 0 && joystickDirectionY == 0, "combat's values: none under 8");
+  Check(combatPlatform.joystickDirectionX == 0 && combatPlatform.joystickDirectionY == 0, "combat's values: none under 8");
   CombatAt(40, -40);
-  Check(joystickDirectionX == 40 && joystickDirectionY == -40, "combat's values: the distance from the centre");
+  Check(combatPlatform.joystickDirectionX == 40 && combatPlatform.joystickDirectionY == -40, "combat's values: the distance from the centre");
 
   sticks[0] = Stick(0, 0, true, false);
   Check(BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_ONE) == 1 && BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_TWO) == 0,
@@ -130,20 +130,20 @@ int main() {
   // Calibrated while held full right: the centre moves; centred reads left.
   sticks[0] = Stick(127, 0);
   BtechCalibrateJoystickAxisPairs();
-  Check(joystickAxisCentres[0] == 254 && joystickAxisReciprocals[0] == 128, "calibrated full right: centre 254");
-  Check(CombatAt(0, 0) == COMBAT_DIRECTION_LEFT && joystickDirectionX == -63,
+  Check(combatPlatform.joystickAxisCentres[0] == 254 && combatPlatform.joystickAxisReciprocals[0] == 128, "calibrated full right: centre 254");
+  Check(CombatAt(0, 0) == COMBAT_DIRECTION_LEFT && combatPlatform.joystickDirectionX == -63,
         "then centred: combat reads left, -63");
   // Calibrated while held full left: a reading of 0 leaves the scale as it was.
   sticks[0] = Stick(-127, 0);
   BtechCalibrateJoystickAxisPairs();
-  Check(joystickAxisCentres[0] == 0 && joystickAxisReciprocals[0] == 128, "calibrated full left: centre 0, scale kept");
+  Check(combatPlatform.joystickAxisCentres[0] == 0 && combatPlatform.joystickAxisReciprocals[0] == 128, "calibrated full left: centre 0, scale kept");
 
   // Taken out after calibration (H3b): combat reads it centred, not at the
   // timing limit's full right and down.
   sticks[0] = Stick(0, 0);
   BtechCalibrateJoystickAxisPairs();
   sticks[0] = MwJoystickState{false, 0, 0, false, false};
-  Check(BtechReadJoystickDirectionMask(JOYSTICK_A) == 0 && joystickDirectionX == 0 && joystickDirectionY == 0
+  Check(BtechReadJoystickDirectionMask(JOYSTICK_A) == 0 && combatPlatform.joystickDirectionX == 0 && combatPlatform.joystickDirectionY == 0
             && BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_ONE) == 0,
         "taken out after calibration: centred, released");
 
@@ -151,7 +151,7 @@ int main() {
   sticks[0] = MwJoystickState{false, 0, 0, false, false};
   sticks[1] = sticks[0];
   BtechCalibrateJoystickAxisPairs();
-  Check(joystickPairInstalled[0] == 0 && joystickPairInstalled[1] == 0 && joystickAxisCentres[0] == 0xFF,
+  Check(combatPlatform.joystickPairInstalled[0] == 0 && combatPlatform.joystickPairInstalled[1] == 0 && combatPlatform.joystickAxisCentres[0] == 0xFF,
         "none connected: none installed, the timing limit as the centre");
   Check(BtechReadJoystickDirectionMask(JOYSTICK_A) == 0 && BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_ONE) == 0,
         "none connected: no direction, no button");

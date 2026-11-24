@@ -19,6 +19,8 @@ Exit status: check.py's (0 all match, 1 a mismatch), or 2 when a run fails.
 import argparse, os, shutil, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+from selection import check_only  # noqa: E402
 CAPTURE = os.path.join(os.path.dirname(HERE), "capture")
 FLAGS = ("NOPATCH.TXT", "KEYFAIL.TXT", "ITEMFAIL.TXT")
 
@@ -37,11 +39,13 @@ def main():
     ap.add_argument("--cycles", default="3000")
     ap.add_argument("--limit", default="600", help="seconds per run")
     a = ap.parse_args()
+    valid = sorted(f[:-6] for f in os.listdir(os.path.join(HERE, "traces")) if f.endswith(".jsonl"))
+    check_only(a.only, valid)
 
     home, out = os.path.abspath(os.path.expanduser(a.home)), os.path.abspath(os.path.expanduser(a.out))
     if not os.path.isdir(os.path.join(home, "game")):
         sys.exit(f"{home}/game: no game copy")
-    names = a.only or sorted(f[:-6] for f in os.listdir(os.path.join(HERE, "traces")) if f.endswith(".jsonl"))
+    names = a.only or valid
     inbox = os.path.join(home, "in")
     os.makedirs(inbox, exist_ok=True)
     os.makedirs(out, exist_ok=True)

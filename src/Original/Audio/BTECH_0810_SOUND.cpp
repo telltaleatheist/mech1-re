@@ -6,6 +6,6 @@
  * weapon kind or hardware note. Disabled path does not touch bank/channel data. */
 void BtechPlaySoundIfEnabled(int16_t soundEventIndex,uint16_t priority)
 {
-    MwEventLogSound(soundEventIndex,priority,combatSoundEnabled!=0); /* Test instrument (event_log.h). */
-    if (combatSoundEnabled) BtechDispatchSoundBankEvent(soundEventIndex,priority);
+    MwEventLogSound(soundEventIndex,priority,combatImport.combatSoundEnabled!=0); /* Test instrument (event_log.h). */
+    if (combatImport.combatSoundEnabled) BtechDispatchSoundBankEvent(soundEventIndex,priority);
 }

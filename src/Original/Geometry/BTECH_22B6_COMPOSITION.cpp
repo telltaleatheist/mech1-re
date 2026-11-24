@@ -63,7 +63,7 @@ uint16_t BtechLookupSignedCoefficientAngle(uint16_t coefficient)
 {
     bool negative=(int16_t)coefficient<0;
     if (negative) coefficient=(uint16_t)(0-coefficient);
-    uint16_t angle=coefficient==0x8000?orientationCosines[0x401]:coefficientAngles[coefficient>>5];
+    uint16_t angle=coefficient==0x8000?combatGeometryTables.orientationCosines[0x401]:combatGeometryTables.coefficientAngles[coefficient>>5];
     if (negative) angle=(uint16_t)(0x1000-angle);
     return (uint16_t)(angle<<4);
 }
@@ -83,7 +83,7 @@ uint16_t BtechCalculateWordPairHeading(uint16_t componentA,uint16_t componentB)
     {
         uint16_t smaller=componentA<componentB?componentA:componentB;
         uint16_t larger=componentA<componentB?componentB:componentA;
-        angle=headingRatioAngles[((uint32_t)smaller<<9)/larger];
+        angle=combatGeometryTables.headingRatioAngles[((uint32_t)smaller<<9)/larger];
         if (componentA<componentB) angle=(uint16_t)(0x400-angle);
     }
     if (negativeA) angle=(uint16_t)(0x800-angle);

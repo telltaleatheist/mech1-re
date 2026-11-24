@@ -24,10 +24,10 @@ uint16_t BtechSampleTerrainOrSurfaceHeight(const BtechPosition3D *position)
         numerator=COMBAT_BOUNDARY_LIMIT_B-position->positionB;
         uint16_t column=(int32_t)numerator/TERRAIN_WORLD_CELL_SIZE;
         if (row>=TERRAIN_GRID_ROWS || column>=TERRAIN_GRID_COLUMNS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: row>=TERRAIN_GRID_ROWS || column>=TERRAIN_GRID_COLUMNS"); /* Adjacent-owner wrapping alias. */
-        return (uint16_t)(terrainHeightGrid[row][column]<<TERRAIN_HEIGHT_SHIFT);
+        return (uint16_t)(combatWorld.terrainHeightGrid[row][column]<<TERRAIN_HEIGHT_SHIFT);
     }
     BtechSurfaceQueryResult surfaceQuery={0};
-    if (BtechQueryWorldSurface(&surfaceQuery,position,selectedWorldObjects,(int16_t)selectedObjectCount))
+    if (BtechQueryWorldSurface(&surfaceQuery,position,combatWorld.selectedWorldObjects,(int16_t)combatWorld.selectedObjectCount))
         return (uint16_t)surfaceQuery.surfacePositionC;
     return 0;
 }
@@ -76,13 +76,13 @@ uint8_t BtechTestTerrainLineOfSight(const BtechPosition3D *start,const BtechPosi
  * separate world object, not another BattleMech slot. */
 uint8_t BtechTestPlayerTargetRenderVisibility(int16_t targetSlot)
 {
-    if (targetSlot<=0 || targetSlot>COMBAT_SPECIAL_TARGET_SLOT || !playerUnitBinding
-        || !playerUnitBinding->positionedLeftLeg) return 0;
-    if (targetSlot!=COMBAT_SPECIAL_TARGET_SLOT && !unitBindings[targetSlot].mech) return 0;
-    if (targetSlot==COMBAT_SPECIAL_TARGET_SLOT && !specialTargetDamageRemaining) return 0;
-    const BtechPosition3D *player=&playerUnitBinding->positionedLeftLeg->object.prefix.position;
+    if (targetSlot<=0 || targetSlot>COMBAT_SPECIAL_TARGET_SLOT || !combatWorld.playerUnitBinding
+        || !combatWorld.playerUnitBinding->positionedLeftLeg) return 0;
+    if (targetSlot!=COMBAT_SPECIAL_TARGET_SLOT && !combatMechs.unitBindings[targetSlot].mech) return 0;
+    if (targetSlot==COMBAT_SPECIAL_TARGET_SLOT && !combatWorld.specialTargetDamageRemaining) return 0;
+    const BtechPosition3D *player=&combatWorld.playerUnitBinding->positionedLeftLeg->object.prefix.position;
     const BtechPooledWorldObject *target=targetSlot==COMBAT_SPECIAL_TARGET_SLOT
-        ?specialTargetObject:unitBindings[targetSlot].positionedLeftLeg;
+        ?combatWorld.specialTargetObject:combatMechs.unitBindings[targetSlot].positionedLeftLeg;
     if (!target) return 0;
     uint32_t deltaA=player->positionA-target->object.prefix.position.positionA;
     uint32_t deltaB=player->positionB-target->object.prefix.position.positionB;
@@ -90,7 +90,7 @@ uint8_t BtechTestPlayerTargetRenderVisibility(int16_t targetSlot)
     if (deltaB==0x8000) deltaB=0x7FFF;else if ((int32_t)deltaB<0) deltaB=0-deltaB;
     if ((int32_t)deltaA>=COMBAT_VISIBLE_PLANAR_LIMIT || (int32_t)deltaB>=COMBAT_VISIBLE_PLANAR_LIMIT) return 0;
     const BtechPooledWorldObject *lastDrawnPart=targetSlot==COMBAT_SPECIAL_TARGET_SLOT
-        ?objectiveVisibilityObject:combatStartup.unitLastDrawParts[targetSlot];
+        ?combatWorld.objectiveVisibilityObject:combatStartup.unitLastDrawParts[targetSlot];
     return lastDrawnPart?lastDrawnPart->object.prefix.flags&WORLD_OBJECT_TARGET_PROBE_VISIBLE:0;
 }
 
@@ -98,7 +98,7 @@ uint8_t BtechTestPlayerTargetRenderVisibility(int16_t targetSlot)
  * first probe. Visibility is called again on exit, even after success. */
 uint16_t BtechCyclePlayerVisibleTarget(uint16_t currentTargetSlot)
 {
-    uint16_t targetLimit=(int16_t)sideObjectiveRules[0]>OBJECTIVE_OPPOSE_WITHDRAWAL?COMBAT_MECH_SLOTS+1:COMBAT_MECH_SLOTS;
+    uint16_t targetLimit=(int16_t)combatImport.sideObjectiveRules[0]>OBJECTIVE_OPPOSE_WITHDRAWAL?COMBAT_MECH_SLOTS+1:COMBAT_MECH_SLOTS;
     uint16_t startingSlot=currentTargetSlot?currentTargetSlot:COMBAT_LANCE_SLOTS;
     uint16_t candidate=startingSlot;
     do
@@ -116,21 +116,21 @@ void BtechRefreshOpposingUnitVisibility(void)
     for (uint16_t observer=0;observer<COMBAT_MECH_SLOTS;++observer)
         for (uint16_t target=0;target<COMBAT_MECH_SLOTS;++target)
         {
-            if (!unitBindings[target].mech || !unitBindings[observer].mech)
-            {unitVisibility[target][observer]=0;unitVisibility[observer][target]=0;continue;}
-            if (unitControls[observer].sideIndex || unitControls[target].sideIndex!=1) continue;
-            if (!unitBindings[target].torso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[target].torso");
-            uint8_t projection=unitBindings[target].torso->object.prefix.renderFlags&WORLD_OBJECT_PROJECTED;
+            if (!combatMechs.unitBindings[target].mech || !combatMechs.unitBindings[observer].mech)
+            {combatMechs.unitVisibility[target][observer]=0;combatMechs.unitVisibility[observer][target]=0;continue;}
+            if (combatMechs.unitControls[observer].sideIndex || combatMechs.unitControls[target].sideIndex!=1) continue;
+            if (!combatMechs.unitBindings[target].torso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[target].torso");
+            uint8_t projection=combatMechs.unitBindings[target].torso->object.prefix.renderFlags&WORLD_OBJECT_PROJECTED;
             uint8_t visible;
             if (!observer && !combatStartup.combatDispatchState && projection) visible=BtechTestPlayerTargetRenderVisibility((int16_t)target);
             else
             {
-                if (!unitBindings[observer].positionedLeftLeg || !unitBindings[target].positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[observer].positionedLeftLeg || !unitBindings[target].positionedLeftLeg");
-                visible=BtechTestTerrainLineOfSight(&unitBindings[observer].positionedLeftLeg->object.prefix.position,
-                    &unitBindings[target].positionedLeftLeg->object.prefix.position);
+                if (!combatMechs.unitBindings[observer].positionedLeftLeg || !combatMechs.unitBindings[target].positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[observer].positionedLeftLeg || !unitBindings[target].positionedLeftLeg");
+                visible=BtechTestTerrainLineOfSight(&combatMechs.unitBindings[observer].positionedLeftLeg->object.prefix.position,
+                    &combatMechs.unitBindings[target].positionedLeftLeg->object.prefix.position);
             }
-            unitVisibility[observer][target]=visible;
-            unitVisibility[target][observer]=unitVisibility[observer][target];
+            combatMechs.unitVisibility[observer][target]=visible;
+            combatMechs.unitVisibility[target][observer]=combatMechs.unitVisibility[observer][target];
         }
 }
 
@@ -141,9 +141,9 @@ void BtechInitializeUnitControlRecords(void)
 {
     BtechBuildTemplateMaximumCombatScores();
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
-        if (unitBindings[slot].mech)
+        if (combatMechs.unitBindings[slot].mech)
         {
-            BtechUnitControlState *control=&unitControls[slot];
+            BtechUnitControlState *control=&combatMechs.unitControls[slot];
             *control=BtechUnitControlState{};
             control->commandCode=COMBAT_ORDER_ACT_ON_OWN;
             control->sideIndex=slot<COMBAT_LANCE_SLOTS?0:1;
@@ -164,13 +164,13 @@ void BtechRecalculateUnitConditionScoresAndExitCodes(void)
 {
     for (uint16_t unitSlot=0;unitSlot<COMBAT_MECH_SLOTS;++unitSlot)
     {
-        BtechUnitControlState *unitControl=&unitControls[unitSlot];
+        BtechUnitControlState *unitControl=&combatMechs.unitControls[unitSlot];
         unitControl->conditionScoreOrExitCode=COMBAT_CONDITION_SCORE_MINIMUM;
-        BtechUnitBinding *unitBinding=&unitBindings[unitSlot];
+        BtechUnitBinding *unitBinding=&combatMechs.unitBindings[unitSlot];
         BtechMechState *evaluatedMech=unitBinding->mech;
         if (!evaluatedMech) continue;
         if (evaluatedMech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: evaluatedMech->templateIndex>=COMBAT_MECH_TEMPLATES");
-        BtechMechTemplate *mechTemplate=&mechTemplates[evaluatedMech->templateIndex];
+        BtechMechTemplate *mechTemplate=&combatMechs.mechTemplates[evaluatedMech->templateIndex];
         if (evaluatedMech->gyroHits!=COMBAT_GYRO_DESTROYED_HITS)
             for (uint16_t location=0;location<COMBAT_ARMOR_LOCATIONS;++location)
                 unitControl->conditionScoreOrExitCode=(int16_t)((uint16_t)unitControl->conditionScoreOrExitCode+evaluatedMech->currentArmor[location]);
@@ -183,7 +183,7 @@ void BtechRecalculateUnitConditionScoresAndExitCodes(void)
                     int16_t weaponKind=mechTemplate->weaponMounts[mountIndex].weaponKind;
                     if (weaponKind<0 || weaponKind>=COMBAT_WEAPON_KINDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: weaponKind<0 || weaponKind>=COMBAT_WEAPON_KINDS");
                     unitControl->conditionScoreOrExitCode=(int16_t)((uint16_t)unitControl->conditionScoreOrExitCode
-                        +(uint16_t)(weaponDefinitions[weaponKind].damageOrMissileCount<<COMBAT_WEAPON_CONDITION_SCORE_SHIFT));
+                        +(uint16_t)(combatMechs.weaponDefinitions[weaponKind].damageOrMissileCount<<COMBAT_WEAPON_CONDITION_SCORE_SHIFT));
                 }
         if (!BtechIsMechOperational(evaluatedMech)) unitControl->conditionScoreOrExitCode=COMBAT_MECH_DISABLED_VALUE;
         uint8_t exitBoundaryIndex=BtechClassifyUnitWorldBoundary(unitSlot);

@@ -111,7 +111,7 @@ FIELDS={m.group(1):int(m.group(2),16) for m in re.finditer(r'\{"([\w.]+)", 0x([0
         open(os.path.join(ROOT,'src','Rules','new_campaign_fields.cpp')).read())}
 # Macros that name part of an item (combat_import.h and friends).
 ALIAS={m.group(1):m.group(2) for p in glob.glob(os.path.join(ROOT,'src','include','mechwarrior','*.h'))
-       for m in re.finditer(r'#define\s+(\w+)\s+(\w+)\.',open(p).read())}
+       for m in re.finditer(r'#define\s+(\w+)\s+(?:(?:'+'|'.join(OWNERS)+r')\.)?(\w+)\.',open(p).read())}
 # Items a door fills through a local copy (signed words, double words, rows).
 VIA={'randomStateWord0':'rule new_campaign.start.random_seed','randomStateWord1':'rule new_campaign.start.random_seed',
      'mechFallbackTemplateSteps':'rule combat.fallback_template_steps','mechTemplateBudgetCostsBytes':'rule combat.template_budget_costs',

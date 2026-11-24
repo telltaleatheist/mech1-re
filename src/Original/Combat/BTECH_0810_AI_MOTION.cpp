@@ -21,16 +21,16 @@ int16_t BtechClampSignedDifferenceStep(uint16_t desiredHeading,uint16_t currentH
  * Unlike099A, only POSITIVE acceleration is clamped; reverse uses SAR, not DIV. */
 void BtechSetActiveUnitGroundOrJumpMotion(uint16_t desiredHeading,uint16_t movementDirection)
 {
-    if (!activeUnitControl) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl");
-    if (activeUnitControl->movementMode==MOVEMENT_MODE_JUMP)
+    if (!combatImport.activeUnitControl) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl");
+    if (combatImport.activeUnitControl->movementMode==MOVEMENT_MODE_JUMP)
     {BtechApplyJumpMotion(desiredHeading,movementDirection);return;}
-    if (activeUnitControl->animationSequence!=ANIMATION_SEQUENCE_IDLE && activeUnitControl->animationSequence!=ANIMATION_SEQUENCE_WALK) return;
+    if (combatImport.activeUnitControl->animationSequence!=ANIMATION_SEQUENCE_IDLE && combatImport.activeUnitControl->animationSequence!=ANIMATION_SEQUENCE_WALK) return;
     if (!combatPose.activeUnitPositionedObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject");
     int16_t currentForwardStep=combatPose.activeUnitPositionedObject->forwardStepScale,requestedForwardStep=0;
     if (movementDirection!=MOTION_DIRECTION_STOP)
     {
-        if (!combatPose.activeMechState || !combatPose.activeMechTemplate || activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeMechState || !activeMechTemplate || activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS");
-        int16_t heatLimitedForwardStep=combatPose.activeMechTemplate->maximumSpeedScale-heatSpeedPenalties[activeUnitControl->unitSlot];
+        if (!combatPose.activeMechState || !combatPose.activeMechTemplate || combatImport.activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeMechState || !activeMechTemplate || activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS");
+        int16_t heatLimitedForwardStep=combatPose.activeMechTemplate->maximumSpeedScale-combatMechs.heatSpeedPenalties[combatImport.activeUnitControl->unitSlot];
         int16_t limitingLegActuatorCondition=combatPose.activeMechState->actuatorCondition[COMBAT_ACTUATOR_LEFT_LEG];
         if (limitingLegActuatorCondition>(int16_t)combatPose.activeMechState->actuatorCondition[COMBAT_ACTUATOR_RIGHT_LEG]) limitingLegActuatorCondition=(int16_t)combatPose.activeMechState->actuatorCondition[COMBAT_ACTUATOR_RIGHT_LEG];
         uint16_t actuatorSpeedProductLow=(uint16_t)((int32_t)heatLimitedForwardStep*limitingLegActuatorCondition),speedProductSignMask=(int16_t)actuatorSpeedProductLow<0?UINT16_MAX:0;
@@ -55,7 +55,7 @@ void BtechSetActiveUnitGroundOrJumpMotion(uint16_t desiredHeading,uint16_t movem
  * +04 is speed limit. Do not confuse them with displayScale/ground speed. */
 void BtechApplyJumpMotion(uint16_t desiredHeading,uint16_t movementDirection)
 {
-    if (!combatPose.activeMechTemplate || !combatPose.activeUnitPositionedObject || !activeUnitControl || !combatPose.activeMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeMechTemplate || !activeUnitPositionedObject || !activeUnitControl || !activeMechState");
+    if (!combatPose.activeMechTemplate || !combatPose.activeUnitPositionedObject || !combatImport.activeUnitControl || !combatPose.activeMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeMechTemplate || !activeUnitPositionedObject || !activeUnitControl || !activeMechState");
     BtechMechTemplate *jumpMechTemplate=combatPose.activeMechTemplate;
     BtechPooledWorldObject *jumpingMechObject=combatPose.activeUnitPositionedObject;
     int16_t headingError=desiredHeading-jumpingMechObject->object.prefix.orientationC;
@@ -67,16 +67,16 @@ void BtechApplyJumpMotion(uint16_t desiredHeading,uint16_t movementDirection)
     uint32_t scaledFeetAltitude=BtechShiftSignedDwordRight(feetAltitude,AI_JUMP_CHARGE_HEIGHT_SHIFT);
     uint32_t altitudeChargeRequirement=BtechDivideSignedDword(scaledFeetAltitude,(int16_t)jumpMechTemplate->jumpAcceleration);
     int16_t requiredJumpCharge=(uint16_t)altitudeChargeRequirement+AI_JUMP_CHARGE_RESERVE;
-    uint8_t jumpCapabilityLost=activeUnitControl->conditionScoreOrExitCode==COMBAT_MECH_DISABLED_VALUE
+    uint8_t jumpCapabilityLost=combatImport.activeUnitControl->conditionScoreOrExitCode==COMBAT_MECH_DISABLED_VALUE
         || !combatPose.activeMechState->currentInternalStructure[COMBAT_BODY_RIGHT_LEG]
         || !combatPose.activeMechState->currentInternalStructure[COMBAT_BODY_LEFT_LEG]
         || combatPose.activeMechTemplate->jumpJetGroupCount==combatPose.activeMechState->destroyedJumpJetGroups;
     if (movementDirection==MOTION_DIRECTION_STOP || (int16_t)combatPose.activeMechState->jumpCharge<requiredJumpCharge || jumpCapabilityLost)
     {
         uint32_t savedMechAltitude=jumpingMechObject->object.prefix.position.positionC;
-        uint16_t landingSurfaceClass=BtechResolveGroundSurfaceAndSlope(jumpingMechObject,0,selectedWorldObjects,selectedObjectCount);
+        uint16_t landingSurfaceClass=BtechResolveGroundSurfaceAndSlope(jumpingMechObject,0,combatWorld.selectedWorldObjects,combatWorld.selectedObjectCount);
         jumpingMechObject=combatPose.activeUnitPositionedObject;
-        jumpGroundHeight=jumpingMechObject->object.prefix.position.positionC;
+        combatMovement.jumpGroundHeight=jumpingMechObject->object.prefix.position.positionC;
         jumpingMechObject->object.prefix.position.positionC=savedMechAltitude;
         int16_t descentStepThreshold;
         if (landingSurfaceClass==SURFACE_BLOCKS_GROUND_MOVEMENT)
@@ -123,48 +123,48 @@ void BtechApplyJumpMotion(uint16_t desiredHeading,uint16_t movementDirection)
  * rejection restores pose but not the surface cache; stopped cooling is stale. */
 void BtechAdvanceActiveAiUnitMotion(void)
 {
-    if (!combatPose.activeUnitPositionedObject || !activeUnitControl || !combatPose.activeMechTemplate || !combatPose.activeMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject || !activeUnitControl || !activeMechTemplate || !activeMechState");
+    if (!combatPose.activeUnitPositionedObject || !combatImport.activeUnitControl || !combatPose.activeMechTemplate || !combatPose.activeMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject || !activeUnitControl || !activeMechTemplate || !activeMechState");
     BtechPooledWorldObject *movingMechObject=combatPose.activeUnitPositionedObject;
     BtechPosition3D savedPosition=movingMechObject->object.prefix.position;
     uint16_t savedOrientation[]={movingMechObject->object.prefix.orientationA,movingMechObject->object.prefix.orientationB,movingMechObject->object.prefix.orientationC};
     movingMechObject->object.prefix.orientationB=0;movingMechObject->object.prefix.orientationA=0;
     BtechAdvancePooledObjectMotion(combatPose.activeUnitPositionedObject);
-    if (activeUnitControl->movementMode==MOVEMENT_MODE_JUMP)
+    if (combatImport.activeUnitControl->movementMode==MOVEMENT_MODE_JUMP)
     {
         uint16_t chassisHalfHeight=(combatPose.activeMechTemplate->displayScale>>1)|((combatPose.activeMechTemplate->displayScale&0x8000)?0x8000:0);
         movingMechObject=combatPose.activeUnitPositionedObject;
         uint32_t feetAltitude=movingMechObject->object.prefix.position.positionC-(uint32_t)(int16_t)chassisHalfHeight;
         uint16_t jumpPitchSpeed=((uint16_t)movingMechObject->forwardStepScale>>2)|(movingMechObject->forwardStepScale<0?0xC000:0);
         movingMechObject->object.prefix.orientationA=(uint16_t)(0-(uint16_t)(jumpPitchSpeed*AI_JUMP_PITCH_SCALE));
-        if ((int32_t)feetAltitude<AI_JUMP_LANDING_HEIGHT_LIMIT && (int32_t)feetAltitude<(int32_t)jumpGroundHeight)
+        if ((int32_t)feetAltitude<AI_JUMP_LANDING_HEIGHT_LIMIT && (int32_t)feetAltitude<(int32_t)combatMovement.jumpGroundHeight)
         {
             chassisHalfHeight=(combatPose.activeMechTemplate->displayScale>>1)|((combatPose.activeMechTemplate->displayScale&0x8000)?0x8000:0);
             movingMechObject=combatPose.activeUnitPositionedObject;
-            movingMechObject->object.prefix.position.positionC=jumpGroundHeight+(uint32_t)(int16_t)chassisHalfHeight;
+            movingMechObject->object.prefix.position.positionC=combatMovement.jumpGroundHeight+(uint32_t)(int16_t)chassisHalfHeight;
             movingMechObject->positionSteps[2]=0;
-            if (activeUnitControl->conditionScoreOrExitCode!=COMBAT_MECH_DISABLED_VALUE
+            if (combatImport.activeUnitControl->conditionScoreOrExitCode!=COMBAT_MECH_DISABLED_VALUE
                 && combatPose.activeMechState->currentInternalStructure[COMBAT_BODY_LEFT_LEG]
                 && combatPose.activeMechState->currentInternalStructure[COMBAT_BODY_RIGHT_LEG])
-                activeUnitControl->animationRequestFlags|=ANIMATION_REQUEST_LANDING;
-            else activeUnitControl->animationRequestFlags|=ANIMATION_REQUEST_FALL_POSE;
+                combatImport.activeUnitControl->animationRequestFlags|=ANIMATION_REQUEST_LANDING;
+            else combatImport.activeUnitControl->animationRequestFlags|=ANIMATION_REQUEST_FALL_POSE;
         }
-        if (activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS");
-        unitMovementObstructionHistory[activeUnitControl->unitSlot]=0;
+        if (combatImport.activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS");
+        combatMovement.unitMovementObstructionHistory[combatImport.activeUnitControl->unitSlot]=0;
         return;
     }
-    uint16_t groundSurfaceClass=BtechResolveGroundSurfaceAndSlope(combatPose.activeUnitPositionedObject,0,selectedWorldObjects,selectedObjectCount);
+    uint16_t groundSurfaceClass=BtechResolveGroundSurfaceAndSlope(combatPose.activeUnitPositionedObject,0,combatWorld.selectedWorldObjects,combatWorld.selectedObjectCount);
     movingMechObject=combatPose.activeUnitPositionedObject;
     if (movingMechObject->forwardStepScale)
     {
-        activeUnitControl->animationRequestFlags|=ANIMATION_REQUEST_WALK;
-        if (activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS");
-        uint16_t previousObstruction=unitMovementObstructionHistory[activeUnitControl->unitSlot];
-        int16_t movementObstructed=(int8_t)BtechTestUnitMovementObstruction(activeUnitControl->unitSlot);
-        if (activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS");
-        unitMovementObstructionHistory[activeUnitControl->unitSlot]=(uint16_t)movementObstructed;
-        if ((unitMovementObstructionHistory[activeUnitControl->unitSlot] && !previousObstruction) || groundSurfaceClass==SURFACE_BLOCKS_GROUND_MOVEMENT)
+        combatImport.activeUnitControl->animationRequestFlags|=ANIMATION_REQUEST_WALK;
+        if (combatImport.activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS");
+        uint16_t previousObstruction=combatMovement.unitMovementObstructionHistory[combatImport.activeUnitControl->unitSlot];
+        int16_t movementObstructed=(int8_t)BtechTestUnitMovementObstruction(combatImport.activeUnitControl->unitSlot);
+        if (combatImport.activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS");
+        combatMovement.unitMovementObstructionHistory[combatImport.activeUnitControl->unitSlot]=(uint16_t)movementObstructed;
+        if ((combatMovement.unitMovementObstructionHistory[combatImport.activeUnitControl->unitSlot] && !previousObstruction) || groundSurfaceClass==SURFACE_BLOCKS_GROUND_MOVEMENT)
         {
-            unitMovementObstructionHistory[activeUnitControl->unitSlot]=previousObstruction;
+            combatMovement.unitMovementObstructionHistory[combatImport.activeUnitControl->unitSlot]=previousObstruction;
             movingMechObject=combatPose.activeUnitPositionedObject;
             movingMechObject->object.prefix.position=savedPosition;
             movingMechObject->object.prefix.orientationA=savedOrientation[0];movingMechObject->object.prefix.orientationB=savedOrientation[1];
@@ -172,7 +172,7 @@ void BtechAdvanceActiveAiUnitMotion(void)
             if (movingMechObject->forwardStepScale<=AI_GROUND_ACCELERATION_MAXIMUM)
                 movingMechObject->object.prefix.orientationC+=(movingMechObject->object.prefix.position.positionA&1)?AI_BLOCKED_HEADING_STEP:-AI_BLOCKED_HEADING_STEP;
             BtechClearObjectMotionTail(combatPose.activeUnitPositionedObject);
-            activeUnitControl->animationSequence=ANIMATION_SEQUENCE_IDLE;activeUnitControl->animationFrame=0;
+            combatImport.activeUnitControl->animationSequence=ANIMATION_SEQUENCE_IDLE;combatImport.activeUnitControl->animationFrame=0;
             return;
         }
         uint16_t chassisHalfHeight=(combatPose.activeMechTemplate->displayScale>>1)|((combatPose.activeMechTemplate->displayScale&0x8000)?0x8000:0);

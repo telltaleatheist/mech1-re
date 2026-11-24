@@ -58,11 +58,11 @@ BtechResourceAllocation BtechAllocateAndDecodeResource(const char *filename)
 /*0810:DD6E. First dot wins; extension is replaced, not concatenated twice. */
 const char *BtechBuildFilenameWithExtension(const char *basename,const char *extension)
 {
-    if (strlen(basename)>=sizeof(resourceFilename)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: strlen(basename)>=sizeof(resourceFilename)");
-    strcpy(resourceFilename,basename);
-    char *dot=strchr(resourceFilename,'.');
-    if (!dot) dot=resourceFilename+strlen(resourceFilename);
-    if ((size_t)(dot-resourceFilename)+strlen(extension)+2>sizeof(resourceFilename)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (size_t)(dot-resourceFilename)+strlen(extension)+2>sizeof(resourceFilename)");
+    if (strlen(basename)>=sizeof(combatResources.resourceFilename)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: strlen(basename)>=sizeof(resourceFilename)");
+    strcpy(combatResources.resourceFilename,basename);
+    char *dot=strchr(combatResources.resourceFilename,'.');
+    if (!dot) dot=combatResources.resourceFilename+strlen(combatResources.resourceFilename);
+    if ((size_t)(dot-combatResources.resourceFilename)+strlen(extension)+2>sizeof(combatResources.resourceFilename)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (size_t)(dot-resourceFilename)+strlen(extension)+2>sizeof(resourceFilename)");
     *dot++='.';strcpy(dot,extension);
-    return resourceFilename;
+    return combatResources.resourceFilename;
 }

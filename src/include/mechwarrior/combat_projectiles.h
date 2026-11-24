@@ -13,11 +13,16 @@ typedef struct BtechProjectileState {
     BtechPooledWorldObject *worldObject;
     uint16_t profileIndex,lifetimeRemaining,firingUnitSlot,targetUnitSlot,targetArmorLocation;
 } BtechProjectileState;
-extern BtechProjectileState projectiles[COMBAT_PROJECTILE_SLOTS];
-extern BtechProjectileProfile projectileProfiles[COMBAT_PROJECTILE_PROFILES];
-extern uint16_t projectileProfileIndicesByWeapon[COMBAT_WEAPON_KINDS],bodyLocationReferenceIndices[COMBAT_BODY_LOCATIONS];
-extern int16_t missileClusterRowByWeapon[COMBAT_WEAPON_KINDS];
-extern uint16_t missileClusterRows[COMBAT_MISSILE_CLUSTER_ROWS][COMBAT_MISSILE_CLUSTER_ROLLS];
+/* Combat state owned by combat_projectiles.h (plan, slice B3d). */
+struct CombatProjectileState
+{
+    BtechProjectileState projectiles[COMBAT_PROJECTILE_SLOTS];
+    BtechProjectileProfile projectileProfiles[COMBAT_PROJECTILE_PROFILES];
+    uint16_t projectileProfileIndicesByWeapon[COMBAT_WEAPON_KINDS], bodyLocationReferenceIndices[COMBAT_BODY_LOCATIONS];
+    int16_t missileClusterRowByWeapon[COMBAT_WEAPON_KINDS];
+    uint16_t missileClusterRows[COMBAT_MISSILE_CLUSTER_ROWS][COMBAT_MISSILE_CLUSTER_ROLLS];
+};
+extern CombatProjectileState combatProjectiles;
 BtechProjectileState *BtechAllocateProjectileFromWeaponProfile(int16_t weaponKind,const BtechPosition3D *placement);
 BtechProjectileState *BtechSpawnUnitWeaponProjectile(uint16_t unitSlot,int16_t weaponKind,const BtechPosition3D *placement);
 void BtechFirePlayerWeaponProjectile(uint16_t mountIndex);

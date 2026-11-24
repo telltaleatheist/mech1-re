@@ -24,20 +24,20 @@ void BtechShowCombatStageBriefing(void)
     BtechLoadScreenImage("status.scr",NULL);
     combatVideo.textTransparentBackground=true;
     combatVideo.screenPolygonNeedsClip=false;
-    combatVideo.textForegroundColour=hudColourSchemeIndex?(int)Combat_Pal_EGA_Black:COMBAT_BRIEFING_TEXT_COLOUR;
+    combatVideo.textForegroundColour=combatImport.hudColourSchemeIndex?(int)Combat_Pal_EGA_Black:COMBAT_BRIEFING_TEXT_COLOUR;
     BtechDrawNearText(combatCockpit.briefingMissionLabel,BRIEFING_MISSION_LABEL_X,BRIEFING_MISSION_LABEL_Y);
-    if (combatMissionDefinitionIndex>=COMBAT_BRIEFING_MISSIONS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatMissionDefinitionIndex>=COMBAT_BRIEFING_MISSIONS"); /* Adjacent directory alias not mapped. */
-    BtechDrawNearText(combatCockpit.combatMissionTitles[combatMissionDefinitionIndex],BRIEFING_MISSION_TITLE_X,BRIEFING_MISSION_TITLE_Y);
+    if (combatImport.combatMissionDefinitionIndex>=COMBAT_BRIEFING_MISSIONS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatMissionDefinitionIndex>=COMBAT_BRIEFING_MISSIONS"); /* Adjacent directory alias not mapped. */
+    BtechDrawNearText(combatCockpit.combatMissionTitles[combatImport.combatMissionDefinitionIndex],BRIEFING_MISSION_TITLE_X,BRIEFING_MISSION_TITLE_Y);
     BtechDrawNearText(combatCockpit.briefingCrewLabel,BRIEFING_ROSTER_LABEL_X,BRIEFING_CREW_LABEL_Y);
     BtechDrawNearText(combatCockpit.briefingMechLabel,BRIEFING_ROSTER_LABEL_X,BRIEFING_MECH_LABEL_Y);
     for (uint16_t slot=0;slot<COMBAT_FRIENDLY_SLOTS;++slot)
     {
-        BtechMechState *mech=unitBindings[slot].mech;
+        BtechMechState *mech=combatMechs.unitBindings[slot].mech;
         if (mech)
         {
             uint16_t rowY=(slot+1)*BRIEFING_ROSTER_ROW_STEP;
-            if (deployedPilotIds[slot]>=COMBAT_PILOT_NAMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: deployedPilotIds[slot]>=COMBAT_PILOT_NAMES");
-            BtechDrawNearText(combatCockpit.pilotDefinitionNames[deployedPilotIds[slot]],BRIEFING_ROSTER_TEXT_X,rowY+BRIEFING_CREW_LABEL_Y);
+            if (combatImport.deployedPilotIds[slot]>=COMBAT_PILOT_NAMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: deployedPilotIds[slot]>=COMBAT_PILOT_NAMES");
+            BtechDrawNearText(combatCockpit.pilotDefinitionNames[combatImport.deployedPilotIds[slot]],BRIEFING_ROSTER_TEXT_X,rowY+BRIEFING_CREW_LABEL_Y);
             BtechDrawNearText(":OK",BRIEFING_STATUS_COLON_X,rowY+BRIEFING_CREW_LABEL_Y);
             if (mech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mech->templateIndex>=COMBAT_MECH_TEMPLATES");
             BtechDrawNearText(combatCockpit.mechTemplateNames[mech->templateIndex],BRIEFING_ROSTER_TEXT_X,rowY+BRIEFING_MECH_LABEL_Y);
@@ -47,25 +47,25 @@ void BtechShowCombatStageBriefing(void)
         }
     }
     combatVideo.textTransparentBackground=false;
-    if (!orderMapCameraObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !orderMapCameraObject");
-    orderMapCameraObject->object.prefix.position.positionC=COMBAT_BRIEFING_MAP_ALTITUDE;
-    if (!orderMapCameraContext) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !orderMapCameraContext");
-    orderMapCameraContext->clipMinimumB=BRIEFING_MAP_TOP;
-    orderMapCameraContext->clipMaximumB=BRIEFING_MAP_BOTTOM;
-    orderMapCameraContext->clipMinimumA=BRIEFING_MAP_LEFT;
-    orderMapCameraContext->clipMaximumA=BRIEFING_MAP_RIGHT;
-    BtechRenderObjectListVeneer(orderMapCameraContext,selectedWorldObjects,(int16_t)selectedObjectCount);
+    if (!combatWorld.orderMapCameraObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !orderMapCameraObject");
+    combatWorld.orderMapCameraObject->object.prefix.position.positionC=COMBAT_BRIEFING_MAP_ALTITUDE;
+    if (!combatWorld.orderMapCameraContext) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !orderMapCameraContext");
+    combatWorld.orderMapCameraContext->clipMinimumB=BRIEFING_MAP_TOP;
+    combatWorld.orderMapCameraContext->clipMaximumB=BRIEFING_MAP_BOTTOM;
+    combatWorld.orderMapCameraContext->clipMinimumA=BRIEFING_MAP_LEFT;
+    combatWorld.orderMapCameraContext->clipMaximumA=BRIEFING_MAP_RIGHT;
+    BtechRenderObjectListVeneer(combatWorld.orderMapCameraContext,combatWorld.selectedWorldObjects,(int16_t)combatWorld.selectedObjectCount);
     BtechDrawLanceMapUnitMarkers();
     BtechDrawLanceMapRetreatBoundaries();
-    orderMapCameraContext->clipMinimumB=BRIEFING_RESTORED_MAP_TOP;
-    orderMapCameraContext->clipMaximumB=BRIEFING_RESTORED_MAP_BOTTOM;
-    orderMapCameraContext->clipMinimumA=BRIEFING_RESTORED_MAP_LEFT;
-    orderMapCameraContext->clipMaximumA=BRIEFING_RESTORED_MAP_RIGHT;
+    combatWorld.orderMapCameraContext->clipMinimumB=BRIEFING_RESTORED_MAP_TOP;
+    combatWorld.orderMapCameraContext->clipMaximumB=BRIEFING_RESTORED_MAP_BOTTOM;
+    combatWorld.orderMapCameraContext->clipMinimumA=BRIEFING_RESTORED_MAP_LEFT;
+    combatWorld.orderMapCameraContext->clipMaximumA=BRIEFING_RESTORED_MAP_RIGHT;
     combatVideo.screenPolygonNeedsClip=false;
     BtechSetOverscanColour(Combat_Pal_EGA_LightGrey);
     BtechCopyHudRectangleIfReady(0,0,COMBAT_SCREEN_WIDTH,COMBAT_SCREEN_HEIGHT);
     BtechWaitForCombatInputReleaseThenPress();
     for (uint16_t slot=0;slot<COMBAT_LANCE_SLOTS;++slot)
-        if (unitBindings[slot].mech && !unitBindings[slot].head)
-            unitBindings[slot].mech=NULL;
+        if (combatMechs.unitBindings[slot].mech && !combatMechs.unitBindings[slot].head)
+            combatMechs.unitBindings[slot].mech=NULL;
 }

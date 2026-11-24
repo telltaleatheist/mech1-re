@@ -9,7 +9,7 @@
 uint8_t BtechApplyDestroyedBodyLocationEffects(BtechMechState *mech,int16_t bodyLocation)
 {
     if (mech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mech->templateIndex>=COMBAT_MECH_TEMPLATES");
-    BtechMechTemplate *damagedMechTemplate=&mechTemplates[mech->templateIndex];
+    BtechMechTemplate *damagedMechTemplate=&combatMechs.mechTemplates[mech->templateIndex];
     uint8_t stopDamageTransfer=0;
     for (int16_t mountIndex=0;mountIndex<(int16_t)damagedMechTemplate->weaponMountCount;++mountIndex)
     {
@@ -25,7 +25,7 @@ uint8_t BtechApplyDestroyedBodyLocationEffects(BtechMechState *mech,int16_t body
         mech->destroyedHeatSinks+=(int16_t)(damagedMechTemplate->heatSinkCount+bodyLocation)/COMBAT_HEAT_SINK_LOCATION_DIVISOR;
     if (bodyLocation>=COMBAT_BODY_LEFT_ARM && bodyLocation<=COMBAT_BODY_RIGHT_LEG)
     {
-        uint16_t actuatorIndex=actuatorIndicesByBodyLocation[bodyLocation];
+        uint16_t actuatorIndex=combatDamage.actuatorIndicesByBodyLocation[bodyLocation];
         if (actuatorIndex>=COMBAT_ACTUATORS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: actuatorIndex>=COMBAT_ACTUATORS");
         mech->actuatorCondition[actuatorIndex]=0;
     }
@@ -37,7 +37,7 @@ uint8_t BtechApplyDestroyedBodyLocationEffects(BtechMechState *mech,int16_t body
     else if (bodyLocation==COMBAT_BODY_CENTER_TORSO)
     {
         mech->gyroHits=COMBAT_GYRO_DESTROYED_HITS;mech->engineHits=COMBAT_ENGINE_HIT_LIMIT;stopDamageTransfer=1;
-        if (mech==playerMechState && !(combatStartup.combatTickCounter&COMBAT_CENTER_TORSO_COCKPIT_TICK_MASK)) mech->cockpitDisabled=1;
+        if (mech==combatWorld.playerMechState && !(combatStartup.combatTickCounter&COMBAT_CENTER_TORSO_COCKPIT_TICK_MASK)) mech->cockpitDisabled=1;
     }
     return stopDamageTransfer;
 }

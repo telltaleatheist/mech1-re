@@ -19,23 +19,23 @@ static void RecordDiagnosticAudio(const float *samples,uint32_t count)
 static void TraceDiagnosticFrame(void)
 {
     uint64_t now=SDL_GetTicks();
-    if (!mwSdlCombatActive || now<nextDiagnosticFrame || !playerUnitBinding
-        || !playerUnitBinding->positionedLeftLeg) return;
+    if (!mwSdlCombatActive || now<nextDiagnosticFrame || !combatWorld.playerUnitBinding
+        || !combatWorld.playerUnitBinding->positionedLeftLeg) return;
     nextDiagnosticFrame=now+1000;
-    const BtechPooledWorldObject *body=playerUnitBinding->positionedLeftLeg;
+    const BtechPooledWorldObject *body=combatWorld.playerUnitBinding->positionedLeftLeg;
     fprintf(stderr,"Combat time=%llu tick=%u position=%ld,%ld step=%d pose=%u/%u gait=%u sound=%u timerLagMs=%.2f audioQueueMs=%u tickMs=%.1f speed=%u lateAudioFrames=%llu underrunFrames=%llu\n",
         (unsigned long long)now,combatStartup.combatTickCounter,
         (long)(int32_t)body->object.prefix.position.positionA,
         (long)(int32_t)body->object.prefix.position.positionB,
         body->forwardStepScale,combatPose.playerPoseSequence,combatPose.playerPoseFrame,
-        combatPose.playerPoseDistanceAccumulator,combatSoundEnabled,
+        combatPose.playerPoseDistanceAccumulator,combatImport.combatSoundEnabled,
         MwSdlTimerLagMilliseconds(),MwSdlQueuedAudioMilliseconds(),
         (double)MwSdlCombatTickNanoseconds()/1e6,(unsigned)mwSdlCombatSpeed,(unsigned long long)MwSdlLateAudioFrames(),
         (unsigned long long)MwSdlAudioUnderrunFrames());
     for (uint16_t slot=1;slot<COMBAT_MECH_SLOTS;++slot)
     {
-        const BtechPooledWorldObject *other=unitBindings[slot].positionedLeftLeg;
-        if (!unitBindings[slot].mech || !other) continue;
+        const BtechPooledWorldObject *other=combatMechs.unitBindings[slot].positionedLeftLeg;
+        if (!combatMechs.unitBindings[slot].mech || !other) continue;
         fprintf(stderr,"AI slot=%u position=%ld,%ld step=%d\n",slot,
             (long)(int32_t)other->object.prefix.position.positionA,
             (long)(int32_t)other->object.prefix.position.positionB,

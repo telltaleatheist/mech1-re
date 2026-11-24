@@ -10,16 +10,21 @@ typedef struct BtechEffectSequenceState {
     BtechPooledWorldObject *worldObject;
     uint16_t frameIndex,sequenceIndex;
 } BtechEffectSequenceState;
-extern BtechEffectSequenceState effectSequences[COMBAT_EFFECT_SLOTS];
-extern uint16_t defaultEffectResourceDeltas[7],machineGunEffectResourceDeltas[3];
 extern uint16_t *const effectResourceSequences[2];
 typedef struct BtechBodyDamageEffect {
     uint32_t anchorPositionA,anchorPositionB;
     BtechPooledWorldObject *worldObject;
     uint16_t animationTicksRemaining;
 } BtechBodyDamageEffect;
-extern BtechBodyDamageEffect bodyDamageEffects[COMBAT_BODY_EFFECT_SLOTS];
-extern uint16_t bodyDamageEffectResourceDeltas[COMBAT_BODY_EFFECT_FRAMES];
+/* Combat state owned by combat_effects.h (plan, slice B3d). */
+struct CombatEffectState
+{
+    BtechEffectSequenceState effectSequences[COMBAT_EFFECT_SLOTS];
+    uint16_t defaultEffectResourceDeltas[7], machineGunEffectResourceDeltas[3];
+    BtechBodyDamageEffect bodyDamageEffects[COMBAT_BODY_EFFECT_SLOTS];
+    uint16_t bodyDamageEffectResourceDeltas[COMBAT_BODY_EFFECT_FRAMES];
+};
+extern CombatEffectState combatEffects;
 void BtechSpawnBodyDamageEffect(const BtechPosition3D *position);
 void BtechResetBodyDamageEffectHandles(void);
 void BtechUpdateBodyDestructionEffects(void);

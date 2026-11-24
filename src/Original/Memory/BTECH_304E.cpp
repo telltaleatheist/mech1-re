@@ -7,87 +7,53 @@
 #include "mechwarrior/combat_damage.h"
 #include <string.h>
 
-uint16_t combatContinuationStage;
-uint16_t salvageEntryCount;
-uint16_t campaignUnitKindByCombatTemplate[COMBAT_MECH_TEMPLATES];
-uint16_t actuatorIntegrityTierByCondition[5],systemDamageTierByHits[3],weaponIntegrityTierByOperational[2];
-BtechMissionRules missionRules;
+CombatImportState combatImport;
 static_assert(offsetof(BtechMissionRules,fields.continuationProfileIndex)==0x48,"Mission36 aliases profile0974");
-uint16_t reducedMemoryMode,combatTerrainDetailLevel,combatMissionDefinitionIndex,combatSoundEnabled;
-uint16_t playbackCombatInputRequested,combatScenarioIndex;
-uint16_t gunneryTargetNumbers[8],pilotingRecoveryBounds[8],activeCockpitLayoutIndex;
-uint16_t combatToPilotRosterSlots[4],combatToOwnedMechSlots[4],deployedPilotIds[4];
-BtechTemplateReservations mechTemplateReservations;
 static_assert(sizeof(BtechTemplateReservations)==0x14,"Native reservation WORD aliases");
 static_assert(offsetof(BtechTemplateReservations,fields.reservedCount)==0x0E,"Native reservation count alias");
-uint32_t mechTemplateBudgetCostsBytes[8];
-uint16_t hudColourSchemeIndex,specialTargetInteractionBlocked,sideObjectiveRules[2],combatLandscapeIndex;
-BtechCombatStageProfile combatContinuationProfiles[9];
-uint16_t opposingObjectiveRules[5];
-uint16_t combatTemplateByCampaignUnitKind[10],weaponDisabledByDamageTier[4],systemHitsByDamageTier[4],actuatorLossByDamageTier[4];
-uint16_t armorToBodyLocations[9],campaignBodyTierByArmorLocation[9];
-uint16_t mechFallbackStartTemplates[8];
-int16_t mechFallbackTemplateSteps[8];
-uint8_t combatDefaultCommanderNameBytes[10];
-uint16_t savedArgumentCount;
-const char *const *savedArguments;
-BtechUnitControlState *activeUnitControl;
-uint16_t startupControlMovementAlias;
-uint8_t playerDamageSuppressed;
-uint16_t damageTransferArmorLocations[COMBAT_BODY_LOCATIONS];
-uint16_t criticalTransferBodyLocations[COMBAT_BODY_LOCATIONS],actuatorIndicesByBodyLocation[4];
+CombatDamageState combatDamage;
 
 bool BtechImportCombatStageInitialData(const uint8_t *data,size_t byteCount)
 {
     if (!BtechImportMechInitialData(data,byteCount)) return false;
-    startupControlMovementAlias=MwReadNativeWord(data,0x0051);
-    playerDamageSuppressed=data[0x0E1A];
+    combatImport.startupControlMovementAlias=MwReadNativeWord(data,0x0051);
+    combatDamage.playerDamageSuppressed=data[0x0E1A];
     /* The rule tables come from data/rules (src/Rules), laid out as the exe's. */
-    if (!MwRulesCopyWords("combat.damage_transfer",damageTransferArmorLocations,COMBAT_BODY_LOCATIONS,0)
-        || !MwRulesCopyWords("combat.critical_transfer",criticalTransferBodyLocations,COMBAT_BODY_LOCATIONS,0)
-        || !MwRulesCopyWords("combat.actuator_of_limb",actuatorIndicesByBodyLocation,4,0)) return false;
-    if (!MwStoryCopyText("combat.commander.default_name",(char *)combatDefaultCommanderNameBytes,sizeof(combatDefaultCommanderNameBytes))) return false;
-    salvageEntryCount=0; /*0976*/
+    if (!MwRulesCopyWords("combat.damage_transfer",combatDamage.damageTransferArmorLocations,COMBAT_BODY_LOCATIONS,0)
+        || !MwRulesCopyWords("combat.critical_transfer",combatDamage.criticalTransferBodyLocations,COMBAT_BODY_LOCATIONS,0)
+        || !MwRulesCopyWords("combat.actuator_of_limb",combatDamage.actuatorIndicesByBodyLocation,4,0)) return false;
+    if (!MwStoryCopyText("combat.commander.default_name",(char *)combatImport.combatDefaultCommanderNameBytes,sizeof(combatImport.combatDefaultCommanderNameBytes))) return false;
+    combatImport.salvageEntryCount=0; /*0976*/
     uint16_t steps[8],costs[16];
-    if (!MwRulesCopyWords("combat.unit_kind_of_template",campaignUnitKindByCombatTemplate,COMBAT_MECH_TEMPLATES,0)
-        || !MwRulesCopyWords("combat.actuator_integrity_by_condition",actuatorIntegrityTierByCondition,5,0)
-        || !MwRulesCopyWords("combat.system_tier_by_hits",systemDamageTierByHits,3,0)
-        || !MwRulesCopyWords("combat.weapon_integrity_by_operational",weaponIntegrityTierByOperational,2,0)
-        || !MwRulesCopyWords("combat.body_of_armour",armorToBodyLocations,9,0)
-        || !MwRulesCopyWords("combat.campaign_body_tier_of_armour",campaignBodyTierByArmorLocation,9,0)
+    if (!MwRulesCopyWords("combat.unit_kind_of_template",combatImport.campaignUnitKindByCombatTemplate,COMBAT_MECH_TEMPLATES,0)
+        || !MwRulesCopyWords("combat.actuator_integrity_by_condition",combatImport.actuatorIntegrityTierByCondition,5,0)
+        || !MwRulesCopyWords("combat.system_tier_by_hits",combatImport.systemDamageTierByHits,3,0)
+        || !MwRulesCopyWords("combat.weapon_integrity_by_operational",combatImport.weaponIntegrityTierByOperational,2,0)
+        || !MwRulesCopyWords("combat.body_of_armour",combatImport.armorToBodyLocations,9,0)
+        || !MwRulesCopyWords("combat.campaign_body_tier_of_armour",combatImport.campaignBodyTierByArmorLocation,9,0)
         || !MwRulesCopyWords("combat.mission_side_zero_rules",combatMissionSideZeroRules,COMBAT_MISSION_COUNT,0)
-        || !MwRulesCopyWords("combat.opposing_objective",opposingObjectiveRules,5,0)
-        || !MwRulesCopyWords("combat.template_of_unit_kind",combatTemplateByCampaignUnitKind,10,0)
-        || !MwRulesCopyWords("combat.weapon_disabled_by_tier",weaponDisabledByDamageTier,4,0)
-        || !MwRulesCopyWords("combat.system_hits_by_tier",systemHitsByDamageTier,4,0)
-        || !MwRulesCopyWords("combat.actuator_loss_by_tier",actuatorLossByDamageTier,4,0)
-        || !MwRulesCopyWords("combat.fallback_start_template",mechFallbackStartTemplates,8,0)
+        || !MwRulesCopyWords("combat.opposing_objective",combatImport.opposingObjectiveRules,5,0)
+        || !MwRulesCopyWords("combat.template_of_unit_kind",combatImport.combatTemplateByCampaignUnitKind,10,0)
+        || !MwRulesCopyWords("combat.weapon_disabled_by_tier",combatImport.weaponDisabledByDamageTier,4,0)
+        || !MwRulesCopyWords("combat.system_hits_by_tier",combatImport.systemHitsByDamageTier,4,0)
+        || !MwRulesCopyWords("combat.actuator_loss_by_tier",combatImport.actuatorLossByDamageTier,4,0)
+        || !MwRulesCopyWords("combat.fallback_start_template",combatImport.mechFallbackStartTemplates,8,0)
         || !MwRulesCopyWords("combat.fallback_template_steps",steps,8,0)
         || !MwRulesCopyWords("combat.template_budget_costs",costs,16,0)) return false;
     for (uint16_t i=0;i<9;++i)
-        if (!MwRulesCopyWords("combat.continuation_profiles",combatContinuationProfiles[i].missionCodes,3,i*6)) return false;
+        if (!MwRulesCopyWords("combat.continuation_profiles",combatImport.combatContinuationProfiles[i].missionCodes,3,i*6)) return false;
     for (uint16_t i=0;i<8;++i)
     {
-        mechFallbackTemplateSteps[i]=(int16_t)(steps[i]<0x8000?steps[i]:(int32_t)steps[i]-0x10000);
-        mechTemplateBudgetCostsBytes[i]=(uint32_t)costs[i*2]|((uint32_t)costs[i*2+1]<<16);
+        combatImport.mechFallbackTemplateSteps[i]=(int16_t)(steps[i]<0x8000?steps[i]:(int32_t)steps[i]-0x10000);
+        combatImport.mechTemplateBudgetCostsBytes[i]=(uint32_t)costs[i*2]|((uint32_t)costs[i*2+1]<<16);
     }
-    combatContinuationStage=0; /*C35A*/
+    combatImport.combatContinuationStage=0; /*C35A*/
     combatContinuationProfileIndex=MwReadNativeWord(data,0x0974);
-    combatMissionDefinitionIndex=0; /*C96E*/
+    combatImport.combatMissionDefinitionIndex=0; /*C96E*/
     return true;
 }
 
-BtechMechTemplate mechTemplates[COMBAT_MECH_TEMPLATES];
-BtechWeaponDefinition weaponDefinitions[COMBAT_WEAPON_KINDS];
-uint16_t templateMaximumCombatScores[COMBAT_MECH_TEMPLATES];
-uint8_t unitVisibility[COMBAT_MECH_SLOTS][COMBAT_MECH_SLOTS];
-BtechMechState mechStates[COMBAT_MECH_SLOTS];
-BtechUnitBinding unitBindings[COMBAT_MECH_SLOTS];
-BtechUnitControlState unitControls[COMBAT_MECH_SLOTS];
-uint16_t heatAimJitterThresholds[COMBAT_HEAT_THRESHOLDS];
-uint16_t heatSpeedPenalties[COMBAT_MECH_SLOTS],heatInhibitFlags[COMBAT_MECH_SLOTS];
-uint16_t specialAssaultMode;
-uint16_t randomStateWords[COMBAT_RANDOM_WORDS],randomWriteIndex,randomAddendIndex;
+CombatMechState combatMechs;
 
 /* File decoder only. Runtime records need not inherit native unaligned WORDs
  * or DOS near references. Mech/binding/control state is initialized by native
@@ -96,12 +62,12 @@ bool BtechImportMechInitialData(const uint8_t *data,size_t byteCount)
 {
     if (!data || byteCount<NATIVE_SEGMENT_BYTE_COUNT) return false;
     /* The rule tables come from data/rules (src/Rules), laid out as the exe's. */
-    if (!MwRulesCopyWords("combat.heat_aim_jitter_thresholds",heatAimJitterThresholds,COMBAT_HEAT_THRESHOLDS,0)) return false;
+    if (!MwRulesCopyWords("combat.heat_aim_jitter_thresholds",combatMechs.heatAimJitterThresholds,COMBAT_HEAT_THRESHOLDS,0)) return false;
     for (uint16_t kind=0;kind<COMBAT_WEAPON_KINDS;++kind)
     {
         uint16_t row[11];
         if (!MwRulesCopyWords("weapons.definitions",row,11,kind*0x16)) return false;
-        BtechWeaponDefinition *weapon=&weaponDefinitions[kind];
+        BtechWeaponDefinition *weapon=&combatMechs.weaponDefinitions[kind];
         weapon->damageOrMissileCount=row[0];
         weapon->ammoFamily=(int16_t)row[1];
         weapon->reloadTicks=row[2];weapon->heatUnits=row[3];
@@ -117,7 +83,7 @@ bool BtechImportMechInitialData(const uint8_t *data,size_t byteCount)
          * laid out as the exe's, read here at the exe's offsets. */
         uint8_t bytes[0xE0];
         if (!MwRulesCopyBytes("mechs.templates",bytes,sizeof(bytes),index*0x00E0)) return false;
-        BtechMechTemplate *mech=&mechTemplates[index];
+        BtechMechTemplate *mech=&combatMechs.mechTemplates[index];
         mech->tonnage=MwReadNativeWord(bytes,0);
         mech->displayScale=MwReadNativeWord(bytes,2);
         mech->firingMovementThreshold=MwReadNativeWord(bytes,4);
@@ -158,10 +124,10 @@ bool BtechImportMechInitialData(const uint8_t *data,size_t byteCount)
             mech->maximumInternalStructure[location]=MwReadNativeWord(bytes,0x00C4+location*2);
     }
     for (uint16_t index=0;index<COMBAT_RANDOM_WORDS;++index)
-        randomStateWords[index]=MwReadNativeWord(data,0x281C+index*2);
-    randomWriteIndex=0; /*285C*/
-    randomAddendIndex=MwReadNativeWord(data,0x285E);
-    specialAssaultMode=0; /*C7BE*/
+        combatMechs.randomStateWords[index]=MwReadNativeWord(data,0x281C+index*2);
+    combatMechs.randomWriteIndex=0; /*285C*/
+    combatMechs.randomAddendIndex=MwReadNativeWord(data,0x285E);
+    combatMechs.specialAssaultMode=0; /*C7BE*/
     return true;
 }
 
@@ -170,40 +136,40 @@ bool BtechImportMechInitialData(const uint8_t *data,size_t byteCount)
  * scalars separately. Host bindings and campaign owners are untouched. */
 void BtechInitializeFreshMechOwners(const uint8_t *data)
 {
-    combatContinuationStage=0;
-    reducedMemoryMode=0;
-    combatTerrainDetailLevel=0;
-    combatMissionDefinitionIndex=0;
-    combatSoundEnabled=0;
-    playbackCombatInputRequested=0;
-    combatScenarioIndex=0;
+    combatImport.combatContinuationStage=0;
+    combatImport.reducedMemoryMode=0;
+    combatImport.combatTerrainDetailLevel=0;
+    combatImport.combatMissionDefinitionIndex=0;
+    combatImport.combatSoundEnabled=0;
+    combatImport.playbackCombatInputRequested=0;
+    combatImport.combatScenarioIndex=0;
     for (uint16_t slot=0;slot<8;++slot)
-        gunneryTargetNumbers[slot]=0;
+        combatImport.gunneryTargetNumbers[slot]=0;
     for (uint16_t slot=0;slot<8;++slot)
-        pilotingRecoveryBounds[slot]=0;
-    activeCockpitLayoutIndex=0;
+        combatImport.pilotingRecoveryBounds[slot]=0;
+    combatImport.activeCockpitLayoutIndex=0;
     for (uint16_t slot=0;slot<4;++slot)
-        combatToPilotRosterSlots[slot]=0;
+        combatImport.combatToPilotRosterSlots[slot]=0;
     for (uint16_t slot=0;slot<4;++slot)
-        combatToOwnedMechSlots[slot]=0;
+        combatImport.combatToOwnedMechSlots[slot]=0;
     for (uint16_t slot=0;slot<4;++slot)
-        deployedPilotIds[slot]=0;
-    mechTemplateReservations=BtechTemplateReservations{};
-    hudColourSchemeIndex=0;
-    savedArgumentCount=0;
-    activeUnitControl=NULL;
+        combatImport.deployedPilotIds[slot]=0;
+    combatImport.mechTemplateReservations=BtechTemplateReservations{};
+    combatImport.hudColourSchemeIndex=0;
+    combatImport.savedArgumentCount=0;
+    combatImport.activeUnitControl=NULL;
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
-        mechStates[slot]=BtechMechState{};
+        combatMechs.mechStates[slot]=BtechMechState{};
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
-        unitBindings[slot]=BtechUnitBinding{};
+        combatMechs.unitBindings[slot]=BtechUnitBinding{};
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
-        unitControls[slot]=BtechUnitControlState{};
-    specialAssaultMode=0;
-    specialTargetInteractionBlocked=0; /*0EEA*/
+        combatMechs.unitControls[slot]=BtechUnitControlState{};
+    combatMechs.specialAssaultMode=0;
+    combatImport.specialTargetInteractionBlocked=0; /*0EEA*/
     /* Written before it's read (BtechPrepareCampaignCombatStage); zero where the exe reloaded it. */
-    for (uint16_t slot=0;slot<sizeof(sideObjectiveRules)/sizeof(sideObjectiveRules[0]);++slot) sideObjectiveRules[slot]=0;
-    combatLandscapeIndex=0; /*1E86*/
+    for (uint16_t slot=0;slot<sizeof(combatImport.sideObjectiveRules)/sizeof(combatImport.sideObjectiveRules[0]);++slot) combatImport.sideObjectiveRules[slot]=0;
+    combatImport.combatLandscapeIndex=0; /*1E86*/
     /* From the story file, as the importer reads it; a missing text fails that import. */
-    (void)MwStoryCopyText("combat.commander.default_name",(char *)combatDefaultCommanderNameBytes,sizeof(combatDefaultCommanderNameBytes));
-    savedArguments=NULL;
+    (void)MwStoryCopyText("combat.commander.default_name",(char *)combatImport.combatDefaultCommanderNameBytes,sizeof(combatImport.combatDefaultCommanderNameBytes));
+    combatImport.savedArguments=NULL;
 }

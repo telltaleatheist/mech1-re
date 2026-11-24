@@ -13,8 +13,8 @@
  * absolute C coordinate, not target-relative. All upper boundaries are strict. */
 uint8_t BtechTestPositionInsideSpecialTarget(const BtechPosition3D *contactPosition,uint16_t useNarrowContactBounds)
 {
-    if (!specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
-    const BtechWorldObjectPrefix *objectiveObject=&specialTargetObject->object.prefix;
+    if (!combatWorld.specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
+    const BtechWorldObjectPrefix *objectiveObject=&combatWorld.specialTargetObject->object.prefix;
     if (objectiveObject->renderFlags&COMBAT_WORLD_OBJECT_HIDDEN) return 0;
     uint32_t absoluteSeparationX=objectiveObject->position.positionA-contactPosition->positionA;
     uint32_t absoluteSeparationY=objectiveObject->position.positionB-contactPosition->positionB;
@@ -28,16 +28,16 @@ uint8_t BtechTestPositionInsideSpecialTarget(const BtechPosition3D *contactPosit
  * reference scale, not its object's current forward motion, for damage. */
 uint16_t BtechResolveUnitContactWithSpecialTarget(uint16_t unitSlot)
 {
-    if ((int16_t)sideObjectiveRules[0]<=OBJECTIVE_OPPOSE_WITHDRAWAL) return 0;
-    if (unitSlot>=COMBAT_MECH_SLOTS || !unitBindings[unitSlot].positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitSlot>=COMBAT_MECH_SLOTS || !unitBindings[unitSlot].positionedLeftLeg");
-    const BtechPosition3D *contactPosition=&unitBindings[unitSlot].positionedLeftLeg->object.prefix.position;
+    if ((int16_t)combatImport.sideObjectiveRules[0]<=OBJECTIVE_OPPOSE_WITHDRAWAL) return 0;
+    if (unitSlot>=COMBAT_MECH_SLOTS || !combatMechs.unitBindings[unitSlot].positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitSlot>=COMBAT_MECH_SLOTS || !unitBindings[unitSlot].positionedLeftLeg");
+    const BtechPosition3D *contactPosition=&combatMechs.unitBindings[unitSlot].positionedLeftLeg->object.prefix.position;
     if (!BtechTestPositionInsideSpecialTarget(contactPosition,unitSlot<1)) return 0;
-    BtechMechState *contactingMech=unitBindings[unitSlot].mech;
+    BtechMechState *contactingMech=combatMechs.unitBindings[unitSlot].mech;
     if (!contactingMech || contactingMech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !contactingMech || contactingMech->templateIndex>=COMBAT_MECH_TEMPLATES");
-    const BtechMechTemplate *contactingMechTemplate=&mechTemplates[contactingMech->templateIndex];
-    uint16_t contactingSideIndex=unitControls[unitSlot].sideIndex;
+    const BtechMechTemplate *contactingMechTemplate=&combatMechs.mechTemplates[contactingMech->templateIndex];
+    uint16_t contactingSideIndex=combatMechs.unitControls[unitSlot].sideIndex;
     if (contactingSideIndex>=2) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: contactingSideIndex>=2");
-    if (sideObjectiveRules[contactingSideIndex]==OBJECTIVE_SPECIAL_TARGET && specialTargetInteractionBlocked)
+    if (combatImport.sideObjectiveRules[contactingSideIndex]==OBJECTIVE_SPECIAL_TARGET && combatImport.specialTargetInteractionBlocked)
         combatStartup.sideCompletionFlags[contactingSideIndex]=1;
     else
     {
@@ -54,20 +54,20 @@ uint16_t BtechResolveUnitContactWithSpecialTarget(uint16_t unitSlot)
  * In particular contact speed/side read7750/7752, even in the player caller. */
 uint8_t BtechTestUnitMovementObstruction(uint16_t unitSlot)
 {
-    if (unitSlot>=COMBAT_MECH_SLOTS || !unitBindings[unitSlot].positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitSlot>=COMBAT_MECH_SLOTS || !unitBindings[unitSlot].positionedLeftLeg");
-    BtechPooledWorldObject *movingMechObject=unitBindings[unitSlot].positionedLeftLeg;
+    if (unitSlot>=COMBAT_MECH_SLOTS || !combatMechs.unitBindings[unitSlot].positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitSlot>=COMBAT_MECH_SLOTS || !unitBindings[unitSlot].positionedLeftLeg");
+    BtechPooledWorldObject *movingMechObject=combatMechs.unitBindings[unitSlot].positionedLeftLeg;
     if (unitSlot)
     {
-        if (!activeUnitControl) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl");
-        if (activeUnitControl->tacticalState!=COMBAT_TACTICAL_RETREATING)
+        if (!combatImport.activeUnitControl) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl");
+        if (combatImport.activeUnitControl->tacticalState!=COMBAT_TACTICAL_RETREATING)
         {
-            uint8_t checkWorldBoundary=activeUnitControl->commandCode==COMBAT_ORDER_ATTACK_ENEMY;
-            if (!checkWorldBoundary && activeUnitControl->trackedPosition[2]>-1)
+            uint8_t checkWorldBoundary=combatImport.activeUnitControl->commandCode==COMBAT_ORDER_ATTACK_ENEMY;
+            if (!checkWorldBoundary && combatImport.activeUnitControl->trackedPosition[2]>-1)
             {
                 checkWorldBoundary=1;
                 for (uint16_t axis=0;axis<2;++axis)
                 {
-                    uint32_t absoluteTrackedCoordinate=activeUnitControl->trackedPosition[axis];
+                    uint32_t absoluteTrackedCoordinate=combatImport.activeUnitControl->trackedPosition[axis];
                     if (absoluteTrackedCoordinate==0x8000) absoluteTrackedCoordinate=0x7FFF;else if ((int32_t)absoluteTrackedCoordinate<0) absoluteTrackedCoordinate=0-absoluteTrackedCoordinate;
                     uint16_t axisBoundaryLimit=axis?COMBAT_BOUNDARY_LIMIT_B:COMBAT_BOUNDARY_LIMIT_A;
                     if ((int16_t)(absoluteTrackedCoordinate>>16)>0 || (!(absoluteTrackedCoordinate>>16) && (uint16_t)absoluteTrackedCoordinate>=axisBoundaryLimit)) {checkWorldBoundary=0;break;}
@@ -78,9 +78,9 @@ uint8_t BtechTestUnitMovementObstruction(uint16_t unitSlot)
     }
     for (uint16_t otherSlot=0;otherSlot<COMBAT_MECH_SLOTS;++otherSlot)
     {
-        if (otherSlot==unitSlot || !unitBindings[otherSlot].mech) continue;
-        if (!unitBindings[otherSlot].positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[otherSlot].positionedLeftLeg");
-        const BtechPosition3D *otherMechPosition=&unitBindings[otherSlot].positionedLeftLeg->object.prefix.position;
+        if (otherSlot==unitSlot || !combatMechs.unitBindings[otherSlot].mech) continue;
+        if (!combatMechs.unitBindings[otherSlot].positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[otherSlot].positionedLeftLeg");
+        const BtechPosition3D *otherMechPosition=&combatMechs.unitBindings[otherSlot].positionedLeftLeg->object.prefix.position;
         const BtechPosition3D *movingMechPosition=&movingMechObject->object.prefix.position;
         uint32_t contactSeparation[3]={otherMechPosition->positionA-movingMechPosition->positionA,otherMechPosition->positionB-movingMechPosition->positionB,otherMechPosition->positionC-movingMechPosition->positionC};
         uint8_t withinContactBounds=1;
@@ -96,8 +96,8 @@ uint8_t BtechTestUnitMovementObstruction(uint16_t unitSlot)
             if (!combatPose.activeUnitPositionedObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject"); /* Native null near-owner access is not fabricated. */
             if (combatPose.activeUnitPositionedObject->forwardStepScale>UNIT_CONTACT_DAMAGE_SPEED_MINIMUM)
             {
-                if (!activeUnitControl) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl");
-                if (unitControls[otherSlot].sideIndex!=activeUnitControl->sideIndex)
+                if (!combatImport.activeUnitControl) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl");
+                if (combatMechs.unitControls[otherSlot].sideIndex!=combatImport.activeUnitControl->sideIndex)
                     BtechApplyUnitCollisionDamage(unitSlot,otherSlot);
             }
             return 1;
@@ -111,11 +111,11 @@ uint8_t BtechTestUnitMovementObstruction(uint16_t unitSlot)
 void BtechApplyUnitCollisionDamage(uint16_t movingUnitSlot,uint16_t contactedUnitSlot)
 {
     if (movingUnitSlot>=COMBAT_MECH_SLOTS || contactedUnitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: movingUnitSlot>=COMBAT_MECH_SLOTS || contactedUnitSlot>=COMBAT_MECH_SLOTS");
-    BtechUnitBinding *movingMechBinding=&unitBindings[movingUnitSlot],*contactedMechBinding=&unitBindings[contactedUnitSlot];
+    BtechUnitBinding *movingMechBinding=&combatMechs.unitBindings[movingUnitSlot],*contactedMechBinding=&combatMechs.unitBindings[contactedUnitSlot];
     if (!movingMechBinding->mech || !contactedMechBinding->mech || !movingMechBinding->positionedLeftLeg || !contactedMechBinding->positionedLeftLeg
         || movingMechBinding->mech->templateIndex>=COMBAT_MECH_TEMPLATES || contactedMechBinding->mech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !movingMechBinding->mech || !contactedMechBinding->mech || !movingMechBinding->positionedLeftLeg || !contactedMechBinding->positionedLeftLeg || movingMechBinding->mech->templateIndex>=COMBAT_MECH_TEMPLATES || contactedMechBinding->mech->templateIndex>=COMBAT_MECH_TEMPLATES");
-    int16_t movingTonnage=mechTemplates[movingMechBinding->mech->templateIndex].tonnage;
-    int16_t contactedTonnage=mechTemplates[contactedMechBinding->mech->templateIndex].tonnage;
+    int16_t movingTonnage=combatMechs.mechTemplates[movingMechBinding->mech->templateIndex].tonnage;
+    int16_t contactedTonnage=combatMechs.mechTemplates[contactedMechBinding->mech->templateIndex].tonnage;
     int16_t movingTonnageSquared=(int32_t)movingTonnage*movingTonnage;
     int16_t contactedTonnageSquared=(int32_t)contactedTonnage*contactedTonnage;
     int16_t movingForwardStep=movingMechBinding->positionedLeftLeg->forwardStepScale;
@@ -137,13 +137,13 @@ void BtechApplyUnitCollisionDamage(uint16_t movingUnitSlot,uint16_t contactedUni
         BtechApplyArmorAndInternalDamage(movingUnitSlot,COMBAT_ARMOR_RIGHT_LEG,collisionDamage/CONTACT_LIMB_DAMAGE_DIVISOR);
         BtechClearObjectMotionTail(contactedMechBinding->positionedLeftLeg); /* Reload binding after collisionDamage. */
         uint32_t collisionFactorDifference=movingCollisionFactor-contactedCollisionFactor;
-        int16_t knockdownThreshold=unitControls[contactedUnitSlot].conditionScoreOrExitCode==COMBAT_MECH_DISABLED_VALUE?CONTACT_DISABLED_FALL_THRESHOLD:CONTACT_FALL_THRESHOLD;
+        int16_t knockdownThreshold=combatMechs.unitControls[contactedUnitSlot].conditionScoreOrExitCode==COMBAT_MECH_DISABLED_VALUE?CONTACT_DISABLED_FALL_THRESHOLD:CONTACT_FALL_THRESHOLD;
         if ((int32_t)collisionFactorDifference>0
             && (int32_t)BtechDivideSignedDword(collisionFactorDifference,(uint32_t)contactedTonnageSquared)>knockdownThreshold)
-        {unitControls[contactedUnitSlot].animationRequestFlags|=ANIMATION_REQUEST_FALL_POSE;return;}
+        {combatMechs.unitControls[contactedUnitSlot].animationRequestFlags|=ANIMATION_REQUEST_FALL_POSE;return;}
         if ((int32_t)collisionFactorDifference<0
             && (int32_t)BtechDivideSignedDword(0-collisionFactorDifference,(uint32_t)movingTonnageSquared)>CONTACT_FALL_THRESHOLD)
-            unitControls[movingUnitSlot].animationRequestFlags|=ANIMATION_REQUEST_FALL_POSE;
+            combatMechs.unitControls[movingUnitSlot].animationRequestFlags|=ANIMATION_REQUEST_FALL_POSE;
         return;
     }
     int16_t collisionDamage;
@@ -182,36 +182,36 @@ void BtechApplyUnitCollisionDamage(uint16_t movingUnitSlot,uint16_t contactedUni
  * Do not install player AI context before89F6: native only sets7752 at the end. */
 void BtechUpdatePlayerMechMotion(void)
 {
-    if (!playerUnitBinding || !playerUnitBinding->positionedLeftLeg || !playerMechTemplate || !playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->positionedLeftLeg || !playerMechTemplate || !playerMechState");
-    BtechPooledWorldObject *playerMechObject=playerUnitBinding->positionedLeftLeg;
+    if (!combatWorld.playerUnitBinding || !combatWorld.playerUnitBinding->positionedLeftLeg || !combatWorld.playerMechTemplate || !combatWorld.playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->positionedLeftLeg || !playerMechTemplate || !playerMechState");
+    BtechPooledWorldObject *playerMechObject=combatWorld.playerUnitBinding->positionedLeftLeg;
     BtechWorldObjectPrefix *playerMechPose=&playerMechObject->object.prefix;
     BtechPosition3D savedPosition=playerMechPose->position;
     uint16_t savedOrientation[3]={playerMechPose->orientationA,playerMechPose->orientationB,playerMechPose->orientationC};
-    if (unitControls[0].movementMode==MOVEMENT_MODE_JUMP)
+    if (combatMechs.unitControls[0].movementMode==MOVEMENT_MODE_JUMP)
     {
         playerMechObject->orientationSteps[1]=0;playerMechObject->orientationSteps[0]=0;combatStartup.playerSpecialTargetLandingLatch=0;
         BtechAdvancePooledObjectMotion(playerMechObject);
         uint32_t groundHeight=0;
-        if (BtechQueryWorldSurface(&playerMechObject->surfaceQuery,&playerMechPose->position,selectedWorldObjects,(int16_t)selectedObjectCount))
+        if (BtechQueryWorldSurface(&playerMechObject->surfaceQuery,&playerMechPose->position,combatWorld.selectedWorldObjects,(int16_t)combatWorld.selectedObjectCount))
             groundHeight=playerMechObject->surfaceQuery.surfacePositionC;
-        uint16_t chassisDisplayScale=playerMechTemplate->displayScale;
+        uint16_t chassisDisplayScale=combatWorld.playerMechTemplate->displayScale;
         int16_t chassisHalfHeight=(chassisDisplayScale>>1)|(chassisDisplayScale&0x8000);
         uint32_t feetAltitude=playerMechPose->position.positionC-(uint32_t)chassisHalfHeight;
         if ((int32_t)feetAltitude<=(int32_t)groundHeight)
         {
-            chassisDisplayScale=playerMechTemplate->displayScale;chassisHalfHeight=(int16_t)((chassisDisplayScale>>1)|(chassisDisplayScale&0x8000));
+            chassisDisplayScale=combatWorld.playerMechTemplate->displayScale;chassisHalfHeight=(int16_t)((chassisDisplayScale>>1)|(chassisDisplayScale&0x8000));
             playerMechPose->position.positionC=groundHeight+(uint32_t)chassisHalfHeight;
             if (playerMechObject->positionSteps[2]<PLAYER_HARD_LANDING_STEP)
             {
                 BtechApplyArmorAndInternalDamage(0,COMBAT_ARMOR_LEFT_LEG,(int16_t)(BtechRandomBelowBound(PLAYER_LANDING_DAMAGE_BOUND)+PLAYER_LANDING_DAMAGE_BASE));
                 BtechApplyArmorAndInternalDamage(0,COMBAT_ARMOR_RIGHT_LEG,(int16_t)(BtechRandomBelowBound(PLAYER_LANDING_DAMAGE_BOUND)+PLAYER_LANDING_DAMAGE_BASE));
-                unitControls[0].movementMode=MOVEMENT_MODE_FALLING;
-                unitControls[0].animationRequestFlags|=ANIMATION_REQUEST_FALL_POSE;
+                combatMechs.unitControls[0].movementMode=MOVEMENT_MODE_FALLING;
+                combatMechs.unitControls[0].animationRequestFlags|=ANIMATION_REQUEST_FALL_POSE;
             }
             else
             {
-                unitControls[0].movementMode=MOVEMENT_MODE_LANDING;
-                unitControls[0].animationRequestFlags|=ANIMATION_REQUEST_LANDING;
+                combatMechs.unitControls[0].movementMode=MOVEMENT_MODE_LANDING;
+                combatMechs.unitControls[0].animationRequestFlags|=ANIMATION_REQUEST_LANDING;
             }
             playerMechObject->positionSteps[2]=0;
         }
@@ -224,19 +224,19 @@ void BtechUpdatePlayerMechMotion(void)
             else
             {
                 /*9367..9379 computes a height comparison then discards AX. No height clamp. */
-                playerMechObject->positionSteps[2]=0;unitControls[0].movementMode=MOVEMENT_MODE_LANDING;
-                unitControls[0].animationRequestFlags|=ANIMATION_REQUEST_LANDING;combatStartup.playerSpecialTargetLandingLatch=1;
+                playerMechObject->positionSteps[2]=0;combatMechs.unitControls[0].movementMode=MOVEMENT_MODE_LANDING;
+                combatMechs.unitControls[0].animationRequestFlags|=ANIMATION_REQUEST_LANDING;combatStartup.playerSpecialTargetLandingLatch=1;
             }
         }
     }
-    else if ((int16_t)playerMechState->gyroHits>=COMBAT_GYRO_DESTROYED_HITS
-        || (int16_t)playerMechState->engineHits>=COMBAT_ENGINE_HIT_LIMIT
-        || unitControls[0].movementMode==MOVEMENT_MODE_FALLEN_POSE)
+    else if ((int16_t)combatWorld.playerMechState->gyroHits>=COMBAT_GYRO_DESTROYED_HITS
+        || (int16_t)combatWorld.playerMechState->engineHits>=COMBAT_ENGINE_HIT_LIMIT
+        || combatMechs.unitControls[0].movementMode==MOVEMENT_MODE_FALLEN_POSE)
     {playerMechObject->orientationSteps[1]=0;playerMechObject->orientationSteps[0]=0;}
     else
     {
         BtechAdvancePooledObjectMotion(playerMechObject);
-        uint16_t groundSurfaceClass=BtechResolveGroundSurfaceAndSlope(playerMechObject,0,selectedWorldObjects,(int16_t)selectedObjectCount);
+        uint16_t groundSurfaceClass=BtechResolveGroundSurfaceAndSlope(playerMechObject,0,combatWorld.selectedWorldObjects,(int16_t)combatWorld.selectedObjectCount);
         playerMechObject->orientationSteps[1]=0;playerMechPose->orientationB=0;
         if (playerMechObject->forwardStepScale)
         {
@@ -249,9 +249,9 @@ void BtechUpdatePlayerMechMotion(void)
             }
             else
             {
-                uint16_t chassisDisplayScale=playerMechTemplate->displayScale;
+                uint16_t chassisDisplayScale=combatWorld.playerMechTemplate->displayScale;
                 playerMechPose->position.positionC+=(uint32_t)(int16_t)((chassisDisplayScale>>1)|(chassisDisplayScale&0x8000));
-                playerMechState->doubleCoolingFlag=groundSurfaceClass==SURFACE_DOUBLE_COOLING;
+                combatWorld.playerMechState->doubleCoolingFlag=groundSurfaceClass==SURFACE_DOUBLE_COOLING;
             }
         }
         else
@@ -261,6 +261,6 @@ void BtechUpdatePlayerMechMotion(void)
             {playerMechPose->orientationB=0;playerMechPose->orientationA=0;playerMechObject->orientationSteps[1]=0;playerMechObject->orientationSteps[0]=0;}
         }
     }
-    activeUnitControl=&unitControls[0];
+    combatImport.activeUnitControl=&combatMechs.unitControls[0];
     BtechSynchronizeMechRenderParts();
 }

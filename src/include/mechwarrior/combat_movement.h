@@ -23,8 +23,13 @@ enum { MOTION_DIRECTION_FORWARD=0,MOTION_DIRECTION_REVERSE_HALF=1,MOTION_DIRECTI
     AI_JUMP_CHARGE_COST=2,AI_JUMP_FORWARD_HEAT=8,AI_JUMP_VERTICAL_HEAT=12,
     AI_JUMP_CEILING=4000,AI_JUMP_LANDING_HEIGHT_LIMIT=1500,AI_JUMP_PITCH_SCALE=0xB6,
     AI_BLOCKED_HEADING_STEP=4*0xB6 };
-extern uint32_t jumpGroundHeight;
-extern uint16_t unitMovementObstructionHistory[COMBAT_MECH_SLOTS];
+/* Combat state owned by combat_movement.h (plan, slice B3d). */
+struct CombatMovementState
+{
+    uint32_t jumpGroundHeight;
+    uint16_t unitMovementObstructionHistory[COMBAT_MECH_SLOTS];
+};
+extern CombatMovementState combatMovement;
 int16_t BtechClampSignedDifferenceStep(uint16_t desiredHeading,uint16_t currentHeading,int16_t maximumStep);
 void BtechSetActiveUnitGroundOrJumpMotion(uint16_t desiredHeading,uint16_t movementDirection);
 void BtechApplyJumpMotion(uint16_t desiredHeading,uint16_t movementDirection);

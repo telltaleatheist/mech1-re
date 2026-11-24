@@ -125,9 +125,9 @@ static void TerminateChild(uint8_t exitCode)
 {
     if (!childActive) MwSdlFail("BTECH termination outside EXEC");
     printf("Combat return: DOS exit=%u result=%u tick=%u objective=%u completion=%u/%u protectedTargetRemaining=%u playerValue=%d movementMode=%u lastScan=%02X\n",
-        exitCode,campaignResultExchange.result,combatStartup.combatTickCounter,sideObjectiveRules[0],
-        combatStartup.sideCompletionFlags[0],combatStartup.sideCompletionFlags[1],specialTargetDamageRemaining,
-        unitControls[0].conditionScoreOrExitCode,unitControls[0].movementMode,combatInput.combatInputScanCode);
+        exitCode,campaignResultExchange.result,combatStartup.combatTickCounter,combatImport.sideObjectiveRules[0],
+        combatStartup.sideCompletionFlags[0],combatStartup.sideCompletionFlags[1],combatWorld.specialTargetDamageRemaining,
+        combatMechs.unitControls[0].conditionScoreOrExitCode,combatMechs.unitControls[0].movementMode,combatInput.combatInputScanCode);
     fflush(stdout);
     childExitCode=exitCode;
     longjmp(childReturn,1); /* Actual DOS termination never returns to E144. */

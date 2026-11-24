@@ -14,11 +14,11 @@
 void BtechInitializeCombatRuntime(void)
 {
     BtechInstallDosCriticalErrorHandler();
-    combatContinuationStage=UINT16_MAX;
+    combatImport.combatContinuationStage=UINT16_MAX;
     BtechResetCombatState();
     BtechInitializeVideoAndInput();
-    hudColourSchemeIndex=combatVideo.combatRendererKind==1;
-    if (hudColourSchemeIndex || combatVideo.combatRendererKind==3) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex || combatRendererKind==3"); /* Non-EGA scratch ownership not converted. */
+    combatImport.hudColourSchemeIndex=combatVideo.combatRendererKind==1;
+    if (combatImport.hudColourSchemeIndex || combatVideo.combatRendererKind==3) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex || combatRendererKind==3"); /* Non-EGA scratch ownership not converted. */
     desertPaletteSlot=BtechLoadPaletteSlot("desert.pal",NULL);
     arcticPaletteSlot=BtechLoadPaletteSlot("arctic.pal",NULL);
     tropicalPaletteSlot=BtechLoadPaletteSlot("tropic.pal",NULL);
@@ -34,16 +34,16 @@ void BtechInitializeCombatRuntime(void)
     else BtechSelectActiveSoundBank(soundBank);
     BtechPrepareCampaignCombatStage(inheritedSoundStreamIdentity);
     BtechInitializeUnitControlRecords();
-    selectedObjectCount=0;
+    combatWorld.selectedObjectCount=0;
     for (uint16_t object=0;object<COMBAT_WORLD_OBJECTS;++object)
     {
-        BtechWorldObjectPrefix *registered=worldObjects[object];
+        BtechWorldObjectPrefix *registered=combatWorld.worldObjects[object];
         if (!registered) break;
-        if ((int16_t)registered->resourceId<(int16_t)surfaceResourceBank.resourceCount
+        if ((int16_t)registered->resourceId<(int16_t)combatResources.surfaceResourceBank.resourceCount
             && (int16_t)registered->resourceId>=0)
         {
-            if (selectedObjectCount>=COMBAT_SELECTED_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedObjectCount>=COMBAT_SELECTED_WORLD_OBJECTS"); /* Next native store aliases7A2E. */
-            selectedWorldObjects[selectedObjectCount++]=worldObjects[object];
+            if (combatWorld.selectedObjectCount>=COMBAT_SELECTED_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedObjectCount>=COMBAT_SELECTED_WORLD_OBJECTS"); /* Next native store aliases7A2E. */
+            combatWorld.selectedWorldObjects[combatWorld.selectedObjectCount++]=combatWorld.worldObjects[object];
         }
     }
     combatVideo.playerCameraFillASuppressed=BtechRandomBelowBound(3)<1;
@@ -51,13 +51,13 @@ void BtechInitializeCombatRuntime(void)
     BtechLoadCockpitHudResources();
     BtechInitializeOrderPanelState();
     BtechResetMechInspectionState();
-    if (!playerMechTemplate) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechTemplate");
-    for (int16_t mount=0;mount<(int16_t)playerMechTemplate->weaponMountCount;++mount)
+    if (!combatWorld.playerMechTemplate) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechTemplate");
+    for (int16_t mount=0;mount<(int16_t)combatWorld.playerMechTemplate->weaponMountCount;++mount)
     {
-        if (mount>=COMBAT_WEAPON_MOUNTS || !playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mount>=COMBAT_WEAPON_MOUNTS || !playerMechState");
-        combatStartup.playerMountFireFlags[mount]=(int8_t)playerMechState->weapons[mount].operational;
+        if (mount>=COMBAT_WEAPON_MOUNTS || !combatWorld.playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mount>=COMBAT_WEAPON_MOUNTS || !playerMechState");
+        combatStartup.playerMountFireFlags[mount]=(int8_t)combatWorld.playerMechState->weapons[mount].operational;
     }
-    activeUnitControl=&unitControls[0];
+    combatImport.activeUnitControl=&combatMechs.unitControls[0];
     BtechSynchronizeMechRenderParts();
     BtechShowCombatStageBriefing();
     BtechRefreshCockpitViewportAndGauges();
@@ -68,9 +68,9 @@ void BtechInitializeCombatRuntime(void)
 void BtechInitializeVideoAndInput(void)
 {
     uint16_t adapterOverride=COMBAT_VIDEO_AUTO;
-    if ((int16_t)savedArgumentCount>1)
+    if ((int16_t)combatImport.savedArgumentCount>1)
     {
-        uint8_t option=savedArguments[1][0];
+        uint8_t option=combatImport.savedArguments[1][0];
         /*EAA0 lowercases ASCII upper-case in the shipped character table. */
         if (option>='A' && option<='Z') option+='a'-'A';
         switch (option)
@@ -137,8 +137,8 @@ void BtechResetCombatState(void)
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot) combatStartup.unitLastDrawParts[slot]=NULL;
     for (uint16_t chassis=0;chassis<COMBAT_MECH_TEMPLATES;++chassis) mechResourceBaseIds[chassis]=0;
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
-    {unitBindings[slot].mech=NULL;unitBindings[slot].positionedLeftLeg=NULL;}
-    specialTargetInteractionBlocked=0;
+    {combatMechs.unitBindings[slot].mech=NULL;combatMechs.unitBindings[slot].positionedLeftLeg=NULL;}
+    combatImport.specialTargetInteractionBlocked=0;
     otherShapeResourceBase=0;firstMechShapeResourceId=0;
     combatStartup.playerSpecialTargetLandingLatch=0;
 }

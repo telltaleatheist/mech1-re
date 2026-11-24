@@ -13,7 +13,7 @@ void BtechOrderMechRenderParts(BtechCameraContext *camera,BtechWorldObjectPrefix
         if ((int16_t)objects[index]->resourceId<(int16_t)firstMechShapeResourceId) continue;
         for (uint16_t slot=1;slot<COMBAT_MECH_SLOTS;++slot)
         {
-            BtechUnitBinding *binding=&unitBindings[slot];
+            BtechUnitBinding *binding=&combatMechs.unitBindings[slot];
             if (!binding->torso) continue;
             const BtechPosition3D *position=&binding->torso->object.prefix.position;
             const BtechPosition3D *candidate=&objects[index]->position;

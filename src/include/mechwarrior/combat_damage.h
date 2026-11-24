@@ -16,15 +16,20 @@ enum { COMBAT_ARMOR_LEFT_ARM=0,COMBAT_ARMOR_RIGHT_ARM=1,COMBAT_ARMOR_LEFT_LEG=2,
     COMBAT_DAMAGE_SOUND=7,COMBAT_DAMAGE_SOUND_PRIORITY=0x28,
     COMBAT_DESTRUCTION_HIGH_ALTITUDE=0x384,COMBAT_DESTRUCTION_LOW_ALTITUDE=0x190,
     COMBAT_DESTRUCTION_OFFSET=0xC8 };
-extern uint8_t playerDamageSuppressed;
 /* Combat state owned by combat_damage.h (plan, slice B3a). */
 struct CombatDamagePanelState
 {
     uint8_t targetDamagePanelDirty[COMBAT_MECH_SLOTS], specialTargetDamagePanelDirty;
 };
 extern CombatDamagePanelState combatDamagePanels;
-extern uint16_t damageTransferArmorLocations[COMBAT_BODY_LOCATIONS];
-extern uint16_t criticalTransferBodyLocations[COMBAT_BODY_LOCATIONS],actuatorIndicesByBodyLocation[4];
+/* Combat state owned by combat_damage.h (plan, slice B3d). */
+struct CombatDamageState
+{
+    uint8_t playerDamageSuppressed;
+    uint16_t damageTransferArmorLocations[COMBAT_BODY_LOCATIONS];
+    uint16_t criticalTransferBodyLocations[COMBAT_BODY_LOCATIONS], actuatorIndicesByBodyLocation[4];
+};
+extern CombatDamageState combatDamage;
 typedef struct BtechBodyDestructionEmitter {
     uint16_t unitSlot;
     int16_t armorLocation;

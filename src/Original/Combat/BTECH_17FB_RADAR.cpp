@@ -12,12 +12,12 @@ void BtechDrawTerrainRadar(void)
     uint8_t backdropChanged=0;
     uint16_t tickDiscontinuity=(uint16_t)(combatCockpit.radarPreviousTick+1)!=combatStartup.combatTickCounter;
     combatCockpit.radarPreviousTick=combatStartup.combatTickCounter;
-    combatCockpit.radarCachePage=hudColourSchemeIndex?0:combatStartup.combatTickCounter&1;
+    combatCockpit.radarCachePage=combatImport.hudColourSchemeIndex?0:combatStartup.combatTickCounter&1;
     combatVideo.drawPageSelector=combatVideo.backPageSelector;
-    if (!playerUnitBinding) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding");
-    combatCockpit.radarPlayerObject=playerUnitBinding->positionedLeftLeg;
-    if (activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS");
-    combatCockpit.radarRectangle=&combatCockpit.cockpitLayouts[activeCockpitLayoutIndex].radarPanel;
+    if (!combatWorld.playerUnitBinding) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding");
+    combatCockpit.radarPlayerObject=combatWorld.playerUnitBinding->positionedLeftLeg;
+    if (combatImport.activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS");
+    combatCockpit.radarRectangle=&combatCockpit.cockpitLayouts[combatImport.activeCockpitLayoutIndex].radarPanel;
     int16_t halfWidth=(combatCockpit.radarRectangle->width-(combatCockpit.radarRectangle->width<0))/2;
     int16_t halfHeight=(combatCockpit.radarRectangle->height-(combatCockpit.radarRectangle->height<0))/2;
     combatCockpit.radarCentreX=(uint16_t)(combatCockpit.radarRectangle->x+halfWidth-1);
@@ -29,8 +29,8 @@ void BtechDrawTerrainRadar(void)
     if (mapX!=combatCockpit.radarMapOriginX || mapY!=combatCockpit.radarMapOriginY || combatCockpit.cockpitFullRedrawPending || tickDiscontinuity)
     {
         combatCockpit.radarMapOriginX=mapX;combatCockpit.radarMapOriginY=mapY;combatVideo.drawPolygonFilled=true;
-        if (hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
-        combatVideo.drawLineColour=(uint8_t)combatCockpit.hudColourSchemes[hudColourSchemeIndex].radarBackground;
+        if (combatImport.hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
+        combatVideo.drawLineColour=(uint8_t)combatCockpit.hudColourSchemes[combatImport.hudColourSchemeIndex].radarBackground;
         combatVideo.drawFillColour=combatVideo.drawLineColour;
         BtechDrawStyledRectangle(combatCockpit.radarRectangle->x,combatCockpit.radarRectangle->y,combatCockpit.radarRectangle->width,combatCockpit.radarRectangle->height);
         for (uint16_t panelX=0;(int16_t)panelX<combatCockpit.radarRectangle->width;++panelX,++mapX)
@@ -39,11 +39,11 @@ void BtechDrawTerrainRadar(void)
             for (uint16_t panelY=0;(int16_t)panelY<combatCockpit.radarRectangle->height;++panelY,++terrainY)
             {
                 if (mapX>=TERRAIN_GRID_ROWS || terrainY>=TERRAIN_GRID_COLUMNS) continue;
-                uint16_t height=terrainHeightGrid[mapX][terrainY];
+                uint16_t height=combatWorld.terrainHeightGrid[mapX][terrainY];
                 if (!height) continue;
                 uint16_t band=height>>5;if (band>3) band=3;
                 BtechWriteClippedPixel((int16_t)(combatCockpit.radarRectangle->x+panelX),
-                    (int16_t)(combatCockpit.radarRectangle->y+panelY),combatCockpit.hudColourSchemes[hudColourSchemeIndex].radarTerrainBands[band]);
+                    (int16_t)(combatCockpit.radarRectangle->y+panelY),combatCockpit.hudColourSchemes[combatImport.hudColourSchemeIndex].radarTerrainBands[band]);
             }
         }
         backdropChanged=1;
@@ -58,29 +58,29 @@ void BtechDrawTerrainRadar(void)
         }
     }
     combatCockpit.radarMarkerCounts[combatCockpit.radarCachePage]=0;
-    if (hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
-    uint16_t paletteIndex=combatCockpit.hudColourSchemes[hudColourSchemeIndex].radarFriendly;
+    if (combatImport.hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
+    uint16_t paletteIndex=combatCockpit.hudColourSchemes[combatImport.hudColourSchemeIndex].radarFriendly;
     for (uint16_t slot=1;slot<COMBAT_MECH_SLOTS;++slot)
     {
-        if (!unitBindings[slot].mech || unitControls[slot].conditionScoreOrExitCode<=COMBAT_EXIT_CODE_THRESHOLD) continue;
+        if (!combatMechs.unitBindings[slot].mech || combatMechs.unitControls[slot].conditionScoreOrExitCode<=COMBAT_EXIT_CODE_THRESHOLD) continue;
         if (slot>=COMBAT_FRIENDLY_SLOTS)
         {
-            if (!unitVisibility[0][slot]) continue;
-            paletteIndex=combatCockpit.hudColourSchemes[hudColourSchemeIndex].radarOpposing;
+            if (!combatMechs.unitVisibility[0][slot]) continue;
+            paletteIndex=combatCockpit.hudColourSchemes[combatImport.hudColourSchemeIndex].radarOpposing;
         }
-        if (!unitBindings[slot].torso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[slot].torso");
-        BtechDrawRadarPositionMarker(&unitBindings[slot].torso->object.prefix.position,paletteIndex);
+        if (!combatMechs.unitBindings[slot].torso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[slot].torso");
+        BtechDrawRadarPositionMarker(&combatMechs.unitBindings[slot].torso->object.prefix.position,paletteIndex);
     }
-    if (sideObjectiveRules[0]==OBJECTIVE_SPECIAL_TARGET || sideObjectiveRules[0]==OBJECTIVE_DEFEND_SPECIAL_TARGET)
+    if (combatImport.sideObjectiveRules[0]==OBJECTIVE_SPECIAL_TARGET || combatImport.sideObjectiveRules[0]==OBJECTIVE_DEFEND_SPECIAL_TARGET)
     {
-        if (!specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
-        BtechDrawRadarPositionMarker(&specialTargetObject->object.prefix.position,combatCockpit.hudColourSchemes[hudColourSchemeIndex].radarSpecialTarget);
+        if (!combatWorld.specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
+        BtechDrawRadarPositionMarker(&combatWorld.specialTargetObject->object.prefix.position,combatCockpit.hudColourSchemes[combatImport.hudColourSchemeIndex].radarSpecialTarget);
     }
-    BtechDrawRadarPositionMarker(player,combatCockpit.hudColourSchemes[hudColourSchemeIndex].radarPlayer);
+    BtechDrawRadarPositionMarker(player,combatCockpit.hudColourSchemes[combatImport.hudColourSchemeIndex].radarPlayer);
     if (backdropChanged)
     {
         BtechCopyHudRectangleIfReady(combatCockpit.radarRectangle->x,combatCockpit.radarRectangle->y,combatCockpit.radarRectangle->width,combatCockpit.radarRectangle->height);
-        if (!hudColourSchemeIndex)
+        if (!combatImport.hudColourSchemeIndex)
         {
             uint16_t otherPage=combatCockpit.radarCachePage<1?1:0;
             combatCockpit.radarMarkerCounts[otherPage]=combatCockpit.radarMarkerCounts[combatCockpit.radarCachePage];

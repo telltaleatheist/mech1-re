@@ -6,9 +6,9 @@
 BtechCameraContext *BtechAllocateCameraContext(BtechWorldObjectPrefix *object)
 {
     uint16_t slot=0;
-    while (slot<COMBAT_CAMERA_CONTEXTS && (cameraContexts[slot].flags&CAMERA_OCCUPIED)) ++slot;
+    while (slot<COMBAT_CAMERA_CONTEXTS && (combatWorld.cameraContexts[slot].flags&CAMERA_OCCUPIED)) ++slot;
     if (slot==COMBAT_CAMERA_CONTEXTS) return NULL;
-    BtechCameraContext *camera=&cameraContexts[slot];
+    BtechCameraContext *camera=&combatWorld.cameraContexts[slot];
     camera->flags=CAMERA_OCCUPIED;camera->projectionShift=CAMERA_PROJECTION_SHIFT;
     camera->viewObject=object;
     for (uint16_t axis=0;axis<3;++axis) camera->relativeOrientation[axis]=0;
@@ -24,5 +24,5 @@ BtechCameraContext *BtechAllocateCameraContext(BtechWorldObjectPrefix *object)
 uint16_t BtechLookupHeadingRatio(uint16_t ratioIndex)
 {
     if (ratioIndex>=0x200) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: ratioIndex>=0x200");
-    return headingRatioAngles[ratioIndex];
+    return combatGeometryTables.headingRatioAngles[ratioIndex];
 }

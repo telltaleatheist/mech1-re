@@ -14,14 +14,19 @@ enum { NAVIGATION_ARRIVAL_HALF_WIDTH=160,AVOIDANCE_PROBES=4,AVOIDANCE_TURNS=3,
 enum { AVOIDANCE_PROBE_FORWARD=0,AVOIDANCE_PROBE_POSITIVE_TURN=1,
     AVOIDANCE_PROBE_NEGATIVE_TURN=2,AVOIDANCE_PROBE_REVERSE=3 };
 enum { AVOIDANCE_TURN_STRAIGHT=0,AVOIDANCE_TURN_POSITIVE=1,AVOIDANCE_TURN_NEGATIVE=2 };
-extern int16_t avoidanceStepX,avoidanceStepY;
-extern const BtechPosition3D *avoidancePosition;
-/* Native5430 references angles at object+14; C retains the owning prefix so
- * its heading remains a named field, not an untyped adjacent-field array. */
-extern const BtechWorldObjectPrefix *avoidanceOrientation;
-extern uint16_t avoidanceHeadingOffsets[AVOIDANCE_TURNS];
-extern int16_t avoidanceProbeSignsX[AVOIDANCE_PROBES],avoidanceProbeSignsY[AVOIDANCE_PROBES];
-extern const int16_t *avoidanceProbeComponentsX[AVOIDANCE_PROBES],*avoidanceProbeComponentsY[AVOIDANCE_PROBES];
+/* Combat state owned by combat_navigation.h (plan, slice B3d). */
+struct CombatNavigationState
+{
+    int16_t avoidanceStepX, avoidanceStepY;
+    const BtechPosition3D *avoidancePosition;
+    /* Native5430 references angles at object+14; C retains the owning prefix so
+     * its heading remains a named field, not an untyped adjacent-field array. */
+    const BtechWorldObjectPrefix *avoidanceOrientation;
+    uint16_t avoidanceHeadingOffsets[AVOIDANCE_TURNS];
+    int16_t avoidanceProbeSignsX[AVOIDANCE_PROBES], avoidanceProbeSignsY[AVOIDANCE_PROBES];
+    const int16_t *avoidanceProbeComponentsX[AVOIDANCE_PROBES], *avoidanceProbeComponentsY[AVOIDANCE_PROBES];
+};
+extern CombatNavigationState combatNavigation;
 uint8_t BtechArePlanarPositionsWithinArrivalBounds(const BtechPosition3D *destinationPosition,const BtechPosition3D *mechPosition);
 void BtechNavigateActiveUnitTowardPosition(const BtechPosition3D *destinationPosition);
 void BtechSteerActiveUnitAroundObstacles(uint16_t desiredHeading,uint8_t moveForward);

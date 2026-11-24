@@ -41,11 +41,11 @@ static RetiredShapeRegistry *retiredShapeRegistries;
 
 void BtechHostRetainDetachedShapeRegistry(void)
 {
-    if (!shapeResourceBanks || shapeResourceBanks==&initialShapeResourceBank) return;
-    for (uint16_t bank=0;bank<shapeResourceBankCount;++bank)
-        if (shapeResourceBanks[bank].resources || shapeResourceBanks[bank].decodedResources) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: shapeResourceBanks[bank].resources || shapeResourceBanks[bank].decodedResources");
+    if (!combatResources.shapeResourceBanks || combatResources.shapeResourceBanks==&combatResources.initialShapeResourceBank) return;
+    for (uint16_t bank=0;bank<combatResources.shapeResourceBankCount;++bank)
+        if (combatResources.shapeResourceBanks[bank].resources || combatResources.shapeResourceBanks[bank].decodedResources) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: shapeResourceBanks[bank].resources || shapeResourceBanks[bank].decodedResources");
     RetiredShapeRegistry *retired=static_cast<RetiredShapeRegistry *>(malloc(sizeof(*retired)));if (!retired) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !retired");
-    *retired=RetiredShapeRegistry{shapeResourceBanks,retiredShapeRegistries};retiredShapeRegistries=retired;
+    *retired=RetiredShapeRegistry{combatResources.shapeResourceBanks,retiredShapeRegistries};retiredShapeRegistries=retired;
 }
 
 /* Decoded host-only allocations have no counterpart in the native paragraph
@@ -112,12 +112,12 @@ void BtechHostDiscardChildData(void)
     combatVideo.promptBitmaps=NULL;
     combatVideo.pointPictures=NULL;combatVideo.smallMechPictures=NULL;combatVideo.strutPictures=NULL;
     combatVideo.cockpitPictures=NULL;combatVideo.hudGlyphPictures=NULL;combatVideo.inspectionDamagePictures=NULL;
-    paragraphs|=orderPanelCaptureBuffer.bytes!=NULL;
-    orderPanelCaptureBuffer=BtechResourceAllocation{};
+    paragraphs|=combatOrders.orderPanelCaptureBuffer.bytes!=NULL;
+    combatOrders.orderPanelCaptureBuffer=BtechResourceAllocation{};
     for (uint16_t slot=0;slot<RESOURCE_ARCHIVE_SLOTS;++slot)
-        if (archiveDescriptors[slot])
+        if (combatResources.archiveDescriptors[slot])
         {
-            FILE *stream=archiveDescriptors[slot]->stream;
+            FILE *stream=combatResources.archiveDescriptors[slot]->stream;
             bool runtimeOwned=false;
             for (uint16_t file=0;file<COMBAT_STREAM_SLOTS;++file) runtimeOwned|=runtimeStreams[file].file==stream;
             if (stream && !runtimeOwned) fclose(stream);
@@ -125,8 +125,8 @@ void BtechHostDiscardChildData(void)
         }
     BtechCloseRuntimeStreamFiles();
     for (uint16_t slot=0;slot<COMBAT_WORLD_OBJECTS;++slot)
-        if (heapWorldObjectOwned[slot])
-        {worldObjects[slot]=NULL;heapWorldObjectOwned[slot]=0;}
+        if (combatWorld.heapWorldObjectOwned[slot])
+        {combatWorld.worldObjects[slot]=NULL;combatWorld.heapWorldObjectOwned[slot]=0;}
     for (uint16_t bank=0;bank<COMBAT_AUDIO_BANK_ROOTS;++bank)
     {
         /* DOS and near allocator owners include detached/reused nodes. Process
@@ -134,16 +134,16 @@ void BtechHostDiscardChildData(void)
         paragraphs|=soundBanks[bank].root.allocation.bytes!=NULL;
         free(soundBanks[bank].events);soundBanks[bank]=BtechSoundBank{};
     }
-    for (uint32_t owner=0;owner<(uint32_t)shapeResourceBankCount+1;++owner)
+    for (uint32_t owner=0;owner<(uint32_t)combatResources.shapeResourceBankCount+1;++owner)
     {
         BtechResourceBank *bank;
-        if (owner<shapeResourceBankCount)
+        if (owner<combatResources.shapeResourceBankCount)
         {
-            if (!shapeResourceBanks || shapeResourceBanks==&initialShapeResourceBank) continue;
-            bank=&shapeResourceBanks[owner];
-            if (bank->resources==initialShapeResourceBank.resources) continue;
+            if (!combatResources.shapeResourceBanks || combatResources.shapeResourceBanks==&combatResources.initialShapeResourceBank) continue;
+            bank=&combatResources.shapeResourceBanks[owner];
+            if (bank->resources==combatResources.initialShapeResourceBank.resources) continue;
         }
-        else bank=&initialShapeResourceBank;
+        else bank=&combatResources.initialShapeResourceBank;
         paragraphs|=bank->allocation.bytes!=NULL;
         BtechHostDiscardDecodedShapeBank(bank);
     }
@@ -152,10 +152,10 @@ void BtechHostDiscardChildData(void)
         RetiredShapeRegistry *retired=retiredShapeRegistries;retiredShapeRegistries=retired->next;
         free(retired); /* Bank arrays belong to the shared child near heap. */
     }
-    paragraphs|=surfaceResourceBank.allocation.bytes!=NULL;
-    BtechHostDiscardDecodedSurfaceBank(&surfaceResourceBank);
-    initialShapeResourceBank=BtechResourceBank{};surfaceResourceBank=BtechSurfaceBank{};
-    shapeResourceBanks=NULL;shapeResourceBankCount=0;
+    paragraphs|=combatResources.surfaceResourceBank.allocation.bytes!=NULL;
+    BtechHostDiscardDecodedSurfaceBank(&combatResources.surfaceResourceBank);
+    combatResources.initialShapeResourceBank=BtechResourceBank{};combatResources.surfaceResourceBank=BtechSurfaceBank{};
+    combatResources.shapeResourceBanks=NULL;combatResources.shapeResourceBankCount=0;
     for (uint16_t slot=1;slot<COMBAT_FONT_SLOTS;++slot) paragraphs|=combatVideo.fonts[slot].bytes!=NULL;
     paragraphs|=soundAllocationOverride.bytes!=NULL;
     if (paragraphs && !btechHostReleaseChildDosAllocations) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: paragraphs && !btechHostReleaseChildDosAllocations");
