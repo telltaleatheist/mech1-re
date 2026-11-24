@@ -6,22 +6,22 @@
  * walk. The original endpoint-emission order is not four Sutherland passes. */
 void BtechClipScreenPolygonToViewport(void)
 {
-    if ((int16_t)polygonVertexCount<=1) return;
+    if ((int16_t)combatPolygons.polygonVertexCount<=1) return;
     for (uint16_t axis=0;axis<2;++axis)
     {
-        int16_t *sourceX=axis?polygonWorkX:screenPolygonX;
-        int16_t *sourceY=axis?polygonWorkY:screenPolygonY;
-        int16_t *destinationX=axis?screenPolygonX:polygonWorkX;
-        int16_t *destinationY=axis?screenPolygonY:polygonWorkY;
+        int16_t *sourceX=axis?combatPolygons.polygonWorkX:combatPolygons.screenPolygonX;
+        int16_t *sourceY=axis?combatPolygons.polygonWorkY:combatPolygons.screenPolygonY;
+        int16_t *destinationX=axis?combatPolygons.screenPolygonX:combatPolygons.polygonWorkX;
+        int16_t *destinationY=axis?combatPolygons.screenPolygonY:combatPolygons.polygonWorkY;
         int16_t *plane=axis?sourceY:sourceX,*other=axis?sourceX:sourceY;
         int16_t *outPlane=axis?destinationY:destinationX,*outOther=axis?destinationX:destinationY;
         int16_t minimum=axis?clipMinimumY:clipMinimumX;
         int16_t maximum=axis?clipMaximumY:clipMaximumX;
         uint8_t minimumBit=axis?8:1,maximumBit=axis?4:2;
-        if (polygonVertexCount>COMBAT_POLYGON_VERTEX_WORDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: polygonVertexCount>COMBAT_POLYGON_VERTEX_WORDS");
-        uint16_t previous=polygonVertexCount-1,output=0;
+        if (combatPolygons.polygonVertexCount>COMBAT_POLYGON_VERTEX_WORDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: polygonVertexCount>COMBAT_POLYGON_VERTEX_WORDS");
+        uint16_t previous=combatPolygons.polygonVertexCount-1,output=0;
         uint8_t previousOutside=(plane[previous]<minimum?minimumBit:0)|(plane[previous]>maximum?maximumBit:0);
-        for (uint16_t current=0;current!=polygonVertexCount;++current)
+        for (uint16_t current=0;current!=combatPolygons.polygonVertexCount;++current)
         {
             uint8_t currentOutside=(plane[current]<minimum?minimumBit:0)|(plane[current]>maximum?maximumBit:0);
             if (!(previousOutside|currentOutside))
@@ -56,14 +56,14 @@ void BtechClipScreenPolygonToViewport(void)
             }
             previous=current;previousOutside=currentOutside;
         }
-        polygonVertexCount=output;
-        if (!axis && (int16_t)polygonVertexCount<=1)
+        combatPolygons.polygonVertexCount=output;
+        if (!axis && (int16_t)combatPolygons.polygonVertexCount<=1)
         {
             for (uint16_t coordinateAxis=0;coordinateAxis<2;++coordinateAxis)
             {
-                int16_t *source=coordinateAxis?polygonWorkY:polygonWorkX;
-                int16_t *destination=coordinateAxis?screenPolygonY:screenPolygonX;
-                for (uint16_t i=0;i<polygonVertexCount;++i) destination[i]=source[i];
+                int16_t *source=coordinateAxis?combatPolygons.polygonWorkY:combatPolygons.polygonWorkX;
+                int16_t *destination=coordinateAxis?combatPolygons.screenPolygonY:combatPolygons.screenPolygonX;
+                for (uint16_t i=0;i<combatPolygons.polygonVertexCount;++i) destination[i]=source[i];
             }
             return;
         }

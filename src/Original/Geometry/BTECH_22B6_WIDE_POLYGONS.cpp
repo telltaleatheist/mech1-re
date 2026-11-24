@@ -12,7 +12,7 @@ uint64_t BtechMultiplySignedDwordsWide(uint32_t first,uint32_t second)
 /*22B6:2744. Original two forward REP MOVSWs, X before Y. */
 void BtechCopyRendererWorkingCoordinateArrays(void)
 {
-    uint16_t count=(uint16_t)(polygonVertexCount*2)>>1; /* Native WORD count wraps before REP. */
+    uint16_t count=(uint16_t)(combatPolygons.polygonVertexCount*2)>>1; /* Native WORD count wraps before REP. */
     if (count>WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: count>WIDE_POLYGON_VERTICES");
     for (uint16_t vertex=0;vertex<count;++vertex) wideScreenX[vertex]=widePolygonWorkX[vertex];
     for (uint16_t vertex=0;vertex<count;++vertex) wideScreenY[vertex]=widePolygonWorkY[vertex];
@@ -31,7 +31,7 @@ void BtechOffsetWidePolygonVerticesToScreen(void)
         wideScreenX[destination]=centreX+geometryProjectedX.wide[vertex];
         wideScreenY[destination]=centreY-geometryProjectedY.wide[vertex];
         ++destination;
-    } while ((int16_t)destination<(int16_t)polygonVertexCount);
+    } while ((int16_t)destination<(int16_t)combatPolygons.polygonVertexCount);
 }
 
 /*22B6:6836. Actual wide polygon orchestration, not a replacement renderer. */
@@ -52,7 +52,7 @@ void BtechRenderWidePolygonPayload(const BtechRenderPolygonPayload *payload)
         }
         BtechSelectPolygonColoursAndShade(polygon);
         polygonHasNearClippedVertex=0;
-        polygonVertexCount=0;
+        combatPolygons.polygonVertexCount=0;
         for (const uint8_t *indices=polygon->vertexIndices;*indices!=POLYGON_VERTEX_LIST_END;++indices)
         {
             uint8_t vertex=*indices;
@@ -89,8 +89,8 @@ divideCoordinate:
                     }
                 }
             }
-            if (polygonVertexCount>=POLYGON_VERTEX_INDEX_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: polygonVertexCount>=POLYGON_VERTEX_INDEX_BYTES");
-            polygonVertexIndices[polygonVertexCount++]=vertex;
+            if (combatPolygons.polygonVertexCount>=POLYGON_VERTEX_INDEX_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: polygonVertexCount>=POLYGON_VERTEX_INDEX_BYTES");
+            polygonVertexIndices[combatPolygons.polygonVertexCount++]=vertex;
         }
         if (polygonHasNearClippedVertex)
         {
@@ -99,7 +99,7 @@ divideCoordinate:
         }
         else
         {
-            if (!polygonVertexCount) continue;
+            if (!combatPolygons.polygonVertexCount) continue;
             BtechOffsetWidePolygonVerticesToScreen();
         }
         if (objectNeedsScreenClip)
@@ -107,13 +107,13 @@ divideCoordinate:
             if (useWordProductClipping) BtechClipPolygonWithWordProducts();
             else BtechClipWidePolygonToScreen();
         }
-        for (uint16_t vertex=0;vertex<polygonVertexCount;++vertex)
+        for (uint16_t vertex=0;vertex<combatPolygons.polygonVertexCount;++vertex)
         {
             if (vertex>=COMBAT_POLYGON_VERTEX_WORDS || vertex>=WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: vertex>=COMBAT_POLYGON_VERTEX_WORDS || vertex>=WIDE_POLYGON_VERTICES");
-            screenPolygonX[vertex]=(int16_t)wideScreenX[vertex];
-            screenPolygonY[vertex]=(int16_t)wideScreenY[vertex];
+            combatPolygons.screenPolygonX[vertex]=(int16_t)wideScreenX[vertex];
+            combatPolygons.screenPolygonY[vertex]=(int16_t)wideScreenY[vertex];
         }
         screenPolygonNeedsClip=false;
-        BtechDrawScreenPolygon((int16_t)polygonVertexCount,screenPolygonX,screenPolygonY);
+        BtechDrawScreenPolygon((int16_t)combatPolygons.polygonVertexCount,combatPolygons.screenPolygonX,combatPolygons.screenPolygonY);
     }
 }

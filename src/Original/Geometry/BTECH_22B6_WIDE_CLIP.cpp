@@ -49,8 +49,8 @@ void BtechIntersectDwordNearEdgeWithWordProducts(uint16_t outsideVertex,uint16_t
  * -> crossing in current's slot. Preserve original output and partial writes. */
 void BtechClipWidePolygonNearPlane(void)
 {
-    if (!polygonVertexCount || polygonVertexCount>POLYGON_VERTEX_INDEX_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !polygonVertexCount || polygonVertexCount>POLYGON_VERTEX_INDEX_BYTES"); /* Native empty-list read aliases4616. */
-    uint16_t previous=polygonVertexIndices[polygonVertexCount-1],output=0,input=0;
+    if (!combatPolygons.polygonVertexCount || combatPolygons.polygonVertexCount>POLYGON_VERTEX_INDEX_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !polygonVertexCount || polygonVertexCount>POLYGON_VERTEX_INDEX_BYTES"); /* Native empty-list read aliases4616. */
+    uint16_t previous=polygonVertexIndices[combatPolygons.polygonVertexCount-1],output=0,input=0;
     do
     {
         uint16_t current=polygonVertexIndices[input];
@@ -78,16 +78,16 @@ void BtechClipWidePolygonNearPlane(void)
             ++output;
         }
         previous=current;++input;
-    } while ((int16_t)input<(int16_t)polygonVertexCount);
-    polygonVertexCount=output;
+    } while ((int16_t)input<(int16_t)combatPolygons.polygonVertexCount);
+    combatPolygons.polygonVertexCount=output;
 }
 
 /*22B6:72D3. Previous outside -> crossing then current; current outside
  * -> crossing in current's slot. Preserve original output and partial writes. */
 void BtechClipDwordNearPolygonWithWordProducts(void)
 {
-    if (!polygonVertexCount || polygonVertexCount>POLYGON_VERTEX_INDEX_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !polygonVertexCount || polygonVertexCount>POLYGON_VERTEX_INDEX_BYTES"); /* Native empty-list read aliases4616. */
-    uint16_t previous=polygonVertexIndices[polygonVertexCount-1],output=0,input=0;
+    if (!combatPolygons.polygonVertexCount || combatPolygons.polygonVertexCount>POLYGON_VERTEX_INDEX_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !polygonVertexCount || polygonVertexCount>POLYGON_VERTEX_INDEX_BYTES"); /* Native empty-list read aliases4616. */
+    uint16_t previous=polygonVertexIndices[combatPolygons.polygonVertexCount-1],output=0,input=0;
     do
     {
         uint16_t current=polygonVertexIndices[input];
@@ -115,8 +115,8 @@ void BtechClipDwordNearPolygonWithWordProducts(void)
             ++output;
         }
         previous=current;++input;
-    } while ((int16_t)input<(int16_t)polygonVertexCount);
-    polygonVertexCount=output;
+    } while ((int16_t)input<(int16_t)combatPolygons.polygonVertexCount);
+    combatPolygons.polygonVertexCount=output;
 }
 
 /*22B6:6E20. Native DI advances one DWORD only when a plane is emitted.
@@ -205,10 +205,10 @@ uint16_t BtechIntersectScreenEdgeWordProductB(uint16_t base,uint16_t next,uint16
  * four independent clipping passes. Live WORD count and endpoint order retained. */
 void BtechClipWidePolygonToScreen(void)
 {
-    if ((int16_t)polygonVertexCount<=1) return;
-    if (polygonVertexCount>WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: polygonVertexCount>WIDE_POLYGON_VERTICES");
+    if ((int16_t)combatPolygons.polygonVertexCount<=1) return;
+    if (combatPolygons.polygonVertexCount>WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: polygonVertexCount>WIDE_POLYGON_VERTICES");
     {
-        uint16_t previous=polygonVertexCount-1,current=0,output=0;
+        uint16_t previous=combatPolygons.polygonVertexCount-1,current=0,output=0;
         uint32_t coordinate=wideScreenX[previous];
         int16_t upper=coordinate>>16;
         uint8_t previousFlags=0;
@@ -241,16 +241,16 @@ void BtechClipWidePolygonToScreen(void)
                 }
             }
             previous=current;previousFlags=currentFlags;++current;
-        } while (current!=polygonVertexCount);
-        polygonVertexCount=output;
+        } while (current!=combatPolygons.polygonVertexCount);
+        combatPolygons.polygonVertexCount=output;
     }
-    if ((int16_t)polygonVertexCount<=1)
+    if ((int16_t)combatPolygons.polygonVertexCount<=1)
     {
         BtechCopyRendererWorkingCoordinateArrays();
         return;
     }
     {
-        uint16_t previous=polygonVertexCount-1,current=0,output=0;
+        uint16_t previous=combatPolygons.polygonVertexCount-1,current=0,output=0;
         uint32_t coordinate=widePolygonWorkY[previous];
         int16_t upper=coordinate>>16;
         uint8_t previousFlags=0;
@@ -283,8 +283,8 @@ void BtechClipWidePolygonToScreen(void)
                 }
             }
             previous=current;previousFlags=currentFlags;++current;
-        } while (current!=polygonVertexCount);
-        polygonVertexCount=output;
+        } while (current!=combatPolygons.polygonVertexCount);
+        combatPolygons.polygonVertexCount=output;
     }
 }
 
@@ -292,10 +292,10 @@ void BtechClipWidePolygonToScreen(void)
  * four independent clipping passes. Live WORD count and endpoint order retained. */
 void BtechClipPolygonWithWordProducts(void)
 {
-    if ((int16_t)polygonVertexCount<=1) return;
-    if (polygonVertexCount>WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: polygonVertexCount>WIDE_POLYGON_VERTICES");
+    if ((int16_t)combatPolygons.polygonVertexCount<=1) return;
+    if (combatPolygons.polygonVertexCount>WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: polygonVertexCount>WIDE_POLYGON_VERTICES");
     {
-        uint16_t previous=polygonVertexCount-1,current=0,output=0;
+        uint16_t previous=combatPolygons.polygonVertexCount-1,current=0,output=0;
         uint32_t coordinate=wideScreenX[previous];
         int16_t upper=coordinate>>16;
         uint8_t previousFlags=0;
@@ -328,16 +328,16 @@ void BtechClipPolygonWithWordProducts(void)
                 }
             }
             previous=current;previousFlags=currentFlags;++current;
-        } while (current!=polygonVertexCount);
-        polygonVertexCount=output;
+        } while (current!=combatPolygons.polygonVertexCount);
+        combatPolygons.polygonVertexCount=output;
     }
-    if ((int16_t)polygonVertexCount<=1)
+    if ((int16_t)combatPolygons.polygonVertexCount<=1)
     {
         BtechCopyRendererWorkingCoordinateArrays();
         return;
     }
     {
-        uint16_t previous=polygonVertexCount-1,current=0,output=0;
+        uint16_t previous=combatPolygons.polygonVertexCount-1,current=0,output=0;
         uint32_t coordinate=widePolygonWorkY[previous];
         int16_t upper=coordinate>>16;
         uint8_t previousFlags=0;
@@ -370,7 +370,7 @@ void BtechClipPolygonWithWordProducts(void)
                 }
             }
             previous=current;previousFlags=currentFlags;++current;
-        } while (current!=polygonVertexCount);
-        polygonVertexCount=output;
+        } while (current!=combatPolygons.polygonVertexCount);
+        combatPolygons.polygonVertexCount=output;
     }
 }

@@ -80,8 +80,8 @@ void BtechIntersectWordEdgeWithNearPlane(uint16_t outsideVertex,uint16_t insideV
  * vertices: intersections reuse the outside index. */
 void BtechClipWordPolygonNearPlane(void)
 {
-    if (!polygonVertexCount || polygonVertexCount>POLYGON_VERTEX_INDEX_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !polygonVertexCount || polygonVertexCount>POLYGON_VERTEX_INDEX_BYTES"); /* Native empty aliases4616. */
-    uint16_t previous=polygonVertexIndices[polygonVertexCount-1],output=0,input=0;
+    if (!combatPolygons.polygonVertexCount || combatPolygons.polygonVertexCount>POLYGON_VERTEX_INDEX_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !polygonVertexCount || polygonVertexCount>POLYGON_VERTEX_INDEX_BYTES"); /* Native empty aliases4616. */
+    uint16_t previous=polygonVertexIndices[combatPolygons.polygonVertexCount-1],output=0,input=0;
     do
     {
         uint16_t current=polygonVertexIndices[input],emit[2],emitted=0;
@@ -97,13 +97,13 @@ void BtechClipWordPolygonNearPlane(void)
         for (uint16_t index=0;index<emitted;++index)
         {
             if (output>=COMBAT_POLYGON_VERTEX_WORDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: output>=COMBAT_POLYGON_VERTEX_WORDS");
-            screenPolygonX[output]=(int16_t)((uint16_t)screenCentreA+geometryProjectedX.words[emit[index]]);
-            screenPolygonY[output]=(int16_t)((uint16_t)screenCentreB-geometryProjectedY.words[emit[index]]);
+            combatPolygons.screenPolygonX[output]=(int16_t)((uint16_t)screenCentreA+geometryProjectedX.words[emit[index]]);
+            combatPolygons.screenPolygonY[output]=(int16_t)((uint16_t)screenCentreB-geometryProjectedY.words[emit[index]]);
             ++output;
         }
         previous=current;++input;
-    } while (input!=polygonVertexCount);
-    polygonVertexCount=output;
+    } while (input!=combatPolygons.polygonVertexCount);
+    combatPolygons.polygonVertexCount=output;
 }
 
 /*22B6:276A. FAR tails select6836 or genuine DBEE RETF; otherwise native WORD
@@ -124,7 +124,7 @@ void BtechDrawPolygonPayload(const BtechRenderPolygonPayload *payload)
         if ((flags&POLYGON_FACING_MASK)!=0
             && BtechGetPolygonFacingDotHighWord(polygon->normalVectorIndex,polygon->vertexIndices[0])>=0) continue;
         BtechSelectPolygonColoursAndShade(polygon);
-        wordPolygonHasNearOutsideVertex=0;polygonVertexCount=0;
+        wordPolygonHasNearOutsideVertex=0;combatPolygons.polygonVertexCount=0;
         for (const uint8_t *indices=polygon->vertexIndices;*indices!=POLYGON_VERTEX_LIST_END;++indices)
         {
             uint8_t vertex=*indices;
@@ -158,22 +158,22 @@ divideCoordinate:
                     vertexNearPlaneState[vertex]=GEOMETRY_VERTEX_PROJECTED;
                 }
             }
-            if (polygonVertexCount>=POLYGON_VERTEX_INDEX_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: polygonVertexCount>=POLYGON_VERTEX_INDEX_BYTES");
-            polygonVertexIndices[polygonVertexCount++]=vertex;
+            if (combatPolygons.polygonVertexCount>=POLYGON_VERTEX_INDEX_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: polygonVertexCount>=POLYGON_VERTEX_INDEX_BYTES");
+            polygonVertexIndices[combatPolygons.polygonVertexCount++]=vertex;
         }
         if (wordPolygonHasNearOutsideVertex) BtechClipWordPolygonNearPlane();
         else
         {
-            if (!polygonVertexCount) continue;
-            for (uint16_t index=0;index<polygonVertexCount;++index)
+            if (!combatPolygons.polygonVertexCount) continue;
+            for (uint16_t index=0;index<combatPolygons.polygonVertexCount;++index)
             {
                 if (index>=COMBAT_POLYGON_VERTEX_WORDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: index>=COMBAT_POLYGON_VERTEX_WORDS");
                 uint8_t vertex=polygonVertexIndices[index];
-                screenPolygonX[index]=(int16_t)((uint16_t)screenCentreA+geometryProjectedX.words[vertex]);
-                screenPolygonY[index]=(int16_t)((uint16_t)screenCentreB-geometryProjectedY.words[vertex]);
+                combatPolygons.screenPolygonX[index]=(int16_t)((uint16_t)screenCentreA+geometryProjectedX.words[vertex]);
+                combatPolygons.screenPolygonY[index]=(int16_t)((uint16_t)screenCentreB-geometryProjectedY.words[vertex]);
             }
         }
         screenPolygonNeedsClip=objectNeedsScreenClip;
-        BtechDrawScreenPolygon((int16_t)polygonVertexCount,screenPolygonX,screenPolygonY);
+        BtechDrawScreenPolygon((int16_t)combatPolygons.polygonVertexCount,combatPolygons.screenPolygonX,combatPolygons.screenPolygonY);
     }
 }

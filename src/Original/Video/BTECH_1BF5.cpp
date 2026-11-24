@@ -41,8 +41,8 @@ uint16_t BtechSelectCombatRenderer(uint8_t adapterOverride,uint8_t allowedMask)
         graphicsPresentRectangle=BtechEgaNoOperation;
         graphicsFillSolidSpan=BtechEgaFillSolidSpan;
         graphicsFillAlternatingSpan=BtechEgaFillAlternatingSpan;
-        graphicsFillPolygonSpans=BtechEgaFillPolygonSpans;
-        graphicsDrawLine=BtechEgaDrawLine;
+        combatPolygons.graphicsFillPolygonSpans=BtechEgaFillPolygonSpans;
+        combatPolygons.graphicsDrawLine=BtechEgaDrawLine;
         graphicsWritePixel=BtechEgaWritePixel;graphicsReadPixel=BtechEgaReadPixel;
         graphicsSetOverscanColour=BtechEgaSetOverscanColour;
         graphicsCopyScreenRectangle=BtechEgaCopyScreenRectangle;

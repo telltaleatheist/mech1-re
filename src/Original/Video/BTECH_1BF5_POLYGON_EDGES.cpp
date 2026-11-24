@@ -16,8 +16,8 @@ void BtechAccumulateVerticalPolygonEdge(int16_t firstY,int16_t fixedX,int16_t se
     if (rows>COMBAT_SCREEN_HEIGHT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: rows>COMBAT_SCREEN_HEIGHT");
     while (rows--)
     {
-        if (row>=COMBAT_SCREEN_HEIGHT || (polygonSpanBoundaryByteOffset!=0 && polygonSpanBoundaryByteOffset!=2)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: row>=COMBAT_SCREEN_HEIGHT || (polygonSpanBoundaryByteOffset!=0 && polygonSpanBoundaryByteOffset!=2)");
-        if (polygonSpanBoundaryByteOffset) polygonScanlineSpans[row].endpoints.right=currentX;
+        if (row>=COMBAT_SCREEN_HEIGHT || (combatPolygons.polygonSpanBoundaryByteOffset!=0 && combatPolygons.polygonSpanBoundaryByteOffset!=2)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: row>=COMBAT_SCREEN_HEIGHT || (polygonSpanBoundaryByteOffset!=0 && polygonSpanBoundaryByteOffset!=2)");
+        if (combatPolygons.polygonSpanBoundaryByteOffset) polygonScanlineSpans[row].endpoints.right=currentX;
         else polygonScanlineSpans[row].endpoints.left=currentX;
         row += rowStep;
         uint32_t sum=(uint32_t)fraction+fractionStep;
@@ -47,8 +47,8 @@ void BtechAccumulateYMajorPolygonEdge(int16_t firstY,int16_t firstX,int16_t seco
     if (rows>COMBAT_SCREEN_HEIGHT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: rows>COMBAT_SCREEN_HEIGHT");
     while (rows--)
     {
-        if (row>=COMBAT_SCREEN_HEIGHT || (polygonSpanBoundaryByteOffset!=0 && polygonSpanBoundaryByteOffset!=2)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: row>=COMBAT_SCREEN_HEIGHT || (polygonSpanBoundaryByteOffset!=0 && polygonSpanBoundaryByteOffset!=2)");
-        if (polygonSpanBoundaryByteOffset) polygonScanlineSpans[row].endpoints.right=currentX;
+        if (row>=COMBAT_SCREEN_HEIGHT || (combatPolygons.polygonSpanBoundaryByteOffset!=0 && combatPolygons.polygonSpanBoundaryByteOffset!=2)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: row>=COMBAT_SCREEN_HEIGHT || (polygonSpanBoundaryByteOffset!=0 && polygonSpanBoundaryByteOffset!=2)");
+        if (combatPolygons.polygonSpanBoundaryByteOffset) polygonScanlineSpans[row].endpoints.right=currentX;
         else polygonScanlineSpans[row].endpoints.left=currentX;
         row += rowStep;
         uint32_t sum=(uint32_t)fraction+fractionStep;
@@ -71,8 +71,8 @@ void BtechAccumulateDiagonalPolygonEdge(int16_t firstY,int16_t firstX,int16_t se
     if (rows>COMBAT_SCREEN_HEIGHT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: rows>COMBAT_SCREEN_HEIGHT");
     while (rows--)
     {
-        if (row>=COMBAT_SCREEN_HEIGHT || (polygonSpanBoundaryByteOffset!=0 && polygonSpanBoundaryByteOffset!=2)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: row>=COMBAT_SCREEN_HEIGHT || (polygonSpanBoundaryByteOffset!=0 && polygonSpanBoundaryByteOffset!=2)");
-        if (polygonSpanBoundaryByteOffset) polygonScanlineSpans[row].endpoints.right=currentX;
+        if (row>=COMBAT_SCREEN_HEIGHT || (combatPolygons.polygonSpanBoundaryByteOffset!=0 && combatPolygons.polygonSpanBoundaryByteOffset!=2)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: row>=COMBAT_SCREEN_HEIGHT || (polygonSpanBoundaryByteOffset!=0 && polygonSpanBoundaryByteOffset!=2)");
+        if (combatPolygons.polygonSpanBoundaryByteOffset) polygonScanlineSpans[row].endpoints.right=currentX;
         else polygonScanlineSpans[row].endpoints.left=currentX;
         row += rowStep;
         uint32_t sum=(uint32_t)fraction+fractionStep;
@@ -104,8 +104,8 @@ void BtechAccumulateDescendingXMajorPolygonEdge(int16_t firstY,int16_t firstX,in
     if (rows>COMBAT_SCREEN_HEIGHT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: rows>COMBAT_SCREEN_HEIGHT");
     while (rows--)
     {
-        if (row>=COMBAT_SCREEN_HEIGHT || (polygonSpanBoundaryByteOffset!=0 && polygonSpanBoundaryByteOffset!=2)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: row>=COMBAT_SCREEN_HEIGHT || (polygonSpanBoundaryByteOffset!=0 && polygonSpanBoundaryByteOffset!=2)");
-        if (polygonSpanBoundaryByteOffset) polygonScanlineSpans[row].endpoints.right=currentX;
+        if (row>=COMBAT_SCREEN_HEIGHT || (combatPolygons.polygonSpanBoundaryByteOffset!=0 && combatPolygons.polygonSpanBoundaryByteOffset!=2)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: row>=COMBAT_SCREEN_HEIGHT || (polygonSpanBoundaryByteOffset!=0 && polygonSpanBoundaryByteOffset!=2)");
+        if (combatPolygons.polygonSpanBoundaryByteOffset) polygonScanlineSpans[row].endpoints.right=currentX;
         else polygonScanlineSpans[row].endpoints.left=currentX;
         row += rowStep;
         uint32_t sum=(uint32_t)fraction+fractionStep;
@@ -135,8 +135,8 @@ void BtechAccumulateAscendingXMajorPolygonEdge(int16_t firstY,int16_t firstX,int
     if (rows>COMBAT_SCREEN_HEIGHT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: rows>COMBAT_SCREEN_HEIGHT");
     while (rows--)
     {
-        if (row>=COMBAT_SCREEN_HEIGHT || (polygonSpanBoundaryByteOffset!=0 && polygonSpanBoundaryByteOffset!=2)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: row>=COMBAT_SCREEN_HEIGHT || (polygonSpanBoundaryByteOffset!=0 && polygonSpanBoundaryByteOffset!=2)");
-        if (polygonSpanBoundaryByteOffset) polygonScanlineSpans[row].endpoints.right=currentX;
+        if (row>=COMBAT_SCREEN_HEIGHT || (combatPolygons.polygonSpanBoundaryByteOffset!=0 && combatPolygons.polygonSpanBoundaryByteOffset!=2)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: row>=COMBAT_SCREEN_HEIGHT || (polygonSpanBoundaryByteOffset!=0 && polygonSpanBoundaryByteOffset!=2)");
+        if (combatPolygons.polygonSpanBoundaryByteOffset) polygonScanlineSpans[row].endpoints.right=currentX;
         else polygonScanlineSpans[row].endpoints.left=currentX;
         row += rowStep;
         uint32_t sum=(uint32_t)fraction+fractionStep;
