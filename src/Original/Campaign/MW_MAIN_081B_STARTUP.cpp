@@ -34,9 +34,9 @@ uint8_t MwRunCampaign(const MwCampaignLaunch *launch)
 {
     uint16_t continuation;
     campaignStartup.launcherMemoryTier=launch->memoryTier;
-    if (MwReadNativeViewByte(&launch->resident,(uint16_t)(launch->transferOffset+0x07D0))!='M'
-        || MwReadNativeViewByte(&launch->resident,(uint16_t)(launch->transferOffset+0x07D4))!='W'
-        || MwReadNativeViewByte(&launch->resident,(uint16_t)(launch->transferOffset+0x07DA))!='R')
+    if (launch->identity[0]!='M'
+        || launch->identity[4]!='W'
+        || launch->identity[10]!='R')
     {
         campaignStartup.launcherExitCode=CAMPAIGN_EXIT_QUIT;
         goto finish;
