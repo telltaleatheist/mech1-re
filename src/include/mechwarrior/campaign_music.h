@@ -32,9 +32,6 @@ typedef struct MwMusicHardwareCalls
     void (*allowNestedTicks)(void);
     MwMusicTimerHandler (*readIrq0Handler)(void);
     void (*writeIrq0Handler)(MwMusicTimerHandler handler);
-    void (*writePort)(uint16_t port,uint8_t value);
-    uint8_t (*readPort)(uint16_t port);
-    void (*waitForInterrupt)(void);
     /* The speaker music's tone (S6): a frequency in Hz, or 0 for silence. The
      * host plays it on the tone voice, where PIT channel 2 and port 61h were. */
     void (*playTone)(double frequency);

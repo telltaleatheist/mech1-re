@@ -38,7 +38,7 @@ void MwSdlInitializeTimer(void);
 bool MwSdlVirtualClock(void);
 uint64_t MwSdlNowNanoseconds(void);
 void MwSdlAudioLogSnap(const char *name);
-void MwSdlAudioLogTone(double frequency); /* A trace snap, as a mark in the sound-port log. */
+void MwSdlAudioLogTone(double frequency); /* Both in the tone log (MECHWARRIOR_AUDIO_LOG); a snap is a mark. */
 void MwSdlPumpTimer(void);
 /* Combat runs one tick per fixed length, combat_tick_ms divided by the speed
  * step (docs/timing/PLAN.md). The logic reads no clock: only the wait changes. */
@@ -90,8 +90,6 @@ void MwSdlSetTimerPeriod(uint32_t pitCycles);
 void MwSdlShutdownAudio(void);
 /* Combat is running (its frames are on the canvas like the campaign's). */
 extern bool mwSdlCombatActive;
-void MwSdlWriteDevicePort(uint16_t port,uint8_t value);
-uint8_t MwSdlReadDevicePort(uint16_t port);
 void MwSdlRunDue(void);
 void MwSdlWaitIdle(void);
 MwMusicTimerHandler MwSdlReadTimerHandler(void);

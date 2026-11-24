@@ -9,17 +9,18 @@
 #include <string.h>
 
 /*1ADF:0000. Genuine DX:AX code pair becomes a typed callback, not an SDL
- * audio decision. Tandy selection precedes the speaker/fallback selector. */
+ * audio decision. Tandy selection precedes the speaker/fallback selector; the
+ * Tandy tick (2134:0086), a hardware backend, left with H5. */
 BtechAudioTick BtechSelectTandyOrFallbackAudioCallback(void)
 {
-    if (selectedAudioBackendMask&COMBAT_SOUND_TANDY) return BtechTickTandyToneChannels;
+    if (combatSound.selectedAudioBackendMask&COMBAT_SOUND_TANDY) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("The Tandy sound chip is not converted; it can't be selected, the host's BIOS model byte being an AT's.");
     return BtechSelectSpeakerCallback();
 }
 
 /*1ADF:000E. The remaining case is actual0F38; AdLib's left with S8. */
 BtechAudioTick BtechSelectSpeakerCallback(void)
 {
-    if (selectedAudioBackendMask&COMBAT_SOUND_SPEAKER) return BtechTickSpeakerToneChannels;
+    if (combatSound.selectedAudioBackendMask&COMBAT_SOUND_SPEAKER) return BtechTickSpeakerToneChannels;
     return BtechAudioTimerNoOp;
 }
 
@@ -32,13 +33,13 @@ void BtechAudioTimerNoOp(void)
  * signed and admits track==count; an available directory entry still runs. */
 BtechSoundEvent BtechAdvanceMusicSequence(void)
 {
-    if (activeMusicBankIndex>=COMBAT_MUSIC_SEQUENCE_ROWS || musicSequenceIndex>=COMBAT_MUSIC_SEQUENCE_WORDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeMusicBankIndex>=COMBAT_MUSIC_SEQUENCE_ROWS || musicSequenceIndex>=COMBAT_MUSIC_SEQUENCE_WORDS");
-    int16_t next=musicSequences[activeMusicBankIndex][musicSequenceIndex];
+    if (combatSound.activeMusicBankIndex>=COMBAT_MUSIC_SEQUENCE_ROWS || combatSound.musicSequenceIndex>=COMBAT_MUSIC_SEQUENCE_WORDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeMusicBankIndex>=COMBAT_MUSIC_SEQUENCE_ROWS || musicSequenceIndex>=COMBAT_MUSIC_SEQUENCE_WORDS");
+    int16_t next=combatSound.musicSequences[combatSound.activeMusicBankIndex][combatSound.musicSequenceIndex];
     if (next==-1) return BtechSoundEvent{};
-    BtechSoundBank *bank=&soundBanks[COMBAT_MUSIC_FIRST_ROOT+activeMusicBankIndex];
+    BtechSoundBank *bank=&combatSound.soundBanks[COMBAT_MUSIC_FIRST_ROOT+combatSound.activeMusicBankIndex];
     if (next>(int16_t)bank->eventCount) return BtechSoundEvent{};
-    next=musicSequences[activeMusicBankIndex][musicSequenceIndex];
-    musicSequenceIndex=(uint16_t)next;
+    next=combatSound.musicSequences[combatSound.activeMusicBankIndex][combatSound.musicSequenceIndex];
+    combatSound.musicSequenceIndex=(uint16_t)next;
     if (next<0 || !bank->events || (uint16_t)next>=bank->eventReferenceCapacity) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: next<0 || !bank->events || (uint16_t)next>=bank->eventReferenceCapacity");
     BtechSoundEvent block=bank->events[next];block.offset+=COMBAT_TONE_HEADER_BYTES;
     return block;
@@ -60,11 +61,11 @@ uint16_t BtechProbePlatformAudioMask(void)
 uint16_t BtechStopSoundEventAndTimer(uint16_t soundEventIndex)
 {
     BtechStopMatchingToneChannels(soundEventIndex,0);
-    if (soundEventIndex==timerSoundEventIndex)
+    if (soundEventIndex==combatSound.timerSoundEventIndex)
     {
         BtechRestoreSoundTimerInterrupt();
-        if (!samplePriorityOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !samplePriorityOwner");
-        *samplePriorityOwner=0;
+        if (!combatSound.samplePriorityOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !samplePriorityOwner");
+        *combatSound.samplePriorityOwner=0;
     }
     return 0;
 }
@@ -73,11 +74,11 @@ uint16_t BtechStopSoundEventAndTimer(uint16_t soundEventIndex)
  * write. IRQ0DD3's call with sample DS selected remains a separate live gate. */
 void BtechRestoreSoundTimerInterrupt(void)
 {
-    if (!soundTimerInstalled) return;
-    combatStartup.pitChannel0DivisorShadow=savedSoundTimerDivisor;
+    if (!combatSound.soundTimerInstalled) return;
+    combatStartup.pitChannel0DivisorShadow=combatSound.savedSoundTimerDivisor;
     if (!btechHostSetTimerPeriod || !btechHostSetTimerOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetTimerPeriod || !btechHostSetTimerOwner");
-    btechHostSetTimerPeriod(savedSoundTimerDivisor); /* Was 40h's low and high bytes (H4b). */
-    soundTimerInstalled=0;
+    btechHostSetTimerPeriod(combatSound.savedSoundTimerDivisor); /* Was 40h's low and high bytes (H4b). */
+    combatSound.soundTimerInstalled=0;
     btechHostSetTimerOwner(combatSoundIrq.savedSampleIrqOwner);
 }
 
@@ -96,12 +97,12 @@ void BtechInstallMusicTimerCallback(BtechAudioTick callback,uint16_t divisor)
 {
     if (!btechHostGetTimerOwner || !btechHostSetTimerOwner
         || !btechHostSetTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetTimerOwner || !btechHostSetTimerOwner || !btechHostSetTimerPeriod");
-    if (!musicTimerInstalled)
+    if (!combatSound.musicTimerInstalled)
     {
-        musicTimerInstalled=1;
-        savedMusicTimerOwner=btechHostGetTimerOwner();
+        combatSound.musicTimerInstalled=1;
+        combatSound.savedMusicTimerOwner=btechHostGetTimerOwner();
         btechHostSetTimerOwner(MwTimerOwner::CombatMusic);
-        savedMusicTimerDivisor=combatStartup.pitChannel0DivisorShadow;
+        combatSound.savedMusicTimerDivisor=combatStartup.pitChannel0DivisorShadow;
     }
     combatSoundIrq.musicTimerCallback=callback;
     combatStartup.pitChannel0DivisorShadow=divisor;
@@ -112,11 +113,11 @@ void BtechInstallMusicTimerCallback(BtechAudioTick callback,uint16_t divisor)
  * the timer, but the native shadow and callback deliberately remain unchanged. */
 void BtechRestoreMusicTimerInterrupt(void)
 {
-    if (!musicTimerInstalled) return;
+    if (!combatSound.musicTimerInstalled) return;
     if (!btechHostSetTimerPeriod || !btechHostSetTimerOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetTimerPeriod || !btechHostSetTimerOwner");
-    btechHostSetTimerPeriod(savedMusicTimerDivisor);
-    musicTimerInstalled=0;
-    btechHostSetTimerOwner(savedMusicTimerOwner);
+    btechHostSetTimerPeriod(combatSound.savedMusicTimerDivisor);
+    combatSound.musicTimerInstalled=0;
+    btechHostSetTimerOwner(combatSound.savedMusicTimerOwner);
 }
 
 /*1ADF:0290. Timer restoration can change the priority owner; select the final
@@ -124,8 +125,8 @@ void BtechRestoreMusicTimerInterrupt(void)
 uint16_t BtechStopAllAudioChannels(void)
 {
     BtechRestoreSoundTimerInterrupt();
-    if (!samplePriorityOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !samplePriorityOwner");
-    *samplePriorityOwner=0;
+    if (!combatSound.samplePriorityOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !samplePriorityOwner");
+    *combatSound.samplePriorityOwner=0;
     BtechStopMatchingToneChannels(0,3);
     BtechSelectTandyOrFallbackAudioCallback()();
     return 1;
@@ -145,13 +146,13 @@ uint16_t BtechShutdownAudioBackends(void)
 uint16_t BtechLoadSoundBank(const char *filename,BtechRuntimeStream *stream,uint16_t *inheritedStreamIdentity)
 {
     int16_t bankIndex=0;
-    while (bankIndex<COMBAT_SOUND_BANKS-1 && soundBanks[bankIndex].root.allocation.bytes) ++bankIndex;
+    while (bankIndex<COMBAT_SOUND_BANKS-1 && combatSound.soundBanks[bankIndex].root.allocation.bytes) ++bankIndex;
     uint16_t openedHere=0;
     if (!stream || !BtechIsRegisteredTaggedStream(stream))
     {stream=BtechOpenTaggedResourceStream(filename);openedHere=1;}
-    *inheritedStreamIdentity=stream?(uint16_t)(COMBAT_STREAM_TABLE+(stream-runtimeStreams)*COMBAT_STREAM_STRIDE):0;
+    *inheritedStreamIdentity=stream?(uint16_t)(COMBAT_STREAM_TABLE+(stream-combatSound.runtimeStreams)*COMBAT_STREAM_STRIDE):0;
     if (!stream) return 0;
-    BtechSoundBank *bank=&soundBanks[bankIndex];
+    BtechSoundBank *bank=&combatSound.soundBanks[bankIndex];
     uint16_t failed=(BtechFindResourceTagPosition(stream,"SND:INF:",0)&0x80000000)!=0;
     if (!failed)
     {
@@ -163,11 +164,11 @@ uint16_t BtechLoadSoundBank(const char *filename,BtechRuntimeStream *stream,uint
         BtechReadStreamElements(eventCount,2,1,stream->file);bank->eventCount=MwReadNativeWord(eventCount,0);
         BtechReadStreamElements(unknown,2,1,stream->file);bank->unidentifiedField9=MwReadNativeWord(unknown,0);
         failed=1;
-        if (selectedAudioBackendMask&COMBAT_SOUND_SPEAKER)
+        if (combatSound.selectedAudioBackendMask&COMBAT_SOUND_SPEAKER)
             failed&=BtechMergeSoundBackendDirectory(bank,stream,"SND:IBM:")==0;
-        if (selectedAudioBackendMask&COMBAT_SOUND_TANDY)
+        if (combatSound.selectedAudioBackendMask&COMBAT_SOUND_TANDY)
             failed&=BtechMergeSoundBackendDirectory(bank,stream,"SND:TAN:")==0;
-        if (selectedAudioBackendMask&COMBAT_SOUND_8SV_MASK)
+        if (combatSound.selectedAudioBackendMask&COMBAT_SOUND_8SV_MASK)
             failed&=BtechMergeSoundBackendDirectory(bank,stream,"SND:8SV:")==0;
     }
     if (!failed) bank->fallback=BtechLoadTaggedSoundAllocation(bank,stream,"SND:ITM:");
@@ -216,7 +217,7 @@ BtechSoundAllocationNode *BtechLoadTaggedSoundAllocation(BtechSoundBank *bank,Bt
     if (BtechReadStreamElements(lengthBytes,4,1,stream->file)!=1) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: BtechReadStreamElements(lengthBytes,4,1,stream->file)!=1");
     uint32_t remaining=(uint32_t)MwReadNativeWord(lengthBytes,0)|((uint32_t)MwReadNativeWord(lengthBytes,2)<<16);
     fseek(stream->file,-5,SEEK_CUR);
-    BtechResourceAllocation allocation=soundAllocationOverride;
+    BtechResourceAllocation allocation=combatSound.soundAllocationOverride;
     if (!allocation.bytes)
     {
         /*1EB6 deliberately wraps its paragraph request. A corrupt sound length
@@ -225,7 +226,7 @@ BtechSoundAllocationNode *BtechLoadTaggedSoundAllocation(BtechSoundBank *bank,Bt
         if (remaining>DOS_MAX_PARAGRAPH_ALLOCATION_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: remaining>DOS_MAX_PARAGRAPH_ALLOCATION_BYTES");
         allocation.bytes=BtechAllocateDosMemoryBlock(remaining).bytes;
         allocation.byteCount=remaining;
-        if (!allocation.bytes) soundAllocationError=1;
+        if (!allocation.bytes) combatSound.soundAllocationError=1;
     }
     int16_t archive=BtechOpenCompressedArchive(UINT16_MAX,stream->file,"rb",BtechGetTaggedPayloadLength(stream));
     uint16_t failed=archive<0;
@@ -247,7 +248,7 @@ BtechSoundAllocationNode *BtechLoadTaggedSoundAllocation(BtechSoundBank *bank,Bt
             while (node->next) node=node->next;
             node->next=static_cast<BtechSoundAllocationNode *>(BtechAllocateNearBytes(BTECH_NEAR_SOUND_NODE_BYTES,sizeof(*node),BTECH_NEAR_SOUND_NODE));
             if (node->next) {node=node->next;node->next=NULL;}
-            else {soundAllocationError=2;failed=2;}
+            else {combatSound.soundAllocationError=2;failed=2;}
         }
         node->allocation=allocation;
         if (!btechHostDosAllocationSelector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostDosAllocationSelector");
@@ -270,8 +271,8 @@ uint16_t BtechSelectActiveSoundBank(uint16_t bankHandle)
 {
     --bankHandle;
     if ((int16_t)bankHandle<0 || (int16_t)bankHandle>COMBAT_SOUND_BANKS-1) return 0;
-    if (!soundBanks[bankHandle].root.allocation.bytes) return 0;
-    activeSoundBankIndex=bankHandle;
+    if (!combatSound.soundBanks[bankHandle].root.allocation.bytes) return 0;
+    combatSound.activeSoundBankIndex=bankHandle;
     return 1;
 }
 
@@ -281,7 +282,7 @@ uint16_t BtechLoadMusicBank(const char *filename,BtechRuntimeStream *stream)
 {
     enum { MUSIC_INFORMATION_MAGIC=0x59D9 };
     uint16_t bankIndex=0;
-    while (bankIndex<COMBAT_MUSIC_LOAD_ROOTS && soundBanks[COMBAT_MUSIC_FIRST_ROOT+bankIndex].root.allocation.bytes) ++bankIndex;
+    while (bankIndex<COMBAT_MUSIC_LOAD_ROOTS && combatSound.soundBanks[COMBAT_MUSIC_FIRST_ROOT+bankIndex].root.allocation.bytes) ++bankIndex;
     if (bankIndex==COMBAT_MUSIC_LOAD_ROOTS) return 0;
     bool openedHere=!stream || !BtechIsRegisteredTaggedStream(stream);
     if (openedHere) stream=BtechOpenTaggedResourceStream(filename);
@@ -303,20 +304,20 @@ uint16_t BtechLoadMusicBank(const char *filename,BtechRuntimeStream *stream)
         uint16_t sequenceWord=bankIndex*COMBAT_MUSIC_SEQUENCE_WORDS+track;
         if (sequenceWord>=COMBAT_MUSIC_SEQUENCE_ROWS*COMBAT_MUSIC_SEQUENCE_WORDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: sequenceWord>=COMBAT_MUSIC_SEQUENCE_ROWS*COMBAT_MUSIC_SEQUENCE_WORDS");
         /* Native unchecked counts can spill into the next represented row. */
-        int16_t *next=&musicSequences[sequenceWord/COMBAT_MUSIC_SEQUENCE_WORDS][sequenceWord%COMBAT_MUSIC_SEQUENCE_WORDS];
+        int16_t *next=&combatSound.musicSequences[sequenceWord/COMBAT_MUSIC_SEQUENCE_WORDS][sequenceWord%COMBAT_MUSIC_SEQUENCE_WORDS];
         header[0]=(uint8_t)*next;header[1]=(uint8_t)((uint16_t)*next>>8);
         BtechReadStreamElements(header,1,2,stream->file); /* Native partial reads preserve unwritten destination bytes. */
         *next=(int16_t)MwReadNativeWord(header,0);
     }
-    BtechSoundBank *bank=&soundBanks[COMBAT_MUSIC_FIRST_ROOT+bankIndex];
+    BtechSoundBank *bank=&combatSound.soundBanks[COMBAT_MUSIC_FIRST_ROOT+bankIndex];
     bank->eventCount=trackCount;bank->unidentifiedField9=trackCount;
     uint16_t failed=0;
     if (trackCount)
     {
         failed=1;
         const char *tag=NULL;
-        if (selectedAudioBackendMask&COMBAT_SOUND_TANDY) tag="MUS:TAN:";
-        else if (selectedAudioBackendMask&COMBAT_SOUND_SPEAKER) tag="MUS:IBM:";
+        if (combatSound.selectedAudioBackendMask&COMBAT_SOUND_TANDY) tag="MUS:TAN:";
+        else if (combatSound.selectedAudioBackendMask&COMBAT_SOUND_SPEAKER) tag="MUS:IBM:";
         if (tag) failed&=BtechMergeSoundBackendDirectory(bank,stream,tag)<1;
     }
     if (openedHere) BtechCloseTaggedResourceStream(stream);
@@ -332,9 +333,9 @@ uint16_t BtechSelectActiveMusicBank(uint16_t bankHandle)
     else
     {
         if (bankHandle>=COMBAT_MUSIC_LOAD_ROOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: bankHandle>=COMBAT_MUSIC_LOAD_ROOTS");
-        if (!soundBanks[COMBAT_MUSIC_FIRST_ROOT+bankHandle].root.allocation.bytes) bankHandle=UINT16_MAX;
+        if (!combatSound.soundBanks[COMBAT_MUSIC_FIRST_ROOT+bankHandle].root.allocation.bytes) bankHandle=UINT16_MAX;
     }
-    activeMusicBankIndex=bankHandle;
+    combatSound.activeMusicBankIndex=bankHandle;
     ++bankHandle;
     return (int16_t)bankHandle>0?bankHandle:0;
 }
@@ -342,25 +343,25 @@ uint16_t BtechSelectActiveMusicBank(uint16_t bankHandle)
 /*1ADF:024C. Clear the selector before the cursor. */
 void BtechStopMusicStreams(void)
 {
-    midiStreamSelectorPresent=false;combatMidiStreamOffset=0;
-    if (selectedAudioBackendMask&COMBAT_SOUND_SPEAKER) BtechStopMatchingToneChannels(0,2);
+    combatSound.midiStreamSelectorPresent=false;combatSound.combatMidiStreamOffset=0;
+    if (combatSound.selectedAudioBackendMask&COMBAT_SOUND_SPEAKER) BtechStopMatchingToneChannels(0,2);
 }
 
 /*1ADF:013C. Stop first, then reload the selected bank. A zero track count
  * deliberately wraps the unsigned DEC comparison rather than rejecting all. */
 uint16_t BtechStartSelectedMusicBankTrack(uint16_t trackIndex,uint16_t priority)
 {
-    if ((int16_t)activeMusicBankIndex<0) return 0;
-    if (activeMusicBankIndex>=COMBAT_MUSIC_LOAD_ROOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeMusicBankIndex>=COMBAT_MUSIC_LOAD_ROOTS");
-    if ((uint16_t)(soundBanks[COMBAT_MUSIC_FIRST_ROOT+activeMusicBankIndex].eventCount-1)<trackIndex) return 0;
+    if ((int16_t)combatSound.activeMusicBankIndex<0) return 0;
+    if (combatSound.activeMusicBankIndex>=COMBAT_MUSIC_LOAD_ROOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeMusicBankIndex>=COMBAT_MUSIC_LOAD_ROOTS");
+    if ((uint16_t)(combatSound.soundBanks[COMBAT_MUSIC_FIRST_ROOT+combatSound.activeMusicBankIndex].eventCount-1)<trackIndex) return 0;
     BtechStopMusicStreams();
-    if (activeMusicBankIndex>=COMBAT_MUSIC_LOAD_ROOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeMusicBankIndex>=COMBAT_MUSIC_LOAD_ROOTS");
-    BtechSoundBank *bank=&soundBanks[COMBAT_MUSIC_FIRST_ROOT+activeMusicBankIndex];
+    if (combatSound.activeMusicBankIndex>=COMBAT_MUSIC_LOAD_ROOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeMusicBankIndex>=COMBAT_MUSIC_LOAD_ROOTS");
+    BtechSoundBank *bank=&combatSound.soundBanks[COMBAT_MUSIC_FIRST_ROOT+combatSound.activeMusicBankIndex];
     if (!bank->root.allocation.bytes || !bank->events || trackIndex>=bank->eventReferenceCapacity) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !bank->root.allocation.bytes || !bank->events || trackIndex>=bank->eventReferenceCapacity");
     BtechSoundEvent track=bank->events[trackIndex];
     BtechStartSoftwareMusicTrack(track.data,track.offset,track.selector!=0);
     BtechSetToneMusicPriorityAndTranslation(priority);
-    musicSequenceIndex=trackIndex;
+    combatSound.musicSequenceIndex=trackIndex;
     return 1;
 }
 
@@ -375,7 +376,7 @@ uint16_t BtechFreeSoundAllocationChain(BtechSoundBank *bank)
 {
     BtechSoundAllocationNode *node=&bank->root;
     if (!node->allocation.bytes) return 0;
-    if (!soundAllocationOverride.bytes)
+    if (!combatSound.soundAllocationOverride.bytes)
     {
         if (!btechHostFreeDosSelector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostFreeDosSelector");
         btechHostFreeDosSelector(node->allocationSelector);
@@ -383,7 +384,7 @@ uint16_t BtechFreeSoundAllocationChain(BtechSoundBank *bank)
     node->allocationSelector=0;node->allocationOffset=0;node->allocation=BtechResourceAllocation{};
     while ((node=node->next)!=NULL)
     {
-        if (!soundAllocationOverride.bytes && (node->allocationOffset|node->allocationSelector))
+        if (!combatSound.soundAllocationOverride.bytes && (node->allocationOffset|node->allocationSelector))
         {
             if (!btechHostFreeDosSelector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostFreeDosSelector");
             btechHostFreeDosSelector(node->allocationSelector);
@@ -399,10 +400,10 @@ uint16_t BtechFreeSoundAllocationChain(BtechSoundBank *bank)
 uint16_t BtechUnloadMusicBank(uint16_t bankHandle)
 {
     --bankHandle;
-    if (activeMusicBankIndex==bankHandle) BtechStopMusicStreams();
+    if (combatSound.activeMusicBankIndex==bankHandle) BtechStopMusicStreams();
     if ((int16_t)bankHandle<0 || (int16_t)bankHandle>COMBAT_MUSIC_BANKS-1) return 0;
     if (bankHandle>=COMBAT_MUSIC_LOAD_ROOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: bankHandle>=COMBAT_MUSIC_LOAD_ROOTS");
-    return BtechFreeSoundAllocationChain(&soundBanks[COMBAT_MUSIC_FIRST_ROOT+bankHandle]);
+    return BtechFreeSoundAllocationChain(&combatSound.soundBanks[COMBAT_MUSIC_FIRST_ROOT+bankHandle]);
 }
 
 /*1ADF:0C52. Sound-bank bounds precede the active comparison, unlike music.
@@ -411,12 +412,12 @@ uint16_t BtechUnloadSoundBank(uint16_t bankHandle)
 {
     --bankHandle;
     if ((int16_t)bankHandle<0 || (int16_t)bankHandle>=COMBAT_SOUND_BANKS) return 0;
-    if (activeSoundBankIndex==bankHandle)
+    if (combatSound.activeSoundBankIndex==bankHandle)
     {
-        activeSoundBankIndex=UINT16_MAX;
+        combatSound.activeSoundBankIndex=UINT16_MAX;
         BtechStopAllAudioChannels();
     }
-    return BtechFreeSoundAllocationChain(&soundBanks[bankHandle]);
+    return BtechFreeSoundAllocationChain(&combatSound.soundBanks[bankHandle]);
 }
 
 /*1ADF:0AAC. Native minimum-priority search excludes the last channel. The
@@ -426,27 +427,27 @@ uint16_t BtechAllocateToneEventChannels(BtechSoundEvent event,uint16_t priority,
     uint16_t type=MwReadNativeViewWord(&event.data,event.offset),first,last;
     if (!type)
     {
-        if (!(selectedAudioBackendMask&COMBAT_SOUND_SPEAKER)) return 0;
+        if (!(combatSound.selectedAudioBackendMask&COMBAT_SOUND_SPEAKER)) return 0;
         first=0;last=3;
     }
     else
     {
-        if (type!=1 || !(selectedAudioBackendMask&COMBAT_SOUND_TANDY)) return 0;
+        if (type!=1 || !(combatSound.selectedAudioBackendMask&COMBAT_SOUND_TANDY)) return 0;
         if (MwReadNativeViewWord(&event.data,(uint16_t)(event.offset+6))) first=last=6;
         else {first=4;last=6;}
     }
     uint16_t selected=first;
-    while (selected<=last && soundPriorities[selected]) ++selected;
+    while (selected<=last && combatTones.soundPriorities[selected]) ++selected;
     if (selected>last)
     {
-        uint16_t minimumPriority=soundPriorities[first];
+        uint16_t minimumPriority=combatTones.soundPriorities[first];
         for (uint16_t channel=first;channel<last;++channel)
-            if (minimumPriority>=soundPriorities[channel])
-            {minimumPriority=soundPriorities[channel];selected=channel;}
+            if (minimumPriority>=combatTones.soundPriorities[channel])
+            {minimumPriority=combatTones.soundPriorities[channel];selected=channel;}
     }
-    if (soundPriorities[selected]>priority) return 0;
-    if (activeSoundBankIndex>=COMBAT_SOUND_BANKS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeSoundBankIndex>=COMBAT_SOUND_BANKS");
-    BtechSoundAllocationNode *fallback=soundBanks[activeSoundBankIndex].fallback;
+    if (combatTones.soundPriorities[selected]>priority) return 0;
+    if (combatSound.activeSoundBankIndex>=COMBAT_SOUND_BANKS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeSoundBankIndex>=COMBAT_SOUND_BANKS");
+    BtechSoundAllocationNode *fallback=combatSound.soundBanks[combatSound.activeSoundBankIndex].fallback;
     /* A missing ITM still starts native effects. Preserve its ambient WORD
      * offset; physical selector0/unknown fallback memory is gated ONLY if read. */
     uint16_t fallbackOffset=fallback?0:missingSoundFallbackOffsetAlias;
@@ -455,7 +456,7 @@ uint16_t BtechAllocateToneEventChannels(BtechSoundEvent event,uint16_t priority,
     BtechStartToneInterpreterChannel(event.data,event.offset,selected,fallbackData,fallbackOffset);
     if (MwReadNativeViewWord(&event.data,(uint16_t)(event.offset+6)) && MwReadNativeViewWord(&event.data,event.offset)==1)
     {
-        fallback=soundBanks[activeSoundBankIndex].fallback;
+        fallback=combatSound.soundBanks[combatSound.activeSoundBankIndex].fallback;
         fallbackOffset=fallback?0:missingSoundFallbackOffsetAlias;
         fallbackData=fallback?MwNativeByteView{fallback->allocation.bytes,0,fallback->allocation.byteCount}:MwNativeByteView{};
         if (!fallback && btechHostBorrowDosMemory) fallbackData=btechHostBorrowDosMemory(missingSoundFallbackSelectorAlias);
@@ -463,8 +464,8 @@ uint16_t BtechAllocateToneEventChannels(BtechSoundEvent event,uint16_t priority,
         uint16_t secondaryOffset=factor*0x0A+event.offset-0x50;
         BtechStartToneInterpreterChannel(event.data,secondaryOffset,7,fallbackData,fallbackOffset);
     }
-    soundPriorities[selected]=priority;
-    soundEventIndices[selected]=soundEventIndex;
+    combatTones.soundPriorities[selected]=priority;
+    combatTones.soundEventIndices[selected]=soundEventIndex;
     return 1;
 }
 
@@ -472,9 +473,9 @@ uint16_t BtechAllocateToneEventChannels(BtechSoundEvent event,uint16_t priority,
  * Sample/DAC output retains explicit gates rather than invented playback. */
 uint16_t BtechDispatchSoundBankEvent(int16_t soundEventIndex,uint16_t priority)
 {
-    if ((int16_t)activeSoundBankIndex<0) return 0;
-    if (activeSoundBankIndex>=COMBAT_SOUND_BANKS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeSoundBankIndex>=COMBAT_SOUND_BANKS");
-    BtechSoundBank *bank=&soundBanks[activeSoundBankIndex];
+    if ((int16_t)combatSound.activeSoundBankIndex<0) return 0;
+    if (combatSound.activeSoundBankIndex>=COMBAT_SOUND_BANKS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeSoundBankIndex>=COMBAT_SOUND_BANKS");
+    BtechSoundBank *bank=&combatSound.soundBanks[combatSound.activeSoundBankIndex];
     if ((int16_t)(bank->eventCount-1)<soundEventIndex) return 0;
     if (soundEventIndex<0 || (uint16_t)soundEventIndex>=bank->eventReferenceCapacity || !bank->events) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: soundEventIndex<0 || (uint16_t)soundEventIndex>=bank->eventReferenceCapacity || !bank->events");
     BtechSoundEvent event=bank->events[soundEventIndex];
@@ -483,11 +484,11 @@ uint16_t BtechDispatchSoundBankEvent(int16_t soundEventIndex,uint16_t priority)
     {
     case 0:case 1:return BtechAllocateToneEventChannels(event,priority,(uint16_t)soundEventIndex);
     case 2:
-        if (!(soundEffectsEnableMask&1) || !(selectedAudioBackendMask&COMBAT_SOUND_SPEAKER)) return 0;
+        if (!(combatSound.soundEffectsEnableMask&1) || !(combatSound.selectedAudioBackendMask&COMBAT_SOUND_SPEAKER)) return 0;
         /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Native uninitialized priority-channel WORD and sample IRQ not converted."); /* Native uninitialized priority-channel WORD and sample IRQ not converted. */
     case 3:case 0x0B:return 1;
     case 4:
-        if (!(soundEffectsEnableMask&1) || !(selectedAudioBackendMask&0x08)) return 0;
+        if (!(combatSound.soundEffectsEnableMask&1) || !(combatSound.selectedAudioBackendMask&0x08)) return 0;
         /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Tandy SL/TL DAC path."); /* Tandy SL/TL DAC path. */
     default:return 0;
     }

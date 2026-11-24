@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 
 static uint8_t *resourceAllocations[8];
 static uint16_t allocationCount;
@@ -136,6 +137,14 @@ bool MwSdlResolveWriteDirectory(char *directory,size_t size)
     strcpy(directory,prefPath);SDL_free(prefPath);
     return true;
 }
+/* A start refused after SDL_Init: the reason is kept, since SDL_Quit clears
+ * SDL's error and the caller prints it. */
+static bool RefuseStart(void)
+{
+    const std::string reason=SDL_GetError();
+    MwSdlShutdown();
+    return SDL_SetError("%s",reason.c_str());
+}
 bool MwSdlInitialize(const char *gameDirectory,const char *captureDirectory)
 {
     if (initialized || strlen(gameDirectory)>=sizeof(installationDirectory)) return false;
@@ -154,10 +163,10 @@ bool MwSdlInitialize(const char *gameDirectory,const char *captureDirectory)
     MwImportLauncherInitialData();
     if (!SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_EVENTS)) return false;
     initialized=true;
-    if (!MwSdlInitializeVideo(captureDirectory) || !MwSdlInitializeAudio()) {MwSdlShutdown();return false;}
+    if (!MwSdlInitializeVideo(captureDirectory) || !MwSdlInitializeAudio()) return RefuseStart();
     MwSdlInitializeTimer();MwSdlInitializeInput();
     MwSdlInitializeCombatHardware();
-    if (!MwSdlInitializeCombatProcess(gameDirectory)) {MwSdlShutdown();return false;}
+    if (!MwSdlInitializeCombatProcess(gameDirectory)) return RefuseStart();
     mwHostValidateFileDestination=ValidateFileDestination;
     mwCampaignPlatform=MwCampaignPlatformCalls{AllocateParagraphs,LoadOverlay,
         MwSdlInstallCampaignInterrupts,MwSdlRestoreCampaignInterrupts,

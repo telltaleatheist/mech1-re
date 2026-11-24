@@ -4,6 +4,11 @@ The C17 port uses SDL3 under its zlib licence. SDL3 is not vendored in this
 source snapshot. Supply an installed SDL3 CMake package or an SDL3 source tree;
 include SDL's own licence when distributing its runtime library.
 
+SDL compiles in hidapi (Signal 11 Software and others, offered under GPL 3, a
+BSD-style licence or its original one). We use it under the BSD-style licence,
+which is copied into the package's `licenses` folder
+(`hidapi-LICENSE-bsd.txt`); a package without it is refused.
+
 Original game material has separate ownership: see [the rights notice](NOTICE.md).
 
 The setup reads downloads (zip, 7z, RAR, tar) with libarchive 3.7.9 (BSD

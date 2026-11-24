@@ -242,10 +242,12 @@ def stage_common(root, build, sdl, resources):
         shutil.copy2(source, notices / (prefix + source.name))
     archive_licences(build, notices)
     stage_soundfont(root, build, resources, notices)
-    # The setup kit's own third-party code (stb, miniz): a package without their licences is refused.
+    # The setup kit's own third-party code (stb, miniz), and hidapi, which SDL compiles in and which we use under its
+    # BSD-style licence: a package without their licences is refused.
     kit = root / "extern/re-setup-kit"
     for name, source in [("re-setup-kit-LICENSE", kit / "LICENSE"), ("stb-LICENSE", kit / "third_party/stb/LICENSE"),
                          ("miniz-LICENSE", kit / "third_party/miniz/LICENSE"),
+                         ("hidapi-LICENSE-bsd.txt", sdl / "src/hidapi/LICENSE-bsd.txt"),
                          ("TinySoundFont-LICENSE", root / "extern/TinySoundFont/LICENSE")]:
         if not source.is_file():
             raise RuntimeError(f"Missing licence: {source}")

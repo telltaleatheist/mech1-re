@@ -119,7 +119,7 @@ void BtechHostDiscardChildData(void)
         {
             FILE *stream=combatResources.archiveDescriptors[slot]->stream;
             bool runtimeOwned=false;
-            for (uint16_t file=0;file<COMBAT_STREAM_SLOTS;++file) runtimeOwned|=runtimeStreams[file].file==stream;
+            for (uint16_t file=0;file<COMBAT_STREAM_SLOTS;++file) runtimeOwned|=combatSound.runtimeStreams[file].file==stream;
             if (stream && !runtimeOwned) fclose(stream);
             BtechReleaseArchiveDescriptor(slot);
         }
@@ -131,8 +131,8 @@ void BtechHostDiscardChildData(void)
     {
         /* DOS and near allocator owners include detached/reused nodes. Process
          * disposal must not follow a game's stale or cyclic next chain. */
-        paragraphs|=soundBanks[bank].root.allocation.bytes!=NULL;
-        free(soundBanks[bank].events);soundBanks[bank]=BtechSoundBank{};
+        paragraphs|=combatSound.soundBanks[bank].root.allocation.bytes!=NULL;
+        free(combatSound.soundBanks[bank].events);combatSound.soundBanks[bank]=BtechSoundBank{};
     }
     for (uint32_t owner=0;owner<(uint32_t)combatResources.shapeResourceBankCount+1;++owner)
     {
@@ -157,7 +157,7 @@ void BtechHostDiscardChildData(void)
     combatResources.initialShapeResourceBank=BtechResourceBank{};combatResources.surfaceResourceBank=BtechSurfaceBank{};
     combatResources.shapeResourceBanks=NULL;combatResources.shapeResourceBankCount=0;
     for (uint16_t slot=1;slot<COMBAT_FONT_SLOTS;++slot) paragraphs|=combatVideo.fonts[slot].bytes!=NULL;
-    paragraphs|=soundAllocationOverride.bytes!=NULL;
+    paragraphs|=combatSound.soundAllocationOverride.bytes!=NULL;
     if (paragraphs && !btechHostReleaseChildDosAllocations) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: paragraphs && !btechHostReleaseChildDosAllocations");
     if (btechHostReleaseChildDosAllocations) btechHostReleaseChildDosAllocations();
     for (uint16_t slot=0;slot<COMBAT_FONT_SLOTS;++slot) combatVideo.fonts[slot]=BtechFont{};

@@ -7,7 +7,7 @@ These are exact logs of what the game *asked for*, recorded from today's port be
 - the tones combat's effect player chose;
 - the sounds and keys it requested, and combat's ticks.
 
-[The sound-port goldens](../audio/README.md) record what the game wrote to the hardware. That changes once the hardware layer is rebuilt, but these logs must not. Every later slice of the plan leaves them identical, apart from one planned exception. H4 removes the port model's time charges, and with them the few sequencer ticks they add between a key and the music (below), so H4 re-records the note ticks once and says so.
+[The tone log's goldens](../audio/README.md) recorded, as the sound-port goldens, what the game wrote to the hardware; the ports are gone (H5) and it holds the tones and the snaps. That changes once the hardware layer is rebuilt, but these logs must not. Every later slice of the plan leaves them identical, apart from one planned exception. H4 removes the port model's time charges, and with them the few sequencer ticks they add between a key and the music (below), so H4 re-records the note ticks once and says so.
 
     python3 tools/trace/events.py check  --port build/mechwarrior --game ~/MECHWAR --work ~/mw1-events
     python3 tools/trace/events.py record --port build/mechwarrior --game ~/MECHWAR --work ~/mw1-events

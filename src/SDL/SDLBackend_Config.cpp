@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-MwHostMusic mwSdlMusic=MW_MUSIC_SPEAKER;
+MwHostMusic mwSdlMusic=MW_MUSIC_SOUNDFONT;
 char mwSdlGameFolder[4096];
 enum { HOST_MIN_COMBAT_TICK_MS=20,HOST_MAX_COMBAT_TICK_MS=500 };
 static char userConfigurationPath[4096];

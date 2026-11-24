@@ -170,7 +170,7 @@ bool StartImageStreams() {
     const BtechStartRow &row = btechStartRows[i];
     if (std::strcmp(row.id, "runtime.streams") != 0) continue;
     for (uint16_t slot = 0; slot < COMBAT_STREAM_SLOTS; ++slot)
-      runtimeStreams[slot] = BtechRuntimeStream{nullptr, row.bytes[slot * COMBAT_STREAM_STRIDE], nullptr};
+      combatSound.runtimeStreams[slot] = BtechRuntimeStream{nullptr, row.bytes[slot * COMBAT_STREAM_STRIDE], nullptr};
     return true;
   }
   return false;
@@ -194,7 +194,7 @@ void Streams() {
   // The table's fifteen free slots, then a refusal; a file that can't be opened takes none.
   for (int i = 2; i < 15; ++i) Check(BtechRuntimeStreamOpen("D", "rb") != nullptr, "fifteen files open");
   Check(BtechRuntimeStreamOpen("E", "rb") == nullptr, "a sixteenth is refused");
-  Check(BtechStreamIdentity(&runtimeStreams[COMBAT_STREAM_SLOTS - 1]) == 0x4C58, "the last slot is at 4C58");
+  Check(BtechStreamIdentity(&combatSound.runtimeStreams[COMBAT_STREAM_SLOTS - 1]) == 0x4C58, "the last slot is at 4C58");
   BtechCloseRuntimeStreamFiles();
   Check(StartImageStreams(), "the table again");
 

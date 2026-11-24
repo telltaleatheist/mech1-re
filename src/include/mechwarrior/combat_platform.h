@@ -7,8 +7,6 @@ enum { DOS_MAX_PARAGRAPH_ALLOCATION_BYTES=0xFFFF0 };
 /* Required low-level host boundaries. No combat/game decision callbacks. A
  * missing binding fails explicitly, never simulates successful calibration. */
 extern FILE *(*btechHostOpenStream)(const char *filename,const char *mode);
-extern uint8_t (*btechHostReadPort)(uint16_t port);
-extern void (*btechHostWritePort)(uint16_t port,uint8_t value);
 /* The host's due work, run where combat reads its keys (H4c): the clock's due
  * ticks and the queued key and MPU events, as the original's CLI let them in
  * just before it read the queue. It takes no time. The interrupt flag itself

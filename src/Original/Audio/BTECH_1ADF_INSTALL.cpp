@@ -8,9 +8,9 @@ uint16_t BtechSelectAndInstallAudioBackends(uint16_t requestedBackendMask)
     if (!requestedBackendMask) requestedBackendMask=UINT16_MAX;
     requestedBackendMask&=BtechProbeAudioBackendMask();
     if (requestedBackendMask&(COMBAT_SOUND_SPEAKER|COMBAT_SOUND_TANDY))
-        audioMusicCallback=BtechDispatchToneMidiMessage;
-    audioTickCallback=BtechTickSoftwareMusic;
-    selectedAudioBackendMask=requestedBackendMask;
+        combatSound.audioMusicCallback=BtechDispatchToneMidiMessage;
+    combatSound.audioTickCallback=BtechTickSoftwareMusic;
+    combatSound.selectedAudioBackendMask=requestedBackendMask;
     return requestedBackendMask;
 }
 

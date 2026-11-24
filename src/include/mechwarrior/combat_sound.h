@@ -23,7 +23,7 @@ uint16_t BtechProbeAudioBackendMask(void);
  * zero arena, game-memory registry or default IVT is installed by the port. */
 extern MwNativeByteView (*btechHostBorrowDosMemory)(uint16_t selector);
 enum { COMBAT_TONE_CHANNELS=8,COMBAT_SPEAKER_CHANNELS=4,COMBAT_TONE_HEADER_BYTES=8,
-    TONE_TANDY_DATA_PORT=0xC0,TONE_STATE_FIELD_MASK=0x7E,
+    TONE_STATE_FIELD_MASK=0x7E,
     TONE_BRANCH_RETURN=0x0232,TONE_BRANCH_CALL=0x0239,TONE_BRANCH_STOP=0x01E5,TONE_BRANCH_REPEAT=0x01B3 };
 enum { TONE_SPEAKER_PITCH_TABLE=0x03B4,TONE_TANDY_PITCH_TABLE=0x04F4,
     TONE_SPEAKER_PITCH_WORDS=0xA0,TONE_TANDY_PITCH_WORDS=0x94,TONE_NOISE_PERIOD_WORDS=3,
@@ -42,33 +42,27 @@ typedef struct BtechToneChannelState {
     uint16_t modulationPhaseLimit,levelSequenceOffset,modulationTableOffset;
 } BtechToneChannelState;
 typedef struct BtechToneChannelFlags {uint8_t activityMask,unidentifiedField2;} BtechToneChannelFlags;
-extern uint16_t soundEventIndices[COMBAT_TONE_CHANNELS],soundPriorities[COMBAT_TONE_CHANNELS];
-extern BtechToneChannelFlags channelFlags[COMBAT_TONE_CHANNELS];
-extern BtechToneChannelState toneChannels[COMBAT_TONE_CHANNELS];
-extern BtechToneChannelState *toneChannelStates[COMBAT_TONE_CHANNELS];
-extern MwNativeByteView toneEventData[COMBAT_TONE_CHANNELS],toneFallbackData[COMBAT_TONE_CHANNELS];
-extern uint16_t fallbackAllocationOffsets[COMBAT_TONE_CHANNELS],levelSequenceDirectoryOffsets[COMBAT_TONE_CHANNELS];
-extern uint16_t bytecodeReturnOffset,currentChannelDisplacement,selectedSpeakerPriority;
-extern uint16_t bytecodeBranchHandlers[4];
-extern BtechToneChannelState *selectedSpeakerState;
-extern uint8_t soundOutputEnableMask,soundEffectsEnableMask;
-extern void (*audioTickCallback)(void);
+/* Combat state owned by combat_sound.h (plan, slice B3b). */
+struct CombatToneState
+{
+    uint16_t soundEventIndices[COMBAT_TONE_CHANNELS],soundPriorities[COMBAT_TONE_CHANNELS];
+    BtechToneChannelFlags channelFlags[COMBAT_TONE_CHANNELS];
+    BtechToneChannelState toneChannels[COMBAT_TONE_CHANNELS];
+    BtechToneChannelState *toneChannelStates[COMBAT_TONE_CHANNELS];
+    MwNativeByteView toneEventData[COMBAT_TONE_CHANNELS],toneFallbackData[COMBAT_TONE_CHANNELS];
+    uint16_t fallbackAllocationOffsets[COMBAT_TONE_CHANNELS],levelSequenceDirectoryOffsets[COMBAT_TONE_CHANNELS];
+    uint16_t bytecodeReturnOffset,currentChannelDisplacement,selectedSpeakerPriority;
+    uint16_t bytecodeBranchHandlers[4];
+    BtechToneChannelState *selectedSpeakerState;
+    uint8_t soundOutputEnableMask;
+    uint8_t musicNoteBase,musicChannelBias;
+    uint16_t musicPitchTableOffset,musicPriority,musicHandlerOffsets[8];
+    uint16_t speakerMusicPeriods[TONE_SPEAKER_PITCH_WORDS],tandyMusicPeriods[TONE_TANDY_PITCH_WORDS],noiseMusicPeriods[TONE_NOISE_PERIOD_WORDS];
+    /*00AF is priority entry8, immediately after the eight tone priorities. */
+    uint16_t sampleSoundPriority;
+};
+extern CombatToneState combatTones;
 typedef uint16_t (*BtechMusicMessage)(uint16_t statusDisplacement,uint16_t channel,uint16_t packedData);
-extern BtechMusicMessage audioMusicCallback;
-extern uint8_t softwareMusicRateShift,softwareMusicDivisionScale;
-extern uint16_t midiTrackIndex;
-extern uint8_t midiRunningStatus,midiMessageData[2],midiMessageDataLength,midiChannel;
-extern uint8_t midiMessageLengths[8];
-extern uint16_t musicSequenceIndex,mpuTempoInterval,combatMidiStreamOffset;
-extern uint16_t queuedMidiDeltaTicks,softwareMusicDelayTicks,midiTempoHighBytes;
-extern MwNativeByteView midiStreamData;
-/* Native stream-pair presence differs from an OFFSET0 parser check. */
-extern bool midiStreamSelectorPresent;
-extern uint16_t activeMusicBankIndex;
-extern int16_t musicSequences[COMBAT_MUSIC_SEQUENCE_ROWS][COMBAT_MUSIC_SEQUENCE_WORDS];
-extern uint8_t musicNoteBase,musicChannelBias;
-extern uint16_t musicPitchTableOffset,musicPriority,musicHandlerOffsets[8];
-extern uint16_t speakerMusicPeriods[TONE_SPEAKER_PITCH_WORDS],tandyMusicPeriods[TONE_TANDY_PITCH_WORDS],noiseMusicPeriods[TONE_NOISE_PERIOD_WORDS];
 /* Authored229C:0020 is RETF. AX residue is needed by the parser. */
 uint16_t BtechMusicMessageNoOperation(uint16_t statusDisplacement,uint16_t channel,uint16_t packedData);
 uint16_t BtechDispatchToneMidiMessage(uint16_t statusDisplacement,uint16_t channel,uint16_t packedData);
@@ -77,9 +71,6 @@ void BtechStartSoftwareMusicTrack(MwNativeByteView musicHeader,uint16_t headerOf
 void BtechTickSoftwareMusic(void);
 uint8_t BtechDecodeNextMidiEvent(uint8_t inheritedDeltaHighByte);
 typedef void (*BtechAudioTick)(void);
-extern uint8_t musicTimerInstalled;
-extern uint16_t savedMusicTimerDivisor;
-extern MwTimerOwner savedMusicTimerOwner;
 void BtechMusicTimerInterrupt(void);
 void BtechInstallMusicTimerCallback(BtechAudioTick callback,uint16_t divisor);
 void BtechRestoreMusicTimerInterrupt(void);
@@ -93,15 +84,9 @@ void BtechAudioTimerNoOp(void);
  * or 0 for silence. The host plays it on the tone voice. */
 extern void (*btechHostPlayTone)(double frequency);
 void BtechTickSpeakerToneChannels(void);
-void BtechTickTandyToneChannels(void);
 void BtechAdvanceToneChannel(BtechToneChannelState *state,MwNativeByteView event,uint16_t channel);
 void BtechParseToneCommands(BtechToneChannelState *state,MwNativeByteView event,uint16_t cursor,uint16_t channel);
 void BtechStartToneInterpreterChannel(MwNativeByteView event,uint16_t eventOffset,uint16_t channel,MwNativeByteView fallback,uint16_t fallbackOffset);
-/*00AF is priority entry8, immediately after the eight tone priorities. */
-extern uint16_t sampleSoundPriority;
-extern uint16_t timerSoundEventIndex,savedSoundTimerDivisor;
-extern uint8_t soundTimerInstalled;
-extern uint16_t *samplePriorityOwner;
 /* Combat state owned by combat_sound.h (plan, slice B3a). */
 struct CombatSoundIrqState
 {
@@ -150,13 +135,38 @@ typedef struct BtechSoundBank {
     BtechSoundEvent *events; /* Relocated binary directory; no second byte mirror. */
     uint16_t eventReferenceCapacity; /* Host allocation extent, not a native game field. */
 } BtechSoundBank;
-/* Slot10 is also the first music root in the native image. Both domains must
- * use this owner when music is connected; never allocate a second root there. */
-extern BtechSoundBank soundBanks[COMBAT_AUDIO_BANK_ROOTS];
-extern BtechRuntimeStream runtimeStreams[COMBAT_STREAM_SLOTS];
-extern BtechTaggedStream taggedStreams[COMBAT_TAGGED_STREAMS],taggedStreamBackup;
-extern uint16_t selectedAudioBackendMask,activeSoundBankIndex,soundAllocationError;
-extern BtechResourceAllocation soundAllocationOverride;
+/* Combat state owned by combat_sound.h (plan, slice B3b). */
+struct CombatSoundState
+{
+    uint8_t soundEffectsEnableMask;
+    void (*audioTickCallback)(void);
+    BtechMusicMessage audioMusicCallback;
+    uint8_t softwareMusicRateShift,softwareMusicDivisionScale;
+    uint16_t midiTrackIndex;
+    uint8_t midiRunningStatus,midiMessageData[2],midiMessageDataLength,midiChannel;
+    uint8_t midiMessageLengths[8];
+    uint16_t musicSequenceIndex,mpuTempoInterval,combatMidiStreamOffset;
+    uint16_t queuedMidiDeltaTicks,softwareMusicDelayTicks,midiTempoHighBytes;
+    MwNativeByteView midiStreamData;
+    /* Native stream-pair presence differs from an OFFSET0 parser check. */
+    bool midiStreamSelectorPresent;
+    uint16_t activeMusicBankIndex;
+    int16_t musicSequences[COMBAT_MUSIC_SEQUENCE_ROWS][COMBAT_MUSIC_SEQUENCE_WORDS];
+    uint8_t musicTimerInstalled;
+    uint16_t savedMusicTimerDivisor;
+    MwTimerOwner savedMusicTimerOwner;
+    uint16_t timerSoundEventIndex,savedSoundTimerDivisor;
+    uint8_t soundTimerInstalled;
+    uint16_t *samplePriorityOwner;
+    /* Slot10 is also the first music root in the native image. Both domains must
+     * use this owner when music is connected; never allocate a second root there. */
+    BtechSoundBank soundBanks[COMBAT_AUDIO_BANK_ROOTS];
+    BtechRuntimeStream runtimeStreams[COMBAT_STREAM_SLOTS];
+    BtechTaggedStream taggedStreams[COMBAT_TAGGED_STREAMS],taggedStreamBackup;
+    uint16_t selectedAudioBackendMask,activeSoundBankIndex,soundAllocationError;
+    BtechResourceAllocation soundAllocationOverride;
+};
+extern CombatSoundState combatSound;
 bool BtechImportSoundInitialData(const uint8_t *data,size_t bytes);
 BtechRuntimeStream *BtechRuntimeStreamFindFreeSlot(void);
 BtechRuntimeStream *BtechRuntimeStreamOpen(const char *filename,const char *mode);
