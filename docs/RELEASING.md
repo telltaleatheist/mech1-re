@@ -106,7 +106,7 @@ platform's files are named `MW1-Rebuild-<label>-...`:
 | Platform | Made on | Files |
 |---|---|---|
 | Windows x64 | Windows, MSVC | `-win64.zip`, and with `--installer` `-Setup.exe` (Inno Setup) |
-| macOS | a Mac | `-mac.dmg` (`MechWarrior 1 Rebuild.app`, signed ad hoc), this Mac's architecture |
+| macOS | a Mac | `-mac.dmg` (`MechWarrior 1 Rebuild.app`, signed ad hoc), universal (x86_64 and arm64), macOS 12 and later |
 | Linux x86-64 | Linux or WSL | `-linux-x86_64.tar.gz`, and with `--installer` `-x86_64.AppImage` |
 
     python tools/build_package.py --sdl SDL_SOURCE --label LABEL [--game GAME] [--installer] [--appimage-tools DIR]

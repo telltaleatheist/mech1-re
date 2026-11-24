@@ -562,7 +562,8 @@ Every slice below is its own branch with the full gate green: both setups, the t
 - A release label is packaged only from its tag, with nothing uncommitted. The three platforms refuse it otherwise.
 - One libSDL3 in the tar.gz, under the name the program loads (`libSDL3.so.0`). The build holds it twice (SDL's own folder and beside the program), so libraries are told apart by their bytes.
 - Every package is checked for its notices as it is finished, hidapi's among them.
-- Measured: what the Mac, Windows and Linux packages load and hold. Windows ships the whole redistributable folder of the MSVC runtime, and the installer Inno Setup's loader and uninstaller; neither has a notice in the package. Nothing is changed on that.
+- The Windows package holds the three MSVC runtime DLLs the program and SDL3 load, with their notice; packaging refuses a program or DLL that loads one that isn't in the package. Inno Setup isn't pinned: 7 is looked for first and the version used is printed.
+- The Mac package is universal (x86_64 and arm64, macOS 12.0); packaging refuses a binary that isn't. The launcher has one dmg for every Mac.
 
 **From R's story repair:**
 - **A story file that can't be used is imported again at the start**, once, from the player's copy: one that can't be read, isn't its shape, or that the campaign's importers would refuse (they rebuild it into scratch first). A text changed by hand stays, whatever its length, unless it doesn't fit its record.
