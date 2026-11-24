@@ -129,9 +129,19 @@ platform's files are named `MW1-Rebuild-<label>-...`:
   `linuxdeploy-x86_64.AppImage`, `appimagetool-x86_64.AppImage` and
   `runtime-x86_64`, which `tools/deps/get_appimage_tools.sh DIR` fetches; each
   is refused unless it has the hash pinned there. The
-  AppImage holds `usr/bin/mechwarrior` with `data/` and `MechWarrior.ini`
-  beside it, and the notices in `usr/share/doc/mechwarrior`, the AppImage runtime's
-  (`tools/package/appimage-runtime`) among them.
+  AppImage holds `usr/bin/mw1r` with `data/` and `MechWarrior.ini`
+  beside it, and the notices in `usr/share/doc/mw1r`, the AppImage runtime's
+  (`tools/package/appimage-runtime`) among them. Packaging unpacks it with
+  `--appimage-extract` and starts the program from the unpacked folder, as the
+  launcher does.
+
+For the BattleTech launcher, a program built with a release's tag
+(`MECHWARRIOR_RELEASE_TAG`, which packaging sets from the label) holds
+`MW3-PROGRAM-VERSION:<tag>` in its file, and each start with a player at it
+writes `rebuild-program.txt` (game, program, version) into the player's folder,
+so the launcher finds a copy installed without it. Any other label's program
+holds no such string and writes nothing; packaging refuses a program whose
+stamp is not its label's.
 
 Every installer's contents pass `tools/package/check_paths.py`: no local path
 or user name in any file. Each file gets a `.sha256` beside it; for a release,
