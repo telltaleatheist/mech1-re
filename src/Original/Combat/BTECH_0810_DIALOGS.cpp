@@ -12,7 +12,7 @@ enum { DIALOG_LEFT=0x6B,DIALOG_TOP=0x57,DIALOG_WIDTH=0x6B,DIALOG_HEIGHT=0x1B,
 /*0810:137D. Original four-byte local is two near text references. */
 void BtechShowSimulationPausedDialog(void)
 {
-    BtechDialogMessagePair message={simulationText,pausedText};
+    BtechDialogMessagePair message={combatCockpit.simulationText,combatCockpit.pausedText};
     BtechShowCapturedTwoLineDialog(&message);
 }
 
@@ -25,7 +25,7 @@ void BtechShowSimulationPausedDialogFar(void)
 /*0810:27C7. The saved scan, not ASCII or the later release poll. */
 uint16_t BtechConfirmRetreatDialog(void)
 {
-    BtechDialogMessagePair message={retreatQuestionText,retreatChoiceText};
+    BtechDialogMessagePair message={combatCockpit.retreatQuestionText,combatCockpit.retreatChoiceText};
     return BtechShowCapturedTwoLineDialog(&message)==DIALOG_Y_SCAN_CODE;
 }
 
@@ -61,20 +61,20 @@ uint16_t BtechShowCapturedTwoLineDialog(const BtechDialogMessagePair *message)
  * are NOT saved by the original. Keep these independent native owners. */
 void BtechSaveDrawingState(void)
 {
-    savedPolygonFilled=(int8_t)drawPolygonFilled;
-    savedPolygonClip=(int8_t)screenPolygonNeedsClip;
-    savedTextBackground=(int8_t)textBackgroundColour;
-    savedTextForeground=(int8_t)textForegroundColour;
-    savedFillColour=(int8_t)drawFillColour;
-    savedLineColour=(int8_t)drawLineColour;
-    savedCopySourcePage=copySourcePageSelector;savedDrawPage=drawPageSelector;
+    combatCockpit.savedPolygonFilled=(int8_t)drawPolygonFilled;
+    combatCockpit.savedPolygonClip=(int8_t)screenPolygonNeedsClip;
+    combatCockpit.savedTextBackground=(int8_t)textBackgroundColour;
+    combatCockpit.savedTextForeground=(int8_t)textForegroundColour;
+    combatCockpit.savedFillColour=(int8_t)drawFillColour;
+    combatCockpit.savedLineColour=(int8_t)drawLineColour;
+    combatCockpit.savedCopySourcePage=copySourcePageSelector;combatCockpit.savedDrawPage=drawPageSelector;
 }
 
 /*0810:2999. Restore LOW BYTEs in original order, then page WORDs. */
 void BtechRestoreDrawingState(void)
 {
-    drawPolygonFilled=(uint8_t)savedPolygonFilled;screenPolygonNeedsClip=(uint8_t)savedPolygonClip;
-    textBackgroundColour=(uint8_t)savedTextBackground;textForegroundColour=(uint8_t)savedTextForeground;
-    drawFillColour=(uint8_t)savedFillColour;drawLineColour=(uint8_t)savedLineColour;
-    copySourcePageSelector=savedCopySourcePage;drawPageSelector=savedDrawPage;
+    drawPolygonFilled=(uint8_t)combatCockpit.savedPolygonFilled;screenPolygonNeedsClip=(uint8_t)combatCockpit.savedPolygonClip;
+    textBackgroundColour=(uint8_t)combatCockpit.savedTextBackground;textForegroundColour=(uint8_t)combatCockpit.savedTextForeground;
+    drawFillColour=(uint8_t)combatCockpit.savedFillColour;drawLineColour=(uint8_t)combatCockpit.savedLineColour;
+    copySourcePageSelector=combatCockpit.savedCopySourcePage;drawPageSelector=combatCockpit.savedDrawPage;
 }

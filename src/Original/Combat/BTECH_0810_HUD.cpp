@@ -13,14 +13,14 @@ enum { AIM_RETICLE_VIEW_SHIFT=7, AIM_RETICLE_OUTER_RADIUS=6, AIM_RETICLE_INNER_R
 /*0810:024B. Genuine FAR guard around the selected present-rectangle entry. */
 void BtechPresentHudRectangleIfReady(uint16_t x,uint16_t y,uint16_t width,uint16_t height)
 {
-    if (!cockpitFullRedrawPending) BtechPresentScreenRectangle((int16_t)x,(int16_t)y,width,height);
+    if (!combatCockpit.cockpitFullRedrawPending) BtechPresentScreenRectangle((int16_t)x,(int16_t)y,width,height);
 }
 
 /*0810:05FD. Actual lamps/gauges/radar, sensor flicker and target/weapon HUD. */
 void BtechRefreshCockpitAndSensorTarget(void)
 {
     BtechPooledWorldObject *movementObject=unitBindings[0].positionedLeftLeg;
-    if (!combatStartup.combatTickCounter) rememberedSensorTargetSlot=0;
+    if (!combatStartup.combatTickCounter) combatCockpit.rememberedSensorTargetSlot=0;
     drawPageSelector=backPageSelector;screenPolygonNeedsClip=false;drawPolygonFilled=true;
     BtechDrawMechSubsystemLamps(playerMechState);
     if (!playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState");
@@ -28,7 +28,7 @@ void BtechRefreshCockpitAndSensorTarget(void)
     if (!movementObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !movementObject");
     BtechDrawForwardMovementGauge(movementObject->forwardStepScale);
     if (!playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
-    if (mechCockpitLayoutIndices[playerMechState->templateIndex]!=2)
+    if (combatCockpit.mechCockpitLayoutIndices[playerMechState->templateIndex]!=2)
         BtechUpdateJumpChargeGauge((int16_t)playerMechState->jumpCharge);
     BtechUpdateRadarPanel();
     uint16_t sensorAvailable=0;
@@ -37,12 +37,12 @@ void BtechRefreshCockpitAndSensorTarget(void)
     sensorAvailable|=playerMechState->sensorHits<1; /*069B is UNSIGNED. */
     if (!combatStartup.playerTargetSlot && sensorAvailable)
     {
-        if (BtechTestPlayerTargetRenderVisibility((int16_t)rememberedSensorTargetSlot)) combatStartup.playerTargetSlot=rememberedSensorTargetSlot;
+        if (BtechTestPlayerTargetRenderVisibility((int16_t)combatCockpit.rememberedSensorTargetSlot)) combatStartup.playerTargetSlot=combatCockpit.rememberedSensorTargetSlot;
     }
     else if (combatStartup.playerTargetSlot)
     {
         if (!BtechTestPlayerTargetRenderVisibility((int16_t)combatStartup.playerTargetSlot) || !sensorAvailable)
-        {rememberedSensorTargetSlot=combatStartup.playerTargetSlot;combatStartup.playerTargetSlot=0;}
+        {combatCockpit.rememberedSensorTargetSlot=combatStartup.playerTargetSlot;combatStartup.playerTargetSlot=0;}
     }
     BtechDrawWeaponStatusList(combatStartup.selectedWeaponMount,combatStartup.playerTargetSlot);
     BtechUpdateTargetPanelAndReticle(combatStartup.playerTargetSlot);
@@ -67,7 +67,7 @@ void BtechDrawCockpitBitmapPlacements(void)
 {
     screenPolygonNeedsClip=false;
     if (activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS");
-    const BtechCockpitBitmapPlacement *placement=cockpitLayouts[activeCockpitLayoutIndex].bitmapPlacements;
+    const BtechCockpitBitmapPlacement *placement=combatCockpit.cockpitLayouts[activeCockpitLayoutIndex].bitmapPlacements;
     for (uint16_t index=0;index<COMBAT_COCKPIT_PLACEMENTS;++index,++placement)
     {
         if (placement->bitmapIndex==COCKPIT_BITMAP_END_INDEX) return;
@@ -84,7 +84,7 @@ void BtechDrawPendingFiringIndicator(void)
     int16_t pitch=playerMechState->aimPitch;
     uint16_t pitchClass=(pitch<FIRING_INDICATOR_UPPER_PITCH)+(pitch<(int16_t)FIRING_INDICATOR_LOWER_PITCH);
     if (activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS");
-    const BtechCockpitLayout *layout=&cockpitLayouts[activeCockpitLayoutIndex];
+    const BtechCockpitLayout *layout=&combatCockpit.cockpitLayouts[activeCockpitLayoutIndex];
     if (combatStartup.firingIndicatorBank1Pending)
     {
         const BtechHudGaugeAnchor *anchor=&layout->firingIndicatorBank1[pitchClass];

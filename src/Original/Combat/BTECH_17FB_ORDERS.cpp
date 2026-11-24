@@ -112,7 +112,7 @@ uint16_t BtechGetMechConditionColour(int16_t unitSlot)
     if (mech->engineHits==COMBAT_ENGINE_HIT_LIMIT || mech->gyroHits==COMBAT_GYRO_DESTROYED_HITS || mech->cockpitDisabled==1) band=0;
     if (band<0 || (uint16_t)unitControls[unitSlot].conditionScoreOrExitCode==COMBAT_DISABLED_UNIT_VALUE) band=0;
     if (hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || band>=ORDER_CONDITION_BANDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || band>=ORDER_CONDITION_BANDS"); /* Unsupported upper-band adjacent palette alias. */
-    return hudColourSchemes[hudColourSchemeIndex].orderConditionColours[band];
+    return combatCockpit.hudColourSchemes[hudColourSchemeIndex].orderConditionColours[band];
 }
 
 /*17FB:157E. Native first-wingmate gate, even if another wingmate exists.
@@ -132,7 +132,7 @@ void BtechUpdateLanceOrderHighlight(void)
             BtechCopyHudRectangleIfReady(previousX,previousY,ORDER_PANEL_WIDTH,ORDER_HIGHLIGHT_HEIGHT);
     }
     if (hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
-    const BtechHudColourScheme *colours=&hudColourSchemes[hudColourSchemeIndex];
+    const BtechHudColourScheme *colours=&combatCockpit.hudColourSchemes[hudColourSchemeIndex];
     drawFillColour=(uint8_t)(selectedOrderPanelRow==ORDER_REFERENCE_ROW && (orderPanelMode==ORDER_PANEL_TARGET || orderPanelMode==ORDER_PANEL_DESTINATION)
         ?colours->orderReferenceHighlight:colours->orderHighlight);
     uint16_t selectedY=selectedOrderPanelRow? (uint16_t)(ORDER_HIGHLIGHT_ROW_BASE_Y+(uint16_t)(selectedOrderPanelRow*ORDER_PANEL_ROW_STEP)):ORDER_HIGHLIGHT_FIRST_ROW_Y;
@@ -203,7 +203,7 @@ void BtechEditSelectedUnitOrders(void)
     case COMBAT_KEY_Q:
     case COMBAT_KEY_SPACE:
         combatStartup.combatDispatchState=COMBAT_SCREEN_COCKPIT;orderScreenFullRedrawPending=1;
-        BtechRefreshCockpitViewportAndGaugesFar();cockpitFullRedrawPending=1;
+        BtechRefreshCockpitViewportAndGaugesFar();combatCockpit.cockpitFullRedrawPending=1;
         break;
     case COMBAT_KEY_P:BtechShowSimulationPausedDialogFar();break;
     case COMBAT_KEY_S:combatSoundEnabled=combatSoundEnabled==0;break;

@@ -369,11 +369,11 @@ static void WriteStatus(const char *path)
     if(mwSdlCombatActive) for(unsigned i=0;i<worldObjectCount && i<COMBAT_WORLD_OBJECTS;++i)
     {if(!worldObjects[i])continue;fprintf(file,"%s{\"index\":%u,",first?"":",",i);first=false;Position(file,worldObjects[i]);fputc('}',file);}
     fprintf(file,"],\"radar\":{\"rangeShift\":%u,\"headingMode\":%u,\"origin\":[%u,%u],\"markers\":[",
-        combatStartup.radarRangeShift,combatStartup.headingRadarSelected,radarMapOriginX,radarMapOriginY);
-    unsigned page=radarCachePage;
+        combatStartup.radarRangeShift,combatStartup.headingRadarSelected,combatCockpit.radarMapOriginX,combatCockpit.radarMapOriginY);
+    unsigned page=combatCockpit.radarCachePage;
     if(mwSdlCombatActive && page<COMBAT_RADAR_CACHE_PAGES)
-        for(unsigned i=0;i<radarMarkerCounts[page] && i<COMBAT_RADAR_MARKERS;++i)
-            fprintf(file,"%s[%u,%u]",i?",":"",radarMarkerX[i][page],radarMarkerY[i][page]);
+        for(unsigned i=0;i<combatCockpit.radarMarkerCounts[page] && i<COMBAT_RADAR_MARKERS;++i)
+            fprintf(file,"%s[%u,%u]",i?",":"",combatCockpit.radarMarkerX[i][page],combatCockpit.radarMarkerY[i][page]);
     fputs("]}}\n",file);fclose(file);
 }
 static void PublishStatus(void) {WriteStatus(statusPath);}

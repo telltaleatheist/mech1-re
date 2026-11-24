@@ -18,9 +18,9 @@ enum { TARGET_PANEL_DRAW_INSET=1, TARGET_DAMAGE_INSET_X=5,
 void BtechUpdateTargetPanelAndReticle(uint16_t targetUnitSlot)
 {
     if (!playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
-    uint16_t layout=mechCockpitLayoutIndices[playerMechState->templateIndex];
+    uint16_t layout=combatCockpit.mechCockpitLayoutIndices[playerMechState->templateIndex];
     if (layout>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: layout>=COMBAT_COCKPIT_LAYOUTS");
-    const BtechScreenRectangle *panel=&cockpitLayouts[layout].targetPanel;
+    const BtechScreenRectangle *panel=&combatCockpit.cockpitLayouts[layout].targetPanel;
     screenPolygonNeedsClip=false;drawPolygonFilled=true;
     if (!combatStartup.combatTickCounter) cachedTargetPanelSlot=0;
     drawPageSelector=backPageSelector;
@@ -36,7 +36,7 @@ void BtechUpdateTargetPanelAndReticle(uint16_t targetUnitSlot)
     }
     if (targetUnitSlot>COMBAT_SPECIAL_TARGET_SLOT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: targetUnitSlot>COMBAT_SPECIAL_TARGET_SLOT");
     uint8_t *dirty=targetUnitSlot==COMBAT_SPECIAL_TARGET_SLOT?&combatDamagePanels.specialTargetDamagePanelDirty:&combatDamagePanels.targetDamagePanelDirty[targetUnitSlot];
-    if (targetUnitSlot!=cachedTargetPanelSlot || *dirty || cockpitFullRedrawPending)
+    if (targetUnitSlot!=cachedTargetPanelSlot || *dirty || combatCockpit.cockpitFullRedrawPending)
     {
         BtechDrawTargetDamagePanel(targetUnitSlot,panel);
         cachedTargetPanelSlot=targetUnitSlot;*dirty=0;
@@ -84,7 +84,7 @@ void BtechDrawTargetDamagePanel(uint16_t targetUnitSlot,const BtechScreenRectang
     if (targetUnitSlot==COMBAT_SPECIAL_TARGET_SLOT)
     {
         int16_t condition=specialTargetDamageRemaining;
-        const BtechHudColourScheme *colours=&hudColourSchemes[hudColourSchemeIndex];
+        const BtechHudColourScheme *colours=&combatCockpit.hudColourSchemes[hudColourSchemeIndex];
         uint16_t colour=condition==SPECIAL_TARGET_INITIAL_DAMAGE?colours->undamaged:
             condition>SPECIAL_TARGET_INITIAL_DAMAGE/2?colours->aboveHalfCondition:condition?colours->damaged:colours->destroyed;
         drawFillColour=(uint8_t)colour;drawLineColour=(uint8_t)colour;
@@ -105,13 +105,13 @@ void BtechDrawTargetDamagePanel(uint16_t targetUnitSlot,const BtechScreenRectang
             uint16_t body=armorToBodyLocations[armor];if (body>=COMBAT_BODY_LOCATIONS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: body>=COMBAT_BODY_LOCATIONS");
             int16_t remaining=mech->currentArmor[armor]+mech->currentInternalStructure[body];
             int16_t maximum=chassis->maximumArmor[armor]+chassis->maximumInternalStructure[body];
-            const BtechHudColourScheme *colours=&hudColourSchemes[hudColourSchemeIndex];
+            const BtechHudColourScheme *colours=&combatCockpit.hudColourSchemes[hudColourSchemeIndex];
             int16_t halfMaximum=(maximum-(maximum<0))/2;
             uint16_t colour=remaining==maximum?colours->undamaged:remaining>halfMaximum?colours->aboveHalfCondition:remaining?colours->damaged:colours->destroyed;
             if (mech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mech->templateIndex>=COMBAT_MECH_TEMPLATES");
-            const BtechScreenRectangle *region=&targetDiagramRegions[mech->templateIndex][armor];
+            const BtechScreenRectangle *region=&combatCockpit.targetDiagramRegions[mech->templateIndex][armor];
             drawFillColour=(uint8_t)colour;drawLineColour=(uint8_t)colour;
-            const BtechHudGaugeAnchor *anchor=&targetDiagramAnchors[mech->templateIndex];
+            const BtechHudGaugeAnchor *anchor=&combatCockpit.targetDiagramAnchors[mech->templateIndex];
             BtechDrawStyledRectangle((uint16_t)(region->x-anchor->x+panel->x),(uint16_t)(region->y-anchor->y+panel->y),region->width,region->height);
         }
         diagram=mech->templateIndex;

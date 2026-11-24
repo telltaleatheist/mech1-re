@@ -19,22 +19,22 @@ enum { HEAT_GAUGE_ROW_SHIFT=1, HEAT_GAUGE_ROW_HEIGHT=2, HEAT_GAUGE_LAST_COLUMN=1
 /*0810:60A0. Signed heat rows; cache updates AFTER the native partial copy. */
 void BtechUpdateHeatGauge(int16_t heatLevel)
 {
-    if (heatLevel==(int16_t)cachedHeatGaugeLevel) return;
+    if (heatLevel==(int16_t)combatCockpit.cachedHeatGaugeLevel) return;
     int16_t lowerLevel=heatLevel;
-    if (lowerLevel>(int16_t)cachedHeatGaugeLevel) lowerLevel=(int16_t)cachedHeatGaugeLevel;
+    if (lowerLevel>(int16_t)combatCockpit.cachedHeatGaugeLevel) lowerLevel=(int16_t)combatCockpit.cachedHeatGaugeLevel;
     uint16_t difference;
-    if ((uint16_t)(cachedHeatGaugeLevel-(uint16_t)heatLevel)==0x8000) difference=0x7FFF;
-    else if ((int16_t)cachedHeatGaugeLevel<heatLevel) difference=(uint16_t)(heatLevel-cachedHeatGaugeLevel);
-    else difference=(uint16_t)(cachedHeatGaugeLevel-heatLevel);
+    if ((uint16_t)(combatCockpit.cachedHeatGaugeLevel-(uint16_t)heatLevel)==0x8000) difference=0x7FFF;
+    else if ((int16_t)combatCockpit.cachedHeatGaugeLevel<heatLevel) difference=(uint16_t)(heatLevel-combatCockpit.cachedHeatGaugeLevel);
+    else difference=(uint16_t)(combatCockpit.cachedHeatGaugeLevel-heatLevel);
     if (hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
-    drawFillColour=(uint8_t)(heatLevel<(int16_t)cachedHeatGaugeLevel?
-        hudColourSchemes[hudColourSchemeIndex].heatFalling:hudColourSchemes[hudColourSchemeIndex].heatRising);
-    uint16_t pixelColour=heatLevel<(int16_t)cachedHeatGaugeLevel?Combat_Pal_EGA_White:Combat_Pal_EGA_LightRed;
+    drawFillColour=(uint8_t)(heatLevel<(int16_t)combatCockpit.cachedHeatGaugeLevel?
+        combatCockpit.hudColourSchemes[hudColourSchemeIndex].heatFalling:combatCockpit.hudColourSchemes[hudColourSchemeIndex].heatRising);
+    uint16_t pixelColour=heatLevel<(int16_t)combatCockpit.cachedHeatGaugeLevel?Combat_Pal_EGA_White:Combat_Pal_EGA_LightRed;
     screenPolygonNeedsClip=false;drawPageSelector=backPageSelector;
     if (!unitBindings[0].mech || unitBindings[0].mech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[0].mech || unitBindings[0].mech->templateIndex>=COMBAT_MECH_TEMPLATES");
-    uint16_t layoutIndex=mechCockpitLayoutIndices[unitBindings[0].mech->templateIndex];
+    uint16_t layoutIndex=combatCockpit.mechCockpitLayoutIndices[unitBindings[0].mech->templateIndex];
     if (layoutIndex>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: layoutIndex>=COMBAT_COCKPIT_LAYOUTS");
-    const BtechHudGaugeAnchor *gauge=&cockpitLayouts[layoutIndex].heatGauge;
+    const BtechHudGaugeAnchor *gauge=&combatCockpit.cockpitLayouts[layoutIndex].heatGauge;
     uint16_t rowY=gauge->y-((uint16_t)lowerLevel<<HEAT_GAUGE_ROW_SHIFT);
     for (int16_t row=0;row<(int16_t)difference;++row)
     {
@@ -49,7 +49,7 @@ void BtechUpdateHeatGauge(int16_t heatLevel)
         rowY-=HEAT_GAUGE_ROW_HEIGHT;
     }
     BtechCopyHudRectangleIfReady((uint16_t)gauge->x,rowY,HEAT_GAUGE_COPY_WIDTH,(uint16_t)((difference<<HEAT_GAUGE_ROW_SHIFT)+HEAT_GAUGE_ROW_HEIGHT));
-    cachedHeatGaugeLevel=(uint16_t)heatLevel;
+    combatCockpit.cachedHeatGaugeLevel=(uint16_t)heatLevel;
 }
 
 /*0810:61F3. Native selected colour persists through the rest of each bank,
@@ -57,34 +57,34 @@ void BtechUpdateHeatGauge(int16_t heatLevel)
 void BtechDrawForwardMovementGauge(int16_t forwardScale)
 {
     if (!unitBindings[0].mech || unitBindings[0].mech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[0].mech || unitBindings[0].mech->templateIndex>=COMBAT_MECH_TEMPLATES");
-    uint16_t layoutIndex=mechCockpitLayoutIndices[unitBindings[0].mech->templateIndex];
+    uint16_t layoutIndex=combatCockpit.mechCockpitLayoutIndices[unitBindings[0].mech->templateIndex];
     if (layoutIndex>=COMBAT_COCKPIT_LAYOUTS || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: layoutIndex>=COMBAT_COCKPIT_LAYOUTS || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
-    const BtechHudGaugeAnchor *gauge=&cockpitLayouts[layoutIndex].movementGauge;
+    const BtechHudGaugeAnchor *gauge=&combatCockpit.cockpitLayouts[layoutIndex].movementGauge;
     int16_t forward=forwardScale<0?0:forwardScale;
     uint16_t reverse=forward?0:(uint16_t)(0-(uint16_t)forwardScale);
-    drawFillColour=(uint8_t)hudColourSchemes[hudColourSchemeIndex].forwardTicks;
+    drawFillColour=(uint8_t)combatCockpit.hudColourSchemes[hudColourSchemeIndex].forwardTicks;
     uint16_t pixelColour=Combat_Pal_EGA_LightGreen;
     int16_t marker=forward>>MOVEMENT_GAUGE_SCALE_SHIFT;
     uint16_t tickX=gauge->x+MOVEMENT_GAUGE_FORWARD_X;
     for (int16_t tick=0;tick<MOVEMENT_GAUGE_FORWARD_TICKS;++tick)
     {
         if (tick==marker)
-        {pixelColour=Combat_Pal_EGA_LightGrey;drawFillColour=(uint8_t)hudColourSchemes[hudColourSchemeIndex].selectedMovementTick;}
+        {pixelColour=Combat_Pal_EGA_LightGrey;drawFillColour=(uint8_t)combatCockpit.hudColourSchemes[hudColourSchemeIndex].selectedMovementTick;}
         BtechDrawClippedLine((int16_t)tickX,gauge->y,(int16_t)tickX,(int16_t)(gauge->y+MOVEMENT_GAUGE_TICK_LAST_ROW));
         if (!hudColourSchemeIndex) BtechWriteClippedPixel((int16_t)tickX,gauge->y,pixelColour);
         tickX+=MOVEMENT_GAUGE_TICK_SPACING;
     }
-    drawFillColour=(uint8_t)hudColourSchemes[hudColourSchemeIndex].movementZeroReference;
+    drawFillColour=(uint8_t)combatCockpit.hudColourSchemes[hudColourSchemeIndex].movementZeroReference;
     uint16_t zeroX=gauge->x+MOVEMENT_GAUGE_ZERO_X;
     BtechDrawClippedLine((int16_t)zeroX,gauge->y,(int16_t)zeroX,(int16_t)(gauge->y+MOVEMENT_GAUGE_TICK_LAST_ROW));
     if (!hudColourSchemeIndex) BtechWriteClippedPixel((int16_t)(gauge->x+MOVEMENT_GAUGE_ZERO_X),gauge->y,Combat_Pal_EGA_White);
-    drawFillColour=(uint8_t)hudColourSchemes[hudColourSchemeIndex].reverseTicks;
+    drawFillColour=(uint8_t)combatCockpit.hudColourSchemes[hudColourSchemeIndex].reverseTicks;
     pixelColour=Combat_Pal_EGA_LightRed;marker=(int16_t)((reverse>>MOVEMENT_GAUGE_SCALE_SHIFT)|((reverse&0x8000)?0xC000:0));
     tickX=(uint16_t)(gauge->x+MOVEMENT_GAUGE_REVERSE_X);
     for (int16_t tick=0;tick<MOVEMENT_GAUGE_REVERSE_TICKS;++tick)
     {
         if (tick==marker)
-        {drawFillColour=(uint8_t)hudColourSchemes[hudColourSchemeIndex].selectedMovementTick;pixelColour=Combat_Pal_EGA_LightGrey;}
+        {drawFillColour=(uint8_t)combatCockpit.hudColourSchemes[hudColourSchemeIndex].selectedMovementTick;pixelColour=Combat_Pal_EGA_LightGrey;}
         BtechDrawClippedLine((int16_t)tickX,gauge->y,(int16_t)tickX,(int16_t)(gauge->y+MOVEMENT_GAUGE_TICK_LAST_ROW));
         if (!hudColourSchemeIndex) BtechWriteClippedPixel((int16_t)tickX,gauge->y,pixelColour);
         tickX-=MOVEMENT_GAUGE_TICK_SPACING;
@@ -97,16 +97,16 @@ void BtechUpdateJumpChargeGauge(int16_t jumpCharge)
 {
     enum { JUMP_GAUGE_CHARGE_PER_ROW=20,JUMP_GAUGE_READY_CHARGE=500 };
     int16_t level=jumpCharge/JUMP_GAUGE_CHARGE_PER_ROW;
-    if (level==(int16_t)cachedJumpChargeGaugeLevel) return;
+    if (level==(int16_t)combatCockpit.cachedJumpChargeGaugeLevel) return;
     drawPolygonFilled=true;screenPolygonNeedsClip=false;drawPageSelector=backPageSelector;
     if (!unitBindings[0].mech || unitBindings[0].mech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[0].mech || unitBindings[0].mech->templateIndex>=COMBAT_MECH_TEMPLATES");
-    uint16_t layoutIndex=mechCockpitLayoutIndices[unitBindings[0].mech->templateIndex];
+    uint16_t layoutIndex=combatCockpit.mechCockpitLayoutIndices[unitBindings[0].mech->templateIndex];
     if (layoutIndex>=COMBAT_COCKPIT_LAYOUTS || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: layoutIndex>=COMBAT_COCKPIT_LAYOUTS || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
-    const BtechHudGaugeAnchor *gauge=&cockpitLayouts[layoutIndex].jumpChargeGauge;
+    const BtechHudGaugeAnchor *gauge=&combatCockpit.cockpitLayouts[layoutIndex].jumpChargeGauge;
     uint16_t belowThreshold=jumpCharge<JUMP_GAUGE_READY_CHARGE;
     drawFillColour=drawLineColour=belowThreshold?
-        hudColourSchemes[hudColourSchemeIndex].jumpBelowThreshold:
-        hudColourSchemes[hudColourSchemeIndex].jumpCharged;
+        combatCockpit.hudColourSchemes[hudColourSchemeIndex].jumpBelowThreshold:
+        combatCockpit.hudColourSchemes[hudColourSchemeIndex].jumpCharged;
     BtechDrawStyledRectangle((uint16_t)(gauge->x+JUMP_LAMP_X_INSET),JUMP_LAMP_Y,JUMP_LAMP_SIZE,JUMP_LAMP_SIZE);
     if (!hudColourSchemeIndex)
     {
@@ -117,26 +117,26 @@ void BtechUpdateJumpChargeGauge(int16_t jumpCharge)
     }
     BtechCopyHudRectangleIfReady((uint16_t)(gauge->x+JUMP_LAMP_X_INSET),JUMP_LAMP_Y,JUMP_LAMP_SIZE,JUMP_LAMP_SIZE);
     int16_t lowerLevel=level;
-    if (lowerLevel>(int16_t)cachedJumpChargeGaugeLevel) lowerLevel=(int16_t)cachedJumpChargeGaugeLevel;
+    if (lowerLevel>(int16_t)combatCockpit.cachedJumpChargeGaugeLevel) lowerLevel=(int16_t)combatCockpit.cachedJumpChargeGaugeLevel;
     uint16_t difference;
-    if ((uint16_t)(cachedJumpChargeGaugeLevel-(uint16_t)level)==0x8000) difference=0x7FFF;
-    else if ((int16_t)cachedJumpChargeGaugeLevel<level) difference=(uint16_t)(level-cachedJumpChargeGaugeLevel);
-    else difference=(uint16_t)(cachedJumpChargeGaugeLevel-level);
-    uint8_t colour=level<(int16_t)cachedJumpChargeGaugeLevel?
-        hudColourSchemes[hudColourSchemeIndex].jumpFalling:hudColourSchemes[hudColourSchemeIndex].jumpRising;
+    if ((uint16_t)(combatCockpit.cachedJumpChargeGaugeLevel-(uint16_t)level)==0x8000) difference=0x7FFF;
+    else if ((int16_t)combatCockpit.cachedJumpChargeGaugeLevel<level) difference=(uint16_t)(level-combatCockpit.cachedJumpChargeGaugeLevel);
+    else difference=(uint16_t)(combatCockpit.cachedJumpChargeGaugeLevel-level);
+    uint8_t colour=level<(int16_t)combatCockpit.cachedJumpChargeGaugeLevel?
+        combatCockpit.hudColourSchemes[hudColourSchemeIndex].jumpFalling:combatCockpit.hudColourSchemes[hudColourSchemeIndex].jumpRising;
     drawLineColour=colour;drawFillColour=colour;
     uint16_t rowY=gauge->y-lowerLevel;
     BtechDrawStyledRectangle((uint16_t)gauge->x,(uint16_t)(rowY-difference+1),JUMP_GAUGE_WIDTH,difference);
     if (!hudColourSchemeIndex)
     {
-        drawFillColour=level<(int16_t)cachedJumpChargeGaugeLevel?Combat_Pal_EGA_White:Combat_Pal_EGA_LightCyan;
+        drawFillColour=level<(int16_t)combatCockpit.cachedJumpChargeGaugeLevel?Combat_Pal_EGA_White:Combat_Pal_EGA_LightCyan;
         uint16_t edgeX=gauge->x+JUMP_GAUGE_LAST_COLUMN;
         BtechDrawClippedLine((int16_t)edgeX,(int16_t)rowY,(int16_t)edgeX,(int16_t)(rowY-difference+1));
     }
-    drawFillColour=(uint8_t)hudColourSchemes[hudColourSchemeIndex].jumpReference;
+    drawFillColour=(uint8_t)combatCockpit.hudColourSchemes[hudColourSchemeIndex].jumpReference;
     uint16_t referenceX=gauge->x;
     BtechDrawClippedLine((int16_t)referenceX,JUMP_GAUGE_BASELINE_Y,(int16_t)(referenceX+6),0x92);
     if (!hudColourSchemeIndex) BtechWriteClippedPixel((int16_t)(gauge->x+JUMP_GAUGE_LAST_COLUMN),JUMP_GAUGE_BASELINE_Y,Combat_Pal_EGA_LightRed);
     BtechCopyHudRectangleIfReady((uint16_t)gauge->x,(uint16_t)(rowY-difference+1),JUMP_GAUGE_COPY_WIDTH,(uint16_t)(difference+1));
-    cachedJumpChargeGaugeLevel=(uint16_t)level;
+    combatCockpit.cachedJumpChargeGaugeLevel=(uint16_t)level;
 }

@@ -17,14 +17,14 @@ void BtechUpdateRadarPanel(void)
         return;
     }
     if (activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS");
-    const BtechScreenRectangle *panel=&cockpitLayouts[activeCockpitLayoutIndex].radarPanel;
+    const BtechScreenRectangle *panel=&combatCockpit.cockpitLayouts[activeCockpitLayoutIndex].radarPanel;
     drawPolygonFilled=true;
     if (combatStartup.headingRadarSelected)
         drawLineColour=hudColourSchemeIndex?RADAR_ALTERNATE_HEADING_BACKGROUND:RADAR_HEADING_BACKGROUND;
     else
     {
         if (hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
-        drawLineColour=(uint8_t)hudColourSchemes[hudColourSchemeIndex].radarBackground;
+        drawLineColour=(uint8_t)combatCockpit.hudColourSchemes[hudColourSchemeIndex].radarBackground;
     }
     drawFillColour=drawLineColour;
     BtechDrawStyledRectangle(panel->x,panel->y,panel->width,panel->height);
@@ -36,7 +36,7 @@ void BtechDrawHeadingRadar(void)
 {
     drawPageSelector=backPageSelector;
     if (activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS");
-    const BtechScreenRectangle *panel=&cockpitLayouts[activeCockpitLayoutIndex].radarPanel;
+    const BtechScreenRectangle *panel=&combatCockpit.cockpitLayouts[activeCockpitLayoutIndex].radarPanel;
     int16_t halfWidth=(panel->width-(panel->width<0))/2;
     int16_t halfHeight=(panel->height-(panel->height<0))/2;
     uint16_t centreX=panel->x+halfWidth-1;
@@ -78,7 +78,7 @@ void BtechDrawHeadingRadar(void)
     }
     textForegroundColour=hudColourSchemeIndex?Combat_Pal_EGA_White:Combat_Pal_EGA_Green;textTransparentBackground=true;
     if (combatStartup.radarRangeShift<RADAR_MINIMUM_RANGE_SHIFT || combatStartup.radarRangeShift>RADAR_MAXIMUM_RANGE_SHIFT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: radarRangeShift<RADAR_MINIMUM_RANGE_SHIFT || radarRangeShift>RADAR_MAXIMUM_RANGE_SHIFT"); /* ASCII aliases below2406. */
-    BtechDrawNearText(radarRangeLabels[combatStartup.radarRangeShift-RADAR_MINIMUM_RANGE_SHIFT],
+    BtechDrawNearText(combatCockpit.radarRangeLabels[combatStartup.radarRangeShift-RADAR_MINIMUM_RANGE_SHIFT],
         (int16_t)(panel->x+panel->width/2-0x12),(int16_t)(panel->y+panel->height-8));
     textTransparentBackground=false;
     BtechPresentScreenRectangle(panel->x,panel->y,panel->width,panel->height);

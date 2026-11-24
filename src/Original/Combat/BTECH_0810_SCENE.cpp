@@ -57,23 +57,23 @@ void BtechRenderCockpitSceneAndHud(void)
     textForegroundColour=landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex].hudReticleColour;
     uint16_t zoomX=COCKPIT_RIGHT_LABEL_X,automaticWeaponsX=COCKPIT_LEFT_LABEL_X;
     if (playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
-    if (mechCockpitLayoutIndices[playerMechState->templateIndex]==2)
+    if (combatCockpit.mechCockpitLayoutIndices[playerMechState->templateIndex]==2)
     {zoomX=COCKPIT_LEFT_LABEL_X;automaticWeaponsX=COCKPIT_RIGHT_LABEL_X;}
-    BtechDrawNearText(zoomLabel,zoomX,COCKPIT_STATUS_TEXT_Y);
+    BtechDrawNearText(combatCockpit.zoomLabel,zoomX,COCKPIT_STATUS_TEXT_Y);
     BtechDrawNearText(BtechFormatSignedDecimalField((int16_t)(combatStartup.viewScaleShift-COCKPIT_ZOOM_SHIFT_BASE),1,' '),zoomX+COCKPIT_ZOOM_VALUE_X_OFFSET,COCKPIT_STATUS_TEXT_Y);
-    if (combatStartup.mountGroupMode) BtechDrawNearText(automaticWeaponsLabel,automaticWeaponsX,COCKPIT_STATUS_TEXT_Y);
+    if (combatStartup.mountGroupMode) BtechDrawNearText(combatCockpit.automaticWeaponsLabel,automaticWeaponsX,COCKPIT_STATUS_TEXT_Y);
     if (heatInhibitFlags[0] && (combatStartup.combatTickCounter&COCKPIT_WARNING_FLASH_MASK))
     {
         textForegroundColour=COCKPIT_REACTOR_WARNING_COLOUR;
-        BtechDrawNearText(reactorShutdownText,COCKPIT_REACTOR_WARNING_X,COCKPIT_REACTOR_WARNING_Y);
+        BtechDrawNearText(combatCockpit.reactorShutdownText,COCKPIT_REACTOR_WARNING_X,COCKPIT_REACTOR_WARNING_Y);
     }
     textTransparentBackground=false;
     BtechSwapScreenPages(false);
-    if (cockpitFullRedrawPending)
+    if (combatCockpit.cockpitFullRedrawPending)
     {
         BtechSetOverscanColour(Combat_Pal_EGA_Black);
         BtechPresentScreenRectangle(0,0,COMBAT_SCREEN_WIDTH,COMBAT_SCREEN_HEIGHT);
-        cockpitFullRedrawPending=0;
+        combatCockpit.cockpitFullRedrawPending=0;
         drawPageSelector=backPageSelector;copySourcePageSelector=frontPageSelector;
         BtechCopyScreenRectangle(0,0,COMBAT_SCREEN_WIDTH,COMBAT_SCREEN_HEIGHT);
     }

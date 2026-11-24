@@ -9,7 +9,7 @@
 void BtechSetCockpitCameraViewport(BtechCameraContext *camera)
 {
     if (activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS || !camera) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS || !camera");
-    const BtechCockpitLayout *layout=&cockpitLayouts[activeCockpitLayoutIndex];
+    const BtechCockpitLayout *layout=&combatCockpit.cockpitLayouts[activeCockpitLayoutIndex];
     camera->clipMinimumB=layout->viewport.y;
     camera->clipMaximumB=(int16_t)((uint16_t)layout->viewport.y+(uint16_t)layout->viewport.height);
     camera->clipMinimumA=layout->viewport.x;
@@ -19,9 +19,9 @@ void BtechSetCockpitCameraViewport(BtechCameraContext *camera)
 /*0810:6094. The third cache WORD has no proved consumer/meaning yet. */
 void BtechResetHudGaugeCaches(void)
 {
-    unidentifiedField25=0;
-    cachedHeatGaugeLevel=0;
-    cachedJumpChargeGaugeLevel=0;
+    combatCockpit.unidentifiedField25=0;
+    combatCockpit.cachedHeatGaugeLevel=0;
+    combatCockpit.cachedJumpChargeGaugeLevel=0;
 }
 
 /*0810:26C5. Ignore screen-loader result; restore only the saved clip BYTE.
@@ -30,15 +30,15 @@ void BtechRefreshCockpitViewportAndGauges(void)
 {
     uint8_t savedClipping=screenPolygonNeedsClip;
     if (!playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
-    activeCockpitLayoutIndex=mechCockpitLayoutIndices[playerMechState->templateIndex];
+    activeCockpitLayoutIndex=combatCockpit.mechCockpitLayoutIndices[playerMechState->templateIndex];
     screenPolygonNeedsClip=false;
     drawPageSelector=backPageSelector;
     if (activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS");
-    BtechLoadScreenImage(cockpitScreenFilenames[activeCockpitLayoutIndex],NULL);
+    BtechLoadScreenImage(combatCockpit.cockpitScreenFilenames[activeCockpitLayoutIndex],NULL);
     screenPolygonNeedsClip=savedClipping;
     BtechResetHudGaugeCaches();
     BtechSetCockpitCameraViewport(playerPoseCameraContext);
-    cockpitFullRedrawPending=1;
+    combatCockpit.cockpitFullRedrawPending=1;
 }
 
 /*0810:2938. Genuine FAR veneer, no source arguments or BP result. */

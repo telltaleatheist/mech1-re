@@ -32,7 +32,7 @@ void BtechDrawUnitOrderPanels(void)
             control->commandCode=COMBAT_ORDER_ACT_ON_OWN;
         } /* Navigation reference deliberately survives this reset. */
         ++friendlyMarker;
-        const BtechHudColourScheme *colours=&hudColourSchemes[hudColourSchemeIndex];
+        const BtechHudColourScheme *colours=&combatCockpit.hudColourSchemes[hudColourSchemeIndex];
         uint16_t markerColour=hudColourSchemeIndex?ORDER_PANEL_TEXT_COLOUR:
             landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex].unitMarkerColours[friendlyMarker];
         textForegroundColour=(uint8_t)markerColour;
@@ -40,9 +40,9 @@ void BtechDrawUnitOrderPanels(void)
             || orderPanelMode==ORDER_PANEL_TARGET || orderPanelMode==ORDER_PANEL_DESTINATION)
         {
             if (unitSlot>=COMBAT_FRIENDLY_SLOTS || deployedPilotIds[unitSlot]>=COMBAT_PILOT_NAMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitSlot>=COMBAT_FRIENDLY_SLOTS || deployedPilotIds[unitSlot]>=COMBAT_PILOT_NAMES"); /* Native slot4+ pilot-directory neighbour alias. */
-            BtechDrawNearText(pilotDefinitionNameDirectory[deployedPilotIds[unitSlot]],x,ORDER_PANEL_NAME_Y);
+            BtechDrawNearText(combatCockpit.pilotDefinitionNameDirectory[deployedPilotIds[unitSlot]],x,ORDER_PANEL_NAME_Y);
             BtechDrawThreeByThreeMarker((uint16_t)(x+ORDER_PANEL_MARKER_X),ORDER_PANEL_MARKER_Y,markerColour,friendlyMarker);
-            BtechDrawNearText(mechTemplateNameDirectory[mech->templateIndex],x,ORDER_PANEL_CHASSIS_Y);
+            BtechDrawNearText(combatCockpit.mechTemplateNameDirectory[mech->templateIndex],x,ORDER_PANEL_CHASSIS_Y);
             if (control->tacticalState>=ORDER_TACTICAL_LABELS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: control->tacticalState>=ORDER_TACTICAL_LABELS");
             BtechDrawNearText(tacticalOrderLabels[control->tacticalState],x,ORDER_PANEL_TACTICAL_Y);
             textForegroundColour=ORDER_PANEL_TEXT_COLOUR;
@@ -68,7 +68,7 @@ void BtechDrawUnitOrderPanels(void)
                     if ((uint16_t)referenceSlot>=COMBAT_MECH_SLOTS || !unitBindings[referenceSlot].mech) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)referenceSlot>=COMBAT_MECH_SLOTS || !unitBindings[referenceSlot].mech");
                     uint16_t referenceChassis=unitBindings[referenceSlot].mech->templateIndex;
                     if (referenceChassis>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: referenceChassis>=COMBAT_MECH_TEMPLATES");
-                    referenceLabel=mechTemplateNameDirectory[referenceChassis];
+                    referenceLabel=combatCockpit.mechTemplateNameDirectory[referenceChassis];
                     textForegroundColour=(uint8_t)BtechGetMechConditionColour(referenceSlot);
                 }
             }

@@ -22,7 +22,7 @@ void BtechRefreshLanceOrderScreen(void)
     drawPageSelector=backPageSelector;
     if (orderScreenFullRedrawPending)
     {
-        cockpitFullRedrawPending=0;
+        combatCockpit.cockpitFullRedrawPending=0;
         screenPolygonNeedsClip=false;
         BtechLoadScreenImage("map.scr",NULL);
         if (reducedMemoryMode)
