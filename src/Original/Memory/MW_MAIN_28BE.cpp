@@ -13,22 +13,13 @@ static bool DecodeMusicDriver(const uint8_t *data,size_t byteCount)
     uint16_t hostEndian=1;
     if (!data || byteCount<0x0A12 || *(uint8_t *)&hostEndian!=1) return false;
     uint16_t backendOffset=MwReadNativeWord(data,0x03F8);
-    if (backendOffset && backendOffset!=MIDI_SPEAKER_BACKEND_OFFSET && backendOffset!=MIDI_MPU_BACKEND_OFFSET
-        && backendOffset!=MIDI_ADLIB_BACKEND_OFFSET) return false;
-    for (size_t i=0;i<sizeof(campaignMusic.adlibBackend);++i) ((uint8_t *)&campaignMusic.adlibBackend)[i]=data[MIDI_ADLIB_BACKEND_OFFSET+i];
-    for (size_t i=0;i<sizeof(campaignMusic.adlibInstruments);++i) ((uint8_t *)campaignMusic.adlibInstruments)[i]=data[MIDI_INSTRUMENTS_OFFSET+i];
-    campaignMusic.adlibAddressDelayReads=MwReadNativeWord(data,0x00E0);
-    campaignMusic.adlibDataDelayReads=MwReadNativeWord(data,0x00E2);
-    campaignMusic.adlibRhythmRegister=data[0x00E4];
-    for (size_t i=0;i<MIDI_ADLIB_NOTE_COUNT;++i) campaignMusic.adlibPackedNoteFrequencies[i]=MwReadNativeWord(data,(uint16_t)(0x00E6+i*2));
-    for (size_t i=0;i<sizeof(campaignMusic.adlibVoiceRoutes);++i) ((uint8_t *)campaignMusic.adlibVoiceRoutes)[i]=data[0x01CC+i];
-    for (size_t i=0;i<sizeof(campaignMusic.musicRuntimeHeader);++i) campaignMusic.musicRuntimeHeader[i]=data[i];
+    /* The AdLib backend (00B0..0223: its descriptor, instruments, bus delays,
+     * rhythm register, note frequencies, voice routes), the MPU's queue
+     * (0224..0329) and the runtime header (0000..0041) went with their code
+     * in S8; nothing else read them. The MPU's descriptor (01EE) stays: it is
+     * 'R', the rebuild's music. */
+    if (backendOffset && backendOffset!=MIDI_SPEAKER_BACKEND_OFFSET && backendOffset!=MIDI_MPU_BACKEND_OFFSET) return false;
     for (size_t i=0;i<sizeof(campaignMusic.mpuBackend);++i) ((uint8_t *)&campaignMusic.mpuBackend)[i]=data[MIDI_MPU_BACKEND_OFFSET+i];
-    for (size_t i=0;i<sizeof(campaignMusic.mpuTransmitQueue);++i) campaignMusic.mpuTransmitQueue[i]=data[0x0224+i];
-    campaignMusic.mpuQueueWriteIndex=MwReadNativeWord(data,0x0324);
-    campaignMusic.mpuQueueReadIndex=MwReadNativeWord(data,0x0326);
-    campaignMusic.mpuQueueByteCount=MwReadNativeWord(data,0x0328);
-    campaignMusic.mpuPreviousIrqOwner=MwMpuIrqOwner::System; /*0220: 0000:0000*/
     campaignMusic.midiTickDenominator=MwReadNativeWord(data,0x0042);
     campaignMusic.midiTickNumerator=MwReadNativeWord(data,0x0044);
     campaignMusic.midiTickRemainder=0; /*0046*/
@@ -61,7 +52,7 @@ static bool DecodeMusicDriver(const uint8_t *data,size_t byteCount)
     for (size_t i=0;i<sizeof(campaignMusic.audioDummyChannel);++i) ((uint8_t *)&campaignMusic.audioDummyChannel)[i]=data[0x0646+i];
     for (size_t i=0;i<sizeof(campaignMusic.midiSysex);++i) ((uint8_t *)&campaignMusic.midiSysex)[i]=data[0x07CE +i];
     campaignMusic.selectedAudioBackend=backendOffset==MIDI_MPU_BACKEND_OFFSET?&campaignMusic.mpuBackend
-        :backendOffset==MIDI_ADLIB_BACKEND_OFFSET?&campaignMusic.adlibBackend:backendOffset?&speakerBackend:NULL;
+        :backendOffset?&speakerBackend:NULL;
     return true;
 }
 bool MwImportCampaignMusicData(void)

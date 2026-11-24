@@ -66,8 +66,13 @@ bool MwSdlLoadTimingConfiguration(const char *path,bool optional)
         else if (!strcmp(key,"sound_system"))
         {
             if (!strcmp(value,"speaker")) soundSystem=MW_SOUND_SPEAKER;
-            else if (!strcmp(value,"mt32")) soundSystem=MW_SOUND_MT32;
-            else if (!strcmp(value,"adlib")) soundSystem=MW_SOUND_ADLIB;
+            else if (!strcmp(value,"mt32") || !strcmp(value,"adlib"))
+            {
+                /* The AdLib and MT-32 paths are gone (S8): an existing ini keeps
+                 * working, with the rebuild's music. S9 replaces the key. */
+                fprintf(stderr,"%s: sound_system=%s now plays the rebuild's music (music=soundfont).\n",path,value);
+                musicSoundfont=true;
+            }
             else {valid=false;break;}
         }
         else if (!strcmp(key,"music"))

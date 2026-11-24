@@ -4,13 +4,13 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 
 | Group | Items |
 |---|---|
-| Extracted: the original's creative content (the story file, first run) | 90 |
+| Extracted: the original's creative content (the story file, first run) | 84 |
 | Ours: UI words and system messages (story/words.json, imported) | 142 |
 | Ours: screen layout, panels and menus (data/ui/*.json) | 127 |
 | Ours: rules and constants (data/rules/*.json) | 102 |
 | Ours: the new campaign's starting state (data/rules/new_campaign.json) | 103 |
 | Dropped | 6 |
-| Code: runtime state and renderer tables (no file) | 949 |
+| Code: runtime state and renderer tables (no file) | 944 |
 
 ## Extracted: the original's creative content (the story file, first run)
 
@@ -86,11 +86,6 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 | MW_MAIN_1090_OPTIONS.cpp | `restoreNavigationProbe` | MW_MAIN 1090:AD6D | story probe.restore |
 | MW_MAIN_1AA5.cpp | `eventTextStorage` | - | story, MwStoryBuildEventText |
 | MW_MAIN_1AA5.cpp | `eventTextStorage / eventTextRecords` | - | story, MwStoryBuildEventText |
-| MW_MAIN_28BE.cpp | `adlibAddressDelayReads` | MW_MAIN 28BE:00E0 | story, music.driver (native span) |
-| MW_MAIN_28BE.cpp | `adlibDataDelayReads` | MW_MAIN 28BE:00E2 | story, music.driver (native span) |
-| MW_MAIN_28BE.cpp | `adlibPackedNoteFrequencies` | MW_MAIN 28BE:00E6 | story, music.driver (native span) |
-| MW_MAIN_28BE.cpp | `adlibRhythmRegister` | MW_MAIN 28BE:00E4 | story, music.driver (native span) |
-| MW_MAIN_28BE.cpp | `adlibVoiceRoutes` | MW_MAIN 28BE:01CC | story, music.driver (native span) |
 | MW_MAIN_28BE.cpp | `audioChannels` | MW_MAIN 28BE:04C6 | story, music.driver (native span) |
 | MW_MAIN_28BE.cpp | `audioDummyChannel` | MW_MAIN 28BE:0646 | story, music.driver (native span) |
 | MW_MAIN_28BE.cpp | `midiBarDivision` | MW_MAIN 28BE:004A | story, music.driver (native span) |
@@ -105,7 +100,6 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 | MW_MAIN_28BE.cpp | `midiTrackChannelHandlers` | MW_MAIN 28BE:005D | story, music.driver (native span) |
 | MW_MAIN_28BE.cpp | `midiTrackRunningStatus` | MW_MAIN 28BE:005C | story, music.driver (native span) |
 | MW_MAIN_28BE.cpp | `midiTrackSystemHandlers` | MW_MAIN 28BE:006B | story, music.driver (native span) |
-| MW_MAIN_28BE.cpp | `mpuTransmitQueue` | MW_MAIN 28BE:0224 | story, music.driver (native span) |
 
 ## Ours: UI words and system messages (story/words.json, imported)
 
@@ -614,7 +608,7 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 
 ## Code: runtime state and renderer tables (no file)
 
-Not listed one by one: BTECH_1ADF_STATE.cpp 2, BTECH_1BF5_STATE.cpp 4, BTECH_22B6_DATA.cpp 15, BTECH_2FEB.cpp 24, BTECH_304E.cpp 31, BTECH_304E_ADLIB.cpp 25, BTECH_304E_COCKPIT.cpp 36, BTECH_304E_MPU.cpp 9, BTECH_304E_ORDERS.cpp 24, BTECH_304E_POLYGONS.cpp 24, BTECH_304E_POSE.cpp 12, BTECH_304E_RENDER.cpp 62, BTECH_304E_RUNTIME.cpp 14, BTECH_304E_SCENE.cpp 8, BTECH_304E_SOUND.cpp 43, BTECH_304E_STARTUP.cpp 55, BTECH_304E_VIDEO.cpp 86, BTECH_304E_WORLD.cpp 107, BtechStartImage.cpp 4, MW_0806_STATE.cpp 1, MW_EGA_0800_STATE.cpp 72, MW_MAIN_0F41_STATE.cpp 5, MW_MAIN_1090.cpp 250, MW_MAIN_1090_OPTIONS.cpp 11, MW_MAIN_1AA5.cpp 1, MW_MAIN_28BE.cpp 19, NativeStart.cpp 5.
+Not listed one by one: BTECH_1ADF_STATE.cpp 2, BTECH_1BF5_STATE.cpp 4, BTECH_22B6_DATA.cpp 15, BTECH_2FEB.cpp 24, BTECH_304E.cpp 31, BTECH_304E_ADLIB.cpp 25, BTECH_304E_COCKPIT.cpp 36, BTECH_304E_MPU.cpp 9, BTECH_304E_ORDERS.cpp 24, BTECH_304E_POLYGONS.cpp 24, BTECH_304E_POSE.cpp 12, BTECH_304E_RENDER.cpp 62, BTECH_304E_RUNTIME.cpp 14, BTECH_304E_SCENE.cpp 8, BTECH_304E_SOUND.cpp 43, BTECH_304E_STARTUP.cpp 55, BTECH_304E_VIDEO.cpp 86, BTECH_304E_WORLD.cpp 107, BtechStartImage.cpp 4, MW_0806_STATE.cpp 1, MW_EGA_0800_STATE.cpp 72, MW_MAIN_0F41_STATE.cpp 5, MW_MAIN_1090.cpp 250, MW_MAIN_1090_OPTIONS.cpp 11, MW_MAIN_1AA5.cpp 1, MW_MAIN_28BE.cpp 14, NativeStart.cpp 5.
 
 Still read from the exe (slice 6 moves them): none.
 

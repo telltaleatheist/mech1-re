@@ -211,8 +211,6 @@ add_library(mechwarrior_original STATIC
     src/Original/Memory/MW_MAIN_0F41_STATE.cpp
     src/Original/Runtime/MW_MAIN_0F41.cpp
     src/Original/Runtime/MW_MAIN_0F41_SYNTH.cpp
-    src/Original/Runtime/MW_MAIN_0F41_MPU.cpp
-    src/Original/Runtime/MW_MAIN_0F41_ADLIB.cpp
     src/Original/Runtime/MW_MAIN_0800.cpp
     src/Original/Memory/MW_EGA_0800_STATE.cpp
     src/Original/Video/MW_EGA_0800.cpp
