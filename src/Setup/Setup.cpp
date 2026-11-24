@@ -415,11 +415,21 @@ Installed install(const rekit::Found& found, const std::string& out_dir, const P
   if (out_dir.empty()) return fail("There is no folder to copy the game into.");
   std::error_code ec;
   const fs::path dest(out_dir), tmp(out_dir + ".new");
-  // tmp is ours only when it carries the marker (an earlier run's, stopped); else it is the player's.
-  if (fs::exists(tmp, ec)) {
-    if (!fs::exists(tmp / kInstallMarker, ec)) return fail("The folder " + tmp.string() + " is in the way: move it away first.");
-    fs::remove_all(tmp, ec);
-  }
+  // tmp is ours only when it carries the marker (an earlier run's, stopped); else it is the player's, and never
+  // deleted. It is made and marked before anything goes in it, so a run killed at any point leaves one that is ours.
+  if (fs::exists(tmp, ec) && !fs::exists(tmp / kInstallMarker, ec) && !(fs::is_directory(tmp, ec) && fs::is_empty(tmp, ec)))
+    return fail("The folder " + tmp.string() + " is in the way, and nothing in it was touched. Move that folder somewhere "
+                "else, or delete it if you don't need it, then set the game up again.");
+  const auto stage = [&](const std::string& from) -> std::string {  // "" or why not
+    std::error_code e;
+    if (fs::exists(tmp / kInstallMarker, e)) fs::remove_all(tmp, e);
+    fs::create_directories(tmp, e);
+    if (e) return "Could not make " + tmp.string() + ": " + e.message() + ".";
+    std::ofstream mark(tmp / kInstallMarker);
+    mark << from << std::flush;
+    return mark ? "" : "Could not write in " + tmp.string() + ".";
+  };
+  fs::path ready = tmp;  // what is swapped in
   fs::create_directories(dest.parent_path(), ec);
 
   if (found.on_disk && found.steps.empty()) {
@@ -427,19 +437,27 @@ Installed install(const rekit::Found& found, const std::string& out_dir, const P
     const std::string from = (fs::path(found.path) / found.root).lexically_normal().string();
     const std::string src = is_dir(from) ? from : fs::path(from).parent_path().string();
     if (fs::exists(dest, ec) && fs::equivalent(src, dest, ec)) return r.ok = true, r.dir = dest.string(), r;
+    const fs::path real = fs::weakly_canonical(src, ec), staged = fs::weakly_canonical(tmp, ec);
+    if (std::mismatch(staged.begin(), staged.end(), real.begin(), real.end()).first == staged.end())
+      return fail("The folder " + src + " is a copy this setup didn't finish: pick your own copy.");
     if (larger_than(src, kMaxGameBytes))
       return fail("The folder " + src + " holds far more than " + std::string(kTitle) +
                   ", which is about 1 MB: nothing was copied. Put the game's files in a folder of their own and pick "
                   "that.");
-    const rekit::CopyResult c = rekit::copy_folder(src, tmp.string(), [&](uint64_t done, uint64_t total, const std::string& f) {
+    // Copied into a folder inside the marked one (the kit copies only into a new one).
+    const std::string from_words = "Copied from " + src + " by the setup (the original was left as it was).\n";
+    if (const std::string why = stage(from_words); !why.empty()) return fail(why);
+    ready = tmp / "copy";
+    const rekit::CopyResult c = rekit::copy_folder(src, ready.string(), [&](uint64_t done, uint64_t total, const std::string& f) {
       return !progress || progress(total ? double(done) / double(total) : 0.0, f);
     });
     if (!c.ok) {
+      fs::remove_all(tmp, ec);  // ours: marked above
       r.cancelled = c.cancelled;
       return fail(c.cancelled ? "Stopped. Nothing was copied." : "Could not copy the game from " + src + ": " + c.error);
     }
     r.files = c.files, r.bytes = c.bytes;
-    std::ofstream(tmp / kInstallMarker) << "Copied from " << src << " by the setup (the original was left as it was).\n";
+    std::ofstream(ready / kInstallMarker) << from_words;
   } else {
     // In an archive (at any depth): the game's folder read out in one forward pass.
     if (!rekit::archives_supported()) return fail("This build cannot open archives: unpack it and pick its BTECH.EXE.");
@@ -461,9 +479,8 @@ Installed install(const rekit::Found& found, const std::string& out_dir, const P
       chain.push_back(std::move(inner));
     }
     rekit::ArchiveReader& a = *chain.back();
-    fs::create_directories(tmp, ec);
-    if (ec) return fail("Could not make " + tmp.string() + ": " + ec.message() + ".");
-    std::ofstream(tmp / kInstallMarker) << "Unpacked from " << found.path << " by the setup (the archive was left as it was).\n";
+    if (const std::string why = stage("Unpacked from " + found.path + " by the setup (the archive was left as it was).\n"); !why.empty())
+      return fail(why);
     std::vector<uint8_t> buf(1 << 16);
     std::string rel, why;
     const int64_t whole = [&] {
@@ -498,15 +515,16 @@ Installed install(const rekit::Found& found, const std::string& out_dir, const P
       return fail(why);
     }
   }
-  if (check_install(tmp.string(), true).state == rekit::Status::kMissing) {
+  if (check_install(ready.string(), true).state == rekit::Status::kMissing) {
     fs::remove_all(tmp, ec);
     return fail("The copy has no BTECH.EXE this program knows: nothing was changed.");
   }
-  if (!rekit::swap_in_folder(tmp.string(), dest.string(), kInstallMarker, ec)) {
+  if (!rekit::swap_in_folder(ready.string(), dest.string(), kInstallMarker, ec)) {
     const std::string why = ec.message();
     fs::remove_all(tmp, ec);
     return fail("Could not put the game in " + dest.string() + " (" + why + "): nothing was changed.");
   }
+  fs::remove_all(tmp, ec);  // the marked folder the copy was made in
   r.ok = true, r.dir = dest.string();
   return r;
 }

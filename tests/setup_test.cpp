@@ -488,6 +488,38 @@ void with_game(const fs::path& work, const char* game_env, const char* ref_env, 
   r = setup::install(f, (work / "blocked").string());
   check(!r.ok && fs::exists(work / "blocked.new" / "X"), "break: a .new folder that is not ours is left alone");
 
+  // Break: a folder copy killed part way (its staging folder as it was then, put back) doesn't stop the next one.
+  {
+    const fs::path kout = work / "kuser" / "install", knew = work / "kuser" / "install.new", kept = work / "killed";
+    int steps = 0;
+    r = setup::install(f, kout.string(), [&](double, const std::string&) {
+      if (++steps == 2) fs::copy(knew, kept, fs::copy_options::recursive);
+      return steps < 2;
+    });
+    check(r.cancelled && !fs::exists(knew) && !fs::exists(kout), "a folder copy cancelled part way leaves nothing");
+    check(fs::exists(kept / setup::kInstallMarker) && count_files(kept) > 1, "part way, its folder is already marked");
+    fs::rename(kept, knew);
+    rekit::Found half = f;
+    half.path = (knew / "copy").string();
+    r = setup::install(half, kout.string());
+    check(!r.ok && fs::exists(knew / "copy"), "break: the half copy itself picked: refused, not deleted");
+    r = setup::install(f, kout.string());
+    check(r.ok && !fs::exists(knew) && fs::exists(kout / setup::kInstallMarker) && !fs::exists(kout / "copy") && fs::exists(kout / "BTECH.EXE"),
+          "after a killed copy, the next install succeeds");
+    // One an older version left, with no marker: refused, whole, and the message names it.
+    write(knew / "BTECH.EXE", "half of it");
+    r = setup::install(f, kout.string());
+    check(!r.ok && r.error.find("The folder " + knew.string() + " is in the way") == 0 && read(knew / "BTECH.EXE") == "half of it" &&
+              fs::exists(kout / "BTECH.EXE"), "break: an unmarked leftover is refused, named and not touched");
+    fs::remove_all(knew);
+    fs::create_directories(knew);  // an empty one is made use of: there is nothing of the player's in it
+    r = setup::install(f, kout.string());
+    check(r.ok && !fs::exists(knew), "an empty leftover is no obstacle");
+    write(knew, "a file");
+    r = setup::install(f, kout.string());
+    check(!r.ok && read(knew) == "a file", "break: a file in its place is refused and kept");
+  }
+
   // Incomplete without MW_MAIN.EXE until the story is imported.
   fs::remove(rekit::any_case_path(out.string(), "MW_MAIN.EXE"));
   check(setup::check_install(out.string(), false).state == rekit::Status::kIncomplete, "no MW_MAIN.EXE before the import: incomplete");
