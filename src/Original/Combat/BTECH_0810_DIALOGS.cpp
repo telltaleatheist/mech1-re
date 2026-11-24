@@ -39,7 +39,7 @@ uint16_t BtechShowCapturedTwoLineDialog(const BtechDialogMessagePair *message)
     BtechResourceAllocation capture={BtechAllocateDosMemoryBlock(captureBytes).bytes,captureBytes};
     if (capture.bytes)
     {
-        combatVideo.drawPageSelector=combatVideo.frontPageSelector;combatVideo.copySourcePageSelector=combatVideo.frontPageSelector;
+        combatVideo.drawPage=combatVideo.frontPage;combatVideo.copySourcePage=combatVideo.frontPage;
         BtechCaptureScreenRectangle(capture,DIALOG_LEFT,DIALOG_TOP,DIALOG_WIDTH,DIALOG_HEIGHT);
         combatVideo.screenPolygonNeedsClip=false;combatVideo.drawPolygonFilled=true;combatVideo.textTransparentBackground=true;
         combatVideo.textForegroundColour=combatImport.hudColourSchemeIndex?DIALOG_MONOCHROME_TEXT_COLOUR:DIALOG_TEXT_COLOUR;
@@ -67,7 +67,7 @@ void BtechSaveDrawingState(void)
     combatCockpit.savedTextForeground=(int8_t)combatVideo.textForegroundColour;
     combatCockpit.savedFillColour=(int8_t)combatVideo.drawFillColour;
     combatCockpit.savedLineColour=(int8_t)combatVideo.drawLineColour;
-    combatCockpit.savedCopySourcePage=combatVideo.copySourcePageSelector;combatCockpit.savedDrawPage=combatVideo.drawPageSelector;
+    combatCockpit.savedCopySourcePage=combatVideo.copySourcePage;combatCockpit.savedDrawPage=combatVideo.drawPage;
 }
 
 /*0810:2999. Restore LOW BYTEs in original order, then page WORDs. */
@@ -76,5 +76,5 @@ void BtechRestoreDrawingState(void)
     combatVideo.drawPolygonFilled=(uint8_t)combatCockpit.savedPolygonFilled;combatVideo.screenPolygonNeedsClip=(uint8_t)combatCockpit.savedPolygonClip;
     combatVideo.textBackgroundColour=(uint8_t)combatCockpit.savedTextBackground;combatVideo.textForegroundColour=(uint8_t)combatCockpit.savedTextForeground;
     combatVideo.drawFillColour=(uint8_t)combatCockpit.savedFillColour;combatVideo.drawLineColour=(uint8_t)combatCockpit.savedLineColour;
-    combatVideo.copySourcePageSelector=combatCockpit.savedCopySourcePage;combatVideo.drawPageSelector=combatCockpit.savedDrawPage;
+    combatVideo.copySourcePage=combatCockpit.savedCopySourcePage;combatVideo.drawPage=combatCockpit.savedDrawPage;
 }

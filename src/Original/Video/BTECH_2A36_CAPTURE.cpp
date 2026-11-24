@@ -22,7 +22,7 @@ void BtechEgaCaptureScreenRectangle(BtechResourceAllocation buffer,uint16_t x,ui
     uint16_t wordsPerRow=(coveredBytes>>1)+(coveredBytes&1);
     if (y>=COMBAT_SCREEN_HEIGHT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: y>=COMBAT_SCREEN_HEIGHT"); /* Adjacent row-owner aliases not represented. */
     uint16_t screenStart=combatVideo.graphicsRowOffsets[y]+leftByte;
-    CombatPage page=combatVideo.copySourcePageSelector;uint16_t bufferCursor=0;
+    CombatPage page=combatVideo.copySourcePage;uint16_t bufferCursor=0;
     for (int16_t plane=COMBAT_EGA_PLANES-1;plane>=0;--plane)
     {
         uint16_t rowsRemaining=height,screenCursor=screenStart;
@@ -55,7 +55,7 @@ void BtechEgaRestoreScreenRectangle(BtechResourceAllocation buffer,uint16_t x,ui
     uint16_t wordsPerRow=(coveredBytes>>1)+(coveredBytes&1);
     if (y>=COMBAT_SCREEN_HEIGHT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: y>=COMBAT_SCREEN_HEIGHT");
     uint16_t screenStart=combatVideo.graphicsRowOffsets[y]+leftByte;
-    CombatPage page=combatVideo.drawPageSelector;uint16_t bufferCursor=0;
+    CombatPage page=combatVideo.drawPage;uint16_t bufferCursor=0;
     for (int16_t plane=COMBAT_EGA_PLANES-1;plane>=0;--plane)
     {
         uint16_t rowsRemaining=height,screenCursor=screenStart;

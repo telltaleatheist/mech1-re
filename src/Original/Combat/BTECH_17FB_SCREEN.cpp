@@ -19,7 +19,7 @@ enum { ORDER_REDUCED_PANEL_X=0x6D,ORDER_REDUCED_PANEL_Y=0x7A,
 void BtechRefreshLanceOrderScreen(void)
 {
     uint16_t redrawRequired=0;
-    combatVideo.drawPageSelector=combatVideo.backPageSelector;
+    combatVideo.drawPage=combatVideo.backPage;
     if (combatOrders.orderScreenFullRedrawPending)
     {
         combatCockpit.cockpitFullRedrawPending=0;
@@ -64,13 +64,13 @@ void BtechRefreshLanceOrderScreen(void)
     }
     combatWorld.orderMapCameraObject->object.prefix.position.positionC=
         BtechShiftDwordLeftPair(1,combatOrders.orderMapScaleShifts[combatOrders.orderMapScaleIndex]);
-    combatVideo.drawPolygonFilled=true;combatVideo.drawPageSelector=combatVideo.backPageSelector;
+    combatVideo.drawPolygonFilled=true;combatVideo.drawPage=combatVideo.backPage;
     if (redrawRequired)
     {
         BtechRenderObjectListVeneer(combatWorld.orderMapCameraContext,combatWorld.selectedWorldObjects,(int16_t)combatWorld.selectedObjectCount);
         if (combatOrders.orderMapScaleIndex==ORDER_MAP_FULL_SCALE)
         {
-            combatVideo.copySourcePageSelector=combatVideo.backPageSelector;
+            combatVideo.copySourcePage=combatVideo.backPage;
             const BtechCameraContext *viewport=combatWorld.orderMapCameraContext;
             BtechCaptureScreenRectangle(combatOrders.orderPanelCaptureBuffer,(uint16_t)viewport->clipMinimumA,(uint16_t)viewport->clipMinimumB,
                 (uint16_t)(viewport->clipMaximumA-viewport->clipMinimumA),(uint16_t)(viewport->clipMaximumB-viewport->clipMinimumB+1));
@@ -123,7 +123,7 @@ void BtechRefreshLanceOrderScreen(void)
     if (combatOrders.orderScreenFullRedrawPending)
     {
         BtechPresentScreenRectangle(0,0,COMBAT_SCREEN_WIDTH,COMBAT_SCREEN_HEIGHT);
-        combatVideo.copySourcePageSelector=combatVideo.frontPageSelector;combatVideo.drawPageSelector=combatVideo.backPageSelector;
+        combatVideo.copySourcePage=combatVideo.frontPage;combatVideo.drawPage=combatVideo.backPage;
         BtechCopyScreenRectangle(0,0,COMBAT_SCREEN_WIDTH,COMBAT_SCREEN_HEIGHT);
         combatOrders.orderScreenFullRedrawPending=0;
     }

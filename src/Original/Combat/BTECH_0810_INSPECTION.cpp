@@ -49,7 +49,7 @@ void BtechUpdateMechInspectionScreen(uint16_t unitSlot)
     case COMBAT_KEY_C:combatStartup.combatDispatchState=PLAYER_SCREEN_ORDERS;combatVideo.inspectionReloadPending=1;break;
     default:break;
     }
-    combatVideo.drawPageSelector=combatVideo.backPageSelector;
+    combatVideo.drawPage=combatVideo.backPage;
     BtechDrawMechInspectionStatus();
     BtechDrawMechInspectionDiagramAndLegend();
     BtechSwapScreenPages(false);
@@ -69,7 +69,7 @@ void BtechClearInspectionBackground(void)
 {
     if (combatImport.hudColourSchemeIndex)
     {
-        combatVideo.drawPageSelector=combatVideo.backPageSelector;
+        combatVideo.drawPage=combatVideo.backPage;
         combatVideo.drawPolygonFilled=true;combatVideo.screenPolygonNeedsClip=false;combatVideo.drawLineColour=Combat_Pal_EGA_Black;combatVideo.drawFillColour=Combat_Pal_EGA_Black;
         BtechDrawStyledRectangle(0,0,COMBAT_SCREEN_WIDTH,COMBAT_SCREEN_HEIGHT);
         BtechCopyHudRectangleIfReady(0,0,COMBAT_SCREEN_WIDTH,COMBAT_SCREEN_HEIGHT);

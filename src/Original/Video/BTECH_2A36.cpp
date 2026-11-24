@@ -21,8 +21,8 @@ void BtechInitializeEgaVideo(uint16_t paletteByteOffset)
 {
     if (paletteByteOffset) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: paletteByteOffset");
     combatVideo.videoColourCount=COMBAT_EGA_COLOURS;
-    combatVideo.frontPageSelector=CombatPage::First;
-    combatVideo.backPageSelector=CombatPage::Second;
+    combatVideo.frontPage=CombatPage::First;
+    combatVideo.backPage=CombatPage::Second;
     MwSetVideoMode(COMBAT_EGA_MODE_320X200);
     uint16_t pattern=0;
     for (uint16_t colour=0;colour<COMBAT_EGA_COLOURS;++colour)

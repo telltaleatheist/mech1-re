@@ -23,7 +23,7 @@ void BtechUpdateTargetPanelAndReticle(uint16_t targetUnitSlot)
     const BtechScreenRectangle *panel=&combatCockpit.cockpitLayouts[layout].targetPanel;
     combatVideo.screenPolygonNeedsClip=false;combatVideo.drawPolygonFilled=true;
     if (!combatStartup.combatTickCounter) cachedTargetPanelSlot=0;
-    combatVideo.drawPageSelector=combatVideo.backPageSelector;
+    combatVideo.drawPage=combatVideo.backPage;
     if (!targetUnitSlot)
     {
         if (cachedTargetPanelSlot)

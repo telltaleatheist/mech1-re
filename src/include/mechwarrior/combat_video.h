@@ -184,9 +184,9 @@ struct CombatVideoState
     BtechAlternatingSpan graphicsFillAlternatingSpan;
     BtechShapeSpanCallback shapeSpanCallback;
     uint8_t ellipseLeftInsets[COMBAT_ELLIPSE_ROWS], ellipseBorderWidths[COMBAT_ELLIPSE_ROWS], ellipseInteriorWidths[COMBAT_ELLIPSE_ROWS];
-    CombatPage ellipsePageSelector;
-    CombatPage backPageSelector, frontPageSelector;
-    CombatPage copySourcePageSelector, drawPageSelector;
+    CombatPage ellipsePage;
+    CombatPage backPage, frontPage;
+    CombatPage copySourcePage, drawPage;
     uint8_t videoColourCount;
     uint8_t pcjrTandyCompatible, combatRendererKind;
     uint8_t textForegroundPattern, textBackgroundPattern, glyphTailMask;

@@ -12,8 +12,8 @@
 void BtechEgaSwapScreenPages(uint16_t waitForRetrace)
 {
     (void)waitForRetrace;
-    CombatPage previousFrontPage=combatVideo.frontPageSelector;
-    combatVideo.frontPageSelector=combatVideo.backPageSelector;
-    combatVideo.backPageSelector=previousFrontPage;
-    mw1o::video::GameCanvas().present(BtechEgaCanvasPage(combatVideo.frontPageSelector));
+    CombatPage previousFrontPage=combatVideo.frontPage;
+    combatVideo.frontPage=combatVideo.backPage;
+    combatVideo.backPage=previousFrontPage;
+    mw1o::video::GameCanvas().present(BtechEgaCanvasPage(combatVideo.frontPage));
 }

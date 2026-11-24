@@ -34,7 +34,7 @@ void BtechUpdateRadarPanel(void)
  * Native671B tests the binding ADDRESS, not its Mech pointer. */
 void BtechDrawHeadingRadar(void)
 {
-    combatVideo.drawPageSelector=combatVideo.backPageSelector;
+    combatVideo.drawPage=combatVideo.backPage;
     if (combatImport.activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS");
     const BtechScreenRectangle *panel=&combatCockpit.cockpitLayouts[combatImport.activeCockpitLayoutIndex].radarPanel;
     int16_t halfWidth=(panel->width-(panel->width<0))/2;

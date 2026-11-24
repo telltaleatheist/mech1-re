@@ -20,7 +20,7 @@ enum { BRIEFING_MISSION_LABEL_X=0x14,BRIEFING_MISSION_LABEL_Y=0x96,
  * wait, then remove only friendly bindings with a Mech but no head object. */
 void BtechShowCombatStageBriefing(void)
 {
-    combatVideo.drawPageSelector=combatVideo.backPageSelector;
+    combatVideo.drawPage=combatVideo.backPage;
     BtechLoadScreenImage("status.scr",NULL);
     combatVideo.textTransparentBackground=true;
     combatVideo.screenPolygonNeedsClip=false;

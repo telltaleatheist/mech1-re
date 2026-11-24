@@ -42,7 +42,7 @@ void BtechRenderCockpitSceneAndHud(void)
     uint32_t projectedAim=BtechDivideSignedDword(BtechShiftDwordLeft(aimSine,(uint8_t)combatStartup.viewScaleShift),aimCosine);
     uint16_t viewportYSum=combatWorld.playerPoseCameraContext->clipMaximumB+combatWorld.playerPoseCameraContext->clipMinimumB;
     combatStartup.aimReticleScreenY=(uint16_t)((uint16_t)projectedAim+(uint16_t)((int16_t)viewportYSum>>1));
-    combatVideo.drawPageSelector=combatVideo.backPageSelector;
+    combatVideo.drawPage=combatVideo.backPage;
     uint16_t probeY=BtechRandomSignedSpread(combatStartup.heatAimJitterTiers[0])+combatStartup.aimReticleScreenY;
     uint16_t probeX=BtechRandomSignedSpread(combatStartup.heatAimJitterTiers[0])+COMBAT_SCREEN_WIDTH/2;
     BtechBeginSelectionPixelProbe(probeX,probeY);
@@ -74,7 +74,7 @@ void BtechRenderCockpitSceneAndHud(void)
         BtechSetOverscanColour(Combat_Pal_EGA_Black);
         BtechPresentScreenRectangle(0,0,COMBAT_SCREEN_WIDTH,COMBAT_SCREEN_HEIGHT);
         combatCockpit.cockpitFullRedrawPending=0;
-        combatVideo.drawPageSelector=combatVideo.backPageSelector;combatVideo.copySourcePageSelector=combatVideo.frontPageSelector;
+        combatVideo.drawPage=combatVideo.backPage;combatVideo.copySourcePage=combatVideo.frontPage;
         BtechCopyScreenRectangle(0,0,COMBAT_SCREEN_WIDTH,COMBAT_SCREEN_HEIGHT);
     }
     else BtechPresentScreenRectangle(combatWorld.playerPoseCameraContext->clipMinimumA,combatWorld.playerPoseCameraContext->clipMinimumB,

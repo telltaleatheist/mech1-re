@@ -13,7 +13,7 @@ void BtechEgaDrawBitmap(const BtechBitmap *bitmap,uint16_t x,uint16_t y)
 {
     if (!bitmap) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !bitmap");
     const BtechBitmap image=*bitmap;
-    CombatPage page=combatVideo.drawPageSelector;uint16_t rows=image.heightPixels;
+    CombatPage page=combatVideo.drawPage;uint16_t rows=image.heightPixels;
     uint16_t rowStart,sourceSkip=0;
     uint8_t rowBytes;
     if (!combatVideo.screenPolygonNeedsClip)

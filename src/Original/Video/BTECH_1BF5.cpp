@@ -51,8 +51,8 @@ uint16_t BtechSelectCombatRenderer(uint8_t adapterOverride,uint8_t allowedMask)
     }
     if (!btechHostWriteBiosWord) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWriteBiosWord");
     btechHostWriteBiosWord(0xF0,0x304E); /* Physical0000:04F0, not game state. */
-    combatVideo.copySourcePageSelector=combatVideo.frontPageSelector;
-    combatVideo.drawPageSelector=combatVideo.backPageSelector;
+    combatVideo.copySourcePage=combatVideo.frontPage;
+    combatVideo.drawPage=combatVideo.backPage;
     return combatVideo.combatRendererKind;
 }
 
@@ -120,7 +120,7 @@ uint16_t BtechGetBiosDisplayAdapterBits(void)
  * the compiled glyph path is consequently always forward. */
 void BtechDrawNearText(const char *text,int16_t x,int16_t y)
 {
-    CombatPage page=combatVideo.drawPageSelector;
+    CombatPage page=combatVideo.drawPage;
     combatVideo.textBackgroundPattern=(uint8_t)combatVideo.graphicsColourPatterns[combatVideo.textBackgroundColour];
     combatVideo.textForegroundPattern=(uint8_t)combatVideo.graphicsColourPatterns[combatVideo.textForegroundColour];
     if (combatVideo.screenPolygonNeedsClip)

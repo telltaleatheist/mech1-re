@@ -8,9 +8,9 @@ void BtechDrawStyledEllipse(int16_t radius, uint16_t centerX, uint16_t centerY)
 {
     // DS=SS=304E; BP becomes the row-table byte index, not a stack object.
     // See SHARED_ELLIPSE_RECOVERY.md for BYTE clipping and callback contracts.
-    CombatPage page=combatVideo.drawPageSelector;
+    CombatPage page=combatVideo.drawPage;
     if (combatVideo.combatRendererKind!=COMBAT_VIDEO_EGA) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatRendererKind!=COMBAT_VIDEO_EGA"); /* Tandy window resolver remains outside EGA scope. */
-    combatVideo.ellipsePageSelector=page; // Before even radius rejection.
+    combatVideo.ellipsePage=page; // Before even radius rejection.
     if (radius<=0x0001)
     {
         if (radius==0x0001)
@@ -54,7 +54,7 @@ void BtechDrawStyledEllipse(int16_t radius, uint16_t centerX, uint16_t centerY)
         combatVideo.ellipseInteriorWidths[rowIndex]=interiorWidth;
         previousInset=inset;
     }
-    page=combatVideo.ellipsePageSelector; // Native ES reload1789/178C.
+    page=combatVideo.ellipsePage; // Native ES reload1789/178C.
     combatVideo.spanPrimaryPattern=combatVideo.palettePrimarySlots[combatVideo.drawLineColour/COMBAT_PALETTE_WORDS][combatVideo.drawLineColour%COMBAT_PALETTE_WORDS];
     combatVideo.spanSecondaryPattern=combatVideo.paletteSecondarySlots[combatVideo.drawLineColour/COMBAT_PALETTE_WORDS][combatVideo.drawLineColour%COMBAT_PALETTE_WORDS];
     if (combatVideo.spanPrimaryPattern==combatVideo.spanSecondaryPattern)
