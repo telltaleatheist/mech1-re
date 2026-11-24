@@ -21,6 +21,9 @@ return in both runs (each combat EXEC launches and returns). The host stops
 on any program (.EXE or .COM) opened at play, naming the file and the opener
 (find_game_file); those lines are printed. Names and counts only.
 
+The copy is deleted at the end, also on a failure; the runs and their logs
+stay in DIR.
+
 Exit status: 0 the same without the exes, 1 not, 77 skipped (not opted in,
 or no game or port).
 """
@@ -78,8 +81,17 @@ def main():
     work = os.path.abspath(a.work)
     shutil.rmtree(work, ignore_errors=True)
     game, clean, free, story = (os.path.join(work, d) for d in ("game", "clean", "free", "story"))
-    shutil.copytree(a.game, game)
+    try:
+        shutil.copytree(a.game, game)
+        return traces(a, names, game, clean, free, story)
+    finally:
+        # Not left behind, whatever happened: setup looks for the game near
+        # the program and would find this copy. The runs and logs stay.
+        shutil.rmtree(game, ignore_errors=True)
 
+
+def traces(a, names, game, clean, free, story):
+    """The traces with the exes, then without them. The exit status."""
     _, lines = check(a, game, clean, [])
     print(f"with the exes: {lines[-1]}")
     unfinished = [n for n in names if not os.path.exists(os.path.join(clean, n + ".jsonl"))]
