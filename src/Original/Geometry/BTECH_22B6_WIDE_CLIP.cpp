@@ -12,7 +12,7 @@ void BtechIntersectWideEdgeWithNearPlane(uint16_t outsideVertex,uint16_t insideV
     BtechGeometryCoordinateCache *projected[]={&geometryProjectedX,&geometryProjectedY};
     for (uint16_t axis=0;axis<2;++axis)
     {
-        uint32_t planeDistance=(uint32_t)(int16_t)nearClipDepth-geometryViewDepth.wide[outsideVertex];
+        uint32_t planeDistance=(uint32_t)(int16_t)combatRender.nearClipDepth-geometryViewDepth.wide[outsideVertex];
         uint32_t difference=coordinates[axis]->wide[insideVertex]-coordinates[axis]->wide[outsideVertex];
         uint64_t product=BtechMultiplySignedDwordsWide(difference,planeDistance);
         uint32_t displacement=BtechDivideSignedWideNumerator((int16_t)(product>>48),(uint16_t)(product>>32),(uint16_t)(product>>16),(uint16_t)product,(uint16_t)denominator,(int16_t)(denominator>>16),NULL);
@@ -30,7 +30,7 @@ void BtechIntersectDwordNearEdgeWithWordProducts(uint16_t outsideVertex,uint16_t
     BtechGeometryCoordinateCache *projected[]={&geometryProjectedX,&geometryProjectedY};
     for (uint16_t axis=0;axis<2;++axis)
     {
-        uint32_t planeDistance=(uint32_t)(int16_t)nearClipDepth-geometryViewDepth.wide[outsideVertex];
+        uint32_t planeDistance=(uint32_t)(int16_t)combatRender.nearClipDepth-geometryViewDepth.wide[outsideVertex];
         uint32_t difference=coordinates[axis]->wide[insideVertex]-coordinates[axis]->wide[outsideVertex];
         uint32_t product=(int32_t)(int16_t)difference*(int16_t)planeDistance;
         if (!denominator) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !denominator"); /* A zero-divisor IRQ retries forever, not a valid crossing. */
@@ -73,8 +73,8 @@ void BtechClipWidePolygonNearPlane(void)
         for (uint16_t vertex=0;vertex<emitted;++vertex)
         {
             if (output>=WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: output>=WIDE_POLYGON_VERTICES");
-            wideScreenX[output]=(uint32_t)screenCentreA+geometryProjectedX.wide[emit[vertex]];
-            wideScreenY[output]=(uint32_t)screenCentreB-geometryProjectedY.wide[emit[vertex]];
+            wideScreenX[output]=(uint32_t)combatRender.screenCentreA+geometryProjectedX.wide[emit[vertex]];
+            wideScreenY[output]=(uint32_t)combatRender.screenCentreB-geometryProjectedY.wide[emit[vertex]];
             ++output;
         }
         previous=current;++input;
@@ -110,8 +110,8 @@ void BtechClipDwordNearPolygonWithWordProducts(void)
         for (uint16_t vertex=0;vertex<emitted;++vertex)
         {
             if (output>=WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: output>=WIDE_POLYGON_VERTICES");
-            wideScreenX[output]=(uint32_t)screenCentreA+geometryProjectedX.wide[emit[vertex]];
-            wideScreenY[output]=(uint32_t)screenCentreB-geometryProjectedY.wide[emit[vertex]];
+            wideScreenX[output]=(uint32_t)combatRender.screenCentreA+geometryProjectedX.wide[emit[vertex]];
+            wideScreenY[output]=(uint32_t)combatRender.screenCentreB-geometryProjectedY.wide[emit[vertex]];
             ++output;
         }
         previous=current;++input;

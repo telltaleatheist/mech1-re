@@ -9,11 +9,11 @@ void BtechCacheTransformedPolygonVertex(uint8_t vectorIndex)
     if (vectorIndex>=GEOMETRY_CACHE_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: vectorIndex>=GEOMETRY_CACHE_VERTICES");
     if (vertexNearPlaneState[vectorIndex]) return;
     vertexNearPlaneState[vectorIndex]=GEOMETRY_VERTEX_TRANSFORMED;
-    for (uint16_t axis=0;axis<3;++axis) viewVectorCoefficients[axis]=renderGeometry[vectorIndex][axis];
-    BtechTransformWordVector(viewVectorCoefficients,activeRenderBasis,transformedEntryVector);
-    geometryViewX.words[vectorIndex]=(uint16_t)(transformedEntryVector[0]+(uint16_t)transformedViewPosition.positionA);
-    geometryViewDepth.words[vectorIndex]=(uint16_t)(transformedEntryVector[1]+(uint16_t)transformedViewPosition.positionB);
-    geometryViewZ.words[vectorIndex]=(uint16_t)(transformedEntryVector[2]+(uint16_t)transformedViewPosition.positionC);
+    for (uint16_t axis=0;axis<3;++axis) combatRender.viewVectorCoefficients[axis]=combatRender.renderGeometry[vectorIndex][axis];
+    BtechTransformWordVector(combatRender.viewVectorCoefficients,combatRender.activeRenderBasis,combatRender.transformedEntryVector);
+    geometryViewX.words[vectorIndex]=(uint16_t)(combatRender.transformedEntryVector[0]+(uint16_t)combatRender.transformedViewPosition.positionA);
+    geometryViewDepth.words[vectorIndex]=(uint16_t)(combatRender.transformedEntryVector[1]+(uint16_t)combatRender.transformedViewPosition.positionB);
+    geometryViewZ.words[vectorIndex]=(uint16_t)(combatRender.transformedEntryVector[2]+(uint16_t)combatRender.transformedViewPosition.positionC);
 }
 
 /*22B6:6AC2. Normals share the vertex cache flags but omit translation. */
@@ -22,11 +22,11 @@ void BtechCacheTransformedPolygonNormal(uint8_t vectorIndex)
     if (vectorIndex>=GEOMETRY_CACHE_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: vectorIndex>=GEOMETRY_CACHE_VERTICES");
     if (vertexNearPlaneState[vectorIndex]) return;
     vertexNearPlaneState[vectorIndex]=GEOMETRY_VERTEX_TRANSFORMED;
-    for (uint16_t axis=0;axis<3;++axis) viewVectorCoefficients[axis]=renderGeometry[vectorIndex][axis];
-    BtechTransformWordVector(viewVectorCoefficients,activeRenderBasis,transformedEntryVector);
-    geometryViewX.words[vectorIndex]=transformedEntryVector[0];
-    geometryViewDepth.words[vectorIndex]=transformedEntryVector[1];
-    geometryViewZ.words[vectorIndex]=transformedEntryVector[2];
+    for (uint16_t axis=0;axis<3;++axis) combatRender.viewVectorCoefficients[axis]=combatRender.renderGeometry[vectorIndex][axis];
+    BtechTransformWordVector(combatRender.viewVectorCoefficients,combatRender.activeRenderBasis,combatRender.transformedEntryVector);
+    geometryViewX.words[vectorIndex]=combatRender.transformedEntryVector[0];
+    geometryViewDepth.words[vectorIndex]=combatRender.transformedEntryVector[1];
+    geometryViewZ.words[vectorIndex]=combatRender.transformedEntryVector[2];
 }
 
 /*22B6:6BD0, including shared6B51 direct-basis continuation, not a new call.
@@ -35,12 +35,12 @@ int16_t BtechGetPolygonFacingDotHighWord(uint8_t normalIndex,uint8_t firstVertex
 {
     if (normalIndex>=GEOMETRY_CACHE_VERTICES || firstVertexIndex>=GEOMETRY_CACHE_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: normalIndex>=GEOMETRY_CACHE_VERTICES || firstVertexIndex>=GEOMETRY_CACHE_VERTICES");
     uint16_t vertex[3],normal[3];
-    if (useViewBasisDirectly)
+    if (combatRender.useViewBasisDirectly)
     {
-        vertex[0]=(uint16_t)(renderGeometry[firstVertexIndex][0]+(uint16_t)cameraRelativePosition.positionA);
-        vertex[1]=(uint16_t)(renderGeometry[firstVertexIndex][1]+(uint16_t)cameraRelativePosition.positionB);
-        vertex[2]=(uint16_t)(renderGeometry[firstVertexIndex][2]+(uint16_t)cameraRelativePosition.positionC);
-        for (uint16_t axis=0;axis<3;++axis) normal[axis]=renderGeometry[normalIndex][axis];
+        vertex[0]=(uint16_t)(combatRender.renderGeometry[firstVertexIndex][0]+(uint16_t)combatRender.cameraRelativePosition.positionA);
+        vertex[1]=(uint16_t)(combatRender.renderGeometry[firstVertexIndex][1]+(uint16_t)combatRender.cameraRelativePosition.positionB);
+        vertex[2]=(uint16_t)(combatRender.renderGeometry[firstVertexIndex][2]+(uint16_t)combatRender.cameraRelativePosition.positionC);
+        for (uint16_t axis=0;axis<3;++axis) normal[axis]=combatRender.renderGeometry[normalIndex][axis];
     }
     else
     {
@@ -61,7 +61,7 @@ void BtechIntersectWordEdgeWithNearPlane(uint16_t outsideVertex,uint16_t insideV
 {
     if (outsideVertex>=GEOMETRY_CACHE_VERTICES || insideVertex>=GEOMETRY_CACHE_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: outsideVertex>=GEOMETRY_CACHE_VERTICES || insideVertex>=GEOMETRY_CACHE_VERTICES");
     int16_t denominator=geometryViewDepth.words[insideVertex]-geometryViewDepth.words[outsideVertex];
-    int16_t planeDistance=nearClipDepth-geometryViewDepth.words[outsideVertex];
+    int16_t planeDistance=combatRender.nearClipDepth-geometryViewDepth.words[outsideVertex];
     BtechGeometryCoordinateCache *source[]={&geometryViewX,&geometryViewZ};
     BtechGeometryCoordinateCache *destination[]={&geometryProjectedX,&geometryProjectedY};
     for (uint16_t axis=0;axis<2;++axis)
@@ -97,8 +97,8 @@ void BtechClipWordPolygonNearPlane(void)
         for (uint16_t index=0;index<emitted;++index)
         {
             if (output>=COMBAT_POLYGON_VERTEX_WORDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: output>=COMBAT_POLYGON_VERTEX_WORDS");
-            combatPolygons.screenPolygonX[output]=(int16_t)((uint16_t)screenCentreA+geometryProjectedX.words[emit[index]]);
-            combatPolygons.screenPolygonY[output]=(int16_t)((uint16_t)screenCentreB-geometryProjectedY.words[emit[index]]);
+            combatPolygons.screenPolygonX[output]=(int16_t)((uint16_t)combatRender.screenCentreA+geometryProjectedX.words[emit[index]]);
+            combatPolygons.screenPolygonY[output]=(int16_t)((uint16_t)combatRender.screenCentreB-geometryProjectedY.words[emit[index]]);
             ++output;
         }
         previous=current;++input;
@@ -110,29 +110,29 @@ void BtechClipWordPolygonNearPlane(void)
  * facing, projection, near clipping and shared0475 viewport/raster path. */
 void BtechDrawPolygonPayload(const BtechRenderPolygonPayload *payload)
 {
-    if (widePolygonCoordinates) {BtechRenderWidePolygonPayload(payload);return;}
-    if (skipWordPolygonRenderer) return;
-    wordPolygonsRemaining=(uint16_t)payload->polygonCount;
+    if (combatRender.widePolygonCoordinates) {BtechRenderWidePolygonPayload(payload);return;}
+    if (combatRender.skipWordPolygonRenderer) return;
+    combatRender.wordPolygonsRemaining=(uint16_t)payload->polygonCount;
     const BtechRenderPolygon *polygon=payload->polygons;
     for (;;++polygon)
     {
         /* DEC/JGE observes overflow too:8000 ->7FFF still exits. */
-        if ((int16_t)wordPolygonsRemaining--<=0) return;
+        if ((int16_t)combatRender.wordPolygonsRemaining--<=0) return;
         uint8_t flags=polygon->flags;
         drawPolygonFilled=(flags&POLYGON_FILLED)!=0;
         if ((flags&POLYGON_FACING_MASK)==2) continue;
         if ((flags&POLYGON_FACING_MASK)!=0
             && BtechGetPolygonFacingDotHighWord(polygon->normalVectorIndex,polygon->vertexIndices[0])>=0) continue;
         BtechSelectPolygonColoursAndShade(polygon);
-        wordPolygonHasNearOutsideVertex=0;combatPolygons.polygonVertexCount=0;
+        combatRender.wordPolygonHasNearOutsideVertex=0;combatPolygons.polygonVertexCount=0;
         for (const uint8_t *indices=polygon->vertexIndices;*indices!=POLYGON_VERTEX_LIST_END;++indices)
         {
             uint8_t vertex=*indices;
             BtechCacheTransformedPolygonVertex(vertex);
             if (vertexNearPlaneState[vertex]!=GEOMETRY_VERTEX_PROJECTED)
             {
-                if ((int16_t)geometryViewDepth.words[vertex]<(int16_t)nearClipDepth)
-                {vertexNearPlaneState[vertex]=GEOMETRY_VERTEX_BEHIND;wordPolygonHasNearOutsideVertex=GEOMETRY_VERTEX_BEHIND;}
+                if ((int16_t)geometryViewDepth.words[vertex]<(int16_t)combatRender.nearClipDepth)
+                {vertexNearPlaneState[vertex]=GEOMETRY_VERTEX_BEHIND;combatRender.wordPolygonHasNearOutsideVertex=GEOMETRY_VERTEX_BEHIND;}
                 else
                 {
                     BtechGeometryCoordinateCache *source[]={&geometryViewX,&geometryViewZ};
@@ -141,7 +141,7 @@ void BtechDrawPolygonPayload(const BtechRenderPolygonPayload *payload)
                     for (uint16_t axis=0;axis<2;++axis)
                     {
                         uint32_t numerator=(int16_t)source[axis]->words[vertex];
-                        uint16_t shifts=combatProjectionShift;
+                        uint16_t shifts=combatRender.combatProjectionShift;
                         if ((int8_t)(uint8_t)shifts>=8)
                         {
                             numerator<<=8;shifts=(shifts&0xFF00)|(uint8_t)((uint8_t)shifts-8);
@@ -161,7 +161,7 @@ divideCoordinate:
             if (combatPolygons.polygonVertexCount>=POLYGON_VERTEX_INDEX_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: polygonVertexCount>=POLYGON_VERTEX_INDEX_BYTES");
             polygonVertexIndices[combatPolygons.polygonVertexCount++]=vertex;
         }
-        if (wordPolygonHasNearOutsideVertex) BtechClipWordPolygonNearPlane();
+        if (combatRender.wordPolygonHasNearOutsideVertex) BtechClipWordPolygonNearPlane();
         else
         {
             if (!combatPolygons.polygonVertexCount) continue;
@@ -169,11 +169,11 @@ divideCoordinate:
             {
                 if (index>=COMBAT_POLYGON_VERTEX_WORDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: index>=COMBAT_POLYGON_VERTEX_WORDS");
                 uint8_t vertex=polygonVertexIndices[index];
-                combatPolygons.screenPolygonX[index]=(int16_t)((uint16_t)screenCentreA+geometryProjectedX.words[vertex]);
-                combatPolygons.screenPolygonY[index]=(int16_t)((uint16_t)screenCentreB-geometryProjectedY.words[vertex]);
+                combatPolygons.screenPolygonX[index]=(int16_t)((uint16_t)combatRender.screenCentreA+geometryProjectedX.words[vertex]);
+                combatPolygons.screenPolygonY[index]=(int16_t)((uint16_t)combatRender.screenCentreB-geometryProjectedY.words[vertex]);
             }
         }
-        screenPolygonNeedsClip=objectNeedsScreenClip;
+        screenPolygonNeedsClip=combatRender.objectNeedsScreenClip;
         BtechDrawScreenPolygon((int16_t)combatPolygons.polygonVertexCount,combatPolygons.screenPolygonX,combatPolygons.screenPolygonY);
     }
 }

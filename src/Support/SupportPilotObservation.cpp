@@ -32,7 +32,7 @@ void SupportPilotObserve(PilotObservation *view,bool combatActive)
     view->requestedSpeed=(int16_t)combatStartup.requestedPlayerForwardStepScale;
     view->maximumSpeed=(int16_t)playerMechTemplate->maximumSpeedScale;
     view->lockedTarget=combatStartup.playerTargetSlot;view->selectedWeapon=combatStartup.selectedWeaponMount;
-    view->reticleX=screenCentreA;view->reticleY=(int16_t)combatStartup.aimReticleScreenY;
+    view->reticleX=combatRender.screenCentreA;view->reticleY=(int16_t)combatStartup.aimReticleScreenY;
     for(unsigned slot=1;slot<COMBAT_MECH_SLOTS;++slot)
     {
         const BtechUnitBinding *binding=&unitBindings[slot];

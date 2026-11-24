@@ -19,25 +19,25 @@ void BtechSelectPolygonColoursAndShade(const BtechRenderPolygon *polygon)
     uint8_t flags=polygon->flags;
     drawPolygonFilled=(flags&POLYGON_FILLED)!=0;
     if (drawPolygonFilled && (flags&POLYGON_SHADE_NORMAL)
-        && (flags&POLYGON_FACING_MASK)==1 && graphicsColourMode && activeColourShadeClasses)
+        && (flags&POLYGON_FACING_MASK)==1 && graphicsColourMode && combatRender.activeColourShadeClasses)
     {
-        uint8_t shadeClass=activeColourShadeClasses[drawLineColour];
+        uint8_t shadeClass=combatRender.activeColourShadeClasses[drawLineColour];
         if (shadeClass && (int8_t)shadeClass<=POLYGON_SHADE_CLASSES) /* Native signed JG; do not clamp80..FF. */
         {
-            polygonShadeClass=shadeClass;
+            combatRender.polygonShadeClass=shadeClass;
             BtechCachePolygonShadeNormal(polygon->normalVectorIndex);
-            uint16_t dotHigh=BtechDotProductSignedWordVectors(transformedReferenceVector,viewVectorCoefficients)>>16;
+            uint16_t dotHigh=BtechDotProductSignedWordVectors(combatRender.transformedReferenceVector,combatRender.viewVectorCoefficients)>>16;
             if (dotHigh==0x0010) dotHigh=0x000F;
-            uint16_t shadeOffset=dotHigh+0x0010+(uint16_t)(uint8_t)(polygonShadeClass-1)*POLYGON_SHADE_STEPS;
+            uint16_t shadeOffset=dotHigh+0x0010+(uint16_t)(uint8_t)(combatRender.polygonShadeClass-1)*POLYGON_SHADE_STEPS;
             if (shadeOffset>=sizeof(polygonShadeDeltas)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: shadeOffset>=sizeof(polygonShadeDeltas)"); /* Native read enters other CS owners, not a ninth shade row. */
             uint8_t originalLineColour=drawLineColour;
             drawLineColour+=polygonShadeDeltas[shadeOffset/POLYGON_SHADE_STEPS][shadeOffset%POLYGON_SHADE_STEPS];
             if (originalLineColour==drawFillColour) drawFillColour=drawLineColour;
         }
     }
-    if (activePaletteRemap)
+    if (combatRender.activePaletteRemap)
     {
-        drawFillColour=activePaletteRemap[drawFillColour];
-        drawLineColour=activePaletteRemap[drawLineColour];
+        drawFillColour=combatRender.activePaletteRemap[drawFillColour];
+        drawLineColour=combatRender.activePaletteRemap[drawLineColour];
     }
 }

@@ -33,9 +33,9 @@ void BtechFillTiltedCameraHorizonRegions(uint16_t fillA,uint16_t fillB,uint16_t 
     uint16_t rollSin=(uint16_t)trigonometry[2],rollCos=(uint16_t)trigonometry[3];
     for (uint16_t shift=0;shift<6;++shift)
     {rollSin=(rollSin>>1)|(rollSin&0x8000);rollCos=(rollCos>>1)|(rollCos&0x8000);}
-    cameraDepthScratch=(cameraDepthScratch&UINT32_C(0xFFFF0000))|(uint16_t)trigonometry[1];
+    combatRender.cameraDepthScratch=(combatRender.cameraDepthScratch&UINT32_C(0xFFFF0000))|(uint16_t)trigonometry[1];
     uint32_t numerator=(uint32_t)trigonometry[0];
-    uint16_t shifts=combatProjectionShift;
+    uint16_t shifts=combatRender.combatProjectionShift;
     if ((uint8_t)shifts>=8 && (uint8_t)shifts<0x80)
     {
         numerator<<=8;
@@ -54,10 +54,10 @@ dividePitch: ;
     }
     int16_t offsetX=(uint32_t)((int32_t)(int16_t)rollSin*projectedPitch)>>8;
     int16_t offsetY=(uint32_t)((int32_t)(int16_t)(0-rollCos)*projectedPitch)>>8;
-    int16_t left=screenCentreA-rollCos+offsetX;
-    int16_t right=screenCentreA+rollCos+offsetX;
-    int16_t leftY=screenCentreB-((uint16_t)(0-rollSin)+offsetY);
-    int16_t rightY=screenCentreB-(rollSin+offsetY);
+    int16_t left=combatRender.screenCentreA-rollCos+offsetX;
+    int16_t right=combatRender.screenCentreA+rollCos+offsetX;
+    int16_t leftY=combatRender.screenCentreB-((uint16_t)(0-rollSin)+offsetY);
+    int16_t rightY=combatRender.screenCentreB-(rollSin+offsetY);
     uint16_t wholeColour;
     if (right<clipMinimumX) {wholeColour=roll>=0x8000?fillA:fillB;goto fillWhole;}
     if (left<clipMinimumX)
@@ -172,15 +172,15 @@ fillRegions: ;
         }
         else
         {
-            horizonPolygonY[0]=rightY;horizonPolygonY[1]=rightY;
-            horizonPolygonY[2]=leftY;horizonPolygonY[3]=leftY;
-            horizonPolygonX[1]=right;horizonPolygonX[2]=left;
-            horizonPolygonX[0]=clipMinimumX;horizonPolygonX[3]=clipMinimumX;
+            combatRender.horizonPolygonY[0]=rightY;combatRender.horizonPolygonY[1]=rightY;
+            combatRender.horizonPolygonY[2]=leftY;combatRender.horizonPolygonY[3]=leftY;
+            combatRender.horizonPolygonX[1]=right;combatRender.horizonPolygonX[2]=left;
+            combatRender.horizonPolygonX[0]=clipMinimumX;combatRender.horizonPolygonX[3]=clipMinimumX;
             drawLineColour=(uint8_t)leftColour;drawFillColour=(uint8_t)leftColour;
-            BtechDrawScreenPolygon(4,horizonPolygonX,horizonPolygonY);
-            horizonPolygonX[0]=clipMaximumX;horizonPolygonX[3]=clipMaximumX;
+            BtechDrawScreenPolygon(4,combatRender.horizonPolygonX,combatRender.horizonPolygonY);
+            combatRender.horizonPolygonX[0]=clipMaximumX;combatRender.horizonPolygonX[3]=clipMaximumX;
             drawLineColour=(uint8_t)rightColour;drawFillColour=(uint8_t)rightColour;
-            BtechDrawScreenPolygon(4,horizonPolygonX,horizonPolygonY);
+            BtechDrawScreenPolygon(4,combatRender.horizonPolygonX,combatRender.horizonPolygonY);
         }
     }
     screenPolygonNeedsClip=true;

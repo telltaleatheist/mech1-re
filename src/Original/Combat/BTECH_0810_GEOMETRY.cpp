@@ -4,49 +4,49 @@
  * arithmetic shifts and reference-vector staging. No host floating point. */
 void BtechPrepareResourceCoordinatePaths(void)
 {
-    if (projectionScaleMultiplier!=0x100)
+    if (combatRender.projectionScaleMultiplier!=0x100)
     {
-        uint32_t product=(int32_t)(int16_t)projectionScaleMultiplier*(int16_t)objectProjectionScale;
+        uint32_t product=(int32_t)(int16_t)combatRender.projectionScaleMultiplier*(int16_t)combatRender.objectProjectionScale;
         for (uint8_t shifts=8;shifts;--shifts) product=(product>>1)|(product&0x80000000);
-        objectProjectionScale=(int32_t)product<0?0:(int32_t)product>0x100?0x100:(uint16_t)product;
+        combatRender.objectProjectionScale=(int32_t)product<0?0:(int32_t)product>0x100?0x100:(uint16_t)product;
     }
-    resourceScaleShift=activeRenderHeader->scaleShift;
-    uint32_t magnitude=transformedViewPosition.positionA;
+    combatRender.resourceScaleShift=combatRender.activeRenderHeader->scaleShift;
+    uint32_t magnitude=combatRender.transformedViewPosition.positionA;
     if ((int32_t)magnitude<0) magnitude=0-magnitude;
-    projectionVectorScratch.positionA=magnitude;
-    magnitude=transformedViewPosition.positionB;
+    combatRender.projectionVectorScratch.positionA=magnitude;
+    magnitude=combatRender.transformedViewPosition.positionB;
     if ((int32_t)magnitude<0) magnitude=0-magnitude;
-    projectionVectorScratch.positionB=magnitude;
-    magnitude=transformedViewPosition.positionC;
+    combatRender.projectionVectorScratch.positionB=magnitude;
+    magnitude=combatRender.transformedViewPosition.positionC;
     if ((int32_t)magnitude<0) magnitude=0-magnitude;
-    projectionVectorScratch.positionC=magnitude;
-    uint32_t maximumMagnitude=projectionVectorScratch.positionA;
-    if ((int32_t)maximumMagnitude<(int32_t)projectionVectorScratch.positionB)
-        maximumMagnitude=projectionVectorScratch.positionB;
-    if ((int32_t)maximumMagnitude<(int32_t)projectionVectorScratch.positionC)
-        maximumMagnitude=projectionVectorScratch.positionC;
-    uint32_t maximumPlusExtent=maximumMagnitude+resourceScaledExtent;
-    widePolygonCoordinates=resourceScaleShift!=0 || (int32_t)resourceScaledExtent>0x3FFC
+    combatRender.projectionVectorScratch.positionC=magnitude;
+    uint32_t maximumMagnitude=combatRender.projectionVectorScratch.positionA;
+    if ((int32_t)maximumMagnitude<(int32_t)combatRender.projectionVectorScratch.positionB)
+        maximumMagnitude=combatRender.projectionVectorScratch.positionB;
+    if ((int32_t)maximumMagnitude<(int32_t)combatRender.projectionVectorScratch.positionC)
+        maximumMagnitude=combatRender.projectionVectorScratch.positionC;
+    uint32_t maximumPlusExtent=maximumMagnitude+combatRender.resourceScaledExtent;
+    combatRender.widePolygonCoordinates=combatRender.resourceScaleShift!=0 || (int32_t)combatRender.resourceScaledExtent>0x3FFC
         || (int32_t)maximumPlusExtent>0x7FBC;
-    useWordProductClipping=(int32_t)resourceScaledExtent<0x3FAC;
+    combatRender.useWordProductClipping=(int32_t)combatRender.resourceScaledExtent<0x3FAC;
     uint16_t coordinateShift=0;
-    if (widePolygonCoordinates && (int32_t)maximumMagnitude>0x3FFF)
+    if (combatRender.widePolygonCoordinates && (int32_t)maximumMagnitude>0x3FFF)
         while ((int32_t)maximumMagnitude>0x3FFF)
         {maximumMagnitude=(maximumMagnitude>>1)|(maximumMagnitude&0x80000000);++coordinateShift;}
-    uint16_t *reference=useViewBasisDirectly?resourceReferenceVector:viewVectorCoefficients;
-    for (uint16_t component=0;component<3;++component) reference[component]=activeRenderHeader->referenceVector[component];
-    const BtechPosition3D *position=&cameraRelativePosition;
-    if (!useViewBasisDirectly)
+    uint16_t *reference=combatRender.useViewBasisDirectly?combatRender.resourceReferenceVector:combatRender.viewVectorCoefficients;
+    for (uint16_t component=0;component<3;++component) reference[component]=combatRender.activeRenderHeader->referenceVector[component];
+    const BtechPosition3D *position=&combatRender.cameraRelativePosition;
+    if (!combatRender.useViewBasisDirectly)
     {
-        BtechTransformWordVectorFar(viewVectorCoefficients,activeRenderBasis,resourceReferenceVector);
-        position=&transformedViewPosition;
+        BtechTransformWordVectorFar(combatRender.viewVectorCoefficients,combatRender.activeRenderBasis,combatRender.resourceReferenceVector);
+        position=&combatRender.transformedViewPosition;
     }
     const uint32_t *components[]={&position->positionA,&position->positionB,&position->positionC};
     for (uint16_t component=0;component<3;++component)
     {
         uint32_t value=*components[component];
         for (uint8_t shifts=coordinateShift;shifts;--shifts) value=(value>>1)|(value&0x80000000);
-        resourceReferenceVector[component]+=(uint16_t)value;
+        combatRender.resourceReferenceVector[component]+=(uint16_t)value;
     }
-    skipWordPolygonRenderer=0;
+    combatRender.skipWordPolygonRenderer=0;
 }
