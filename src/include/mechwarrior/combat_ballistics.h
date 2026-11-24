@@ -10,16 +10,6 @@ enum { COMBAT_WEAPON_SMALL_LASER=0,COMBAT_WEAPON_MEDIUM_LASER=1,COMBAT_WEAPON_LA
     DIRECT_HIT_SOUND=5,DIRECT_HIT_SOUND_PRIORITY=5,
     DIRECT_TORSO_HEADING_BIAS=0x7FF8,DIRECT_TORSO_FRONT_LOWER=0x2AA8,DIRECT_TORSO_FRONT_UPPER=0xD548,
     DIRECT_TORSO_LEFT_LIMIT=0x6AA4,DIRECT_TORSO_REAR_LIMIT=0x954C };
-extern uint16_t beamHalfWidths[COMBAT_WEAPON_KINDS];
-extern int16_t muzzleLateralOffsetsByBodyLocation[COMBAT_BODY_LOCATIONS];
-extern uint8_t beamSlotOccupied[COMBAT_BEAM_SLOTS];
-extern BtechShapeResource beamResources[COMBAT_BEAM_SLOTS];
-extern BtechRenderEntry beamRenderEntries[COMBAT_BEAM_SLOTS];
-extern uint16_t beamGeometry[COMBAT_BEAM_SLOTS][COMBAT_BEAM_VECTORS][3];
-extern BtechHeapWorldObject beamWorldObjects[COMBAT_BEAM_SLOTS];
-extern BtechRenderVariant ppcBeamVariant,laserBeamVariant;
-extern BtechBodyReferencePoint fallenBodyReferenceBanks[COMBAT_MECH_TEMPLATES][COMBAT_ARMOR_LOCATIONS];
-extern BtechPosition3D bodyReferenceWorldPosition;
 void BtechRotateSignedWordPair(int16_t *componentA,int16_t *componentB,uint16_t angle);
 BtechPosition3D *BtechGetUnitBodyReferencePosition(uint16_t unitSlot,int16_t referenceIndex);
 void BtechBuildDirectionVectorFromOrientation(int16_t direction[3],const uint16_t orientation[3]);
@@ -29,7 +19,6 @@ uint8_t BtechIsPlayerWeaponMountReady(uint16_t mountIndex);
 uint16_t BtechFindNextReadyPlayerWeaponMount(uint16_t currentMount,uint16_t allowWrap);
 uint16_t BtechFindPreviousReadyPlayerWeaponMount(uint16_t currentMount,uint16_t allowWrap);
 void BtechAdvancePlayerGroupedWeaponSelection(void);
-extern uint32_t unitDistances[COMBAT_MECH_SLOTS][COMBAT_MECH_SLOTS];
 void BtechRefreshUnitDistanceMatrix(void);
 void BtechMapSelectedRenderPartToArmorLocation(uint16_t *armorLocation,uint16_t *unitSlot);
 void BtechBuildPlayerDirectShotGeometry(int16_t shotDistance,const BtechWeaponMount *weaponMount,uint8_t spawnImpactEffect);
@@ -45,8 +34,24 @@ enum { WEAPON_RANGE_WORLD_SCALE=0x1E0,WEAPON_RANGE_BANDS=5,
     TO_HIT_RANGE_BASE_ADJUSTMENT=4,TO_HIT_FIRING_MOVEMENT_HIGH=2,TO_HIT_FIRING_MOVEMENT_LOW=1,
     TO_HIT_TARGET_MOTION_STEP=30,TO_HIT_STATIONARY_TARGET_BONUS=4,
     AI_INCOMING_PROJECTILE_SOUND=8,AI_INCOMING_PROJECTILE_PRIORITY=15,AI_MISS_DIRECTION_PRODUCT_SHIFT=14 };
-extern uint16_t aiCandidateTargetSlot,aiCandidateDistance;
-extern uint16_t hitLocationRows[ATTACK_ARCS][HIT_LOCATION_ROLLS],rangeHitModifiers[WEAPON_RANGE_BANDS];
+/* Combat state owned by combat_ballistics.h (plan, slice B3d). */
+struct CombatBallisticsState
+{
+    uint16_t beamHalfWidths[COMBAT_WEAPON_KINDS];
+    int16_t muzzleLateralOffsetsByBodyLocation[COMBAT_BODY_LOCATIONS];
+    uint8_t beamSlotOccupied[COMBAT_BEAM_SLOTS];
+    BtechShapeResource beamResources[COMBAT_BEAM_SLOTS];
+    BtechRenderEntry beamRenderEntries[COMBAT_BEAM_SLOTS];
+    uint16_t beamGeometry[COMBAT_BEAM_SLOTS][COMBAT_BEAM_VECTORS][3];
+    BtechHeapWorldObject beamWorldObjects[COMBAT_BEAM_SLOTS];
+    BtechRenderVariant ppcBeamVariant, laserBeamVariant;
+    BtechBodyReferencePoint fallenBodyReferenceBanks[COMBAT_MECH_TEMPLATES][COMBAT_ARMOR_LOCATIONS];
+    BtechPosition3D bodyReferenceWorldPosition;
+    uint32_t unitDistances[COMBAT_MECH_SLOTS][COMBAT_MECH_SLOTS];
+    uint16_t aiCandidateTargetSlot, aiCandidateDistance;
+    uint16_t hitLocationRows[ATTACK_ARCS][HIT_LOCATION_ROLLS], rangeHitModifiers[WEAPON_RANGE_BANDS];
+};
+extern CombatBallisticsState combatBallistics;
 int16_t BtechClassifyWeaponRange(uint16_t firingSlot,uint16_t targetSlot,uint16_t weaponKind);
 int16_t BtechTestAiFiringCandidate(const BtechPosition3D *position,uint32_t distance,uint16_t flags);
 int16_t BtechSelectAiWeaponMountForDistance(int16_t distance);

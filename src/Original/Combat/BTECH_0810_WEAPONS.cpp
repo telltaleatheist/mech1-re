@@ -190,6 +190,6 @@ void BtechRefreshUnitDistanceMatrix(void)
                 distance=BtechApproximatePlanarDistance(&unitBindings[row].positionedLeftLeg->object.prefix.position,
                     &unitBindings[column].positionedLeftLeg->object.prefix.position);
             }
-            unitDistances[row][column]=distance;unitDistances[column][row]=distance;
+            combatBallistics.unitDistances[row][column]=distance;combatBallistics.unitDistances[column][row]=distance;
         }
 }

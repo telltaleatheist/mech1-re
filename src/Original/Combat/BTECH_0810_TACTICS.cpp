@@ -70,7 +70,7 @@ uint8_t BtechHasNearbyVisibleThreat(void)
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
         if (unitBindings[slot].mech && unitControls[slot].sideIndex!=control->sideIndex
             && unitVisibility[control->unitSlot][slot] && unitControls[slot].conditionScoreOrExitCode>COMBAT_CONDITION_SCORE_MINIMUM
-            && (int32_t)unitDistances[control->unitSlot][slot]<(int16_t)control->twiceReadyWeaponRange)
+            && (int32_t)combatBallistics.unitDistances[control->unitSlot][slot]<(int16_t)control->twiceReadyWeaponRange)
         {
             return 1;
         }

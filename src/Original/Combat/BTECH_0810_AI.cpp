@@ -114,7 +114,7 @@ void BtechCoordinateSpecialObjectiveUnits(void)
             int32_t incomingDistance=combatTactics.unitDistancesToSpecialTarget[threat];
             for (uint16_t slot=firstDefender;slot<firstDefender+COMBAT_LANCE_SLOTS;++slot)
             {
-                int32_t objectiveDistance=combatTactics.unitDistancesToSpecialTarget[slot],targetDistance=(int32_t)unitDistances[slot][threat];
+                int32_t objectiveDistance=combatTactics.unitDistancesToSpecialTarget[slot],targetDistance=(int32_t)combatBallistics.unitDistances[slot][threat];
                 BtechUnitControlState *control=&unitControls[slot];
                 if (!objectiveDistance || targetDistance<=0 || objectiveDistance>=OBJECTIVE_DEFENDER_RADIUS || control->conditionScoreOrExitCode<=COMBAT_CONDITION_SCORE_MINIMUM || targetDistance>=nearestDefender) continue;
                 if (control->tacticalState!=TACTICAL_DEFENDING)

@@ -22,7 +22,7 @@ void BtechScoreAndSelectTacticalTarget(void)
             && candidate->positionKnowledgeCode!=COMBAT_POSITION_UNKNOWN && candidate->conditionScoreOrExitCode>COMBAT_CONDITION_SCORE_MINIMUM;
         if (!eligible[slot]) continue;
         anyEligible=1;
-        int32_t distance=unitDistances[active->unitSlot][slot];
+        int32_t distance=combatBallistics.unitDistances[active->unitSlot][slot];
         if (distance>=maximumDistanceLow) maximumDistanceLow=(int16_t)distance;
         int16_t difference=active->conditionScoreOrExitCode-candidate->conditionScoreOrExitCode;
         int16_t magnitude;
@@ -41,7 +41,7 @@ void BtechScoreAndSelectTacticalTarget(void)
         int16_t difference=(int16_t)(active->conditionScoreOrExitCode-candidateValue),score=0;
         if (difference>TACTICAL_TARGET_VALUE_FLOOR)
         {
-            int16_t distanceHeadroom=maximumDistanceLow-(uint16_t)unitDistances[slot][active->unitSlot];
+            int16_t distanceHeadroom=maximumDistanceLow-(uint16_t)combatBallistics.unitDistances[slot][active->unitSlot];
             int16_t magnitude=(uint16_t)difference==0x8000?INT16_MAX:difference<0?-difference:difference;
             int16_t valueHeadroom=maximumValueDifference-magnitude;
             uint16_t shift=difference<0?TACTICAL_STRONGER_VALUE_SHIFT:TACTICAL_WEAKER_VALUE_SHIFT;

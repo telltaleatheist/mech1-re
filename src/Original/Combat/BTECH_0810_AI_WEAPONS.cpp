@@ -18,7 +18,7 @@ int16_t BtechClassifyWeaponRange(uint16_t firingSlot,uint16_t targetSlot,uint16_
     if (firingSlot>=COMBAT_MECH_SLOTS || targetSlot>COMBAT_SPECIAL_TARGET_SLOT || weaponKind>=COMBAT_WEAPON_KINDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: firingSlot>=COMBAT_MECH_SLOTS || targetSlot>COMBAT_SPECIAL_TARGET_SLOT || weaponKind>=COMBAT_WEAPON_KINDS");
     uint32_t distance;
     if (targetSlot!=COMBAT_SPECIAL_TARGET_SLOT && unitControls[firingSlot].sideIndex!=unitControls[targetSlot].sideIndex)
-        distance=unitDistances[firingSlot][targetSlot];
+        distance=combatBallistics.unitDistances[firingSlot][targetSlot];
     else
     {
         BtechPooledWorldObject *source,*target;
@@ -42,7 +42,7 @@ int16_t BtechClassifyWeaponRange(uint16_t firingSlot,uint16_t targetSlot,uint16_
  * clearing the target. Wide-angle is bit1; blocker is bit0, not a target kind. */
 int16_t BtechTestAiFiringCandidate(const BtechPosition3D *position,uint32_t distance,uint16_t flags)
 {
-    if ((int32_t)distance>=(int32_t)(int16_t)aiCandidateDistance) return 0;
+    if ((int32_t)distance>=(int32_t)(int16_t)combatBallistics.aiCandidateDistance) return 0;
     if (!position || !combatPose.activeUnitPositionedObject || !combatPose.activeUnitTorsoObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !position || !activeUnitPositionedObject || !activeUnitTorsoObject");
     BtechWorldObjectPrefix *root=&combatPose.activeUnitPositionedObject->object.prefix;
     uint32_t differenceX=position->positionA-root->position.positionA;
@@ -59,8 +59,8 @@ int16_t BtechTestAiFiringCandidate(const BtechPosition3D *position,uint32_t dist
     if (absolutePitch>=AI_PITCH_LIMIT && !(flags&AI_CANDIDATE_WIDE_ANGLE)) return 0;
     int16_t absoluteYaw=yaw==0x8000?INT16_MAX:(int16_t)yaw<0?-(int16_t)yaw:(int16_t)yaw;
     if (absoluteYaw>yawLimit) return 0;
-    aiCandidateDistance=(uint16_t)distance;
-    if (flags&AI_CANDIDATE_BLOCKER) {aiCandidateTargetSlot=UINT16_MAX;return 0;}
+    combatBallistics.aiCandidateDistance=(uint16_t)distance;
+    if (flags&AI_CANDIDATE_BLOCKER) {combatBallistics.aiCandidateTargetSlot=UINT16_MAX;return 0;}
     return 1;
 }
 
@@ -110,7 +110,7 @@ void BtechFireAiWeaponAtUnit(int16_t targetUnitSlot,int16_t weaponKind,uint16_t 
     {
         int16_t rangeBand=BtechClassifyWeaponRange(activeUnitControl->unitSlot,(uint16_t)targetUnitSlot,(uint16_t)weaponKind);
         if (activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS");
-        int16_t gunneryTargetNumber=gunneryTargetNumbers[activeUnitControl->unitSlot]+rangeHitModifiers[rangeBand]-TO_HIT_RANGE_BASE_ADJUSTMENT;
+        int16_t gunneryTargetNumber=gunneryTargetNumbers[activeUnitControl->unitSlot]+combatBallistics.rangeHitModifiers[rangeBand]-TO_HIT_RANGE_BASE_ADJUSTMENT;
         int16_t firingForwardSpeed=combatPose.activeUnitPositionedObject->forwardStepScale;
         int16_t absoluteFiringSpeed=(uint16_t)firingForwardSpeed==0x8000?INT16_MAX:firingForwardSpeed<0?-firingForwardSpeed:firingForwardSpeed;
         int16_t firingMovementThreshold=combatPose.activeMechTemplate->firingMovementThreshold;
@@ -133,7 +133,7 @@ void BtechFireAiWeaponAtUnit(int16_t targetUnitSlot,int16_t weaponKind,uint16_t 
     {
         uint16_t firstDie=BtechRandomBelowBound(DICE_1D6);
         uint16_t secondDie=BtechRandomBelowBound(DICE_1D6);
-        uint16_t hitArmorLocation=hitLocationRows[attackArc][(uint16_t)(firstDie+secondDie)];
+        uint16_t hitArmorLocation=combatBallistics.hitLocationRows[attackArc][(uint16_t)(firstDie+secondDie)];
         if ((uint16_t)weaponDefinitions[weaponKind].ammoFamily==COMBAT_AMMO_NONE || weaponKind==COMBAT_WEAPON_MACHINE_GUN)
         {
             BtechPosition3D shotEndpoint;
@@ -177,9 +177,9 @@ void BtechFireAiWeaponAtUnit(int16_t targetUnitSlot,int16_t weaponKind,uint16_t 
  * blockers before mount selection. Accounting precedes aim and the actual shot. */
 void BtechChooseAiTargetAndFire(void)
 {
-    aiCandidateTargetSlot=UINT16_MAX;
+    combatBallistics.aiCandidateTargetSlot=UINT16_MAX;
     if (!activeUnitControl || activeUnitControl->sideIndex>=2) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl || activeUnitControl->sideIndex>=2");
-    aiCandidateDistance=(uint16_t)activeUnitControl->readyWeaponRangeMinusMargin;
+    combatBallistics.aiCandidateDistance=(uint16_t)activeUnitControl->readyWeaponRangeMinusMargin;
     uint16_t objectiveRule=sideObjectiveRules[activeUnitControl->sideIndex];
     uint16_t objectiveBlocksFire=objectiveRule==OBJECTIVE_DEFEND_SPECIAL_TARGET || specialTargetInteractionBlocked;
     if (objectiveBlocksFire || objectiveRule==OBJECTIVE_SPECIAL_TARGET)
@@ -189,7 +189,7 @@ void BtechChooseAiTargetAndFire(void)
         {
             const BtechPosition3D *position=&specialTargetObject->object.prefix.position;
             uint32_t distance=BtechApproximatePlanarDistance(position,&combatPose.activeUnitPositionedObject->object.prefix.position)-AI_SPECIAL_TARGET_DISTANCE_MARGIN;
-            if (BtechTestAiFiringCandidate(position,distance,objectiveBlocksFire+AI_CANDIDATE_WIDE_ANGLE)) aiCandidateTargetSlot=COMBAT_SPECIAL_TARGET_SLOT;
+            if (BtechTestAiFiringCandidate(position,distance,objectiveBlocksFire+AI_CANDIDATE_WIDE_ANGLE)) combatBallistics.aiCandidateTargetSlot=COMBAT_SPECIAL_TARGET_SLOT;
         }
     }
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
@@ -202,20 +202,20 @@ void BtechChooseAiTargetAndFire(void)
         if (!unitBindings[slot].positionedLeftLeg || !combatPose.activeUnitPositionedObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[slot].positionedLeftLeg || !activeUnitPositionedObject");
         const BtechPosition3D *position=&unitBindings[slot].positionedLeftLeg->object.prefix.position;
         uint32_t distance=blocksFire?BtechApproximatePlanarDistance(&combatPose.activeUnitPositionedObject->object.prefix.position,position)
-            :unitDistances[activeUnitControl->unitSlot][slot];
-        if (unitControls[slot].movementMode!=MOVEMENT_MODE_FALLEN_POSE && BtechTestAiFiringCandidate(position,distance,blocksFire)) aiCandidateTargetSlot=slot;
+            :combatBallistics.unitDistances[activeUnitControl->unitSlot][slot];
+        if (unitControls[slot].movementMode!=MOVEMENT_MODE_FALLEN_POSE && BtechTestAiFiringCandidate(position,distance,blocksFire)) combatBallistics.aiCandidateTargetSlot=slot;
     }
-    if ((int16_t)aiCandidateTargetSlot<0) return;
-    if (aiCandidateTargetSlot>COMBAT_SPECIAL_TARGET_SLOT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: aiCandidateTargetSlot>COMBAT_SPECIAL_TARGET_SLOT");
-    BtechPooledWorldObject *target=aiCandidateTargetSlot==COMBAT_SPECIAL_TARGET_SLOT?specialTargetObject:unitBindings[aiCandidateTargetSlot].positionedLeftLeg;
+    if ((int16_t)combatBallistics.aiCandidateTargetSlot<0) return;
+    if (combatBallistics.aiCandidateTargetSlot>COMBAT_SPECIAL_TARGET_SLOT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: aiCandidateTargetSlot>COMBAT_SPECIAL_TARGET_SLOT");
+    BtechPooledWorldObject *target=combatBallistics.aiCandidateTargetSlot==COMBAT_SPECIAL_TARGET_SLOT?specialTargetObject:unitBindings[combatBallistics.aiCandidateTargetSlot].positionedLeftLeg;
     if (!target) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !target");
     const BtechPosition3D *position=&target->object.prefix.position;
-    int16_t mountIndex=BtechSelectAiWeaponMountForDistance((int16_t)aiCandidateDistance);
+    int16_t mountIndex=BtechSelectAiWeaponMountForDistance((int16_t)combatBallistics.aiCandidateDistance);
     if (mountIndex<0) return;
     BtechWeaponMount *mount=&combatPose.activeMechTemplate->weaponMounts[mountIndex];
     if ((uint16_t)mount->weaponKind>=COMBAT_WEAPON_KINDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)mount->weaponKind>=COMBAT_WEAPON_KINDS");
     BtechWeaponDefinition *weapon=&weaponDefinitions[mount->weaponKind];
-    activeUnitControl->lastAiFiringTargetSlot=(int16_t)aiCandidateTargetSlot;
+    activeUnitControl->lastAiFiringTargetSlot=(int16_t)combatBallistics.aiCandidateTargetSlot;
     combatPose.activeMechState->heatUnits+=weapon->heatUnits;
     combatPose.activeMechState->weapons[mountIndex].reloadTicksRemaining=weapon->reloadTicks;
     if ((uint16_t)weapon->ammoFamily!=COMBAT_AMMO_NONE)
@@ -224,8 +224,8 @@ void BtechChooseAiTargetAndFire(void)
         --combatPose.activeMechState->ammoSalvosRemaining[weapon->ammoFamily];
     }
     uint32_t targetHeightDifference=position->positionC-combatPose.activeUnitPositionedObject->object.prefix.position.positionC;
-    combatPose.activeMechState->aimPitch=BtechCalculateVectorHeading((int16_t)aiCandidateDistance,targetHeightDifference)+AI_AIM_HEADING_BIAS;
+    combatPose.activeMechState->aimPitch=BtechCalculateVectorHeading((int16_t)combatBallistics.aiCandidateDistance,targetHeightDifference)+AI_AIM_HEADING_BIAS;
     if (activeUnitControl->animationSequence==ANIMATION_SEQUENCE_WALK && (int16_t)activeUnitControl->animationFrame>AI_FIRING_PAUSE_FRAME)
         activeUnitControl->animationRequestFlags|=ANIMATION_REQUEST_FIRING_PAUSE;
-    BtechFireAiWeaponAtUnit((int16_t)aiCandidateTargetSlot,mount->weaponKind,mount->bodyLocation);
+    BtechFireAiWeaponAtUnit((int16_t)combatBallistics.aiCandidateTargetSlot,mount->weaponKind,mount->bodyLocation);
 }

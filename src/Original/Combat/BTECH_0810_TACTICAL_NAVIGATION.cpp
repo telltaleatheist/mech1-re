@@ -153,7 +153,7 @@ void BtechSelectUnitTacticalState(void)
                 if (control->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: control->unitSlot>=COMBAT_MECH_SLOTS");
                 for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
                     if (unitControls[slot].sideIndex==control->sideIndex
-                        && (unitControls[slot].targetUnitSlot==control->unitSlot || (int32_t)unitDistances[slot][control->unitSlot]<control->quarterReadyWeaponRange)) control->tacticalState=TACTICAL_CHARGING;
+                        && (unitControls[slot].targetUnitSlot==control->unitSlot || (int32_t)combatBallistics.unitDistances[slot][control->unitSlot]<control->quarterReadyWeaponRange)) control->tacticalState=TACTICAL_CHARGING;
             }
             break;
         }
@@ -189,7 +189,7 @@ void BtechSelectUnitTacticalState(void)
         if (enemy->sideIndex==control->sideIndex || enemy->conditionScoreOrExitCode<=COMBAT_CONDITION_SCORE_MINIMUM || !unitVisibility[slot][control->unitSlot]) continue;
         int16_t halfEngagementRange=((uint16_t)enemy->readyWeaponRangeMinusMargin>>1)|((uint16_t)enemy->readyWeaponRangeMinusMargin&0x8000);
         int16_t threatEngagementRange=halfEngagementRange+enemy->readyWeaponRangeMinusMargin;
-        if (threatEngagementRange<=(int32_t)unitDistances[slot][control->unitSlot]) continue;
+        if (threatEngagementRange<=(int32_t)combatBallistics.unitDistances[slot][control->unitSlot]) continue;
         uint16_t heading=BtechCalculateVectorHeading((uint32_t)enemy->lastVisiblePosition[0]-root->position.positionA,(uint32_t)enemy->lastVisiblePosition[1]-root->position.positionB);
         BtechPooledWorldObject *enemyRoot=unitBindings[slot].positionedLeftLeg,*enemyTorso=unitBindings[slot].torso;
         if (!enemyRoot || !enemyTorso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !enemyRoot || !enemyTorso");
@@ -275,7 +275,7 @@ void BtechApplyActiveUnitTacticalSteering(uint16_t desiredHeading)
     case TACTICAL_CHARGING:
     {
         if (control->unitSlot>=COMBAT_MECH_SLOTS || (uint16_t)control->targetUnitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: control->unitSlot>=COMBAT_MECH_SLOTS || (uint16_t)control->targetUnitSlot>=COMBAT_MECH_SLOTS");
-        int32_t distance=unitDistances[control->unitSlot][control->targetUnitSlot];
+        int32_t distance=combatBallistics.unitDistances[control->unitSlot][control->targetUnitSlot];
         (void)BtechRandomBelowBound((uint16_t)(((uint16_t)control->targetUnitSlot<<4)+1));
         if (control->quarterReadyWeaponRange>distance) control->maneuverFlags&=(uint8_t)~TACTICAL_OUTER_RANGE;
         else if (control->readyWeaponRangeMinusMargin<distance) control->maneuverFlags|=TACTICAL_OUTER_RANGE;
