@@ -551,7 +551,7 @@ Every slice below is its own branch with the full gate green: both setups, the t
 - The Linux tar.gz holds libSDL3 three times (.so, .so.0, .so.0.2.0); the AppImage holds .so.0 alone.
 - "The C17 port" in `docs/THIRD_PARTY_NOTICES.md`, and the README's stale passages.
 - Packaging with a release's label should refuse a tree that isn't at that tag, or has uncommitted changes.
-- The kit's recognise rules on a real copy of MechWarrior 2, MechWarrior 3 and Pirate's Moon, `DATA1.HDR` included.
+- The setup's recognise rules for MechWarrior 2's `DATABASE.MW2` and `MECH2` folder are untested on real data: no such copy is on the machines. The rest were checked on real copies of MechWarrior 3, Pirate's Moon (installed, disc and download, `DATA1.HDR` included) and MechWarrior 2's `MW2.PRJ`.
 - The AppImage may ship, with libfuse and its notice in its runtime (the project owner's word, 2026-11-24); the licence wording for it is R's.
 - In the release notes: an older build imports the story again on a folder made by this one; an old test package's own `MechWarrior.ini` beside the program keeps its `sound_system=speaker`.
 
