@@ -325,6 +325,12 @@ Changes per piece:
 - **`docs/phase2/INVENTORY.md` is unchanged:** it lists memory items, and none moved.
 - **The sound-port log** is kept as the tone log, its goldens untouched.
 
+**From B3b** (combat's sound state and 2FEB's tone channels as owner structs; a pure move, no golden re-recorded):
+- **What changed.** 60 globals are now the fields of two structs in combat_sound.h, one per memory file: `combatSound` (36, BTECH_304E_SOUND) and `combatTones` (24, BTECH_2FEB).
+- **Left outside.** `combatSoundIrq` (B3a) and the enums.
+- **Reads across the layout** (risk 6). Searched for memory calls, casts, pointer arithmetic, and addresses taken of a moved global, and read each hit: none depends on the order of globals. The stream identity is a difference inside `runtimeStreams`, the memset is `musicSequences`' own, and `samplePriorityOwner` points at `combatTones.sampleSoundPriority`, as it pointed at the global.
+- **The check.** `tools/phase5/owner_structs.py` compares 24 and 36 variables; INVENTORY.md is identical; the -Wshadow list is the same before and after; no unprefixed use is left outside comments and strings.
+
 **From B3c** (combat's video, render, polygons, scene, pose and cockpit state as owner structs; a pure move, no golden re-recorded):
 - **What changed.** 287 globals are now the fields of six structs, one per memory file: `combatVideo` (101 fields, combat_video.h), `combatRender` (63, combat_render.h), `combatPolygons` (26, combat_polygons.h), `combatScene` (8, combat_scene.h), `combatPose` (18, combat_pose.h), `combatCockpit` (71, combat_cockpit.h). Every name is kept, and the macros that name fields point at the instances. No field has an initialiser.
 - **Left outside.** The constants `glyphTailMasks`, `errorCardNotFound` and `errorInspectionShapeMemory`, and the cockpit importer's six private text buffers.
@@ -462,6 +468,13 @@ Every slice below is its own branch with the full gate green: both setups, the t
 | S9 | Nuked-OPL3, Munt and MPU401/Adlib/MT32 removed from the build. ROM settings dropped; `sound_system` replaced by `music`. Notices, AUDIO.md and packaging (no nukedopl or mt32emu library) updated. The AppImage tooling's licence settled | packaging tests; the game's own libraries hold no LGPL; the AppImage, whose runtime does, isn't made (see "From S9") | 2 |
 | H5 | The port bus retired: `MwSdlWriteDevicePort`, `ReadDevicePort` and the port-word hooks removed with their last callers; the sound-port event log keeps its tones and snaps as the tone log (its name is historical), and its port lines are gone. Its first part (ports 0 and 1) went ahead, after H4d; the rest follows S4, S8 and S9, since its last callers are the MT-32 and AdLib backends S8 removes | everything above exact | 2 |
 | R | The release gate: every gate on Windows, macOS and Linux from fresh builds. Packages from a local tag. The listening list and the visual acceptance list signed off on the packaged builds. The controller path is covered by the SDL virtual-device test (H3b); no physical controller is available | all of the above | 2 |
+
+**For R** (found by earlier slices, to be done or decided there):
+- A refused start in a Windows GUI build: does the player see the reason anywhere but a log? (The missing soundfont's message was only ever printed to stderr.)
+- A package built on each platform with hidapi's notice (`licenses/hidapi-LICENSE-bsd.txt`), and what the Mac and Windows packages link and ship: the MSVC runtime DLLs and Inno Setup's parts among them. Only the Linux package has been measured (S9).
+- The Linux tar.gz holds libSDL3 three times (.so, .so.0, .so.0.2.0).
+- "The C17 port" in `docs/THIRD_PARTY_NOTICES.md`, and the README's stale passages.
+- In the release notes: an older build imports the story again on a folder made by this one; an old test package's own `MechWarrior.ini` beside the program keeps its `sound_system=speaker`.
 
 **Group A total:** about 51-52 developer days plus the listening sessions. That is roughly 10 weeks, planned for **one developer, in order**.
 
