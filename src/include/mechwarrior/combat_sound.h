@@ -7,7 +7,7 @@
 
 enum { COMBAT_STREAM_SLOTS=0x14,COMBAT_STREAM_TABLE=0x4BC0,COMBAT_STREAM_STRIDE=8,
     COMBAT_STREAM_ACTIVE_MASK=0x83,COMBAT_STREAM_READ=1,COMBAT_STREAM_WRITE=2,COMBAT_STREAM_UNBUFFERED=4,
-    COMBAT_STREAM_OWNS_BUFFER=8,COMBAT_STREAM_PROTECTED=0x40,COMBAT_STREAM_AUX_EXTERNAL_BUFFER=1,
+    COMBAT_STREAM_OWNS_BUFFER=8,COMBAT_STREAM_PROTECTED=0x40,
     COMBAT_TAGGED_STREAMS=4,COMBAT_TAG_PATH_BYTES=0x1A,COMBAT_TAG_LEVELS=7,
     COMBAT_SOUND_BANKS=0x0B,COMBAT_MUSIC_BANKS=0x10,COMBAT_MUSIC_FIRST_ROOT=0x0A,
     COMBAT_MUSIC_LOAD_ROOTS=0x0F,COMBAT_AUDIO_BANK_ROOTS=COMBAT_MUSIC_FIRST_ROOT+COMBAT_MUSIC_LOAD_ROOTS,
@@ -134,7 +134,7 @@ void BtechRestoreSoundTimerInterrupt(void);
  * This is a typed FILE slot, not a native-memory or address-span registry. */
 typedef struct BtechRuntimeStream {
     FILE *file;
-    uint8_t flags,dosHandle;
+    uint8_t flags;
     uint8_t *buffer; /* Native F776 allocation; host stdio still performs buffering. */
 } BtechRuntimeStream;
 typedef struct BtechTaggedStream {
@@ -171,7 +171,6 @@ typedef struct BtechSoundBank {
  * use this owner when music is connected; never allocate a second root there. */
 extern BtechSoundBank soundBanks[COMBAT_AUDIO_BANK_ROOTS];
 extern BtechRuntimeStream runtimeStreams[COMBAT_STREAM_SLOTS];
-extern uint16_t lastStreamOffset,streamSetupCounter;
 extern BtechTaggedStream taggedStreams[COMBAT_TAGGED_STREAMS],taggedStreamBackup;
 extern uint16_t selectedAudioBackendMask,activeSoundBankIndex,soundAllocationError;
 extern BtechResourceAllocation soundAllocationOverride;
