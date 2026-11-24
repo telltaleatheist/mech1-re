@@ -3,7 +3,7 @@
  * table's generator (tools/import/btech_image.cpp) unpack it the same way the
  * game does. Needs nothing of the game but the layout constants. */
 #include "mechwarrior/combat_installation.h"
-#include "mechwarrior/native_address.h"
+#include "mechwarrior/read_word.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -67,12 +67,12 @@ size_t BtechInstallationPackedBytes(size_t fileBytes)
 static bool DecodeInto(const BtechInstallationRevision *revision,const uint8_t *packed,size_t packedBytes,uint8_t *decoded)
 {
     const size_t imageBytes=revision->imageBytes;
-    size_t start=(size_t)MwReadNativeWord(packed,8)*0x10;
-    size_t stub=start+(size_t)MwReadNativeWord(packed,0x16)*0x10;
-    if (stub+0x12D>packedBytes || MwReadNativeWord(packed,0x14)!=0x12
-        || MwReadNativeWord(packed+stub,0x10)!=0x4252 || MwReadNativeWord(packed+stub,0x0E)!=1
-        || (uint32_t)MwReadNativeWord(packed+stub,0x0C)*0x10!=imageBytes) return false;
-    size_t stubEnd=stub+MwReadNativeWord(packed+stub,6);
+    size_t start=(size_t)MwReadWord(packed+8)*0x10;
+    size_t stub=start+(size_t)MwReadWord(packed+0x16)*0x10;
+    if (stub+0x12D>packedBytes || MwReadWord(packed+0x14)!=0x12
+        || MwReadWord(packed+stub+0x10)!=0x4252 || MwReadWord(packed+stub+0x0E)!=1
+        || (uint32_t)MwReadWord(packed+stub+0x0C)*0x10!=imageBytes) return false;
+    size_t stubEnd=stub+MwReadWord(packed+stub+6);
     if (stubEnd>packedBytes) return false;
     size_t source=stub,destination=imageBytes;
     while (source>start && packed[source-1]==0xFF) --source;
@@ -81,7 +81,7 @@ static bool DecodeInto(const BtechInstallationRevision *revision,const uint8_t *
     {
         if (source-start<3) return false;
         uint8_t command=packed[--source];
-        source-=2;uint16_t count=MwReadNativeWord(packed+source,0);
+        source-=2;uint16_t count=MwReadWord(packed+source);
         if (count>destination) return false;
         destination-=count;
         if ((command&0xFE)==0xB0)
@@ -102,13 +102,13 @@ static bool DecodeInto(const BtechInstallationRevision *revision,const uint8_t *
     for (uint16_t group=0;group<0x10;++group)
     {
         if (cursor+2>stubEnd) return false;
-        uint16_t count=MwReadNativeWord(packed+cursor,0);cursor+=2;
+        uint16_t count=MwReadWord(packed+cursor);cursor+=2;
         while (count--)
         {
             if (cursor+2>stubEnd) return false;
-            size_t at=(size_t)group*0x10000+MwReadNativeWord(packed+cursor,0);cursor+=2;
+            size_t at=(size_t)group*0x10000+MwReadWord(packed+cursor);cursor+=2;
             if (at+2>imageBytes) return false;
-            uint16_t selector=(uint16_t)(RebaseSegment(revision,MwReadNativeWord(decoded+at,0))+BTECH_IMAGE_LOAD_SELECTOR);
+            uint16_t selector=(uint16_t)(RebaseSegment(revision,MwReadWord(decoded+at))+BTECH_IMAGE_LOAD_SELECTOR);
             decoded[at]=(uint8_t)selector;decoded[at+1]=(uint8_t)(selector>>8);
         }
     }
@@ -122,7 +122,7 @@ static bool DecodeInto(const BtechInstallationRevision *revision,const uint8_t *
     {
         uint8_t *dgroup=decoded+BTECH_DATA_IMAGE_OFFSET;
         uint16_t at=revision->dgroupFixups[i][0];
-        if (at+2>BTECH_BSS_START || MwReadNativeWord(dgroup,at)!=revision->dgroupFixups[i][1]) return false;
+        if (at+2>BTECH_BSS_START || MwReadWord(dgroup+at)!=revision->dgroupFixups[i][1]) return false;
         dgroup[at]=(uint8_t)revision->dgroupFixups[i][2];dgroup[at+1]=(uint8_t)(revision->dgroupFixups[i][2]>>8);
     }
     return true;
@@ -135,7 +135,7 @@ bool BtechDecodeImage(const uint8_t *packed,size_t packedBytes,uint8_t **image,B
     for (size_t i=0;i<sizeof(btechInstallationRevisions)/sizeof(btechInstallationRevisions[0]);++i)
         if (btechInstallationRevisions[i].packedBytes==packedBytes) {revision=&btechInstallationRevisions[i];break;}
     if (!revision) return false;
-    if (InstallationCrc(packed,packedBytes)!=revision->crc || MwReadNativeWord(packed,0)!=0x5A4D || MwReadNativeWord(packed,6)) return false;
+    if (InstallationCrc(packed,packedBytes)!=revision->crc || MwReadWord(packed)!=0x5A4D || MwReadWord(packed+6)) return false;
     uint8_t *decoded=static_cast<uint8_t *>(malloc(revision->imageBytes));
     if (!decoded) return false;
     if (!DecodeInto(revision,packed,packedBytes,decoded)) {free(decoded);return false;}

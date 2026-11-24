@@ -19,4 +19,9 @@ static inline uint8_t *MwCampaignBufferBytes(MwCampaignBuffer *buffer)
     if (!buffer) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("A campaign resource buffer that is not allocated");
     return buffer->bytes;
 }
+/* A word of a buffer's bytes; the second byte's offset wraps too. */
+static inline uint16_t MwCampaignBufferWord(const uint8_t *bytes, uint16_t offset)
+{
+    return (uint16_t)(bytes[offset] | ((uint16_t)bytes[(uint16_t)(offset + 1)] << 8));
+}
 #endif

@@ -1,5 +1,4 @@
 #include "mechwarrior/campaign.h"
-#include "mechwarrior/native_address.h"
 
 /* Original MW_MAIN 081B:0C17..0C3D. Used by stock, contracts, recruits and
  * planet selection: CLC; RCR AX twice; RCL BX five; XOR; high WORD of MUL

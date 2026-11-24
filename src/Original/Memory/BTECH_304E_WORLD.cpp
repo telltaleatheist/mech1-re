@@ -11,7 +11,7 @@
 #include "mechwarrior/combat_navigation.h"
 #include "mechwarrior/combat_tactics.h"
 #include "mechwarrior/combat_installation.h"
-#include "mechwarrior/native_address.h"
+#include "mechwarrior/read_word.h"
 #include "mechwarrior/rules.h"
 #include <string.h>
 
@@ -33,7 +33,7 @@ uint16_t *const effectResourceSequences[2]={combatEffects.defaultEffectResourceD
 /* Installation IO, not a runtime memory mirror. Strings are resolved exactly
  * once from authored near directories. Runtime consumers use real C strings. */
 static uint32_t NullSegmentDword(uint16_t offset)
-{return (uint32_t)MwReadNativeWord(combatWorld.nullNearSegment,offset)|((uint32_t)MwReadNativeWord(combatWorld.nullNearSegment,(uint16_t)(offset+2))<<16);}
+{return (uint32_t)MwReadWord(combatWorld.nullNearSegment+offset)|((uint32_t)MwReadWord(combatWorld.nullNearSegment+offset+2)<<16);}
 BtechPosition3D BtechReadNullNearWorldObjectPosition(void)
 {return BtechPosition3D{NullSegmentDword(0x0008),NullSegmentDword(0x000C),NullSegmentDword(0x0010)};}
 static bool CopyRowName(const BtechStartRowData &names,uint16_t nearOffset,char *name,size_t capacity)

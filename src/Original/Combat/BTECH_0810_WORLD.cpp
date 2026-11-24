@@ -216,8 +216,8 @@ void BtechLoadTerrainWorldResources(void)
         FILE *stream=BtechOpenStreamWithRetry(combatWorld.terrainWorldFilename,"rb");
         for (int number=0;BtechReadNextFileRecord(record,sizeof(record),stream,combatWorld.terrainWorldFilename,"object",number);++number)
         {
-            BtechPosition3D placement={BtechRecordDword(record+2),BtechRecordDword(record+6),BtechRecordDword(record+10)};
-            BtechWorldObjectPrefix *object=BtechAllocateHeapWorldObject(BtechRecordWord(record),&placement);
+            BtechPosition3D placement={MwReadDword(record+2),MwReadDword(record+6),MwReadDword(record+10)};
+            BtechWorldObjectPrefix *object=BtechAllocateHeapWorldObject(MwReadWord(record),&placement);
             object->renderFlags=WORLD_OBJECT_SURFACE_QUERY_CANDIDATE;
         }
         BtechCloseStreamFile(stream);
@@ -267,14 +267,14 @@ void BtechReadUnitFormations(FILE *stream,uint16_t side)
     for (uint16_t unit=0;unit<4;++unit)
     {
         BtechFormationPosition *position=&combatWorld.unitFormationPositions[side*4+unit];
-        position->positionA=BtechRecordDword(bytes+unit*8);position->positionB=BtechRecordDword(bytes+unit*8+4);
+        position->positionA=MwReadDword(bytes+unit*8);position->positionB=MwReadDword(bytes+unit*8+4);
     }
 }
 BtechPosition3D BtechReadSpecialTargetPosition(FILE *stream,uint16_t terrain)
 {
     uint8_t bytes[8];
     BtechReadFileRecord(bytes,sizeof(bytes),stream,"snario.dat","the target of terrain",terrain);
-    return BtechPosition3D{BtechRecordDword(bytes),BtechRecordDword(bytes+4),SPECIAL_TARGET_ALTITUDE};
+    return BtechPosition3D{MwReadDword(bytes),MwReadDword(bytes+4),SPECIAL_TARGET_ALTITUDE};
 }
 
 /*0810:1A2E. Scenario -> terrain -> six part allocations -> resource banks ->

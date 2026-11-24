@@ -1,9 +1,10 @@
 #include "mechwarrior/port_diagnostics.h"
-#include "mechwarrior/native_address.h"
 #include "mechwarrior/combat_startup.h"
 #include "mechwarrior/combat_input.h"
 #include "mechwarrior/combat_video.h"
 #include <stdlib.h>
+
+enum { WORD_SIGN_BIT=0x8000 };
 
 /*1BF5:24D3. First clear occupancy bit, not first NULL callback. Publish the
  * timing/callback before the mask update (the original's CLI/STI around
@@ -36,7 +37,7 @@ uint16_t BtechUnregisterTimerCallback(uint16_t callbackHandle)
 void BtechTimerSchedulerInterrupt(void)
 {
     uint16_t remaining=combatPlatform.runtimeDelayRemaining-1;
-    combatPlatform.runtimeDelayRemaining=remaining^((remaining&NATIVE_WORD_SIGN_BIT)?UINT16_MAX:0);
+    combatPlatform.runtimeDelayRemaining=remaining^((remaining&WORD_SIGN_BIT)?UINT16_MAX:0);
     uint16_t pendingSlots=combatStartup.schedulerActiveSlots;
     for (uint16_t slot=0;pendingSlots;++slot,pendingSlots>>=1)
     {

@@ -2,7 +2,7 @@
  * header). Boundary code, not original game helpers. */
 #include "MW_MAIN_1090_LAYOUT.h"
 #include "mechwarrior/story.h"
-#include "mechwarrior/native_address.h"
+#include "mechwarrior/read_word.h"
 #include "mechwarrior/ui_layout.h"
 #include <stdio.h>
 #include <string.h>
@@ -27,7 +27,7 @@ bool MwImportUiCaptions(UiCaptionOwner *owners,size_t count)
         }
         if (owner.bytes?!MwWordsCopyBlock(word,reinterpret_cast<uint8_t *>(owner.text),owner.bytes)
                        :!MwWordsCopyText(word,owner.text,owner.capacity)) return false;
-        owner.display->x=MwReadNativeWord(head,0);owner.display->y=MwReadNativeWord(head,2);
+        owner.display->x=MwReadWord(head);owner.display->y=MwReadWord(head+2);
         owner.display->colour=head[4];owner.display->text=owner.text;
     }
     return true;
@@ -43,14 +43,14 @@ static bool ImportUiPanel(const char *id,MwPanelDescriptor *panel,uint16_t lineC
     uint8_t bytes[UI_PANEL_HEADER_BYTES+2*CAMPAIGN_PANEL_MAX_LINES];
     const size_t size=UI_PANEL_HEADER_BYTES+2*(size_t)lineCount;
     if (lineCount>CAMPAIGN_PANEL_MAX_LINES || MwUiPieceSize(id)!=size || !MwUiCopyNative(id,bytes,size)) return false;
-    panel->x=MwReadNativeWord(bytes,0);panel->y=MwReadNativeWord(bytes,2);
-    panel->width=MwReadNativeWord(bytes,4);panel->bottomInset=MwReadNativeWord(bytes,6);
-    panel->lineCount=MwReadNativeWord(bytes,8);panel->borderEnabled=MwReadNativeWord(bytes,10);
-    panel->lineSpacing=MwReadNativeWord(bytes,12);panel->background=MwReadNativeWord(bytes,14);
+    panel->x=MwReadWord(bytes);panel->y=MwReadWord(bytes+2);
+    panel->width=MwReadWord(bytes+4);panel->bottomInset=MwReadWord(bytes+6);
+    panel->lineCount=MwReadWord(bytes+8);panel->borderEnabled=MwReadWord(bytes+10);
+    panel->lineSpacing=MwReadWord(bytes+12);panel->background=MwReadWord(bytes+14);
     if (list?panel->lineCount>lineCount:panel->lineCount!=lineCount) return false;
     for (uint16_t line=0;line<lineCount;++line)
     {
-        const UiCaptionOwner *owner=FindUiCaption(owners,count,MwReadNativeWord(bytes,(uint16_t)(UI_PANEL_HEADER_BYTES+line*2)));
+        const UiCaptionOwner *owner=FindUiCaption(owners,count,MwReadWord(bytes+UI_PANEL_HEADER_BYTES+line*2));
         if (!owner) return false;
         panel->lines[line]=owner->display;
     }
@@ -74,8 +74,8 @@ bool MwImportUiMenu(const char *id,MwUiMenu *menu,const UiCaptionOwner *owners,s
         const uint8_t *encoded=bytes+row*CAMPAIGN_UI_RECORD_BYTES;
         MwUiRecord *record=&menu->records[row];
         record->enabled=encoded[0];record->textRecord=encoded[1];
-        record->x=MwReadNativeWord(encoded,2);record->y=MwReadNativeWord(encoded,4);
-        record->activateCodeOffset=MwReadNativeWord(encoded,6);record->pictureIndex=MwReadNativeWord(encoded,8);
+        record->x=MwReadWord(encoded+2);record->y=MwReadWord(encoded+4);
+        record->activateCodeOffset=MwReadWord(encoded+6);record->pictureIndex=MwReadWord(encoded+8);
         record->text=NULL;record->textColour=NULL;
         if (record->textRecord && record->pictureIndex)
         {

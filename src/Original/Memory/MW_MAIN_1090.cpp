@@ -1,5 +1,5 @@
 #include "mechwarrior/campaign.h"
-#include "mechwarrior/native_address.h"
+#include "mechwarrior/read_word.h"
 #include "mechwarrior/campaign_mechanics.h"
 #include "mechwarrior/campaign_economy.h"
 #include "mechwarrior/campaign_ui.h"
@@ -99,7 +99,7 @@ CampaignEventsState campaignEvents={
 static uint8_t calendarMonthText[0x6E];
 static void ImportInitialWords(const uint8_t *bytes, uint16_t offset, uint16_t *words, size_t count)
 {
-    for (size_t i=0;i<count;++i) words[i]=MwReadNativeWord(bytes,(uint16_t)(offset+i*2));
+    for (size_t i=0;i<count;++i) words[i]=MwReadWord(bytes+offset+i*2);
 }
 /* A rule table, rebuilt from data/rules (src/Rules) as the exe lays it out. */
 static bool ImportRuleBytes(const char *id, void *bytes, size_t size)
@@ -135,7 +135,7 @@ static_assert(CAMPAIGN_UNIT_DROPSHIP==10 && HOUSE_DAVION==4,"the story keys foll
  * their data-segment offsets, so the
  * importers below read them where the exe kept them. Filled first, by
  * MwImportCampaignInitialData; zero everywhere else. */
-static uint8_t mainWords[NATIVE_SEGMENT_BYTE_COUNT];
+static uint8_t mainWords[0x10000];
 static bool ImportMainWords(void)
 {
     memset(mainWords,0,sizeof(mainWords));
@@ -148,7 +148,7 @@ static bool ImportMainWords(void)
 }
 static bool ImportInitialString(const uint8_t *view, uint16_t offset, char *text, size_t capacity)
 {
-    if ((size_t)offset+capacity>NATIVE_SEGMENT_BYTE_COUNT) return false;
+    if ((size_t)offset+capacity>0x10000) return false;
     const uint8_t *end=static_cast<const uint8_t *>(memchr(view+offset,0,capacity));
     if (!end) return false;
     memcpy(text,view+offset,(size_t)(end-(view+offset))+1);return true;
@@ -583,8 +583,8 @@ bool MwImportCampaignInitialData(void)
         || !ImportRuleBytes("units.weapon_repair_price_lists",weaponRepairPriceLists,sizeof(weaponRepairPriceLists))) return false;
     for (uint16_t entry=0;entry<AMMO_PROFILE_ENTRY_COUNT;++entry)
     {
-        campaignEconomy.unitAmmoProfileEntries[entry].ammoFamily=MwReadNativeWord(ammoProfileEntries,(uint16_t)(entry*4));
-        campaignEconomy.unitAmmoProfileEntries[entry].quantityMaximum=MwReadNativeWord(ammoProfileEntries,(uint16_t)(entry*4+2));
+        campaignEconomy.unitAmmoProfileEntries[entry].ammoFamily=MwReadWord(ammoProfileEntries+entry*4);
+        campaignEconomy.unitAmmoProfileEntries[entry].quantityMaximum=MwReadWord(ammoProfileEntries+entry*4+2);
     }
     /* complex.table.body_diagram_by_kind (3CDA): each kind's diagram at its
      * exe address in the body_diagrams table (3CEE), or 0 for none. */
@@ -595,8 +595,8 @@ bool MwImportCampaignInitialData(void)
     if (!diagramBase || !MwUiCopyWords("complex.table.body_diagram_by_kind",diagramByKind,CAMPAIGN_MECH_KIND_COUNT,0)) return false;
     for (uint16_t kind=0;kind<CAMPAIGN_MECH_KIND_COUNT;++kind)
     {
-        uint16_t profile=MwReadNativeWord(ammoProfiles,(uint16_t)(kind*2));
-        uint16_t prices=MwReadNativeWord(weaponRepairPriceLists,(uint16_t)(kind*2));
+        uint16_t profile=MwReadWord(ammoProfiles+kind*2);
+        uint16_t prices=MwReadWord(weaponRepairPriceLists+kind*2);
         uint16_t layout=diagramByKind[kind];
         if (profile<0x2F3C || profile>=0x2F78 || (profile-0x2F3C)%4
             || prices<0x3C2F || prices>=0x3CAB || (prices-0x3C2F)%2

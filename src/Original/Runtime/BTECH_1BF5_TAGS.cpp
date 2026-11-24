@@ -124,7 +124,7 @@ scanFromCurrent:
             taggedStream->payloadPosition+=8;
             uint8_t lengthBytes[4];
             if (BtechReadStreamElements(lengthBytes,4,1,stream->file)!=1) goto restoreBackup;
-            taggedStream->payloadBytes=BtechRecordDword(lengthBytes);
+            taggedStream->payloadBytes=MwReadDword(lengthBytes);
             taggedStream->branchEnds[taggedStream->tagDepth/4]=taggedStream->payloadPosition+taggedStream->payloadBytes;
             taggedStream->payloadBytes&=0x7FFFFFFF;
             if (!taggedStream->payloadBytes ||

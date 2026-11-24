@@ -1,5 +1,5 @@
 #include "mechwarrior/port_diagnostics.h"
-#include "mechwarrior/native_address.h"
+#include "mechwarrior/campaign_buffer.h"
 #include "mechwarrior/ega_campaign.h"
 #include "mechwarrior/game_files.h"
 #include "mechwarrior/video_mode.h"
@@ -301,7 +301,7 @@ uint16_t EgaDrawPackedSprite(uint16_t x, uint16_t y, uint8_t targetPage,
     rowStartOffset += x < EGA_COLUMNS ? egaOverlay.xByteOffsets[x]
         : EgaUncheckedWord(EGA_UNCHECKED_COLUMN, (uint16_t)(EGA_PIXEL_BYTE_OFFSETS + x * EGA_WORD_BYTES));
     const uint8_t *pictureData = MwCampaignBufferBytes(picture);
-    if (pictureOffset <= NATIVE_SEGMENT_BYTE_COUNT - sizeof(PackedPictureHeader))
+    if (pictureOffset <= CAMPAIGN_BUFFER_BYTE_COUNT - sizeof(PackedPictureHeader))
     {
         const PackedPictureHeader *pictureHeader = (const PackedPictureHeader *)&pictureData[pictureOffset];
         egaOverlay.spriteWidth = pictureHeader->width[0] | ((uint16_t)pictureHeader->width[1] << EGA_BYTE_BITS);
@@ -312,9 +312,9 @@ uint16_t EgaDrawPackedSprite(uint16_t x, uint16_t y, uint8_t targetPage,
     {
         /* Only a boundary-crossing record needs the wrapping byte reader.
          * Preserve width-store before height-read, not an aggregate snapshot. */
-        egaOverlay.spriteWidth = MwReadNativeWord(pictureData, pictureOffset);
+        egaOverlay.spriteWidth = MwCampaignBufferWord(pictureData,pictureOffset);
         pictureOffset += EGA_WORD_BYTES;
-        egaOverlay.spriteRowsRemaining = MwReadNativeWord(pictureData, pictureOffset);
+        egaOverlay.spriteRowsRemaining = MwCampaignBufferWord(pictureData,pictureOffset);
         pictureOffset += EGA_WORD_BYTES;
     }
     int canvasPage = EgaCanvasPage(targetPage == EGA_DISPLAY_PAGE ? egaOverlay.egaDisplayPage : egaOverlay.egaDrawPage);

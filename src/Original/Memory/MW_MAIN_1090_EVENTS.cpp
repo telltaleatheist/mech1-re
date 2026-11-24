@@ -3,7 +3,7 @@
  * menus and the dispatch check from the installation. No runtime address
  * registry, retained executable image or additional game procedure. */
 #include "mechwarrior/campaign_events.h"
-#include "mechwarrior/native_address.h"
+#include "mechwarrior/read_word.h"
 #include "mechwarrior/story.h"
 #include "mechwarrior/ui_layout.h"
 #include <string.h>
@@ -32,10 +32,10 @@ bool MwImportCampaignEventData(void)
             uint16_t at=i*CAMPAIGN_UI_RECORD_BYTES;
             MwUiRecord *record=&menu->records[i];
             record->enabled=layout[at];record->textRecord=layout[at+1];
-            record->x=MwReadNativeWord(layout,at+2);record->y=MwReadNativeWord(layout,at+4);
-            record->activateCodeOffset=MwReadNativeWord(layout,at+6);
+            record->x=MwReadWord(layout+at+2);record->y=MwReadWord(layout+at+4);
+            record->activateCodeOffset=MwReadWord(layout+at+6);
             record->pictureIndex=0;record->text=NULL;record->textColour=NULL;
-            uint16_t captionOffset=MwReadNativeWord(layout,at+8);
+            uint16_t captionOffset=MwReadWord(layout+at+8);
             for (uint16_t caption=0;caption<CAMPAIGN_EVENT_CAPTION_COUNT;++caption)
                 if (captionOffsets[caption]==captionOffset)
                 {

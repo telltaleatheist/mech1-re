@@ -24,10 +24,10 @@ void BtechDecodeCampaignImport(const uint8_t bytes[CAMPAIGN_EXCHANGE_BYTES],Btec
     memcpy(company->commanderName,bytes+TRANSFER_COMMANDER_NAME,sizeof(company->commanderName));
     for (uint16_t slot=0;slot<4;++slot)
     {
-        company->pilotIds[slot]=BtechRecordWord(bytes+TRANSFER_PILOT_IDS+slot*2);
-        company->gunneryTiers[slot]=BtechRecordWord(bytes+TRANSFER_GUNNERY_TIERS+slot*2);
-        company->pilotingTiers[slot]=BtechRecordWord(bytes+TRANSFER_PILOTING_TIERS+slot*2);
-        company->ownedMechSlots[slot]=BtechRecordWord(bytes+TRANSFER_OWNED_MECH_SLOTS+slot*2);
+        company->pilotIds[slot]=MwReadWord(bytes+TRANSFER_PILOT_IDS+slot*2);
+        company->gunneryTiers[slot]=MwReadWord(bytes+TRANSFER_GUNNERY_TIERS+slot*2);
+        company->pilotingTiers[slot]=MwReadWord(bytes+TRANSFER_PILOTING_TIERS+slot*2);
+        company->ownedMechSlots[slot]=MwReadWord(bytes+TRANSFER_OWNED_MECH_SLOTS+slot*2);
     }
     for (uint16_t slot=0;slot<12;++slot)
     {

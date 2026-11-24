@@ -1,5 +1,4 @@
 #include "mechwarrior/port_diagnostics.h"
-#include "mechwarrior/native_address.h"
 #include "SDLBackend.h"
 #include "mechwarrior/campaign_runtime.h"
 #include "mechwarrior/campaign_ui.h"
@@ -78,9 +77,9 @@ static void ValidateFileDestination(const uint8_t *buffer,uint16_t bytesRead)
     for (uint16_t i=0;i<allocationCount;++i)
     {
         uintptr_t allocation=(uintptr_t)resourceAllocations[i]->bytes;
-        if (destination>=allocation && destination-allocation<NATIVE_SEGMENT_BYTE_COUNT)
+        if (destination>=allocation && destination-allocation<CAMPAIGN_BUFFER_BYTE_COUNT)
         {
-            if (bytesRead>NATIVE_SEGMENT_BYTE_COUNT-(destination-allocation))
+            if (bytesRead>CAMPAIGN_BUFFER_BYTE_COUNT-(destination-allocation))
                 MwSdlFail("Unsupported resource read beyond its native offset window");
             return;
         }
