@@ -1,99 +1,67 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/campaign.h"
-#include "mechwarrior/dos_files.h"
 #include "mechwarrior/ega_campaign.h"
+#include "mechwarrior/game_files.h"
 #include <stdlib.h>
 
-/* MW_MAIN 081B:1056..105E / 105F..1065 / 106D..1073 / 1083..108B.
- * AX/CX:DX register transport becomes actual arguments; Carry true is error. */
-bool MwDosOpenResourceReadWrite(const char *filename, uint16_t *handleOrError)
-{ return mwDosFiles.openReadWrite(filename, handleOrError); }
-bool MwDosReadFile(uint8_t *buffer, uint16_t byteCount, uint16_t fileHandle, uint16_t *bytesReadOrError)
-{ return mwDosFiles.read(buffer, byteCount, fileHandle, bytesReadOrError); }
-bool MwDosCloseFile(uint16_t fileHandle) { return mwDosFiles.close(fileHandle); }
-bool MwDosSeekAbsolute(uint32_t fileOffset, uint16_t fileHandle)
-{ return mwDosFiles.seekAbsolute(fileOffset, fileHandle); }
+using mw1o::files::GameFile;
+using mw1o::files::open_game_file;
 
 /* MW_MAIN 081B:108C..113C. Directory read success does NOT require 600 bytes;
  * indexed record decode uses its STORED size, not the successful read count.
  * A failed open, read or seek is fatal (MwFailGameFileRead): no disk prompts. */
 uint16_t MwLoadIndexedPicture(uint16_t pictureIndex)
 {
-    uint16_t handleOrError, bytesReadOrError;
+    if (campaignCore.indexedPictureDirectoryLoaded != 0 && pictureIndex == campaignCore.indexedPictureCachedIndex)
+        return campaignCore.indexedPictureOutputSelector;
+    GameFile file = open_game_file(indexedPictureFilename);
+    if (!file) MwFailGameFileRead(indexedPictureFilename);
     if (campaignCore.indexedPictureDirectoryLoaded == 0)
     {
-        while (MwDosOpenResourceReadWrite(indexedPictureFilename, &handleOrError))
+        if (!file.read(campaignCore.indexedPictureDirectory, INDEXED_PICTURE_DIRECTORY_BYTES))
             MwFailGameFileRead(indexedPictureFilename);
-        campaignCore.indexedPictureFileHandle = handleOrError;
-        while (MwDosReadFile(campaignCore.indexedPictureDirectory, INDEXED_PICTURE_DIRECTORY_BYTES,
-            campaignCore.indexedPictureFileHandle, &bytesReadOrError)) MwFailGameFileRead(indexedPictureFilename);
         campaignCore.indexedPictureDirectoryLoaded++;
     }
-    else
-    {
-        if (pictureIndex == campaignCore.indexedPictureCachedIndex) return campaignCore.indexedPictureOutputSelector;
-        while (MwDosOpenResourceReadWrite(indexedPictureFilename, &handleOrError))
-            MwFailGameFileRead(indexedPictureFilename);
-        campaignCore.indexedPictureFileHandle = handleOrError;
-    }
     campaignCore.indexedPictureCachedIndex = pictureIndex;
-    for (;;)
-    {
-        uint16_t offsetEntry = campaignCore.indexedPictureCachedIndex * PICTURE_OFFSET_ENTRY_BYTES;
-        /* Outside this proved directory object is unresolved live DS storage,
-         * not a safe out-of-bounds C access or a silently clamped index. */
-        if (offsetEntry + PICTURE_OFFSET_ENTRY_BYTES > INDEXED_PICTURE_DIRECTORY_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: offsetEntry + PICTURE_OFFSET_ENTRY_BYTES > INDEXED_PICTURE_DIRECTORY_BYTES");
-        uint32_t fileOffset = ((uint32_t)MwReadNativeWord(campaignCore.indexedPictureDirectory, offsetEntry) << NATIVE_WORD_BITS)
-            | MwReadNativeWord(campaignCore.indexedPictureDirectory, (uint16_t)(offsetEntry + PICTURE_BANK_LOW_OFFSET_WORD));
-        if (!MwDosSeekAbsolute(fileOffset, campaignCore.indexedPictureFileHandle)) break;
+    uint16_t offsetEntry = campaignCore.indexedPictureCachedIndex * PICTURE_OFFSET_ENTRY_BYTES;
+    /* Outside this proved directory object is unresolved live DS storage,
+     * not a safe out-of-bounds C access or a silently clamped index. */
+    if (offsetEntry + PICTURE_OFFSET_ENTRY_BYTES > INDEXED_PICTURE_DIRECTORY_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: offsetEntry + PICTURE_OFFSET_ENTRY_BYTES > INDEXED_PICTURE_DIRECTORY_BYTES");
+    uint32_t fileOffset = ((uint32_t)MwReadNativeWord(campaignCore.indexedPictureDirectory, offsetEntry) << NATIVE_WORD_BITS)
+        | MwReadNativeWord(campaignCore.indexedPictureDirectory, (uint16_t)(offsetEntry + PICTURE_BANK_LOW_OFFSET_WORD));
+    if (!file.seek(fileOffset)) MwFailGameFileRead(indexedPictureFilename);
+    uint16_t sizeEntry = INDEXED_PICTURE_SIZE_TABLE + (uint16_t)(campaignCore.indexedPictureCachedIndex * 2);
+    if (sizeEntry + PICTURE_BANK_LOW_OFFSET_WORD > INDEXED_PICTURE_DIRECTORY_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: sizeEntry + PICTURE_BANK_LOW_OFFSET_WORD > INDEXED_PICTURE_DIRECTORY_BYTES");
+    campaignCore.indexedPictureStoredBytes = MwReadNativeWord(campaignCore.indexedPictureDirectory, sizeEntry);
+    if (!file.read(MwResolveNativeSegment(campaignCore.compressedPictureBufferSelector), campaignCore.indexedPictureStoredBytes))
         MwFailGameFileRead(indexedPictureFilename);
-    }
-    for (;;)
-    {
-        uint16_t sizeEntry = INDEXED_PICTURE_SIZE_TABLE + (uint16_t)(campaignCore.indexedPictureCachedIndex * 2);
-        if (sizeEntry + PICTURE_BANK_LOW_OFFSET_WORD > INDEXED_PICTURE_DIRECTORY_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: sizeEntry + PICTURE_BANK_LOW_OFFSET_WORD > INDEXED_PICTURE_DIRECTORY_BYTES");
-        campaignCore.indexedPictureStoredBytes = MwReadNativeWord(campaignCore.indexedPictureDirectory, sizeEntry);
-        if (!MwDosReadFile(MwResolveNativeSegment(campaignCore.compressedPictureBufferSelector),
-            campaignCore.indexedPictureStoredBytes, campaignCore.indexedPictureFileHandle, &bytesReadOrError)) break;
-        MwFailGameFileRead(indexedPictureFilename);
-    }
-    MwCloseIndexedPictureBank();
+    /* 081B:113E..1152: a failed close is an unreadable file too. */
+    if (!file.close()) MwFailGameFileRead(indexedPictureFilename);
     MwDecodePictureBank(campaignCore.indexedPictureStoredBytes, campaignCore.indexedPictureOutputSelector);
     return campaignCore.indexedPictureOutputSelector; /* ES result; native SI is zero. */
 }
 /* MW_MAIN 081B:113D. Genuine native RET-only hook, not a placeholder. */
 void MwIndexedPictureCloseHook(void) { }
-/* MW_MAIN 081B:113E..1152. JNC skips the prompt on SUCCESS. Stored handle is
- * never cleared, including close failure; do not repair native ownership here. */
-void MwCloseIndexedPictureBank(void)
-{
-    if (campaignCore.indexedPictureFileHandle == 0) return;
-    if (!MwDosCloseFile(campaignCore.indexedPictureFileHandle)) return;
-    MwFailGameFileRead(indexedPictureFilename);
-    MwIndexedPictureCloseHook(); /* Native shared RET tail. */
-}
-/* MW_MAIN 081B:1153..1188. Read failure leaks the handle; close failure is ignored. */
+/* MW_MAIN 081B:1153..1188. A failed close is ignored, here and in the banks below. */
 bool MwLoadGeneralPictureBank(void)
 {
-    uint16_t fileHandleOrError, bytesReadOrError;
-    if (MwDosOpenResourceReadWrite(generalPictureFilename, &fileHandleOrError)) return true;
-    campaignCore.generalPictureFileHandle = fileHandleOrError;
-    if (MwDosReadFile(MwResolveNativeSegment(campaignCore.compressedPictureBufferSelector),
-        GENERAL_PICTURE_READ_BYTES, fileHandleOrError, &bytesReadOrError)) return true;
-    MwDosCloseFile(campaignCore.generalPictureFileHandle);
-    MwDecodePictureBank(bytesReadOrError, campaignCore.generalPictureBankSelector);
+    GameFile file = open_game_file(generalPictureFilename);
+    if (!file) return true;
+    const std::optional<uint16_t> bytesRead = file.read(MwResolveNativeSegment(campaignCore.compressedPictureBufferSelector), GENERAL_PICTURE_READ_BYTES);
+    if (!bytesRead) return true;
+    (void)file.close();
+    MwDecodePictureBank(*bytesRead, campaignCore.generalPictureBankSelector);
     return false;
 }
 /* MW_MAIN 081B:1189..11BE. */
 bool MwLoadCockpitPictureBank(void)
 {
-    uint16_t fileHandleOrError, bytesReadOrError;
-    if (MwDosOpenResourceReadWrite(cockpitPictureFilename, &fileHandleOrError)) return true;
-    campaignCore.selectedPictureFileHandle = fileHandleOrError;
-    if (MwDosReadFile(MwResolveNativeSegment(campaignCore.compressedPictureBufferSelector),
-        WHOLE_PICTURE_READ_BYTES, fileHandleOrError, &bytesReadOrError)) return true;
-    MwDosCloseFile(campaignCore.selectedPictureFileHandle);
-    MwDecodePictureBank(bytesReadOrError, campaignCore.cockpitPictureBankSelector);
+    GameFile file = open_game_file(cockpitPictureFilename);
+    if (!file) return true;
+    const std::optional<uint16_t> bytesRead = file.read(MwResolveNativeSegment(campaignCore.compressedPictureBufferSelector), WHOLE_PICTURE_READ_BYTES);
+    if (!bytesRead) return true;
+    (void)file.close();
+    MwDecodePictureBank(*bytesRead, campaignCore.cockpitPictureBankSelector);
     return false;
 }
 /* MW_MAIN 081B:11BF..11C1 / 11C2..11C5, shared entry/fallthrough. */
@@ -103,28 +71,23 @@ bool MwSelectAndLoadPictureBank(const char *filename)
 /* MW_MAIN 081B:11C6..120D. */
 bool MwLoadSelectedPictureBank(void)
 {
-    uint16_t fileHandleOrError, bytesReadOrError;
-    while (MwDosOpenResourceReadWrite(campaignCore.selectedPictureFilename, &fileHandleOrError))
-    {
-        MwFailGameFileRead(campaignCore.selectedPictureFilename);
-    }
-    campaignCore.selectedPictureFileHandle = fileHandleOrError;
-    if (MwDosReadFile(MwResolveNativeSegment(campaignCore.compressedPictureBufferSelector),
-        WHOLE_PICTURE_READ_BYTES, fileHandleOrError, &bytesReadOrError)) return true;
-    MwDosCloseFile(campaignCore.selectedPictureFileHandle);
-    MwDecodePictureBank(bytesReadOrError, campaignCore.activePictureBankSelector);
+    GameFile file = open_game_file(campaignCore.selectedPictureFilename);
+    if (!file) MwFailGameFileRead(campaignCore.selectedPictureFilename);
+    const std::optional<uint16_t> bytesRead = file.read(MwResolveNativeSegment(campaignCore.compressedPictureBufferSelector), WHOLE_PICTURE_READ_BYTES);
+    if (!bytesRead) return true;
+    (void)file.close();
+    MwDecodePictureBank(*bytesRead, campaignCore.activePictureBankSelector);
     return false;
 }
 /* MW_MAIN 081B:120E..1243. */
 bool MwLoadSecondaryPictureBank(void)
 {
-    uint16_t fileHandleOrError, bytesReadOrError;
-    if (MwDosOpenResourceReadWrite(secondaryPictureFilename, &fileHandleOrError)) return true;
-    campaignCore.selectedPictureFileHandle = fileHandleOrError;
-    if (MwDosReadFile(MwResolveNativeSegment(campaignCore.compressedPictureBufferSelector),
-        WHOLE_PICTURE_READ_BYTES, fileHandleOrError, &bytesReadOrError)) return true;
-    MwDosCloseFile(campaignCore.selectedPictureFileHandle);
-    MwDecodePictureBank(bytesReadOrError, campaignCore.secondaryPictureBankSelector);
+    GameFile file = open_game_file(secondaryPictureFilename);
+    if (!file) return true;
+    const std::optional<uint16_t> bytesRead = file.read(MwResolveNativeSegment(campaignCore.compressedPictureBufferSelector), WHOLE_PICTURE_READ_BYTES);
+    if (!bytesRead) return true;
+    (void)file.close();
+    MwDecodePictureBank(*bytesRead, campaignCore.secondaryPictureBankSelector);
     return false;
 }
 /* MW_MAIN 081B:1244..1249 / 124A..124F / 1250..1255: native near tails. */

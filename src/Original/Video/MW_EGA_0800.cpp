@@ -1,6 +1,6 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/ega_campaign.h"
-#include "mechwarrior/dos_files.h"
+#include "mechwarrior/game_files.h"
 #include "mechwarrior/video_mode.h"
 #include "Canvas.h"
 #include <stdio.h>
@@ -118,27 +118,26 @@ bool EgaLoadFonts(void)
     if (EgaLoadFontFile(EGA_LARGE_FONT_NAME, EGA_LARGE_FONT_BITMAP)) return true;
     return false;
 }
-/* MW_EGA 0800:1096..10B7. Short reads succeed; read failure leaks the handle.
- * The read can overwrite nearby overlay data, including the font tables. */
+/* MW_EGA 0800:1096..10B7. Short reads succeed. The read can overwrite nearby
+ * overlay data, including the font tables. */
 bool EgaLoadFontFile(uint16_t filenameOffset, uint16_t bufferOffset)
 {
     egaOverlay.fontReadBufferOffset = bufferOffset;
-    uint16_t handleOrError;
-    if (EgaDosOpenFontFile(filenameOffset, &handleOrError)) return true;
-    egaOverlay.fontFileHandle = handleOrError;
-    if (EgaDosReadFontFile(egaOverlay.fontReadBufferOffset,
-        EGA_FONT_READ_BYTES, handleOrError)) return true;
-    return EgaDosCloseFontFile(egaOverlay.fontFileHandle);
+    mw1o::files::GameFile file = EgaOpenFontFile(filenameOffset);
+    if (!file) return true;
+    egaOverlay.fontHandleBytes = EGA_FONT_HANDLE_VALUE;
+    if (EgaReadFontFile(file, egaOverlay.fontReadBufferOffset, EGA_FONT_READ_BYTES)) return true;
+    return !file.close();
 }
-/* MW_EGA 0800:10B8..10C0: INT21/3D, AL02. */
-bool EgaDosOpenFontFile(uint16_t filenameOffset, uint16_t *handleOrError)
+/* MW_EGA 0800:10B8..10C0. */
+mw1o::files::GameFile EgaOpenFontFile(uint16_t filenameOffset)
 {
     if (filenameOffset == EGA_SMALL_FONT_NAME)
-        return mwDosFiles.openReadWrite(egaOverlay.smallFontFilename, handleOrError);
+        return mw1o::files::open_game_file(egaOverlay.smallFontFilename);
     if (filenameOffset == EGA_LARGE_FONT_NAME)
-        return mwDosFiles.openReadWrite(egaOverlay.largeFontFilename, handleOrError);
+        return mw1o::files::open_game_file(egaOverlay.largeFontFilename);
     /* An arbitrary native near string may cross named objects. Marshal only
-     * at the DOS boundary; ordinary filename access uses its named owner. */
+     * at the file boundary; ordinary filename access uses its named owner. */
     char filename[EGA_DATA_BYTE_COUNT];
     uint32_t filenameBytes = 0;
     do
@@ -146,19 +145,17 @@ bool EgaDosOpenFontFile(uint16_t filenameOffset, uint16_t *handleOrError)
         filename[filenameBytes] = (char)EgaUncheckedByte(EGA_UNCHECKED_NAME, (uint16_t)(filenameOffset + filenameBytes));
     } while (filename[filenameBytes++] != 0 && filenameBytes < EGA_DATA_BYTE_COUNT);
     if (filename[filenameBytes - 1] != 0) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: filename[filenameBytes - 1] != 0"); /* Unsupported unterminated DOS name. */
-    return mwDosFiles.openReadWrite(filename, handleOrError);
+    return mw1o::files::open_game_file(filename);
 }
-/* MW_EGA 0800:10C1..10C7: INT21/3F. AX's byte count is not tested by its caller. */
-bool EgaDosReadFontFile(uint16_t bufferOffset, uint16_t byteCount, uint16_t fileHandle)
+/* MW_EGA 0800:10C1..10C7. The byte count is not tested by its caller. */
+bool EgaReadFontFile(mw1o::files::GameFile &file, uint16_t bufferOffset, uint16_t byteCount)
 {
     if ((uint32_t)bufferOffset + byteCount > EGA_DATA_BYTE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint32_t)bufferOffset + byteCount > EGA_DATA_BYTE_COUNT"); /* Unsupported DOS transfer window. */
-    uint16_t bytesReadOrError;
-    bool readFailed;
+    std::optional<uint16_t> bytesRead;
     if (bufferOffset >= EGA_SMALL_FONT_BITMAP
         && (uint32_t)bufferOffset + byteCount <= EGA_FONT_DATA_END)
     {
-        readFailed = mwDosFiles.read(&egaOverlay.fontBitmapStorage[bufferOffset - EGA_SMALL_FONT_BITMAP],
-            byteCount, fileHandle, &bytesReadOrError);
+        bytesRead = file.read(&egaOverlay.fontBitmapStorage[bufferOffset - EGA_SMALL_FONT_BITMAP], byteCount);
     }
     else
     {
@@ -169,7 +166,7 @@ bool EgaDosReadFontFile(uint16_t bufferOffset, uint16_t byteCount, uint16_t file
         if (transferBuffer == NULL) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: transferBuffer == NULL");
         for (uint32_t byteIndex = 0; byteIndex < byteCount; ++byteIndex)
             transferBuffer[byteIndex] = EgaReadOverlayByte((uint16_t)(bufferOffset + byteIndex));
-        readFailed = mwDosFiles.read(transferBuffer, byteCount, fileHandle, &bytesReadOrError);
+        bytesRead = file.read(transferBuffer, byteCount);
         for (uint32_t byteIndex = 0; byteIndex < byteCount; ++byteIndex)
             EgaWriteOverlayByte((uint16_t)(bufferOffset + byteIndex), transferBuffer[byteIndex]);
         free(transferBuffer);
@@ -177,11 +174,9 @@ bool EgaDosReadFontFile(uint16_t bufferOffset, uint16_t byteCount, uint16_t file
     /* A long second font can overwrite the executing loader's machine code.
      * Compiled C cannot pretend to execute those changed opcodes. The bytes
      * have been written, but this native self-modification is unsupported. */
-    if (!readFailed && bytesReadOrError != 0 && (uint32_t)bufferOffset + bytesReadOrError > EGA_FONT_DATA_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !readFailed && bytesReadOrError != 0 && (uint32_t)bufferOffset + bytesReadOrError > EGA_FONT_DATA_END");
-    return readFailed;
+    if (bytesRead && *bytesRead != 0 && (uint32_t)bufferOffset + *bytesRead > EGA_FONT_DATA_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !readFailed && bytesReadOrError != 0 && (uint32_t)bufferOffset + bytesReadOrError > EGA_FONT_DATA_END");
+    return !bytesRead;
 }
-/* MW_EGA 0800:10C8..10CE: INT21/3E. */
-bool EgaDosCloseFontFile(uint16_t fileHandle) { return mwDosFiles.close(fileHandle); }
 
 /* MW_EGA 0800:10EF..110A. No clamp: shifted table offset wraps as a WORD. */
 void EgaSelectFont(uint16_t fontIndex)

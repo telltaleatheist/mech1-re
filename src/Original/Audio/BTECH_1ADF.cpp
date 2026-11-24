@@ -244,13 +244,8 @@ BtechSoundAllocationNode *BtechLoadTaggedSoundAllocation(BtechSoundBank *bank,Bt
         node=&bank->root;
         if (node->allocation.bytes)
         {
-            while (node->next)
-            {
-                node=BtechHostResolveReleasedSoundNode(node->next);
-            }
-            BtechSoundAllocationNode *next=static_cast<BtechSoundAllocationNode *>(BtechAllocateNearBytes(BTECH_NEAR_SOUND_NODE_BYTES,sizeof(*node),BTECH_NEAR_SOUND_NODE));
-            if (node==&bank->root) node->next=next;
-            else BtechHostStoreSoundAllocationNext(node,next);
+            while (node->next) node=node->next;
+            node->next=static_cast<BtechSoundAllocationNode *>(BtechAllocateNearBytes(BTECH_NEAR_SOUND_NODE_BYTES,sizeof(*node),BTECH_NEAR_SOUND_NODE));
             if (node->next) {node=node->next;node->next=NULL;}
             else {soundAllocationError=2;failed=2;}
         }
@@ -372,7 +367,10 @@ uint16_t BtechStartSelectedMusicBankTrack(uint16_t trackIndex,uint16_t priority)
 /*1ADF:0C8A. The embedded root's next link and tag survive release. E96E marks
  * a near-heap header free; CDD9's FFFF probe reaches FAAD->FB7B, changing heap
  * metadata, not the node payload. Retain typed near nodes until child reset so
- * the subsequent native next-field read is valid C, never a use-after-free. */
+ * the subsequent native next-field read is valid C, never a use-after-free.
+ * The original could read a released node's bytes after another owner reused
+ * them; B5's step 0 saw no such read in the traces and sound scripts, so a
+ * released node keeps its own last link. */
 uint16_t BtechFreeSoundAllocationChain(BtechSoundBank *bank)
 {
     BtechSoundAllocationNode *node=&bank->root;
@@ -385,7 +383,6 @@ uint16_t BtechFreeSoundAllocationChain(BtechSoundBank *bank)
     node->allocationSelector=0;node->allocationOffset=0;node->allocation=BtechResourceAllocation{};
     while ((node=node->next)!=NULL)
     {
-        node=BtechHostResolveReleasedSoundNode(node);
         if (!soundAllocationOverride.bytes && (node->allocationOffset|node->allocationSelector))
         {
             if (!btechHostFreeDosSelector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostFreeDosSelector");

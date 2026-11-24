@@ -3,18 +3,26 @@
 // long divide (its rounding is game maths; it equals C's truncating division, and the minimum dword over -1 wraps).
 // Combat's open files: which slot of the table each takes (its address goes into the checksum that seeds the combat
 // random mix), and the 512-byte buffer charged to the near heap at the first read, never at the open.
+// A save on a full disk: reported as one (DOS wrote straight through; a buffered write saw it only at the close).
 // Plain checks, no framework: exit 0 when all hold.
 #include "mechwarrior/btech_start_image.h"
+#include "mechwarrior/campaign_options.h"
 #include "mechwarrior/combat_heap.h"
 #include "mechwarrior/combat_platform.h"
 #include "mechwarrior/combat_render.h"
 #include "mechwarrior/combat_runtime.h"
+#include "mechwarrior/game_files.h"
 
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <random>
 #include <set>
+
+#if !defined(_WIN32)
+#include <csignal>
+#include <sys/resource.h>
+#endif
 
 namespace {
 
@@ -214,6 +222,38 @@ void Streams() {
   std::remove(kStreamFile);
 }
 
+long FileBytes(const char *path) {
+  FILE *f = std::fopen(path, "rb");
+  if (!f) return -1;
+  std::fseek(f, 0, SEEK_END);
+  long bytes = std::ftell(f);
+  std::fclose(f);
+  return bytes;
+}
+
+// The disk fills part of the way through a save (a file-size limit stands in for it; POSIX only).
+void SaveOnFullDisk() {
+  const char *const name = "RTFULL.GAM";
+  mw1o::files::set_save_directory(".");
+  Check(MwWriteCampaignSaveFile(name) == CampaignSaveWrite::Written && FileBytes(name) == CAMPAIGN_SAVE_BYTES,
+        "a save with room is written whole");
+#if !defined(_WIN32)
+  std::signal(SIGXFSZ, SIG_IGN);
+  rlimit old{};
+  getrlimit(RLIMIT_FSIZE, &old);
+  rlimit small = old;
+  small.rlim_cur = 0x400;
+  setrlimit(RLIMIT_FSIZE, &small);
+  CampaignSaveWrite result = MwWriteCampaignSaveFile(name);
+  long left = FileBytes(name);
+  setrlimit(RLIMIT_FSIZE, &old);
+  Check(result == CampaignSaveWrite::DiskFull, "a save that stops short is reported as a full disk");
+  Check(left >= 0 && left <= 0x400, "the old save was truncated by the create, as the original's is");
+#endif
+  Check(MwWriteCampaignSaveFile("no/such.GAM") == CampaignSaveWrite::NotCreated, "a save that cannot be created");
+  std::remove(name);
+}
+
 }  // namespace
 
 int main() {
@@ -223,6 +263,7 @@ int main() {
   RepeatedVisitsBounded();
   LongDivide();
   Streams();
+  SaveOnFullDisk();
   BtechHostDiscardNearHeap();
   if (failures) std::printf("%d failed\n", failures);
   else std::printf("runtime: all hold\n");

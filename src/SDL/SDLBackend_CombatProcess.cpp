@@ -1,6 +1,6 @@
 #include "SDLBackend.h"
 #include "mechwarrior/launcher.h"
-#include "mechwarrior/dos_files.h"
+#include "mechwarrior/game_files.h"
 #include "mechwarrior/combat_installation.h"
 #include "mechwarrior/combat_startup.h"
 #include "mechwarrior/combat_runtime.h"
@@ -114,9 +114,7 @@ static FILE *OpenStream(const char *filename,const char *mode)
     /* Original resources are flat installation files. Never change the shared
      * working directory or let a native filename escape the installation. */
     if (!filename[0] || strpbrk(filename,"/\\:")) return NULL;
-    char path[4096];
-    if (!MwHostJoinGamePath(path,sizeof(path),gameDirectory,filename,__func__)) return NULL;
-    return fopen(path,mode);
+    return fopen(mw1o::files::find_game_file(gameDirectory,filename,__func__).string().c_str(),mode);
 }
 static void WriteStderr(const char *text,uint16_t bytes)
 {
