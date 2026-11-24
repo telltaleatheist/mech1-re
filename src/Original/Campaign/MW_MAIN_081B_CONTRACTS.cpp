@@ -123,7 +123,7 @@ uint16_t MwDrawMissionContractBriefingContinuation(uint16_t missionOfferSlot)
     MwDrawNegotiatingOfferTerms();
     if (campaignCore.calendarMonthIndex>=CAMPAIGN_MONTH_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: calendarMonthIndex>=CAMPAIGN_MONTH_COUNT");
     uint16_t yearX=campaignContracts.contractDateYearXOffsets[campaignCore.calendarMonthIndex];
-    MwDrawContractText(CONTRACT_MONTH_X,CONTRACT_DATE_Y,(const char *)campaignCore.calendarMonthNames[campaignCore.calendarMonthIndex]);
+    MwDrawContractText(CONTRACT_MONTH_X,CONTRACT_DATE_Y,(const char *)campaignCore.calendarMonthNames[campaignCore.calendarMonthIndex].cursor);
     MwDrawSignedDecimalField(campaignCore.calendarYear,(uint16_t)(yearX+CONTRACT_YEAR_BASE_X),1,0,CONTRACT_TEXT_COLOUR,CONTRACT_PAGE_BACKGROUND,CONTRACT_DATE_Y);
     MwSelectUiRecordTable(1,&campaignContracts.contractActionsMenu);
     return CAMPAIGN_CONTINUE_UI;

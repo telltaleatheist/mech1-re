@@ -43,9 +43,8 @@ void MwDrawCampaignCalendar(uint16_t panelX, uint8_t yearDigits, uint8_t backgro
     if (campaignCore.calendarMonthIndex >= CAMPAIGN_MONTH_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: calendarMonthIndex >= CAMPAIGN_MONTH_COUNT");
     uint16_t monthWidth = campaignCore.calendarMonthNameWidths[campaignCore.calendarMonthIndex];
     campaignCore.calendarTextX += (uint16_t)(PLANET_NAME_PANEL_WIDTH - (uint16_t)(monthWidth + CALENDAR_YEAR_FIELD_WIDTH)) >> 1;
-    const char *monthName = (const char *)campaignCore.calendarMonthNames[campaignCore.calendarMonthIndex];
-    if (monthName == NULL) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: monthName == NULL");
-    MwText text = MwTerminatedText(monthName);
+    MwText text = campaignCore.calendarMonthNames[campaignCore.calendarMonthIndex];
+    if (text.cursor == NULL) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: text.cursor == NULL");
     EgaDrawTransparentText(campaignCore.calendarTextX, campaignCore.calendarTextY, campaignCore.calendarForeground, text);
     MwDrawSignedDecimalField(campaignCore.calendarYear,
         (uint16_t)(monthWidth + campaignCore.calendarTextX + CALENDAR_YEAR_GAP), 1, yearDigits, campaignCore.calendarForeground,

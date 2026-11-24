@@ -1,6 +1,7 @@
 #ifndef MECHWARRIOR_CAMPAIGN_H
 #define MECHWARRIOR_CAMPAIGN_H
 
+#include "mechwarrior/campaign_text.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -118,7 +119,7 @@ struct CampaignCoreState
      * come from the original image; future mutable views must use this same owner. */
     uint16_t planetRecordOffsets[CAMPAIGN_PLANET_COUNT];
     uint8_t planetRecordStorage[PLANET_RECORDS_END - PLANET_RECORDS_START];
-    const uint8_t *calendarMonthNames[CAMPAIGN_MONTH_COUNT];
+    MwText calendarMonthNames[CAMPAIGN_MONTH_COUNT];
     uint16_t calendarMonthNameWidths[CAMPAIGN_MONTH_COUNT];
     uint16_t calendarMonthIndex, calendarYear;
     uint16_t calendarTextX, calendarTextY;
