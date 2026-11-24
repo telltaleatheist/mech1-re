@@ -10,14 +10,15 @@ first cockpit tick, and the music logs did not change.
     python3 tools/trace/audio.py check  --port build/mechwarrior --game ~/MECHWAR --work ~/mw1-audio
     python3 tools/trace/audio.py record --port build/mechwarrior --game ~/MECHWAR --work ~/mw1-audio
 
-`--only music` or `--only combat.adlib` limits the run. Exit status: 0 all
+`--only music` limits the run. Exit status: 0 all
 match, 1 a mismatch, 77 skipped. On macOS set `MW1O_HIDDEN=1`, as for
 `check.py`.
 
 ## What runs
 
-Each script in `scripts/` runs once per device (speaker, adlib, mt32) through
-`record.py`, with three switches:
+Each script in `scripts/` runs on the speaker through `record.py`. Until S8 it
+also ran on AdLib and MT-32; those paths left the game, and their four goldens
+with them (they are in the history up to 6aebf22). It runs with two switches:
 
 - `MECHWARRIOR_AUDIO_LOG=FILE`: every access to the speaker (42h, 43h, 61h),
   PIT channel 0 (40h), AdLib (388h, 389h) and MPU (330h, 331h) ports, plus
@@ -39,8 +40,6 @@ Each script in `scripts/` runs once per device (speaker, adlib, mt32) through
   The log then depends on the script alone. Game logic never reads the
   clock, so the snaps match the normal goldens: combat_cockpit matches under
   this clock on all three devices.
-- MT-32 with no ROM paths: while logging, the MPU and its byte stream run as
-  usual and the synthesizer is silent. No ROMs are needed to record or check.
 
 The log is cut after the last snap, because what follows is the shutdown,
 timed by the harness. It's stored as `traces/<script>.<device>.jsonl.gz`.

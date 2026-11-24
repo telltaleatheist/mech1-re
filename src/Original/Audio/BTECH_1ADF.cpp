@@ -4,8 +4,6 @@
 #include "mechwarrior/combat_startup.h"
 #include "mechwarrior/combat_video.h"
 #include "mechwarrior/native_address.h"
-#include "mechwarrior/combat_mpu.h"
-#include "mechwarrior/combat_adlib.h"
 #include "mechwarrior/combat_heap.h"
 #include <stdlib.h>
 #include <string.h>
@@ -15,27 +13,19 @@
 BtechAudioTick BtechSelectTandyOrFallbackAudioCallback(void)
 {
     if (selectedAudioBackendMask&COMBAT_SOUND_TANDY) return BtechTickTandyToneChannels;
-    return BtechSelectSpeakerAdlibOrMpuCallback();
+    return BtechSelectSpeakerCallback();
 }
 
-/*1ADF:000E. Speaker precedes AdLib; the remaining case is actual0F38. */
-BtechAudioTick BtechSelectSpeakerAdlibOrMpuCallback(void)
+/*1ADF:000E. The remaining case is actual0F38; AdLib's left with S8. */
+BtechAudioTick BtechSelectSpeakerCallback(void)
 {
     if (selectedAudioBackendMask&COMBAT_SOUND_SPEAKER) return BtechTickSpeakerToneChannels;
-    if (selectedAudioBackendMask&COMBAT_SOUND_ADLIB) return BtechTickSoftwareMusic;
     return BtechAudioTimerNoOp;
 }
 
 /*1ADF:0F38. Actual one-byte RETF target, not a replacement music scheduler. */
 void BtechAudioTimerNoOp(void)
 {
-}
-
-/* Same 1ADF:0F38 RETF, viewed through its register-message call contract.
- * This preserves AX and target identity separately from 229C:0020. */
-uint16_t BtechAudioMusicNoOp(uint16_t statusDisplacement,uint16_t channel,uint16_t packedData)
-{
-    (void)statusDisplacement;(void)channel;return packedData;
 }
 
 /*1ADF:01CE. Music root0 aliases sound root10. The sequence comparison is
@@ -52,34 +42,6 @@ BtechSoundEvent BtechAdvanceMusicSequence(void)
     if (next<0 || !bank->events || (uint16_t)next>=bank->eventReferenceCapacity) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: next<0 || !bank->events || (uint16_t)next>=bank->eventReferenceCapacity");
     BtechSoundEvent block=bank->events[next];block.offset+=COMBAT_TONE_HEADER_BYTES;
     return block;
-}
-
-/*1ADF:10D2. Count actual OPL status reads, not a wall-clock delay. */
-void BtechWriteAdlibProbeRegister(uint8_t registerIndex,uint8_t value)
-{
-    if (!btechHostReadPort || !btechHostWritePort) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostReadPort || !btechHostWritePort");
-    btechHostWritePort(ADLIB_INDEX_PORT,registerIndex);
-    for (uint16_t delay=7;delay;--delay) btechHostReadPort(ADLIB_INDEX_PORT);
-    btechHostWritePort(ADLIB_DATA_PORT,value);
-    for (uint16_t delay=0x1E;delay;--delay) btechHostReadPort(ADLIB_INDEX_PORT);
-}
-
-/*1ADF:10EC. Failure paths do NOT perform the final timer reset writes. */
-uint16_t BtechProbeAdlibTimerStatus(void)
-{
-    BtechWriteAdlibProbeRegister(ADLIB_TIMER_CONTROL,ADLIB_TIMER_RESET);
-    BtechWriteAdlibProbeRegister(ADLIB_TIMER_CONTROL,ADLIB_IRQ_RESET);
-    adlibProbeInitialStatus=btechHostReadPort(ADLIB_INDEX_PORT);
-    BtechWriteAdlibProbeRegister(ADLIB_TIMER_ONE,0xFF);
-    BtechWriteAdlibProbeRegister(ADLIB_TIMER_CONTROL,ADLIB_TIMER_START);
-    for (uint16_t delay=0x190;delay;--delay) btechHostReadPort(ADLIB_INDEX_PORT);
-    uint8_t status=(btechHostReadPort(ADLIB_INDEX_PORT)&ADLIB_TIMER_STATUS_MASK)^ADLIB_TIMER_EXPECTED_STATUS;
-    if (status) return status;
-    status=adlibProbeInitialStatus&ADLIB_TIMER_STATUS_MASK;
-    if (status) return status;
-    BtechWriteAdlibProbeRegister(ADLIB_TIMER_CONTROL,ADLIB_TIMER_RESET);
-    BtechWriteAdlibProbeRegister(ADLIB_TIMER_CONTROL,ADLIB_IRQ_RESET);
-    return 0;
 }
 
 /*1ADF:1136. ROM BYTEs then INT15; the signature leaves AL21, so native AX
@@ -169,13 +131,12 @@ uint16_t BtechStopAllAudioChannels(void)
     return 1;
 }
 
-/*1ADF:00F2. Preserve the four native cleanup calls in this order. Normal and
+/*1ADF:00F2. Preserve the native cleanup calls in this order (the MPU's left with S8). Normal and
  * fatal program exits do not call this library entry in the reviewed image. */
 uint16_t BtechShutdownAudioBackends(void)
 {
     BtechRestoreMusicTimerInterrupt();
     BtechStopMusicStreams();
-    BtechRestoreMpuInterruptHandler();
     return BtechStopAllAudioChannels();
 }
 
@@ -208,8 +169,6 @@ uint16_t BtechLoadSoundBank(const char *filename,BtechRuntimeStream *stream,uint
             failed&=BtechMergeSoundBackendDirectory(bank,stream,"SND:TAN:")==0;
         if (selectedAudioBackendMask&COMBAT_SOUND_8SV_MASK)
             failed&=BtechMergeSoundBackendDirectory(bank,stream,"SND:8SV:")==0;
-        if (selectedAudioBackendMask&COMBAT_SOUND_MPU)
-            failed&=BtechLoadTaggedSoundAllocation(bank,stream,"SND:ROL:")==NULL;
     }
     if (!failed) bank->fallback=BtechLoadTaggedSoundAllocation(bank,stream,"SND:ITM:");
     if (openedHere) BtechCloseTaggedResourceStream(stream);
@@ -322,7 +281,7 @@ uint16_t BtechSelectActiveSoundBank(uint16_t bankHandle)
 }
 
 /*1ADF:075E. A music bank chooses one backend directory, unlike the sound
- * bank's merges. The shipped AdLib branch also requests MUS:ROL:, not ADL. */
+ * bank's merges. The MPU's and AdLib's (both MUS:ROL:) left with S8. */
 uint16_t BtechLoadMusicBank(const char *filename,BtechRuntimeStream *stream)
 {
     enum { MUSIC_INFORMATION_MAGIC=0x59D9 };
@@ -361,9 +320,7 @@ uint16_t BtechLoadMusicBank(const char *filename,BtechRuntimeStream *stream)
     {
         failed=1;
         const char *tag=NULL;
-        if (selectedAudioBackendMask&COMBAT_SOUND_MPU) tag="MUS:ROL:";
-        else if (selectedAudioBackendMask&COMBAT_SOUND_ADLIB) tag="MUS:ROL:";
-        else if (selectedAudioBackendMask&COMBAT_SOUND_TANDY) tag="MUS:TAN:";
+        if (selectedAudioBackendMask&COMBAT_SOUND_TANDY) tag="MUS:TAN:";
         else if (selectedAudioBackendMask&COMBAT_SOUND_SPEAKER) tag="MUS:IBM:";
         if (tag) failed&=BtechMergeSoundBackendDirectory(bank,stream,tag)<1;
     }
@@ -387,13 +344,10 @@ uint16_t BtechSelectActiveMusicBank(uint16_t bankHandle)
     return (int16_t)bankHandle>0?bankHandle:0;
 }
 
-/*1ADF:024C. Clear the selector before the cursor; MPU stops short-circuit both
- * AdLib note-count cleanup and speaker music-channel cleanup. */
+/*1ADF:024C. Clear the selector before the cursor. */
 void BtechStopMusicStreams(void)
 {
     midiStreamSelectorPresent=false;combatMidiStreamOffset=0;
-    if (selectedAudioBackendMask&COMBAT_SOUND_MPU) {BtechStopMpuMusicTrack();return;}
-    if (selectedAudioBackendMask&COMBAT_SOUND_ADLIB) BtechClearAdlibNoteReferenceCounts();
     if (selectedAudioBackendMask&COMBAT_SOUND_SPEAKER) BtechStopMatchingToneChannels(0,2);
 }
 
@@ -410,8 +364,7 @@ uint16_t BtechStartSelectedMusicBankTrack(uint16_t trackIndex,uint16_t priority)
     if (!bank->root.allocation.bytes || !bank->events || trackIndex>=bank->eventReferenceCapacity) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !bank->root.allocation.bytes || !bank->events || trackIndex>=bank->eventReferenceCapacity");
     BtechSoundEvent track=bank->events[trackIndex];
     BtechStartSoftwareMusicTrack(track.data,track.offset,track.selector!=0);
-    if (selectedAudioBackendMask&COMBAT_SOUND_MPU) BtechStartMpuMusicTrack(track.data,track.offset);
-    else if (!(selectedAudioBackendMask&COMBAT_SOUND_ADLIB)) BtechSetToneMusicPriorityAndTranslation(priority);
+    BtechSetToneMusicPriorityAndTranslation(priority);
     musicSequenceIndex=trackIndex;
     return 1;
 }
@@ -518,7 +471,7 @@ uint16_t BtechAllocateToneEventChannels(BtechSoundEvent event,uint16_t priority,
     return 1;
 }
 
-/*1ADF:091A. Tone records, native MPU terminal-byte output and real no-op cases.
+/*1ADF:091A. Tone records and real no-op cases (the MPU record is one since S8).
  * Sample/DAC output retains explicit gates rather than invented playback. */
 uint16_t BtechDispatchSoundBankEvent(int16_t soundEventIndex,uint16_t priority)
 {
@@ -535,25 +488,10 @@ uint16_t BtechDispatchSoundBankEvent(int16_t soundEventIndex,uint16_t priority)
     case 2:
         if (!(soundEffectsEnableMask&1) || !(selectedAudioBackendMask&COMBAT_SOUND_SPEAKER)) return 0;
         /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Native uninitialized priority-channel WORD and sample IRQ not converted."); /* Native uninitialized priority-channel WORD and sample IRQ not converted. */
-    case 3:return 1;
+    case 3:case 0x0B:return 1;
     case 4:
         if (!(soundEffectsEnableMask&1) || !(selectedAudioBackendMask&0x08)) return 0;
         /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Tandy SL/TL DAC path."); /* Tandy SL/TL DAC path. */
-    case 0x0B:
-        if (!(selectedAudioBackendMask&COMBAT_SOUND_MPU)) return 1;
-        if (!BtechSendMpuCommandStack(0xDF)) return 1;
-        {
-            /* 1ADF:09DA..0A15 advances to the terminal BYTE, not a payload
-             * transmit loop. Do not turn it into a plausible SysEx upload. */
-            uint16_t index=0;
-            while (MwReadNativeViewWord(&event.data,(uint16_t)(event.offset+2))>index) ++index;
-            uint32_t payload=(uint32_t)event.offset+10;
-            /* Only the first addition carries into the selector. The later
-             * payload/index addition wraps its offset without another carry. */
-            uint32_t terminal=(payload&0x10000)+(uint16_t)((uint16_t)payload+index);
-            if (!event.data.bytes || event.data.nativeBase || terminal>=event.data.byteCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !event.data.bytes || event.data.nativeBase || terminal>=event.data.byteCount");
-            MpuWriteDataByte(event.data.bytes[terminal]);return 1;
-        }
     default:return 0;
     }
 }

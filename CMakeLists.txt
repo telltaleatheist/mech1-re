@@ -134,10 +134,6 @@ add_library(mechwarrior_original STATIC
     src/Original/Audio/BTECH_1ADF.cpp
     src/Original/Audio/BTECH_1ADF_INSTALL.cpp
     src/Original/Audio/BTECH_229C.cpp
-    src/Original/Audio/BTECH_21CA.cpp
-    src/Original/Audio/BTECH_2176.cpp
-    src/Original/Memory/BTECH_304E_ADLIB.cpp
-    src/Original/Memory/BTECH_304E_MPU.cpp
     src/Original/Audio/BTECH_0810_SOUND.cpp
     src/Original/Audio/BTECH_2134.cpp
     src/Original/Runtime/BTECH_0810_STREAMS.cpp
@@ -211,8 +207,6 @@ add_library(mechwarrior_original STATIC
     src/Original/Memory/MW_MAIN_0F41_STATE.cpp
     src/Original/Runtime/MW_MAIN_0F41.cpp
     src/Original/Runtime/MW_MAIN_0F41_SYNTH.cpp
-    src/Original/Runtime/MW_MAIN_0F41_MPU.cpp
-    src/Original/Runtime/MW_MAIN_0F41_ADLIB.cpp
     src/Original/Runtime/MW_MAIN_0800.cpp
     src/Original/Memory/MW_EGA_0800_STATE.cpp
     src/Original/Video/MW_EGA_0800.cpp

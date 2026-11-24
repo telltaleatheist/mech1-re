@@ -35,11 +35,6 @@ typedef struct MwMusicHardwareCalls
     void (*writePort)(uint16_t port,uint8_t value);
     uint8_t (*readPort)(uint16_t port);
     void (*waitForInterrupt)(void);
-    /* IRQ2's owner (H4c), where the original got and set INT 0Ah. */
-    MwMpuIrqOwner (*readMpuIrqOwner)(void);
-    void (*writeMpuIrqOwner)(MwMpuIrqOwner owner);
-    /* The device IRQs passed to their owners (H4c), where the PIC mask was written. */
-    void (*enableDeviceIrqs)(MwDeviceIrq irqs);
     /* The speaker music's tone (S6): a frequency in Hz, or 0 for silence. The
      * host plays it on the tone voice, where PIT channel 2 and port 61h were. */
     void (*playTone)(double frequency);
@@ -87,9 +82,7 @@ enum { MIDI_VOICE_CAPACITY=11, MIDI_CHANNEL_RECORDS=48,
     MIDI_DUMMY_CHANNEL_OFFSET=0x0646, MIDI_INSTRUMENTS_OFFSET=0x064E,
     MIDI_INSTRUMENT_BYTES=0x0C, MIDI_SYSEX_BUFFER_OFFSET=0x07CE,
     MIDI_SPEAKER_BACKEND_OFFSET=0x07FC, MIDI_MPU_BACKEND_OFFSET=0x01EE,
-    MIDI_ADLIB_BACKEND_OFFSET=0x00B0,MIDI_ADLIB_NOTE_FREQUENCIES_OFFSET=0x00E6,
-    MIDI_ADLIB_NOTE_COUNT=115,MIDI_INSTRUMENT_COUNT=32,
-    MIDI_MPU_QUEUE_CAPACITY=256, MIDI_DRUM_CHANNEL_BIT=0x40,
+    MIDI_DRUM_CHANNEL_BIT=0x40,
     MIDI_DRUM_CHANNEL_FIRST=16, MIDI_DRUM_CHANNEL_COUNT=32,
     SPEAKER_SILENT_PERIOD=0x0014, SPEAKER_FIRST_NOTE=14,
     SPEAKER_PERIOD_WORDS=242, SPEAKER_ROTATION_TICKS=2 };
@@ -106,13 +99,6 @@ typedef struct MwAdlibVoice
     uint16_t instrumentOffset,packedFrequency;
     uint8_t carrierLevel,unidentifiedField;
 } MwAdlibVoice;
-typedef struct MwAdlibInstrument
-{
-    uint8_t modulatorFlags,modulatorLevel,modulatorSustainRelease,modulatorAttackDecay;
-    uint8_t modulatorWaveform,feedbackConnection;
-    uint8_t carrierFlags,carrierLevel,carrierSustainRelease,carrierAttackDecay;
-    uint8_t carrierWaveform,unidentifiedField;
-} MwAdlibInstrument;
 typedef struct MwMidiVoice
 {
     union
@@ -170,7 +156,6 @@ typedef struct MwMidiSysexWorkspace
     uint16_t tonePeriodsAndAdjacentWords[SPEAKER_PERIOD_WORDS];
 } MwMidiSysexWorkspace;
 static_assert(sizeof(MwMidiChannel)==0x08,"Native MIDI channel width");
-static_assert(sizeof(MwAdlibInstrument)==MIDI_INSTRUMENT_BYTES,"Native AdLib instrument width");
 static_assert(sizeof(MwAdlibVoice)==8,"Native AdLib voice overlay");
 static_assert(sizeof(MwMidiVoice)==0x12,"Native voice width");
 static_assert(offsetof(MwMidiVoice,pitPeriod)==0x0A,"Native speaker overlay");
@@ -181,19 +166,7 @@ static_assert(offsetof(MwMidiSysexWorkspace,currentVoiceOffset)==0x5A,"Speaker c
 static_assert(offsetof(MwMidiSysexWorkspace,tonePeriodsAndAdjacentWords)==0x60,"Speaker tone alias");
 #define audioVoiceList campaignMusic.audioVoicePool.records.sentinels
 #define audioVoices campaignMusic.audioVoicePool.records.voices
-uint16_t MwProbeAdlibAndCalibrateDelays(void);
-void MwInitializeAdlibBackend(void);
-void MwWriteAdlibRegisterPair(uint16_t registerAndValue,uint16_t port);
-void MwStartAdlibVoice(MwMidiVoice *voice,MwMidiChannel *channel,uint16_t velocity);
-void MwStopAdlibVoice(MwMidiVoice *voice);
-void MwInitializeAdlibVoiceRouting(void);
-void MwDecodeAdlibInstrument(const uint8_t *source,MwAdlibInstrument *instrument);
-uint16_t MwProbeMpuBackend(void);
-void MwInitializeMpuUartBackend(void);
-void MwDrainAndShutdownMpuBackend(void);
-uint16_t MwQueueMpuByte(uint16_t midiWord);
-void MwTickMpuTransmitQueue(void);
-void MwMpuReceiveInterrupt(void);
+uint16_t MwProbeRebuildMusic(void);
 /* Campaign state owned by campaign_music.h (plan, slice B2). */
 struct CampaignMusicState
 {
@@ -210,18 +183,8 @@ struct CampaignMusicState
     MwMidiChannel audioChannels[MIDI_CHANNEL_RECORDS], audioDummyChannel;
     MwMidiSysexWorkspace midiSysex;
     MwCampaignAudioBackend *selectedAudioBackend;
+    /* The image's MPU descriptor: 'R', the rebuild's music since S8. */
     MwCampaignAudioBackend mpuBackend;
-    MwCampaignAudioBackend adlibBackend;
-    MwAdlibInstrument adlibInstruments[MIDI_INSTRUMENT_COUNT];
-    uint16_t adlibAddressDelayReads, adlibDataDelayReads;
-    uint8_t adlibRhythmRegister, adlibVoiceRoutes[MIDI_VOICE_CAPACITY][3];
-    uint16_t adlibPackedNoteFrequencies[MIDI_ADLIB_NOTE_COUNT];
-    /* Observable native DX residue: rhythm release can target non-OPL ports. */
-    uint16_t midiAdlibOutputPort;
-    uint8_t mpuTransmitQueue[MIDI_MPU_QUEUE_CAPACITY];
-    volatile uint16_t mpuQueueWriteIndex, mpuQueueReadIndex, mpuQueueByteCount;
-    MwMpuIrqOwner mpuPreviousIrqOwner;
-    uint8_t musicRuntimeHeader[0x42];
     uint16_t midiByteHandlerDisplacement, midiDispatchChannel, midiFirstDataByte, midiControllerValue;
     uint16_t midiByteHandlers[14];
 };

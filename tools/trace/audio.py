@@ -4,17 +4,14 @@
     audio.py record --port BUILD/mechwarrior --game DIR --work DIR   # write the goldens
     audio.py check  --port BUILD/mechwarrior --game DIR --work DIR   # compare a build
 
-Each script in audio/scripts/ runs once per sound device (speaker, adlib,
-mt32) through record.py, with:
-- MECHWARRIOR_AUDIO_LOG: every access to the AdLib and MPU ports, as
-  [PIT cycle, "w" or "r", port, value] (PIT channel 0's programming left the
-  log in H4b: it is a host timer period now); each change of the tone
+Each script in audio/scripts/ runs on the speaker (the AdLib and MT-32 paths
+left in S8, and their goldens with them) through record.py, with:
+- MECHWARRIOR_AUDIO_LOG: each change of the tone
   voice's tone (the speaker music, S6, and combat's effects, S5, where PIT
   channel 2 and port 61h were), as [PIT cycle, "tone", Hz to 0.001, 0 for
   silence]; and each snap as [PIT cycle, "snap", name];
 - MECHWARRIOR_DEBUG_VIRTUAL_CLOCK: time moves only where the port would wait,
-  so the log depends on the script alone;
-- MT-32 with no ROMs: the MPU byte stream runs and the synthesizer is silent.
+  so the log depends on the script alone.
 
 The log is cut after the last snap (what follows is the shutdown, timed by
 the harness) and kept as audio/traces/<script>.<device>.jsonl.gz. A check
@@ -26,7 +23,7 @@ import argparse, gzip, hashlib, os, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 AUDIO = os.path.join(HERE, "audio")
-DEVICES = ("speaker", "adlib", "mt32")
+DEVICES = ("speaker",)
 SKIP = 77
 
 

@@ -27,7 +27,6 @@ typedef struct BtechSchedulerTiming {uint16_t ticksRemaining,period;} BtechSched
 extern void (*btechHostRunPreviousTimerOwner)(void);
 /* The device IRQs passed to their owners (H4c), where the PIC mask was written. */
 extern void (*btechHostEnableDeviceIrqs)(MwDeviceIrq irqs);
-extern void (*btechHostDisableDeviceIrqs)(MwDeviceIrq irqs);
 /* The timer's period (H4b), where PIT channel 0 was programmed: in the PIT's
  * clock units; PIT_COUNTER_MODULUS is the BIOS's 18.2 Hz. */
 extern void (*btechHostSetTimerPeriod)(uint32_t pitCycles);
@@ -52,8 +51,6 @@ extern MwKeyboardOwner (*btechHostGetKeyboardOwner)(void);
 extern void (*btechHostSetKeyboardOwner)(MwKeyboardOwner owner);
 extern MwDivideOwner (*btechHostGetDivideOwner)(void);
 extern void (*btechHostSetDivideOwner)(MwDivideOwner owner);
-extern MwMpuIrqOwner (*btechHostGetMpuIrqOwner)(void);
-extern void (*btechHostSetMpuIrqOwner)(MwMpuIrqOwner owner);
 extern void (*btechHostWriteBiosWord)(uint16_t offset,uint16_t value);
 extern uint8_t (*btechHostReadBiosByte)(uint16_t offset);
 extern void (*btechHostWriteBiosByte)(uint16_t offset,uint8_t value);

@@ -16,28 +16,14 @@ MwMusicOutCalls mwMusicOut;
 uint16_t MwProbeMusicBackend(MwCampaignAudioBackend *backend)
 {
     if (!backend) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !backend");
-    if (backend->probeOffset==0x06B9) return MwProbeAdlibAndCalibrateDelays();
-    if (backend->probeOffset==0x0912) return MwProbeMpuBackend();
+    if (backend->probeOffset==0x0912) return MwProbeRebuildMusic(); /* 'R' (S8). */
     if (backend->probeOffset!=0x0EE4) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: backend->probeOffset!=0x0EE4");
     return MwProbeSpeakerBackend();
 }
 
-/* 0B6C reads BX as DOS's GET VECTOR left it: the offset of IRQ2's previous
- * handler, used as data (H4c keeps it). These are the offsets each owner's
- * handler had in the original's code. The system's own handler has always
- * been 0000:0000 here: the host keeps no BIOS vector table. After an MT-32
- * combat, which doesn't restore IRQ2, the owner is combat's receive handler. */
-static uint16_t MpuIrqOwnerVectorOffset(MwMpuIrqOwner owner)
-{
-    switch (owner)
-    {
-    case MwMpuIrqOwner::System: return 0x0000;
-    case MwMpuIrqOwner::CombatProbe: return 0x1082; /* 1ADF:1082 */
-    case MwMpuIrqOwner::CombatReceive: return 0x0106; /* 2176:0106 */
-    case MwMpuIrqOwner::CampaignReceive: return 0x0A01; /* 0F41:0A01 */
-    }
-    /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unknown IRQ2 owner");
-}
+/* 'R's fast timer callback (09D0, S8): it sent the queued bytes, and there is
+ * no queue. It stays a callback so that the timer keeps the MPU path's rate. */
+static void MwTickRebuildMusic(void) {}
 
 /* MW_MAIN0F41:0B46..0B7F. Pending timer arguments precede initialization;
  * MPU's different BX residue is retained rather than repaired. */
@@ -45,7 +31,7 @@ void MwSelectAndInitializeMidiBackend(MwCampaignAudioBackend *backend)
 {
     if (campaignMusic.selectedAudioBackend)
     {
-        if (campaignMusic.selectedAudioBackend->shutdownOffset==0x098A) MwDrainAndShutdownMpuBackend();
+        if (campaignMusic.selectedAudioBackend->shutdownOffset==0x098A) {} /* 'R': no queue to drain (S8). */
         else if (campaignMusic.selectedAudioBackend->shutdownOffset==0x0F01) MwShutdownSpeakerBackend();
         else if (campaignMusic.selectedAudioBackend->shutdownOffset==0x0736) {} /* Native RET. */
         else /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Music backend has an unsupported initialization, vector, pitch-copy or timer entry.");
@@ -54,42 +40,20 @@ void MwSelectAndInitializeMidiBackend(MwCampaignAudioBackend *backend)
     if (!backend) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !backend");
     uint16_t timerRate=backend->timerRateShift;
     uint16_t timerTarget=backend->timerOffset;
-    if (backend->initializeOffset==0x0946)
+    /* 'R' (0946) is the rebuild's music (S8): nothing to set up. The MPU's
+     * UART command, receive handler and IRQ2 save went with it, and so did the
+     * install's byte copy from the saved IRQ2 owner's offset into the runtime
+     * header (0B6C): nothing reads that header but its importer. Like the
+     * original's MPU path, it leaves the voice count as it was. */
+    if (backend->initializeOffset!=0x0946)
     {
-        MwInitializeMpuUartBackend();
-        /* 0B6C uses BX left by DOS GET VECTOR, NOT the selected descriptor.
-         * After BTECH returns,0106 aliases two AdLib frequency WORDs rather
-         * than the runtime header. Apply the native byte write to that actual
-         * owner; do not zero the retained IRQ or change MPU voice capacity. */
-        uint16_t previousOffset=MpuIrqOwnerVectorOffset(campaignMusic.mpuPreviousIrqOwner);
-        uint16_t source=(uint16_t)(previousOffset+3),destination=(uint16_t)(previousOffset+0x17);
-        if (source<sizeof(campaignMusic.musicRuntimeHeader) && destination<sizeof(campaignMusic.musicRuntimeHeader))
-            campaignMusic.musicRuntimeHeader[destination]=campaignMusic.musicRuntimeHeader[source];
-        else if (source>=MIDI_ADLIB_NOTE_FREQUENCIES_OFFSET && destination>=MIDI_ADLIB_NOTE_FREQUENCIES_OFFSET
-            && (size_t)(source-MIDI_ADLIB_NOTE_FREQUENCIES_OFFSET)<sizeof(campaignMusic.adlibPackedNoteFrequencies)
-            && (size_t)(destination-MIDI_ADLIB_NOTE_FREQUENCIES_OFFSET)<sizeof(campaignMusic.adlibPackedNoteFrequencies))
-        {
-            source-=MIDI_ADLIB_NOTE_FREQUENCIES_OFFSET;destination-=MIDI_ADLIB_NOTE_FREQUENCIES_OFFSET;
-            uint8_t value=campaignMusic.adlibPackedNoteFrequencies[source/2]>>((source&1)*8);
-            uint8_t shift=(destination&1)*8;
-            campaignMusic.adlibPackedNoteFrequencies[destination/2]=(uint16_t)((campaignMusic.adlibPackedNoteFrequencies[destination/2]
-                &~(UINT16_C(0xFF)<<shift))|((uint16_t)value<<shift));
-        }
-        else
-        {
-            fprintf(stderr,"Campaign MPU install residue for saved IRQ2 owner %u (offset %04X) has no typed owner\n",
-                (unsigned)campaignMusic.mpuPreviousIrqOwner,previousOffset);/* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Music backend has an unsupported initialization, vector, pitch-copy or timer entry.");
-        }
-    }
-    else
-    {
-        if (backend->initializeOffset==0x0712) MwInitializeAdlibBackend();
-        else if (backend->initializeOffset==0x0EE8) MwInitializeSpeakerBackend();
+        if (backend->initializeOffset==0x0EE8) MwInitializeSpeakerBackend();
         else /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Music backend has an unsupported initialization, vector, pitch-copy or timer entry.");
         backend->selectedVoiceCount=backend->voiceCapacity;
     }
     MwResetMidiParserState(MIDI_RESET_PARSER_ENTRY);
-    if (timerTarget==0x09D0) MwTimerSetCallback(MUSIC_TIMER_FAST_SLOT,MwTickMpuTransmitQueue,timerRate);
+    /* 'R' keeps the MPU path's timer rate, so the campaign's timer runs as it did. */
+    if (timerTarget==0x09D0) MwTimerSetCallback(MUSIC_TIMER_FAST_SLOT,MwTickRebuildMusic,timerRate);
     else if (timerTarget==0x0F73) MwTimerSetCallback(MUSIC_TIMER_FAST_SLOT,MwTickSpeakerVoices,timerRate);
     else if (!timerTarget) MwTimerSetCallback(MUSIC_TIMER_FAST_SLOT,NULL,timerRate);
     else /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Music backend has an unsupported initialization, vector, pitch-copy or timer entry.");
@@ -100,7 +64,7 @@ void MwShutdownMusicBackend(void)
 {
     if (campaignMusic.selectedAudioBackend)
     {
-        if (campaignMusic.selectedAudioBackend->shutdownOffset==0x098A) MwDrainAndShutdownMpuBackend();
+        if (campaignMusic.selectedAudioBackend->shutdownOffset==0x098A) {} /* 'R': no queue to drain (S8). */
         else if (campaignMusic.selectedAudioBackend->shutdownOffset==0x0F01) MwShutdownSpeakerBackend();
         else if (campaignMusic.selectedAudioBackend->shutdownOffset==0x0736) {} /* Native RET. */
         else /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Music backend has an unsupported shutdown entry.");
@@ -112,7 +76,9 @@ void MwShutdownMusicBackend(void)
 /* MW_MAIN0F41:0BA0..0BAD. PC hook deliberately ignores the full input WORD. */
 uint16_t MwSendMidiByteToSelectedBackend(uint16_t midiWord)
 {
-    if (campaignMusic.selectedAudioBackend && campaignMusic.selectedAudioBackend->rawByteOffset==0x09A4) return MwQueueMpuByte(midiWord);
+    /* 'R': the rebuild's music has every byte already (mwMusicOut, at dispatch),
+     * so the byte is taken, as the MPU queue took it (S8). */
+    if (campaignMusic.selectedAudioBackend && campaignMusic.selectedAudioBackend->rawByteOffset==0x09A4) return 1;
     if (campaignMusic.selectedAudioBackend && campaignMusic.selectedAudioBackend->rawByteOffset==0x0737) return 0;
     if (!campaignMusic.selectedAudioBackend || campaignMusic.selectedAudioBackend->rawByteOffset!=0x0F0A) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !selectedAudioBackend || selectedAudioBackend->rawByteOffset!=0x0F0A");
     return MwIgnoreSpeakerRawMidiByte();
@@ -151,8 +117,7 @@ uint16_t MwReleaseCampaignMidiVoice(uint16_t channelIndex,uint16_t note)
         audioVoiceListHead=voiceOffset;
         MwResolveMidiVoiceLinks(next)->previousOffset=voiceOffset;
         if (!campaignMusic.selectedAudioBackend) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !selectedAudioBackend");
-        if (campaignMusic.selectedAudioBackend->noteOffOffset==0x0841) MwStopAdlibVoice(voice);
-        else if (campaignMusic.selectedAudioBackend->noteOffOffset==0x0F2D) MwStopSpeakerVoice(voice);
+        if (campaignMusic.selectedAudioBackend->noteOffOffset==0x0F2D) MwStopSpeakerVoice(voice);
         else /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Music backend has an unsupported note-off entry.");
         return 1;
     }
@@ -209,8 +174,7 @@ uint16_t MwAllocateCampaignMidiVoice(uint16_t channelIndex,uint16_t note,uint16_
     voice->originalNote=(uint8_t)note;
     voice->translatedNote=(uint8_t)(note+channel->transposeOrDrumBase);
     if (!campaignMusic.selectedAudioBackend) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !selectedAudioBackend");
-    if (campaignMusic.selectedAudioBackend->noteOnOffset==0x073A) MwStartAdlibVoice(voice,channel,velocity);
-    else if (campaignMusic.selectedAudioBackend->noteOnOffset==0x0F0D) MwStartSpeakerVoice(voice);
+    if (campaignMusic.selectedAudioBackend->noteOnOffset==0x0F0D) MwStartSpeakerVoice(voice);
     else /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Music backend has an unsupported note-on entry.");
     return 1;
 }
@@ -227,8 +191,7 @@ void MwSilenceCampaignMidiVoices(void)
         if (!voice->activePriority) continue;
         voice->activePriority=0;
         if (!campaignMusic.selectedAudioBackend) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !selectedAudioBackend");
-        if (campaignMusic.selectedAudioBackend->noteOffOffset==0x0841) MwStopAdlibVoice(voice);
-        else if (campaignMusic.selectedAudioBackend->noteOffOffset==0x0F2D) MwStopSpeakerVoice(voice);
+        if (campaignMusic.selectedAudioBackend->noteOffOffset==0x0F2D) MwStopSpeakerVoice(voice);
         else /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Music backend has an unsupported note-off entry.");
     }
 }
@@ -425,12 +388,6 @@ void MwApplySysexChannelConfiguration(const MwMidiChannelConfiguration *configur
  * speaker's actual decoder is a RET, not a synthesized instrument conversion. */
 void MwApplySysexInstrument(const uint8_t *source)
 {
-    if (campaignMusic.selectedAudioBackend && campaignMusic.selectedAudioBackend->decodeInstrumentOffset==0x0890)
-    {
-        uint8_t index=*source++;
-        if (index>=MIDI_INSTRUMENT_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: index>=MIDI_INSTRUMENT_COUNT");
-        MwDecodeAdlibInstrument(source,&campaignMusic.adlibInstruments[index]);return;
-    }
     if (!campaignMusic.selectedAudioBackend || campaignMusic.selectedAudioBackend->decodeInstrumentOffset!=0x0F72) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !selectedAudioBackend || selectedAudioBackend->decodeInstrumentOffset!=0x0F72");
     MwIgnoreSpeakerInstrument();
 }
@@ -473,14 +430,18 @@ void MwResetMidiParserState(uint16_t entryOffset)
     }
     if (!campaignMusic.selectedAudioBackend) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !selectedAudioBackend");
     campaignMusic.selectedAudioBackend->voicePoolOffset=MIDI_VOICES_OFFSET;
-    if (campaignMusic.selectedAudioBackend->initializeVoicesOffset==0x09CB) (void)MwQueueMpuByte(0xFF);
+    /* 'R' (09CB) queued a MIDI reset byte (FF) for the MPU alone: the
+     * sequencer's output never held it, and the rebuild's music takes the
+     * sequencer's output (S8). */
+    if (campaignMusic.selectedAudioBackend->initializeVoicesOffset==0x09CB) {}
     else if (campaignMusic.selectedAudioBackend->initializeVoicesOffset==0x0F4F) MwInitializeSpeakerVoiceRouting();
-    else if (campaignMusic.selectedAudioBackend->initializeVoicesOffset==0x0869) MwInitializeAdlibVoiceRouting();
     else /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Music backend has an unsupported voice-initialization entry.");
 }
 
 /* MW_MAIN0F41:0EE4..0EE7. Native unconditional success, no hardware probe. */
 uint16_t MwProbeSpeakerBackend(void) {return 1;}
+/* 'R' (0912, S8): the rebuild's music is always there; the MPU's handshake went. */
+uint16_t MwProbeRebuildMusic(void) {return 1;}
 /* S6: the speaker music sounds from the backend's start to its shutdown (the
  * original's port 61h gate), each period as a tone on the tone voice (where it
  * programmed PIT channel 2). The backend's silent period, an inaudible

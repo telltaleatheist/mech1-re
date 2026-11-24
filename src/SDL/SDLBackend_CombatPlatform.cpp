@@ -3,7 +3,6 @@
 #include "mechwarrior/combat_video.h"
 #include "mechwarrior/campaign_input.h"
 #include "mechwarrior/combat_installation.h"
-#include "mechwarrior/combat_mpu.h"
 #include <string.h>
 
 /* Physical BIOS transport and the interrupts' owners (H4c), not another game
@@ -14,7 +13,6 @@ static uint8_t biosData[0x100];
 static MwTimerOwner timerOwner;
 static MwKeyboardOwner keyboardOwner;
 static MwDivideOwner divideOwner;
-static MwMpuIrqOwner mpuIrqOwner;
 static MwMusicTimerHandler previousTimerHandler;
 
 /* The original read its tone data from the interrupt table here (a missing
@@ -64,12 +62,6 @@ static void WriteBiosByte(uint16_t offset,uint8_t value)
 }
 static void WriteBiosWord(uint16_t offset,uint16_t value)
 {WriteBiosByte(offset,(uint8_t)value);WriteBiosByte(offset+1,(uint8_t)(value>>8));}
-void MwSdlDeliverCombatMpuInterrupt(void)
-{
-    if (mpuIrqOwner==MwMpuIrqOwner::CombatProbe) BtechMpuProbeInterrupt();
-    else if (mpuIrqOwner==MwMpuIrqOwner::CombatReceive) BtechMpuInterrupt();
-    else MwSdlFail("No combat MPU handler owns IRQ2");
-}
 static MwTimerOwner GetTimerOwner(void) {return timerOwner;}
 static void SetTimerOwner(MwTimerOwner owner)
 {
@@ -88,8 +80,6 @@ static MwKeyboardOwner GetKeyboardOwner(void) {return keyboardOwner;}
 static void SetKeyboardOwner(MwKeyboardOwner owner) {keyboardOwner=owner;}
 static MwDivideOwner GetDivideOwner(void) {return divideOwner;}
 static void SetDivideOwner(MwDivideOwner owner) {divideOwner=owner;}
-static MwMpuIrqOwner GetMpuIrqOwner(void) {return mpuIrqOwner;}
-static void SetMpuIrqOwner(MwMpuIrqOwner owner) {mpuIrqOwner=owner;}
 static uint8_t ReadRomByte(uint16_t selector,uint16_t offset)
 {
     uint32_t address=(((uint32_t)selector<<4)+offset)&HOST_REAL_MODE_ADDRESS_MASK;
@@ -102,7 +92,7 @@ void MwSdlResetCombatHardware(void)
     MwSdlResetCombatTick();
     previousTimerHandler=MwSdlReadTimerHandler();
     timerOwner=MwTimerOwner::Previous;keyboardOwner=MwKeyboardOwner::System;
-    divideOwner=MwDivideOwner::System;mpuIrqOwner=MwMpuIrqOwner::System;
+    divideOwner=MwDivideOwner::System;
     memset(biosData,0,sizeof(biosData));
     WriteBiosWord(COMBAT_BIOS_CRTC_PORT,COMBAT_COLOUR_CRTC_INDEX_PORT);
 }
@@ -113,7 +103,6 @@ void MwSdlInitializeCombatHardware(void)
     btechHostGetTimerOwner=GetTimerOwner;btechHostSetTimerOwner=SetTimerOwner;
     btechHostGetKeyboardOwner=GetKeyboardOwner;btechHostSetKeyboardOwner=SetKeyboardOwner;
     btechHostGetDivideOwner=GetDivideOwner;btechHostSetDivideOwner=SetDivideOwner;
-    btechHostGetMpuIrqOwner=GetMpuIrqOwner;btechHostSetMpuIrqOwner=SetMpuIrqOwner;
     btechHostBorrowDosMemory=BorrowToneDosMemory;
     btechHostRunPreviousTimerOwner=RunPreviousTimerOwner;
     btechHostSetTimerPeriod=MwSdlSetTimerPeriod;

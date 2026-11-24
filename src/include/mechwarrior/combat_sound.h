@@ -13,26 +13,12 @@ enum { COMBAT_STREAM_SLOTS=0x14,COMBAT_STREAM_TABLE=0x4BC0,COMBAT_STREAM_STRIDE=
     COMBAT_MUSIC_LOAD_ROOTS=0x0F,COMBAT_AUDIO_BANK_ROOTS=COMBAT_MUSIC_FIRST_ROOT+COMBAT_MUSIC_LOAD_ROOTS,
     COMBAT_MUSIC_SEQUENCE_WORDS=0x0A,COMBAT_MUSIC_SEQUENCE_ROWS=0x0A,
     COMBAT_SOUND_SPEAKER=1,COMBAT_SOUND_TANDY=2,
-    COMBAT_SOUND_MPU=0x10,COMBAT_SOUND_ADLIB=0x20,COMBAT_SOUND_8SV_MASK=0x0C,COMBAT_SOUND_CHUNK_BYTES=0x4E20 };
-enum { ADLIB_INDEX_PORT=0x388,ADLIB_DATA_PORT=0x389,ADLIB_TIMER_CONTROL=4,
-    ADLIB_TIMER_RESET=0x60,ADLIB_IRQ_RESET=0x80,ADLIB_TIMER_ONE=2,
-    ADLIB_TIMER_START=0x21,ADLIB_TIMER_STATUS_MASK=0xE0,ADLIB_TIMER_EXPECTED_STATUS=0xC0 };
-extern uint8_t adlibProbeInitialStatus;
+    COMBAT_SOUND_8SV_MASK=0x0C,COMBAT_SOUND_CHUNK_BYTES=0x4E20 };
 /* Raw INT15 input AX -> Carry, not a hardware-detected/backend policy seam. */
 extern bool (*btechHostQuerySystemConfiguration)(uint16_t ax);
-void BtechWriteAdlibProbeRegister(uint8_t registerIndex,uint8_t value);
-uint16_t BtechProbeAdlibTimerStatus(void);
 uint16_t BtechProbePlatformAudioMask(void);
 uint16_t BtechSelectAndInstallAudioBackends(uint16_t requestedBackendMask);
 uint16_t BtechProbeAudioBackendMask(void);
-uint16_t BtechProbeMpuWithTemporaryInterrupt(void);
-uint16_t BtechSendMpuProbeCommandAndWaitAck(uint8_t command);
-/* The original IRQ does not establish DS. This entry supports interrupted
- * DS304E only; foreign-DS delivery must not be routed here. */
-void BtechMpuProbeInterrupt(void);
-extern uint16_t mpuProbeDataPort,mpuProbeStatusPort,mpuProbeCommandPort;
-extern uint16_t mpuProbeReceivedByteCount;
-extern MwMpuIrqOwner mpuProbePreviousOwner;
 /* Hardware view, e.g. an instrumented DOS machine's live RAM. No fabricated
  * zero arena, game-memory registry or default IVT is installed by the port. */
 extern MwNativeByteView (*btechHostBorrowDosMemory)(uint16_t selector);
@@ -101,9 +87,8 @@ uint16_t BtechStopAllAudioChannels(void);
 uint16_t BtechShutdownAudioBackends(void);
 uint16_t BtechUnloadSoundBank(uint16_t bankHandle);
 BtechAudioTick BtechSelectTandyOrFallbackAudioCallback(void);
-BtechAudioTick BtechSelectSpeakerAdlibOrMpuCallback(void);
+BtechAudioTick BtechSelectSpeakerCallback(void);
 void BtechAudioTimerNoOp(void);
-uint16_t BtechAudioMusicNoOp(uint16_t statusDisplacement,uint16_t channel,uint16_t packedData);
 /* The tone combat's effect player chose this tick (S5): a frequency in Hz,
  * or 0 for silence. The host plays it on the tone voice. */
 extern void (*btechHostPlayTone)(double frequency);
@@ -195,7 +180,7 @@ uint16_t BtechSelectActiveSoundBank(uint16_t bankHandle);
 uint16_t BtechLoadMusicBank(const char *filename,BtechRuntimeStream *stream);
 uint16_t BtechSelectActiveMusicBank(uint16_t bankHandle);
 uint16_t BtechStartSelectedMusicBankTrack(uint16_t trackIndex,uint16_t priority);
-/* Void projection: callers do not consume native AX residue on non-MPU stops. */
+/* Void projection: callers do not consume native AX residue. */
 void BtechStopMusicStreams(void);
 uint16_t BtechUnloadMusicBank(uint16_t bankHandle);
 uint16_t BtechFreeSoundAllocationChain(BtechSoundBank *bank);

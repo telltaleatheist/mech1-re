@@ -7,6 +7,9 @@
     compare_original.py midi.oss     traces/music.mt32.jsonl.gz
     compare_original.py CAPTURE.wav  traces/music.speaker.jsonl.gz
 
+The adlib and mt32 goldens left with those paths in S8: take them from the
+history before it (6aebf22) to repeat the AdLib and MIDI comparisons.
+
 The original and the port don't spend time the same way on a script (the
 original's empty polls take almost no emulated time), so the comparison is
 per section: the golden's snaps split it, and each section with music is
