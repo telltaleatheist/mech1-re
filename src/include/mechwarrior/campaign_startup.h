@@ -1,7 +1,7 @@
 #ifndef MECHWARRIOR_CAMPAIGN_STARTUP_H
 #define MECHWARRIOR_CAMPAIGN_STARTUP_H
 #include "mechwarrior/campaign_input.h"
-#include "mechwarrior/native_address.h"
+#include "mechwarrior/campaign_buffer.h"
 #include "mechwarrior/campaign_exchange.h"
 
 enum { LAUNCHER_IDENTITY_BYTES=11 };

@@ -1,6 +1,6 @@
 #ifndef MECHWARRIOR_CAMPAIGN_MUSIC_H
 #define MECHWARRIOR_CAMPAIGN_MUSIC_H
-#include "mechwarrior/native_address.h"
+#include "mechwarrior/campaign_buffer.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>

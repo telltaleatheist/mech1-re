@@ -1,4 +1,5 @@
 #include "mechwarrior/port_diagnostics.h"
+#include "mechwarrior/native_address.h"
 #include "mechwarrior/combat_startup.h"
 #include "mechwarrior/combat_input.h"
 #include "mechwarrior/combat_video.h"

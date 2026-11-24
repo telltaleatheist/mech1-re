@@ -1,7 +1,7 @@
 #ifndef MECHWARRIOR_COMBAT_SOUND_H
 #define MECHWARRIOR_COMBAT_SOUND_H
 #include "mechwarrior/combat_resources.h"
-#include "mechwarrior/native_address.h"
+#include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/hardware_ports.h"
 #include <stdbool.h>
 
@@ -19,9 +19,44 @@ extern bool (*btechHostQuerySystemConfiguration)(uint16_t ax);
 uint16_t BtechProbePlatformAudioMask(void);
 uint16_t BtechSelectAndInstallAudioBackends(uint16_t requestedBackendMask);
 uint16_t BtechProbeAudioBackendMask(void);
-/* Hardware view, e.g. an instrumented DOS machine's live RAM. No fabricated
+/* A sound bank's bytes, borrowed from its allocation; a read past the end is
+ * refused. Offsets are WORDs and wrap. */
+struct BtechSoundBytes
+{
+    const uint8_t *bytes;
+    uint32_t byteCount;
+};
+static inline uint8_t BtechReadSoundByte(const BtechSoundBytes &data,uint16_t offset)
+{
+    if (offset>=data.byteCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("A sound read past its data");
+    return data.bytes[offset];
+}
+static inline uint16_t BtechReadSoundWord(const BtechSoundBytes &data,uint16_t offset)
+{
+    uint16_t low=BtechReadSoundByte(data,offset);
+    return low|((uint16_t)BtechReadSoundByte(data,(uint16_t)(offset+1))<<8);
+}
+/* The bytes at 0000:offset of the DOS machine, which a bank with no ITM reads
+ * its modulation from: the interrupt table, INT 0's owner live. No fabricated
  * zero arena, game-memory registry or default IVT is installed by the port. */
-extern MwNativeByteView (*btechHostBorrowDosMemory)(uint16_t selector);
+extern uint8_t (*btechHostReadToneDosByte)(uint16_t offset);
+/* What a tone channel's modulation is read from: its bank's ITM, or DOS memory. */
+struct BtechToneFallback
+{
+    BtechSoundBytes itm;
+    bool dosMemory;
+};
+static inline uint8_t BtechReadToneFallbackByte(const BtechToneFallback &fallback,uint16_t offset)
+{
+    if (!fallback.dosMemory) return BtechReadSoundByte(fallback.itm,offset);
+    if (!btechHostReadToneDosByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostReadToneDosByte");
+    return btechHostReadToneDosByte(offset);
+}
+static inline uint16_t BtechReadToneFallbackWord(const BtechToneFallback &fallback,uint16_t offset)
+{
+    uint16_t low=BtechReadToneFallbackByte(fallback,offset);
+    return low|((uint16_t)BtechReadToneFallbackByte(fallback,(uint16_t)(offset+1))<<8);
+}
 enum { COMBAT_TONE_CHANNELS=8,COMBAT_SPEAKER_CHANNELS=4,COMBAT_TONE_HEADER_BYTES=8,
     TONE_STATE_FIELD_MASK=0x7E,
     TONE_BRANCH_RETURN=0x0232,TONE_BRANCH_CALL=0x0239,TONE_BRANCH_STOP=0x01E5,TONE_BRANCH_REPEAT=0x01B3 };
@@ -49,7 +84,8 @@ struct CombatToneState
     BtechToneChannelFlags channelFlags[COMBAT_TONE_CHANNELS];
     BtechToneChannelState toneChannels[COMBAT_TONE_CHANNELS];
     BtechToneChannelState *toneChannelStates[COMBAT_TONE_CHANNELS];
-    MwNativeByteView toneEventData[COMBAT_TONE_CHANNELS],toneFallbackData[COMBAT_TONE_CHANNELS];
+    BtechSoundBytes toneEventData[COMBAT_TONE_CHANNELS];
+    BtechToneFallback toneFallbackData[COMBAT_TONE_CHANNELS];
     uint16_t fallbackAllocationOffsets[COMBAT_TONE_CHANNELS],levelSequenceDirectoryOffsets[COMBAT_TONE_CHANNELS];
     uint16_t bytecodeReturnOffset,currentChannelDisplacement,selectedSpeakerPriority;
     uint16_t bytecodeBranchHandlers[4];
@@ -67,7 +103,7 @@ typedef uint16_t (*BtechMusicMessage)(uint16_t statusDisplacement,uint16_t chann
 uint16_t BtechMusicMessageNoOperation(uint16_t statusDisplacement,uint16_t channel,uint16_t packedData);
 uint16_t BtechDispatchToneMidiMessage(uint16_t statusDisplacement,uint16_t channel,uint16_t packedData);
 void BtechSetToneMusicPriorityAndTranslation(uint16_t priority);
-void BtechStartSoftwareMusicTrack(MwNativeByteView musicHeader,uint16_t headerOffset,bool selectorPresent);
+void BtechStartSoftwareMusicTrack(BtechSoundBytes musicHeader,uint16_t headerOffset);
 void BtechTickSoftwareMusic(void);
 uint8_t BtechDecodeNextMidiEvent(uint8_t inheritedDeltaHighByte);
 typedef void (*BtechAudioTick)(void);
@@ -84,9 +120,9 @@ void BtechAudioTimerNoOp(void);
  * or 0 for silence. The host plays it on the tone voice. */
 extern void (*btechHostPlayTone)(double frequency);
 void BtechTickSpeakerToneChannels(void);
-void BtechAdvanceToneChannel(BtechToneChannelState *state,MwNativeByteView event,uint16_t channel);
-void BtechParseToneCommands(BtechToneChannelState *state,MwNativeByteView event,uint16_t cursor,uint16_t channel);
-void BtechStartToneInterpreterChannel(MwNativeByteView event,uint16_t eventOffset,uint16_t channel,MwNativeByteView fallback,uint16_t fallbackOffset);
+void BtechAdvanceToneChannel(BtechToneChannelState *state,const BtechSoundBytes &event,uint16_t channel);
+void BtechParseToneCommands(BtechToneChannelState *state,const BtechSoundBytes &event,uint16_t cursor,uint16_t channel);
+void BtechStartToneInterpreterChannel(BtechSoundBytes event,uint16_t eventOffset,uint16_t channel,BtechToneFallback fallback,uint16_t fallbackOffset);
 /* Combat state owned by combat_sound.h (plan, slice B3a). */
 struct CombatSoundIrqState
 {
@@ -118,14 +154,11 @@ typedef struct BtechSoundAllocationNode {
     BtechResourceAllocation allocation;
     struct BtechSoundAllocationNode *next;
     char chunkTag[0x0A];
-    uint16_t allocationSelector; /* Original DOS allocation identity. */
-    uint16_t allocationOffset;
 } BtechSoundAllocationNode;
 
 typedef struct BtechSoundEvent {
-    MwNativeByteView data; /* Borrowed selector-relative allocation bytes. */
+    BtechSoundBytes data; /* Borrowed, from the event's paragraph to its allocation's end. */
     uint16_t offset; /* Native near cursor remains observable to bytecode. */
-    uint16_t selector; /* Relocated DOS selector, not a host-pointer hash. */
 } BtechSoundEvent;
 BtechSoundEvent BtechAdvanceMusicSequence(void);
 typedef struct BtechSoundBank {
@@ -147,9 +180,9 @@ struct CombatSoundState
     uint8_t midiMessageLengths[8];
     uint16_t musicSequenceIndex,mpuTempoInterval,combatMidiStreamOffset;
     uint16_t queuedMidiDeltaTicks,softwareMusicDelayTicks,midiTempoHighBytes;
-    MwNativeByteView midiStreamData;
+    BtechSoundBytes midiStreamData;
     /* Native stream-pair presence differs from an OFFSET0 parser check. */
-    bool midiStreamSelectorPresent;
+    bool midiStreamPresent;
     uint16_t activeMusicBankIndex;
     int16_t musicSequences[COMBAT_MUSIC_SEQUENCE_ROWS][COMBAT_MUSIC_SEQUENCE_WORDS];
     uint8_t musicTimerInstalled;

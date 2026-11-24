@@ -109,7 +109,8 @@ int main(int argc,char **argv)
     bool setupOnly=argc==2 && !strcmp(argv[1],"--setup");
     bool installed=argc==1 || setupOnly;
     if (!help) MwSetupSettleUserFolder();
-    if (!help && !setupOnly && argc<=3) MwSetupRecordProgram();
+    /* Not for a start that is refused its arguments: too many, or an unknown option. */
+    if (!help && argc<=3 && (argc==1 || argv[1][0]!='-')) MwSetupRecordProgram();
     if (argc==1)
     {
         /* No console when double-clicked: the log goes beside the saves. */

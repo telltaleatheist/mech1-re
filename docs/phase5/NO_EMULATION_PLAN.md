@@ -420,6 +420,14 @@ Names such as planetSelector, houseSelector, scenarioSelectors and the trace sch
 - **The damaged bank.** Our 1989 copy's PHAPCK.TBL holds MARPCK.TBL's bytes from 1800h to 5FFFh and one changed bit at 166Dh, and doesn't unpack to its length: the port already refused a Phoenix Hawk with it, without a name (SUPPORTED_VERSIONS.md). No trace loads one: the combat traces have a Locust and a Jenner. The test knows the file by its hash.
 - **1A2E.** Its formation and target reads are functions of their own (for the test); its formation buffer is no longer prefilled with the current positions.
 
+**From B4g** (combat's sound data; no golden re-recorded):
+- **The views.** `BtechSoundBytes` is a bank's borrowed bytes and their count, for the events, the tone channels and the MIDI stream. A read past the end is refused, and an offset is still a word that wraps. The view had a base too, always 0 here.
+- **The tone fallback.** A bank with no ITM reads its modulation from 0000: of the DOS machine. `BtechToneFallback` says which of the two a channel reads, and DOS memory has one source, `btechHostReadToneDosByte`: INT 0's owner live at each read, as before. A selector other than 0 is refused when the channel starts.
+- **The allocations** are freed by their bytes, not a selector, so the two selector hooks and the host's control block segments are gone. DOS's memory list and its sizes stay. Two differences, neither reachable, as nothing calls the unloads: a second release of a chain no longer frees a node's old selector again, and freeing a node whose append failed is refused, where DOS ignored it.
+- **`midiStreamPresent`** (was `midiStreamSelectorPresent`) is whether the track has bytes, which is when its selector was not 0.
+- **native_address.h** keeps `MwReadNativeWord` and two constants. `MwCampaignBuffer` is in campaign_buffer.h. The files that read words include native_address.h themselves.
+- **Also.** `ReleaseChildResources` clears its pointers before it frees the buffers again (B4b had freed first). The music tick runs on the main thread, so neither order could show. A start with an unknown option writes no launcher record.
+
 ## 3. How we check "play identical"
 
 ### Sound
@@ -538,6 +546,10 @@ Every slice below is its own branch with the full gate green: both setups, the t
 - A package built on each platform with hidapi's notice (`licenses/hidapi-LICENSE-bsd.txt`), and what the Mac and Windows packages link and ship: the MSVC runtime DLLs and Inno Setup's parts among them. Only the Linux package has been measured (S9).
 - The Linux tar.gz holds libSDL3 three times (.so, .so.0, .so.0.2.0); the AppImage holds .so.0 alone.
 - "The C17 port" in `docs/THIRD_PARTY_NOTICES.md`, and the README's stale passages.
+- Packaging with a release's label should refuse a tree that isn't at that tag, or has uncommitted changes.
+- On Windows: the program's path and the player's folder in the launcher's record, with a path that isn't plain ASCII (the UTF-8 manifest, and the kit's `self_path`).
+- The kit's recognise rules on a real copy of MechWarrior 2, MechWarrior 3 and Pirate's Moon, `DATA1.HDR` included.
+- The AppImage may ship, with libfuse and its notice in its runtime (the project owner's word, 2026-11-24); the licence wording for it is R's.
 - In the release notes: an older build imports the story again on a folder made by this one; an old test package's own `MechWarrior.ini` beside the program keeps its `sound_system=speaker`.
 
 **Group A total:** about 51-52 developer days plus the listening sessions. That is roughly 10 weeks, planned for **one developer, in order**.

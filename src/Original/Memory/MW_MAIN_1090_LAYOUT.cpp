@@ -2,6 +2,7 @@
  * header). Boundary code, not original game helpers. */
 #include "MW_MAIN_1090_LAYOUT.h"
 #include "mechwarrior/story.h"
+#include "mechwarrior/native_address.h"
 #include "mechwarrior/ui_layout.h"
 #include <stdio.h>
 #include <string.h>

@@ -1,4 +1,5 @@
 #include "mechwarrior/campaign.h"
+#include "mechwarrior/native_address.h"
 #include "mechwarrior/campaign_mechanics.h"
 #include "mechwarrior/campaign_economy.h"
 #include "mechwarrior/campaign_ui.h"

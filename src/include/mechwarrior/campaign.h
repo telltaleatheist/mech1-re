@@ -1,7 +1,7 @@
 #ifndef MECHWARRIOR_CAMPAIGN_H
 #define MECHWARRIOR_CAMPAIGN_H
 
-#include "mechwarrior/native_address.h"
+#include "mechwarrior/campaign_buffer.h"
 #include "mechwarrior/campaign_text.h"
 #include <stdbool.h>
 #include <stddef.h>

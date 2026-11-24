@@ -45,11 +45,6 @@ static uint8_t ReadToneDosByte(uint16_t offset)
     char error[128];SDL_snprintf(error,sizeof(error),"Tone fallback read at 0000:%04X outside recovered physical DOS owners",offset);
     MwSdlFail(error);
 }
-static MwNativeByteView BorrowToneDosMemory(uint16_t selector)
-{
-    if (selector) MwSdlFail("Unrecovered physical DOS selector for tone fallback");
-    return MwNativeByteView{NULL,0,0,ReadToneDosByte};
-}
 static uint8_t ReadBiosByte(uint16_t offset)
 {
     if (offset>=sizeof(biosData)) MwSdlFail("Read outside represented BIOS data");
@@ -102,7 +97,7 @@ void MwSdlInitializeCombatHardware(void)
     btechHostGetTimerOwner=GetTimerOwner;btechHostSetTimerOwner=SetTimerOwner;
     btechHostGetKeyboardOwner=GetKeyboardOwner;btechHostSetKeyboardOwner=SetKeyboardOwner;
     btechHostGetDivideOwner=GetDivideOwner;btechHostSetDivideOwner=SetDivideOwner;
-    btechHostBorrowDosMemory=BorrowToneDosMemory;
+    btechHostReadToneDosByte=ReadToneDosByte;
     btechHostRunPreviousTimerOwner=RunPreviousTimerOwner;
     btechHostSetTimerPeriod=MwSdlSetTimerPeriod;
     btechHostRunDue=MwSdlRunDue;btechHostWaitIdle=MwSdlWaitIdle;
