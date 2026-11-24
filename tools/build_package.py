@@ -122,7 +122,7 @@ BUNDLE_ID = "io.github.mech1re.mechwarrior"  # its own, so it never replaces ano
 README = (
     "MechWarrior 1 Rebuild\n\n"
     "A rebuild of MechWarrior (1989)'s program. Your own copy of the game is required and is\n"
-    "not included: no game data, saves or MT-32 ROMs are in this package.\n\n"
+    "not included: no game data or saves are in this package.\n\n"
     "The first time it starts without your game, it asks for your copy of MechWarrior: its\n"
     "BTECH.EXE, any file in its folder, or the archive it came in (a .zip, for example). It\n"
     "copies the game into your own folder and plays from there; your copy is never changed.\n"
@@ -215,6 +215,19 @@ def stage_soundfont(root, build, resources, notices):
         shutil.copy2(source, notices / name)
 
 
+# Libraries the game no longer uses (S9): an old build folder's copy must not ship.
+REMOVED_LIBRARIES = ("mt32emu", "nukedopl")
+
+
+def require_libraries(folder, sdl_name):
+    """SDL3 is in `folder`, and none of REMOVED_LIBRARIES."""
+    if not list(folder.glob(sdl_name)):
+        raise RuntimeError(f"Missing runtime dependency: {sdl_name}")
+    stale = sorted(f.name for f in folder.rglob("*") if any(name in f.name.lower() for name in REMOVED_LIBRARIES))
+    if stale:
+        raise RuntimeError("Removed libraries in the package (an old build folder?): " + ", ".join(stale))
+
+
 def stage_common(root, build, sdl, resources):
     """The configuration, our data, the read-me and the notices, into `resources`
     (beside the program, or a Mac app's Contents/Resources)."""
@@ -224,9 +237,8 @@ def stage_common(root, build, sdl, resources):
     notices = resources / "licenses"
     notices.mkdir()
     shutil.copytree(root / "docs/LICENSES", notices / "project")
-    for source in [root / "docs/NOTICE.md", root / "docs/THIRD_PARTY_NOTICES.md", sdl / "LICENSE.txt",
-                   build / "_deps/munt-src/mt32emu/COPYING.LESSER.txt", build / "_deps/nukedopl-src/LICENSE"]:
-        prefix = "SDL-" if source.parent == sdl else "Munt-" if source.name == "COPYING.LESSER.txt" else "Nuked-" if source.name == "LICENSE" else ""
+    for source in [root / "docs/NOTICE.md", root / "docs/THIRD_PARTY_NOTICES.md", sdl / "LICENSE.txt"]:
+        prefix = "SDL-" if source.parent == sdl else ""
         shutil.copy2(source, notices / (prefix + source.name))
     archive_licences(build, notices)
     stage_soundfont(root, build, resources, notices)
@@ -248,9 +260,11 @@ def check_paths(root, folder, *extra):
         *[str(Path(p).resolve()) for p in extra])
 
 
-def package(root, build, sdl, output, label, game=None, installer=False, tools=None):
+def package(root, build, sdl, output, label, game=None, installer=False):
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", label):
         raise ValueError("Invalid package label")
+    if installer and platform_name() == "linux-x86_64":
+        raise ValueError("Linux has no installer; its package is the .tar.gz")
     if platform_name() == "mac":
         return package_mac(root, build, sdl, output, label, game)
     windows = platform_name() == "win64"
@@ -278,9 +292,7 @@ def package(root, build, sdl, output, label, game=None, installer=False, tools=N
             raise RuntimeError("Cannot locate redistributable MSVC runtime")
         for dll in crt_dirs[-1].glob("*.dll"):
             shutil.copy2(dll, stage / dll.name)
-    for required in (["SDL3.dll", "mt32emu-*.dll", "nukedopl.dll"] if windows else ["libSDL3.so*", "libmt32emu.so*", "libnukedopl.so*"]):
-        if not list(stage.glob(required)):
-            raise RuntimeError(f"Missing runtime dependency: {required}")
+    require_libraries(stage, "SDL3.dll" if windows else "libSDL3.so*")
     stage_common(root, build, sdl, stage)
     check_paths(root, stage, root, sdl)
     archive = output / (name + (".zip" if windows else ".tar.gz"))
@@ -310,10 +322,7 @@ def package(root, build, sdl, output, label, game=None, installer=False, tools=N
     write_digest(archive)
     print(f"Packaged and startup-checked {archive}")
     if installer:
-        if windows:
-            windows_installer(root, stage, output, label, sdl)
-        else:
-            appimage(root, stage, output, label, tools, game, sdl)
+        windows_installer(root, stage, output, label, sdl)
     return archive
 
 
@@ -345,40 +354,6 @@ def windows_installer(root, stage, output, label, sdl):
         raise RuntimeError(f"Inno Setup made no {setup.name}")
     write_digest(setup)
     print(f"Installer {setup}")
-
-
-def appimage(root, stage, output, label, tools, game, sdl):
-    """MW1-Rebuild-<label>-x86_64.AppImage: usr/bin/mw1r with data/ and MechWarrior.ini beside it
-    (SDL_GetBasePath), the notices in usr/share/doc, the libraries by linuxdeploy. Needs `tools` holding
-    linuxdeploy-x86_64.AppImage and appimagetool-x86_64.AppImage."""
-    if not tools:
-        raise RuntimeError("--appimage-tools DIR (linuxdeploy and appimagetool) is needed for the AppImage")
-    tools = Path(tools).resolve()
-    appdir = output / "AppDir"
-    if appdir.exists():
-        shutil.rmtree(appdir)
-    bin_dir, doc = appdir / "usr/bin", appdir / f"usr/share/doc/{PROGRAM}"
-    bin_dir.mkdir(parents=True)
-    doc.mkdir(parents=True)
-    shutil.copy2(stage / PROGRAM, bin_dir / PROGRAM)
-    shutil.copy2(stage / "MechWarrior.ini", bin_dir / "MechWarrior.ini")
-    shutil.copytree(stage / "data", bin_dir / "data")
-    for name in ("LICENSE", "README.txt"):
-        shutil.copy2(stage / name, doc / name)
-    shutil.copytree(stage / "licenses", doc / "licenses")
-    env = dict(os.environ, APPIMAGE_EXTRACT_AND_RUN="1", ARCH="x86_64",
-               LD_LIBRARY_PATH=str(stage.resolve()) + os.pathsep + os.environ.get("LD_LIBRARY_PATH", ""))
-    run(str(tools / "linuxdeploy-x86_64.AppImage"), "--appdir", str(appdir), "-e", str(bin_dir / PROGRAM),
-        "-d", str(root / "tools/package/mechwarrior.desktop"), "-i", str(root / "tools/package/mechwarrior.png"), env=env)
-    smoke(bin_dir / PROGRAM, game)
-    check_paths(root, appdir, root, sdl)
-    image = output / f"{STEM}-{label}-x86_64.AppImage"
-    run(str(tools / "appimagetool-x86_64.AppImage"), str(appdir), str(image), env=env)
-    result = subprocess.run([str(image.resolve()), "--help"], capture_output=True, text=True, timeout=60, env=env)
-    if result.returncode != 0 or f"Usage: {PROGRAM}" not in result.stdout:
-        raise RuntimeError(f"The AppImage did not start: {result.returncode}\n{result.stderr}")
-    write_digest(image)
-    print(f"AppImage {image}")
 
 
 def package_mac(root, build, sdl, output, label, game):
@@ -432,9 +407,7 @@ def package_mac(root, build, sdl, output, label, game):
             if not (system(d) or d.startswith("@"))]
     if left:
         raise RuntimeError("still outside the app: " + ", ".join(sorted(set(left))))
-    for required in ("libSDL3*", "libmt32emu*", "libnukedopl*"):
-        if not list(frameworks.glob(required)):
-            raise RuntimeError(f"Missing runtime dependency: {required}")
+    require_libraries(frameworks, "libSDL3*")
 
     stage_common(root, build, sdl, resources)
     iconset = output / "mechwarrior.iconset"
@@ -495,8 +468,7 @@ if __name__ == "__main__":
     parser.add_argument("--label")
     parser.add_argument("--smoke", type=Path, help="an extracted package directory: run the smoke test only")
     parser.add_argument("--installer", action="store_true",
-                        help="also the installer: Setup.exe (Windows, Inno Setup) or AppImage (Linux); a Mac always makes its .dmg")
-    parser.add_argument("--appimage-tools", type=Path, help="Linux: the folder with linuxdeploy and appimagetool")
+                        help="also the installer: Setup.exe (Windows, Inno Setup); a Mac always makes its .dmg and Linux its .tar.gz")
     parser.add_argument("--game", type=Path, default=os.environ.get("MW1O_GAME"),
                         help="an original game folder for the first-run check (default MW1O_GAME; never packaged)")
     options = parser.parse_args()
@@ -511,4 +483,4 @@ if __name__ == "__main__":
             parser.error("--sdl and --label are required to package")
         root = Path(__file__).resolve().parents[1]
         package(root, root / "build-package", options.sdl.resolve(), root / "dist", options.label, options.game,
-                options.installer, options.appimage_tools)
+                options.installer)

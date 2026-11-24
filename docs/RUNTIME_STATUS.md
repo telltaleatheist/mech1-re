@@ -3,12 +3,10 @@
 The Windows x64 EGA/PC-speaker build is experimentally playable, not a completed
 campaign release. Combat runs at a fixed `combat_tick_ms=60` per tick at 1x, with
 speed keys for 2x to 4x (docs/CPU_TIMING_PROFILE.md).
-Campaign music can also use MT-32 (Munt, user-supplied ROMs) or AdLib (Nuked-OPL3).
-Both follow the original sequencing and have offline full-cue and dummy-SDL
-integration checks, including the real campaign debrief/death/ending branches
-with controlled combat-return results. Combat installs its native Roland or AdLib driver through
-the same libraries; the shipped combat sound bank supplies speaker effects only.
-No alternate MIDI/FM weapon sounds or combat score are invented. See [audio setup](AUDIO.md).
+The campaign's music plays from the bundled soundfont, as speaker tones, or not
+at all; combat's effects are speaker tones. The shipped combat sound bank holds
+speaker effects only, and no other weapon sounds or combat score are invented.
+See [audio setup](AUDIO.md).
 
 ## Connected gameplay
 

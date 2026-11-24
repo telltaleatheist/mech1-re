@@ -14,7 +14,6 @@ class PackageTests(unittest.TestCase):
     def fixture(self, root):
         for name in ["LICENSE", "MechWarrior.ini", "docs/LICENSES/MIT.txt", "docs/NOTICE.md",
                      "docs/THIRD_PARTY_NOTICES.md", "sdl/LICENSE.txt",
-                     "build/_deps/munt-src/mt32emu/COPYING.LESSER.txt", "build/_deps/nukedopl-src/LICENSE",
                      "data/rules/units.json", "data/ui/hub.json", "data/music/soundfont_programs.txt", "extern/re-setup-kit/LICENSE",
                      "extern/re-setup-kit/third_party/stb/LICENSE", "extern/re-setup-kit/third_party/miniz/LICENSE",
                      "extern/TinySoundFont/LICENSE"]:
@@ -35,7 +34,7 @@ class PackageTests(unittest.TestCase):
         exe = root / "build/mechwarrior"
         exe.write_text('#!/bin/sh\n[ "$1" = --help ] && { echo "Usage: mw1r [<game folder>]"; exit 0; }\nexit 2\n')
         exe.chmod(0o755)
-        for name in ["libSDL3.so.0", "libmt32emu.so.2", "libnukedopl.so"]:
+        for name in ["libSDL3.so.0"]:
             (root / "build" / name).write_bytes(b"fixture library")
         (root / "build/libSDL3.so").symlink_to("libSDL3.so.0")
 
@@ -50,7 +49,7 @@ class PackageTests(unittest.TestCase):
             self.assertEqual((extracted / "libSDL3.so").read_bytes(), b"fixture library")
             self.assertTrue(os.access(extracted / "mw1r", os.X_OK) and not (extracted / "mechwarrior").exists())
             self.assertEqual(subprocess.run([str(extracted / "mw1r"), "--help"], capture_output=True).returncode, 0)
-            self.assertTrue((extracted / "licenses/Munt-COPYING.LESSER.txt").exists())
+            self.assertFalse([f for f in extracted.rglob("*") if any(n in f.name.lower() for n in build_package.REMOVED_LIBRARIES)])
             self.assertTrue((extracted / "licenses/stb-LICENSE").exists() and (extracted / "licenses/miniz-LICENSE").exists())
             self.assertTrue((extracted / "licenses/TinySoundFont-LICENSE").exists())
             for name in ["libarchive-COPYING", "zlib-LICENSE", "xz-COPYING", "xz-COPYING.0BSD"]:
@@ -62,15 +61,20 @@ class PackageTests(unittest.TestCase):
                 self.assertTrue((extracted / "licenses" / name).exists(), name)
             self.assertEqual(len(list((root / "dist").glob("*.sha256"))), 1)
 
-    def test_missing_audio_library_blocks_packaging(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            self.fixture(root)
-            (root / "build/libnukedopl.so").unlink()
-            with patch.object(build_package, "run"), patch.object(build_package, "platform_name", return_value="linux-x86_64"), self.assertRaisesRegex(RuntimeError, "Missing runtime dependency"):
-                build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
-            self.assertFalse(list((root / "dist").glob("*.tar.gz")))
-
+    def test_missing_or_removed_library_blocks_packaging(self):
+        for broken in ("missing", "libmt32emu.so.2", "_deps/libnukedopl.so"):
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                self.fixture(root)
+                if broken == "missing":
+                    for lib in (root / "build").glob("libSDL3.so*"):
+                        lib.unlink()
+                else:
+                    (root / "build" / broken).parent.mkdir(exist_ok=True)
+                    (root / "build" / broken).write_bytes(b"an old build's library")
+                with patch.object(build_package, "run"), patch.object(build_package, "platform_name", return_value="linux-x86_64"), self.assertRaisesRegex(RuntimeError, "Missing runtime dependency" if broken == "missing" else "Removed libraries"):
+                    build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
+                self.assertFalse(list((root / "dist").glob("*.tar.gz")))
 
     def test_missing_kit_licence_blocks_packaging(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -109,6 +113,12 @@ class PackageTests(unittest.TestCase):
                 with patch.object(build_package, "run"), patch.object(build_package, "platform_name", return_value="linux-x86_64"), self.assertRaisesRegex(RuntimeError, "Missing soundfont|Soundfont .* hashes|Missing licence"):
                     build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
                 self.assertFalse(list((root / "dist").glob("*.tar.gz")))
+
+    def test_linux_has_no_installer(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(build_package, "platform_name", return_value="linux-x86_64"):
+            root = Path(directory)
+            with self.assertRaisesRegex(ValueError, "Linux has no installer"):
+                build_package.package(root, root / "build", root / "sdl", root / "dist", "test", installer=True)
 
     def test_program_version_from_the_label(self):
         self.assertEqual(build_package.program_version("mw1r-v1.0.0"), "1.0.0")

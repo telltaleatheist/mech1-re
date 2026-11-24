@@ -282,7 +282,7 @@ timeline has reached.
 | 5 | `FmChip` rhythm mode and noise; level 2 metrics tool and tolerances; reference renders made with Nuked before it goes | 3 |
 | 6 | MT-32 as MIDI out (option A): platform ports, device choice in the config, ROM settings removed | 3 |
 | 7 | Combat card drivers dropped (21CA, 2176, MPU intelligent mode); 1ADF answers "absent" for AdLib and MPU in combat; traces | 2 |
-| 8 | Munt and Nuked-OPL3 removed from CMake, notices and docs (AUDIO.md, THIRD_PARTY_NOTICES.md); LGPL obligations gone | 1 |
+| 8 | Munt and Nuked-OPL3 removed from CMake, notices and docs (AUDIO.md, THIRD_PARTY_NOTICES.md); the game's own libraries then hold no LGPL | 1 |
 | 9 | Fixed-tick integration: IRQ0 callbacks per tick at the programmed rate, sub-tick timestamps | 2-3 |
 
 **Total:** about 22-25 developer days, roughly 4.5-5 weeks for one developer.

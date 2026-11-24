@@ -44,7 +44,7 @@ def run(port, game, work, device):
     ini = os.path.join(base, "sound.ini")
     with open(ini, "w") as f:
         f.write("combat_tick_ms=60\ncombat_speed=1\n")
-        f.write("music=soundfont\n" if device == "soundfont" else f"sound_system={device}\n")
+        f.write(f"music={device}\n")
     pcm = os.path.join(base, "sound.pcm")
     # The feed's song: tokens need the event log on (they are its test aids).
     env = dict(os.environ, MECHWARRIOR_TIMING_CONFIG=ini, MECHWARRIOR_EVENT_LOG=os.path.join(base, "events.log"),

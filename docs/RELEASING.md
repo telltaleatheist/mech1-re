@@ -17,23 +17,21 @@ Each package workflow uploads its archive as a workflow artifact
 
 Windows uses MSVC x64 on Windows Server 2022. Linux uses GCC on Ubuntu 24.04
 x86-64 (glibc 2.39+). SDL 3.2.0 is pinned by commit, matching the supported CMake
-minimum; CMake 3.31.6 is pinned for the older dependency build scripts. Munt and
-Nuked-OPL3 use the project's existing pinned commits. SDL and the LGPL audio
-libraries are bundled as shared libraries. Windows also bundles the MSVC CRT.
+minimum; CMake 3.31.6 is pinned for the older dependency build scripts. SDL is
+bundled as a shared library. Windows also bundles the MSVC CRT.
 Linux requires compatible system C/C++ runtime, desktop and audio libraries.
 
 ## What a package holds
 
 `tools/build_package.py` builds the program and stages:
-- the program, `mw1r` (`mw1r.exe`; `Contents/MacOS/mw1r` in the Mac app;
-  `usr/bin/mw1r` in the AppImage), and its shared libraries. The build's
+- the program, `mw1r` (`mw1r.exe`; `Contents/MacOS/mw1r` in the Mac app), and its shared libraries. The build's
   target and file stay `mechwarrior`, which the tools and traces run; the
   package names it;
 - `data/`: our rules (`data/rules`) and screen layout (`data/ui`), which the
   game reads beside the program; packaging refuses a tree without them;
 - `MechWarrior.ini`, `LICENSE`, a `README.txt` and the licence notices.
 
-No original game files, saves, story files or synthesizer ROMs are packaged.
+No original game files, saves or story files are packaged.
 On the first run the game reads the player's copy's programs once (MW_MAIN.EXE,
 BTECH.EXE and MW_EGA.EXE, in a revision `SUPPORTED_VERSIONS.md` lists) and
 writes a `story/` folder into the save directory; from then on it plays from
@@ -106,9 +104,9 @@ platform's files are named `MW1-Rebuild-<label>-...`:
 |---|---|---|
 | Windows x64 | Windows, MSVC | `-win64.zip`, and with `--installer` `-Setup.exe` (Inno Setup) |
 | macOS | a Mac | `-mac.dmg` (`MechWarrior 1 Rebuild.app`, signed ad hoc), this Mac's architecture |
-| Linux x86-64 | Linux or WSL | `-linux-x86_64.tar.gz`, and with `--installer` `-x86_64.AppImage` |
+| Linux x86-64 | Linux or WSL | `-linux-x86_64.tar.gz` |
 
-    python tools/build_package.py --sdl SDL_SOURCE --label LABEL [--game GAME] [--installer] [--appimage-tools DIR]
+    python tools/build_package.py --sdl SDL_SOURCE --label LABEL [--game GAME] [--installer]
 
 - **Windows**: the program is linked as a GUI program
   (`MECHWARRIOR_WINDOWS_GUI`), so no console window opens, with its icon
@@ -126,10 +124,10 @@ platform's files are named `MW1-Rebuild-<label>-...`:
   `codesign --verify --deep --strict`. The dmg holds the app, a link to
   Applications and the read-me. Unsigned by a developer identity: the first
   start needs right-click, Open.
-- **Linux**: `--appimage-tools DIR` names the folder with
-  `linuxdeploy-x86_64.AppImage` and `appimagetool-x86_64.AppImage`. The
-  AppImage holds `usr/bin/mechwarrior` with `data/` and `MechWarrior.ini`
-  beside it, and the notices in `usr/share/doc/mechwarrior`.
+- **Linux**: the `.tar.gz`, unpacked anywhere; the program, its SDL3, `data/`
+  and the notices are in one folder. No AppImage is made: its runtime holds
+  LGPL code. The archive itself is unpacked and started, with its first run
+  when a game folder is given, as the other platforms' are.
 
 Every installer's contents pass `tools/package/check_paths.py`: no local path
 or user name in any file. Each file gets a `.sha256` beside it; for a release,

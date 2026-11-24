@@ -12,9 +12,6 @@ game is granted and no claim of ownership of recovered game material is made.
 | The program icon, `tools/package/mechwarrior.png` and `.ico` | The MW1 remake's own badge (no game artwork), used with the project's leave; no trademark rights granted |
 | User installations, extracted media and private evidence | Not distributed; ignored local input/output |
 | SDL3 | zlib licence, supplied separately; see [third-party notices](../THIRD_PARTY_NOTICES.md) |
-| Munt libmt32emu | LGPL-2.1-or-later; separate shared library, excluded from MIT |
-| Nuked-OPL3 | LGPL-2.1-or-later; separate shared library, excluded from MIT |
-| Roland synthesizer ROMs | User-provided only; never distributed |
 
 Native-format constants and layout descriptions document interoperability
 contracts. They do not grant rights to original game assets.

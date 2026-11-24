@@ -126,7 +126,7 @@ int main(int argc,char **argv)
         "Without a game folder: the one remembered in the player's MechWarrior.ini or the player's own copy, else the\n"
         "setup (pick your copy, its folder or the archive it came in: it is copied beside the saves); the log and F12\n"
         "captures then go beside the saves. --status prints what is found as JSON; --setup only sets the game up.\n"
-        "EGA; sound device from MechWarrior.ini; arrows and Enter; Ctrl+Escape quits; F12 captures; F11 stops Support pilot;\n"
+        "EGA; music= in MechWarrior.ini; arrows and Enter; Ctrl+Escape quits; F12 captures; F11 stops Support pilot;\n"
         "- and + change the combat speed.\n",name,name);return help?0:2;}
     SDL_SetMainReady();
     if(!MwSdlConfigureSupportPilot(pilotDirectory))
@@ -141,9 +141,9 @@ int main(int argc,char **argv)
         timingPath=defaultTimingPath;
     }
     if (!MwSdlLoadTimingConfiguration(timingPath,optionalTiming))
-    {fprintf(stderr,"Invalid MechWarrior configuration: %s (combat tick, speed, sound system or ROM path).\n",timingPath);return 2;}
+    {fprintf(stderr,"Invalid MechWarrior configuration: %s (combat tick, speed or music).\n",timingPath);return 2;}
     if (!MwSdlLoadUserConfiguration())
-    {fprintf(stderr,"Invalid player configuration: MechWarrior.ini in the save directory (combat tick, speed, sound system or ROM path).\n");return 2;}
+    {fprintf(stderr,"Invalid player configuration: MechWarrior.ini in the save directory (combat tick, speed or music).\n");return 2;}
     printf("Combat tick: %u ms at 1x, speed %ux (- and + in combat); PIT/audio keep hardware rate.\n",
         mwSdlCombatTickMs,(unsigned)mwSdlCombatSpeed);
     fflush(stdout); /* Keep startup information live when the launcher logs it. */

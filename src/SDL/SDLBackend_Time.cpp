@@ -1,5 +1,4 @@
 #include "SDLBackend.h"
-#include "mechwarrior/audio_devices.h"
 #include "mechwarrior/campaign_input.h"
 #include "mechwarrior/combat_sound.h"
 #include "mechwarrior/combat_startup.h"
@@ -147,10 +146,9 @@ double MwSdlTimerLagMilliseconds(void)
     double elapsed=(double)(MwSdlNowNanoseconds()-startNanoseconds)/(double)HOST_NS_PER_MILLISECOND;
     return elapsed-hardwareTime*(double)HOST_MS_PER_SECOND/(double)HOST_PIT_CLOCK_HZ;
 }
-/* Sound-port event log (MECHWARRIOR_AUDIO_LOG=FILE): every access to the
- * AdLib and MPU ports, one JSON array per line:
- * [PIT cycle, "w" or "r", port, value]. Reads log the value returned. The
- * device lines come first. Exact under the test clock (docs/phase5). */
+/* The sound log (MECHWARRIOR_AUDIO_LOG=FILE): each change of the tone and each
+ * snap, one JSON array per line: [PIT cycle, "tone", Hz]. The device line comes
+ * first. Exact under the test clock (docs/phase5). */
 static FILE *audioLog;
 static void AudioLogOpen(void)
 {
@@ -158,18 +156,9 @@ static void AudioLogOpen(void)
     if (audioLog || !path) return;
     audioLog=fopen(path,"w");
     if (!audioLog) MwSdlFail("Open the audio event log");
-    static const char *const devices[]={"speaker","mt32","adlib"};
-    fprintf(audioLog,"{\"device\": \"%s\", \"clock\": \"%s\"}\n",devices[mwSdlSoundSystem],
+    static const char *const devices[]={"speaker","soundfont","off"};
+    fprintf(audioLog,"{\"device\": \"%s\", \"clock\": \"%s\"}\n",devices[mwSdlMusic],
         virtualClock?"virtual":"wall");
-}
-static bool AudioPort(uint16_t port)
-{
-    return port==ADLIB_INDEX_PORT || port==ADLIB_DATA_PORT || port==MPU_DATA_PORT || port==MPU_STATUS_COMMAND_PORT;
-}
-static void AudioLogEvent(char kind,uint16_t port,uint8_t value)
-{
-    if (audioLog && AudioPort(port))
-        fprintf(audioLog,"[%llu, \"%c\", %u, %u]\n",(unsigned long long)hardwareTime,kind,port,value);
 }
 void MwSdlAudioLogTone(double frequency)
 {
@@ -179,25 +168,11 @@ void MwSdlAudioLogSnap(const char *name)
 {
     if (audioLog) {fprintf(audioLog,"[%llu, \"snap\", \"%s\"]\n",(unsigned long long)hardwareTime,name);fflush(audioLog);}
 }
+/* The devices' ports are gone (S9): tones (S5, S6), the timer period (H4b), the
+ * AdLib's and the MPU's. The hooks that still name them stop at H5. */
 void MwSdlWriteDevicePort(uint16_t port,uint8_t value)
 {
-    AudioLogEvent('w',port,value);
-    /* Device writes occur at the delivered hardware time, including inside
-     * an IRQ. No game state is ever touched by an SDL audio thread. */
-    MwSdlAdvanceAudio(hardwareTime);
-    if (port==MPU_DATA_PORT || port==MPU_STATUS_COMMAND_PORT)
-    {
-        if (mwSdlSoundSystem==MW_SOUND_MT32) MwMpuWritePort(port,value);
-        return;
-    }
-    if (port==ADLIB_INDEX_PORT || port==ADLIB_DATA_PORT)
-    {
-        if (mwSdlSoundSystem==MW_SOUND_ADLIB)
-            MwAdlibWritePort(port==ADLIB_DATA_PORT,value,hardwareTime*1000000.0/(double)HOST_PIT_CLOCK_HZ);
-        return;
-    }
-    /* The PIT and port 61h are gone: tones (S5, S6), the timer period (H4b).
-     * Ports 0 and 1 too: the rhythm release's pair stops at 0F41 (H5). */
+    (void)port;(void)value;
     MwSdlFail("Unsupported hardware write");
 }
 /* The timer's period (H4b), where the games programmed PIT channel 0: in the
@@ -208,22 +183,10 @@ void MwSdlSetTimerPeriod(uint32_t pitCycles)
     timerPeriod=pitCycles&&pitCycles<PIT_COUNTER_MODULUS?pitCycles:PIT_COUNTER_MODULUS;
     nextIrq=hardwareTime+timerPeriod;
 }
-static uint8_t ReadDevicePort(uint16_t port);
 uint8_t MwSdlReadDevicePort(uint16_t port)
 {
-    uint8_t value=ReadDevicePort(port);
-    AudioLogEvent('r',port,value);
-    return value;
-}
-static uint8_t ReadDevicePort(uint16_t port)
-{
-    if (port==MPU_DATA_PORT || port==MPU_STATUS_COMMAND_PORT)
-        return mwSdlSoundSystem==MW_SOUND_MT32?MwMpuReadPort(port):UINT8_MAX;
-    if (port==ADLIB_INDEX_PORT)
-        return mwSdlSoundSystem==MW_SOUND_ADLIB
-            ?MwAdlibReadStatus(hardwareTime*1000000.0/(double)HOST_PIT_CLOCK_HZ):UINT8_MAX;
-    MwSdlFail("Unsupported hardware read"); /* Ports 0 and 1's delay reads stop at 0F41 (H5). */
-    return 0;
+    (void)port;
+    MwSdlFail("Unsupported hardware read");
 }
 void MwSdlInitializeTimer(void)
 {
@@ -242,7 +205,6 @@ void MwSdlInitializeTimer(void)
     nextIrq=timerPeriod;irq0=BiosTimerInterrupt;
     enabledDeviceIrqs=(uint8_t)MwDeviceIrq::All;
     campaignInterruptsInstalled=inInterrupt=nestingAllowed=false;
-    MwMpuReset();
     mwMusicHardware=MwMusicHardwareCalls{MwSdlAllowNestedTicks,MwSdlReadTimerHandler,MwSdlWriteTimerHandler,MwSdlWriteDevicePort,MwSdlReadDevicePort,
         MwSdlPumpTimer,MwSdlPlayTone,MwSdlSetTimerPeriod};
     /* Same physical PIT/speaker, different original sequencer. No backend

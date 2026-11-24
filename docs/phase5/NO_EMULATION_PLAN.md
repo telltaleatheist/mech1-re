@@ -313,6 +313,12 @@ Changes per piece:
 - **Not re-recorded.** The speaker event goldens and the start worlds.
 - **Not removed yet.** `MwStoryCopyAdlibInstruments` and `story/music.json` have no caller left in the game; the importer still writes and reads the file, for S9 or the importer's own slice.
 
+**From S9** (the libraries, the settings, the importer and the Linux package):
+- **What went.** Nuked-OPL3, Munt and the MPU401, Adlib and MT32 host files, the ROM settings and `mwSdlSound`; C left `project()`. `music=speaker|soundfont|off` replaces `sound_system`, which is still read, with a log line; the player's own ini overrides the packaged one. `off` takes the 'R' path with no music loaded, and the effects stay. The default stays speaker.
+- **The importer** no longer writes `story/music.json`. A folder made with the table this replaced is current, not imported again: `story_state` accepts the old table's hash for the new one only, and a test fails at the next change of the table. An older build does import again on a folder made by this one, and that is accepted; R's notes say so.
+- **Packaging** needs SDL3 only and refuses a package holding a library named mt32emu or nukedopl, so an old build folder can't ship one.
+- **The Linux package is the .tar.gz alone.** The AppImage step was pinned and given its runtime's notices first, then removed: a project decision that nothing LGPL is shipped, and the AppImage's runtime holds libfuse. One commit, so it can be undone.
+
 **From B3c** (combat's video, render, polygons, scene, pose and cockpit state as owner structs; a pure move, no golden re-recorded):
 - **What changed.** 287 globals are now the fields of six structs, one per memory file: `combatVideo` (101 fields, combat_video.h), `combatRender` (63, combat_render.h), `combatPolygons` (26, combat_polygons.h), `combatScene` (8, combat_scene.h), `combatPose` (18, combat_pose.h), `combatCockpit` (71, combat_cockpit.h). Every name is kept, and the macros that name fields point at the instances. No field has an initialiser.
 - **Left outside.** The constants `glyphTailMasks`, `errorCardNotFound` and `errorInspectionShapeMemory`, and the cockpit importer's six private text buffers.
@@ -345,6 +351,9 @@ Changes per piece:
    - Every sound slice keeps the note log identical. The instrument table changes the sound, never the notes or their times.
 2. **The tone log, exact.** Combat's effects as (game ms, effect, frequency steps). The goldens are converted from today's port-event log, whose PIT divisors give the frequencies.
 3. **The traces, unchanged.** Sound doesn't touch game state, so check.py stays at 8/8 for 1990 and 6/8 for 1989 (combat_cockpit and combat_retreat are the known two), and exe_free stays 8/8.
+   - **Why those two fail on 1989.** The goldens were recorded with the 1990-01-22 BTECH.EXE, first on 2026-11-20 (5bc567b, and combat_retreat as its own in 1d5d0e1); there has never been a 1989 one. The two BTECH revisions wait for keys differently, by design: after a press, the 1990 one waits for the release too (7d4bb10, `btechLoadedRevision` in `BTECH_0810_INPUT.cpp`). The 1990 game starts combat one poll later for it, so the 1989 game's tick is one ahead of the goldens at all 20 combat snaps of both traces.
+   - **Measured 2026-11-24 at 8ccc109.** Besides the tick: in combat_cockpit unit 4's position, orientation and step; in both, unit 0's armor from orders_command and the screen at the two order snaps. In a throwaway build with the 1990 waits forced on the 1989 game, both traces match, so the waits are the whole cause.
+   - **For R.** 6 of 8 is the expected result on 1989, with these two names. Any other name, or a tick not exactly one ahead, is new. 1989 goldens of those two would make it 8 of 8.
 4. **Listening checks.**
    - A fixed list is rendered headless to files, never played aloud by automation: each song (MECH, MECHBAR, LAUNCH, DEATH, VICTORY) and the thirteen effects the game requests, on the soundfont and on speaker-style.
    - The project owner listens to them next to the original's MT-32, AdLib and speaker captures, using the listening sheet (section 5), and signs off the instrument table and levels.
@@ -402,7 +411,7 @@ These are build and test tools only; none is linked in, and only the installer b
 - **DOSBox-X (GPL-2.0):** the original's reference captures (`tools/capture`); never shipped.
 - **Python:** the tests and packaging scripts.
 - **Inno Setup:** builds Setup.exe. Its licence allows distributing the installers it makes.
-- **appimagetool and the AppImage runtime:** MIT; the licence is to be confirmed against the pinned tool in slice S9.
+- **The AppImage's tools** were removed in S9 with the AppImage: its runtime holds LGPL code. The Linux package is the .tar.gz.
 
 ## 5. The path to mw1r-v1.0.0
 
@@ -438,7 +447,7 @@ Every slice below is its own branch with the full gate green: both setups, the t
 | H4c | Interrupts: first, combat's CLI pumps become explicit delivery points at its two key reads, and its waits for a key idle by name (the one re-record, every move attributed); then the interrupt flag removed, vectors as typed owners, the PIC's end-of-interrupt and mask gone (a set of device IRQs), and the BIOS chain an explicit host event at its own cadence | the re-record: traces, game and note streams and start worlds identical, tone moves attributed; then every log identical to it | 2 |
 | H4d | Idle: under the real clock, a host wait sleeps until the next due tick instead of 100 µs steps; the test clock keeps its steps, so no log moves | every log identical; CPU of a held combat pause and of the title's wait, measured before and after (a combat pause: 27% of a core at H4b and H4c's first commit) | 1 |
 | S8 | The campaign's AdLib and MPU backends and combat's 21CA and 2176 removed. 1ADF reports the rebuild's sound (see "From S8") | event logs and traces exact but for the one named re-record; done | 2 |
-| S9 | Nuked-OPL3, Munt and MPU401/Adlib/MT32 removed from the build. ROM settings dropped; `sound_system` replaced by `music`. Notices, AUDIO.md and packaging (no nukedopl or mt32emu library) updated. The AppImage tooling's licence confirmed | packaging tests; no LGPL in the package | 2 |
+| S9 | Nuked-OPL3, Munt and MPU401/Adlib/MT32 removed from the build. ROM settings dropped; `sound_system` replaced by `music`. Notices, AUDIO.md and packaging (no nukedopl or mt32emu library) updated. The AppImage tooling's licence settled | packaging tests; the game's own libraries hold no LGPL; the AppImage, whose runtime does, isn't made (see "From S9") | 2 |
 | H5 | The port bus retired: `MwSdlWriteDevicePort`, `ReadDevicePort` and the port-word hooks removed with their last callers; the sound-port event log retired in favour of the note and tone logs. Its first part (ports 0 and 1) went ahead, after H4d; the rest follows S4, S8 and S9, since its last callers are the MT-32 and AdLib backends S8 removes | everything above exact | 2 |
 | R | The release gate: every gate on Windows, macOS and Linux from fresh builds. Packages from a local tag. The listening list and the visual acceptance list signed off on the packaged builds. The controller path is covered by the SDL virtual-device test (H3b); no physical controller is available | all of the above | 2 |
 

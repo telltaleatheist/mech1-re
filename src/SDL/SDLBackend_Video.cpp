@@ -82,8 +82,7 @@ bool MwSdlInitializeVideo(const char *directory)
 void MwSdlUpdateWindowTitle(void)
 {
     if (!window) return;
-    const char *soundDriver=mwSdlMusicSoundfont?"Soundfont":mwSdlSoundSystem==MW_SOUND_MT32?"Roland MT-32"
-        :mwSdlSoundSystem==MW_SOUND_ADLIB?"AdLib":"PC speaker";
+    const char *soundDriver=mwSdlMusic==MW_MUSIC_SOUNDFONT?"Soundfont":mwSdlMusic==MW_MUSIC_OFF?"No music":"PC speaker";
     char title[128];
     SDL_snprintf(title,sizeof(title),"MechWarrior — EGA / %s",soundDriver);
     if (!SDL_SetWindowTitle(window,title)) MwSdlFail("Update sound driver window title");

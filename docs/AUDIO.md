@@ -1,21 +1,24 @@
 # Sound configuration
 
 Use the existing `MechWarrior.ini`, alongside `combat_tick_ms`. Changing the
-sound system does not change the combat tick length or the PIT clock.
+music does not change the combat tick length or the timer.
 
 ```ini
 combat_tick_ms=60
-sound_system=speaker
+music=speaker
 ```
 
-`speaker` plays the campaign's songs and combat's effects as tones on one
-voice, as the original's PC speaker had them. `music=soundfont` plays the songs
-from a soundfont instead (below).
+- `speaker` (the default) plays the campaign's songs as tones on one voice, as
+  the original's PC speaker had them.
+- `soundfont` plays them from a soundfont (below).
+- `off` plays no music. The effects stay.
 
-The AdLib and MT-32 paths are gone (docs/phase5/NO_EMULATION_PLAN.md, S8). An
-existing INI with `sound_system=adlib` or `mt32` still works: it is read as
-`music=soundfont`, and the log says so in one line. The MT-32 ROM settings are
-no longer used.
+The player's own `MechWarrior.ini`, in the save directory, overrides the one
+beside the program when it names the music. An INI with the old `sound_system`
+still works: `speaker` is read as `music=speaker`, `adlib` and `mt32` as
+`music=soundfont`, and the log says so in one line. `music` wins over it in the
+same file. The MT-32 ROM settings are ignored, with a line in the log. The AdLib
+and MT-32 paths are gone (docs/phase5/NO_EMULATION_PLAN.md, S8 and S9).
 
 Combat's effects play on the speaker's tone voice whatever the music. The
 installed `BTECHSND.SND` holds only PC-speaker effects, and the port does not
@@ -29,9 +32,8 @@ music=soundfont
 
 The campaign's songs play from a General MIDI soundfont instead of a card. The
 game's own sequencer sends the notes the original sent, at the MT-32 version's
-times, to the rebuild's own synthesizer (`src/Audio/Music`, TinySoundFont). No
-ROMs are needed. `music=soundfont` overrides `sound_system`, and combat's
-effects stay on the speaker.
+times, to the rebuild's own synthesizer (`src/Audio/Music`, TinySoundFont). Combat's
+effects stay on the speaker's tone voice.
 
 The instruments come from `data/music/instruments.json`: for each song and
 MIDI channel, a General MIDI program, a level and a pan, plus the drum map. The
@@ -47,7 +49,7 @@ played aloud.
 
 ## Listening and playtesting
 
-Set `music=soundfont` or `sound_system=speaker` in your INI, keep
+Set `music=soundfont` or `music=speaker` in your INI, keep
 `combat_tick_ms=60` and speed 1x while comparing them, and select the INI with
 the existing launcher option:
 
@@ -102,26 +104,5 @@ Speaker output is a digital approximation, not an analogue hardware recording.
 
 ## Building and distributing
 
-Nuked-OPL3 and Munt are still built until S9 removes them; nothing in the game
-uses them since S8.
-
-CMake fetches a pinned Munt revision into the build directory. For an offline
-build, set `MECHWARRIOR_MT32_SOURCE_DIR` to an existing Munt source checkout.
-The small C17 adapter lives in `src/MT32`; Munt itself is C++ behind its C API.
-The build copies the shared library beside the executable; keep it there.
-
-Nuked-OPL3 is pinned at `765ec962e473aeb767e4cba74ffdc8f588ffbfe8` and
-built as a separate shared library. Set `MECHWARRIOR_NUKED_OPL_SOURCE_DIR` to an
-existing checkout for offline builds. The C17 hardware adapter is in `src/Adlib`.
-Keep `nukedopl.dll` beside the executable on Windows. The card's status timers
-are separate from synthesis.
-
-libmt32emu is LGPL-2.1-or-later, not covered by the project's MIT notice. See
-[Munt's source and licence](https://github.com/munt/munt/tree/6e7c01fba7e1d50c8fa705834889fd0eac136075/mt32emu).
-Distributions must include the applicable notices, licence and corresponding
-library source availability, and permit an interface-compatible replacement.
-Do not distribute Roland ROMs with builds or source packages.
-Nuked-OPL3 also declares LGPL-2.1-or-later:
-[source and licence](https://github.com/nukeykt/Nuked-OPL3/tree/765ec962e473aeb767e4cba74ffdc8f588ffbfe8).
-The build copies its licence beside the executable; the same notice, source
-availability and replaceability obligations apply to distributions.
+The synthesizer is our own code and TinySoundFont, built into the program; the
+soundfont and its licences are in [the third-party notices](THIRD_PARTY_NOTICES.md).

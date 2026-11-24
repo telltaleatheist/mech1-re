@@ -2,8 +2,6 @@
 #define MECHWARRIOR_HARDWARE_PORTS_H
 #include <stdint.h>
 /* One physical MPU and timer shared by campaign and combat, not game-specific IDs. */
-enum { MPU_DATA_PORT=0x330,MPU_STATUS_COMMAND_PORT=0x331 };
-enum { ADLIB_INDEX_PORT=0x388,ADLIB_DATA_PORT=0x389 };
 
 enum { PIT_COUNTER_MODULUS=0x10000,BIOS_TICKS_PER_DAY=0x1800B0 };
 

@@ -105,7 +105,6 @@ int main() {
     const fs::path work = fs::current_path() / "btech_revisions_work";
     StoryText texts[2];
     Words words[2];
-    std::string music[2];  // BTECH's one Bytes piece, music.adlib_instruments, imports to music.json
     Native native[2];      // BTECH's native spans (story/native.json)
     const fs::path exes[2] = {reference, build1990};
     for (int r = 0; r < 2; ++r) {
@@ -116,8 +115,6 @@ int main() {
             texts[r] = load_story_text(write);
             words[r] = load_words(write);
             native[r] = load_native(write);
-            std::ifstream in(story_dir(write) / "music.json", std::ios::binary);
-            music[r].assign(std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>());
         } catch (const ImportError& e) {
             // Only pieces that really differ may refuse a revision.
             const std::string message = e.what();
@@ -145,11 +142,6 @@ int main() {
                 const auto x = native[0].find(piece.id), y = native[1].find(piece.id);
                 check(x != native[0].end() && y != native[1].end() && x->second == y->second,
                       std::string(piece.id) + " imports differently");
-                ++same;
-                continue;
-            }
-            if (piece.kind == ImportPiece::Kind::Bytes) {
-                check(!music[0].empty() && music[0] == music[1], std::string(piece.id) + " imports differently");
                 ++same;
                 continue;
             }

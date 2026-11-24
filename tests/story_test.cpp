@@ -216,6 +216,36 @@ int main() {
           "{\"texts\": [{\"id\": \"a\", \"text\": \"x\"}, {\"id\": \"a\", \"text\": \"y\"}]}");
     check(thrown([&] { load_story_text(home); }).find("twice") != std::string::npos, "an id twice is refused");
 
+    // A folder from before the AdLib instruments left the table (S9): current,
+    // with no exe beside it, whatever its music.json is.
+    const fs::path old_home = root / "old", no_game = root / "no_game";
+    check(import_table_hash(import_table()) == kMusicRetired.table,
+          "the pieces changed since kMusicRetired (src/Import/ImportTable.h): remove the pair and this block (older "
+          "folders are then imported again, from the player's exes), or set the pair to the new table's hash only if an "
+          "older folder really has everything the new table reads");
+    for (const char* name : {"text.json", "words.json", "native.json", "pilots.json", "planets.json", "missions.json",
+                             "event_text.json", "events.json"})
+        write(story_dir(old_home) / name, "{}");
+    const auto old_manifest = [&](const std::string& hash) {
+        write(story_dir(old_home) / "import.json", "{" + version + ", \"table_sha256\": \"" + hash + "\"}");
+    };
+    const auto kept = [&] {
+        return story_state(old_home) == StoryState::Current &&
+               thrown([&] { check(!ensure_story(no_game, old_home), "an old folder is not imported again"); }).empty();
+    };
+    old_manifest(std::string(kMusicRetired.accepted));
+    check(kept(), "an old folder without music.json");
+    write(story_dir(old_home) / "music.json", "{\"adlib_instruments\": []}");
+    check(kept(), "an old folder with its music.json");
+    write(story_dir(old_home) / "music.json", "{broken");
+    check(kept(), "an old folder with a broken music.json");
+    check(read(story_dir(old_home) / "music.json") == "{broken", "the old music.json is left as it is");
+    check(story_state(old_home, table) == StoryState::Outdated, "the old hash counts for the game's own table only");
+    old_manifest(std::string(64, '0'));
+    check(story_state(old_home) == StoryState::Outdated, "another table's hash: outdated");
+    old_manifest(import_table_hash(import_table()));
+    check(kept(), "the table's own hash: current");
+
     fs::remove_all(root);
     if (g_failures) {
         std::printf("story_test: %d failed\n", g_failures);

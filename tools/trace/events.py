@@ -92,7 +92,7 @@ def run(port, game, work, script, device):
     os.makedirs(base, exist_ok=True)
     ini = os.path.join(base, "sound.ini")
     with open(ini, "w") as f:
-        setting = "music=soundfont" if device == "soundfont" else f"sound_system={device}"
+        setting = f"music={device}"
         f.write(f"combat_tick_ms=60\ncombat_speed=1\n{setting}\n")
     log = os.path.join(base, "events.log")
     start = os.path.join(base, "start.log")
