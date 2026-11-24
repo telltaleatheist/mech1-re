@@ -3,9 +3,9 @@
 #include <stdio.h>
 #include "mechwarrior/combat_sound.h"
 
-enum { COMBAT_DOS_HANDLES=0x14,COMBAT_STANDARD_HANDLES=5,COMBAT_RUNTIME_MESSAGES=8,
+enum { COMBAT_RUNTIME_MESSAGES=8,
     COMBAT_RUNTIME_CHECKSUM_BYTES=0x42,COMBAT_RUNTIME_CHECKSUM_XOR=0x55,
-    COMBAT_RUNTIME_ERROR_EXIT=0xFF,COMBAT_STDERR_HANDLE=2,COMBAT_RUNTIME_DEVICE_EXIT=2,
+    COMBAT_RUNTIME_ERROR_EXIT=0xFF,COMBAT_RUNTIME_DEVICE_EXIT=2,
     COMBAT_RUNTIME_MESSAGE_NEWLINE=0xFC,COMBAT_RUNTIME_MESSAGE_PREFIX=0xFF,
     COMBAT_RUNTIME_MESSAGE_NULL_ASSIGNMENT=1,COMBAT_EXIT_DELAY_UNITS=0x3C,COMBAT_SHUTDOWN_SOUND_EVENTS=0x0F };
 typedef uint16_t (*BtechRuntimeCallback)(void);
@@ -26,20 +26,17 @@ struct CombatRuntimeState
     BtechRuntimeCallback runtimeExitCallbacks[1], runtimeDiagnosticCallback;
     void (*runtimeDeviceCleanup)(uint16_t operation);
     MwDivideOwner runtimeSavedDivideOwner;
-    uint16_t runtimeHandleLimit;
-    uint8_t runtimeHandleFlags[COMBAT_DOS_HANDLES];
-    uint16_t runtimeTemporaryFileIds[COMBAT_STREAM_SLOTS];
-    uint8_t runtimeStreamAuxiliaryFlags[COMBAT_STREAM_SLOTS];
     BtechRuntimeMessage runtimeMessages[COMBAT_RUNTIME_MESSAGES];
 };
 extern CombatRuntimeState combatRuntime;
 /* Actual DOS IO/process boundaries. Termination must leave the child (the
  * launcher may implement that by a nonlocal return); it must not return here. */
-extern int16_t (*btechHostCloseHandle)(uint16_t handle);
-extern void (*btechHostWriteHandle)(uint16_t handle,const char *text,uint16_t bytes);
+extern void (*btechHostWriteStderr)(const char *text,uint16_t bytes);
 extern void (*btechHostTerminateChild)(uint8_t exitCode);
 bool BtechImportRuntimeInitialData(const uint8_t *data,size_t bytes);
 int16_t BtechRuntimeStreamClose(BtechRuntimeStream *stream);
+uint16_t BtechStreamIdentity(const BtechRuntimeStream *stream);
+void BtechCloseRuntimeStreamFiles(void);
 size_t BtechReadStreamElements(void *destination,size_t size,size_t count,FILE *file);
 int BtechReadStreamByte(FILE *file);
 int BtechCloseStreamFile(FILE *file);

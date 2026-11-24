@@ -7,7 +7,6 @@
 #include <string.h>
 
 BtechRuntimeStream runtimeStreams[COMBAT_STREAM_SLOTS];
-uint16_t lastStreamOffset,streamSetupCounter;
 BtechTaggedStream taggedStreams[COMBAT_TAGGED_STREAMS],taggedStreamBackup;
 BtechSoundBank soundBanks[COMBAT_AUDIO_BANK_ROOTS];
 uint16_t selectedAudioBackendMask,activeSoundBankIndex,soundAllocationError;
@@ -48,16 +47,13 @@ bool BtechImportSoundInitialData(const uint8_t *data,size_t bytes)
     }
     for (uint16_t stream=0;stream<COMBAT_TAGGED_STREAMS;++stream) taggedStreams[stream]=BtechTaggedStream{};
     taggedStreamBackup=BtechTaggedStream{};soundAllocationOverride=BtechResourceAllocation{};
-    lastStreamOffset=MwReadNativeWord(data,0x4CD8);
-    if (lastStreamOffset!=COMBAT_STREAM_TABLE+(COMBAT_STREAM_SLOTS-1)*COMBAT_STREAM_STRIDE) return false;
+    if (MwReadNativeWord(data,0x4CD8)!=COMBAT_STREAM_TABLE+(COMBAT_STREAM_SLOTS-1)*COMBAT_STREAM_STRIDE) return false;
     for (uint16_t slot=0;slot<COMBAT_STREAM_SLOTS;++slot)
     {
         runtimeStreams[slot].file=NULL;
         runtimeStreams[slot].buffer=NULL;
         runtimeStreams[slot].flags=data[COMBAT_STREAM_TABLE+slot*COMBAT_STREAM_STRIDE+6];
-        runtimeStreams[slot].dosHandle=data[COMBAT_STREAM_TABLE+slot*COMBAT_STREAM_STRIDE+7];
     }
-    streamSetupCounter=0; /*4DEA*/
     selectedAudioBackendMask=0; /*28D4*/
     savedMusicTimerDivisor=MwReadNativeWord(data,0x28D6);
     savedMusicTimerOwner=MwTimerOwner::Previous; /*28D8: 0000:0000*/

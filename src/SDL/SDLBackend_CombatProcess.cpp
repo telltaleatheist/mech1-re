@@ -118,26 +118,10 @@ static FILE *OpenStream(const char *filename,const char *mode)
     if (!MwHostJoinGamePath(path,sizeof(path),gameDirectory,filename,__func__)) return NULL;
     return fopen(path,mode);
 }
-static int16_t CloseHandle(uint16_t handle)
+static void WriteStderr(const char *text,uint16_t bytes)
 {
-    for (uint16_t slot=0;slot<COMBAT_STREAM_SLOTS;++slot)
-    {
-        BtechRuntimeStream *stream=&runtimeStreams[slot];
-        if (stream->dosHandle!=handle || !stream->file) continue;
-        int closed=fclose(stream->file);stream->file=NULL;
-        return closed?-1:0; /* Native raw close does not clear FILE flags. */
-    }
-    return -1;
-}
-static void WriteHandle(uint16_t handle,const char *text,uint16_t bytes)
-{
-    FILE *file=handle==COMBAT_STDERR_HANDLE?stderr:handle==1?stdout:NULL;
-    if (!file)
-        for (uint16_t slot=0;slot<COMBAT_STREAM_SLOTS;++slot)
-            if (runtimeStreams[slot].dosHandle==handle && runtimeStreams[slot].file)
-            {file=runtimeStreams[slot].file;break;}
-    if (!file || fwrite(text,1,bytes,file)!=bytes) MwSdlFail("BTECH DOS handle write failed");
-    fflush(file);
+    if (fwrite(text,1,bytes,stderr)!=bytes) MwSdlFail("BTECH stderr write failed");
+    fflush(stderr);
 }
 static void TerminateChild(uint8_t exitCode)
 {
@@ -158,7 +142,7 @@ bool MwSdlInitializeCombatProcess(const char *directory)
     btechHostFreeDosAllocation=FreeDosAllocation;btechHostReleaseChildDosAllocations=ReleaseChildDosAllocations;
     btechHostDosAllocationSelector=DosAllocationSelector;
     btechHostFreeDosSelector=FreeDosSelector;
-    btechHostCloseHandle=CloseHandle;btechHostWriteHandle=WriteHandle;btechHostTerminateChild=TerminateChild;
+    btechHostWriteStderr=WriteStderr;btechHostTerminateChild=TerminateChild;
     return true;
 }
 bool MwSdlExecuteCombatChild(const MwCampaignLaunch *launch,uint8_t audioCode,uint8_t *exitCode)

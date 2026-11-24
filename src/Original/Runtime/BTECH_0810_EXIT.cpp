@@ -35,8 +35,8 @@ void BtechWriteRuntimeMessageToStderr(uint16_t messageCode)
 {
     const char *text=BtechFindRuntimeMessageByCode(messageCode);
     if (!text) return;
-    if (!btechHostWriteHandle) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWriteHandle");
-    btechHostWriteHandle(COMBAT_STDERR_HANDLE,text,(uint16_t)strlen(text));
+    if (!btechHostWriteStderr) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWriteStderr");
+    btechHostWriteStderr(text,(uint16_t)strlen(text));
 }
 
 /*0810:F246. Callback can change the following message; do not snapshot it. */
@@ -80,7 +80,7 @@ void BtechRestoreRuntimeVectors(void)
 }
 
 /*0810:E144. Preserve all four callback ranges, checksum exit-code override,
- * raw-handle scan, CRT vectors, then low-BYTE DOS termination. */
+ * the open files' close, CRT vectors, then low-BYTE DOS termination. */
 void BtechRuntimeExitAndCloseHandles(uint16_t exitCode)
 {
     BtechRunNearCallbacksReverse(NULL,0); /*774C..774C*/
@@ -88,12 +88,7 @@ void BtechRuntimeExitAndCloseHandles(uint16_t exitCode)
     BtechRunNearCallbacksReverse(NULL,0); /*4DFC..4DFC*/
     BtechRunFarCallbacksReverse(NULL,0); /*4DFC..4DFC*/
     if (BtechCheckRuntimeDataChecksum() && !exitCode) exitCode=COMBAT_RUNTIME_ERROR_EXIT;
-    for (uint16_t handle=COMBAT_STANDARD_HANDLES;handle<COMBAT_DOS_HANDLES;++handle)
-    {
-        if (!(combatRuntime.runtimeHandleFlags[handle]&1)) continue;
-        if (!btechHostCloseHandle) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostCloseHandle");
-        btechHostCloseHandle(handle); /* Raw INT21 close: no runtime table write. */
-    }
+    BtechCloseRuntimeStreamFiles();
     BtechRestoreRuntimeVectors();
     if (!btechHostTerminateChild) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostTerminateChild");
     btechHostTerminateChild((uint8_t)exitCode);

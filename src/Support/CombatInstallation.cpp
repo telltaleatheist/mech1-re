@@ -2,6 +2,7 @@
 #include "mechwarrior/combat_installation.h"
 #include "mechwarrior/combat_startup.h"
 #include "mechwarrior/combat_import.h"
+#include "mechwarrior/combat_runtime.h"
 #include "mechwarrior/combat_sound.h"
 #include "mechwarrior/combat_heap.h"
 #include "mechwarrior/combat_video.h"
@@ -122,9 +123,7 @@ void BtechHostDiscardChildData(void)
             if (stream && !runtimeOwned) fclose(stream);
             BtechReleaseArchiveDescriptor(slot);
         }
-    for (uint16_t slot=0;slot<COMBAT_STREAM_SLOTS;++slot)
-        if (runtimeStreams[slot].file)
-        {fclose(runtimeStreams[slot].file);runtimeStreams[slot].file=NULL;}
+    BtechCloseRuntimeStreamFiles();
     for (uint16_t slot=0;slot<COMBAT_WORLD_OBJECTS;++slot)
         if (heapWorldObjectOwned[slot])
         {worldObjects[slot]=NULL;heapWorldObjectOwned[slot]=0;}

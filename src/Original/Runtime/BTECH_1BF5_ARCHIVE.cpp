@@ -100,7 +100,7 @@ int16_t BtechOpenCompressedArchive(uint16_t method,FILE *stream,const char *mode
     archive->stream=stream;
     for (uint16_t slot=0;slot<COMBAT_STREAM_SLOTS;++slot)
         if (runtimeStreams[slot].file==stream)
-        {archive->streamIdentity=COMBAT_STREAM_TABLE+slot*COMBAT_STREAM_STRIDE;break;}
+        {archive->streamIdentity=BtechStreamIdentity(&runtimeStreams[slot]);break;}
     archive->initialStreamPosition=(uint32_t)ftell(stream);
     archive->compressedPosition=5;
     if (!BtechArchiveModeContainsRead(mode)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !BtechArchiveModeContainsRead(mode)"); /* Unconverted writer. */

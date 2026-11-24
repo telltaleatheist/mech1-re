@@ -4,21 +4,27 @@
 #include "mechwarrior/combat_heap.h"
 #include <stdlib.h>
 
-/*0810:F948. Last slot is inclusive. Native resets buffer cursor/base/count;
- * those unobserved buffering fields are owned by host stdio in this IO slice. */
+/* Combat's open files (0810's FILE table; B5). A stream keeps its slot of the table, because the slot's address
+ * (BtechStreamIdentity) is game-visible: the sound bank's goes into the checksum that seeds the combat random mix
+ * (1ADF:02F8, 0810:2C40). The image's standard streams hold slots 0..4 and a file takes the lowest free one, which
+ * runtime_test pins. The DOS handles under them (0810's handle table and limit, the temp-file ids, the external
+ * buffers) are gone: host stdio does the IO, and the table's fifteen free slots were the handles' limit too. */
+uint16_t BtechStreamIdentity(const BtechRuntimeStream *stream)
+{
+    return (uint16_t)(COMBAT_STREAM_TABLE+(stream-runtimeStreams)*COMBAT_STREAM_STRIDE);
+}
+
+/*0810:F948. NULL when every slot is in use (the last is inclusive). */
 BtechRuntimeStream *BtechRuntimeStreamFindFreeSlot(void)
 {
     for (uint16_t slot=0;slot<COMBAT_STREAM_SLOTS;++slot)
     {
         BtechRuntimeStream *stream=&runtimeStreams[slot];
-        if (!(stream->flags&COMBAT_STREAM_ACTIVE_MASK))
-        {
-            stream->flags=0;stream->dosHandle=0xFF;stream->buffer=NULL;
-            return stream;
-        }
-        if (COMBAT_STREAM_TABLE+slot*COMBAT_STREAM_STRIDE==lastStreamOffset) return NULL;
+        if (stream->flags&COMBAT_STREAM_ACTIVE_MASK) continue;
+        stream->flags=0;stream->buffer=NULL;
+        return stream;
     }
-    /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Unsupported native table overrun, not a silently extended table."); /* Unsupported native table overrun, not a silently extended table. */
+    return NULL;
 }
 
 /*0810:E2C0. Binary-read resource branch. F7E2's other modes and runtime buffer
@@ -28,44 +34,25 @@ BtechRuntimeStream *BtechRuntimeStreamOpen(const char *filename,const char *mode
     BtechRuntimeStream *stream=BtechRuntimeStreamFindFreeSlot();
     if (!stream) return NULL;
     if ((mode[0]!='r' && mode[0]!='w') || mode[1]!='b' || mode[2]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (mode[0]!='r' && mode[0]!='w') || mode[1]!='b' || mode[2]");
-    uint16_t handle=0;
-    while (handle<combatRuntime.runtimeHandleLimit && (combatRuntime.runtimeHandleFlags[handle]&1)) ++handle;
-    if (handle>=combatRuntime.runtimeHandleLimit) return NULL;
     if (!btechHostOpenStream) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostOpenStream");
     stream->file=btechHostOpenStream(filename,mode);
     if (!stream->file) return NULL;
-    combatRuntime.runtimeHandleFlags[handle]=1;
-    stream->dosHandle=(uint8_t)handle;
     stream->flags=mode[0]=='r'?COMBAT_STREAM_READ:COMBAT_STREAM_WRITE;
-    ++streamSetupCounter;
     return stream;
 }
 
 /*0810:E206. Host stdio owns resource buffering; preserve active/protected
- * tests, flush-before-close status, and unconditional final flags clear.
- * Native temp-file delete and non-resource update modes remain explicit gates. */
+ * tests, flush-before-close status, and unconditional final flags clear. */
 int16_t BtechRuntimeStreamClose(BtechRuntimeStream *stream)
 {
     int16_t closeStatus=-1;
     if ((stream->flags&COMBAT_STREAM_ACTIVE_MASK) && !(stream->flags&COMBAT_STREAM_PROTECTED))
     {
-        size_t slot=(size_t)(stream-runtimeStreams);
-        if (slot>=COMBAT_STREAM_SLOTS || combatRuntime.runtimeTemporaryFileIds[slot]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: slot>=COMBAT_STREAM_SLOTS || runtimeTemporaryFileIds[slot]");
         closeStatus=BtechRuntimeStreamFlush(stream);
         BtechRuntimeStreamReleaseBuffer(stream);
-        int16_t closed;
-        if (stream->file) {closed=fclose(stream->file)?-1:0;stream->file=NULL;}
-        else
-        {
-            if (!btechHostCloseHandle) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostCloseHandle");
-            closed=btechHostCloseHandle((int8_t)stream->dosHandle);
-        }
-        if (closed<0) closeStatus=-1;
-        else
-        {
-            if (stream->dosHandle>=COMBAT_DOS_HANDLES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: stream->dosHandle>=COMBAT_DOS_HANDLES");
-            combatRuntime.runtimeHandleFlags[stream->dosHandle]=0;
-        }
+        if (!stream->file) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("A standard stream closed by the game.");
+        if (fclose(stream->file)) closeStatus=-1;
+        stream->file=NULL;
     }
     stream->flags=0;
     return closeStatus;
@@ -114,14 +101,10 @@ int BtechCloseStreamFile(FILE *file)
 
 /*0810:F8DA. Host stdio collapses the read-buffer cursor/count reset. Binary
  * resource reads and unbuffered authored standard FILEs need no output flush.
- * Buffered writer/update and auxiliary external-buffer modes remain gated. */
+ * A buffered writer's remains gated: none is opened. */
 int16_t BtechRuntimeStreamFlush(BtechRuntimeStream *stream)
 {
-    size_t slot=(size_t)(stream-runtimeStreams);
-    if (slot>=COMBAT_STREAM_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: slot>=COMBAT_STREAM_SLOTS");
-    if ((stream->flags&(COMBAT_STREAM_READ|COMBAT_STREAM_WRITE))==COMBAT_STREAM_WRITE &&
-        ((stream->flags&COMBAT_STREAM_OWNS_BUFFER) ||
-        (combatRuntime.runtimeStreamAuxiliaryFlags[slot]&COMBAT_STREAM_AUX_EXTERNAL_BUFFER))) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (stream->flags&(COMBAT_STREAM_READ|COMBAT_STREAM_WRITE))==COMBAT_STREAM_WRITE && ((stream->flags&COMBAT_STREAM_OWNS_BUFFER) || (runtimeStreamAuxiliaryFlags[slot]&COMBAT_STREAM_AUX_EXTERNAL_BUFFER))");
+    if ((stream->flags&(COMBAT_STREAM_READ|COMBAT_STREAM_WRITE))==COMBAT_STREAM_WRITE && (stream->flags&COMBAT_STREAM_OWNS_BUFFER)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("A buffered writer's flush.");
     return 0;
 }
 
@@ -130,11 +113,15 @@ int16_t BtechRuntimeStreamFlush(BtechRuntimeStream *stream)
 uint16_t BtechFlushAllRuntimeStreams(void)
 {
     uint16_t flushed=0;
-    for (uint16_t slot=0;COMBAT_STREAM_TABLE+slot*COMBAT_STREAM_STRIDE<=lastStreamOffset;++slot)
-    {
-        if (slot>=COMBAT_STREAM_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: slot>=COMBAT_STREAM_SLOTS"); /* Unrepresented native table overrun. */
-        if ((runtimeStreams[slot].flags&COMBAT_STREAM_ACTIVE_MASK) &&
-            BtechRuntimeStreamFlush(&runtimeStreams[slot])!=-1) ++flushed;
-    }
+    for (BtechRuntimeStream &stream:runtimeStreams)
+        if ((stream.flags&COMBAT_STREAM_ACTIVE_MASK) && BtechRuntimeStreamFlush(&stream)!=-1) ++flushed;
     return flushed;
+}
+
+/* Every stream's host file closed (0810:E144's raw handle close, and the child's disposal). The flags stay, as the
+ * raw close left them. */
+void BtechCloseRuntimeStreamFiles(void)
+{
+    for (BtechRuntimeStream &stream:runtimeStreams)
+        if (stream.file) {fclose(stream.file);stream.file=NULL;}
 }

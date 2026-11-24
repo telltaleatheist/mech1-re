@@ -1,14 +1,19 @@
 // The C runtime's rules kept by B5 (docs/phase5/NO_EMULATION_PLAN.md): the combat near heap's exhaustion, decided by
 // 0810's allocator over its native sizes (not a byte budget: fragmentation can decide a failure), and the 1989 signed
 // long divide (its rounding is game maths; it equals C's truncating division, and the minimum dword over -1 wraps).
+// Combat's open files: which slot of the table each takes (its address goes into the checksum that seeds the combat
+// random mix), and the 512-byte buffer charged to the near heap at the first read, never at the open.
 // Plain checks, no framework: exit 0 when all hold.
+#include "mechwarrior/btech_start_image.h"
 #include "mechwarrior/combat_heap.h"
+#include "mechwarrior/combat_platform.h"
 #include "mechwarrior/combat_render.h"
+#include "mechwarrior/combat_runtime.h"
 
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <random>
-#include <vector>
 
 namespace {
 
@@ -116,6 +121,67 @@ void LongDivide() {
   Check(differ == 0, "the long divide truncates as C does");
 }
 
+const char *const kStreamFile = "runtime_test_stream.bin";
+FILE *OpenTestFile(const char *, const char *mode) { return std::fopen(kStreamFile, mode); }
+
+// The table as the start image has it: its "runtime.streams" row begins at slot 0's flags (304E:4BC6).
+bool StartImageStreams() {
+  for (size_t i = 0; i < btechStartRowCount; ++i) {
+    const BtechStartRow &row = btechStartRows[i];
+    if (std::strcmp(row.id, "runtime.streams") != 0) continue;
+    for (uint16_t slot = 0; slot < COMBAT_STREAM_SLOTS; ++slot)
+      runtimeStreams[slot] = BtechRuntimeStream{nullptr, row.bytes[slot * COMBAT_STREAM_STRIDE], nullptr};
+    return true;
+  }
+  return false;
+}
+
+void Streams() {
+  btechHostOpenStream = OpenTestFile;
+  if (FILE *f = std::fopen(kStreamFile, "wb")) std::fputs("combat stream", f), std::fclose(f);
+  Check(StartImageStreams(), "the start image's streams row");
+  BtechHostDiscardNearHeap();
+
+  // Slot order: the image's five standard streams stay, a file takes the lowest free slot, a closed one's is reused.
+  BtechRuntimeStream *first = BtechRuntimeStreamOpen("A", "rb"), *second = BtechRuntimeStreamOpen("B", "rb");
+  Check(first && BtechStreamIdentity(first) == 0x4BE8, "the first file opened is at 4BE8 (slot 5)");
+  Check(second && BtechStreamIdentity(second) == 0x4BF0, "the second at 4BF0");
+  if (!first || !second) return;
+  Check(BtechRuntimeStreamClose(first) == 0, "a file closes");
+  BtechRuntimeStream *again = BtechRuntimeStreamOpen("C", "rb");
+  Check(again && BtechStreamIdentity(again) == 0x4BE8, "the next open takes the closed file's slot");
+
+  // The table's fifteen free slots, then a refusal; a file that can't be opened takes none.
+  for (int i = 2; i < 15; ++i) Check(BtechRuntimeStreamOpen("D", "rb") != nullptr, "fifteen files open");
+  Check(BtechRuntimeStreamOpen("E", "rb") == nullptr, "a sixteenth is refused");
+  Check(BtechStreamIdentity(&runtimeStreams[COMBAT_STREAM_SLOTS - 1]) == 0x4C58, "the last slot is at 4C58");
+  BtechCloseRuntimeStreamFiles();
+  Check(StartImageStreams(), "the table again");
+
+  // The buffer: not at the open, at the first read; released at the close. The largest block a fresh heap grants
+  // tells them apart.
+  const uint16_t kMost = 7774;
+  BtechHostDiscardNearHeap();
+  BtechRuntimeStream *stream = BtechRuntimeStreamOpen("F", "rb");
+  if (!stream) { Check(false, "a file opens"); return; }
+  Check(!stream->buffer && Near(kMost) != nullptr, "an open charges nothing");
+  BtechHostDiscardNearHeap();
+  Check(BtechReadStreamByte(stream->file) == 'c' && stream->buffer, "the first read takes the buffer");
+  Check(Near(kMost) == nullptr, "which is charged to the near heap");
+  uint8_t *buffer = stream->buffer;
+  Check(BtechReadStreamByte(stream->file) == 'o' && stream->buffer == buffer, "the next read keeps it");
+  Check(BtechRuntimeStreamClose(stream) == 0 && !stream->buffer && Near(500) != nullptr, "the close releases it");
+
+  // A full heap: the read still works, unbuffered.
+  BtechHostDiscardNearHeap();
+  Check(Near(kMost) != nullptr, "the heap filled");
+  stream = BtechRuntimeStreamOpen("G", "rb");
+  Check(stream && BtechReadStreamByte(stream->file) == 'c' && !stream->buffer && (stream->flags & COMBAT_STREAM_UNBUFFERED),
+        "a read on a full heap is unbuffered");
+  BtechCloseRuntimeStreamFiles();
+  std::remove(kStreamFile);
+}
+
 }  // namespace
 
 int main() {
@@ -123,6 +189,7 @@ int main() {
   Fragmentation();
   ReleasedStaysReadable();
   LongDivide();
+  Streams();
   BtechHostDiscardNearHeap();
   if (failures) std::printf("%d failed\n", failures);
   else std::printf("runtime: all hold\n");
