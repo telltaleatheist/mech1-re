@@ -3,7 +3,7 @@
 #include "mechwarrior/campaign_input.h"
 #include "mechwarrior/combat_sound.h"
 #include "mechwarrior/combat_startup.h"
-#include "mechwarrior/combat_mpu.h"
+#include "mechwarrior/combat_sound.h"
 #include <float.h>
 #include <math.h>
 #include <stdio.h>
@@ -85,7 +85,6 @@ static uint32_t timerPeriod,biosTicks;
 /* The device IRQs passed to their owners (H4c), where the PIC mask was. */
 static uint8_t enabledDeviceIrqs;
 void MwSdlEnableDeviceIrqs(MwDeviceIrq irqs) {enabledDeviceIrqs|=(uint8_t)irqs;}
-void MwSdlDisableDeviceIrqs(MwDeviceIrq irqs) {enabledDeviceIrqs&=(uint8_t)~(uint8_t)irqs;}
 static bool DeviceIrqEnabled(MwDeviceIrq irq) {return enabledDeviceIrqs&(uint8_t)irq;}
 
 static void BiosTimerInterrupt(void)
@@ -128,8 +127,7 @@ void MwSdlWaitIdle(void)
     idleOwed=false;
 }
 /* The host's idle, when nothing is due (H4d). Under the real clock it sleeps
- * until the next due event: IRQ0's next tick, or in an MT-32 combat the MPU's
- * next event, as the pump would deliver them. A running wait's deadline comes
+ * until the next due event: IRQ0's next tick, as the pump would deliver it. A running wait's deadline comes
  * first, and it sleeps at most HOST_IDLE_MAX_NS, so the window, the input and
  * the audio queue (2048 frames ahead at least, 43 ms) are still served. Under
  * the test clock it stays the 100 us step, so no log moves. */
@@ -139,7 +137,6 @@ static void HostIdle(void)
     uint64_t now=SDL_GetTicksNS(),wake=now+HOST_IDLE_MAX_NS;
     if (idleDeadline && idleDeadline<wake) wake=idleDeadline;
     double due=DeviceIrqEnabled(MwDeviceIrq::Timer)?nextIrq:DBL_MAX;
-    if (mwSdlCombatActive && mwSdlSoundSystem==MW_SOUND_MT32) due=fmin(due,MwMpuNextEventTime());
     double dueNanoseconds=(double)startNanoseconds+due*(double)HOST_NS_PER_SECOND/(double)HOST_PIT_CLOCK_HZ;
     if (dueNanoseconds<(double)wake) wake=(uint64_t)ceil(dueNanoseconds);
     if (wake>now) SDL_DelayNS(wake-now);
@@ -247,11 +244,11 @@ void MwSdlInitializeTimer(void)
     campaignInterruptsInstalled=inInterrupt=nestingAllowed=false;
     MwMpuReset();
     mwMusicHardware=MwMusicHardwareCalls{MwSdlAllowNestedTicks,MwSdlReadTimerHandler,MwSdlWriteTimerHandler,MwSdlWriteDevicePort,MwSdlReadDevicePort,
-        MwSdlPumpTimer,btechHostGetMpuIrqOwner,btechHostSetMpuIrqOwner,MwSdlEnableDeviceIrqs,MwSdlPlayTone,MwSdlSetTimerPeriod};
+        MwSdlPumpTimer,MwSdlPlayTone,MwSdlSetTimerPeriod};
     /* Same physical PIT/speaker, different original sequencer. No backend
      * selection or invented combat callback is installed at this boundary. */
     btechHostWritePort=MwSdlWriteDevicePort;btechHostReadPort=MwSdlReadDevicePort;
-    btechHostEnableDeviceIrqs=MwSdlEnableDeviceIrqs;btechHostDisableDeviceIrqs=MwSdlDisableDeviceIrqs;
+    btechHostEnableDeviceIrqs=MwSdlEnableDeviceIrqs;
 }
 void MwSdlPumpTimer(void)
 {
@@ -263,23 +260,12 @@ void MwSdlPumpTimer(void)
     if (inInterrupt && !nestingAllowed) MwSdlFail("Pump inside a timer handler that didn't allow nested ticks");
 #endif
     if (inInterrupt && !nestingAllowed) return;
-    if (!inInterrupt && mwSdlCombatActive && mwSdlSoundSystem==MW_SOUND_MT32
-        && DeviceIrqEnabled(MwDeviceIrq::Mpu) && !(MwMpuReadPort(MPU_STATUS_COMMAND_PORT)&BTECH_MPU_INPUT_EMPTY))
-        RunHandler(MwSdlDeliverCombatMpuInterrupt);
     if (!inInterrupt && DeviceIrqEnabled(MwDeviceIrq::Keyboard) && MwSdlCombatKeyboardPending())
         RunHandler(MwSdlDeliverCombatKeyEvent);
     double target=(double)(MwSdlNowNanoseconds()-startNanoseconds)*(double)HOST_PIT_CLOCK_HZ/(double)HOST_NS_PER_SECOND;
     for (;;)
     {
-        double mpuEvent=mwSdlCombatActive && mwSdlSoundSystem==MW_SOUND_MT32?MwMpuNextEventTime():DBL_MAX;
         double timerEvent=DeviceIrqEnabled(MwDeviceIrq::Timer)?nextIrq:DBL_MAX;
-        if (mpuEvent<=target && mpuEvent<timerEvent)
-        {
-            hardwareTime=mpuEvent;MwSdlAdvanceAudio(hardwareTime);MwMpuAdvance(hardwareTime);
-            if (DeviceIrqEnabled(MwDeviceIrq::Mpu) && !(MwMpuReadPort(MPU_STATUS_COMMAND_PORT)&BTECH_MPU_INPUT_EMPTY))
-                RunHandler(MwSdlDeliverCombatMpuInterrupt);
-            continue;
-        }
         if (timerEvent>target) break;
         /* BTECH's installed scheduler must service every elapsed PIT edge,
          * independently of presentation/poll frequency. Keep each original

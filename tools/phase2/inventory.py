@@ -259,7 +259,7 @@ OVR={'inspectionBitmapNames':'code','cockpitScreenNames':'code','hitLocationRows
  'combatTemplateByCampaignUnitKind':'ours:rules','campaignUnitKindByCombatTemplate':'ours:rules','travelDestinationName':'code',
  'hubFirstNavigationProbe':'code','hubSecondNavigationProbe':'code','hubThirdNavigationProbe':'code','saveFindPattern':'code',
  'newsArticleCursor':'code','newsArticleListStart':'code','missionDescriptionMaximumIndicesByCategory':'extracted',
- 'combatAdlibDefaultInstruments':'extracted','musicSequences':'code','generateStartingJenner':'ours:rules',
+ 'musicSequences':'code','generateStartingJenner':'ours:rules',
  'positionedText':'code','newsAtStart':'code','newsAtEnd':'code'}
 rows=scan(sys.argv[1])
 # Slice 3's reclassifications (docs/phase2/PLAN.md 5.1, 5.6): past BTECH's file

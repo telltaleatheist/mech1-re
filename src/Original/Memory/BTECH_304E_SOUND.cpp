@@ -1,8 +1,6 @@
 #include "mechwarrior/combat_sound.h"
 #include "mechwarrior/native_address.h"
 #include "mechwarrior/combat_runtime.h"
-#include "mechwarrior/combat_adlib.h"
-#include "mechwarrior/combat_mpu.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -17,7 +15,6 @@ uint8_t soundTimerInstalled;
 uint8_t musicTimerInstalled;
 uint16_t savedMusicTimerDivisor;
 MwTimerOwner savedMusicTimerOwner;
-uint8_t adlibProbeInitialStatus;
 uint8_t soundEffectsEnableMask;
 void (*audioTickCallback)(void);
 BtechMusicMessage audioMusicCallback;
@@ -31,16 +28,12 @@ MwNativeByteView midiStreamData;
 bool midiStreamSelectorPresent;
 uint16_t activeMusicBankIndex;
 int16_t musicSequences[COMBAT_MUSIC_SEQUENCE_ROWS][COMBAT_MUSIC_SEQUENCE_WORDS];
-uint16_t mpuProbeDataPort,mpuProbeStatusPort,mpuProbeCommandPort;
-uint16_t mpuProbeReceivedByteCount;
-MwMpuIrqOwner mpuProbePreviousOwner;
 uint16_t *samplePriorityOwner;
 
 /* Child-image IO only. Do not call this to reset an already-running child. */
 bool BtechImportSoundInitialData(const uint8_t *data,size_t bytes)
 {
-    if (!data || bytes<0x10000 || !BtechImportRuntimeInitialData(data,bytes)
-        || !BtechImportAdlibInitialData(data,bytes) || !BtechImportMpuInitialData(data,bytes)) return false;
+    if (!data || bytes<0x10000 || !BtechImportRuntimeInitialData(data,bytes)) return false;
     for (uint16_t bank=0;bank<COMBAT_AUDIO_BANK_ROOTS;++bank)
     {
         free(soundBanks[bank].events);
@@ -83,11 +76,6 @@ bool BtechImportSoundInitialData(const uint8_t *data,size_t bytes)
     activeMusicBankIndex=MwReadNativeWord(data,0x2B4E);
     /* 7D8A lies past the file data; MUS:INF fills it at run time. */
     memset(musicSequences,0,sizeof(musicSequences));
-    mpuProbeDataPort=MwReadNativeWord(data,0x2CA8);
-    mpuProbeStatusPort=MwReadNativeWord(data,0x2CAA);mpuProbeCommandPort=MwReadNativeWord(data,0x2CAC);
-    mpuProbePreviousOwner=MwMpuIrqOwner::System; /*2CAE: 0000:0000*/
-    mpuProbeReceivedByteCount=0; /*2CB2*/
-    adlibProbeInitialStatus=data[0x2CB4];
     activeSoundBankIndex=MwReadNativeWord(data,0x2B4C);
     soundAllocationError=0; /*2B56*/
     return true;

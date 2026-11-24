@@ -134,10 +134,6 @@ add_library(mechwarrior_original STATIC
     src/Original/Audio/BTECH_1ADF.cpp
     src/Original/Audio/BTECH_1ADF_INSTALL.cpp
     src/Original/Audio/BTECH_229C.cpp
-    src/Original/Audio/BTECH_21CA.cpp
-    src/Original/Audio/BTECH_2176.cpp
-    src/Original/Memory/BTECH_304E_ADLIB.cpp
-    src/Original/Memory/BTECH_304E_MPU.cpp
     src/Original/Audio/BTECH_0810_SOUND.cpp
     src/Original/Audio/BTECH_2134.cpp
     src/Original/Runtime/BTECH_0810_STREAMS.cpp

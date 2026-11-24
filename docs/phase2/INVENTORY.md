@@ -4,13 +4,13 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 
 | Group | Items |
 |---|---|
-| Extracted: the original's creative content (the story file, first run) | 84 |
+| Extracted: the original's creative content (the story file, first run) | 83 |
 | Ours: UI words and system messages (story/words.json, imported) | 142 |
 | Ours: screen layout, panels and menus (data/ui/*.json) | 127 |
 | Ours: rules and constants (data/rules/*.json) | 102 |
 | Ours: the new campaign's starting state (data/rules/new_campaign.json) | 103 |
 | Dropped | 6 |
-| Code: runtime state and renderer tables (no file) | 944 |
+| Code: runtime state and renderer tables (no file) | 904 |
 
 ## Extracted: the original's creative content (the story file, first run)
 
@@ -18,7 +18,6 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 |---|---|---|---|
 | BTECH_304E.cpp | `combatDefaultCommanderNameBytes` | BTECH 304E:0978 | story combat.commander.default_name |
 | BTECH_304E.cpp | `startupControlMovementAlias` | BTECH 304E:0051 | story, runtime.prefix (native span) |
-| BTECH_304E_ADLIB.cpp | `combatAdlibDefaultInstruments` | - | story, MwStoryCopyAdlibInstruments |
 | BTECH_304E_COCKPIT.cpp | `mechTemplateNames` | BTECH 304E:2045 | story combat.mech_template.1.name |
 | BTECH_304E_COCKPIT.cpp | `missionTitleText` | BTECH 304E:09F0 | story combat.mission.1.title |
 | BTECH_304E_COCKPIT.cpp | `pilotDefinitionNameDirectory` | BTECH 304E:20AD | story combat.pilot.1.name |
@@ -608,7 +607,7 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 
 ## Code: runtime state and renderer tables (no file)
 
-Not listed one by one: BTECH_1ADF_STATE.cpp 2, BTECH_1BF5_STATE.cpp 4, BTECH_22B6_DATA.cpp 15, BTECH_2FEB.cpp 24, BTECH_304E.cpp 31, BTECH_304E_ADLIB.cpp 25, BTECH_304E_COCKPIT.cpp 36, BTECH_304E_MPU.cpp 9, BTECH_304E_ORDERS.cpp 24, BTECH_304E_POLYGONS.cpp 24, BTECH_304E_POSE.cpp 12, BTECH_304E_RENDER.cpp 62, BTECH_304E_RUNTIME.cpp 14, BTECH_304E_SCENE.cpp 8, BTECH_304E_SOUND.cpp 43, BTECH_304E_STARTUP.cpp 55, BTECH_304E_VIDEO.cpp 86, BTECH_304E_WORLD.cpp 107, BtechStartImage.cpp 4, MW_0806_STATE.cpp 1, MW_EGA_0800_STATE.cpp 72, MW_MAIN_0F41_STATE.cpp 5, MW_MAIN_1090.cpp 250, MW_MAIN_1090_OPTIONS.cpp 11, MW_MAIN_1AA5.cpp 1, MW_MAIN_28BE.cpp 14, NativeStart.cpp 5.
+Not listed one by one: BTECH_1ADF_STATE.cpp 2, BTECH_1BF5_STATE.cpp 4, BTECH_22B6_DATA.cpp 15, BTECH_2FEB.cpp 24, BTECH_304E.cpp 31, BTECH_304E_COCKPIT.cpp 36, BTECH_304E_ORDERS.cpp 24, BTECH_304E_POLYGONS.cpp 24, BTECH_304E_POSE.cpp 12, BTECH_304E_RENDER.cpp 62, BTECH_304E_RUNTIME.cpp 14, BTECH_304E_SCENE.cpp 8, BTECH_304E_SOUND.cpp 37, BTECH_304E_STARTUP.cpp 55, BTECH_304E_VIDEO.cpp 86, BTECH_304E_WORLD.cpp 107, BtechStartImage.cpp 4, MW_0806_STATE.cpp 1, MW_EGA_0800_STATE.cpp 72, MW_MAIN_0F41_STATE.cpp 5, MW_MAIN_1090.cpp 250, MW_MAIN_1090_OPTIONS.cpp 11, MW_MAIN_1AA5.cpp 1, MW_MAIN_28BE.cpp 14, NativeStart.cpp 5.
 
 Still read from the exe (slice 6 moves them): none.
 
