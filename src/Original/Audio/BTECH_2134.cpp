@@ -8,7 +8,7 @@
 void BtechSetToneMusicPriorityAndTranslation(uint16_t priority)
 {
     combatTones.musicPriority=priority;
-    if (selectedAudioBackendMask&COMBAT_SOUND_TANDY)
+    if (combatSound.selectedAudioBackendMask&COMBAT_SOUND_TANDY)
     {combatTones.musicPitchTableOffset=TONE_TANDY_PITCH_TABLE;combatTones.musicChannelBias=4;combatTones.musicNoteBase=0x1E;}
     else
     {combatTones.musicChannelBias=0;combatTones.musicPitchTableOffset=TONE_SPEAKER_PITCH_TABLE;combatTones.musicNoteBase=0x0E;}
@@ -171,9 +171,9 @@ void BtechAdvanceToneChannel(BtechToneChannelState *state,MwNativeByteView event
  * where the original wrote PIT channel 2's divisor and port 61h's gate). */
 void BtechTickSpeakerToneChannels(void)
 {
-    if (!audioTickCallback) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !audioTickCallback");
-    audioTickCallback();
-    combatTones.soundOutputEnableMask=soundEffectsEnableMask;
+    if (!combatSound.audioTickCallback) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !audioTickCallback");
+    combatSound.audioTickCallback();
+    combatTones.soundOutputEnableMask=combatSound.soundEffectsEnableMask;
     combatTones.selectedSpeakerState=NULL;combatTones.selectedSpeakerPriority=0;
     for (int16_t channel=COMBAT_SPEAKER_CHANNELS-1;channel>=0;--channel)
     {

@@ -129,7 +129,7 @@ void BtechApplyArmorAndInternalDamage(uint16_t unitSlot,int16_t damageArmorLocat
 {
     /* Native 4EEB reads the low byte of this existing music row. Keep the
      * shared owner; this is not an independent invulnerability flag. */
-    if (combatStartup.sideCompletionFlags[1] || ((uint16_t)musicSequences[0][0]&0xFF)) return;
+    if (combatStartup.sideCompletionFlags[1] || ((uint16_t)combatSound.musicSequences[0][0]&0xFF)) return;
     if (!unitSlot)
     {
         BtechPlaySoundIfEnabled(COMBAT_DAMAGE_SOUND,COMBAT_DAMAGE_SOUND_PRIORITY);

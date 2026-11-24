@@ -11,7 +11,7 @@
  * buffers) are gone: host stdio does the IO, and the table's fifteen free slots were the handles' limit too. */
 uint16_t BtechStreamIdentity(const BtechRuntimeStream *stream)
 {
-    return (uint16_t)(COMBAT_STREAM_TABLE+(stream-runtimeStreams)*COMBAT_STREAM_STRIDE);
+    return (uint16_t)(COMBAT_STREAM_TABLE+(stream-combatSound.runtimeStreams)*COMBAT_STREAM_STRIDE);
 }
 
 /*0810:F948. NULL when every slot is in use (the last is inclusive). */
@@ -19,7 +19,7 @@ BtechRuntimeStream *BtechRuntimeStreamFindFreeSlot(void)
 {
     for (uint16_t slot=0;slot<COMBAT_STREAM_SLOTS;++slot)
     {
-        BtechRuntimeStream *stream=&runtimeStreams[slot];
+        BtechRuntimeStream *stream=&combatSound.runtimeStreams[slot];
         if (stream->flags&COMBAT_STREAM_ACTIVE_MASK) continue;
         stream->flags=0;stream->buffer=NULL;
         return stream;
@@ -80,10 +80,10 @@ size_t BtechReadStreamElements(void *destination,size_t size,size_t count,FILE *
 {
     if (size && count)
         for (uint16_t slot=0;slot<COMBAT_STREAM_SLOTS;++slot)
-            if (runtimeStreams[slot].file==file)
+            if (combatSound.runtimeStreams[slot].file==file)
             {
-                if (!(runtimeStreams[slot].flags&(COMBAT_STREAM_OWNS_BUFFER|COMBAT_STREAM_UNBUFFERED)))
-                    BtechRuntimeStreamAllocateBuffer(&runtimeStreams[slot]);
+                if (!(combatSound.runtimeStreams[slot].flags&(COMBAT_STREAM_OWNS_BUFFER|COMBAT_STREAM_UNBUFFERED)))
+                    BtechRuntimeStreamAllocateBuffer(&combatSound.runtimeStreams[slot]);
                 break;
             }
     return fread(destination,size,count,file);
@@ -95,7 +95,7 @@ int BtechReadStreamByte(FILE *file)
 int BtechCloseStreamFile(FILE *file)
 {
     for (uint16_t slot=0;slot<COMBAT_STREAM_SLOTS;++slot)
-        if (runtimeStreams[slot].file==file) return BtechRuntimeStreamClose(&runtimeStreams[slot]);
+        if (combatSound.runtimeStreams[slot].file==file) return BtechRuntimeStreamClose(&combatSound.runtimeStreams[slot]);
     return fclose(file); /* External FILE supplied by an isolated runtime caller. */
 }
 
@@ -113,7 +113,7 @@ int16_t BtechRuntimeStreamFlush(BtechRuntimeStream *stream)
 uint16_t BtechFlushAllRuntimeStreams(void)
 {
     uint16_t flushed=0;
-    for (BtechRuntimeStream &stream:runtimeStreams)
+    for (BtechRuntimeStream &stream:combatSound.runtimeStreams)
         if ((stream.flags&COMBAT_STREAM_ACTIVE_MASK) && BtechRuntimeStreamFlush(&stream)!=-1) ++flushed;
     return flushed;
 }
@@ -122,6 +122,6 @@ uint16_t BtechFlushAllRuntimeStreams(void)
  * raw close left them. */
 void BtechCloseRuntimeStreamFiles(void)
 {
-    for (BtechRuntimeStream &stream:runtimeStreams)
+    for (BtechRuntimeStream &stream:combatSound.runtimeStreams)
         if (stream.file) {fclose(stream.file);stream.file=NULL;}
 }

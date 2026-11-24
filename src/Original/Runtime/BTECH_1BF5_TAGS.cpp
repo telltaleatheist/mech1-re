@@ -9,7 +9,7 @@
 BtechTaggedStream *BtechFindTaggedStreamRecord(BtechRuntimeStream *stream)
 {
     for (int16_t slot=COMBAT_TAGGED_STREAMS-1;slot>=0;--slot)
-        if (taggedStreams[slot].stream==stream) return &taggedStreams[slot];
+        if (combatSound.taggedStreams[slot].stream==stream) return &combatSound.taggedStreams[slot];
     return NULL;
 }
 
@@ -55,7 +55,7 @@ BtechRuntimeStream *BtechOpenTaggedResourceStream(const char *filename)
 /*1BF5:2878. Snapshot is descriptor state, not actual current FILE position. */
 uint32_t BtechRestoreTaggedStreamSnapshotAndSeek(BtechTaggedStream *taggedStream)
 {
-    *taggedStream=taggedStreamBackup;
+    *taggedStream=combatSound.taggedStreamBackup;
     fseek(taggedStream->stream->file,(int32_t)taggedStream->payloadPosition,SEEK_SET);
     return UINT32_MAX;
 }
@@ -70,7 +70,7 @@ uint32_t BtechFindResourceTagPosition(BtechRuntimeStream *stream,const char *tag
     uint16_t tagLength=(uint16_t)strlen(tag),resultOrdinal;
     if (!tagLength || (tagLength&3)) return UINT32_MAX;
     if (tagLength>=COMBAT_TAG_PATH_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: tagLength>=COMBAT_TAG_PATH_BYTES"); /* Native path spill is not host memory. */
-    taggedStreamBackup=*taggedStream;
+    combatSound.taggedStreamBackup=*taggedStream;
     if (!BtechEqualNearStringsBounded(tag,taggedStream->tagPath,0x19))
     {
         if ((int16_t)occurrence>0)

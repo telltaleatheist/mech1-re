@@ -11,7 +11,7 @@ bool BtechImportToneInitialData(const uint8_t *data,size_t bytes,const uint8_t *
     /* Shipped priority owner is2FEB, NOT304E. Other selectors require recovery
      * of their actual owning field, not a new segment address registry. */
     if (MwReadNativeWord(data,0x4DFC)!=0x2FEB) return false;
-    samplePriorityOwner=&combatTones.sampleSoundPriority;
+    combatSound.samplePriorityOwner=&combatTones.sampleSoundPriority;
     combatTones.sampleSoundPriority=MwReadNativeWord(toneData,0x00AF);
     combatTones.soundOutputEnableMask=toneData[0];
     combatTones.musicNoteBase=toneData[1];combatTones.musicPitchTableOffset=MwReadNativeWord(toneData,2);
@@ -42,8 +42,8 @@ bool BtechImportToneInitialData(const uint8_t *data,size_t bytes,const uint8_t *
         for (uint16_t byte=0;byte<0x30;++byte) if (toneData[0x00FE +channel*0x30+byte]) return false;
         combatTones.toneChannels[channel]=BtechToneChannelState{};
     }
-    soundTimerInstalled=data[0x28D0];
-    savedSoundTimerDivisor=MwReadNativeWord(data,0x28D1);
-    timerSoundEventIndex=MwReadNativeWord(data,0x28F2);
+    combatSound.soundTimerInstalled=data[0x28D0];
+    combatSound.savedSoundTimerDivisor=MwReadNativeWord(data,0x28D1);
+    combatSound.timerSoundEventIndex=MwReadNativeWord(data,0x28F2);
     return true;
 }
