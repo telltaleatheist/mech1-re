@@ -62,7 +62,7 @@ uint16_t MwRestartCampaignContinuation(void)
     combatPlanetSelector=0;
     combatScenarioCode=0;
     deploymentTerrainDetailLevel=0;
-    for (size_t i=0;i<sizeof(rosterStatus)/sizeof(rosterStatus[0]);++i) rosterStatus[i]=0;
+    for (size_t i=0;i<sizeof(campaignMechanics.rosterStatus)/sizeof(campaignMechanics.rosterStatus[0]);++i) campaignMechanics.rosterStatus[i]=0;
     for (size_t i=0;i<sizeof(salvageEntries)/sizeof(salvageEntries[0]);++i) salvageEntries[i]=CampaignSalvageEntry{};
     returnedDisabledEnemyCount=0;
     combatTransitionResult=0;
@@ -89,29 +89,29 @@ uint16_t MwRestartCampaignContinuation(void)
     for (size_t i=0;i<sizeof(campaignEconomy.houseFavorPoints)/sizeof(campaignEconomy.houseFavorPoints[0]);++i) campaignEconomy.houseFavorPoints[i]=0;
     for (size_t i=0;i<sizeof(campaignEconomy.houseGrievancePoints)/sizeof(campaignEconomy.houseGrievancePoints[0]);++i) campaignEconomy.houseGrievancePoints[i]=0;
     campaignEconomy.playerCombatCredit=0;
-    pilotIdentityStorage=CampaignPilotIdentityStorage{};
+    campaignMechanics.pilotIdentityStorage=CampaignPilotIdentityStorage{};
     campaignEconomy.pilotDepartureFlagTail=0;
-    for (size_t i=0;i<sizeof(rosterPayTiers)/sizeof(rosterPayTiers[0]);++i) rosterPayTiers[i]=0;
-    for (size_t i=0;i<sizeof(rosterGunneryTiers)/sizeof(rosterGunneryTiers[0]);++i) rosterGunneryTiers[i]=0;
-    for (size_t i=0;i<sizeof(rosterPilotingTiers)/sizeof(rosterPilotingTiers[0]);++i) rosterPilotingTiers[i]=0;
-    for (size_t i=0;i<sizeof(rosterUnknownWords)/sizeof(rosterUnknownWords[0]);++i) rosterUnknownWords[i]=0;
-    for (size_t i=0;i<sizeof(rosterMechAssignments)/sizeof(rosterMechAssignments[0]);++i) rosterMechAssignments[i]=0;
-    for (size_t i=0;i<sizeof(rosterPortraitIds)/sizeof(rosterPortraitIds[0]);++i) rosterPortraitIds[i]=0;
+    for (size_t i=0;i<sizeof(campaignMechanics.rosterPayTiers)/sizeof(campaignMechanics.rosterPayTiers[0]);++i) campaignMechanics.rosterPayTiers[i]=0;
+    for (size_t i=0;i<sizeof(campaignMechanics.rosterGunneryTiers)/sizeof(campaignMechanics.rosterGunneryTiers[0]);++i) campaignMechanics.rosterGunneryTiers[i]=0;
+    for (size_t i=0;i<sizeof(campaignMechanics.rosterPilotingTiers)/sizeof(campaignMechanics.rosterPilotingTiers[0]);++i) campaignMechanics.rosterPilotingTiers[i]=0;
+    for (size_t i=0;i<sizeof(campaignMechanics.rosterUnknownWords)/sizeof(campaignMechanics.rosterUnknownWords[0]);++i) campaignMechanics.rosterUnknownWords[i]=0;
+    for (size_t i=0;i<sizeof(campaignMechanics.rosterMechAssignments)/sizeof(campaignMechanics.rosterMechAssignments[0]);++i) campaignMechanics.rosterMechAssignments[i]=0;
+    for (size_t i=0;i<sizeof(campaignMechanics.rosterPortraitIds)/sizeof(campaignMechanics.rosterPortraitIds[0]);++i) campaignMechanics.rosterPortraitIds[i]=0;
     campaignEconomy.dropShipMissedUpkeepPayments=0;
     campaignEconomy.unpaidPilotWageMarker=0;
     campaignEconomy.availableRecruitCount=0;
     for (size_t i=0;i<sizeof(campaignEconomy.availableRecruitIds)/sizeof(campaignEconomy.availableRecruitIds[0]);++i) campaignEconomy.availableRecruitIds[i]=0;
     campaignEconomy.ownedUnitCount=0;
     for (size_t i=0;i<sizeof(campaignEconomy.ownedUnitKinds)/sizeof(campaignEconomy.ownedUnitKinds[0]);++i) campaignEconomy.ownedUnitKinds[i]=0;
-    for (size_t i=0;i<sizeof(ownedUnitDamage)/sizeof(ownedUnitDamage[0]);++i) ownedUnitDamage[i]=CampaignUnitDamage{};
+    for (size_t i=0;i<sizeof(campaignMechanics.ownedUnitDamage)/sizeof(campaignMechanics.ownedUnitDamage[0]);++i) campaignMechanics.ownedUnitDamage[i]=CampaignUnitDamage{};
     for (size_t i=0;i<sizeof(campaignEconomy.ownedAmmoQuantitiesByGroup)/sizeof(campaignEconomy.ownedAmmoQuantitiesByGroup[0]);++i) campaignEconomy.ownedAmmoQuantitiesByGroup[i]=0;
     for (size_t i=0;i<sizeof(campaignEconomy.marketAmmoQuantitiesByGroup)/sizeof(campaignEconomy.marketAmmoQuantitiesByGroup[0]);++i) campaignEconomy.marketAmmoQuantitiesByGroup[i]=0;
-    for (size_t i=0;i<sizeof(reserveAmmoQuantitiesByFamily)/sizeof(reserveAmmoQuantitiesByFamily[0]);++i) reserveAmmoQuantitiesByFamily[i]=0;
+    for (size_t i=0;i<sizeof(campaignMechanics.reserveAmmoQuantitiesByFamily)/sizeof(campaignMechanics.reserveAmmoQuantitiesByFamily[0]);++i) campaignMechanics.reserveAmmoQuantitiesByFamily[i]=0;
     for (size_t i=0;i<sizeof(campaignEconomy.ownedAmmoKindsByGroup)/sizeof(campaignEconomy.ownedAmmoKindsByGroup[0]);++i) campaignEconomy.ownedAmmoKindsByGroup[i]=0;
     for (size_t i=0;i<sizeof(campaignEconomy.marketAmmoKindsByGroup)/sizeof(campaignEconomy.marketAmmoKindsByGroup[0]);++i) campaignEconomy.marketAmmoKindsByGroup[i]=0;
     campaignEconomy.marketUnitCount=0;
     for (size_t i=0;i<sizeof(campaignEconomy.marketUnitKinds)/sizeof(campaignEconomy.marketUnitKinds[0]);++i) campaignEconomy.marketUnitKinds[i]=0;
-    for (size_t i=0;i<sizeof(marketUnitDamage)/sizeof(marketUnitDamage[0]);++i) marketUnitDamage[i]=CampaignUnitDamage{};
+    for (size_t i=0;i<sizeof(campaignMechanics.marketUnitDamage)/sizeof(campaignMechanics.marketUnitDamage[0]);++i) campaignMechanics.marketUnitDamage[i]=CampaignUnitDamage{};
     campaignEconomy.missionOfferCount=0;
     for (size_t i=0;i<sizeof(campaignEconomy.missionDescriptionOffsets)/sizeof(campaignEconomy.missionDescriptionOffsets[0]);++i) campaignEconomy.missionDescriptionOffsets[i]=0;
     for (size_t i=0;i<sizeof(campaignEconomy.missionPlanetRecordIndices)/sizeof(campaignEconomy.missionPlanetRecordIndices[0]);++i) campaignEconomy.missionPlanetRecordIndices[i]=0;
@@ -141,9 +141,9 @@ uint16_t MwRestartCampaignContinuation(void)
     for (size_t i=0;i<sizeof(campaignEconomy.houseMissionTypeLimits)/sizeof(campaignEconomy.houseMissionTypeLimits[0]);++i) campaignEconomy.houseMissionTypeLimits[i]=0;
     audioOptionLabelIndex=0;
     for (size_t i=0;i<sizeof(campaignEconomy.missionScenarioCodes)/sizeof(campaignEconomy.missionScenarioCodes[0]);++i) campaignEconomy.missionScenarioCodes[i]=0;
-    for (size_t i=0;i<sizeof(pilotGunneryTiers)/sizeof(pilotGunneryTiers[0]);++i) pilotGunneryTiers[i]=0;
-    for (size_t i=0;i<sizeof(pilotPilotingTiers)/sizeof(pilotPilotingTiers[0]);++i) pilotPilotingTiers[i]=0;
-    for (size_t i=0;i<sizeof(pilotExperienceCounts)/sizeof(pilotExperienceCounts[0]);++i) pilotExperienceCounts[i]=0;
+    for (size_t i=0;i<sizeof(campaignMechanics.pilotGunneryTiers)/sizeof(campaignMechanics.pilotGunneryTiers[0]);++i) campaignMechanics.pilotGunneryTiers[i]=0;
+    for (size_t i=0;i<sizeof(campaignMechanics.pilotPilotingTiers)/sizeof(campaignMechanics.pilotPilotingTiers[0]);++i) campaignMechanics.pilotPilotingTiers[i]=0;
+    for (size_t i=0;i<sizeof(campaignMechanics.pilotExperienceCounts)/sizeof(campaignMechanics.pilotExperienceCounts[0]);++i) campaignMechanics.pilotExperienceCounts[i]=0;
     eventDirectoryIndex=0;
     for (size_t i=0;i<sizeof(eventSeenFlags)/sizeof(eventSeenFlags[0]);++i) eventSeenFlags[i]=0;
     for (size_t i=0;i<sizeof(campaignEventPlanetSelectors)/sizeof(campaignEventPlanetSelectors[0]);++i) campaignEventPlanetSelectors[i]=0;
@@ -158,7 +158,7 @@ uint16_t MwRestartCampaignContinuation(void)
     commanderAgeYears=COMMANDER_INITIAL_AGE_YEARS;
     campaignEconomy.campaignFundsLow=(uint16_t)DECIMAL_MILLION;campaignEconomy.campaignFundsHigh=DECIMAL_MILLION>>NATIVE_WORD_BITS;
     pilotRosterCount=1;
-    for (uint16_t i=0;i<CAMPAIGN_ROSTER_SLOTS;++i) rosterMechAssignments[i]=UINT16_MAX;
+    for (uint16_t i=0;i<CAMPAIGN_ROSTER_SLOTS;++i) campaignMechanics.rosterMechAssignments[i]=UINT16_MAX;
     for (uint16_t i=0;i<CAMPAIGN_OWNED_UNIT_SLOTS;++i)
     {campaignEconomy.ownedUnitKinds[i]=UINT16_MAX;campaignEconomy.marketUnitKinds[i]=UINT16_MAX;}
     for (size_t i=0;i<sizeof(campaignEconomy.houseMissionTypeLimits);++i)

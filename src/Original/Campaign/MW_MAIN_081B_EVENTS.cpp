@@ -243,7 +243,7 @@ void MwEventTestControllingHouseStanding(const MwEventCommand *command)
 /* MW_MAIN081B:6562..6568, falls through false/true combine labels. */
 void MwEventTestPlayerCombatLoss(void)
 {
-    MwCombineEventCondition(rosterStatus[0]==1);
+    MwCombineEventCondition(campaignMechanics.rosterStatus[0]==1);
 }
 /* MW_MAIN081B:6588..65B0. Queue choice-dependent restart, do not reset now. */
 void MwEventQueueCampaignRestart(void)

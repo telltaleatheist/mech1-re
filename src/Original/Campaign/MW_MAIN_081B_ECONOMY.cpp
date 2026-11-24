@@ -20,19 +20,19 @@ void MwGenerateUnitStock(uint16_t stockKindRangeIndex, uint16_t tierThreeRolls,
     }
     campaignEconomy.generatedUnitKind = unitKind;
     if (unitKind >= CAMPAIGN_MECH_KIND_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitKind >= CAMPAIGN_MECH_KIND_COUNT");
-    campaignEconomy.generatedDamageMaximumIndex = (uint8_t)(unitWeaponCounts[unitKind] + CAMPAIGN_SYSTEM_COUNT - 1);
-    uint8_t *damageBytes = (uint8_t *)&generatedMechDamage;
-    for (uint16_t index = 0; index < sizeof(generatedMechDamage); ++index) damageBytes[index] = 0;
+    campaignEconomy.generatedDamageMaximumIndex = (uint8_t)(campaignMechanics.unitWeaponCounts[unitKind] + CAMPAIGN_SYSTEM_COUNT - 1);
+    uint8_t *damageBytes = (uint8_t *)&campaignMechanics.generatedMechDamage;
+    for (uint16_t index = 0; index < sizeof(campaignMechanics.generatedMechDamage); ++index) damageBytes[index] = 0;
     uint16_t damageRollCounts[3] = {tierThreeRolls, tierTwoRolls, tierOneRolls};
     for (uint16_t pass = 0; pass < 3; ++pass)
         for (uint16_t roll = 0; roll < damageRollCounts[pass]; ++roll)
         {
             uint16_t damageIndex = MwRandomUpTo(campaignEconomy.generatedDamageMaximumIndex);
-            if (damageIndex >= sizeof(generatedMechDamage)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: damageIndex >= sizeof(generatedMechDamage)");
+            if (damageIndex >= sizeof(campaignMechanics.generatedMechDamage)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: damageIndex >= sizeof(generatedMechDamage)");
             damageBytes[damageIndex] = (uint8_t)(STOCK_COMPONENT_TIER_THREE - pass);
         }
-    if (campaignEconomy.unitJumpJetGroupCounts[unitKind] == 0) generatedMechDamage.destroyedJumpJetGroups = 0;
-    else generatedMechDamage.destroyedJumpJetGroups >>= 1;
+    if (campaignEconomy.unitJumpJetGroupCounts[unitKind] == 0) campaignMechanics.generatedMechDamage.destroyedJumpJetGroups = 0;
+    else campaignMechanics.generatedMechDamage.destroyedJumpJetGroups >>= 1;
     uint16_t groupsRemaining = campaignEconomy.unitAmmoGroupCounts[unitKind];
     const CampaignAmmoProfileEntry *profile = campaignEconomy.unitAmmoProfiles[unitKind];
     uint16_t ammoGroup = 0;
@@ -50,13 +50,13 @@ void MwGenerateUnitStock(uint16_t stockKindRangeIndex, uint16_t tierThreeRolls,
     do
     {
         uint16_t bodyLocation = MwRandomUpTo(CAMPAIGN_BODY_LOCATION_COUNT - 1);
-        generatedMechDamage.bodyDamageTiers[bodyLocation] =
+        campaignMechanics.generatedMechDamage.bodyDamageTiers[bodyLocation] =
             (MwRandomUpTo(STOCK_BODY_TIER_MAXIMUM) | 1) & STOCK_BODY_TIER_MAXIMUM;
     } while (--bodyRollsRemaining != 0);
     if (campaignEconomy.generateStartingJenner == STOCK_FORCE_STARTER_MECH)
     {
-        generatedMechDamage.engineHits = 0;
-        generatedMechDamage.gyroDamageTier = 0;
+        campaignMechanics.generatedMechDamage.engineHits = 0;
+        campaignMechanics.generatedMechDamage.gyroDamageTier = 0;
     }
     campaignEconomy.generateStartingJenner = 0;
 }
@@ -71,7 +71,7 @@ void MwRefreshMarketUnitStock(void)
     for (uint16_t marketSlot = 0; marketSlot < CAMPAIGN_MARKET_UNIT_SLOTS; ++marketSlot)
     {
         campaignEconomy.marketUnitKinds[marketSlot] = CAMPAIGN_VACANT_UNIT_KIND;
-        uint8_t *damageBytes = (uint8_t *)&marketUnitDamage[marketSlot];
+        uint8_t *damageBytes = (uint8_t *)&campaignMechanics.marketUnitDamage[marketSlot];
         for (uint16_t index = 0; index < sizeof(CampaignUnitDamage); ++index) damageBytes[index] = 0;
     }
     uint8_t stockDivisor = currentPlanetMarketTier + 1;
@@ -90,8 +90,8 @@ void MwRefreshMarketUnitStock(void)
             : rangeRoll < STOCK_SECOND_RANGE_THRESHOLD ? 1 : 2;
         MwGenerateUnitStock(stockKindRange,tierThreeRolls,tierTwoRolls,tierOneRolls);
         campaignEconomy.marketUnitKinds[marketSlot] = campaignEconomy.generatedUnitKind;
-        uint8_t *destination = (uint8_t *)&marketUnitDamage[(uint8_t)marketSlot];
-        const uint8_t *source = (const uint8_t *)&generatedMechDamage;
+        uint8_t *destination = (uint8_t *)&campaignMechanics.marketUnitDamage[(uint8_t)marketSlot];
+        const uint8_t *source = (const uint8_t *)&campaignMechanics.generatedMechDamage;
         for (uint16_t index = 0; index < sizeof(CampaignUnitDamage); ++index) destination[index] = source[index];
         for (uint16_t group = 0; group < CAMPAIGN_AMMO_GROUPS; ++group)
         {
@@ -117,8 +117,8 @@ void MwRefreshAvailablePilotRecruits(void)
         uint16_t sampledPilotIndex = MwRandomUpTo(CAMPAIGN_PILOT_ID_COUNT - 2);
         uint16_t pilotId = sampledPilotIndex + 1;
         if (pilotUnavailableFlags[pilotId] != 0) goto nextCandidate;
-        uint16_t gunneryTier;gunneryTier=pilotGunneryTiers[pilotId];
-        uint16_t commanderReputationTier;commanderReputationTier=rosterPayTiers[0];
+        uint16_t gunneryTier;gunneryTier=campaignMechanics.pilotGunneryTiers[pilotId];
+        uint16_t commanderReputationTier;commanderReputationTier=campaignMechanics.rosterPayTiers[0];
         if (gunneryTier > commanderReputationTier || (gunneryTier != commanderReputationTier
             && gunneryTier + 1 != commanderReputationTier)) goto nextCandidate;
         uint16_t portraitPairBaseIndex;portraitPairBaseIndex=sampledPilotIndex & PILOT_PORTRAIT_PAIR_MASK;
@@ -174,7 +174,7 @@ bool MwGenerateMissionOffer(uint16_t missionOfferSlot)
     {
         uint16_t rosterSlot = rosterByteOffset / sizeof(uint16_t);
         if (rosterSlot >= CAMPAIGN_ROSTER_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: rosterSlot >= CAMPAIGN_ROSTER_SLOTS");
-        uint16_t assignedOwnedSlot = rosterMechAssignments[rosterSlot];
+        uint16_t assignedOwnedSlot = campaignMechanics.rosterMechAssignments[rosterSlot];
         if (assignedOwnedSlot != CAMPAIGN_NO_MECH_ASSIGNMENT)
         {
             uint16_t ownedSlot = (uint16_t)(assignedOwnedSlot << 1) / sizeof(uint16_t);
@@ -304,8 +304,8 @@ retryTarget:
     targetColumn = campaignEconomy.missionTargetHouseIndices[offerSlot];
     if (category != MISSION_CATEGORY_DEFENCE && targetColumn < CAMPAIGN_HOUSE_COUNT)
     {
-        uint16_t rangeStart = housePlanetRangeStarts[targetColumn];
-        uint16_t rangeMaximum = housePlanetRangeCounts[targetColumn];
+        uint16_t rangeStart = campaignMechanics.housePlanetRangeStarts[targetColumn];
+        uint16_t rangeMaximum = campaignMechanics.housePlanetRangeCounts[targetColumn];
         for (;;)
         {
             uint16_t directoryByteOffset = (uint16_t)(MwRandomUpTo(rangeMaximum) + rangeStart) << 1;
@@ -378,7 +378,7 @@ void MwAdvanceDropShipConditionDeterioration(void)
     for (uint16_t ownedSlot = 0; ownedSlot < CAMPAIGN_OWNED_UNIT_SLOTS; ++ownedSlot)
     {
         if (campaignEconomy.ownedUnitKinds[ownedSlot] != CAMPAIGN_UNIT_DROPSHIP) continue;
-        CampaignDropShipConditionPrefix *condition = (CampaignDropShipConditionPrefix *)&ownedUnitDamage[ownedSlot];
+        CampaignDropShipConditionPrefix *condition = (CampaignDropShipConditionPrefix *)&campaignMechanics.ownedUnitDamage[ownedSlot];
         uint8_t deterioration = condition->deterioration;
         condition->deterioration = (uint8_t)(deterioration + (deterioration >> 2) + 1);
         return;
@@ -429,7 +429,7 @@ void MwAdvanceCampaignTimeAndChargeWages(uint16_t elapsedUnits)
             if (rosterSlot >= CAMPAIGN_ROSTER_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: rosterSlot >= CAMPAIGN_ROSTER_SLOTS");
             /* Contracted wages stay at the hiring-time tier after promotions. */
             /* Native WORD table indexing discards the high index bit. */
-            uint16_t contractedWageTier = rosterPayTiers[rosterSlot] & (UINT16_MAX >> 1);
+            uint16_t contractedWageTier = campaignMechanics.rosterPayTiers[rosterSlot] & (UINT16_MAX >> 1);
             if (contractedWageTier > PILOT_SKILL_EXCELLENT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: contractedWageTier > PILOT_SKILL_EXCELLENT");
             monthlyWages += campaignEconomy.pilotWageAmounts[contractedWageTier];
             ++rosterSlot;
@@ -450,7 +450,7 @@ void MwAdvanceCampaignTimeAndChargeWages(uint16_t elapsedUnits)
                 campaignEconomy.notificationPending[NOTIFICATION_UNPAID_PILOT_WAGES] = 0;
                 pilotRosterCount = 1;
                 for (uint16_t slot = 1; slot < CAMPAIGN_ROSTER_SLOTS; ++slot)
-                    rosterMechAssignments[slot] = CAMPAIGN_NO_MECH_ASSIGNMENT;
+                    campaignMechanics.rosterMechAssignments[slot] = CAMPAIGN_NO_MECH_ASSIGNMENT;
                 for (uint16_t slot = 1; slot < CAMPAIGN_ROSTER_SLOTS; ++slot)
                 {
                     uint16_t flagOffset = PILOT_DEPARTURE_NATIVE_BASE + rosterPilotIds[slot];

@@ -27,7 +27,7 @@ enum { TRAVEL_NAME_PANEL_X=0x0008, TRAVEL_HEADER_PANEL_Y=0x0006,
  * existing0018-byte mutable owner. This is not a new string-cache policy. */
 void MwCopyTravelDestinationName(void)
 {
-    uint16_t directoryByteOffset=travelDestinationPlanetIndex*sizeof(uint16_t);
+    uint16_t directoryByteOffset=campaignMechanics.travelDestinationPlanetIndex*sizeof(uint16_t);
     if (directoryByteOffset>=sizeof(planetRecordOffsets)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: directoryByteOffset>=sizeof(planetRecordOffsets)");
     uint16_t planetOffset=planetRecordOffsets[directoryByteOffset/sizeof(uint16_t)];
     if (planetOffset<PLANET_RECORDS_START || planetOffset>=PLANET_RECORDS_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetOffset<PLANET_RECORDS_START || planetOffset>=PLANET_RECORDS_END");
@@ -35,24 +35,24 @@ void MwCopyTravelDestinationName(void)
     uint16_t nameByte=0;
     do
     {
-        if (nameByte>=sizeof(travelDestinationName)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: nameByte>=sizeof(travelDestinationName)"); /* Unrepresented adjacent native storage. */
-        travelDestinationName[nameByte]=name[nameByte];
-    } while (travelDestinationName[nameByte++]!='\0');
+        if (nameByte>=sizeof(campaignMechanics.travelDestinationName)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: nameByte>=sizeof(travelDestinationName)"); /* Unrepresented adjacent native storage. */
+        campaignMechanics.travelDestinationName[nameByte]=name[nameByte];
+    } while (campaignMechanics.travelDestinationName[nameByte++]!='\0');
 }
 
 /* MW_MAIN 081B:5AF5..5B0B. The old marker coordinates are captured before
  * drawing sprite0D on the display page. */
 void MwDrawTravelMarker(void)
 {
-    travelSavedMarkerX=travelMarkerX;
-    travelSavedMarkerY=travelMarkerY;
-    MwDrawGeneralPicture(travelMarkerX,travelMarkerY,EGA_DISPLAY_PAGE,TRAVEL_MARKER_PICTURE);
+    campaignMechanics.travelSavedMarkerX=campaignMechanics.travelMarkerX;
+    campaignMechanics.travelSavedMarkerY=campaignMechanics.travelMarkerY;
+    MwDrawGeneralPicture(campaignMechanics.travelMarkerX,campaignMechanics.travelMarkerY,EGA_DISPLAY_PAGE,TRAVEL_MARKER_PICTURE);
 }
 
 /* MW_MAIN 081B:5B0C..5B20. The draw page holds the clean map captured by5620. */
 void MwRestoreTravelMarkerRegion(void)
 {
-    EgaCopyDrawPageToDisplay(travelSavedMarkerX,travelSavedMarkerY,
+    EgaCopyDrawPageToDisplay(campaignMechanics.travelSavedMarkerX,campaignMechanics.travelSavedMarkerY,
         TRAVEL_MARKER_RESTORE_WIDTH,TRAVEL_MARKER_RESTORE_HEIGHT);
 }
 
@@ -60,15 +60,15 @@ void MwRestoreTravelMarkerRegion(void)
  * test is inclusive against the marker's four-pixel box. */
 int16_t MwFindPlanetAtTravelMarker(void)
 {
-    uint16_t right=travelMarkerX+TRAVEL_MARKER_HIT_SIZE;
-    uint16_t bottom=travelMarkerY+TRAVEL_MARKER_HIT_SIZE;
+    uint16_t right=campaignMechanics.travelMarkerX+TRAVEL_MARKER_HIT_SIZE;
+    uint16_t bottom=campaignMechanics.travelMarkerY+TRAVEL_MARKER_HIT_SIZE;
     for (uint16_t planetIndex=0;planetIndex<TRAVEL_PLANET_DIRECTORY_COUNT;++planetIndex)
     {
         uint16_t planetOffset=planetRecordOffsets[planetIndex];
         if (planetOffset<PLANET_RECORDS_START || (uint32_t)planetOffset+sizeof(MwPlanetHeader)>PLANET_RECORDS_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetOffset<PLANET_RECORDS_START || (uint32_t)planetOffset+sizeof(MwPlanetHeader)>PLANET_RECORDS_END");
         const MwPlanetHeader *planet=(const MwPlanetHeader *)&planetRecordStorage[planetOffset-PLANET_RECORDS_START];
-        if (planet->mapPositionX<travelMarkerX || planet->mapPositionX>right) continue;
-        if (planet->mapPositionY<travelMarkerY || planet->mapPositionY>bottom) continue;
+        if (planet->mapPositionX<campaignMechanics.travelMarkerX || planet->mapPositionX>right) continue;
+        if (planet->mapPositionY<campaignMechanics.travelMarkerY || planet->mapPositionY>bottom) continue;
         return (int16_t)planetIndex;
     }
     return -1;
@@ -84,16 +84,16 @@ positionMouse:
     if (campaignInput.mouseInstalled!=0)
     {
         if (!mwCampaignInput.setMousePosition) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.setMousePosition");
-        mwCampaignInput.setMousePosition(travelMarkerX,travelMarkerY);
+        mwCampaignInput.setMousePosition(campaignMechanics.travelMarkerX,campaignMechanics.travelMarkerY);
     }
     for (;;)
     {
         uint16_t key=0;
         if (!mwCampaignInput.keyboardAvailable || !mwCampaignInput.readKeyboard) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.keyboardAvailable || !mwCampaignInput.readKeyboard");
         if (mwCampaignInput.keyboardAvailable()) key=MwCampaignKeyWord(mwCampaignInput.readKeyboard());
-        else if (campaignInput.joystickInstalled!=0 && campaignInput.campaignTimerTicks!=travelJoystickLastTick)
+        else if (campaignInput.joystickInstalled!=0 && campaignInput.campaignTimerTicks!=campaignMechanics.travelJoystickLastTick)
         {
-            travelJoystickLastTick=campaignInput.campaignTimerTicks; /*5B81 saved tick. */
+            campaignMechanics.travelJoystickLastTick=campaignInput.campaignTimerTicks; /*5B81 saved tick. */
             MwPollJoystickA();
             if (campaignInput.joystickButtonOnePressed!=0)
             {
@@ -112,11 +112,11 @@ pollMouse:
             if (!mwCampaignInput.readMousePosition || !mwCampaignInput.mouseReleaseCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.readMousePosition || !mwCampaignInput.mouseReleaseCount");
             uint16_t mouseX,mouseY;
             mwCampaignInput.readMousePosition(&mouseX,&mouseY);
-            if (mouseX!=travelMarkerX || mouseY!=travelMarkerY)
+            if (mouseX!=campaignMechanics.travelMarkerX || mouseY!=campaignMechanics.travelMarkerY)
             {
-                travelMarkerX=mouseX;travelMarkerY=mouseY;
-                if (travelMarkerX<TRAVEL_MAP_MINIMUM_X || travelMarkerX>TRAVEL_MAP_MAXIMUM_X
-                    || travelMarkerY<TRAVEL_MAP_MINIMUM_Y || travelMarkerY>TRAVEL_MAP_MAXIMUM_Y)
+                campaignMechanics.travelMarkerX=mouseX;campaignMechanics.travelMarkerY=mouseY;
+                if (campaignMechanics.travelMarkerX<TRAVEL_MAP_MINIMUM_X || campaignMechanics.travelMarkerX>TRAVEL_MAP_MAXIMUM_X
+                    || campaignMechanics.travelMarkerY<TRAVEL_MAP_MINIMUM_Y || campaignMechanics.travelMarkerY>TRAVEL_MAP_MAXIMUM_Y)
                     goto restoreCurrentPlanet;
                 MwRestoreTravelMarkerRegion();MwDrawTravelMarker();
             }
@@ -135,37 +135,37 @@ pollMouse:
             if (planetIndex<0) continue;
             uint16_t planetOffset=planetRecordOffsets[(uint16_t)planetIndex];
             const MwPlanetHeader *planet=(const MwPlanetHeader *)&planetRecordStorage[planetOffset-PLANET_RECORDS_START];
-            travelMarkerX=(uint16_t)(planet->mapPositionX-TRAVEL_MAP_MARKER_INSET);
-            travelMarkerY=(uint16_t)(planet->mapPositionY-TRAVEL_MAP_MARKER_INSET);
+            campaignMechanics.travelMarkerX=(uint16_t)(planet->mapPositionX-TRAVEL_MAP_MARKER_INSET);
+            campaignMechanics.travelMarkerY=(uint16_t)(planet->mapPositionY-TRAVEL_MAP_MARKER_INSET);
             MwRestoreTravelMarkerRegion();MwDrawTravelMarker();
-            travelDestinationPlanetIndex=(uint16_t)planetIndex;
+            campaignMechanics.travelDestinationPlanetIndex=(uint16_t)planetIndex;
             MwCopyTravelDestinationName();
             MwDrawDescriptorTextPanel(&travelDestinationHeaderPanel);
             MwDrawTravelDestinationDetails();MwDrawPlanetTravelQuote();
-            travelMapSelection=0;
+            campaignMechanics.travelMapSelection=0;
             return CAMPAIGN_CONTINUE_TRAVEL_MAP;
         }
         switch (key)
         {
-        case CAMPAIGN_KEY_UP:--travelMarkerY;break;
-        case CAMPAIGN_KEY_DOWN:++travelMarkerY;break;
-        case CAMPAIGN_KEY_LEFT:--travelMarkerX;break;
-        case CAMPAIGN_KEY_RIGHT:++travelMarkerX;break;
-        case CAMPAIGN_KEY_UP_LEFT:--travelMarkerX;--travelMarkerY;break;
-        case CAMPAIGN_KEY_UP_RIGHT:++travelMarkerX;--travelMarkerY;break;
-        case CAMPAIGN_KEY_DOWN_LEFT:--travelMarkerX;++travelMarkerY;break;
-        case CAMPAIGN_KEY_DOWN_RIGHT:++travelMarkerX;++travelMarkerY;break;
+        case CAMPAIGN_KEY_UP:--campaignMechanics.travelMarkerY;break;
+        case CAMPAIGN_KEY_DOWN:++campaignMechanics.travelMarkerY;break;
+        case CAMPAIGN_KEY_LEFT:--campaignMechanics.travelMarkerX;break;
+        case CAMPAIGN_KEY_RIGHT:++campaignMechanics.travelMarkerX;break;
+        case CAMPAIGN_KEY_UP_LEFT:--campaignMechanics.travelMarkerX;--campaignMechanics.travelMarkerY;break;
+        case CAMPAIGN_KEY_UP_RIGHT:++campaignMechanics.travelMarkerX;--campaignMechanics.travelMarkerY;break;
+        case CAMPAIGN_KEY_DOWN_LEFT:--campaignMechanics.travelMarkerX;++campaignMechanics.travelMarkerY;break;
+        case CAMPAIGN_KEY_DOWN_RIGHT:++campaignMechanics.travelMarkerX;++campaignMechanics.travelMarkerY;break;
         default:continue;
         }
-        if (travelMarkerX<TRAVEL_MAP_MINIMUM_X || travelMarkerX>TRAVEL_MAP_MAXIMUM_X
-            || travelMarkerY<TRAVEL_MAP_MINIMUM_Y || travelMarkerY>TRAVEL_MAP_MAXIMUM_Y)
+        if (campaignMechanics.travelMarkerX<TRAVEL_MAP_MINIMUM_X || campaignMechanics.travelMarkerX>TRAVEL_MAP_MAXIMUM_X
+            || campaignMechanics.travelMarkerY<TRAVEL_MAP_MINIMUM_Y || campaignMechanics.travelMarkerY>TRAVEL_MAP_MAXIMUM_Y)
         {
 restoreCurrentPlanet:
-            travelMapSelection=0;MwRestoreTravelMarkerRegion();
+            campaignMechanics.travelMapSelection=0;MwRestoreTravelMarkerRegion();
             uint16_t planetOffset=planetRecordOffsets[currentPlanetIndex];
             const MwPlanetHeader *planet=(const MwPlanetHeader *)&planetRecordStorage[planetOffset-PLANET_RECORDS_START];
-            travelMarkerX=(uint16_t)(planet->mapPositionX-TRAVEL_MAP_MARKER_INSET);
-            travelMarkerY=(uint16_t)(planet->mapPositionY-TRAVEL_MAP_MARKER_INSET);
+            campaignMechanics.travelMarkerX=(uint16_t)(planet->mapPositionX-TRAVEL_MAP_MARKER_INSET);
+            campaignMechanics.travelMarkerY=(uint16_t)(planet->mapPositionY-TRAVEL_MAP_MARKER_INSET);
             MwDrawTravelMarker();return CAMPAIGN_CONTINUE_TRAVEL_MAP;
         }
         MwRestoreTravelMarkerRegion();MwDrawTravelMarker();
@@ -182,10 +182,10 @@ void MwDrawTravelDestinationDetails(void)
     EgaFillDisplayPageRectangle(TRAVEL_LANDSCAPE_PANEL_X,TRAVEL_HEADER_PANEL_Y,TRAVEL_LANDSCAPE_PANEL_WIDTH,TRAVEL_HEADER_PANEL_HEIGHT,Campaign_Pal_EGA_LightGrey);
     EgaFillDisplayPageRectangle(TRAVEL_POPULATION_PANEL_X,TRAVEL_HEADER_PANEL_Y,TRAVEL_POPULATION_PANEL_WIDTH,TRAVEL_HEADER_PANEL_HEIGHT,Campaign_Pal_EGA_LightGrey);
     EgaFillDisplayPageRectangle(TRAVEL_NAME_PANEL_X,TRAVEL_DESCRIPTION_PANEL_Y,TRAVEL_DESCRIPTION_PANEL_WIDTH,TRAVEL_HEADER_PANEL_HEIGHT,Campaign_Pal_EGA_LightGrey);
-    uint16_t directoryByteOffset=travelDestinationPlanetIndex*sizeof(uint16_t);
+    uint16_t directoryByteOffset=campaignMechanics.travelDestinationPlanetIndex*sizeof(uint16_t);
     if (directoryByteOffset>=sizeof(planetRecordOffsets)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: directoryByteOffset>=sizeof(planetRecordOffsets)");
     uint16_t planetOffset=planetRecordOffsets[directoryByteOffset/sizeof(uint16_t)];
-    travelDestinationPlanetOffset=planetOffset;
+    campaignMechanics.travelDestinationPlanetOffset=planetOffset;
     if (planetOffset<PLANET_RECORDS_START || (uint32_t)planetOffset+sizeof(MwPlanetHeader)>=PLANET_RECORDS_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetOffset<PLANET_RECORDS_START || (uint32_t)planetOffset+sizeof(MwPlanetHeader)>=PLANET_RECORDS_END");
     const uint8_t *record=&planetRecordStorage[planetOffset-PLANET_RECORDS_START];
     const MwPlanetHeader *planet=(const MwPlanetHeader *)record;
@@ -218,7 +218,7 @@ void MwDrawTravelDestinationDetails(void)
  * procedure returns here before the destination marker is repositioned. */
 uint16_t MwSelectTravelDestinationContinuation(uint16_t planetIndex)
 {
-    travelDestinationPlanetIndex=planetIndex;
+    campaignMechanics.travelDestinationPlanetIndex=planetIndex;
     MwCopyTravelDestinationName();
     MwDrawDescriptorTextPanel(&travelDestinationHeaderPanel);
     MwDrawDescriptorTextPanel(&travelCostPanel);
@@ -226,11 +226,11 @@ uint16_t MwSelectTravelDestinationContinuation(uint16_t planetIndex)
     MwDrawDescriptorTextPanel(&travelBrowsePanel);
     MwDrawTravelDestinationDetails();
     MwDrawPlanetTravelQuote();
-    uint16_t planetOffset=planetRecordOffsets[travelDestinationPlanetIndex];
+    uint16_t planetOffset=planetRecordOffsets[campaignMechanics.travelDestinationPlanetIndex];
     if (planetOffset<PLANET_RECORDS_START || (uint32_t)planetOffset+sizeof(MwPlanetHeader)>PLANET_RECORDS_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetOffset<PLANET_RECORDS_START || (uint32_t)planetOffset+sizeof(MwPlanetHeader)>PLANET_RECORDS_END");
     const MwPlanetHeader *planet=(const MwPlanetHeader *)&planetRecordStorage[planetOffset-PLANET_RECORDS_START];
-    travelMarkerX=(uint16_t)(planet->mapPositionX-TRAVEL_MAP_MARKER_INSET);
-    travelMarkerY=(uint16_t)(planet->mapPositionY-TRAVEL_MAP_MARKER_INSET);
+    campaignMechanics.travelMarkerX=(uint16_t)(planet->mapPositionX-TRAVEL_MAP_MARKER_INSET);
+    campaignMechanics.travelMarkerY=(uint16_t)(planet->mapPositionY-TRAVEL_MAP_MARKER_INSET);
     MwDrawTravelMarker(); /* Native56E4, before shared56E7. */
     return MwEnterTravelMapMenuContinuation();
 }
@@ -240,7 +240,7 @@ uint16_t MwSelectTravelDestinationContinuation(uint16_t planetIndex)
 uint16_t MwEnterTravelMapMenuContinuation(void)
 {
     campaignUi.uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_SELECT_TRAVEL_MAP_PLANET;
-    uint16_t selectionTransfer=MwSelectUiRecordTable(travelMapSelection,&travelMapMenu);
+    uint16_t selectionTransfer=MwSelectUiRecordTable(campaignMechanics.travelMapSelection,&travelMapMenu);
     return selectionTransfer!=0?selectionTransfer:CAMPAIGN_CONTINUE_UI;
 }
 
@@ -251,45 +251,45 @@ uint16_t MwEnterTravelMapMenuContinuation(void)
 void MwDrawPlanetTravelQuote(void)
 {
     EgaFillDisplayPageRectangle(TRAVEL_QUOTE_CLEAR_X,TRAVEL_QUOTE_CLEAR_Y,TRAVEL_QUOTE_CLEAR_WIDTH,TRAVEL_QUOTE_CLEAR_HEIGHT,Campaign_Pal_EGA_LightGrey);
-    travelQuoteCbillsLow=0;
-    travelQuoteCbillsHigh=0;
-    if (travelDestinationPlanetIndex!=currentPlanetIndex)
+    campaignMechanics.travelQuoteCbillsLow=0;
+    campaignMechanics.travelQuoteCbillsHigh=0;
+    if (campaignMechanics.travelDestinationPlanetIndex!=currentPlanetIndex)
     {
-        uint16_t distance=MwCalculatePlanetTravelDistance(travelDestinationPlanetIndex);
+        uint16_t distance=MwCalculatePlanetTravelDistance(campaignMechanics.travelDestinationPlanetIndex);
         if (campaignEconomy.ownedUnitCount==0)
         {
             uint16_t passengerBase=pilotRosterCount*PASSENGER_TRAVEL_CBILLS_PER_DISTANCE_UNIT;
             uint32_t quote=(uint32_t)passengerBase*distance;
-            travelQuoteCbillsLow=(uint16_t)quote;
-            travelQuoteCbillsHigh=(uint16_t)(quote>>NATIVE_WORD_BITS);
+            campaignMechanics.travelQuoteCbillsLow=(uint16_t)quote;
+            campaignMechanics.travelQuoteCbillsHigh=(uint16_t)(quote>>NATIVE_WORD_BITS);
             MwAddReserveAmmoFreightToTravelQuote();
         }
         else
         {
-            travelDropShipSelected=0;
+            campaignMechanics.travelDropShipSelected=0;
             uint16_t ownedSlot=0;
             while (ownedSlot!=CAMPAIGN_OWNED_UNIT_SLOTS
                 && campaignEconomy.ownedUnitKinds[ownedSlot]!=CAMPAIGN_UNIT_DROPSHIP) ++ownedSlot;
             if (ownedSlot!=CAMPAIGN_OWNED_UNIT_SLOTS)
             {
-                travelDropShipSelected=1;
-                uint32_t quote=(uint32_t)travelDistanceUnits*OWNED_DROPSHIP_TRAVEL_CBILLS_PER_DISTANCE_UNIT;
-                travelQuoteCbillsLow=(uint16_t)quote;
-                travelQuoteCbillsHigh=(uint16_t)(quote>>NATIVE_WORD_BITS);
+                campaignMechanics.travelDropShipSelected=1;
+                uint32_t quote=(uint32_t)campaignMechanics.travelDistanceUnits*OWNED_DROPSHIP_TRAVEL_CBILLS_PER_DISTANCE_UNIT;
+                campaignMechanics.travelQuoteCbillsLow=(uint16_t)quote;
+                campaignMechanics.travelQuoteCbillsHigh=(uint16_t)(quote>>NATIVE_WORD_BITS);
             }
             else
             {
                 uint32_t base=(uint32_t)campaignEconomy.ownedUnitCount*HIRED_MECH_TRAVEL_BASE_CBILLS;
-                uint16_t unitDistance=(uint8_t)campaignEconomy.ownedUnitCount*(uint8_t)travelDistanceUnits;
+                uint16_t unitDistance=(uint8_t)campaignEconomy.ownedUnitCount*(uint8_t)campaignMechanics.travelDistanceUnits;
                 uint32_t quote=(uint32_t)unitDistance*HIRED_MECH_TRAVEL_CBILLS_PER_DISTANCE_UNIT+base;
-                travelQuoteCbillsLow=(uint16_t)quote;
-                travelQuoteCbillsHigh=(uint16_t)(quote>>NATIVE_WORD_BITS);
+                campaignMechanics.travelQuoteCbillsLow=(uint16_t)quote;
+                campaignMechanics.travelQuoteCbillsHigh=(uint16_t)(quote>>NATIVE_WORD_BITS);
                 MwAddReserveAmmoFreightToTravelQuote();
             }
         }
     }
     ++numericGroupingEnabled;
-    MwDrawSignedDecimalField(((uint32_t)travelQuoteCbillsHigh<<NATIVE_WORD_BITS)|travelQuoteCbillsLow,
+    MwDrawSignedDecimalField(((uint32_t)campaignMechanics.travelQuoteCbillsHigh<<NATIVE_WORD_BITS)|campaignMechanics.travelQuoteCbillsLow,
         TRAVEL_QUOTE_X,1,0,2,3,TRAVEL_QUOTE_Y);
     ++numericGroupingEnabled;
     MwDrawSignedDecimalField(((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow,
@@ -301,7 +301,7 @@ void MwDrawPlanetTravelQuote(void)
 uint16_t MwOpenTravelScreenContinuation(void)
 {
     campaignUi.hubSelectedRecordIndex=3;
-    travelMapSelection=0;
+    campaignMechanics.travelMapSelection=0;
     EgaSelectFont(0);
     (void)MwLoadIndexedPicture((uint16_t)(TRAVEL_HOUSE_PICTURE_BASE+currentPlanetHouseIndex));
     MwDrawActivePicture(0,0,EGA_DRAW_PAGE,TRAVEL_MAP_PICTURE);
@@ -312,8 +312,8 @@ uint16_t MwOpenTravelScreenContinuation(void)
     uint16_t planetOffset=planetRecordOffsets[directoryByteOffset/sizeof(uint16_t)];
     if (planetOffset<PLANET_RECORDS_START || (uint32_t)planetOffset+sizeof(MwPlanetHeader)>PLANET_RECORDS_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetOffset<PLANET_RECORDS_START || (uint32_t)planetOffset+sizeof(MwPlanetHeader)>PLANET_RECORDS_END");
     const MwPlanetHeader *planet=(const MwPlanetHeader *)&planetRecordStorage[planetOffset-PLANET_RECORDS_START];
-    travelMarkerX=(uint16_t)(planet->mapPositionX-TRAVEL_MAP_MARKER_INSET);
-    travelMarkerY=(uint16_t)(planet->mapPositionY-TRAVEL_MAP_MARKER_INSET);
+    campaignMechanics.travelMarkerX=(uint16_t)(planet->mapPositionX-TRAVEL_MAP_MARKER_INSET);
+    campaignMechanics.travelMarkerY=(uint16_t)(planet->mapPositionY-TRAVEL_MAP_MARKER_INSET);
     MwDrawTravelMarker();
     EgaCopyDisplayToDrawPage(0,0,EGA_COLUMNS,EGA_ROWS);
     return MwSelectTravelDestinationContinuation(currentPlanetIndex);
@@ -345,7 +345,7 @@ uint16_t MwSearchTravelPlanetContinuation(void)
             if (name[nameIndex]==0)
             {
                 MwRestoreTravelMarkerRegion();
-                travelDestinationPlanetIndex=planetIndex;
+                campaignMechanics.travelDestinationPlanetIndex=planetIndex;
                 return CAMPAIGN_CONTINUE_SELECT_TRAVEL_DESTINATION;
             }
         }
@@ -377,7 +377,7 @@ uint16_t MwCloseTravelHouseBrowserContinuation(void)
 {
     MwRestoreTravelHouseBrowserRegion();
     MwDrawTravelMarker(); /* Native5D25, before shared56E7. */
-    travelMapSelection=2;
+    campaignMechanics.travelMapSelection=2;
     return CAMPAIGN_CONTINUE_TRAVEL_MAP;
 }
 
@@ -395,14 +395,14 @@ uint16_t MwOpenSelectedHousePlanetListContinuation(void)
     MwRestoreTravelHouseBrowserRegion();
     travelSelectedHouseRow=campaignUi.selectedUiRecordIndex;
     if (travelSelectedHouseRow>=TRAVEL_HOUSE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: travelSelectedHouseRow>=TRAVEL_HOUSE_COUNT");
-    travelSelectedHouseByteOffset=(uint16_t)(travelSelectedHouseRow*sizeof(uint16_t));
-    travelHousePlanetStart=housePlanetRangeStarts[travelSelectedHouseRow];
-    travelHousePlanetCount=housePlanetRangeCounts[travelSelectedHouseRow];
+    campaignMechanics.travelSelectedHouseByteOffset=(uint16_t)(travelSelectedHouseRow*sizeof(uint16_t));
+    campaignMechanics.travelHousePlanetStart=campaignMechanics.housePlanetRangeStarts[travelSelectedHouseRow];
+    campaignMechanics.travelHousePlanetCount=campaignMechanics.housePlanetRangeCounts[travelSelectedHouseRow];
     strcpy(travelHouseSearchCaption.text,travelHouseSearchNames[travelSelectedHouseRow]);
-    if ((uint32_t)travelHousePlanetStart+travelHousePlanetCount>TRAVEL_PLANET_DIRECTORY_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint32_t)travelHousePlanetStart+travelHousePlanetCount>TRAVEL_PLANET_DIRECTORY_COUNT");
-    for (uint16_t row=0;row<travelHousePlanetCount;++row)
+    if ((uint32_t)campaignMechanics.travelHousePlanetStart+campaignMechanics.travelHousePlanetCount>TRAVEL_PLANET_DIRECTORY_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint32_t)travelHousePlanetStart+travelHousePlanetCount>TRAVEL_PLANET_DIRECTORY_COUNT");
+    for (uint16_t row=0;row<campaignMechanics.travelHousePlanetCount;++row)
     {
-        uint16_t planetOffset=alphabeticPlanetRecordOffsets[travelHousePlanetStart+row];
+        uint16_t planetOffset=campaignMechanics.alphabeticPlanetRecordOffsets[campaignMechanics.travelHousePlanetStart+row];
         if (planetOffset<PLANET_RECORDS_START || (uint32_t)planetOffset+sizeof(MwPlanetHeader)>=PLANET_RECORDS_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetOffset<PLANET_RECORDS_START || (uint32_t)planetOffset+sizeof(MwPlanetHeader)>=PLANET_RECORDS_END");
         const char *name=(const char *)&planetRecordStorage[planetOffset-PLANET_RECORDS_START+sizeof(MwPlanetHeader)];
         if (strlen(name)>=sizeof(travelHousePlanetRows[row].text)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: strlen(name)>=sizeof(travelHousePlanetRows[row].text)");
@@ -451,13 +451,13 @@ void MwRestoreTravelHousePlanetListRegion(void)
 uint16_t MwSelectHousePlanetContinuation(void)
 {
     MwRestoreTravelHousePlanetListRegion();
-    uint16_t alphabeticIndex=travelHousePlanetStart+campaignUi.selectedUiRecordIndex;
+    uint16_t alphabeticIndex=campaignMechanics.travelHousePlanetStart+campaignUi.selectedUiRecordIndex;
     if (alphabeticIndex>=TRAVEL_PLANET_DIRECTORY_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: alphabeticIndex>=TRAVEL_PLANET_DIRECTORY_COUNT");
-    uint16_t planetOffset=alphabeticPlanetRecordOffsets[alphabeticIndex];
+    uint16_t planetOffset=campaignMechanics.alphabeticPlanetRecordOffsets[alphabeticIndex];
     if (planetOffset<PLANET_RECORDS_START || planetOffset>=PLANET_RECORDS_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetOffset<PLANET_RECORDS_START || planetOffset>=PLANET_RECORDS_END");
     uint8_t primaryPlanetNumber=planetRecordStorage[planetOffset-PLANET_RECORDS_START];
     if (primaryPlanetNumber==0) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: primaryPlanetNumber==0");
-    travelDestinationPlanetIndex=(uint16_t)(primaryPlanetNumber-1);
+    campaignMechanics.travelDestinationPlanetIndex=(uint16_t)(primaryPlanetNumber-1);
     return CAMPAIGN_CONTINUE_SELECT_TRAVEL_DESTINATION;
 }
 
@@ -465,13 +465,13 @@ uint16_t MwSelectHousePlanetContinuation(void)
  * decision; the successful halves are stored only after the borrow test. */
 uint16_t MwConfirmPlanetTravelContinuation(void)
 {
-    if (travelDestinationPlanetIndex==currentPlanetIndex)
+    if (campaignMechanics.travelDestinationPlanetIndex==currentPlanetIndex)
     {
         campaignUi.uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_SELECT_TRAVEL_MAP_PLANET;
         return 0;
     }
     uint32_t funds=((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow;
-    uint32_t quote=((uint32_t)travelQuoteCbillsHigh<<NATIVE_WORD_BITS)|travelQuoteCbillsLow;
+    uint32_t quote=((uint32_t)campaignMechanics.travelQuoteCbillsHigh<<NATIVE_WORD_BITS)|campaignMechanics.travelQuoteCbillsLow;
     if (funds<quote)
     {
         MwRestoreTravelMarkerRegion();
@@ -493,18 +493,18 @@ uint16_t MwConfirmPlanetTravelContinuation(void)
  * deltas toward zero. Calendar calls reload live planet indices afterwards. */
 uint16_t MwAdvancePaidTravelAndJoinPlanetArrivalContinuation(void)
 {
-    int16_t distance=travelDistanceUnits;
-    int16_t deltaX=travelMapDeltaX;
+    int16_t distance=campaignMechanics.travelDistanceUnits;
+    int16_t deltaX=campaignMechanics.travelMapDeltaX;
     if (distance==0 || (deltaX==INT16_MIN && distance==-1)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: distance==0 || (deltaX==INT16_MIN && distance==-1)");
-    travelMapDeltaX=(uint16_t)(deltaX/distance);
-    distance=(int16_t)travelDistanceUnits;
-    int16_t deltaY=travelMapDeltaY;
+    campaignMechanics.travelMapDeltaX=(uint16_t)(deltaX/distance);
+    distance=(int16_t)campaignMechanics.travelDistanceUnits;
+    int16_t deltaY=campaignMechanics.travelMapDeltaY;
     if (distance==0 || (deltaY==INT16_MIN && distance==-1)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: distance==0 || (deltaY==INT16_MIN && distance==-1)");
-    travelMapDeltaY=(uint16_t)(deltaY/distance);
+    campaignMechanics.travelMapDeltaY=(uint16_t)(deltaY/distance);
     EgaDrawLine(TRAVEL_ROUTE_COLOUR,currentPlanetMapPositionY,
-        travelDestinationMapPositionX,currentPlanetMapPositionX,
-        travelDestinationMapPositionY);
-    uint16_t elapsedUnits=(uint16_t)(travelDistanceUnits-1)*TRAVEL_DISTANCE_TIME_UNITS;
+        campaignMechanics.travelDestinationMapPositionX,currentPlanetMapPositionX,
+        campaignMechanics.travelDestinationMapPositionY);
+    uint16_t elapsedUnits=(uint16_t)(campaignMechanics.travelDistanceUnits-1)*TRAVEL_DISTANCE_TIME_UNITS;
     MwAdvanceCampaignTimeAndChargeWages(elapsedUnits);
     uint16_t planetIndex=currentPlanetIndex;
     if (planetIndex>=TRAVEL_PLANET_DIRECTORY_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetIndex>=TRAVEL_PLANET_DIRECTORY_COUNT");
@@ -512,7 +512,7 @@ uint16_t MwAdvancePaidTravelAndJoinPlanetArrivalContinuation(void)
     if (planetOffset<PLANET_RECORDS_START || (uint32_t)planetOffset+sizeof(MwPlanetHeader)>PLANET_RECORDS_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetOffset<PLANET_RECORDS_START || (uint32_t)planetOffset+sizeof(MwPlanetHeader)>PLANET_RECORDS_END");
     const MwPlanetHeader *planet=(const MwPlanetHeader *)&planetRecordStorage[planetOffset-PLANET_RECORDS_START];
     MwAdvanceCampaignTimeAndChargeWages((uint16_t)(planet->travelTimeWeight<<1));
-    planetIndex=travelDestinationPlanetIndex;
+    planetIndex=campaignMechanics.travelDestinationPlanetIndex;
     if (planetIndex>=TRAVEL_PLANET_DIRECTORY_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetIndex>=TRAVEL_PLANET_DIRECTORY_COUNT");
     planetOffset=planetRecordOffsets[planetIndex];
     if (planetOffset<PLANET_RECORDS_START || (uint32_t)planetOffset+sizeof(MwPlanetHeader)>PLANET_RECORDS_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetOffset<PLANET_RECORDS_START || (uint32_t)planetOffset+sizeof(MwPlanetHeader)>PLANET_RECORDS_END");
@@ -526,12 +526,12 @@ uint16_t MwAdvancePaidTravelAndJoinPlanetArrivalContinuation(void)
  * for the host dispatcher; native AX is not a result. */
 uint16_t MwFinishPlanetArrivalContinuation(void)
 {
-    currentPlanetIndex=travelDestinationPlanetIndex;
+    currentPlanetIndex=campaignMechanics.travelDestinationPlanetIndex;
     MwApplyCurrentPlanetState();
     MwRefreshMarketUnitStock();
     MwRefreshMissionOffers();
     MwRefreshAvailablePilotRecruits();
-    if (travelDropShipSelected!=0)
+    if (campaignMechanics.travelDropShipSelected!=0)
         MwPlayOwnedDropShipAnimation();
     else
         MwPlayHiredTransportAnimation();
@@ -543,7 +543,7 @@ uint16_t MwFinishPlanetArrivalContinuation(void)
  * Timer delivery is a host boundary; input polling remains native game code. */
 void MwPlayHiredTransportAnimation(void)
 {
-    travelAnimationFrameStep=0xFFFF;
+    campaignMechanics.travelAnimationFrameStep=0xFFFF;
     uint16_t frameIndex=0x0020;
     MwDrawIndexedPicture(0,0,HIRED_TRANSPORT_BACKGROUND_PICTURE);
     EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
@@ -560,16 +560,16 @@ void MwPlayHiredTransportAnimation(void)
         nextFrameTick=(uint16_t)(campaignInput.campaignTimerTicks+TRAVEL_ANIMATION_FRAME_TICKS);
         uint16_t pictureIndex;
         if (frameIndex==UINT16_MAX)
-            pictureIndex=hiredTransportReverseTerminator;
+            pictureIndex=campaignMechanics.hiredTransportReverseTerminator;
         else
         {
             if (frameIndex>=HIRED_TRANSPORT_FRAME_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: frameIndex>=HIRED_TRANSPORT_FRAME_COUNT");
-            pictureIndex=hiredTransportFrames[frameIndex];
+            pictureIndex=campaignMechanics.hiredTransportFrames[frameIndex];
         }
         if (pictureIndex==TRAVEL_ANIMATION_TERMINATOR) break;
         MwDrawFourthBankPicture(HIRED_TRANSPORT_X,HIRED_TRANSPORT_Y,EGA_DRAW_PAGE,pictureIndex);
         EgaFlipPages();
-        frameIndex += travelAnimationFrameStep;
+        frameIndex += campaignMechanics.travelAnimationFrameStep;
     }
     uint16_t finalTick=campaignInput.campaignTimerTicks+TRAVEL_ANIMATION_FINAL_TICKS;
     while (finalTick>campaignInput.campaignTimerTicks)
@@ -597,7 +597,7 @@ void MwPlayOwnedDropShipAnimation(void)
         }
         nextFrameTick=(uint16_t)(campaignInput.campaignTimerTicks+TRAVEL_ANIMATION_FRAME_TICKS);
         if (frameIndex>=DROPSHIP_TRAVEL_FRAME_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: frameIndex>=DROPSHIP_TRAVEL_FRAME_COUNT");
-        uint16_t pictureIndex=dropShipTravelFrames[frameIndex];
+        uint16_t pictureIndex=campaignMechanics.dropShipTravelFrames[frameIndex];
         if (pictureIndex==TRAVEL_ANIMATION_TERMINATOR) break;
         MwDrawAlternateBankPicture(DROPSHIP_X,DROPSHIP_Y,EGA_DRAW_PAGE,pictureIndex);
         EgaFlipPages();
@@ -618,8 +618,8 @@ uint16_t MwLookupScaledSquareRoot(uint16_t tableIndex)
     uint16_t byteOffset = tableIndex * sizeof(uint16_t);
     uint16_t nativeOffset = TRAVEL_ROOT_TABLE_START + byteOffset;
     uint16_t tableByteOffset = nativeOffset - TRAVEL_ROOT_TABLE_START;
-    if (tableByteOffset >= sizeof(travelSquareRootValues)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: tableByteOffset >= sizeof(travelSquareRootValues)");
-    return travelSquareRootValues[tableByteOffset / sizeof(uint16_t)];
+    if (tableByteOffset >= sizeof(campaignMechanics.travelSquareRootValues)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: tableByteOffset >= sizeof(travelSquareRootValues)");
+    return campaignMechanics.travelSquareRootValues[tableByteOffset / sizeof(uint16_t)];
 }
 
 /* MW_MAIN 081B:5F5C..5FE5. Decimal magnitude bands deliberately lose
@@ -654,25 +654,25 @@ uint16_t MwCalculatePlanetTravelDistance(uint16_t destinationPlanetIndex)
     uint16_t directoryByteOffset = destinationPlanetIndex * sizeof(uint16_t);
     if (directoryByteOffset >= sizeof(planetRecordOffsets)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: directoryByteOffset >= sizeof(planetRecordOffsets)");
     uint16_t planetOffset = planetRecordOffsets[directoryByteOffset / sizeof(uint16_t)];
-    travelDestinationPlanetOffset = planetOffset;
+    campaignMechanics.travelDestinationPlanetOffset = planetOffset;
     if (planetOffset < PLANET_RECORDS_START
         || (uint32_t)planetOffset + sizeof(MwPlanetHeader) > PLANET_RECORDS_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetOffset < PLANET_RECORDS_START || (uint32_t)planetOffset + sizeof(MwPlanetHeader) > PLANET_RECORDS_END");
     const MwPlanetHeader *planet = (const MwPlanetHeader *)&planetRecordStorage[planetOffset - PLANET_RECORDS_START];
-    travelDestinationMapPositionX = planet->mapPositionX;
-    travelDestinationMapPositionY = planet->mapPositionY;
-    travelDestinationTimeWeight = planet->travelTimeWeight;
+    campaignMechanics.travelDestinationMapPositionX = planet->mapPositionX;
+    campaignMechanics.travelDestinationMapPositionY = planet->mapPositionY;
+    campaignMechanics.travelDestinationTimeWeight = planet->travelTimeWeight;
     uint16_t deltaX = planet->mapPositionX - currentPlanetMapPositionX;
-    travelMapDeltaX = deltaX;
+    campaignMechanics.travelMapDeltaX = deltaX;
     if (planet->mapPositionX < currentPlanetMapPositionX) deltaX = (uint16_t)(0 - deltaX);
     uint16_t deltaY = planet->mapPositionY - currentPlanetMapPositionY;
-    travelMapDeltaY = deltaY;
+    campaignMechanics.travelMapDeltaY = deltaY;
     if (planet->mapPositionY < currentPlanetMapPositionY) deltaY = (uint16_t)(0 - deltaY);
     uint32_t scaledY = (uint32_t)deltaY * TRAVEL_MAP_Y_SCALE_NUMERATOR / TRAVEL_MAP_Y_SCALE_DENOMINATOR;
     if (scaledY > UINT16_MAX) /* Port emulation of a native CPU fault. */ MW_NATIVE_FAULT("Rejected condition: scaledY > UINT16_MAX"); /* Native DIV faults after both delta stores. */
     uint32_t squaredDistance = (uint32_t)deltaX * deltaX + scaledY * scaledY;
     uint16_t distance = MwApproximateSquareRoot(squaredDistance) / TRAVEL_DISTANCE_DIVISOR;
     if (distance == 0) distance = TRAVEL_MINIMUM_DISTANCE;
-    travelDistanceUnits = distance;
+    campaignMechanics.travelDistanceUnits = distance;
     return distance;
 }
 
@@ -682,8 +682,8 @@ void MwAddReserveAmmoFreightToTravelQuote(void)
 {
     for (uint16_t ammoFamily = 0; ammoFamily < CAMPAIGN_AMMO_FAMILY_COUNT; ++ammoFamily)
     {
-        uint32_t charge = (uint32_t)reserveAmmoQuantitiesByFamily[ammoFamily] * reserveAmmoFreightRates[ammoFamily];
-        travelQuoteCbillsLow += (uint16_t)charge;
-        travelQuoteCbillsHigh += (uint16_t)(charge >> NATIVE_WORD_BITS);
+        uint32_t charge = (uint32_t)campaignMechanics.reserveAmmoQuantitiesByFamily[ammoFamily] * campaignMechanics.reserveAmmoFreightRates[ammoFamily];
+        campaignMechanics.travelQuoteCbillsLow += (uint16_t)charge;
+        campaignMechanics.travelQuoteCbillsHigh += (uint16_t)(charge >> NATIVE_WORD_BITS);
     }
 }

@@ -80,7 +80,7 @@ uint16_t MwCampaignUiEventLoop(void)
                 case CAMPAIGN_CONTINUE_CONFIRM_PILOT_ASSIGNMENT:codeOffset=MwConfirmPilotMechAssignmentContinuation();break;
                 case CAMPAIGN_CONTINUE_PLANET_HUB:case CAMPAIGN_CONTINUE_HUB_MENU:codeOffset=MwEnterCampaignPlanetHub(codeOffset);break;
                 case CAMPAIGN_CONTINUE_OPEN_TRAVEL_SCREEN:codeOffset=MwOpenTravelScreenContinuation();break;
-                case CAMPAIGN_CONTINUE_SELECT_TRAVEL_DESTINATION:codeOffset=MwSelectTravelDestinationContinuation(travelDestinationPlanetIndex);break;
+                case CAMPAIGN_CONTINUE_SELECT_TRAVEL_DESTINATION:codeOffset=MwSelectTravelDestinationContinuation(campaignMechanics.travelDestinationPlanetIndex);break;
                 case CAMPAIGN_CONTINUE_TRAVEL_MAP:codeOffset=MwEnterTravelMapMenuContinuation();break;
                 case CAMPAIGN_CONTINUE_SEARCH_PLANET:codeOffset=MwSearchTravelPlanetContinuation();break;
                 case CAMPAIGN_CONTINUE_OPEN_HOUSE_BROWSER:codeOffset=MwOpenTravelHouseBrowserContinuation();break;

@@ -122,59 +122,7 @@ uint16_t ammunitionTransactionPrices[AMMUNITION_PRICE_COUNT];
  * including the two trailing slots per row not reached by normal repair work. */
 CampaignRepairAttemptRow repairAttemptFailuresByKind[REPAIR_ATTEMPT_KIND_COUNT];
 static_assert(sizeof(repairAttemptFailuresByKind) == 0x00DC, "Native reset extent");
-
-/* Native game tables/state. Original image initialization remains required;
- * no default prices, authored lookup values or pilot definitions are invented. */
-CampaignUnitDamage ownedUnitDamage[CAMPAIGN_OWNED_UNIT_SLOTS];
-CampaignUnitDamage marketUnitDamage[CAMPAIGN_MARKET_UNIT_SLOTS];
-CampaignUnitDamage generatedMechDamage;
-uint8_t unitWeaponCounts[CAMPAIGN_MECH_KIND_COUNT];
-uint8_t unitPriceTierMultipliers[UNIT_PRICE_TIER_COUNT];
-uint16_t unitBasePrices[CAMPAIGN_UNIT_KIND_COUNT];
-uint16_t unitTransactionPriceLow, unitTransactionPriceHigh;
-uint16_t selectedOwnedUnitKind, selectedMarketUnitKind;
-uint16_t unitRepairQuoteLow, unitRepairQuoteHigh;
-uint16_t repairQuoteMechKind;
-CampaignUnitDamage *repairQuoteDamage;
-uint16_t componentRepairPriceLow, componentRepairPriceHigh;
-uint16_t repairPriceCategory;
-CampaignUnitDamage *componentRepairDamage;
-CampaignSystemRepairPriceRow systemRepairBasePrices[CAMPAIGN_SYSTEM_COUNT];
-uint16_t *weaponRepairPricesByKind[CAMPAIGN_MECH_KIND_COUNT];
-uint16_t weaponRepairPrices[REPAIR_WEAPON_PRICE_WORD_COUNT];
-uint8_t bodyRepairBasePricesByKind[CAMPAIGN_MECH_KIND_COUNT];
-
-CampaignPilotIdentityStorage pilotIdentityStorage;
-uint8_t rosterStatus[CAMPAIGN_ROSTER_SLOTS];
-uint16_t rosterPayTiers[CAMPAIGN_ROSTER_SLOTS];
-uint16_t rosterGunneryTiers[CAMPAIGN_ROSTER_SLOTS];
-uint16_t rosterPilotingTiers[CAMPAIGN_ROSTER_SLOTS];
-uint16_t rosterUnknownWords[CAMPAIGN_ROSTER_SLOTS];
-uint16_t rosterMechAssignments[CAMPAIGN_ROSTER_SLOTS];
-uint16_t rosterPortraitIds[CAMPAIGN_ROSTER_SLOTS];
-uint8_t pilotGunneryTiers[CAMPAIGN_PILOT_ID_COUNT];
-uint8_t pilotPilotingTiers[CAMPAIGN_PILOT_ID_COUNT];
-uint8_t pilotExperienceCounts[CAMPAIGN_PILOT_ID_COUNT];
-uint16_t pilotDefinitionOffsets[CAMPAIGN_PILOT_ID_COUNT];
-uint8_t pilotDefinitionStorage[PILOT_DEFINITIONS_END - PILOT_DEFINITIONS_START];
-
-uint16_t travelSquareRootValues[TRAVEL_ROOT_TABLE_COUNT];
-uint16_t travelDestinationMapPositionX, travelDestinationMapPositionY;
-uint16_t travelMapDeltaX, travelMapDeltaY, travelDestinationTimeWeight;
-uint16_t travelDestinationPlanetOffset, travelDistanceUnits;
-uint16_t travelQuoteCbillsLow, travelQuoteCbillsHigh;
-uint16_t travelMapSelection, travelDestinationPlanetIndex;
-uint16_t travelMarkerX, travelMarkerY;
-uint16_t travelSavedMarkerX, travelSavedMarkerY;
-uint16_t travelJoystickLastTick, travelAnimationFrameStep;
-uint8_t travelDropShipSelected;
-uint16_t hiredTransportReverseTerminator;
-uint16_t hiredTransportFrames[HIRED_TRANSPORT_FRAME_COUNT];
-uint16_t dropShipTravelFrames[DROPSHIP_TRAVEL_FRAME_COUNT];
-char travelDestinationName[TRAVEL_PLANET_NAME_CAPACITY];
-uint16_t alphabeticPlanetRecordOffsets[TRAVEL_PLANET_DIRECTORY_COUNT];
-uint16_t travelSelectedHouseByteOffset, travelHousePlanetStart;
-uint16_t travelHousePlanetCount;
+CampaignMechanicsState campaignMechanics;
 uint16_t travelSelectedHouseRow;
 char travelHouseSearchNames[TRAVEL_HOUSE_COUNT][0x10];
 MwPanelDescriptor travelHouseBrowserPanel, travelHousePlanetPanel;
@@ -198,9 +146,6 @@ MwServiceCaption travelCostLabel, travelConfirmLabel, travelBrowseLabel;
 char travelPopulationSuffix[9];
 char travelLandscapeLabels[TRAVEL_LANDSCAPE_LABEL_COUNT][9];
 char travelInsufficientFundsText[0x29];
-uint16_t reserveAmmoQuantitiesByFamily[CAMPAIGN_AMMO_FAMILY_COUNT];
-uint16_t reserveAmmoFreightRates[CAMPAIGN_AMMO_FAMILY_COUNT];
-uint16_t housePlanetRangeStarts[CAMPAIGN_HOUSE_COUNT], housePlanetRangeCounts[CAMPAIGN_HOUSE_COUNT];
 /* Private backing arrays; shared access goes through the typed menus below. */
 static MwUiRecord mechServiceUiRecords[0x0005];
 static MwUiRecord dropShipServiceUiRecords[0x0002];
@@ -214,7 +159,7 @@ CampaignServiceState campaignService={
      * (sensor price for kind8 low). Keep typed aliases, not host-endian BYTE casts. */
     .ownedUnitListMenu={ campaignService.ownedUnitListUiRecords, 0x0D, NULL, &campaignService.componentRepairUiRecords[15].x, 8 },
     .mechServiceMenu={ mechServiceUiRecords, 5, &repairAttemptFailuresByKind[9].failedByDamageIndex[8] },
-    .dropShipServiceMenu={ dropShipServiceUiRecords, 2, NULL, &systemRepairBasePrices[REPAIR_SENSORS].basePriceByMechKind[CAMPAIGN_UNIT_MARAUDER], 0 },
+    .dropShipServiceMenu={ dropShipServiceUiRecords, 2, NULL, &campaignMechanics.systemRepairBasePrices[REPAIR_SENSORS].basePriceByMechKind[CAMPAIGN_UNIT_MARAUDER], 0 },
     .componentRepairMenu={ campaignService.componentRepairUiRecords, REPAIR_UI_RECORD_COUNT, &marketCapacityNavigationProbe }
 };
 static MwUiRecord rearmConfirmationRecords[2], saleConfirmationRecords[2], marketUnitListRecords[0x0D];
@@ -376,7 +321,7 @@ static bool ImportTravelUiData(void)
      * 5C4D) and travel record 0 points at it, so the selection redraws the
      * name in the highlight colour. All three use travelDestinationName, so
      * the caption is pointed at it before the menu takes its text. */
-    travelDestinationHeaderLabels[0].display.text=travelDestinationName;
+    travelDestinationHeaderLabels[0].display.text=campaignMechanics.travelDestinationName;
     if (!MwImportUiPanel("travel.panel.house_planets",&travelHousePlanetPanel,TRAVEL_HOUSE_PLANET_LINE_COUNT,owners,count)
         || !MwImportUiPanel("travel.panel.house_browser",&travelHouseBrowserPanel,TRAVEL_HOUSE_BROWSER_LINE_COUNT,owners,count)
         || !MwImportUiPanel("travel.panel.cost",&travelCostPanel,1,owners,count)
@@ -397,31 +342,16 @@ static bool ImportTravelUiData(void)
         if (!ImportInitialString(mainWords,landscapeLabels[label],travelLandscapeLabels[label],sizeof(travelLandscapeLabels[label]))) return false;
     return true;
 }
-/* Native UI directories become typed references. Persistent pilot tables
- * remain parallel arrays; these objects do not invent a packed pilot record. */
-MwPanelDescriptor companyMenuPanel,commanderProfilePanel,crewLabelsPanel,barMenuPanel,recruitInterviewPanel;
-MwServiceCaption companyMenuLabels[4],commanderProfileLabels[11],crewLabels[7],barMenuLabels[4],recruitInterviewLabels[3];
-char commanderProfileName[0x0A],commanderReputationLabels[COMMANDER_REPUTATION_COUNT][0x10];
-char houseAttitudeLabels[5][0x0A],pilotSkillLabels[4][0x0A];
-const char *houseAttitudeText[9];
-char pilotAssignmentCaptions[PILOT_ASSIGNMENT_CAPTION_COUNT][PILOT_ASSIGNMENT_CAPTION_BYTES];
-uint8_t pilotAssignmentCaptionColours[PILOT_ASSIGNMENT_CAPTION_COUNT];
-uint16_t crewScreenRightEdge,pilotCardRosterSlot,pilotCardTextX,displayedPilotId;
-uint16_t pilotCardGunneryTier,pilotCardPilotingTier,pilotCardPortraitId,pilotCardQuotedWageTier,pilotCardOwnedUnitSlot,pilotCardColumnOrigins[PILOT_CARD_COUNT];
-uint16_t assignmentSelectedPilotSlot,assignmentCandidateOwnedSlot,assignmentConflictingPilotSlot,assignmentConflictingOwnedSlot;
-uint8_t assignmentConflictHighlighted;
-uint16_t recruitOfferSlot,selectedRecruitPilotId;
-char recruitStatLabels[0x17],noAvailableRecruitsText[0x21],fullFourPilotRosterText[0x33],fullThreePilotRosterText[0x35];
-const MwPilotDefinitionPrefix *pilotDefinitions[CAMPAIGN_PILOT_ID_COUNT];
-const char *pilotDialogue[CAMPAIGN_PILOT_ID_COUNT];
 static MwUiRecord companyRecords[3],crewRecords[5],barRecords[3],recruitInterviewRecords[2];
 /*0960 reads FF-link probes before rejecting the link. Options and restore
  * now own the mutable bytes also probed by Bar and recruitment. */
 static uint8_t companyNavigationPadding;
-MwUiMenu companyMenu={companyRecords,3,&companyNavigationPadding};
-MwUiMenu crewMenu={crewRecords,5,&rearmConfirmationRecords[1].textRecord};
-MwUiMenu barMenu={barRecords,3,NULL};
-MwUiMenu recruitInterviewMenu={recruitInterviewRecords,2,NULL,&campaignOptions.saveListRows[4].display.x,0};
+CampaignPilotsState campaignPilots={
+    .companyMenu={companyRecords,3,&companyNavigationPadding},
+    .crewMenu={crewRecords,5,&rearmConfirmationRecords[1].textRecord},
+    .barMenu={barRecords,3,NULL},
+    .recruitInterviewMenu={recruitInterviewRecords,2,NULL,&campaignOptions.saveListRows[4].display.x,0}
+};
 static bool ImportPilotUiData(void);
 static bool ImportReserveAmmoUiData(void);
 static bool ImportContractData(void);
@@ -553,7 +483,7 @@ bool MwImportCampaignInitialData(void)
     /* The planets from story/planets.json, laid out as the exe holds them
      * (offsets at 6570, storage 67B6.., the alphabetical table at 6694). */
     if (!MwStoryBuildPlanets(planetRecordStorage,sizeof(planetRecordStorage),PLANET_RECORDS_START,
-        planetRecordOffsets,CAMPAIGN_PLANET_COUNT,alphabeticPlanetRecordOffsets,TRAVEL_PLANET_DIRECTORY_COUNT)) return false;
+        planetRecordOffsets,CAMPAIGN_PLANET_COUNT,campaignMechanics.alphabeticPlanetRecordOffsets,TRAVEL_PLANET_DIRECTORY_COUNT)) return false;
     if (!MwUiCopyWords("hub.table.calendar_month_name_widths",calendarMonthNameWidths,CAMPAIGN_MONTH_COUNT,0)) return false; /*11BA*/
     /* 117E..1183: the calendar's place and colours. Written before it's read; zero where the exe reloaded it. */
     calendarTextX=0;calendarTextY=0;calendarBackground=0;calendarForeground=0;
@@ -574,57 +504,57 @@ bool MwImportCampaignInitialData(void)
     if (!ImportRuleWords("market.start.ammunition_transaction_prices",(uint16_t *)ammunitionTransactionPrices,sizeof(ammunitionTransactionPrices)/sizeof(uint16_t))) return false;
     /* 3A77: zero in the exe, written in play; not a rule (docs/phase2/PLAN.md 5.1). */
     memset(repairAttemptFailuresByKind,0,sizeof(repairAttemptFailuresByKind));
-    memset(&generatedMechDamage,0,sizeof(generatedMechDamage)); /*3A41*/
-    if (!ImportRuleBytes("units.weapons",unitWeaponCounts,sizeof(unitWeaponCounts))) return false;
-    if (!ImportRuleBytes("market.price_tier_multipliers",unitPriceTierMultipliers,sizeof(unitPriceTierMultipliers))) return false;
-    if (!ImportRuleWords("units.base_prices",(uint16_t *)unitBasePrices,sizeof(unitBasePrices)/sizeof(uint16_t))) return false;
-    unitTransactionPriceLow=0; /*305B*/
-    unitTransactionPriceHigh=0; /*305D*/
-    selectedOwnedUnitKind=0; /*2AD5*/
-    selectedMarketUnitKind=0; /*4322*/
-    unitRepairQuoteLow=0; /*31E9*/
-    unitRepairQuoteHigh=0; /*31EB*/
-    repairQuoteMechKind=0; /*31ED*/
-    componentRepairPriceLow=0; /*320C*/
-    componentRepairPriceHigh=0; /*320E*/
-    repairPriceCategory=0; /*3210*/
-    if (!ImportRuleWords("units.weapon_repair_prices",(uint16_t *)weaponRepairPrices,sizeof(weaponRepairPrices)/sizeof(uint16_t))) return false;
-    if (!ImportRuleBytes("units.body_repair_prices",bodyRepairBasePricesByKind,sizeof(bodyRepairBasePricesByKind))) return false;
+    memset(&campaignMechanics.generatedMechDamage,0,sizeof(campaignMechanics.generatedMechDamage)); /*3A41*/
+    if (!ImportRuleBytes("units.weapons",campaignMechanics.unitWeaponCounts,sizeof(campaignMechanics.unitWeaponCounts))) return false;
+    if (!ImportRuleBytes("market.price_tier_multipliers",campaignMechanics.unitPriceTierMultipliers,sizeof(campaignMechanics.unitPriceTierMultipliers))) return false;
+    if (!ImportRuleWords("units.base_prices",(uint16_t *)campaignMechanics.unitBasePrices,sizeof(campaignMechanics.unitBasePrices)/sizeof(uint16_t))) return false;
+    campaignMechanics.unitTransactionPriceLow=0; /*305B*/
+    campaignMechanics.unitTransactionPriceHigh=0; /*305D*/
+    campaignMechanics.selectedOwnedUnitKind=0; /*2AD5*/
+    campaignMechanics.selectedMarketUnitKind=0; /*4322*/
+    campaignMechanics.unitRepairQuoteLow=0; /*31E9*/
+    campaignMechanics.unitRepairQuoteHigh=0; /*31EB*/
+    campaignMechanics.repairQuoteMechKind=0; /*31ED*/
+    campaignMechanics.componentRepairPriceLow=0; /*320C*/
+    campaignMechanics.componentRepairPriceHigh=0; /*320E*/
+    campaignMechanics.repairPriceCategory=0; /*3210*/
+    if (!ImportRuleWords("units.weapon_repair_prices",(uint16_t *)campaignMechanics.weaponRepairPrices,sizeof(campaignMechanics.weaponRepairPrices)/sizeof(uint16_t))) return false;
+    if (!ImportRuleBytes("units.body_repair_prices",campaignMechanics.bodyRepairBasePricesByKind,sizeof(campaignMechanics.bodyRepairBasePricesByKind))) return false;
     /* The pilots from story/pilots.json (offsets at 9121, storage 9177..). */
-    if (!MwStoryBuildPilots(pilotDefinitionStorage,sizeof(pilotDefinitionStorage),PILOT_DEFINITIONS_START,
-        pilotDefinitionOffsets,CAMPAIGN_PILOT_ID_COUNT)) return false;
-    MwBuildTravelSquareRoots(travelSquareRootValues,TRAVEL_ROOT_TABLE_COUNT); /*4CE6*/
-    travelDestinationMapPositionX=0; /*54D0*/
-    travelDestinationMapPositionY=0; /*54D2*/
-    travelMapDeltaX=0; /*54D4*/
-    travelMapDeltaY=0; /*54D6*/
-    travelDestinationTimeWeight=0; /* Written before it's read; zero where the exe reloaded it. */
-    travelDestinationPlanetOffset=0; /*5AD3*/
-    travelDistanceUnits=0; /*5AD9*/
-    travelQuoteCbillsLow=0; /*5AD5*/
-    travelQuoteCbillsHigh=0; /*5AD7*/
-    travelMapSelection=0; /*5ACF*/
-    travelDestinationPlanetIndex=0; /*5AD1*/
-    travelMarkerX=0; /*5ADB*/
-    travelMarkerY=0; /*5ADD*/
-    travelSavedMarkerX=0; /*5ADF*/
-    travelSavedMarkerY=0; /*5AE1*/
-    travelJoystickLastTick=0; /*5AE3*/
-    travelAnimationFrameStep=0; /*5AE6*/
-    memset(&travelDropShipSelected,0,sizeof(travelDropShipSelected)); /*5AE5*/
-    hiredTransportReverseTerminator=MW_HIRED_TRANSPORT_REVERSE_END;
-    if (!MwUiCopyWords("travel.table.hired_transport_frames",(uint16_t *)hiredTransportFrames,sizeof(hiredTransportFrames)/sizeof(uint16_t),0) /*5AEA*/
-        || !MwUiCopyWords("travel.table.dropship_frames",(uint16_t *)dropShipTravelFrames,sizeof(dropShipTravelFrames)/sizeof(uint16_t),0)) return false; /*5B2E*/
+    if (!MwStoryBuildPilots(campaignMechanics.pilotDefinitionStorage,sizeof(campaignMechanics.pilotDefinitionStorage),PILOT_DEFINITIONS_START,
+        campaignMechanics.pilotDefinitionOffsets,CAMPAIGN_PILOT_ID_COUNT)) return false;
+    MwBuildTravelSquareRoots(campaignMechanics.travelSquareRootValues,TRAVEL_ROOT_TABLE_COUNT); /*4CE6*/
+    campaignMechanics.travelDestinationMapPositionX=0; /*54D0*/
+    campaignMechanics.travelDestinationMapPositionY=0; /*54D2*/
+    campaignMechanics.travelMapDeltaX=0; /*54D4*/
+    campaignMechanics.travelMapDeltaY=0; /*54D6*/
+    campaignMechanics.travelDestinationTimeWeight=0; /* Written before it's read; zero where the exe reloaded it. */
+    campaignMechanics.travelDestinationPlanetOffset=0; /*5AD3*/
+    campaignMechanics.travelDistanceUnits=0; /*5AD9*/
+    campaignMechanics.travelQuoteCbillsLow=0; /*5AD5*/
+    campaignMechanics.travelQuoteCbillsHigh=0; /*5AD7*/
+    campaignMechanics.travelMapSelection=0; /*5ACF*/
+    campaignMechanics.travelDestinationPlanetIndex=0; /*5AD1*/
+    campaignMechanics.travelMarkerX=0; /*5ADB*/
+    campaignMechanics.travelMarkerY=0; /*5ADD*/
+    campaignMechanics.travelSavedMarkerX=0; /*5ADF*/
+    campaignMechanics.travelSavedMarkerY=0; /*5AE1*/
+    campaignMechanics.travelJoystickLastTick=0; /*5AE3*/
+    campaignMechanics.travelAnimationFrameStep=0; /*5AE6*/
+    memset(&campaignMechanics.travelDropShipSelected,0,sizeof(campaignMechanics.travelDropShipSelected)); /*5AE5*/
+    campaignMechanics.hiredTransportReverseTerminator=MW_HIRED_TRANSPORT_REVERSE_END;
+    if (!MwUiCopyWords("travel.table.hired_transport_frames",(uint16_t *)campaignMechanics.hiredTransportFrames,sizeof(campaignMechanics.hiredTransportFrames)/sizeof(uint16_t),0) /*5AEA*/
+        || !MwUiCopyWords("travel.table.dropship_frames",(uint16_t *)campaignMechanics.dropShipTravelFrames,sizeof(campaignMechanics.dropShipTravelFrames)/sizeof(uint16_t),0)) return false; /*5B2E*/
     /* DS:5C4E: the destination header's caption text (the original's buffer runs past it into the next caption's head, bytes after the NUL that nothing draws). */
-    if (!MwWordsCopyText("travel.caption.destination_name.text",travelDestinationName,sizeof(travelDestinationName))) return false;
-    travelSelectedHouseByteOffset=0; /*54DC*/
-    travelHousePlanetStart=0; /*54DE*/
-    travelHousePlanetCount=0; /*54E2*/
+    if (!MwWordsCopyText("travel.caption.destination_name.text",campaignMechanics.travelDestinationName,sizeof(campaignMechanics.travelDestinationName))) return false;
+    campaignMechanics.travelSelectedHouseByteOffset=0; /*54DC*/
+    campaignMechanics.travelHousePlanetStart=0; /*54DE*/
+    campaignMechanics.travelHousePlanetCount=0; /*54E2*/
     travelSelectedHouseRow=0; /*5A0B*/
     memcpy(travelPopulationSuffix,mainWords+0x5B83,sizeof(travelPopulationSuffix));
     memcpy(travelLandscapeLabels,mainWords+0x5CA6,sizeof(travelLandscapeLabels));
     memcpy(travelInsufficientFundsText,mainWords+0x5B5A,sizeof(travelInsufficientFundsText));
-    if (!ImportRuleWords("market.freight_rates",(uint16_t *)reserveAmmoFreightRates,sizeof(reserveAmmoFreightRates)/sizeof(uint16_t))) return false;
+    if (!ImportRuleWords("market.freight_rates",(uint16_t *)campaignMechanics.reserveAmmoFreightRates,sizeof(campaignMechanics.reserveAmmoFreightRates)/sizeof(uint16_t))) return false;
     if (!ImportRuleBytes("market.stock_kind_range_maxima",campaignEconomy.generatedKindRangeMaxima,sizeof(campaignEconomy.generatedKindRangeMaxima))) return false;
     if (!ImportRuleBytes("market.stock_kind_range_starts",campaignEconomy.generatedKindRangeStarts,sizeof(campaignEconomy.generatedKindRangeStarts))) return false;
     campaignEconomy.generatedDamageMaximumIndex=0; /*3A3D*/
@@ -642,8 +572,8 @@ bool MwImportCampaignInitialData(void)
     if (!ImportRuleWords("houses.payment_adjustment_percent",(uint16_t *)campaignEconomy.housePaymentAdjustmentPercent,sizeof(campaignEconomy.housePaymentAdjustmentPercent)/sizeof(uint16_t))) return false;
     if (!ImportRuleWords("houses.salvage_base_percent",(uint16_t *)campaignEconomy.houseSalvageBasePercent,sizeof(campaignEconomy.houseSalvageBasePercent)/sizeof(uint16_t))) return false;
     if (!ImportRuleWords("houses.advance_base_percent",(uint16_t *)campaignEconomy.houseAdvanceBasePercent,sizeof(campaignEconomy.houseAdvanceBasePercent)/sizeof(uint16_t))) return false;
-    if (!ImportRuleWords("houses.planet_range_starts",(uint16_t *)housePlanetRangeStarts,sizeof(housePlanetRangeStarts)/sizeof(uint16_t))) return false;
-    if (!ImportRuleWords("houses.planet_range_counts",(uint16_t *)housePlanetRangeCounts,sizeof(housePlanetRangeCounts)/sizeof(uint16_t))) return false;
+    if (!ImportRuleWords("houses.planet_range_starts",(uint16_t *)campaignMechanics.housePlanetRangeStarts,sizeof(campaignMechanics.housePlanetRangeStarts)/sizeof(uint16_t))) return false;
+    if (!ImportRuleWords("houses.planet_range_counts",(uint16_t *)campaignMechanics.housePlanetRangeCounts,sizeof(campaignMechanics.housePlanetRangeCounts)/sizeof(uint16_t))) return false;
     /* The mission descriptions from story/missions.json: the category tables
      * (8A16 maximum indices, 8A1B list offsets, 8A25 entries) and the storage
      * (8A69..). Saves keep entry offsets, so the original's text gives the
@@ -781,7 +711,7 @@ bool MwImportCampaignInitialData(void)
     if (!ImportIntroCaptionAt("intro.caption.7.right.at",&introSeventhRightText)) return false;
     if (!MwStoryCopyText("intro.caption.7.right",introSeventhRightText.text,sizeof(introSeventhRightText.text))) return false;
     for (uint16_t row=0;row<CAMPAIGN_SYSTEM_COUNT;++row)
-        if (!ImportRuleWords("repair.system_prices",systemRepairBasePrices[row].basePriceByMechKind,CAMPAIGN_MECH_KIND_COUNT,row*0x14)) return false;
+        if (!ImportRuleWords("repair.system_prices",campaignMechanics.systemRepairBasePrices[row].basePriceByMechKind,CAMPAIGN_MECH_KIND_COUNT,row*0x14)) return false;
     /* 2F3C, 2F28 and 3C1B come from the rules (data/rules/units.json). */
     uint8_t ammoProfileEntries[AMMO_PROFILE_ENTRY_COUNT*4],ammoProfiles[CAMPAIGN_MECH_KIND_COUNT*2];
     uint8_t weaponRepairPriceLists[CAMPAIGN_MECH_KIND_COUNT*2];
@@ -809,7 +739,7 @@ bool MwImportCampaignInitialData(void)
             || prices<0x3C2F || prices>=0x3CAB || (prices-0x3C2F)%2
             || (layout && (layout<diagramBase || layout>=diagramBase+8*0x50 || (layout-diagramBase)%0x50))) return false;
         campaignEconomy.unitAmmoProfiles[kind]=&campaignEconomy.unitAmmoProfileEntries[(profile-0x2F3C)/4];
-        weaponRepairPricesByKind[kind]=&weaponRepairPrices[(prices-0x3C2F)/2];
+        campaignMechanics.weaponRepairPricesByKind[kind]=&campaignMechanics.weaponRepairPrices[(prices-0x3C2F)/2];
         campaignService.mechBodyDiagramLayoutsByKind[kind]=layout?&campaignService.mechBodyDiagramLayouts[(layout-diagramBase)/0x50]:NULL;
         uint16_t labelOffset=repairWeaponWords[kind],label=0;
         while (mainWords[labelOffset]!=0xFF && label<CAMPAIGN_WEAPON_SLOTS+1)
@@ -1006,7 +936,7 @@ bool MwImportCampaignInitialData(void)
             rectangle->x=at[0];rectangle->y=at[1];rectangle->width=at[2];rectangle->height=at[3];
         }
     /* These initial near values have no live object until their callers set them. */
-    repairQuoteDamage=NULL;componentRepairDamage=NULL;
+    campaignMechanics.repairQuoteDamage=NULL;campaignMechanics.componentRepairDamage=NULL;
     campaignService.mechDiagramBodyDamage=NULL;campaignService.mechDiagramRectangle=NULL;campaignUi.uiMenu=NULL;
     return ImportPilotUiData() && ImportTravelUiData() && MwImportCampaignEventData()
         && MwImportCampaignOptionsData()
@@ -1028,40 +958,40 @@ static bool ImportPilotUiData(void)
     static const char *const recruitIds[3]={"crew.caption.recruit_prompt","crew.caption.recruit_hire","crew.caption.recruit_reject"};
     UiCaptionOwner owners[4+11+7+4+3];
     size_t count=0;
-    for (uint16_t i=0;i<4;++i) owners[count++]={companyIds[i],&companyMenuLabels[i].display,companyMenuLabels[i].text,sizeof(companyMenuLabels[i].text),0};
-    for (uint16_t i=0;i<11;++i) owners[count++]={profileIds[i],&commanderProfileLabels[i].display,commanderProfileLabels[i].text,sizeof(commanderProfileLabels[i].text),0};
-    for (uint16_t i=0;i<7;++i) owners[count++]={crewIds[i],&crewLabels[i].display,crewLabels[i].text,sizeof(crewLabels[i].text),0};
-    for (uint16_t i=0;i<4;++i) owners[count++]={barIds[i],&barMenuLabels[i].display,barMenuLabels[i].text,sizeof(barMenuLabels[i].text),0};
-    for (uint16_t i=0;i<3;++i) owners[count++]={recruitIds[i],&recruitInterviewLabels[i].display,recruitInterviewLabels[i].text,sizeof(recruitInterviewLabels[i].text),0};
+    for (uint16_t i=0;i<4;++i) owners[count++]={companyIds[i],&campaignPilots.companyMenuLabels[i].display,campaignPilots.companyMenuLabels[i].text,sizeof(campaignPilots.companyMenuLabels[i].text),0};
+    for (uint16_t i=0;i<11;++i) owners[count++]={profileIds[i],&campaignPilots.commanderProfileLabels[i].display,campaignPilots.commanderProfileLabels[i].text,sizeof(campaignPilots.commanderProfileLabels[i].text),0};
+    for (uint16_t i=0;i<7;++i) owners[count++]={crewIds[i],&campaignPilots.crewLabels[i].display,campaignPilots.crewLabels[i].text,sizeof(campaignPilots.crewLabels[i].text),0};
+    for (uint16_t i=0;i<4;++i) owners[count++]={barIds[i],&campaignPilots.barMenuLabels[i].display,campaignPilots.barMenuLabels[i].text,sizeof(campaignPilots.barMenuLabels[i].text),0};
+    for (uint16_t i=0;i<3;++i) owners[count++]={recruitIds[i],&campaignPilots.recruitInterviewLabels[i].display,campaignPilots.recruitInterviewLabels[i].text,sizeof(campaignPilots.recruitInterviewLabels[i].text),0};
     /* The crew menu's pilot rows (1..4) have no caption: 273E/28B2 assigns
      * them before any pilot record is selected. */
     if (!MwImportUiCaptions(owners,count)
-        || !MwImportUiPanel("crew.panel.company",&companyMenuPanel,4,owners,count)
-        || !MwImportUiPanel("crew.panel.commander_profile",&commanderProfilePanel,11,owners,count)
-        || !MwImportUiPanel("crew.panel.crew",&crewLabelsPanel,7,owners,count)
-        || !MwImportUiPanel("crew.panel.bar",&barMenuPanel,4,owners,count)
-        || !MwImportUiPanel("crew.panel.recruit",&recruitInterviewPanel,3,owners,count)
-        || !MwImportUiMenu("crew.menu.company",&companyMenu,owners,count)
-        || !MwImportUiMenu("crew.menu.crew",&crewMenu,owners,count)
-        || !MwImportUiMenu("crew.menu.bar",&barMenu,owners,count)
-        || !MwImportUiMenu("crew.menu.recruit",&recruitInterviewMenu,owners,count)) return false;
-    crewScreenRightEdge=0; /* 2438: Written before it's read; zero where the exe reloaded it. */
-    pilotCardRosterSlot=0; /*243A*/
-    pilotCardTextX=0; /* 243C: Written before it's read; zero where the exe reloaded it. */
-    displayedPilotId=0; /*243E*/
-    pilotCardGunneryTier=0; /* Written before it's read; zero where the exe reloaded it. */
-    pilotCardPilotingTier=0; /* Written before it's read; zero where the exe reloaded it. */
-    pilotCardPortraitId=0; /*2444*/
-    pilotCardQuotedWageTier=0; /* Written before it's read; zero where the exe reloaded it. */
-    pilotCardOwnedUnitSlot=0; /*2448*/
-    assignmentSelectedPilotSlot=0; /*2581*/
-    assignmentCandidateOwnedSlot=0; /*2583*/
-    assignmentConflictingPilotSlot=0; /*2586*/
-    assignmentConflictingOwnedSlot=0; /*2588*/
-    recruitOfferSlot=0; /*911D*/
-    selectedRecruitPilotId=0; /*911F*/
-    assignmentConflictHighlighted=0; /*2585*/
-    if (!MwUiCopyWords("crew.table.pilot_card_column_origins",pilotCardColumnOrigins,PILOT_CARD_COUNT,0)) return false; /*244A*/
+        || !MwImportUiPanel("crew.panel.company",&campaignPilots.companyMenuPanel,4,owners,count)
+        || !MwImportUiPanel("crew.panel.commander_profile",&campaignPilots.commanderProfilePanel,11,owners,count)
+        || !MwImportUiPanel("crew.panel.crew",&campaignPilots.crewLabelsPanel,7,owners,count)
+        || !MwImportUiPanel("crew.panel.bar",&campaignPilots.barMenuPanel,4,owners,count)
+        || !MwImportUiPanel("crew.panel.recruit",&campaignPilots.recruitInterviewPanel,3,owners,count)
+        || !MwImportUiMenu("crew.menu.company",&campaignPilots.companyMenu,owners,count)
+        || !MwImportUiMenu("crew.menu.crew",&campaignPilots.crewMenu,owners,count)
+        || !MwImportUiMenu("crew.menu.bar",&campaignPilots.barMenu,owners,count)
+        || !MwImportUiMenu("crew.menu.recruit",&campaignPilots.recruitInterviewMenu,owners,count)) return false;
+    campaignPilots.crewScreenRightEdge=0; /* 2438: Written before it's read; zero where the exe reloaded it. */
+    campaignPilots.pilotCardRosterSlot=0; /*243A*/
+    campaignPilots.pilotCardTextX=0; /* 243C: Written before it's read; zero where the exe reloaded it. */
+    campaignPilots.displayedPilotId=0; /*243E*/
+    campaignPilots.pilotCardGunneryTier=0; /* Written before it's read; zero where the exe reloaded it. */
+    campaignPilots.pilotCardPilotingTier=0; /* Written before it's read; zero where the exe reloaded it. */
+    campaignPilots.pilotCardPortraitId=0; /*2444*/
+    campaignPilots.pilotCardQuotedWageTier=0; /* Written before it's read; zero where the exe reloaded it. */
+    campaignPilots.pilotCardOwnedUnitSlot=0; /*2448*/
+    campaignPilots.assignmentSelectedPilotSlot=0; /*2581*/
+    campaignPilots.assignmentCandidateOwnedSlot=0; /*2583*/
+    campaignPilots.assignmentConflictingPilotSlot=0; /*2586*/
+    campaignPilots.assignmentConflictingOwnedSlot=0; /*2588*/
+    campaignPilots.recruitOfferSlot=0; /*911D*/
+    campaignPilots.selectedRecruitPilotId=0; /*911F*/
+    campaignPilots.assignmentConflictHighlighted=0; /*2585*/
+    if (!MwUiCopyWords("crew.table.pilot_card_column_origins",campaignPilots.pilotCardColumnOrigins,PILOT_CARD_COUNT,0)) return false; /*244A*/
     /* The crew's words (crew.word.*), through the pointer tables crew.json
      * names them by: reputation 23D0, skill 2452 and attitude 23FB. */
     uint16_t reputationWords[4],skillWords[4],attitudeWords[9];
@@ -1070,18 +1000,18 @@ static bool ImportPilotUiData(void)
         || !MwUiCopyWords("crew.table.attitude_words",attitudeWords,9,0)) return false;
     for (uint16_t i=0;i<4;++i)
     {
-        if (!ImportInitialString(mainWords,reputationWords[i],commanderReputationLabels[i],sizeof(commanderReputationLabels[i]))) return false;
-        if (!ImportInitialString(mainWords,skillWords[i],pilotSkillLabels[i],sizeof(pilotSkillLabels[i]))) return false;
+        if (!ImportInitialString(mainWords,reputationWords[i],campaignPilots.commanderReputationLabels[i],sizeof(campaignPilots.commanderReputationLabels[i]))) return false;
+        if (!ImportInitialString(mainWords,skillWords[i],campaignPilots.pilotSkillLabels[i],sizeof(campaignPilots.pilotSkillLabels[i]))) return false;
     }
     const uint16_t attitudeOffsets[5]={0x240D,0x2414,0x241D,0x2425,0x242E};
     for (uint16_t i=0;i<5;++i)
-        if (!ImportInitialString(mainWords,attitudeOffsets[i],houseAttitudeLabels[i],sizeof(houseAttitudeLabels[i]))) return false;
+        if (!ImportInitialString(mainWords,attitudeOffsets[i],campaignPilots.houseAttitudeLabels[i],sizeof(campaignPilots.houseAttitudeLabels[i]))) return false;
     for (uint16_t i=0;i<9;++i)
     {
         uint16_t offset=attitudeWords[i],label=0;
         while (label<5 && attitudeOffsets[label]!=offset) ++label;
         if (label==5) return false;
-        houseAttitudeText[i]=houseAttitudeLabels[label];
+        campaignPilots.houseAttitudeText[i]=campaignPilots.houseAttitudeLabels[label];
     }
     /* The pilot assignment captions: the pointer table (247E) names colour
      * captions, a colour byte each from the layout and the text after it. */
@@ -1097,27 +1027,27 @@ static bool ImportPilotUiData(void)
             if (MwUiCaptionOffset(id)==assignmentPointers[i]) break;
             ++caption;
         }
-        if (caption==PILOT_ASSIGNMENT_CAPTION_COUNT || !MwUiCopyBytes(id,&pilotAssignmentCaptionColours[i],1,0)) return false;
+        if (caption==PILOT_ASSIGNMENT_CAPTION_COUNT || !MwUiCopyBytes(id,&campaignPilots.pilotAssignmentCaptionColours[i],1,0)) return false;
         char textId[40];
         snprintf(textId,sizeof(textId),"%s.text",id);  /* the caption's text, story/words.json */
-        if (!MwWordsCopyText(textId,pilotAssignmentCaptions[i],sizeof(pilotAssignmentCaptions[i]))) return false;
+        if (!MwWordsCopyText(textId,campaignPilots.pilotAssignmentCaptions[i],sizeof(campaignPilots.pilotAssignmentCaptions[i]))) return false;
     }
-    pilotDefinitions[0]=NULL;pilotDialogue[0]=NULL;
+    campaignPilots.pilotDefinitions[0]=NULL;campaignPilots.pilotDialogue[0]=NULL;
     for (uint16_t pilotId=1;pilotId<CAMPAIGN_PILOT_ID_COUNT;++pilotId)
     {
-        uint16_t offset=pilotDefinitionOffsets[pilotId];
+        uint16_t offset=campaignMechanics.pilotDefinitionOffsets[pilotId];
         if (offset<PILOT_DEFINITIONS_START || (uint32_t)offset+sizeof(MwPilotDefinitionPrefix)>=PILOT_DEFINITIONS_END) return false;
-        const uint8_t *record=&pilotDefinitionStorage[offset-PILOT_DEFINITIONS_START];
+        const uint8_t *record=&campaignMechanics.pilotDefinitionStorage[offset-PILOT_DEFINITIONS_START];
         if (!memchr(record+3,0,0x0B) || !memchr(record+0x0E,0,PILOT_DEFINITIONS_END-offset-0x0E)) return false;
-        pilotDefinitions[pilotId]=(const MwPilotDefinitionPrefix *)&pilotDefinitionStorage[offset-PILOT_DEFINITIONS_START];
-        pilotDialogue[pilotId]=(const char *)(pilotDefinitions[pilotId]+1);
+        campaignPilots.pilotDefinitions[pilotId]=(const MwPilotDefinitionPrefix *)&campaignMechanics.pilotDefinitionStorage[offset-PILOT_DEFINITIONS_START];
+        campaignPilots.pilotDialogue[pilotId]=(const char *)(campaignPilots.pilotDefinitions[pilotId]+1);
     }
     companyNavigationPadding=0; /*3020*/
-    if (!ImportInitialString(mainWords,0x21C2,commanderProfileName,sizeof(commanderProfileName))) return false;
-    if (!ImportInitialString(mainWords,0x9106,recruitStatLabels,sizeof(recruitStatLabels))) return false;
-    if (!ImportInitialString(mainWords,0x9C39,noAvailableRecruitsText,sizeof(noAvailableRecruitsText))) return false;
-    if (!ImportInitialString(mainWords,0x9C5A,fullFourPilotRosterText,sizeof(fullFourPilotRosterText))) return false;
-    if (!ImportInitialString(mainWords,0x9C8D,fullThreePilotRosterText,sizeof(fullThreePilotRosterText))) return false;
+    if (!ImportInitialString(mainWords,0x21C2,campaignPilots.commanderProfileName,sizeof(campaignPilots.commanderProfileName))) return false;
+    if (!ImportInitialString(mainWords,0x9106,campaignPilots.recruitStatLabels,sizeof(campaignPilots.recruitStatLabels))) return false;
+    if (!ImportInitialString(mainWords,0x9C39,campaignPilots.noAvailableRecruitsText,sizeof(campaignPilots.noAvailableRecruitsText))) return false;
+    if (!ImportInitialString(mainWords,0x9C5A,campaignPilots.fullFourPilotRosterText,sizeof(campaignPilots.fullFourPilotRosterText))) return false;
+    if (!ImportInitialString(mainWords,0x9C8D,campaignPilots.fullThreePilotRosterText,sizeof(campaignPilots.fullThreePilotRosterText))) return false;
     return ImportContractData();
 }
 
@@ -1204,7 +1134,7 @@ static bool ImportContractData(void)
 }
 CampaignMarketState campaignMarket={
     /* Native FF-neighbour probe is 1090:505A, the existing travel table WORD. */
-    .reserveAmmoShopMenu={campaignMarket.reserveAmmoShopRecords,RESERVE_AMMO_MENU_ROWS,NULL,&travelSquareRootValues[0x1BA],0},
+    .reserveAmmoShopMenu={campaignMarket.reserveAmmoShopRecords,RESERVE_AMMO_MENU_ROWS,NULL,&campaignMechanics.travelSquareRootValues[0x1BA],0},
     /* FF navigation probes alias the canonical caption/diagram/root-table owners;
      * they are read before the dispatcher rejects the FF navigation link. */
     .rearmConfirmationMenu={rearmConfirmationRecords,2,NULL,&campaignService.mechBodyDiagramLayouts[7].bodyRegions[7].x,8},
@@ -1212,9 +1142,9 @@ CampaignMarketState campaignMarket={
     /*380D, DONE label byte. */
     .marketUnitListMenu={marketUnitListRecords,0x0D,(const uint8_t *)&campaignService.repairWeaponLabelStorage[CAMPAIGN_UNIT_SHADOW_HAWK][4][2]},
     /*529B, high BYTE. */
-    .marketMechMenu={marketMechRecords,3,NULL,&travelSquareRootValues[0x02DA],8},
+    .marketMechMenu={marketMechRecords,3,NULL,&campaignMechanics.travelSquareRootValues[0x02DA],8},
     /*52C5, high BYTE. */
-    .marketDropShipMenu={marketDropShipRecords,2,NULL,&travelSquareRootValues[0x02EF],8},
+    .marketDropShipMenu={marketDropShipRecords,2,NULL,&campaignMechanics.travelSquareRootValues[0x02EF],8},
     /*5601, final space. */
     .marketComponentMenu={marketComponentRecords,1,(const uint8_t *)&campaignMarket.positionedText.text[0x10]},
     .mechComplexMenu={mechComplexRecords,4,NULL,&campaignService.repairWeaponConditionRows[1].display.y,0}

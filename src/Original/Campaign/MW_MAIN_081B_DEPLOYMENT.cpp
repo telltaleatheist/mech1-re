@@ -23,7 +23,7 @@ uint16_t MwResolveDeploymentOrExportCombatExchangeContinuation(void)
 {
     MwPlayHiredTransportAnimation();
     /* Native REP STOSB clears0451..0467, NOT the accepted flag0468. */
-    memset(rosterStatus,0,sizeof(rosterStatus));
+    memset(campaignMechanics.rosterStatus,0,sizeof(campaignMechanics.rosterStatus));
     memset(salvageEntries,0,sizeof(salvageEntries));
     returnedDisabledEnemyCount=0;
     combatTransitionResult=0;

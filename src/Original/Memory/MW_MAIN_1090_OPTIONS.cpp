@@ -49,7 +49,7 @@ bool MwImportCampaignOptionsData(void)
         || !MwImportUiMenu("options.menu.restore",&campaignOptions.restoreMenu,owners,count)
         || !MwImportUiMenu("options.menu.confirmation",&campaignOptions.confirmationMenu,owners,count)
         || !MwImportUiMenu("options.menu.news",&campaignOptions.newsMenu,owners,count)) return false;
-    barMenu.sentinelEnabled=&campaignOptions.optionsMenu.records[5].rightRecordIndex; /*1090:9E3E*/
+    campaignPilots.barMenu.sentinelEnabled=&campaignOptions.optionsMenu.records[5].rightRecordIndex; /*1090:9E3E*/
     /* The menus' past-end probes (story/native.json, src/Import/pieces.txt). */
     if (!MwStoryCopyBytes("probe.options",&optionsNavigationProbe,1)
         || !MwStoryCopyBytes("probe.restore",&restoreNavigationProbe,1)

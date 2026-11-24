@@ -23,7 +23,7 @@ uint16_t MwEnterBarContinuation(uint16_t entryOffset)
     }
 drawBackground:
     campaignUi.hubSelectedRecordIndex=BAR_HUB_ROW;
-    recruitOfferSlot=0;
+    campaignPilots.recruitOfferSlot=0;
     EgaClearDrawPage(BAR_BACKGROUND_COLOUR);
     MwDrawIndexedPicture(0,0,BAR_BACKGROUND_PICTURE);
     EgaSelectFont(BAR_FONT);
@@ -41,8 +41,8 @@ refreshMenu:
         campaignEventDispatchReturnContinuation=0;
     }
 drawMenu:
-    MwDrawDescriptorTextPanel(&barMenuPanel);
-    MwSelectUiRecordTable(campaignUi.barMenuSelectedRow,&barMenu);
+    MwDrawDescriptorTextPanel(&campaignPilots.barMenuPanel);
+    MwSelectUiRecordTable(campaignUi.barMenuSelectedRow,&campaignPilots.barMenu);
     return CAMPAIGN_CONTINUE_UI;
 }
 
@@ -69,11 +69,11 @@ uint16_t MwOrderDrinkContinuation(uint16_t entryOffset)
 bool MwFindNextRecruitCandidate(void)
 {
     if (campaignEconomy.availableRecruitCount==0) return false;
-    while (recruitOfferSlot<RECRUIT_OFFER_SLOTS)
+    while (campaignPilots.recruitOfferSlot<RECRUIT_OFFER_SLOTS)
     {
-        uint16_t pilotId=campaignEconomy.availableRecruitIds[recruitOfferSlot];
-        if (pilotId!=0) {selectedRecruitPilotId=pilotId;return true;}
-        ++recruitOfferSlot;
+        uint16_t pilotId=campaignEconomy.availableRecruitIds[campaignPilots.recruitOfferSlot];
+        if (pilotId!=0) {campaignPilots.selectedRecruitPilotId=pilotId;return true;}
+        ++campaignPilots.recruitOfferSlot;
     }
     return false;
 }
@@ -87,29 +87,29 @@ uint16_t MwOpenRecruitInterviewContinuation(void)
     if (!MwFindNextRecruitCandidate())
     {
         EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
-        MwNativeByteView text={(const uint8_t *)noAvailableRecruitsText,0,sizeof(noAvailableRecruitsText)};
+        MwNativeByteView text={(const uint8_t *)campaignPilots.noAvailableRecruitsText,0,sizeof(campaignPilots.noAvailableRecruitsText)};
         MwShowMonospaceTextPanel(NO_RECRUITS_PANEL_X,NO_RECRUITS_PANEL_Y,NO_RECRUITS_PANEL_WIDTH,NO_RECRUITS_PANEL_HEIGHT,&text,0);
         return CAMPAIGN_CONTINUE_BAR_REFRESH;
     }
     MwAdvanceCampaignTimeAndChargeWages(1);
     EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
-    MwDrawDescriptorTextPanel(&recruitInterviewPanel);
+    MwDrawDescriptorTextPanel(&campaignPilots.recruitInterviewPanel);
     EgaFillDisplayPageRectangle(RECRUIT_STAT_PANEL_X,RECRUIT_STAT_PANEL_Y,RECRUIT_STAT_PANEL_WIDTH,RECRUIT_STAT_PANEL_HEIGHT,PILOT_CARD_BACKGROUND);
     MwDrawPicturePanelBorder(RECRUIT_STAT_PANEL_X,RECRUIT_STAT_PANEL_Y,RECRUIT_STAT_PANEL_WIDTH,RECRUIT_STAT_PANEL_HEIGHT);
-    MwNativeByteView labels={(const uint8_t *)recruitStatLabels,0,sizeof(recruitStatLabels)};
+    MwNativeByteView labels={(const uint8_t *)campaignPilots.recruitStatLabels,0,sizeof(campaignPilots.recruitStatLabels)};
     EgaDrawTransparentText(RECRUIT_LABELS_X,RECRUIT_NAME_Y,PILOT_CARD_TEXT_COLOUR,&labels,0);
-    const MwPilotDefinitionPrefix *pilot=pilotDefinitions[selectedRecruitPilotId]; /* Saved6A9C across drawing. */
+    const MwPilotDefinitionPrefix *pilot=campaignPilots.pilotDefinitions[campaignPilots.selectedRecruitPilotId]; /* Saved6A9C across drawing. */
     MwDrawRecruitStatText((const char *)pilot->nameBytes,RECRUIT_NAME_Y);
-    MwDrawRecruitStatText(pilotSkillLabels[pilotGunneryTiers[selectedRecruitPilotId]],RECRUIT_GUNNERY_Y);
-    MwDrawRecruitStatText(pilotSkillLabels[pilotPilotingTiers[selectedRecruitPilotId]],RECRUIT_PILOTING_Y);
-    uint16_t wage=campaignEconomy.pilotWageAmounts[pilotGunneryTiers[selectedRecruitPilotId]];
+    MwDrawRecruitStatText(campaignPilots.pilotSkillLabels[campaignMechanics.pilotGunneryTiers[campaignPilots.selectedRecruitPilotId]],RECRUIT_GUNNERY_Y);
+    MwDrawRecruitStatText(campaignPilots.pilotSkillLabels[campaignMechanics.pilotPilotingTiers[campaignPilots.selectedRecruitPilotId]],RECRUIT_PILOTING_Y);
+    uint16_t wage=campaignEconomy.pilotWageAmounts[campaignMechanics.pilotGunneryTiers[campaignPilots.selectedRecruitPilotId]];
     ++numericGroupingEnabled;
     MwDrawSignedDecimalField(wage,RECRUIT_STATS_X,1,0,PILOT_CARD_TEXT_COLOUR,PILOT_CARD_BACKGROUND,RECRUIT_WAGE_Y);
     /* Native POP/PUSH DI retains this definition, not a later selection. */
     MwNativeByteView dialogue={(const uint8_t *)(pilot+1),0,(uint32_t)strlen((const char *)(pilot+1))+1};
     EgaDrawTransparentText(RECRUIT_DIALOGUE_X,RECRUIT_DIALOGUE_Y,RECRUIT_DIALOGUE_COLOUR,&dialogue,0);
     MwDrawAlternateBankPicture(RECRUIT_STATS_X,RECRUIT_PORTRAIT_Y,EGA_DISPLAY_PAGE,pilot->portraitId);
-    MwSelectUiRecordTable(0,&recruitInterviewMenu);
+    MwSelectUiRecordTable(0,&campaignPilots.recruitInterviewMenu);
     return CAMPAIGN_CONTINUE_UI;
 }
 
@@ -124,31 +124,31 @@ void MwDrawRecruitStatText(const char *text,uint16_t y)
  * test is equality only. Both full-roster and successful paths consume an offer. */
 uint16_t MwHireSelectedRecruitContinuation(void)
 {
-    if (recruitOfferSlot>=RECRUIT_OFFER_SLOTS) return CAMPAIGN_CONTINUE_BAR_REFRESH;
+    if (campaignPilots.recruitOfferSlot>=RECRUIT_OFFER_SLOTS) return CAMPAIGN_CONTINUE_BAR_REFRESH;
     uint16_t rosterSlot=pilotRosterCount;
     if (rosterSlot==(uint16_t)(launcherMemoryTier+1))
     {
         EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
-        const char *message=launcherMemoryTier==FOUR_PILOT_MEMORY_TIER?fullFourPilotRosterText:fullThreePilotRosterText;
+        const char *message=launcherMemoryTier==FOUR_PILOT_MEMORY_TIER?campaignPilots.fullFourPilotRosterText:campaignPilots.fullThreePilotRosterText;
         MwNativeByteView text={(const uint8_t *)message,0,(uint32_t)strlen(message)+1};
         MwShowMonospaceTextPanel(FULL_ROSTER_PANEL_X,FULL_ROSTER_PANEL_Y,FULL_ROSTER_PANEL_WIDTH,FULL_ROSTER_PANEL_HEIGHT,&text,0);
     }
     else
     {
         if (rosterSlot>=CAMPAIGN_ROSTER_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: rosterSlot>=CAMPAIGN_ROSTER_SLOTS");
-        uint16_t pilotId=selectedRecruitPilotId;
+        uint16_t pilotId=campaignPilots.selectedRecruitPilotId;
         pilotUnavailableFlags[pilotId]=1;
         rosterPilotIds[rosterSlot]=pilotId;
-        rosterPortraitIds[rosterSlot]=pilotDefinitions[pilotId]->portraitId;
+        campaignMechanics.rosterPortraitIds[rosterSlot]=campaignPilots.pilotDefinitions[pilotId]->portraitId;
         /*6BC6 reloads the selection after portrait; preserve that live read. */
-        pilotId=selectedRecruitPilotId;
-        rosterPayTiers[rosterSlot]=pilotGunneryTiers[pilotId];
-        rosterGunneryTiers[rosterSlot]=pilotGunneryTiers[pilotId];
-        rosterPilotingTiers[rosterSlot]=pilotPilotingTiers[pilotId];
-        rosterMechAssignments[rosterSlot]=PILOT_ASSIGNMENT_NONE;
+        pilotId=campaignPilots.selectedRecruitPilotId;
+        campaignMechanics.rosterPayTiers[rosterSlot]=campaignMechanics.pilotGunneryTiers[pilotId];
+        campaignMechanics.rosterGunneryTiers[rosterSlot]=campaignMechanics.pilotGunneryTiers[pilotId];
+        campaignMechanics.rosterPilotingTiers[rosterSlot]=campaignMechanics.pilotPilotingTiers[pilotId];
+        campaignMechanics.rosterMechAssignments[rosterSlot]=PILOT_ASSIGNMENT_NONE;
         ++pilotRosterCount; /* No0451/0502 clear, wage debit or time call. */
     }
-    campaignEconomy.availableRecruitIds[recruitOfferSlot]=0;
+    campaignEconomy.availableRecruitIds[campaignPilots.recruitOfferSlot]=0;
     --campaignEconomy.availableRecruitCount;
     return CAMPAIGN_CONTINUE_BAR_REFRESH;
 }
@@ -156,8 +156,8 @@ uint16_t MwHireSelectedRecruitContinuation(void)
 /* MW_MAIN081B:6BFA..6C0B. Independent callback, same POP/JMP destination. */
 uint16_t MwRejectSelectedRecruitContinuation(void)
 {
-    if (recruitOfferSlot>=RECRUIT_OFFER_SLOTS) return CAMPAIGN_CONTINUE_BAR_REFRESH;
-    campaignEconomy.availableRecruitIds[recruitOfferSlot]=0;
+    if (campaignPilots.recruitOfferSlot>=RECRUIT_OFFER_SLOTS) return CAMPAIGN_CONTINUE_BAR_REFRESH;
+    campaignEconomy.availableRecruitIds[campaignPilots.recruitOfferSlot]=0;
     --campaignEconomy.availableRecruitCount; /* Native WORD wrap, no added zero-count guard. */
     return CAMPAIGN_CONTINUE_BAR_REFRESH;
 }
@@ -173,8 +173,8 @@ uint16_t MwEnterCompanyMenuContinuation(uint16_t entryOffset)
     MwDrawIndexedPicture(0,0,(uint16_t)(currentPlanetLandscapeIndex+COMPANY_LANDSCAPE_PICTURE_BASE));
     EgaFlipPages();
     if (entryOffset==CAMPAIGN_CONTINUE_COMPANY_MENU) MwDrawCommanderProfile();
-    MwDrawDescriptorTextPanel(&companyMenuPanel);
-    MwSelectUiRecordTable(campaignUi.companyMenuSelectedRow,&companyMenu);
+    MwDrawDescriptorTextPanel(&campaignPilots.companyMenuPanel);
+    MwSelectUiRecordTable(campaignUi.companyMenuSelectedRow,&campaignPilots.companyMenu);
     return CAMPAIGN_CONTINUE_UI;
 }
 
@@ -185,30 +185,30 @@ void MwDrawCommanderProfile(void)
     EgaSelectFont(0);
     for (uint16_t house=0;house<CAMPAIGN_HOUSE_COUNT;++house)
         houseNetStandings[house]=(uint16_t)(campaignEconomy.houseFavorPoints[house]-campaignEconomy.houseGrievancePoints[house]);
-    commanderProfilePanel.width=rosterPayTiers[COMMANDER_ROSTER_SLOT]==COMMANDER_REPUTATION_WORTH_WATCHING?COMPANY_PROFILE_WATCHING_WIDTH:COMPANY_PROFILE_WIDTH;
-    commanderProfilePanel.x=COMPANY_PROFILE_X; /* Native252A discards the centering calculation. */
-    MwDrawDescriptorTextPanel(&commanderProfilePanel);
-    MwNativeByteView name={(const uint8_t *)commanderProfileName,0,sizeof(commanderProfileName)};
-    EgaDrawTransparentText((uint16_t)(commanderProfilePanel.x+COMPANY_PROFILE_NAME_X),COMPANY_PROFILE_NAME_Y,RECRUIT_DIALOGUE_COLOUR,&name,0);
+    campaignPilots.commanderProfilePanel.width=campaignMechanics.rosterPayTiers[COMMANDER_ROSTER_SLOT]==COMMANDER_REPUTATION_WORTH_WATCHING?COMPANY_PROFILE_WATCHING_WIDTH:COMPANY_PROFILE_WIDTH;
+    campaignPilots.commanderProfilePanel.x=COMPANY_PROFILE_X; /* Native252A discards the centering calculation. */
+    MwDrawDescriptorTextPanel(&campaignPilots.commanderProfilePanel);
+    MwNativeByteView name={(const uint8_t *)campaignPilots.commanderProfileName,0,sizeof(campaignPilots.commanderProfileName)};
+    EgaDrawTransparentText((uint16_t)(campaignPilots.commanderProfilePanel.x+COMPANY_PROFILE_NAME_X),COMPANY_PROFILE_NAME_Y,RECRUIT_DIALOGUE_COLOUR,&name,0);
     /* The commander's pay-table entry holds reputation, not a salary grade. */
-    uint16_t commanderReputationTier=rosterPayTiers[COMMANDER_ROSTER_SLOT];
+    uint16_t commanderReputationTier=campaignMechanics.rosterPayTiers[COMMANDER_ROSTER_SLOT];
     if (commanderReputationTier>=COMMANDER_REPUTATION_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: commanderReputationTier>=COMMANDER_REPUTATION_COUNT");
-    MwNativeByteView reputationText={(const uint8_t *)commanderReputationLabels[commanderReputationTier],0,sizeof(commanderReputationLabels[commanderReputationTier])};
-    EgaDrawTransparentText((uint16_t)(commanderProfilePanel.x+COMPANY_REPUTATION_X),COMPANY_REPUTATION_Y,PILOT_CARD_TEXT_COLOUR,&reputationText,0);
+    MwNativeByteView reputationText={(const uint8_t *)campaignPilots.commanderReputationLabels[commanderReputationTier],0,sizeof(campaignPilots.commanderReputationLabels[commanderReputationTier])};
+    EgaDrawTransparentText((uint16_t)(campaignPilots.commanderProfilePanel.x+COMPANY_REPUTATION_X),COMPANY_REPUTATION_Y,PILOT_CARD_TEXT_COLOUR,&reputationText,0);
     commanderAgeYears=calendarYear-COMMANDER_AGE_YEAR_BIAS;
     if (calendarMonthIndex>=COMMANDER_AGE_MONTH_THRESHOLD) ++commanderAgeYears;
-    MwDrawSignedDecimalField(commanderAgeYears,(uint16_t)(commanderProfilePanel.x+COMPANY_AGE_X),1,0,PILOT_CARD_TEXT_COLOUR,PILOT_CARD_BACKGROUND,COMPANY_AGE_Y);
+    MwDrawSignedDecimalField(commanderAgeYears,(uint16_t)(campaignPilots.commanderProfilePanel.x+COMPANY_AGE_X),1,0,PILOT_CARD_TEXT_COLOUR,PILOT_CARD_BACKGROUND,COMPANY_AGE_Y);
     ++numericGroupingEnabled;
     MwDrawSignedDecimalField(((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow,
-        (uint16_t)(commanderProfilePanel.x+COMPANY_WEALTH_X),1,0,PILOT_CARD_TEXT_COLOUR,PILOT_CARD_BACKGROUND,COMPANY_WEALTH_Y);
+        (uint16_t)(campaignPilots.commanderProfilePanel.x+COMPANY_WEALTH_X),1,0,PILOT_CARD_TEXT_COLOUR,PILOT_CARD_BACKGROUND,COMPANY_WEALTH_Y);
     for (uint16_t house=0;house<CAMPAIGN_HOUSE_COUNT;++house)
     {
         int16_t standing=houseNetStandings[house];
         if (standing<-COMPANY_HOUSE_STANDING_LIMIT) standing=-COMPANY_HOUSE_STANDING_LIMIT;
         else if (standing>COMPANY_HOUSE_STANDING_LIMIT) standing=COMPANY_HOUSE_STANDING_LIMIT;
         uint16_t attitude=(uint16_t)(((uint16_t)standing&0xFFFE)+COMPANY_HOUSE_STANDING_LIMIT)>>1;
-        MwNativeByteView text={(const uint8_t *)houseAttitudeText[attitude],0,(uint32_t)strlen(houseAttitudeText[attitude])+1};
-        EgaDrawTransparentText((uint16_t)(commanderProfilePanel.x+COMPANY_HOUSE_ATTITUDE_X),(uint16_t)(COMPANY_HOUSE_FIRST_Y+house*COMPANY_HOUSE_ROW_HEIGHT),Campaign_Pal_EGA_LightGrey,&text,0);
+        MwNativeByteView text={(const uint8_t *)campaignPilots.houseAttitudeText[attitude],0,(uint32_t)strlen(campaignPilots.houseAttitudeText[attitude])+1};
+        EgaDrawTransparentText((uint16_t)(campaignPilots.commanderProfilePanel.x+COMPANY_HOUSE_ATTITUDE_X),(uint16_t)(COMPANY_HOUSE_FIRST_Y+house*COMPANY_HOUSE_ROW_HEIGHT),Campaign_Pal_EGA_LightGrey,&text,0);
     }
     EgaSelectFont(COMPANY_MENU_FONT);
 }
@@ -219,29 +219,29 @@ uint16_t MwEnterCrewMenuContinuation(void)
     campaignUi.companyMenuSelectedRow=0;
     MwAdvanceCampaignTimeAndChargeWages(1);
     for (uint16_t rosterSlot=FIRST_HIRED_PILOT_SLOT;rosterSlot<CAMPAIGN_ROSTER_SLOTS;++rosterSlot)
-        crewMenu.records[rosterSlot+CREW_FIRST_PILOT_MENU_RECORD].enabled=0;
+        campaignPilots.crewMenu.records[rosterSlot+CREW_FIRST_PILOT_MENU_RECORD].enabled=0;
     for (uint16_t rosterSlot=FIRST_HIRED_PILOT_SLOT;rosterSlot<CAMPAIGN_ROSTER_SLOTS && rosterSlot!=pilotRosterCount;++rosterSlot)
-        crewMenu.records[rosterSlot+CREW_FIRST_PILOT_MENU_RECORD].enabled=1;
+        campaignPilots.crewMenu.records[rosterSlot+CREW_FIRST_PILOT_MENU_RECORD].enabled=1;
     EgaClearDrawPage(PILOT_CARD_BACKGROUND);
     EgaFillDrawPageRectangle(CREW_FULL_RIGHT_EDGE,0,CREW_RIGHT_MARGIN_WIDTH,EGA_ROWS,BAR_BACKGROUND_COLOUR);
     EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
     EgaSelectFont(CREW_FONT);
-    crewLabelsPanel.width=(uint8_t)pilotRosterCount*PILOT_CARD_COLUMN_WIDTH+PILOT_CARD_FIRST_X;
-    MwDrawDescriptorTextPanel(&crewLabelsPanel);
+    campaignPilots.crewLabelsPanel.width=(uint8_t)pilotRosterCount*PILOT_CARD_COLUMN_WIDTH+PILOT_CARD_FIRST_X;
+    MwDrawDescriptorTextPanel(&campaignPilots.crewLabelsPanel);
     MwDrawAlternateBankPicture(0,0,EGA_DISPLAY_PAGE,PILOT_CARD_LABEL_PICTURE);
     MwDrawAlternateBankPicture(0,PILOT_CARD_MECH_Y,EGA_DISPLAY_PAGE,PILOT_CARD_LABEL_PICTURE);
-    crewScreenRightEdge=CREW_FULL_RIGHT_EDGE;
+    campaignPilots.crewScreenRightEdge=CREW_FULL_RIGHT_EDGE;
     if (launcherMemoryTier!=FOUR_PILOT_MEMORY_TIER)
     {
-        crewMenu.records[THREE_PILOT_ROSTER_CAPACITY].rightRecordIndex=CREW_NO_NEIGHBOUR;
-        crewScreenRightEdge=CREW_SMALL_RIGHT_EDGE;
+        campaignPilots.crewMenu.records[THREE_PILOT_ROSTER_CAPACITY].rightRecordIndex=CREW_NO_NEIGHBOUR;
+        campaignPilots.crewScreenRightEdge=CREW_SMALL_RIGHT_EDGE;
     } /* Tier3 does NOT restore a previously changed23C1 byte. */
-    EgaDrawLine(PILOT_CARD_TEXT_COLOUR,PILOT_CARD_NAME_Y-3,crewScreenRightEdge,0,PILOT_CARD_NAME_Y-3);
-    EgaDrawLine(PILOT_CARD_TEXT_COLOUR,PILOT_CARD_MECH_Y-1,crewScreenRightEdge,0,PILOT_CARD_MECH_Y-1);
-    EgaDrawLine(Campaign_Pal_EGA_LightGrey,0,crewScreenRightEdge,0,0);
-    EgaDrawLine(PILOT_CARD_TEXT_COLOUR,CREW_LAST_Y,crewScreenRightEdge,0,CREW_LAST_Y);
+    EgaDrawLine(PILOT_CARD_TEXT_COLOUR,PILOT_CARD_NAME_Y-3,campaignPilots.crewScreenRightEdge,0,PILOT_CARD_NAME_Y-3);
+    EgaDrawLine(PILOT_CARD_TEXT_COLOUR,PILOT_CARD_MECH_Y-1,campaignPilots.crewScreenRightEdge,0,PILOT_CARD_MECH_Y-1);
+    EgaDrawLine(Campaign_Pal_EGA_LightGrey,0,campaignPilots.crewScreenRightEdge,0,0);
+    EgaDrawLine(PILOT_CARD_TEXT_COLOUR,CREW_LAST_Y,campaignPilots.crewScreenRightEdge,0,CREW_LAST_Y);
     for (uint16_t rosterSlot=0;rosterSlot<PILOT_CARD_COUNT;++rosterSlot) MwDrawPilotRosterCard(rosterSlot);
-    MwSelectUiRecordTable(0,&crewMenu);
+    MwSelectUiRecordTable(0,&campaignPilots.crewMenu);
     return CAMPAIGN_CONTINUE_UI;
 }
 
@@ -249,51 +249,51 @@ uint16_t MwEnterCrewMenuContinuation(void)
  * roster fields. Empty cards retain it; commander duplicates Gunnery. */
 void MwDrawPilotRosterCard(uint16_t pilotRosterSlot)
 {
-    pilotCardRosterSlot=pilotRosterSlot;
+    campaignPilots.pilotCardRosterSlot=pilotRosterSlot;
     if (pilotRosterSlot==LAST_PILOT_CARD_SLOT && launcherMemoryTier!=FOUR_PILOT_MEMORY_TIER) return;
     if (pilotRosterSlot>=PILOT_CARD_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: pilotRosterSlot>=PILOT_CARD_COUNT");
-    pilotCardTextX=pilotCardColumnOrigins[pilotRosterSlot]+PILOT_CARD_TEXT_INSET;
+    campaignPilots.pilotCardTextX=campaignPilots.pilotCardColumnOrigins[pilotRosterSlot]+PILOT_CARD_TEXT_INSET;
     MwDrawPilotCardSeparators();
     if (pilotRosterSlot>=pilotRosterCount) return;
     uint16_t pilotId=rosterPilotIds[pilotRosterSlot];
-    displayedPilotId=pilotId;
-    pilotCardGunneryTier=pilotGunneryTiers[pilotId];
-    pilotCardPilotingTier=pilotPilotingTiers[pilotId];
-    pilotCardPortraitId=rosterPortraitIds[pilotRosterSlot];
+    campaignPilots.displayedPilotId=pilotId;
+    campaignPilots.pilotCardGunneryTier=campaignMechanics.pilotGunneryTiers[pilotId];
+    campaignPilots.pilotCardPilotingTier=campaignMechanics.pilotPilotingTiers[pilotId];
+    campaignPilots.pilotCardPortraitId=campaignMechanics.rosterPortraitIds[pilotRosterSlot];
     /* The card quotes current Gunnery rates; payroll uses the hiring-time tier. */
-    pilotCardQuotedWageTier=pilotGunneryTiers[pilotId];
-    pilotCardOwnedUnitSlot=rosterMechAssignments[pilotRosterSlot];
+    campaignPilots.pilotCardQuotedWageTier=campaignMechanics.pilotGunneryTiers[pilotId];
+    campaignPilots.pilotCardOwnedUnitSlot=campaignMechanics.rosterMechAssignments[pilotRosterSlot];
     if (pilotRosterSlot==0)
-        pilotCardGunneryTier=pilotCardPilotingTier=rosterGunneryTiers[0];
-    MwDrawAlternateBankPicture((uint16_t)(pilotCardTextX-PILOT_CARD_TEXT_INSET),0,EGA_DISPLAY_PAGE,
-        pilotCardRosterSlot==0?PILOT_CARD_COMMANDER_PICTURE:pilotCardPortraitId);
-    pilotId=displayedPilotId;
-    MwDrawPilotCardText(pilotId?(const char *)pilotDefinitions[pilotId]->nameBytes:commanderProfileName,PILOT_CARD_NAME_Y);
-    MwDrawPilotCardText(pilotSkillLabels[pilotCardGunneryTier],PILOT_CARD_GUNNERY_Y);
-    MwDrawPilotCardText(pilotSkillLabels[pilotCardPilotingTier],PILOT_CARD_PILOTING_Y);
-    if (pilotCardRosterSlot!=0)
+        campaignPilots.pilotCardGunneryTier=campaignPilots.pilotCardPilotingTier=campaignMechanics.rosterGunneryTiers[0];
+    MwDrawAlternateBankPicture((uint16_t)(campaignPilots.pilotCardTextX-PILOT_CARD_TEXT_INSET),0,EGA_DISPLAY_PAGE,
+        campaignPilots.pilotCardRosterSlot==0?PILOT_CARD_COMMANDER_PICTURE:campaignPilots.pilotCardPortraitId);
+    pilotId=campaignPilots.displayedPilotId;
+    MwDrawPilotCardText(pilotId?(const char *)campaignPilots.pilotDefinitions[pilotId]->nameBytes:campaignPilots.commanderProfileName,PILOT_CARD_NAME_Y);
+    MwDrawPilotCardText(campaignPilots.pilotSkillLabels[campaignPilots.pilotCardGunneryTier],PILOT_CARD_GUNNERY_Y);
+    MwDrawPilotCardText(campaignPilots.pilotSkillLabels[campaignPilots.pilotCardPilotingTier],PILOT_CARD_PILOTING_Y);
+    if (campaignPilots.pilotCardRosterSlot!=0)
     {
-        uint16_t wage=campaignEconomy.pilotWageAmounts[pilotCardQuotedWageTier];
+        uint16_t wage=campaignEconomy.pilotWageAmounts[campaignPilots.pilotCardQuotedWageTier];
         ++numericGroupingEnabled;
-        MwDrawSignedDecimalField(wage,pilotCardTextX,1,0,Campaign_Pal_EGA_LightGrey,Campaign_Pal_EGA_DarkGrey,PILOT_CARD_WAGE_Y);
+        MwDrawSignedDecimalField(wage,campaignPilots.pilotCardTextX,1,0,Campaign_Pal_EGA_LightGrey,Campaign_Pal_EGA_DarkGrey,PILOT_CARD_WAGE_Y);
     }
-    uint16_t assignedSlot=pilotCardOwnedUnitSlot;
+    uint16_t assignedSlot=campaignPilots.pilotCardOwnedUnitSlot;
     uint16_t assignedMechKind=assignedSlot==PILOT_ASSIGNMENT_NONE?PILOT_ASSIGNMENT_NONE:campaignEconomy.ownedUnitKinds[assignedSlot];
     MwDrawPilotCardText(MwSetPilotAssignmentCaption(assignedMechKind),PILOT_CARD_ASSIGNMENT_Y);
-    assignedSlot=pilotCardOwnedUnitSlot;
+    assignedSlot=campaignPilots.pilotCardOwnedUnitSlot;
     if ((int16_t)assignedSlot>=0)
     {
         uint16_t mechPictureId=MwLoadIndexedPicture((uint16_t)(campaignEconomy.ownedUnitKinds[assignedSlot]+PILOT_MECH_PICTURE_BASE));
-        EgaDrawPackedSprite((uint16_t)(pilotCardTextX-PILOT_CARD_TEXT_INSET),PILOT_CARD_MECH_Y,EGA_DISPLAY_PAGE,0,mechPictureId);
+        EgaDrawPackedSprite((uint16_t)(campaignPilots.pilotCardTextX-PILOT_CARD_TEXT_INSET),PILOT_CARD_MECH_Y,EGA_DISPLAY_PAGE,0,mechPictureId);
     }
 }
 
 /* MW_MAIN081B:286F..28A2, reload shared X between the two graphics calls. */
 void MwDrawPilotCardSeparators(void)
 {
-    uint16_t x=pilotCardTextX-PILOT_CARD_TEXT_INSET;
+    uint16_t x=campaignPilots.pilotCardTextX-PILOT_CARD_TEXT_INSET;
     EgaDrawLine(Campaign_Pal_EGA_LightGrey,0,x,x,EGA_ROWS);
-    x=pilotCardTextX-PILOT_CARD_TEXT_INSET+PILOT_CARD_COLUMN_WIDTH-1;
+    x=campaignPilots.pilotCardTextX-PILOT_CARD_TEXT_INSET+PILOT_CARD_COLUMN_WIDTH-1;
     EgaDrawLine(Campaign_Pal_EGA_LightGrey,0,x,x,EGA_ROWS);
 }
 
@@ -301,7 +301,7 @@ void MwDrawPilotCardSeparators(void)
 void MwDrawPilotCardText(const char *text,uint16_t y)
 {
     MwNativeByteView caption={(const uint8_t *)text,0,(uint32_t)strlen(text)+1};
-    EgaDrawTransparentText(pilotCardTextX,y,PILOT_CARD_TEXT_COLOUR,&caption,0);
+    EgaDrawTransparentText(campaignPilots.pilotCardTextX,y,PILOT_CARD_TEXT_COLOUR,&caption,0);
 }
 
 /* MW_MAIN081B:28B2..28E6, native DI result becomes a typed caption reference.
@@ -313,20 +313,20 @@ const char *MwSetPilotAssignmentCaption(uint16_t assignedMechKind)
     else if (assignedMechKind==PILOT_ASSIGNMENT_NONE) assignmentCaptionIndex=ASSIGNMENT_NONE_CAPTION;
     else assignmentCaptionIndex=assignedMechKind+ASSIGNMENT_MECH_CAPTION_BASE;
     if (assignmentCaptionIndex>=PILOT_ASSIGNMENT_CAPTION_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: assignmentCaptionIndex>=PILOT_ASSIGNMENT_CAPTION_COUNT");
-    uint16_t pilotMenuRecord=(pilotCardRosterSlot<LAST_PILOT_CARD_SLOT?pilotCardRosterSlot:LAST_PILOT_CARD_SLOT)+CREW_FIRST_PILOT_MENU_RECORD;
-    crewMenu.records[pilotMenuRecord].text=pilotAssignmentCaptions[assignmentCaptionIndex];
-    crewMenu.records[pilotMenuRecord].textColour=&pilotAssignmentCaptionColours[assignmentCaptionIndex];
-    return pilotAssignmentCaptions[assignmentCaptionIndex];
+    uint16_t pilotMenuRecord=(campaignPilots.pilotCardRosterSlot<LAST_PILOT_CARD_SLOT?campaignPilots.pilotCardRosterSlot:LAST_PILOT_CARD_SLOT)+CREW_FIRST_PILOT_MENU_RECORD;
+    campaignPilots.crewMenu.records[pilotMenuRecord].text=campaignPilots.pilotAssignmentCaptions[assignmentCaptionIndex];
+    campaignPilots.crewMenu.records[pilotMenuRecord].textColour=&campaignPilots.pilotAssignmentCaptionColours[assignmentCaptionIndex];
+    return campaignPilots.pilotAssignmentCaptions[assignmentCaptionIndex];
 }
 
 /* MW_MAIN081B:28E7/28EC/28F1/28F6 load slots0..3 then share28F9..2910.
  * Native AX is the slot, no added source frame at the shared continuation. */
 uint16_t MwBeginPilotMechAssignmentContinuation(uint16_t pilotRosterSlot)
 {
-    assignmentSelectedPilotSlot=pilotRosterSlot;
-    assignmentConflictHighlighted=0;
-    if (assignmentSelectedPilotSlot>=CAMPAIGN_ROSTER_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: assignmentSelectedPilotSlot>=CAMPAIGN_ROSTER_SLOTS");
-    assignmentCandidateOwnedSlot=rosterMechAssignments[assignmentSelectedPilotSlot];
+    campaignPilots.assignmentSelectedPilotSlot=pilotRosterSlot;
+    campaignPilots.assignmentConflictHighlighted=0;
+    if (campaignPilots.assignmentSelectedPilotSlot>=CAMPAIGN_ROSTER_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: assignmentSelectedPilotSlot>=CAMPAIGN_ROSTER_SLOTS");
+    campaignPilots.assignmentCandidateOwnedSlot=campaignMechanics.rosterMechAssignments[campaignPilots.assignmentSelectedPilotSlot];
     MwHighlightSelectedPilotAssignment();
     return CAMPAIGN_CONTINUE_PILOT_ASSIGNMENT_INPUT;
 }
@@ -351,12 +351,12 @@ uint16_t MwPollPilotMechAssignmentContinuation(void)
             if (mwCampaignInput.controlHeld()) return CAMPAIGN_CONTINUE_CLEANUP;
             continue; /* Plain Escape is NOT a cancel action here. */
         }
-        uint16_t candidateOwnedUnitSlot=assignmentCandidateOwnedSlot;
+        uint16_t candidateOwnedUnitSlot=campaignPilots.assignmentCandidateOwnedSlot;
         if (key==CAMPAIGN_KEY_UP)
         {
             for (;;)
             {
-                if (candidateOwnedUnitSlot==PILOT_ASSIGNMENT_DISMISS || (candidateOwnedUnitSlot==PILOT_ASSIGNMENT_NONE && assignmentSelectedPilotSlot==COMMANDER_ROSTER_SLOT)) goto pollAgain;
+                if (candidateOwnedUnitSlot==PILOT_ASSIGNMENT_DISMISS || (candidateOwnedUnitSlot==PILOT_ASSIGNMENT_NONE && campaignPilots.assignmentSelectedPilotSlot==COMMANDER_ROSTER_SLOT)) goto pollAgain;
                 --candidateOwnedUnitSlot;
                 if (candidateOwnedUnitSlot==PILOT_ASSIGNMENT_NONE || candidateOwnedUnitSlot==PILOT_ASSIGNMENT_DISMISS) break;
                 if (candidateOwnedUnitSlot>=CAMPAIGN_OWNED_UNIT_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: candidateOwnedUnitSlot>=CAMPAIGN_OWNED_UNIT_SLOTS");
@@ -383,7 +383,7 @@ uint16_t MwPollPilotMechAssignmentContinuation(void)
         }
         else continue;
         MwClearAssignmentConflictHighlight(); /* Saved BX survives redraw. */
-        assignmentCandidateOwnedSlot=candidateOwnedUnitSlot;
+        campaignPilots.assignmentCandidateOwnedSlot=candidateOwnedUnitSlot;
         MwHighlightSelectedPilotAssignment();
         MwFindAssignmentConflict();
 pollAgain:;
@@ -394,20 +394,20 @@ pollAgain:;
  * first OTHER owner wins; zero count is not an invented no-op. */
 void MwFindAssignmentConflict(void)
 {
-    uint16_t candidateOwnedUnitSlot=assignmentCandidateOwnedSlot;
+    uint16_t candidateOwnedUnitSlot=campaignPilots.assignmentCandidateOwnedSlot;
     if (candidateOwnedUnitSlot==PILOT_ASSIGNMENT_NONE) return;
     uint16_t rosterSlot=0;
     do
     {
         if (rosterSlot>=CAMPAIGN_ROSTER_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: rosterSlot>=CAMPAIGN_ROSTER_SLOTS");
-        if (rosterMechAssignments[rosterSlot]==candidateOwnedUnitSlot && rosterSlot!=assignmentSelectedPilotSlot)
+        if (campaignMechanics.rosterMechAssignments[rosterSlot]==candidateOwnedUnitSlot && rosterSlot!=campaignPilots.assignmentSelectedPilotSlot)
         {
-            assignmentConflictHighlighted=1;
-            assignmentConflictingPilotSlot=rosterSlot;
-            assignmentConflictingOwnedSlot=candidateOwnedUnitSlot;
-            EgaFillDisplayPageRectangle((uint16_t)(pilotCardColumnOrigins[assignmentConflictingPilotSlot]+PILOT_CARD_TEXT_INSET),
+            campaignPilots.assignmentConflictHighlighted=1;
+            campaignPilots.assignmentConflictingPilotSlot=rosterSlot;
+            campaignPilots.assignmentConflictingOwnedSlot=candidateOwnedUnitSlot;
+            EgaFillDisplayPageRectangle((uint16_t)(campaignPilots.pilotCardColumnOrigins[campaignPilots.assignmentConflictingPilotSlot]+PILOT_CARD_TEXT_INSET),
                 PILOT_CARD_ASSIGNMENT_Y,ASSIGNMENT_TEXT_WIDTH,ASSIGNMENT_TEXT_HEIGHT,PILOT_CARD_BACKGROUND);
-            MwDrawPilotAssignmentCandidate(assignmentConflictingPilotSlot,assignmentConflictingOwnedSlot,ASSIGNMENT_CONFLICT_COLOUR);
+            MwDrawPilotAssignmentCandidate(campaignPilots.assignmentConflictingPilotSlot,campaignPilots.assignmentConflictingOwnedSlot,ASSIGNMENT_CONFLICT_COLOUR);
             return;
         }
         ++rosterSlot;
@@ -418,13 +418,13 @@ void MwFindAssignmentConflict(void)
 /* MW_MAIN081B:2A98..2ACA, SI slot/BX candidate/DL colour, actual near CALL. */
 void MwDrawPilotAssignmentCandidate(uint16_t pilotRosterSlot,uint16_t ownedUnitSlot,uint8_t foreground)
 {
-    uint16_t x=pilotCardColumnOrigins[pilotRosterSlot]+PILOT_CARD_TEXT_INSET;
+    uint16_t x=campaignPilots.pilotCardColumnOrigins[pilotRosterSlot]+PILOT_CARD_TEXT_INSET;
     uint16_t assignmentCaptionIndex;
     if (ownedUnitSlot==PILOT_ASSIGNMENT_NONE) assignmentCaptionIndex=ASSIGNMENT_NONE_CAPTION;
     else if (ownedUnitSlot==PILOT_ASSIGNMENT_DISMISS) assignmentCaptionIndex=ASSIGNMENT_DISMISS_CAPTION;
     else assignmentCaptionIndex=campaignEconomy.ownedUnitKinds[ownedUnitSlot]+ASSIGNMENT_MECH_CAPTION_BASE;
     if (assignmentCaptionIndex>=PILOT_ASSIGNMENT_CAPTION_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: assignmentCaptionIndex>=PILOT_ASSIGNMENT_CAPTION_COUNT");
-    MwNativeByteView text={(const uint8_t *)pilotAssignmentCaptions[assignmentCaptionIndex],0,sizeof(pilotAssignmentCaptions[assignmentCaptionIndex])};
+    MwNativeByteView text={(const uint8_t *)campaignPilots.pilotAssignmentCaptions[assignmentCaptionIndex],0,sizeof(campaignPilots.pilotAssignmentCaptions[assignmentCaptionIndex])};
     EgaDrawTransparentText(x,PILOT_CARD_ASSIGNMENT_Y,foreground,&text,0);
 }
 
@@ -432,15 +432,15 @@ void MwDrawPilotAssignmentCandidate(uint16_t pilotRosterSlot,uint16_t ownedUnitS
  * CURRENT candidate2583, not the recorded conflicting-owned-slot2588. */
 void MwClearAssignmentConflictHighlight(void)
 {
-    if (assignmentConflictHighlighted==0) return;
-    assignmentConflictHighlighted=0;
-    MwDrawPilotAssignmentCandidate(assignmentConflictingPilotSlot,assignmentCandidateOwnedSlot,PILOT_CARD_TEXT_COLOUR);
+    if (campaignPilots.assignmentConflictHighlighted==0) return;
+    campaignPilots.assignmentConflictHighlighted=0;
+    MwDrawPilotAssignmentCandidate(campaignPilots.assignmentConflictingPilotSlot,campaignPilots.assignmentCandidateOwnedSlot,PILOT_CARD_TEXT_COLOUR);
 }
 
 /* MW_MAIN081B:2AE4..2B05 falls2B06; no additional return word. */
 void MwHighlightSelectedPilotAssignment(void)
 {
-    EgaFillDisplayPageRectangle((uint16_t)(pilotCardColumnOrigins[assignmentSelectedPilotSlot]+PILOT_CARD_TEXT_INSET),
+    EgaFillDisplayPageRectangle((uint16_t)(campaignPilots.pilotCardColumnOrigins[campaignPilots.assignmentSelectedPilotSlot]+PILOT_CARD_TEXT_INSET),
         PILOT_CARD_ASSIGNMENT_Y,ASSIGNMENT_TEXT_WIDTH,ASSIGNMENT_TEXT_HEIGHT,PILOT_CARD_BACKGROUND);
     MwDrawSelectedPilotAssignment(ASSIGNMENT_SELECTED_COLOUR);
 }
@@ -448,8 +448,8 @@ void MwHighlightSelectedPilotAssignment(void)
 /* MW_MAIN081B:2B06..2B14, read candidate again AFTER the text CALL. */
 void MwDrawSelectedPilotAssignment(uint8_t foreground)
 {
-    MwDrawPilotAssignmentCandidate(assignmentSelectedPilotSlot,assignmentCandidateOwnedSlot,foreground);
-    MwDrawAssignmentMechPreview(assignmentCandidateOwnedSlot);
+    MwDrawPilotAssignmentCandidate(campaignPilots.assignmentSelectedPilotSlot,campaignPilots.assignmentCandidateOwnedSlot,foreground);
+    MwDrawAssignmentMechPreview(campaignPilots.assignmentCandidateOwnedSlot);
 }
 
 /* MW_MAIN081B:2B15..2B9C. Saved origin survives all four negative-preview
@@ -460,10 +460,10 @@ void MwDrawAssignmentMechPreview(uint16_t ownedUnitSlot)
     {
         if (ownedUnitSlot>=CAMPAIGN_OWNED_UNIT_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: ownedUnitSlot>=CAMPAIGN_OWNED_UNIT_SLOTS");
         uint16_t mechPictureId=MwLoadIndexedPicture((uint16_t)(campaignEconomy.ownedUnitKinds[ownedUnitSlot]+PILOT_MECH_PICTURE_BASE));
-        EgaDrawPackedSprite(pilotCardColumnOrigins[assignmentSelectedPilotSlot],PILOT_CARD_MECH_Y,EGA_DISPLAY_PAGE,0,mechPictureId);
+        EgaDrawPackedSprite(campaignPilots.pilotCardColumnOrigins[campaignPilots.assignmentSelectedPilotSlot],PILOT_CARD_MECH_Y,EGA_DISPLAY_PAGE,0,mechPictureId);
         return;
     }
-    uint16_t x=pilotCardColumnOrigins[assignmentSelectedPilotSlot];
+    uint16_t x=campaignPilots.pilotCardColumnOrigins[campaignPilots.assignmentSelectedPilotSlot];
     EgaFillDisplayPageRectangle((uint16_t)(x+1),PILOT_CARD_MECH_Y,ASSIGNMENT_MECH_WIDTH,ASSIGNMENT_MECH_HEIGHT,PILOT_CARD_BACKGROUND);
     EgaDrawLine(PILOT_CARD_TEXT_COLOUR,PILOT_CARD_MECH_Y,x,x,EGA_ROWS);
     EgaDrawLine(PILOT_CARD_TEXT_COLOUR,PILOT_CARD_MECH_Y,(uint16_t)(x+PILOT_CARD_COLUMN_WIDTH-1),(uint16_t)(x+PILOT_CARD_COLUMN_WIDTH-1),EGA_ROWS);
@@ -476,10 +476,10 @@ uint16_t MwConfirmPilotMechAssignmentContinuation(void)
 {
     MwDrawSelectedPilotAssignment(ASSIGNMENT_CONFIRMED_COLOUR);
     MwTransferPreviousMechToConflictingPilot();
-    uint16_t candidateOwnedUnitSlot=assignmentCandidateOwnedSlot;
-    if (candidateOwnedUnitSlot==PILOT_ASSIGNMENT_DISMISS) return MwDismissSelectedPilotContinuation(assignmentSelectedPilotSlot);
-    rosterMechAssignments[assignmentSelectedPilotSlot]=candidateOwnedUnitSlot;
-    pilotCardRosterSlot=assignmentSelectedPilotSlot;
+    uint16_t candidateOwnedUnitSlot=campaignPilots.assignmentCandidateOwnedSlot;
+    if (candidateOwnedUnitSlot==PILOT_ASSIGNMENT_DISMISS) return MwDismissSelectedPilotContinuation(campaignPilots.assignmentSelectedPilotSlot);
+    campaignMechanics.rosterMechAssignments[campaignPilots.assignmentSelectedPilotSlot]=candidateOwnedUnitSlot;
+    campaignPilots.pilotCardRosterSlot=campaignPilots.assignmentSelectedPilotSlot;
     uint16_t assignedMechKind=candidateOwnedUnitSlot==PILOT_ASSIGNMENT_NONE?PILOT_ASSIGNMENT_NONE:campaignEconomy.ownedUnitKinds[candidateOwnedUnitSlot];
     MwSetPilotAssignmentCaption(assignedMechKind);
     return 0;
@@ -489,20 +489,20 @@ uint16_t MwConfirmPilotMechAssignmentContinuation(void)
  * graphics. Highlight latch is deliberately NOT cleared by confirmation. */
 void MwTransferPreviousMechToConflictingPilot(void)
 {
-    if (assignmentConflictHighlighted==0) return;
-    uint16_t previousOwnedSlot=rosterMechAssignments[assignmentSelectedPilotSlot];
-    uint16_t conflictingPilotSlot=assignmentConflictingPilotSlot;
-    rosterMechAssignments[conflictingPilotSlot]=previousOwnedSlot;
-    EgaFillDisplayPageRectangle((uint16_t)(pilotCardColumnOrigins[assignmentConflictingPilotSlot]+PILOT_CARD_TEXT_INSET),
+    if (campaignPilots.assignmentConflictHighlighted==0) return;
+    uint16_t previousOwnedSlot=campaignMechanics.rosterMechAssignments[campaignPilots.assignmentSelectedPilotSlot];
+    uint16_t conflictingPilotSlot=campaignPilots.assignmentConflictingPilotSlot;
+    campaignMechanics.rosterMechAssignments[conflictingPilotSlot]=previousOwnedSlot;
+    EgaFillDisplayPageRectangle((uint16_t)(campaignPilots.pilotCardColumnOrigins[campaignPilots.assignmentConflictingPilotSlot]+PILOT_CARD_TEXT_INSET),
         PILOT_CARD_ASSIGNMENT_Y,ASSIGNMENT_TEXT_WIDTH,ASSIGNMENT_TEXT_HEIGHT,PILOT_CARD_BACKGROUND);
     MwDrawPilotAssignmentCandidate(conflictingPilotSlot,previousOwnedSlot,PILOT_CARD_TEXT_COLOUR);
-    pilotCardRosterSlot=assignmentConflictingPilotSlot;
+    campaignPilots.pilotCardRosterSlot=campaignPilots.assignmentConflictingPilotSlot;
     uint16_t previousMechKind=previousOwnedSlot==PILOT_ASSIGNMENT_NONE?PILOT_ASSIGNMENT_NONE:campaignEconomy.ownedUnitKinds[previousOwnedSlot];
     MwSetPilotAssignmentCaption(previousMechKind);
-    uint16_t savedSelectedPilot=assignmentSelectedPilotSlot;
-    assignmentSelectedPilotSlot=assignmentConflictingPilotSlot;
+    uint16_t savedSelectedPilot=campaignPilots.assignmentSelectedPilotSlot;
+    campaignPilots.assignmentSelectedPilotSlot=campaignPilots.assignmentConflictingPilotSlot;
     MwDrawAssignmentMechPreview(previousOwnedSlot);
-    assignmentSelectedPilotSlot=savedSelectedPilot;
+    campaignPilots.assignmentSelectedPilotSlot=savedSelectedPilot;
 }
 
 /* MW_MAIN081B:29E3..2A3A. Voluntary dismissal leaves mission-status bytes alone;
@@ -516,15 +516,15 @@ uint16_t MwDismissSelectedPilotContinuation(uint16_t rosterSlot)
     while (rosterSlot!=CAMPAIGN_ROSTER_SLOTS-1)
     {
         rosterPilotIds[rosterSlot]=rosterPilotIds[rosterSlot+1];
-        rosterPayTiers[rosterSlot]=rosterPayTiers[rosterSlot+1];
-        rosterPortraitIds[rosterSlot]=rosterPortraitIds[rosterSlot+1];
-        rosterGunneryTiers[rosterSlot]=rosterGunneryTiers[rosterSlot+1];
-        rosterPilotingTiers[rosterSlot]=rosterPilotingTiers[rosterSlot+1];
-        rosterUnknownWords[rosterSlot]=rosterUnknownWords[rosterSlot+1];
-        rosterMechAssignments[rosterSlot]=rosterMechAssignments[rosterSlot+1];
+        campaignMechanics.rosterPayTiers[rosterSlot]=campaignMechanics.rosterPayTiers[rosterSlot+1];
+        campaignMechanics.rosterPortraitIds[rosterSlot]=campaignMechanics.rosterPortraitIds[rosterSlot+1];
+        campaignMechanics.rosterGunneryTiers[rosterSlot]=campaignMechanics.rosterGunneryTiers[rosterSlot+1];
+        campaignMechanics.rosterPilotingTiers[rosterSlot]=campaignMechanics.rosterPilotingTiers[rosterSlot+1];
+        campaignMechanics.rosterUnknownWords[rosterSlot]=campaignMechanics.rosterUnknownWords[rosterSlot+1];
+        campaignMechanics.rosterMechAssignments[rosterSlot]=campaignMechanics.rosterMechAssignments[rosterSlot+1];
         ++rosterSlot;
     }
-    rosterMechAssignments[rosterSlot]=PILOT_ASSIGNMENT_NONE;
+    campaignMechanics.rosterMechAssignments[rosterSlot]=PILOT_ASSIGNMENT_NONE;
     return CAMPAIGN_CONTINUE_CREW_MENU; /* Original roster rebuild charges time; not executed twice. */
 }
 
@@ -534,13 +534,13 @@ void MwInitializePilotRatingsFromDefinitions(void)
 {
     for (uint16_t pilotId = 1; pilotId < CAMPAIGN_PILOT_ID_COUNT; ++pilotId)
     {
-        uint16_t pilotDefinitionOffset = pilotDefinitionOffsets[pilotId];
+        uint16_t pilotDefinitionOffset = campaignMechanics.pilotDefinitionOffsets[pilotId];
         if (pilotDefinitionOffset < PILOT_DEFINITIONS_START
             || (uint32_t)pilotDefinitionOffset + sizeof(MwPilotDefinitionPrefix) > PILOT_DEFINITIONS_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: pilotDefinitionOffset < PILOT_DEFINITIONS_START || (uint32_t)pilotDefinitionOffset + sizeof(MwPilotDefinitionPrefix) > PILOT_DEFINITIONS_END");
-        const MwPilotDefinitionPrefix *pilotDefinition = (const MwPilotDefinitionPrefix *)&pilotDefinitionStorage[pilotDefinitionOffset - PILOT_DEFINITIONS_START];
-        pilotGunneryTiers[pilotId] = pilotDefinition->initialGunneryTier;
-        pilotPilotingTiers[pilotId] = pilotDefinition->initialPilotingTier;
-        pilotExperienceCounts[pilotId] = 0;
+        const MwPilotDefinitionPrefix *pilotDefinition = (const MwPilotDefinitionPrefix *)&campaignMechanics.pilotDefinitionStorage[pilotDefinitionOffset - PILOT_DEFINITIONS_START];
+        campaignMechanics.pilotGunneryTiers[pilotId] = pilotDefinition->initialGunneryTier;
+        campaignMechanics.pilotPilotingTiers[pilotId] = pilotDefinition->initialPilotingTier;
+        campaignMechanics.pilotExperienceCounts[pilotId] = 0;
     }
 }
 
@@ -549,26 +549,26 @@ void MwInitializePilotRatingsFromDefinitions(void)
 void MwAdvancePilotSkillFromExperience(uint16_t pilotRosterSlot)
 {
     if (pilotRosterSlot >= CAMPAIGN_ROSTER_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: pilotRosterSlot >= CAMPAIGN_ROSTER_SLOTS");
-    if (rosterMechAssignments[pilotRosterSlot] == CAMPAIGN_NO_MECH_ASSIGNMENT) return;
+    if (campaignMechanics.rosterMechAssignments[pilotRosterSlot] == CAMPAIGN_NO_MECH_ASSIGNMENT) return;
     uint16_t pilotId = rosterPilotIds[pilotRosterSlot];
     if (pilotId >= CAMPAIGN_PILOT_ID_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: pilotId >= CAMPAIGN_PILOT_ID_COUNT");
-    pilotExperienceCounts[pilotId]++;
+    campaignMechanics.pilotExperienceCounts[pilotId]++;
     uint8_t promotionThreshold;
-    switch (pilotGunneryTiers[pilotId])
+    switch (campaignMechanics.pilotGunneryTiers[pilotId])
     {
     case PILOT_SKILL_POOR: promotionThreshold = PILOT_POOR_ADVANCE_COUNT; break;
     case PILOT_SKILL_AVERAGE: promotionThreshold = PILOT_AVERAGE_ADVANCE_COUNT; break;
     case PILOT_SKILL_GOOD: promotionThreshold = PILOT_GOOD_ADVANCE_COUNT; break;
-    default: pilotExperienceCounts[pilotId] = 0; return;
+    default: campaignMechanics.pilotExperienceCounts[pilotId] = 0; return;
     }
     /* Avoid implementation-defined unsigned-to-signed conversion in C17. */
-    if (pilotExperienceCounts[pilotId] >= NATIVE_BYTE_SIGN_BIT
-        || pilotExperienceCounts[pilotId] < promotionThreshold) return;
-    pilotGunneryTiers[pilotId]++;
-    pilotPilotingTiers[pilotId] = pilotGunneryTiers[pilotId];
-    rosterGunneryTiers[pilotRosterSlot] = pilotGunneryTiers[pilotId];
-    rosterPilotingTiers[pilotRosterSlot] = pilotGunneryTiers[pilotId];
-    pilotExperienceCounts[pilotId] = 0;
+    if (campaignMechanics.pilotExperienceCounts[pilotId] >= NATIVE_BYTE_SIGN_BIT
+        || campaignMechanics.pilotExperienceCounts[pilotId] < promotionThreshold) return;
+    campaignMechanics.pilotGunneryTiers[pilotId]++;
+    campaignMechanics.pilotPilotingTiers[pilotId] = campaignMechanics.pilotGunneryTiers[pilotId];
+    campaignMechanics.rosterGunneryTiers[pilotRosterSlot] = campaignMechanics.pilotGunneryTiers[pilotId];
+    campaignMechanics.rosterPilotingTiers[pilotRosterSlot] = campaignMechanics.pilotGunneryTiers[pilotId];
+    campaignMechanics.pilotExperienceCounts[pilotId] = 0;
 }
 
 /* MW_MAIN 081B:223F..22A8. Casualty removal also compacts mission status.
@@ -578,7 +578,7 @@ uint16_t MwRemovePilotAndCompactRoster(uint16_t rosterSlot)
 {
     if (rosterSlot >= CAMPAIGN_ROSTER_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: rosterSlot >= CAMPAIGN_ROSTER_SLOTS");
     uint16_t removedPilotId = rosterPilotIds[rosterSlot];
-    if (rosterStatus[rosterSlot] == PILOT_STATUS_RELEASE_AVAILABILITY)
+    if (campaignMechanics.rosterStatus[rosterSlot] == PILOT_STATUS_RELEASE_AVAILABILITY)
     {
         if (removedPilotId >= CAMPAIGN_PILOT_ID_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Removed MechWarrior ID is outside the campaign pilot definitions: removedPilotId >= CAMPAIGN_PILOT_ID_COUNT");
         pilotUnavailableFlags[removedPilotId]=0;
@@ -586,16 +586,16 @@ uint16_t MwRemovePilotAndCompactRoster(uint16_t rosterSlot)
     pilotRosterCount--;
     while (rosterSlot != CAMPAIGN_ROSTER_SLOTS - 1)
     {
-        rosterStatus[rosterSlot] = rosterStatus[rosterSlot + 1];
+        campaignMechanics.rosterStatus[rosterSlot] = campaignMechanics.rosterStatus[rosterSlot + 1];
         rosterPilotIds[rosterSlot] = rosterPilotIds[rosterSlot + 1];
-        rosterPayTiers[rosterSlot] = rosterPayTiers[rosterSlot + 1];
-        rosterPortraitIds[rosterSlot] = rosterPortraitIds[rosterSlot + 1];
-        rosterGunneryTiers[rosterSlot] = rosterGunneryTiers[rosterSlot + 1];
-        rosterPilotingTiers[rosterSlot] = rosterPilotingTiers[rosterSlot + 1];
-        rosterUnknownWords[rosterSlot] = rosterUnknownWords[rosterSlot + 1];
-        rosterMechAssignments[rosterSlot] = rosterMechAssignments[rosterSlot + 1];
+        campaignMechanics.rosterPayTiers[rosterSlot] = campaignMechanics.rosterPayTiers[rosterSlot + 1];
+        campaignMechanics.rosterPortraitIds[rosterSlot] = campaignMechanics.rosterPortraitIds[rosterSlot + 1];
+        campaignMechanics.rosterGunneryTiers[rosterSlot] = campaignMechanics.rosterGunneryTiers[rosterSlot + 1];
+        campaignMechanics.rosterPilotingTiers[rosterSlot] = campaignMechanics.rosterPilotingTiers[rosterSlot + 1];
+        campaignMechanics.rosterUnknownWords[rosterSlot] = campaignMechanics.rosterUnknownWords[rosterSlot + 1];
+        campaignMechanics.rosterMechAssignments[rosterSlot] = campaignMechanics.rosterMechAssignments[rosterSlot + 1];
         rosterSlot++;
     }
-    rosterMechAssignments[rosterSlot] = CAMPAIGN_NO_MECH_ASSIGNMENT;
+    campaignMechanics.rosterMechAssignments[rosterSlot] = CAMPAIGN_NO_MECH_ASSIGNMENT;
     return removedPilotId; /* Native DI result, not a new status code. */
 }

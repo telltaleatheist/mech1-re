@@ -8,18 +8,18 @@ uint32_t MwCalculateUnitConditionPrice(uint8_t condition, uint16_t unitKind, uin
 {
     *marketTier = currentPlanetMarketTier;
     if (*marketTier >= UNIT_PRICE_TIER_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: *marketTier >= UNIT_PRICE_TIER_COUNT"); /* Unmapped adjacent DS. */
-    uint8_t priceMultiplier = unitPriceTierMultipliers[*marketTier];
+    uint8_t priceMultiplier = campaignMechanics.unitPriceTierMultipliers[*marketTier];
     priceMultiplier--;
     uint16_t conditionFactor = priceMultiplier * condition;
     uint16_t kindByteOffset = unitKind * sizeof(uint16_t);
-    if (kindByteOffset >= sizeof(unitBasePrices)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: kindByteOffset >= sizeof(unitBasePrices)");
-    uint32_t price = (uint32_t)conditionFactor * unitBasePrices[kindByteOffset / sizeof(uint16_t)];
+    if (kindByteOffset >= sizeof(campaignMechanics.unitBasePrices)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: kindByteOffset >= sizeof(unitBasePrices)");
+    uint32_t price = (uint32_t)conditionFactor * campaignMechanics.unitBasePrices[kindByteOffset / sizeof(uint16_t)];
     price += UNIT_SALE_ROUNDING_CBILLS;
     price /= CBILLS_PER_THOUSAND;
     if (price > UINT16_MAX) /* Port emulation of a native CPU fault. */ MW_NATIVE_FAULT("Rejected condition: price > UINT16_MAX"); /* Native DIV fault precedes both price stores. */
     price *= CBILLS_PER_THOUSAND;
-    unitTransactionPriceLow = (uint16_t)price;
-    unitTransactionPriceHigh = (uint16_t)(price >> NATIVE_WORD_BITS);
+    campaignMechanics.unitTransactionPriceLow = (uint16_t)price;
+    campaignMechanics.unitTransactionPriceHigh = (uint16_t)(price >> NATIVE_WORD_BITS);
     return price;
 }
 
@@ -28,25 +28,25 @@ uint32_t MwCalculateUnitConditionPrice(uint8_t condition, uint16_t unitKind, uin
 void MwCalculateMarketPurchasePrice(void)
 {
     if (currentPlanetMarketTier >= UNIT_PRICE_TIER_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: currentPlanetMarketTier >= UNIT_PRICE_TIER_COUNT");
-    uint16_t priceFactor = unitPriceTierMultipliers[currentPlanetMarketTier] * PERCENT_DIVISOR;
-    uint16_t kindByteOffset = selectedMarketUnitKind * sizeof(uint16_t);
-    if (kindByteOffset >= sizeof(unitBasePrices)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: kindByteOffset >= sizeof(unitBasePrices)");
-    uint32_t price = (uint32_t)priceFactor * unitBasePrices[kindByteOffset / sizeof(uint16_t)];
-    price -= ((uint32_t)unitRepairQuoteHigh << NATIVE_WORD_BITS) | unitRepairQuoteLow;
+    uint16_t priceFactor = campaignMechanics.unitPriceTierMultipliers[currentPlanetMarketTier] * PERCENT_DIVISOR;
+    uint16_t kindByteOffset = campaignMechanics.selectedMarketUnitKind * sizeof(uint16_t);
+    if (kindByteOffset >= sizeof(campaignMechanics.unitBasePrices)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: kindByteOffset >= sizeof(unitBasePrices)");
+    uint32_t price = (uint32_t)priceFactor * campaignMechanics.unitBasePrices[kindByteOffset / sizeof(uint16_t)];
+    price -= ((uint32_t)campaignMechanics.unitRepairQuoteHigh << NATIVE_WORD_BITS) | campaignMechanics.unitRepairQuoteLow;
     price /= CBILLS_PER_THOUSAND;
     if (price > UINT16_MAX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: price > UINT16_MAX");
     price *= CBILLS_PER_THOUSAND;
-    unitTransactionPriceLow = (uint16_t)price;
-    unitTransactionPriceHigh = (uint16_t)(price >> NATIVE_WORD_BITS);
+    campaignMechanics.unitTransactionPriceLow = (uint16_t)price;
+    campaignMechanics.unitTransactionPriceHigh = (uint16_t)(price >> NATIVE_WORD_BITS);
 }
 
 /* MW_MAIN 081B:3ED0..3EE7. Read the stored near cursor one BYTE at a time.
  * Character views below inspect canonical records, never a second DS mirror. */
 uint16_t MwHasBodyDamageForRepair(void)
 {
-    if (!componentRepairDamage) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !componentRepairDamage"); /* Unconverted reference, not a clean record. */
+    if (!campaignMechanics.componentRepairDamage) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !componentRepairDamage"); /* Unconverted reference, not a clean record. */
     for (uint16_t location = 0; location < CAMPAIGN_BODY_LOCATION_COUNT; ++location)
-        if (componentRepairDamage->bodyDamageTiers[location] != 0) return 1;
+        if (campaignMechanics.componentRepairDamage->bodyDamageTiers[location] != 0) return 1;
     return 0;
 }
 
@@ -54,10 +54,10 @@ uint16_t MwHasBodyDamageForRepair(void)
  * occupies a price-only slot, shifting weapon prices by one. */
 void MwQuoteRepairComponent(CampaignUnitDamage *damage)
 {
-    componentRepairDamage = damage;
-    componentRepairPriceLow = 0;
-    componentRepairPriceHigh = 0;
-    uint16_t category = repairPriceCategory;
+    campaignMechanics.componentRepairDamage = damage;
+    campaignMechanics.componentRepairPriceLow = 0;
+    campaignMechanics.componentRepairPriceHigh = 0;
+    uint16_t category = campaignMechanics.repairPriceCategory;
     if (category != REPAIR_BODY)
     {
         if (!damage) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !damage"); /* Both quote words have already been cleared. */
@@ -69,20 +69,20 @@ void MwQuoteRepairComponent(CampaignUnitDamage *damage)
     uint16_t basePrice;
     if (category < REPAIR_BODY)
     {
-        if (selectedOwnedUnitKind >= CAMPAIGN_MECH_KIND_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedOwnedUnitKind >= CAMPAIGN_MECH_KIND_COUNT");
-        basePrice = systemRepairBasePrices[category].basePriceByMechKind[selectedOwnedUnitKind];
+        if (campaignMechanics.selectedOwnedUnitKind >= CAMPAIGN_MECH_KIND_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedOwnedUnitKind >= CAMPAIGN_MECH_KIND_COUNT");
+        basePrice = campaignMechanics.systemRepairBasePrices[category].basePriceByMechKind[campaignMechanics.selectedOwnedUnitKind];
     }
     else if (category == REPAIR_BODY)
     {
         if (MwHasBodyDamageForRepair() == 0) return;
-        if (selectedOwnedUnitKind >= CAMPAIGN_MECH_KIND_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedOwnedUnitKind >= CAMPAIGN_MECH_KIND_COUNT");
-        basePrice = bodyRepairBasePricesByKind[selectedOwnedUnitKind];
+        if (campaignMechanics.selectedOwnedUnitKind >= CAMPAIGN_MECH_KIND_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedOwnedUnitKind >= CAMPAIGN_MECH_KIND_COUNT");
+        basePrice = campaignMechanics.bodyRepairBasePricesByKind[campaignMechanics.selectedOwnedUnitKind];
     }
     else
     {
-        if (selectedOwnedUnitKind >= CAMPAIGN_MECH_KIND_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedOwnedUnitKind >= CAMPAIGN_MECH_KIND_COUNT");
-        if (!weaponRepairPricesByKind[selectedOwnedUnitKind]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !weaponRepairPricesByKind[selectedOwnedUnitKind]");
-        basePrice = weaponRepairPricesByKind[selectedOwnedUnitKind][category - REPAIR_FIRST_WEAPON];
+        if (campaignMechanics.selectedOwnedUnitKind >= CAMPAIGN_MECH_KIND_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedOwnedUnitKind >= CAMPAIGN_MECH_KIND_COUNT");
+        if (!campaignMechanics.weaponRepairPricesByKind[campaignMechanics.selectedOwnedUnitKind]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !weaponRepairPricesByKind[selectedOwnedUnitKind]");
+        basePrice = campaignMechanics.weaponRepairPricesByKind[campaignMechanics.selectedOwnedUnitKind][category - REPAIR_FIRST_WEAPON];
     }
     uint32_t surcharge = (uint32_t)basePrice * planetMarketPremiumPercent / PERCENT_DIVISOR;
     if (surcharge > UINT16_MAX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: surcharge > UINT16_MAX");
@@ -90,22 +90,22 @@ void MwQuoteRepairComponent(CampaignUnitDamage *damage)
     uint16_t priceMultiplier = category == REPAIR_HEAT_SINKS || category == REPAIR_JUMP_JETS || category == REPAIR_BODY
         ? CBILLS_PER_THOUSAND : REPAIR_COMPONENT_CBILLS;
     uint32_t price = (uint32_t)adjustedPrice * priceMultiplier;
-    componentRepairPriceLow = (uint16_t)price;
-    componentRepairPriceHigh = (uint16_t)(price >> NATIVE_WORD_BITS);
+    campaignMechanics.componentRepairPriceLow = (uint16_t)price;
+    campaignMechanics.componentRepairPriceHigh = (uint16_t)(price >> NATIVE_WORD_BITS);
 }
 
 /* MW_MAIN 081B:3763..3801. Repeated ADD/ADC per component tier, but only one
  * body charge per nonzero location. This never repairs or debits C-bills. */
 void MwQuoteMechRepairTotal(uint16_t unitKind, CampaignUnitDamage *damage)
 {
-    repairQuoteDamage = damage;
-    repairQuoteMechKind = unitKind;
-    selectedOwnedUnitKind = unitKind;
-    unitRepairQuoteHigh = 0;
-    unitRepairQuoteLow = 0;
+    campaignMechanics.repairQuoteDamage = damage;
+    campaignMechanics.repairQuoteMechKind = unitKind;
+    campaignMechanics.selectedOwnedUnitKind = unitKind;
+    campaignMechanics.unitRepairQuoteHigh = 0;
+    campaignMechanics.unitRepairQuoteLow = 0;
     if (unitKind >= CAMPAIGN_MECH_KIND_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitKind >= CAMPAIGN_MECH_KIND_COUNT");
     if (!damage) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !damage");
-    uint16_t fieldsRemaining = CAMPAIGN_SYSTEM_COUNT + unitWeaponCounts[unitKind];
+    uint16_t fieldsRemaining = CAMPAIGN_SYSTEM_COUNT + campaignMechanics.unitWeaponCounts[unitKind];
     uint16_t category = 0;
     uint16_t component = 0;
     do
@@ -113,35 +113,35 @@ void MwQuoteMechRepairTotal(uint16_t unitKind, CampaignUnitDamage *damage)
         uint8_t tier = ((const unsigned char *)damage)[component];
         if (tier != 0)
         {
-            repairPriceCategory = category;
-            MwQuoteRepairComponent(repairQuoteDamage);
-            uint32_t tierPrice = ((uint32_t)componentRepairPriceHigh << NATIVE_WORD_BITS) | componentRepairPriceLow;
+            campaignMechanics.repairPriceCategory = category;
+            MwQuoteRepairComponent(campaignMechanics.repairQuoteDamage);
+            uint32_t tierPrice = ((uint32_t)campaignMechanics.componentRepairPriceHigh << NATIVE_WORD_BITS) | campaignMechanics.componentRepairPriceLow;
             do
             {
-                uint32_t total = ((uint32_t)unitRepairQuoteHigh << NATIVE_WORD_BITS) | unitRepairQuoteLow;
+                uint32_t total = ((uint32_t)campaignMechanics.unitRepairQuoteHigh << NATIVE_WORD_BITS) | campaignMechanics.unitRepairQuoteLow;
                 total += tierPrice;
-                unitRepairQuoteLow = (uint16_t)total;
-                unitRepairQuoteHigh = (uint16_t)(total >> NATIVE_WORD_BITS);
+                campaignMechanics.unitRepairQuoteLow = (uint16_t)total;
+                campaignMechanics.unitRepairQuoteHigh = (uint16_t)(total >> NATIVE_WORD_BITS);
             } while (--tier != 0);
         }
         component++;
         category++;
         if (category == REPAIR_BODY) category++;
     } while (--fieldsRemaining != 0);
-    repairPriceCategory = REPAIR_BODY;
-    MwQuoteRepairComponent(repairQuoteDamage); /* Even for zero body damage. */
+    campaignMechanics.repairPriceCategory = REPAIR_BODY;
+    MwQuoteRepairComponent(campaignMechanics.repairQuoteDamage); /* Even for zero body damage. */
     uint16_t damagedLocations = 0;
     for (uint16_t location = 0; location < CAMPAIGN_BODY_LOCATION_COUNT; ++location)
         if (damage->bodyDamageTiers[location] != 0) damagedLocations++;
     if (damagedLocations != 0)
     {
-        uint32_t bodyPrice = ((uint32_t)componentRepairPriceHigh << NATIVE_WORD_BITS) | componentRepairPriceLow;
+        uint32_t bodyPrice = ((uint32_t)campaignMechanics.componentRepairPriceHigh << NATIVE_WORD_BITS) | campaignMechanics.componentRepairPriceLow;
         do
         {
-            uint32_t total = ((uint32_t)unitRepairQuoteHigh << NATIVE_WORD_BITS) | unitRepairQuoteLow;
+            uint32_t total = ((uint32_t)campaignMechanics.unitRepairQuoteHigh << NATIVE_WORD_BITS) | campaignMechanics.unitRepairQuoteLow;
             total += bodyPrice;
-            unitRepairQuoteLow = (uint16_t)total;
-            unitRepairQuoteHigh = (uint16_t)(total >> NATIVE_WORD_BITS);
+            campaignMechanics.unitRepairQuoteLow = (uint16_t)total;
+            campaignMechanics.unitRepairQuoteHigh = (uint16_t)(total >> NATIVE_WORD_BITS);
         } while (--damagedLocations != 0);
     }
 }

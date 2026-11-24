@@ -17,33 +17,40 @@ enum { COMMANDER_ROSTER_SLOT=0, FIRST_HIRED_PILOT_SLOT=1,
     PILOT_CARD_COMMANDER_PICTURE=0x16, PILOT_CARD_LABEL_PICTURE=0x1A,
     PILOT_ASSIGNMENT_NONE=0xFFFF, PILOT_ASSIGNMENT_DISMISS=0xFFFE,
     PILOT_CARD_BACKGROUND=Campaign_Pal_EGA_DarkGrey, PILOT_CARD_TEXT_COLOUR=Campaign_Pal_EGA_LightGrey };
-extern MwPanelDescriptor companyMenuPanel,commanderProfilePanel;
-extern MwPanelDescriptor crewLabelsPanel,barMenuPanel,recruitInterviewPanel;
-extern MwUiMenu companyMenu,crewMenu,barMenu,recruitInterviewMenu;
-extern MwServiceCaption companyMenuLabels[4],commanderProfileLabels[11];
-extern MwServiceCaption crewLabels[7],barMenuLabels[4],recruitInterviewLabels[3];
-extern char commanderProfileName[0x0A];
-extern char commanderReputationLabels[COMMANDER_REPUTATION_COUNT][0x10];
-extern char houseAttitudeLabels[5][0x0A];
-extern const char *houseAttitudeText[9];
-extern char pilotSkillLabels[4][0x0A];
-/* Two preceding native table entries are DISMISS and NONE. In C they have
- * proper array indices, not negative subscripts into an unrelated allocation. */
-extern char pilotAssignmentCaptions[PILOT_ASSIGNMENT_CAPTION_COUNT][PILOT_ASSIGNMENT_CAPTION_BYTES];
-extern uint8_t pilotAssignmentCaptionColours[PILOT_ASSIGNMENT_CAPTION_COUNT];
-extern uint16_t crewScreenRightEdge,pilotCardRosterSlot,pilotCardTextX;
-extern uint16_t displayedPilotId,pilotCardGunneryTier,pilotCardPilotingTier;
-extern uint16_t pilotCardPortraitId,pilotCardQuotedWageTier,pilotCardOwnedUnitSlot;
-extern uint16_t pilotCardColumnOrigins[PILOT_CARD_COUNT];
-extern uint16_t assignmentSelectedPilotSlot,assignmentCandidateOwnedSlot;
-extern uint8_t assignmentConflictHighlighted;
-extern uint16_t assignmentConflictingPilotSlot,assignmentConflictingOwnedSlot;
-/* Logical offer index; only snapshot fixtures encode native byte displacement. */
-extern uint16_t recruitOfferSlot,selectedRecruitPilotId;
-extern char recruitStatLabels[0x17],noAvailableRecruitsText[0x21];
-extern char fullFourPilotRosterText[0x33],fullThreePilotRosterText[0x35];
-extern const MwPilotDefinitionPrefix *pilotDefinitions[CAMPAIGN_PILOT_ID_COUNT];
-extern const char *pilotDialogue[CAMPAIGN_PILOT_ID_COUNT];
+/* Campaign state owned by campaign_pilots.h (plan, slice B2). */
+struct CampaignPilotsState
+{
+    /* Native UI directories become typed references. Persistent pilot tables
+     * remain parallel arrays; these objects do not invent a packed pilot record. */
+    MwPanelDescriptor companyMenuPanel, commanderProfilePanel;
+    MwPanelDescriptor crewLabelsPanel, barMenuPanel, recruitInterviewPanel;
+    MwUiMenu companyMenu, crewMenu, barMenu, recruitInterviewMenu;
+    MwServiceCaption companyMenuLabels[4], commanderProfileLabels[11];
+    MwServiceCaption crewLabels[7], barMenuLabels[4], recruitInterviewLabels[3];
+    char commanderProfileName[0x0A];
+    char commanderReputationLabels[COMMANDER_REPUTATION_COUNT][0x10];
+    char houseAttitudeLabels[5][0x0A];
+    const char *houseAttitudeText[9];
+    char pilotSkillLabels[4][0x0A];
+    /* Two preceding native table entries are DISMISS and NONE. In C they have
+     * proper array indices, not negative subscripts into an unrelated allocation. */
+    char pilotAssignmentCaptions[PILOT_ASSIGNMENT_CAPTION_COUNT][PILOT_ASSIGNMENT_CAPTION_BYTES];
+    uint8_t pilotAssignmentCaptionColours[PILOT_ASSIGNMENT_CAPTION_COUNT];
+    uint16_t crewScreenRightEdge, pilotCardRosterSlot, pilotCardTextX;
+    uint16_t displayedPilotId, pilotCardGunneryTier, pilotCardPilotingTier;
+    uint16_t pilotCardPortraitId, pilotCardQuotedWageTier, pilotCardOwnedUnitSlot;
+    uint16_t pilotCardColumnOrigins[PILOT_CARD_COUNT];
+    uint16_t assignmentSelectedPilotSlot, assignmentCandidateOwnedSlot;
+    uint8_t assignmentConflictHighlighted;
+    uint16_t assignmentConflictingPilotSlot, assignmentConflictingOwnedSlot;
+    /* Logical offer index; only snapshot fixtures encode native byte displacement. */
+    uint16_t recruitOfferSlot, selectedRecruitPilotId;
+    char recruitStatLabels[0x17], noAvailableRecruitsText[0x21];
+    char fullFourPilotRosterText[0x33], fullThreePilotRosterText[0x35];
+    const MwPilotDefinitionPrefix *pilotDefinitions[CAMPAIGN_PILOT_ID_COUNT];
+    const char *pilotDialogue[CAMPAIGN_PILOT_ID_COUNT];
+};
+extern CampaignPilotsState campaignPilots;
 enum { BAR_BACKGROUND_PICTURE=6, BAR_LANDSCAPE_PICTURE_BASE=8,
     BAR_DRINK_PICTURE=7, BAR_HUB_ROW=4, BAR_ROW_DRINK=0,BAR_ROW_RECRUIT=1,
     BAR_FONT=3, BAR_FIRST_VISIT=0xFFFF, BAR_INITIAL_EVENT_CLASS=1,BAR_DRINK_EVENT_CLASS=2 };

@@ -456,7 +456,7 @@ uint16_t MwCheckDeploymentWithoutRefusalPenalty(void)
  * shared, not a new source CALL. Success joins the native deployment chain. */
 uint16_t MwCheckAssignedMechDeploymentReadiness(void)
 {
-    if (rosterMechAssignments[0]==CAMPAIGN_NO_MECH_ASSIGNMENT)
+    if (campaignMechanics.rosterMechAssignments[0]==CAMPAIGN_NO_MECH_ASSIGNMENT)
     {
         if (deploymentPenaltySuppressed!=1)
         {
@@ -471,12 +471,12 @@ uint16_t MwCheckAssignedMechDeploymentReadiness(void)
     do
     {
         if (rosterSlot>=CAMPAIGN_ROSTER_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: rosterSlot>=CAMPAIGN_ROSTER_SLOTS"); /* Unrepresented adjacent roster words, not a zero-count guard. */
-        uint16_t ownedSlot=rosterMechAssignments[rosterSlot];
+        uint16_t ownedSlot=campaignMechanics.rosterMechAssignments[rosterSlot];
         if (ownedSlot!=CAMPAIGN_NO_MECH_ASSIGNMENT)
         {
             ownedSlot=(uint8_t)ownedSlot; /* Native MUL BL consumes AL. */
             if (ownedSlot>=CAMPAIGN_OWNED_UNIT_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: ownedSlot>=CAMPAIGN_OWNED_UNIT_SLOTS");
-            const CampaignUnitDamage *damage=&ownedUnitDamage[ownedSlot];
+            const CampaignUnitDamage *damage=&campaignMechanics.ownedUnitDamage[ownedSlot];
             if (damage->engineHits>MECH_FUNCTIONAL_MAXIMUM_TIER || damage->gyroDamageTier>MECH_FUNCTIONAL_MAXIMUM_TIER
                 || damage->lifeSupportDamageTier>MECH_FUNCTIONAL_MAXIMUM_TIER
                 || damage->actuatorDamageTiers[2]>MECH_FUNCTIONAL_MAXIMUM_TIER

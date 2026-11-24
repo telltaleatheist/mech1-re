@@ -65,7 +65,7 @@ void MwAnimateMechServiceIdle(void)
 uint16_t MwPurchaseSelectedMarketUnit(uint16_t entryOffset)
 {
     if (entryOffset==CAMPAIGN_CONTINUE_MECH_PURCHASE_FINISHED) goto purchaseFinished;
-    uint32_t purchasePrice;purchasePrice=((uint32_t)unitTransactionPriceHigh<<NATIVE_WORD_BITS)|unitTransactionPriceLow;
+    uint32_t purchasePrice;purchasePrice=((uint32_t)campaignMechanics.unitTransactionPriceHigh<<NATIVE_WORD_BITS)|campaignMechanics.unitTransactionPriceLow;
     uint32_t funds;funds=((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow;
     if (purchasePrice>funds)
     {
@@ -89,8 +89,8 @@ uint16_t MwPurchaseSelectedMarketUnit(uint16_t entryOffset)
     uint16_t marketUnitSlot;marketUnitSlot=campaignMarket.selectedMarketUnitByteOffset/sizeof(uint16_t);
     campaignEconomy.ownedUnitKinds[ownedUnitSlot]=campaignEconomy.marketUnitKinds[marketUnitSlot];
     ++campaignEconomy.ownedUnitCount;
-    const uint8_t *source;source=(const uint8_t *)&marketUnitDamage[(uint8_t)campaignMarket.selectedMarketUnitSlot];
-    uint8_t *destination;destination=(uint8_t *)&ownedUnitDamage[(uint8_t)ownedUnitSlot];
+    const uint8_t *source;source=(const uint8_t *)&campaignMechanics.marketUnitDamage[(uint8_t)campaignMarket.selectedMarketUnitSlot];
+    uint8_t *destination;destination=(uint8_t *)&campaignMechanics.ownedUnitDamage[(uint8_t)ownedUnitSlot];
     for (uint16_t index=0;index<CAMPAIGN_DAMAGE_BYTES;++index) destination[index]=source[index];
     for (uint16_t group=0;group<CAMPAIGN_AMMO_GROUPS;++group)
         campaignEconomy.ownedAmmoQuantitiesByGroup[group*CAMPAIGN_OWNED_UNIT_SLOTS+ownedUnitSlot]=campaignEconomy.marketAmmoQuantitiesByGroup[group*CAMPAIGN_MARKET_UNIT_SLOTS+marketUnitSlot];
@@ -111,12 +111,12 @@ uint16_t MwOpenMarketMechComponentInspectionCallback(void)
 {
     campaignService.unitInspectionContextCode=MECH_COMPLEX_DEALER_CONTEXT;
     EgaSelectFont(TEXT_PANEL_COMPACT_FONT);
-    uint16_t kind=selectedMarketUnitKind;
+    uint16_t kind=campaignMechanics.selectedMarketUnitKind;
     uint16_t titleCursor=0;
     while (titleCursor!=campaignService.repairTitleLeadingSpacesByKind[kind])
         campaignMarket.marketComponentTitle.text[titleCursor++]=ASCII_SPACE;
     strcpy(campaignMarket.marketComponentTitle.text+titleCursor,campaignService.unitDisplayNames[kind]);
-    CampaignUnitDamage *damage=&marketUnitDamage[(uint8_t)campaignMarket.selectedMarketUnitSlot];
+    CampaignUnitDamage *damage=&campaignMechanics.marketUnitDamage[(uint8_t)campaignMarket.selectedMarketUnitSlot];
     uint8_t *damagedComponent=(uint8_t *)damage;
     campaignMarket.marketSystemRowIndex=0;
     do
@@ -127,12 +127,12 @@ uint16_t MwOpenMarketMechComponentInspectionCallback(void)
         row->display.colour=tier==0?REPAIR_CONDITION_HEALTHY_COLOUR:REPAIR_CONDITION_DAMAGED_COLOUR;
         if (category==REPAIR_HEAT_SINKS)
         {
-            uint16_t kind=selectedMarketUnitKind;
+            uint16_t kind=campaignMechanics.selectedMarketUnitKind;
             uint8_t maximum=campaignService.unitHeatSinkCounts[kind];
             MwBuildDecimalDigitBuffer((uint8_t)(maximum-tier));
             row->caption.columns.condition[0]=numericDecimalDigits[8]==0?ASCII_SPACE:numericDecimalDigits[8]+ASCII_DIGIT_ZERO;
             row->caption.columns.condition[1]=numericDecimalDigits[9]+ASCII_DIGIT_ZERO;
-            kind=selectedMarketUnitKind;
+            kind=campaignMechanics.selectedMarketUnitKind;
             maximum=campaignService.unitHeatSinkCounts[kind];
             MwBuildDecimalDigitBuffer(maximum);
             row->caption.columns.condition[6]=numericDecimalDigits[8]+ASCII_DIGIT_ZERO;
@@ -142,11 +142,11 @@ uint16_t MwOpenMarketMechComponentInspectionCallback(void)
         {
             for (uint16_t letter=0;letter<sizeof(campaignService.repairJumpJetCountTemplateBytes);++letter)
                 row->caption.columns.condition[letter]=campaignService.repairJumpJetCountTemplateBytes[letter];
-            uint16_t kind=selectedMarketUnitKind;
+            uint16_t kind=campaignMechanics.selectedMarketUnitKind;
             uint8_t maximum=campaignEconomy.unitJumpJetGroupCounts[kind];
             MwBuildDecimalDigitBuffer((uint8_t)(maximum-tier));
             row->caption.columns.condition[1]=numericDecimalDigits[9]+ASCII_DIGIT_ZERO;
-            kind=selectedMarketUnitKind;
+            kind=campaignMechanics.selectedMarketUnitKind;
             maximum=campaignEconomy.unitJumpJetGroupCounts[kind];
             if (maximum!=0)
             {MwBuildDecimalDigitBuffer(maximum);row->caption.columns.condition[6]=numericDecimalDigits[9]+ASCII_DIGIT_ZERO;}
@@ -160,7 +160,7 @@ uint16_t MwOpenMarketMechComponentInspectionCallback(void)
         }
         ++campaignMarket.marketSystemRowIndex;++damagedComponent;
     } while (campaignMarket.marketSystemRowIndex!=CAMPAIGN_SYSTEM_COUNT);
-    damagedComponent=marketUnitDamage[(uint8_t)campaignMarket.selectedMarketUnitSlot].bodyDamageTiers;
+    damagedComponent=campaignMechanics.marketUnitDamage[(uint8_t)campaignMarket.selectedMarketUnitSlot].bodyDamageTiers;
     uint8_t bodyDamage=0;
     for (uint16_t location=0;location<CAMPAIGN_BODY_LOCATION_COUNT;++location,++damagedComponent)
         bodyDamage+=*damagedComponent&3;
@@ -177,7 +177,7 @@ uint16_t MwOpenMarketMechComponentInspectionCallback(void)
         campaignMarket.marketWeaponConditionRows[mount].display.y=y;
         y+=REPAIR_WEAPON_ROW_HEIGHT;
     }
-    kind=selectedMarketUnitKind;
+    kind=campaignMechanics.selectedMarketUnitKind;
     uint16_t label=0;
     while (campaignService.repairWeaponLabels[kind][label]!=NULL)
     {
@@ -192,9 +192,9 @@ uint16_t MwOpenMarketMechComponentInspectionCallback(void)
     MwUiRecord *done=&campaignMarket.marketComponentMenu.records[0];
     done->text=doneCaption->text;
     done->textColour=&doneCaption->colour; /*4817 aliases this reference, not separate state. */
-    kind=selectedMarketUnitKind;
-    uint16_t mountsRemaining=unitWeaponCounts[kind],mount=0;
-    damagedComponent=marketUnitDamage[(uint8_t)campaignMarket.selectedMarketUnitSlot].weaponDamageTiers;
+    kind=campaignMechanics.selectedMarketUnitKind;
+    uint16_t mountsRemaining=campaignMechanics.unitWeaponCounts[kind],mount=0;
+    damagedComponent=campaignMechanics.marketUnitDamage[(uint8_t)campaignMarket.selectedMarketUnitSlot].weaponDamageTiers;
     do
     {
         if (mount>=CAMPAIGN_WEAPON_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mount>=CAMPAIGN_WEAPON_SLOTS"); /* Native LOOP underflow is not a zero-weapon no-op. */
@@ -204,8 +204,8 @@ uint16_t MwOpenMarketMechComponentInspectionCallback(void)
         strcpy(row->caption.text+REPAIR_COMPONENT_LABEL_COLUMNS,campaignService.campaignDamageTierLabels[tier]);
     } while (--mountsRemaining!=0);
     done->x=REPAIR_DONE_X;done->y=DEALER_COMPONENT_DONE_Y;done->activateCodeOffset=CAMPAIGN_CONTINUE_MARKET_COMPONENT_INSPECTION_RETURN;
-    kind=selectedMarketUnitKind;
-    campaignMarket.marketComponentPanel.lineCount=unitWeaponCounts[kind]+DEALER_COMPONENT_FIXED_LINES;
+    kind=campaignMechanics.selectedMarketUnitKind;
+    campaignMarket.marketComponentPanel.lineCount=campaignMechanics.unitWeaponCounts[kind]+DEALER_COMPONENT_FIXED_LINES;
     EgaFillDisplayPageRectangle(REPAIR_PANEL_X,REPAIR_PANEL_Y,REPAIR_PANEL_WIDTH,REPAIR_PANEL_HEIGHT,MECH_DETAIL_BACKGROUND);
     MwDrawDescriptorTextPanel(&campaignMarket.marketComponentPanel);
     MwSelectUiRecordTable(0,&campaignMarket.marketComponentMenu);
@@ -229,9 +229,9 @@ uint16_t MwDrawMarketMechDetailContinuation(uint16_t entryOffset)
         EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
     }
     MwDrawMechInspectionGrid();
-    if (selectedMarketUnitKind!=CAMPAIGN_UNIT_DROPSHIP)
-        MwDrawMechBodyDamageDiagram(selectedMarketUnitKind,&marketUnitDamage[(uint8_t)campaignMarket.selectedMarketUnitSlot]);
-    uint16_t kind;kind=selectedMarketUnitKind;
+    if (campaignMechanics.selectedMarketUnitKind!=CAMPAIGN_UNIT_DROPSHIP)
+        MwDrawMechBodyDamageDiagram(campaignMechanics.selectedMarketUnitKind,&campaignMechanics.marketUnitDamage[(uint8_t)campaignMarket.selectedMarketUnitSlot]);
+    uint16_t kind;kind=campaignMechanics.selectedMarketUnitKind;
     uint16_t x;x=campaignService.unitDetailPictureXOffsets[kind]-DETAIL_PICTURE_X_INSET;
     uint16_t y;y=campaignService.unitDetailPictureYOrigins[kind];
     x+=INSPECTION_GRID_X;
@@ -240,13 +240,13 @@ uint16_t MwDrawMarketMechDetailContinuation(uint16_t entryOffset)
     EgaDrawPackedSprite(x,y,EGA_DRAW_PAGE,0,selector);
     EgaCopyDrawPageToDisplay(INSPECTION_CAPTURE_X,INSPECTION_PUBLISH_Y,INSPECTION_PUBLISH_WIDTH,INSPECTION_PUBLISH_HEIGHT);
 marketStatus:
-    MwDrawDescriptorTextPanel(selectedMarketUnitKind==CAMPAIGN_UNIT_DROPSHIP?&campaignMarket.marketDropShipStatusPanel:&campaignMarket.marketMechStatusPanel);
+    MwDrawDescriptorTextPanel(campaignMechanics.selectedMarketUnitKind==CAMPAIGN_UNIT_DROPSHIP?&campaignMarket.marketDropShipStatusPanel:&campaignMarket.marketMechStatusPanel);
     MwDrawPicturePanelBorder(0,0,EGA_COLUMNS,EGA_ROWS);
-    selectedMarketUnitKind=campaignEconomy.marketUnitKinds[campaignMarket.selectedMarketUnitByteOffset/sizeof(uint16_t)];
-    const char *mechName=campaignService.unitDisplayNames[selectedMarketUnitKind];
+    campaignMechanics.selectedMarketUnitKind=campaignEconomy.marketUnitKinds[campaignMarket.selectedMarketUnitByteOffset/sizeof(uint16_t)];
+    const char *mechName=campaignService.unitDisplayNames[campaignMechanics.selectedMarketUnitKind];
     MwNativeByteView name={(const uint8_t *)mechName,0,(uint32_t)strlen(mechName)+1};
     EgaDrawTransparentText(MECH_DETAIL_NAME_X,MECH_DETAIL_NAME_Y,MECH_DETAIL_TEXT_COLOUR,&name,0);
-    CampaignUnitDamage *damage=&marketUnitDamage[(uint8_t)campaignMarket.selectedMarketUnitSlot];
+    CampaignUnitDamage *damage=&campaignMechanics.marketUnitDamage[(uint8_t)campaignMarket.selectedMarketUnitSlot];
     /*444A..4484's sum is overwritten at4486, not an overall condition score. */
     const char *conditionText=(const char *)campaignService.mechNonfunctionalTextBytes;
     if (damage->engineHits<=MECH_FUNCTIONAL_MAXIMUM_TIER && damage->gyroDamageTier<=MECH_FUNCTIONAL_MAXIMUM_TIER
@@ -255,19 +255,19 @@ marketStatus:
         && damage->actuatorDamageTiers[3]<=MECH_FUNCTIONAL_MAXIMUM_TIER) conditionText=mechFunctionalTextBytes;
     MwNativeByteView condition={(const uint8_t *)conditionText,0,(uint32_t)strlen(conditionText)+1};
     EgaDrawTransparentText(MECH_DETAIL_CONDITION_X,MECH_DETAIL_CONDITION_Y,MECH_DETAIL_TEXT_COLOUR,&condition,0);
-    if (selectedMarketUnitKind==CAMPAIGN_UNIT_DROPSHIP) goto purchasePrice;
-    damage=&marketUnitDamage[(uint8_t)campaignMarket.selectedMarketUnitSlot];
-    MwQuoteMechRepairTotal(selectedMarketUnitKind,damage); /* Also writes shared2AD5. */
-    uint32_t repairQuote;repairQuote=((uint32_t)unitRepairQuoteHigh<<NATIVE_WORD_BITS)|unitRepairQuoteLow;
+    if (campaignMechanics.selectedMarketUnitKind==CAMPAIGN_UNIT_DROPSHIP) goto purchasePrice;
+    damage=&campaignMechanics.marketUnitDamage[(uint8_t)campaignMarket.selectedMarketUnitSlot];
+    MwQuoteMechRepairTotal(campaignMechanics.selectedMarketUnitKind,damage); /* Also writes shared2AD5. */
+    uint32_t repairQuote;repairQuote=((uint32_t)campaignMechanics.unitRepairQuoteHigh<<NATIVE_WORD_BITS)|campaignMechanics.unitRepairQuoteLow;
     numericGroupingEnabled=1;
     MwDrawSignedDecimalField(repairQuote,MECH_DETAIL_REPAIR_PRICE_X,1,0,MECH_DETAIL_TEXT_COLOUR,MECH_DETAIL_BACKGROUND,MECH_DETAIL_REPAIR_PRICE_Y);
-    kind=selectedMarketUnitKind;
+    kind=campaignMechanics.selectedMarketUnitKind;
     uint8_t tonnage;tonnage=campaignService.unitDisplayTonnages[kind];
     MwDrawSignedDecimalField(tonnage,MECH_DETAIL_TONNAGE_X,1,0,MECH_DETAIL_TEXT_COLOUR,MECH_DETAIL_BACKGROUND,MECH_DETAIL_TONNAGE_Y);
-    kind=selectedMarketUnitKind;
+    kind=campaignMechanics.selectedMarketUnitKind;
     uint8_t speed;speed=campaignService.unitDisplaySpeedsKph[kind];
     MwDrawSignedDecimalField(speed,MECH_DETAIL_SPEED_X,1,0,MECH_DETAIL_TEXT_COLOUR,MECH_DETAIL_BACKGROUND,MECH_DETAIL_SPEED_Y);
-    kind=selectedMarketUnitKind;
+    kind=campaignMechanics.selectedMarketUnitKind;
     uint8_t jumpCapacity;jumpCapacity=campaignService.unitDisplayJumpCapacitiesMetres[kind];
     MwDrawSignedDecimalField(jumpCapacity,MECH_DETAIL_JUMP_CAPACITY_X,1,0,MECH_DETAIL_TEXT_COLOUR,MECH_DETAIL_BACKGROUND,MECH_DETAIL_JUMP_CAPACITY_Y);
     for (uint16_t group=0;group<CAMPAIGN_AMMO_GROUPS;++group)
@@ -285,17 +285,17 @@ marketStatus:
         MwNativeByteView text={(const uint8_t *)ammoName,0,(uint32_t)strlen(ammoName)+1};
         EgaDrawTransparentText(MECH_DETAIL_AMMO_LABEL_X,y,MECH_DETAIL_TEXT_COLOUR,&text,0);
         MwDrawSignedDecimalField(quantity,MECH_DETAIL_AMMO_QUANTITY_X,1,0,MECH_DETAIL_TEXT_COLOUR,MECH_DETAIL_BACKGROUND,y);
-        ++group;kind=selectedMarketUnitKind;
+        ++group;kind=campaignMechanics.selectedMarketUnitKind;
     } while ((uint8_t)group!=campaignEconomy.unitAmmoGroupCounts[kind]);
 purchasePrice:
     MwCalculateMarketPurchasePrice(); /* DropShip intentionally uses the stale repair quote. */
-    uint32_t price=((uint32_t)unitTransactionPriceHigh<<NATIVE_WORD_BITS)|unitTransactionPriceLow;
+    uint32_t price=((uint32_t)campaignMechanics.unitTransactionPriceHigh<<NATIVE_WORD_BITS)|campaignMechanics.unitTransactionPriceLow;
     ++numericGroupingEnabled;
     MwDrawSignedDecimalField(price,DEALER_PRICE_X,1,0,MECH_DETAIL_TEXT_COLOUR,MECH_DETAIL_BACKGROUND,DEALER_PRICE_Y);
     uint32_t funds=((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow;
     ++numericGroupingEnabled;
     MwDrawSignedDecimalField(funds,DEALER_FUNDS_X,1,0,MECH_DETAIL_TEXT_COLOUR,MECH_DETAIL_BACKGROUND,DEALER_FUNDS_Y);
-    if (selectedMarketUnitKind==CAMPAIGN_UNIT_DROPSHIP) MwSelectUiRecordTable(0,&campaignMarket.marketDropShipMenu);
+    if (campaignMechanics.selectedMarketUnitKind==CAMPAIGN_UNIT_DROPSHIP) MwSelectUiRecordTable(0,&campaignMarket.marketDropShipMenu);
     else
     {
         EgaCopyDisplayToDrawPage(0,0,EGA_COLUMNS,EGA_ROWS);
@@ -366,7 +366,7 @@ uint16_t MwSelectMarketUnitListRowCallback(void)
     }
     campaignMarket.selectedMarketUnitByteOffset=marketUnitSlot*sizeof(uint16_t);
     campaignMarket.selectedMarketUnitSlot=marketUnitSlot;
-    selectedMarketUnitKind=campaignEconomy.marketUnitKinds[marketUnitSlot];
+    campaignMechanics.selectedMarketUnitKind=campaignEconomy.marketUnitKinds[marketUnitSlot];
     return CAMPAIGN_CONTINUE_MARKET_MECH_DETAIL;
 }
 
@@ -375,16 +375,16 @@ uint16_t MwSelectMarketUnitListRowCallback(void)
 uint16_t MwSaleContinuation(void)
 {
     uint32_t funds=((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow;
-    funds+=((uint32_t)unitTransactionPriceHigh<<NATIVE_WORD_BITS)|unitTransactionPriceLow;
+    funds+=((uint32_t)campaignMechanics.unitTransactionPriceHigh<<NATIVE_WORD_BITS)|campaignMechanics.unitTransactionPriceLow;
     campaignEconomy.campaignFundsLow=(uint16_t)funds;
     campaignEconomy.campaignFundsHigh=(uint16_t)(funds>>NATIVE_WORD_BITS);
     uint16_t pilotsRemaining=pilotRosterCount, pilotRosterSlot=0;
     do
     {
         if (pilotRosterSlot>=CAMPAIGN_ROSTER_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: pilotRosterSlot>=CAMPAIGN_ROSTER_SLOTS"); /* Native adjacent roster reads not represented. */
-        if (rosterMechAssignments[pilotRosterSlot]==campaignService.selectedOwnedUnitSlot)
+        if (campaignMechanics.rosterMechAssignments[pilotRosterSlot]==campaignService.selectedOwnedUnitSlot)
         {
-            rosterMechAssignments[pilotRosterSlot]=CAMPAIGN_NO_MECH_ASSIGNMENT;
+            campaignMechanics.rosterMechAssignments[pilotRosterSlot]=CAMPAIGN_NO_MECH_ASSIGNMENT;
             break; /* Only the first assignment is released. */
         }
         ++pilotRosterSlot;
@@ -399,10 +399,10 @@ uint16_t MwSaleContinuation(void)
         while (marketUnitSlot<CAMPAIGN_MARKET_UNIT_SLOTS && campaignEconomy.marketUnitKinds[marketUnitSlot]!=CAMPAIGN_VACANT_UNIT_KIND) ++marketUnitSlot;
         if (marketUnitSlot==CAMPAIGN_MARKET_UNIT_SLOTS) goto saleFinished;
         campaignService.saleMarketSlotByteOffset=marketUnitSlot*sizeof(uint16_t);
-        campaignEconomy.marketUnitKinds[marketUnitSlot]=selectedOwnedUnitKind;
+        campaignEconomy.marketUnitKinds[marketUnitSlot]=campaignMechanics.selectedOwnedUnitKind;
         ++campaignEconomy.marketUnitCount;
-        uint8_t *destination=(uint8_t *)&marketUnitDamage[(uint8_t)marketUnitSlot];
-        const uint8_t *source=(const uint8_t *)&ownedUnitDamage[(uint8_t)campaignService.selectedOwnedUnitSlot];
+        uint8_t *destination=(uint8_t *)&campaignMechanics.marketUnitDamage[(uint8_t)marketUnitSlot];
+        const uint8_t *source=(const uint8_t *)&campaignMechanics.ownedUnitDamage[(uint8_t)campaignService.selectedOwnedUnitSlot];
         for (uint16_t index=0;index<CAMPAIGN_DAMAGE_BYTES;++index) destination[index]=source[index];
         for (uint16_t group=0;group<CAMPAIGN_AMMO_GROUPS;++group)
             campaignEconomy.marketAmmoQuantitiesByGroup[group*CAMPAIGN_MARKET_UNIT_SLOTS+marketUnitSlot]=campaignEconomy.ownedAmmoQuantitiesByGroup[group*CAMPAIGN_OWNED_UNIT_SLOTS+ownedUnitSlot];
@@ -426,16 +426,16 @@ uint16_t MwCancelOwnedUnitSale(void)
  * Repair-quote subtraction wraps; DIV overflow precedes either price store. */
 void MwCalculateSelectedUnitNetPrice(void)
 {
-    if (currentPlanetMarketTier>=UNIT_PRICE_TIER_COUNT || selectedOwnedUnitKind>=CAMPAIGN_UNIT_KIND_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: currentPlanetMarketTier>=UNIT_PRICE_TIER_COUNT || selectedOwnedUnitKind>=CAMPAIGN_UNIT_KIND_COUNT"); /* Unrepresented adjacent tables. */
-    uint8_t saleMultiplier=unitPriceTierMultipliers[currentPlanetMarketTier];
+    if (currentPlanetMarketTier>=UNIT_PRICE_TIER_COUNT || campaignMechanics.selectedOwnedUnitKind>=CAMPAIGN_UNIT_KIND_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: currentPlanetMarketTier>=UNIT_PRICE_TIER_COUNT || selectedOwnedUnitKind>=CAMPAIGN_UNIT_KIND_COUNT"); /* Unrepresented adjacent tables. */
+    uint8_t saleMultiplier=campaignMechanics.unitPriceTierMultipliers[currentPlanetMarketTier];
     --saleMultiplier;
-    uint32_t salePrice=(uint32_t)(saleMultiplier*PERCENT_DIVISOR)*unitBasePrices[selectedOwnedUnitKind];
-    salePrice-=((uint32_t)unitRepairQuoteHigh<<NATIVE_WORD_BITS)|unitRepairQuoteLow;
+    uint32_t salePrice=(uint32_t)(saleMultiplier*PERCENT_DIVISOR)*campaignMechanics.unitBasePrices[campaignMechanics.selectedOwnedUnitKind];
+    salePrice-=((uint32_t)campaignMechanics.unitRepairQuoteHigh<<NATIVE_WORD_BITS)|campaignMechanics.unitRepairQuoteLow;
     salePrice/=CBILLS_PER_THOUSAND;
     if (salePrice>UINT16_MAX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: salePrice>UINT16_MAX");
     salePrice*=CBILLS_PER_THOUSAND;
-    unitTransactionPriceLow=(uint16_t)salePrice;
-    unitTransactionPriceHigh=(uint16_t)(salePrice>>NATIVE_WORD_BITS);
+    campaignMechanics.unitTransactionPriceLow=(uint16_t)salePrice;
+    campaignMechanics.unitTransactionPriceHigh=(uint16_t)(salePrice>>NATIVE_WORD_BITS);
 }
 /* MW_MAIN081B:3314..3392. Denial RETs, allowed path POPs at3343 then JMP089B. */
 uint16_t MwBeginOwnedUnitSaleCallback(void)
@@ -453,7 +453,7 @@ uint16_t MwBeginOwnedUnitSaleCallback(void)
     EgaCopyDisplayToDrawPage(SALE_DIALOG_X,SALE_DIALOG_Y,SALE_DIALOG_WIDTH,SALE_DIALOG_HEIGHT);
     MwDrawDescriptorTextPanel(&campaignMarket.saleConfirmationPanel);
     MwCalculateSelectedUnitNetPrice();
-    uint32_t salePrice=((uint32_t)unitTransactionPriceHigh<<NATIVE_WORD_BITS)|unitTransactionPriceLow;
+    uint32_t salePrice=((uint32_t)campaignMechanics.unitTransactionPriceHigh<<NATIVE_WORD_BITS)|campaignMechanics.unitTransactionPriceLow;
     ++numericGroupingEnabled;
     MwDrawSignedDecimalField(salePrice,SALE_QUOTE_X,0,MARKET_PRICE_FIELD_DIGITS,TEXT_PANEL_FOREGROUND,TEXT_PANEL_BACKGROUND,SALE_QUOTE_Y);
     MwSelectUiRecordTable(0,&campaignMarket.saleConfirmationMenu);
@@ -464,7 +464,7 @@ uint16_t MwBeginOwnedUnitSaleCallback(void)
  * Partial purchases survive; the inherited callback IP is consumed at3091. */
 uint16_t MwRearmSelectedMech(void)
 {
-    uint16_t unitKind=selectedOwnedUnitKind;
+    uint16_t unitKind=campaignMechanics.selectedOwnedUnitKind;
     uint16_t groupsRemaining=campaignEconomy.unitAmmoGroupCounts[unitKind];
     const CampaignAmmoProfileEntry *profile=campaignEconomy.unitAmmoProfiles[unitKind];
     uint16_t quantityIndex=campaignService.selectedOwnedUnitSlot;
@@ -511,7 +511,7 @@ uint16_t MwQuoteSelectedMechRearm(void)
 {
     campaignService.mechServiceMenuSelectedRow=MECH_SERVICE_ROW_REARM;
     MwAdvanceCampaignTimeAndChargeWages(REARM_QUOTE_TIME_UNITS);
-    uint16_t unitKind=selectedOwnedUnitKind;
+    uint16_t unitKind=campaignMechanics.selectedOwnedUnitKind;
     uint16_t groupsRemaining=campaignEconomy.unitAmmoGroupCounts[unitKind];
     const CampaignAmmoProfileEntry *profile=campaignEconomy.unitAmmoProfiles[unitKind];
     uint16_t quantityIndex=campaignService.selectedOwnedUnitSlot;
@@ -557,7 +557,7 @@ uint16_t MwOpenReserveAmmunitionShop(void)
     MwMarkOwnedAmmunitionCompatibleMechs();
     EgaSelectFont(TEXT_PANEL_COMPACT_FONT);MwDrawMechComplexBackground();
     for (uint16_t family=0;family<CAMPAIGN_AMMO_FAMILY_COUNT;++family)
-        MwFormatReserveAmmunitionQuantity(family,reserveAmmoQuantitiesByFamily[family]);
+        MwFormatReserveAmmunitionQuantity(family,campaignMechanics.reserveAmmoQuantitiesByFamily[family]);
     MwDrawDescriptorTextPanel(&campaignMarket.reserveAmmoShopPanel);
     EgaCopyDisplayToDrawPage(0,0,RESERVE_AMMO_PREVIEW_WIDTH,RESERVE_AMMO_PREVIEW_HEIGHT);
     MwShowReserveAmmunitionCompatibility(0);
@@ -609,10 +609,10 @@ void MwBuyReserveAmmunition(void)
         uint16_t price=ammunitionTransactionPrices[family];
         if (funds<price) break;
         funds-=price;campaignEconomy.campaignFundsLow=(uint16_t)funds;campaignEconomy.campaignFundsHigh=(uint16_t)(funds>>NATIVE_WORD_BITS);
-        ++reserveAmmoQuantitiesByFamily[family];
+        ++campaignMechanics.reserveAmmoQuantitiesByFamily[family];
     } while (--remaining);
-    MwFormatReserveAmmunitionQuantity(family,reserveAmmoQuantitiesByFamily[family]);
-    MwDrawSignedDecimalField(reserveAmmoQuantitiesByFamily[family],RESERVE_AMMO_QUANTITY_X,0,5,
+    MwFormatReserveAmmunitionQuantity(family,campaignMechanics.reserveAmmoQuantitiesByFamily[family]);
+    MwDrawSignedDecimalField(campaignMechanics.reserveAmmoQuantitiesByFamily[family],RESERVE_AMMO_QUANTITY_X,0,5,
         TEXT_PANEL_FOREGROUND,TEXT_PANEL_BACKGROUND,RESERVE_AMMO_ROW_Y+family*RESERVE_AMMO_ROW_HEIGHT);
     MwDrawAmmunitionShopCompanyFunds();
 }
@@ -681,14 +681,14 @@ uint16_t MwSellReserveAmmunition(void)
     uint16_t remaining=family==RESERVE_AMMO_MACHINE_GUN_FAMILY?RESERVE_AMMO_MACHINE_GUN_BATCH:1;
     do
     {
-        if (!reserveAmmoQuantitiesByFamily[family]) break;
+        if (!campaignMechanics.reserveAmmoQuantitiesByFamily[family]) break;
         uint32_t funds=((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow;
         funds+=ammunitionTransactionPrices[family+CAMPAIGN_AMMO_FAMILY_COUNT];
         campaignEconomy.campaignFundsLow=(uint16_t)funds;campaignEconomy.campaignFundsHigh=(uint16_t)(funds>>NATIVE_WORD_BITS);
-        --reserveAmmoQuantitiesByFamily[family];
+        --campaignMechanics.reserveAmmoQuantitiesByFamily[family];
     } while (--remaining);
-    MwFormatReserveAmmunitionQuantity(family,reserveAmmoQuantitiesByFamily[family]);
-    MwDrawSignedDecimalField(reserveAmmoQuantitiesByFamily[family],RESERVE_AMMO_QUANTITY_X,0,5,
+    MwFormatReserveAmmunitionQuantity(family,campaignMechanics.reserveAmmoQuantitiesByFamily[family]);
+    MwDrawSignedDecimalField(campaignMechanics.reserveAmmoQuantitiesByFamily[family],RESERVE_AMMO_QUANTITY_X,0,5,
         TEXT_PANEL_FOREGROUND,TEXT_PANEL_BACKGROUND,RESERVE_AMMO_ROW_Y+family*RESERVE_AMMO_ROW_HEIGHT);
     MwDrawAmmunitionShopCompanyFunds();MwSelectUiRecordTable(campaignUi.selectedUiRecordIndex,&campaignMarket.reserveAmmoShopMenu);
     return CAMPAIGN_CONTINUE_UI;

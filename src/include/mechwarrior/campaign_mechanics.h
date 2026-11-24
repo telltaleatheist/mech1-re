@@ -96,66 +96,72 @@ typedef union CampaignPilotIdentityStorage
 static_assert(offsetof(CampaignPilotIdentityStorage, roster.pilotIds) == 0x0002, "Roster IDs at04B7");
 static_assert(offsetof(CampaignPilotIdentityStorage, availability.flags) == 0x0009, "Availability alias at04BE");
 static_assert(sizeof(CampaignPilotIdentityStorage) == 0x0034, "Canonical04B5..04E8");
-extern CampaignPilotIdentityStorage pilotIdentityStorage;
-#define pilotRosterCount pilotIdentityStorage.roster.count
-#define rosterPilotIds pilotIdentityStorage.roster.pilotIds
-#define pilotUnavailableFlags pilotIdentityStorage.availability.flags
-
-extern CampaignUnitDamage ownedUnitDamage[CAMPAIGN_OWNED_UNIT_SLOTS];
-extern CampaignUnitDamage marketUnitDamage[CAMPAIGN_MARKET_UNIT_SLOTS];
-extern CampaignUnitDamage generatedMechDamage;
-extern uint8_t unitWeaponCounts[CAMPAIGN_MECH_KIND_COUNT];
-extern uint8_t unitPriceTierMultipliers[UNIT_PRICE_TIER_COUNT];
-extern uint16_t unitBasePrices[CAMPAIGN_UNIT_KIND_COUNT];
-extern uint16_t unitTransactionPriceLow, unitTransactionPriceHigh;
-extern uint16_t selectedOwnedUnitKind, selectedMarketUnitKind;
-extern uint16_t unitRepairQuoteLow, unitRepairQuoteHigh;
-extern uint16_t repairQuoteMechKind;
-extern CampaignUnitDamage *repairQuoteDamage;
-extern uint16_t componentRepairPriceLow, componentRepairPriceHigh;
-extern uint16_t repairPriceCategory;
-extern CampaignUnitDamage *componentRepairDamage;
-extern CampaignSystemRepairPriceRow systemRepairBasePrices[CAMPAIGN_SYSTEM_COUNT];
-extern uint16_t *weaponRepairPricesByKind[CAMPAIGN_MECH_KIND_COUNT];
-extern uint16_t weaponRepairPrices[REPAIR_WEAPON_PRICE_WORD_COUNT];
-extern uint8_t bodyRepairBasePricesByKind[CAMPAIGN_MECH_KIND_COUNT];
-extern uint8_t rosterStatus[CAMPAIGN_ROSTER_SLOTS];
-/* Slot 0 is commander reputation. Hired MechWarriors retain their hiring-time
- * wage tier, even after Gunnery promotions change their quoted card wage. */
-extern uint16_t rosterPayTiers[CAMPAIGN_ROSTER_SLOTS];
-extern uint16_t rosterGunneryTiers[CAMPAIGN_ROSTER_SLOTS];
-extern uint16_t rosterPilotingTiers[CAMPAIGN_ROSTER_SLOTS];
-extern uint16_t rosterUnknownWords[CAMPAIGN_ROSTER_SLOTS];
-extern uint16_t rosterMechAssignments[CAMPAIGN_ROSTER_SLOTS];
-extern uint16_t rosterPortraitIds[CAMPAIGN_ROSTER_SLOTS];
-extern uint8_t pilotGunneryTiers[CAMPAIGN_PILOT_ID_COUNT];
-extern uint8_t pilotPilotingTiers[CAMPAIGN_PILOT_ID_COUNT];
-extern uint8_t pilotExperienceCounts[CAMPAIGN_PILOT_ID_COUNT];
-extern uint16_t pilotDefinitionOffsets[CAMPAIGN_PILOT_ID_COUNT];
-extern uint8_t pilotDefinitionStorage[PILOT_DEFINITIONS_END - PILOT_DEFINITIONS_START];
-extern uint16_t travelSquareRootValues[TRAVEL_ROOT_TABLE_COUNT];
-extern uint16_t travelDestinationMapPositionX, travelDestinationMapPositionY;
-extern uint16_t travelMapDeltaX, travelMapDeltaY, travelDestinationTimeWeight;
-extern uint16_t travelDestinationPlanetOffset, travelDistanceUnits;
-extern uint16_t travelQuoteCbillsLow, travelQuoteCbillsHigh;
-extern uint16_t travelMapSelection, travelDestinationPlanetIndex;
-extern uint16_t travelMarkerX, travelMarkerY;
-extern uint16_t travelSavedMarkerX, travelSavedMarkerY;
-extern uint16_t travelJoystickLastTick, travelAnimationFrameStep;
-/* One authored House range table for both planet directories. Mission52C4
- * passes the count unchanged to inclusive RNG; do not silently subtract one. */
-extern uint16_t housePlanetRangeStarts[CAMPAIGN_HOUSE_COUNT];
-extern uint16_t housePlanetRangeCounts[CAMPAIGN_HOUSE_COUNT];
-extern uint8_t travelDropShipSelected;
-extern uint16_t hiredTransportReverseTerminator;
-extern uint16_t hiredTransportFrames[HIRED_TRANSPORT_FRAME_COUNT];
-extern uint16_t dropShipTravelFrames[DROPSHIP_TRAVEL_FRAME_COUNT];
-extern char travelDestinationName[TRAVEL_PLANET_NAME_CAPACITY];
-extern uint16_t alphabeticPlanetRecordOffsets[TRAVEL_PLANET_DIRECTORY_COUNT];
-extern uint16_t travelSelectedHouseByteOffset, travelHousePlanetStart;
-extern uint16_t travelHousePlanetCount;
-extern uint16_t reserveAmmoQuantitiesByFamily[CAMPAIGN_AMMO_FAMILY_COUNT];
-extern uint16_t reserveAmmoFreightRates[CAMPAIGN_AMMO_FAMILY_COUNT];
+#define pilotRosterCount campaignMechanics.pilotIdentityStorage.roster.count
+#define rosterPilotIds campaignMechanics.pilotIdentityStorage.roster.pilotIds
+#define pilotUnavailableFlags campaignMechanics.pilotIdentityStorage.availability.flags
+/* Campaign state owned by campaign_mechanics.h (plan, slice B2). */
+struct CampaignMechanicsState
+{
+    CampaignPilotIdentityStorage pilotIdentityStorage;
+    /* Native game tables/state. Original image initialization remains required;
+     * no default prices, authored lookup values or pilot definitions are invented. */
+    CampaignUnitDamage ownedUnitDamage[CAMPAIGN_OWNED_UNIT_SLOTS];
+    CampaignUnitDamage marketUnitDamage[CAMPAIGN_MARKET_UNIT_SLOTS];
+    CampaignUnitDamage generatedMechDamage;
+    uint8_t unitWeaponCounts[CAMPAIGN_MECH_KIND_COUNT];
+    uint8_t unitPriceTierMultipliers[UNIT_PRICE_TIER_COUNT];
+    uint16_t unitBasePrices[CAMPAIGN_UNIT_KIND_COUNT];
+    uint16_t unitTransactionPriceLow, unitTransactionPriceHigh;
+    uint16_t selectedOwnedUnitKind, selectedMarketUnitKind;
+    uint16_t unitRepairQuoteLow, unitRepairQuoteHigh;
+    uint16_t repairQuoteMechKind;
+    CampaignUnitDamage *repairQuoteDamage;
+    uint16_t componentRepairPriceLow, componentRepairPriceHigh;
+    uint16_t repairPriceCategory;
+    CampaignUnitDamage *componentRepairDamage;
+    CampaignSystemRepairPriceRow systemRepairBasePrices[CAMPAIGN_SYSTEM_COUNT];
+    uint16_t *weaponRepairPricesByKind[CAMPAIGN_MECH_KIND_COUNT];
+    uint16_t weaponRepairPrices[REPAIR_WEAPON_PRICE_WORD_COUNT];
+    uint8_t bodyRepairBasePricesByKind[CAMPAIGN_MECH_KIND_COUNT];
+    uint8_t rosterStatus[CAMPAIGN_ROSTER_SLOTS];
+    /* Slot 0 is commander reputation. Hired MechWarriors retain their hiring-time
+     * wage tier, even after Gunnery promotions change their quoted card wage. */
+    uint16_t rosterPayTiers[CAMPAIGN_ROSTER_SLOTS];
+    uint16_t rosterGunneryTiers[CAMPAIGN_ROSTER_SLOTS];
+    uint16_t rosterPilotingTiers[CAMPAIGN_ROSTER_SLOTS];
+    uint16_t rosterUnknownWords[CAMPAIGN_ROSTER_SLOTS];
+    uint16_t rosterMechAssignments[CAMPAIGN_ROSTER_SLOTS];
+    uint16_t rosterPortraitIds[CAMPAIGN_ROSTER_SLOTS];
+    uint8_t pilotGunneryTiers[CAMPAIGN_PILOT_ID_COUNT];
+    uint8_t pilotPilotingTiers[CAMPAIGN_PILOT_ID_COUNT];
+    uint8_t pilotExperienceCounts[CAMPAIGN_PILOT_ID_COUNT];
+    uint16_t pilotDefinitionOffsets[CAMPAIGN_PILOT_ID_COUNT];
+    uint8_t pilotDefinitionStorage[PILOT_DEFINITIONS_END - PILOT_DEFINITIONS_START];
+    uint16_t travelSquareRootValues[TRAVEL_ROOT_TABLE_COUNT];
+    uint16_t travelDestinationMapPositionX, travelDestinationMapPositionY;
+    uint16_t travelMapDeltaX, travelMapDeltaY, travelDestinationTimeWeight;
+    uint16_t travelDestinationPlanetOffset, travelDistanceUnits;
+    uint16_t travelQuoteCbillsLow, travelQuoteCbillsHigh;
+    uint16_t travelMapSelection, travelDestinationPlanetIndex;
+    uint16_t travelMarkerX, travelMarkerY;
+    uint16_t travelSavedMarkerX, travelSavedMarkerY;
+    uint16_t travelJoystickLastTick, travelAnimationFrameStep;
+    /* One authored House range table for both planet directories. Mission52C4
+     * passes the count unchanged to inclusive RNG; do not silently subtract one. */
+    uint16_t housePlanetRangeStarts[CAMPAIGN_HOUSE_COUNT];
+    uint16_t housePlanetRangeCounts[CAMPAIGN_HOUSE_COUNT];
+    uint8_t travelDropShipSelected;
+    uint16_t hiredTransportReverseTerminator;
+    uint16_t hiredTransportFrames[HIRED_TRANSPORT_FRAME_COUNT];
+    uint16_t dropShipTravelFrames[DROPSHIP_TRAVEL_FRAME_COUNT];
+    char travelDestinationName[TRAVEL_PLANET_NAME_CAPACITY];
+    uint16_t alphabeticPlanetRecordOffsets[TRAVEL_PLANET_DIRECTORY_COUNT];
+    uint16_t travelSelectedHouseByteOffset, travelHousePlanetStart;
+    uint16_t travelHousePlanetCount;
+    uint16_t reserveAmmoQuantitiesByFamily[CAMPAIGN_AMMO_FAMILY_COUNT];
+    uint16_t reserveAmmoFreightRates[CAMPAIGN_AMMO_FAMILY_COUNT];
+};
+extern CampaignMechanicsState campaignMechanics;
 
 uint32_t MwCalculateUnitConditionPrice(uint8_t condition, uint16_t unitKind, uint16_t *marketTier);
 void MwCalculateMarketPurchasePrice(void);

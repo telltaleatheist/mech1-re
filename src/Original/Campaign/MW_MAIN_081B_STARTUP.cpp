@@ -162,7 +162,7 @@ beginDebrief:
             do
             {
                 if (rosterSlot>=CAMPAIGN_ROSTER_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: rosterSlot>=CAMPAIGN_ROSTER_SLOTS"); /* Unmapped adjacent/corrupt roster. */
-                statusSum+=rosterStatus[rosterSlot++];
+                statusSum+=campaignMechanics.rosterStatus[rosterSlot++];
             } while (--remaining!=0);
             if (statusSum==0) picture=AFTER_ACTION_RETREAT_PICTURE;
         }
@@ -184,15 +184,15 @@ beginDebrief:
             {
                 uint16_t pilotId=rosterPilotIds[rosterSlot];
                 if (pilotId>=CAMPAIGN_PILOT_ID_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: pilotId>=CAMPAIGN_PILOT_ID_COUNT");
-                pilotName=(const char *)pilotDefinitions[pilotId]->nameBytes;
+                pilotName=(const char *)campaignPilots.pilotDefinitions[pilotId]->nameBytes;
             }
             afterActionRosterRowOffset=(uint8_t)rosterSlot*AFTER_ACTION_ROW_HEIGHT;
             uint16_t pilotY=afterActionRosterRowOffset+AFTER_ACTION_FIRST_PILOT_Y;
             MwDrawCampaignTextColourOne(AFTER_ACTION_TEXT_X,pilotY,pilotName);
-            uint8_t status=rosterStatus[rosterSlot];
+            uint8_t status=campaignMechanics.rosterStatus[rosterSlot];
             if (status>=3) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: status>=3"); /* Unmapped status-text adjacency, not a clamp. */
             MwDrawCampaignTextColourOne(AFTER_ACTION_STATUS_X,pilotY,afterActionPilotStatusText[status]);
-            uint16_t ownedUnitSlot=rosterMechAssignments[rosterSlot];
+            uint16_t ownedUnitSlot=campaignMechanics.rosterMechAssignments[rosterSlot];
             if (ownedUnitSlot!=CAMPAIGN_NO_MECH_ASSIGNMENT)
             {
                 if (ownedUnitSlot>=CAMPAIGN_OWNED_UNIT_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: ownedUnitSlot>=CAMPAIGN_OWNED_UNIT_SLOTS");
@@ -200,9 +200,9 @@ beginDebrief:
                 if (unitKind>=CAMPAIGN_UNIT_KIND_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitKind>=CAMPAIGN_UNIT_KIND_COUNT");
                 /* Native1E24/1E29 indexes these BY DOUBLED ROSTER SLOT, not
                  * chassis. Preserve that discrepancy instead of a tidy quote. */
-                uint16_t weaponCount=unitWeaponCounts[rosterSlot*2];
+                uint16_t weaponCount=campaignMechanics.unitWeaponCounts[rosterSlot*2];
                 uint16_t systemCount=campaignService.unitConditionSystemFieldCounts[rosterSlot*2];
-                const uint8_t *damage=(const uint8_t *)&ownedUnitDamage[(uint8_t)ownedUnitSlot];
+                const uint8_t *damage=(const uint8_t *)&campaignMechanics.ownedUnitDamage[(uint8_t)ownedUnitSlot];
                 uint8_t damageSum=0;
                 uint16_t field=0;
                 do
@@ -217,7 +217,7 @@ beginDebrief:
                     damageSum+=damage[field++];
                 } while (--weaponCount!=0);
                 for (uint16_t location=0;location<CAMPAIGN_BODY_LOCATION_COUNT;++location)
-                    damageSum+=ownedUnitDamage[(uint8_t)ownedUnitSlot].bodyDamageTiers[location];
+                    damageSum+=campaignMechanics.ownedUnitDamage[(uint8_t)ownedUnitSlot].bodyDamageTiers[location];
                 uint16_t divisor=campaignService.unitConditionScoreDivisors[unitKind];
                 uint16_t remainingScore=divisor-damageSum;
                 uint32_t condition=(uint32_t)remainingScore*PERCENT_DIVISOR;
@@ -300,20 +300,20 @@ beginDebrief:
             AFTER_ACTION_FOREGROUND,AFTER_ACTION_BACKGROUND,AFTER_ACTION_PAYMENT_Y);
     }
     /*1FB9..2081. Player loss skips ALL roster removal/progression/time. */
-    if (rosterStatus[0]==1) goto postCombatEvents;
-    while (pilotRosterCount!=1 && rosterStatus[1]!=0)
+    if (campaignMechanics.rosterStatus[0]==1) goto postCombatEvents;
+    while (pilotRosterCount!=1 && campaignMechanics.rosterStatus[1]!=0)
     {
         MwStartDeathMusic();
         (void)MwRemovePilotAndCompactRoster(FIRST_HIRED_PILOT_SLOT);
     }
     if (pilotRosterCount!=1)
     {
-        while (pilotRosterCount!=2 && rosterStatus[2]!=0)
+        while (pilotRosterCount!=2 && campaignMechanics.rosterStatus[2]!=0)
         {
             MwStartDeathMusic();
             (void)MwRemovePilotAndCompactRoster(2);
         }
-        if (pilotRosterCount!=2 && pilotRosterCount!=3 && rosterStatus[3]!=0)
+        if (pilotRosterCount!=2 && pilotRosterCount!=3 && campaignMechanics.rosterStatus[3]!=0)
         {
             MwStartDeathMusic();
             (void)MwRemovePilotAndCompactRoster(LAST_PILOT_CARD_SLOT);
@@ -330,16 +330,16 @@ beginDebrief:
             if (campaignEconomy.playerCombatCredit>=COMMANDER_REPUTATION_FOURTH_THRESHOLD) ++reputation;
         }
     }
-    rosterPayTiers[0]=reputation;
+    campaignMechanics.rosterPayTiers[0]=reputation;
     ++playerSkillProgress;
     int32_t skillProgress;skillProgress=playerSkillProgress;
     if (skillProgress>=0x8000) skillProgress-=0x10000; /* Native signed JGE. */
-    if ((rosterGunneryTiers[0]==PILOT_SKILL_POOR && skillProgress>=PILOT_POOR_ADVANCE_COUNT)
-        || (rosterGunneryTiers[0]==PILOT_SKILL_AVERAGE && skillProgress>=PILOT_AVERAGE_ADVANCE_COUNT)
-        || (rosterGunneryTiers[0]==PILOT_SKILL_GOOD && skillProgress>=PILOT_GOOD_ADVANCE_COUNT))
+    if ((campaignMechanics.rosterGunneryTiers[0]==PILOT_SKILL_POOR && skillProgress>=PILOT_POOR_ADVANCE_COUNT)
+        || (campaignMechanics.rosterGunneryTiers[0]==PILOT_SKILL_AVERAGE && skillProgress>=PILOT_AVERAGE_ADVANCE_COUNT)
+        || (campaignMechanics.rosterGunneryTiers[0]==PILOT_SKILL_GOOD && skillProgress>=PILOT_GOOD_ADVANCE_COUNT))
     {
-        ++rosterGunneryTiers[0];
-        ++rosterPilotingTiers[0]; /* Increment independently, NOT assignment to Gunnery. */
+        ++campaignMechanics.rosterGunneryTiers[0];
+        ++campaignMechanics.rosterPilotingTiers[0]; /* Increment independently, NOT assignment to Gunnery. */
         playerSkillProgress=0;
     }
     for (uint16_t rosterSlot=1;rosterSlot!=pilotRosterCount;++rosterSlot)
@@ -699,10 +699,10 @@ uint16_t MwStartNewCampaign(uint16_t entryOffset)
     MwGenerateUnitStock(0,0,0,4);
     campaignEconomy.ownedUnitCount=1;
     campaignEconomy.ownedUnitKinds[0]=campaignEconomy.generatedUnitKind;
-    rosterMechAssignments[0]=0;
+    campaignMechanics.rosterMechAssignments[0]=0;
     /* Both29-byte records are disjoint ordinary objects with no callbacks or
      * writers between native byte copies. Other company slots are untouched. */
-    ownedUnitDamage[0]=generatedMechDamage;
+    campaignMechanics.ownedUnitDamage[0]=campaignMechanics.generatedMechDamage;
     for (uint16_t group=0;group<CAMPAIGN_AMMO_GROUPS;++group)
     {
         campaignEconomy.ownedAmmoKindsByGroup[group*CAMPAIGN_OWNED_UNIT_SLOTS]=campaignEconomy.generatedAmmoKinds[group];
