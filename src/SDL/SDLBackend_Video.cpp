@@ -192,7 +192,7 @@ bool MwSdlCapture(const char *stem)
     if (fclose(file)) saved=false;
     if (snprintf(path,sizeof(path),"%s/%s.json",captureDirectory,stem)>=(int)sizeof(path)) return false;
     file=fopen(path,"wx");if (!file) return false;
-    fprintf(file,"{\"kind\":\"Actual SDL renderer readback; not a matched original replay\",\"mode\":13,\"logicalWidth\":320,\"logicalHeight\":200,\"combat\":%s,\"displayPage\":%u,\"drawPage\":%u,\"displayByteOffset\":%u,\"SDL\":\"%s\",\"acceptance\":\"Pending\"}\n",mwSdlCombatActive?"true":"false",mwSdlCombatActive?frontPageSelector:egaDisplayPage,mwSdlCombatActive?drawPageSelector:egaDrawPage,
+    fprintf(file,"{\"kind\":\"Actual SDL renderer readback; not a matched original replay\",\"mode\":13,\"logicalWidth\":320,\"logicalHeight\":200,\"combat\":%s,\"displayPage\":%u,\"drawPage\":%u,\"displayByteOffset\":%u,\"SDL\":\"%s\",\"acceptance\":\"Pending\"}\n",mwSdlCombatActive?"true":"false",mwSdlCombatActive?frontPageSelector:egaOverlay.egaDisplayPage,mwSdlCombatActive?drawPageSelector:egaOverlay.egaDrawPage,
         (unsigned)(lastPage*(Canvas::PAGE_STRIDE/EGA_PIXELS_PER_BYTE)),SDL_GetRevision());
     if (fclose(file)) saved=false;
     return saved;

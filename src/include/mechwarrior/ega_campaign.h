@@ -63,48 +63,9 @@ enum
     Campaign_Pal_EGA_Green=0x0C, Campaign_Pal_EGA_Yellow=0x0D, Campaign_Pal_EGA_Brown=0x0E,
     Campaign_Pal_EGA_LightMagenta=0x0F
 };
-extern uint8_t defaultPaletteCodes[EGA_PALETTE_ENTRIES];
-extern uint8_t alternatePaletteCodes[EGA_PALETTE_ENTRIES];
 void EgaInitializeGraphics(void);
 void EgaLoadDefaultPalette(void);
 void EgaLoadAlternatePalette(void);
-
-/* Named canonical owners in Memory/MW_EGA_0800_STATE.c. No raw DS mirror. */
-extern uint16_t egaDisplayPage;
-extern uint16_t egaDrawPage;
-extern uint16_t scanlineOffsets[0x00C8];
-extern uint16_t xByteOffsets[0x0140];
-extern uint8_t xPixelMasks[0x0140];
-extern uint16_t spriteWidth;
-extern uint16_t spriteRowsRemaining;
-extern uint16_t glyphX;
-extern uint16_t glyphY;
-extern uint16_t characterCode;
-extern uint8_t glyphForeground;
-extern uint8_t glyphBackground;
-extern uint8_t glyphBitOffset;
-extern uint16_t selectedFontHeight;
-extern uint16_t selectedGlyphAdvance;
-extern uint16_t selectedFontBitmapOffset;
-extern uint16_t rectangleX, rectangleY, rectangleWidth, rectangleHeight;
-extern uint16_t rectangleColour, firstByteWidth, lastByteWidth;
-extern uint8_t firstByteMask, lastByteMask;
-extern uint8_t rectangleLeadingMasks[8], rectangleTrailingMasks[8];
-extern uint16_t copyRectangleX, copyRectangleY;
-extern uint16_t copyRectangleWidth, copyRectangleHeight;
-extern uint16_t textStartX;
-extern uint16_t textCurrentY;
-extern uint8_t egaTextColour;
-extern uint16_t textExtraLeading;
-extern uint16_t fontReadBufferOffset;
-extern uint16_t fontFileHandle;
-extern char smallFontFilename[0x001A];
-extern char largeFontFilename[0x0015];
-extern uint8_t fontBitmapStorage[0x057B];
-extern uint16_t selectedFontIndex;
-extern uint16_t egaFontHeights[0x0005];
-extern uint16_t fontAdvances[0x0005];
-extern uint16_t fontBitmapOffsets[0x0005];
 
 /* Only binary transfers and unchecked neighbouring-byte reads use this view.
  * It projects the named owners; it must not become ordinary scalar access. */
@@ -156,8 +117,53 @@ void EgaFillRectangleOnPage(uint16_t x, uint16_t y, uint16_t width, uint16_t hei
 void EgaFillDisplayPageRectangle(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t colour);
 void EgaCopyDrawPageToDisplay(uint16_t x, uint16_t y, uint16_t width, uint16_t height);
 void EgaCopyDisplayToDrawPage(uint16_t x, uint16_t y, uint16_t width, uint16_t height);
-extern uint8_t egaLineColour;
-extern uint16_t egaCurrentX,currentY,egaFinalX,egaFinalY;
+/* Campaign state owned by ega_campaign.h (plan, slice B2). */
+struct EgaOverlayState
+{
+    uint8_t defaultPaletteCodes[EGA_PALETTE_ENTRIES];
+    uint8_t alternatePaletteCodes[EGA_PALETTE_ENTRIES];
+    /* Named canonical owners in Memory/MW_EGA_0800_STATE.c. No raw DS mirror. */
+    /* MW_EGA CS/DS 0800 owns these recovered globals and tables. Ordinary game
+     * access uses their names, not a synthetic segment pointer or WORD adapter. */
+    uint16_t egaDisplayPage;
+    uint16_t egaDrawPage;
+    uint16_t scanlineOffsets[0x00C8];
+    uint16_t xByteOffsets[0x0140];
+    uint8_t xPixelMasks[0x0140];
+    uint16_t spriteWidth;
+    uint16_t spriteRowsRemaining;
+    uint16_t glyphX;
+    uint16_t glyphY;
+    uint16_t characterCode;
+    uint8_t glyphForeground;
+    uint8_t glyphBackground;
+    uint8_t glyphBitOffset;
+    uint16_t selectedFontHeight;
+    uint16_t selectedGlyphAdvance;
+    uint16_t selectedFontBitmapOffset;
+    uint16_t rectangleX, rectangleY, rectangleWidth, rectangleHeight;
+    uint16_t rectangleColour, firstByteWidth, lastByteWidth;
+    uint8_t firstByteMask, lastByteMask;
+    uint8_t rectangleLeadingMasks[8], rectangleTrailingMasks[8];
+    uint16_t copyRectangleX, copyRectangleY;
+    uint16_t copyRectangleWidth, copyRectangleHeight;
+    uint16_t textStartX;
+    uint16_t textCurrentY;
+    uint8_t egaTextColour;
+    uint16_t textExtraLeading;
+    uint16_t fontReadBufferOffset;
+    uint16_t fontFileHandle;
+    char smallFontFilename[0x001A];
+    char largeFontFilename[0x0015];
+    uint8_t fontBitmapStorage[0x057B];
+    uint16_t selectedFontIndex;
+    uint16_t egaFontHeights[0x0005];
+    uint16_t fontAdvances[0x0005];
+    uint16_t fontBitmapOffsets[0x0005];
+    uint8_t egaLineColour;
+    uint16_t egaCurrentX, currentY, egaFinalX, egaFinalY;
+};
+extern EgaOverlayState egaOverlay;
 void EgaClearDrawPage(uint8_t colour);
 void EgaDrawPixel(uint16_t x,uint16_t y,uint8_t targetPage,uint8_t colour);
 void EgaDrawLine(uint8_t colour,uint16_t startY,uint16_t endX,uint16_t startX,uint16_t endY);

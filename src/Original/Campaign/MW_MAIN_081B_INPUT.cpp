@@ -158,7 +158,7 @@ uint16_t MwReadCampaignTextInput(uint16_t x,uint16_t y,uint16_t capacity,
         {
             if (campaignInput.textInputLength==0) continue;
             campaignTextInputBuffer[--campaignInput.textInputLength]=0;MwEraseTextInputCursor();
-            campaignInput.textInputCursorX -= selectedGlyphAdvance;continue;
+            campaignInput.textInputCursorX -= egaOverlay.selectedGlyphAdvance;continue;
         }
         if (key==CAMPAIGN_KEY_ESCAPE)
         {
