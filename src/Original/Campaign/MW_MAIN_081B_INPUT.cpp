@@ -18,32 +18,32 @@ bool MwPollMouseNavigationKey(uint16_t *navigationKey)
     if (mwCampaignInput.readMouseMotion==NULL) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mwCampaignInput.readMouseMotion==NULL");
     uint16_t motionX,motionY;
     mwCampaignInput.readMouseMotion(&motionX,&motionY);
-    mouseMotionX+=motionX;mouseMotionY+=motionY;
-    if ((int16_t)mouseMotionX>MOUSE_NAVIGATION_THRESHOLD) *navigationKey=CAMPAIGN_KEY_RIGHT;
-    else if ((int16_t)mouseMotionX<-MOUSE_NAVIGATION_THRESHOLD) *navigationKey=CAMPAIGN_KEY_LEFT;
-    else if ((int16_t)mouseMotionY>MOUSE_NAVIGATION_THRESHOLD) *navigationKey=CAMPAIGN_KEY_DOWN;
-    else if ((int16_t)mouseMotionY<-MOUSE_NAVIGATION_THRESHOLD) *navigationKey=CAMPAIGN_KEY_UP;
-    else { *navigationKey=mouseMotionY;return false; } /* Native AX residue. */
-    mouseMotionX=0;mouseMotionY=0;
+    campaignInput.mouseMotionX+=motionX;campaignInput.mouseMotionY+=motionY;
+    if ((int16_t)campaignInput.mouseMotionX>MOUSE_NAVIGATION_THRESHOLD) *navigationKey=CAMPAIGN_KEY_RIGHT;
+    else if ((int16_t)campaignInput.mouseMotionX<-MOUSE_NAVIGATION_THRESHOLD) *navigationKey=CAMPAIGN_KEY_LEFT;
+    else if ((int16_t)campaignInput.mouseMotionY>MOUSE_NAVIGATION_THRESHOLD) *navigationKey=CAMPAIGN_KEY_DOWN;
+    else if ((int16_t)campaignInput.mouseMotionY<-MOUSE_NAVIGATION_THRESHOLD) *navigationKey=CAMPAIGN_KEY_UP;
+    else { *navigationKey=campaignInput.mouseMotionY;return false; } /* Native AX residue. */
+    campaignInput.mouseMotionX=0;campaignInput.mouseMotionY=0;
     return true;
 }
 /* MW_MAIN081B:0DF7..0E0F and shared0E8F..0EE6 joystick tail. CF/AX projection. */
 bool MwPollNavigationKeyFromMouseOrJoystick(uint16_t *navigationKey)
 {
-    if (mouseInstalled!=0 && MwPollMouseNavigationKey(navigationKey)) return true;
-    if (joystickInstalled==0) return false;
+    if (campaignInput.mouseInstalled!=0 && MwPollMouseNavigationKey(navigationKey)) return true;
+    if (campaignInput.joystickInstalled==0) return false;
     MwPollJoystickA();
-    if ((joystickButtonOnePressed|joystickButtonTwoPressed)!=0)
+    if ((campaignInput.joystickButtonOnePressed|campaignInput.joystickButtonTwoPressed)!=0)
     { *navigationKey=CAMPAIGN_KEY_ENTER;return true; }
-    if (joystickDirection==JOYSTICK_CENTRED)
-    { joystickRepeatActive=0;return false; }
-    if (joystickDeflection==JOYSTICK_DEFLECTION_NEAR) return false;
-    if (joystickRepeatActive!=0 && joystickRepeatDeadline>campaignTimerTicks) return false;
-    joystickRepeatDeadline=campaignTimerTicks+JOYSTICK_REPEAT_TICKS;
-    joystickRepeatActive=1;
-    uint16_t byteOffset=joystickDirection*2;
-    if (byteOffset>=sizeof(joystickNavigationKeys)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: byteOffset>=sizeof(joystickNavigationKeys)"); /* Unmapped adjacent input storage. */
-    *navigationKey=joystickNavigationKeys[byteOffset/2];
+    if (campaignInput.joystickDirection==JOYSTICK_CENTRED)
+    { campaignInput.joystickRepeatActive=0;return false; }
+    if (campaignInput.joystickDeflection==JOYSTICK_DEFLECTION_NEAR) return false;
+    if (campaignInput.joystickRepeatActive!=0 && campaignInput.joystickRepeatDeadline>campaignInput.campaignTimerTicks) return false;
+    campaignInput.joystickRepeatDeadline=campaignInput.campaignTimerTicks+JOYSTICK_REPEAT_TICKS;
+    campaignInput.joystickRepeatActive=1;
+    uint16_t byteOffset=campaignInput.joystickDirection*2;
+    if (byteOffset>=sizeof(campaignInput.joystickNavigationKeys)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: byteOffset>=sizeof(joystickNavigationKeys)"); /* Unmapped adjacent input storage. */
+    *navigationKey=campaignInput.joystickNavigationKeys[byteOffset/2];
     return *navigationKey!=0;
 }
 /* MW_MAIN081B:03F7..04AC. The centre is where joystick A is now (H3: its
@@ -53,37 +53,37 @@ void MwCalibrateJoystickA(void)
 {
     if (!mwCampaignInput.readJoystick) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.readJoystick");
     MwJoystickState joystick=mwCampaignInput.readJoystick();
-    joystickCentreX=MwJoystickAxisReading(joystick.x);
-    joystickCentreY=MwJoystickAxisReading(joystick.y);
-    joystickXDeflectionStep=(uint16_t)(joystickCentreX*2)/JOYSTICK_CALIBRATION_DIVISOR;
-    joystickXLow=joystickCentreX-(joystickXDeflectionStep>>1);
-    joystickXFarLow=joystickXLow-joystickXDeflectionStep;
-    joystickXHigh=joystickCentreX+(joystickXDeflectionStep>>1);
-    joystickXFarHigh=joystickXHigh+joystickXDeflectionStep;
-    joystickYDeflectionStep=(uint16_t)(joystickCentreY*2)/JOYSTICK_CALIBRATION_DIVISOR;
-    joystickYLow=joystickCentreY-(joystickYDeflectionStep>>1);
-    joystickYFarLow=joystickYLow-joystickYDeflectionStep;
-    joystickYHigh=joystickCentreY+(joystickYDeflectionStep>>1);
-    joystickYFarHigh=joystickYHigh+joystickYDeflectionStep;
+    campaignInput.joystickCentreX=MwJoystickAxisReading(joystick.x);
+    campaignInput.joystickCentreY=MwJoystickAxisReading(joystick.y);
+    campaignInput.joystickXDeflectionStep=(uint16_t)(campaignInput.joystickCentreX*2)/JOYSTICK_CALIBRATION_DIVISOR;
+    campaignInput.joystickXLow=campaignInput.joystickCentreX-(campaignInput.joystickXDeflectionStep>>1);
+    campaignInput.joystickXFarLow=campaignInput.joystickXLow-campaignInput.joystickXDeflectionStep;
+    campaignInput.joystickXHigh=campaignInput.joystickCentreX+(campaignInput.joystickXDeflectionStep>>1);
+    campaignInput.joystickXFarHigh=campaignInput.joystickXHigh+campaignInput.joystickXDeflectionStep;
+    campaignInput.joystickYDeflectionStep=(uint16_t)(campaignInput.joystickCentreY*2)/JOYSTICK_CALIBRATION_DIVISOR;
+    campaignInput.joystickYLow=campaignInput.joystickCentreY-(campaignInput.joystickYDeflectionStep>>1);
+    campaignInput.joystickYFarLow=campaignInput.joystickYLow-campaignInput.joystickYDeflectionStep;
+    campaignInput.joystickYHigh=campaignInput.joystickCentreY+(campaignInput.joystickYDeflectionStep>>1);
+    campaignInput.joystickYFarHigh=campaignInput.joystickYHigh+campaignInput.joystickYDeflectionStep;
 }
 
 /* MW_MAIN081B:0273..02A3. Host delivery replaces only STI/save/IRET plumbing;
  * all game-owned BYTE/WORD increments and inhibition are retained. */
 void MwCampaignTimerTick(void)
 {
-    if (campaignTimerInhibited != 0) return;
-    campaignTimerByte++;
-    campaignTimerTicks++;
-    campaignTimerPhaseTicks++;
-    if (campaignTimerPhaseTicks < CAMPAIGN_TIMER_PHASE_PERIOD) return;
-    campaignTimerPhaseTicks = 0;
-    campaignTimerAlternatingPhase ^= 1;
+    if (campaignInput.campaignTimerInhibited != 0) return;
+    campaignInput.campaignTimerByte++;
+    campaignInput.campaignTimerTicks++;
+    campaignInput.campaignTimerPhaseTicks++;
+    if (campaignInput.campaignTimerPhaseTicks < CAMPAIGN_TIMER_PHASE_PERIOD) return;
+    campaignInput.campaignTimerPhaseTicks = 0;
+    campaignInput.campaignTimerAlternatingPhase ^= 1;
 }
 
 /* MW_MAIN081B:02F6..02FA falls through02FB: this WAITS for an event despite
  * the historical "DiscardPendingInput" name. Do not replace it with a drain. */
 void MwWaitForInputAcknowledgment(void)
-{ inputSinglePoll = 0; (void)MwPollInputUntilIdleOrEvent(); }
+{ campaignInput.inputSinglePoll = 0; (void)MwPollInputUntilIdleOrEvent(); }
 
 /* MW_MAIN081B:02FB..034C. A mouse release or new joystick press returns before
  * RNG/keyboard. Otherwise every pass consumes a real0C17 draw, even if idle. */
@@ -91,16 +91,16 @@ bool MwPollInputUntilIdleOrEvent(void)
 {
     do
     {
-        if (mouseInstalled != 0)
+        if (campaignInput.mouseInstalled != 0)
         {
             if (mwCampaignInput.mouseReleaseCount == NULL) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mwCampaignInput.mouseReleaseCount == NULL");
             if (mwCampaignInput.mouseReleaseCount(MOUSE_BUTTON_LEFT) != 0) return true;
             if (mwCampaignInput.mouseReleaseCount(MOUSE_BUTTON_RIGHT) != 0) return true;
         }
-        if (joystickInstalled != 0)
+        if (campaignInput.joystickInstalled != 0)
         {
             MwPollJoystickA();
-            if ((joystickButtonOnePressed | joystickButtonTwoPressed) != 0) return true;
+            if ((campaignInput.joystickButtonOnePressed | campaignInput.joystickButtonTwoPressed) != 0) return true;
         }
         (void)MwRandomUpTo(UINT8_MAX);
         if (mwCampaignInput.keyboardAvailable == NULL) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mwCampaignInput.keyboardAvailable == NULL");
@@ -110,19 +110,19 @@ bool MwPollInputUntilIdleOrEvent(void)
             (void)mwCampaignInput.readKeyboard();
             return true;
         }
-    } while (inputSinglePoll == 0);
+    } while (campaignInput.inputSinglePoll == 0);
     return false;
 }
 /* MW_MAIN081B:034D..0353 JMP02FB, no nested native CALL. */
 bool MwPollInputOnce(void)
-{ inputSinglePoll = 1; return MwPollInputUntilIdleOrEvent(); }
+{ campaignInput.inputSinglePoll = 1; return MwPollInputUntilIdleOrEvent(); }
 
 /* MW_MAIN081B:070C..0724. */
 void MwEraseTextInputCursor(void)
 {
-    uint16_t cursorY=textInputCursorY;
-    (void)EgaDrawCharacter(textInputCursorX,&cursorY,
-        ' ',textInputForeground,textInputBackground);
+    uint16_t cursorY=campaignInput.textInputCursorY;
+    (void)EgaDrawCharacter(campaignInput.textInputCursorX,&cursorY,
+        ' ',campaignInput.textInputForeground,campaignInput.textInputBackground);
 }
 
 /* MW_MAIN081B:064E..075D. The second lowercase test is retained even though
@@ -130,20 +130,20 @@ void MwEraseTextInputCursor(void)
 uint16_t MwReadCampaignTextInput(uint16_t x,uint16_t y,uint16_t capacity,
     uint8_t foreground,uint8_t background)
 {
-    textInputCursorX=x;textInputCursorY=y;textInputMaximumIndex=(uint16_t)(capacity-1);
-    textInputForeground=foreground;textInputBackground=background;
-    memset(campaignTextInputBuffer,0,sizeof(campaignTextInputBuffer));textInputLength=0;
+    campaignInput.textInputCursorX=x;campaignInput.textInputCursorY=y;campaignInput.textInputMaximumIndex=(uint16_t)(capacity-1);
+    campaignInput.textInputForeground=foreground;campaignInput.textInputBackground=background;
+    memset(campaignTextInputBuffer,0,sizeof(campaignTextInputBuffer));campaignInput.textInputLength=0;
     for (;;)
     {
         if (!mwCampaignInput.keyboardAvailable || !mwCampaignInput.readKeyboard) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.keyboardAvailable || !mwCampaignInput.readKeyboard");
         if (!mwCampaignInput.keyboardAvailable())
         {
-            if (campaignTimerAlternatingPhase!=textInputLastPhase)
+            if (campaignInput.campaignTimerAlternatingPhase!=campaignInput.textInputLastPhase)
             {
-                textInputLastPhase=campaignTimerAlternatingPhase;
-                uint16_t cursorY=textInputCursorY;
-                (void)EgaDrawCharacter(textInputCursorX,&cursorY,
-                    campaignTimerAlternatingPhase?'*':' ',textInputForeground,textInputBackground);
+                campaignInput.textInputLastPhase=campaignInput.campaignTimerAlternatingPhase;
+                uint16_t cursorY=campaignInput.textInputCursorY;
+                (void)EgaDrawCharacter(campaignInput.textInputCursorX,&cursorY,
+                    campaignInput.campaignTimerAlternatingPhase?'*':' ',campaignInput.textInputForeground,campaignInput.textInputBackground);
             }
             if (!mwCampaignInput.waitForInterrupt) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.waitForInterrupt");
             mwCampaignInput.waitForInterrupt();continue;
@@ -151,14 +151,14 @@ uint16_t MwReadCampaignTextInput(uint16_t x,uint16_t y,uint16_t capacity,
         uint16_t key=MwCampaignKeyWord(mwCampaignInput.readKeyboard());
         if (key==CAMPAIGN_KEY_ENTER)
         {
-            if (mouseInstalled!=0) {if (!mwCampaignInput.resetMouse) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.resetMouse");mwCampaignInput.resetMouse();}
+            if (campaignInput.mouseInstalled!=0) {if (!mwCampaignInput.resetMouse) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.resetMouse");mwCampaignInput.resetMouse();}
             MwEraseTextInputCursor();return 0;
         }
         if (key==CAMPAIGN_KEY_BACKSPACE)
         {
-            if (textInputLength==0) continue;
-            campaignTextInputBuffer[--textInputLength]=0;MwEraseTextInputCursor();
-            textInputCursorX -= selectedGlyphAdvance;continue;
+            if (campaignInput.textInputLength==0) continue;
+            campaignTextInputBuffer[--campaignInput.textInputLength]=0;MwEraseTextInputCursor();
+            campaignInput.textInputCursorX -= selectedGlyphAdvance;continue;
         }
         if (key==CAMPAIGN_KEY_ESCAPE)
         {
@@ -169,12 +169,12 @@ uint16_t MwReadCampaignTextInput(uint16_t x,uint16_t y,uint16_t capacity,
         uint8_t character=key;
         if (character<' ' || character>'z') continue;
         if (character>='a') character -= ASCII_CASE_DISTANCE;
-        if (textInputLength==textInputMaximumIndex) continue;
+        if (campaignInput.textInputLength==campaignInput.textInputMaximumIndex) continue;
         if (character>='a') character -= CAMPAIGN_TEXT_SECOND_CASE_ADJUSTMENT;
-        campaignTextInputBuffer[textInputLength++]=character;
+        campaignTextInputBuffer[campaignInput.textInputLength++]=character;
         MwEraseTextInputCursor();
-        textInputCursorX=EgaDrawCharacter(textInputCursorX,&textInputCursorY,
-            character,textInputForeground,textInputBackground);
+        campaignInput.textInputCursorX=EgaDrawCharacter(campaignInput.textInputCursorX,&campaignInput.textInputCursorY,
+            character,campaignInput.textInputForeground,campaignInput.textInputBackground);
     }
 }
 
@@ -184,40 +184,40 @@ uint16_t MwReadCampaignTextInput(uint16_t x,uint16_t y,uint16_t capacity,
 void MwPollJoystickA(void)
 {
     if (mwCampaignInput.readJoystick == NULL) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mwCampaignInput.readJoystick == NULL");
-    joystickDirection = JOYSTICK_CENTRED;
-    joystickDeflection = JOYSTICK_DEFLECTION_NEAR;
-    joystickButtonOnePressed = 0; joystickButtonTwoPressed = 0;
+    campaignInput.joystickDirection = JOYSTICK_CENTRED;
+    campaignInput.joystickDeflection = JOYSTICK_DEFLECTION_NEAR;
+    campaignInput.joystickButtonOnePressed = 0; campaignInput.joystickButtonTwoPressed = 0;
     MwJoystickState joystick = mwCampaignInput.readJoystick();
-    joystickXCount = MwJoystickAxisReading(joystick.x);
-    joystickYCount = MwJoystickAxisReading(joystick.y);
+    campaignInput.joystickXCount = MwJoystickAxisReading(joystick.x);
+    campaignInput.joystickYCount = MwJoystickAxisReading(joystick.y);
     uint8_t buttons = (uint8_t)((joystick.buttonOne ? 0 : JOYSTICK_BUTTON_ONE_UP) | (joystick.buttonTwo ? 0 : JOYSTICK_BUTTON_TWO_UP));
-    if (!(buttons & JOYSTICK_BUTTON_ONE_UP) && (joystickPreviousButtons & JOYSTICK_BUTTON_ONE_UP)) joystickButtonOnePressed = 1;
-    if (!(buttons & JOYSTICK_BUTTON_TWO_UP) && (joystickPreviousButtons & JOYSTICK_BUTTON_TWO_UP)) joystickButtonTwoPressed = 1;
-    joystickPreviousButtons = buttons;
-    uint16_t y = joystickYCount;
-    if (joystickXCount < joystickXLow)
+    if (!(buttons & JOYSTICK_BUTTON_ONE_UP) && (campaignInput.joystickPreviousButtons & JOYSTICK_BUTTON_ONE_UP)) campaignInput.joystickButtonOnePressed = 1;
+    if (!(buttons & JOYSTICK_BUTTON_TWO_UP) && (campaignInput.joystickPreviousButtons & JOYSTICK_BUTTON_TWO_UP)) campaignInput.joystickButtonTwoPressed = 1;
+    campaignInput.joystickPreviousButtons = buttons;
+    uint16_t y = campaignInput.joystickYCount;
+    if (campaignInput.joystickXCount < campaignInput.joystickXLow)
     {
-        if (y < joystickYLow)
-        { joystickDirection = JOYSTICK_UP_LEFT; if (y < joystickYFarLow) goto farDeflection; }
-        else if (y > joystickYHigh)
-        { joystickDirection = JOYSTICK_DOWN_LEFT; if (y > joystickYFarHigh) goto farDeflection; }
-        else joystickDirection = JOYSTICK_LEFT;
-        if (joystickXCount < joystickXFarLow) goto farDeflection;
+        if (y < campaignInput.joystickYLow)
+        { campaignInput.joystickDirection = JOYSTICK_UP_LEFT; if (y < campaignInput.joystickYFarLow) goto farDeflection; }
+        else if (y > campaignInput.joystickYHigh)
+        { campaignInput.joystickDirection = JOYSTICK_DOWN_LEFT; if (y > campaignInput.joystickYFarHigh) goto farDeflection; }
+        else campaignInput.joystickDirection = JOYSTICK_LEFT;
+        if (campaignInput.joystickXCount < campaignInput.joystickXFarLow) goto farDeflection;
     }
-    else if (joystickXCount > joystickXHigh)
+    else if (campaignInput.joystickXCount > campaignInput.joystickXHigh)
     {
-        if (y < joystickYLow)
-        { joystickDirection = JOYSTICK_UP_RIGHT; if (y < joystickYFarLow) goto farDeflection; }
-        else if (y > joystickYHigh)
-        { joystickDirection = JOYSTICK_DOWN_RIGHT; if (y > joystickYFarHigh) goto farDeflection; }
-        else joystickDirection = JOYSTICK_RIGHT;
-        if (joystickXCount > joystickXFarHigh) goto farDeflection;
+        if (y < campaignInput.joystickYLow)
+        { campaignInput.joystickDirection = JOYSTICK_UP_RIGHT; if (y < campaignInput.joystickYFarLow) goto farDeflection; }
+        else if (y > campaignInput.joystickYHigh)
+        { campaignInput.joystickDirection = JOYSTICK_DOWN_RIGHT; if (y > campaignInput.joystickYFarHigh) goto farDeflection; }
+        else campaignInput.joystickDirection = JOYSTICK_RIGHT;
+        if (campaignInput.joystickXCount > campaignInput.joystickXFarHigh) goto farDeflection;
     }
-    else if (y < joystickYLow)
-    { joystickDirection = JOYSTICK_UP; if (y < joystickYFarLow) goto farDeflection; }
-    else if (y > joystickYHigh)
-    { joystickDirection = JOYSTICK_DOWN; if (y > joystickYFarHigh) goto farDeflection; }
+    else if (y < campaignInput.joystickYLow)
+    { campaignInput.joystickDirection = JOYSTICK_UP; if (y < campaignInput.joystickYFarLow) goto farDeflection; }
+    else if (y > campaignInput.joystickYHigh)
+    { campaignInput.joystickDirection = JOYSTICK_DOWN; if (y > campaignInput.joystickYFarHigh) goto farDeflection; }
     return;
 farDeflection:
-    joystickDeflection = JOYSTICK_DEFLECTION_FAR;
+    campaignInput.joystickDeflection = JOYSTICK_DEFLECTION_FAR;
 }

@@ -79,9 +79,9 @@ int16_t MwFindPlanetAtTravelMarker(void)
  * Mouse positions are the frame's pixels (H3). */
 uint16_t MwHandleTravelMapSelection(void)
 {
-    if (selectedUiRecordIndex!=TRAVEL_MAP_UI_RECORD) return 0;
+    if (campaignUi.selectedUiRecordIndex!=TRAVEL_MAP_UI_RECORD) return 0;
 positionMouse:
-    if (mouseInstalled!=0)
+    if (campaignInput.mouseInstalled!=0)
     {
         if (!mwCampaignInput.setMousePosition) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.setMousePosition");
         mwCampaignInput.setMousePosition(travelMarkerX,travelMarkerY);
@@ -91,24 +91,24 @@ positionMouse:
         uint16_t key=0;
         if (!mwCampaignInput.keyboardAvailable || !mwCampaignInput.readKeyboard) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.keyboardAvailable || !mwCampaignInput.readKeyboard");
         if (mwCampaignInput.keyboardAvailable()) key=MwCampaignKeyWord(mwCampaignInput.readKeyboard());
-        else if (joystickInstalled!=0 && campaignTimerTicks!=travelJoystickLastTick)
+        else if (campaignInput.joystickInstalled!=0 && campaignInput.campaignTimerTicks!=travelJoystickLastTick)
         {
-            travelJoystickLastTick=campaignTimerTicks; /*5B81 saved tick. */
+            travelJoystickLastTick=campaignInput.campaignTimerTicks; /*5B81 saved tick. */
             MwPollJoystickA();
-            if (joystickButtonOnePressed!=0)
+            if (campaignInput.joystickButtonOnePressed!=0)
             {
-                do {MwPollJoystickA();} while (joystickButtonOnePressed!=0);
+                do {MwPollJoystickA();} while (campaignInput.joystickButtonOnePressed!=0);
                 key=CAMPAIGN_KEY_ENTER;
             }
-            else if (joystickDirection==JOYSTICK_CENTRED) goto pollMouse;
-            else if (joystickDirection<JOYSTICK_UP_LEFT)
-                key=joystickNavigationKeys[joystickDirection];
+            else if (campaignInput.joystickDirection==JOYSTICK_CENTRED) goto pollMouse;
+            else if (campaignInput.joystickDirection<JOYSTICK_UP_LEFT)
+                key=campaignInput.joystickNavigationKeys[campaignInput.joystickDirection];
             else key=CAMPAIGN_KEY_UP_LEFT; /* Native default5BDA. */
         }
         else
         {
 pollMouse:
-            if (mouseInstalled==0) continue;
+            if (campaignInput.mouseInstalled==0) continue;
             if (!mwCampaignInput.readMousePosition || !mwCampaignInput.mouseReleaseCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.readMousePosition || !mwCampaignInput.mouseReleaseCount");
             uint16_t mouseX,mouseY;
             mwCampaignInput.readMousePosition(&mouseX,&mouseY);
@@ -169,7 +169,7 @@ restoreCurrentPlanet:
             MwDrawTravelMarker();return CAMPAIGN_CONTINUE_TRAVEL_MAP;
         }
         MwRestoreTravelMarkerRegion();MwDrawTravelMarker();
-        if (mouseInstalled!=0) goto positionMouse; /*5A37 ->5999. */
+        if (campaignInput.mouseInstalled!=0) goto positionMouse; /*5A37 ->5999. */
     }
 }
 
@@ -239,7 +239,7 @@ uint16_t MwSelectTravelDestinationContinuation(uint16_t planetIndex)
  * browser cancellation and marker-boundary paths. */
 uint16_t MwEnterTravelMapMenuContinuation(void)
 {
-    uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_SELECT_TRAVEL_MAP_PLANET;
+    campaignUi.uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_SELECT_TRAVEL_MAP_PLANET;
     uint16_t selectionTransfer=MwSelectUiRecordTable(travelMapSelection,&travelMapMenu);
     return selectionTransfer!=0?selectionTransfer:CAMPAIGN_CONTINUE_UI;
 }
@@ -300,7 +300,7 @@ void MwDrawPlanetTravelQuote(void)
  * C represents the following569F continuation explicitly. */
 uint16_t MwOpenTravelScreenContinuation(void)
 {
-    hubSelectedRecordIndex=3;
+    campaignUi.hubSelectedRecordIndex=3;
     travelMapSelection=0;
     EgaSelectFont(0);
     (void)MwLoadIndexedPicture((uint16_t)(TRAVEL_HOUSE_PICTURE_BASE+currentPlanetHouseIndex));
@@ -323,7 +323,7 @@ uint16_t MwOpenTravelScreenContinuation(void)
  * because both are shared native continuations, not application return values. */
 uint16_t MwSearchTravelPlanetContinuation(void)
 {
-    uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_SELECT_TRAVEL_MAP_PLANET;
+    campaignUi.uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_SELECT_TRAVEL_MAP_PLANET;
     EgaFillDisplayPageRectangle(TRAVEL_SEARCH_X,TRAVEL_SEARCH_Y,
         TRAVEL_SEARCH_WIDTH,TRAVEL_SEARCH_HEIGHT,TRAVEL_SEARCH_BACKGROUND);
     uint16_t transfer=MwReadCampaignTextInput(TRAVEL_SEARCH_X,TRAVEL_SEARCH_Y,
@@ -393,7 +393,7 @@ void MwRestoreTravelHouseBrowserRegion(void)
 uint16_t MwOpenSelectedHousePlanetListContinuation(void)
 {
     MwRestoreTravelHouseBrowserRegion();
-    travelSelectedHouseRow=selectedUiRecordIndex;
+    travelSelectedHouseRow=campaignUi.selectedUiRecordIndex;
     if (travelSelectedHouseRow>=TRAVEL_HOUSE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: travelSelectedHouseRow>=TRAVEL_HOUSE_COUNT");
     travelSelectedHouseByteOffset=(uint16_t)(travelSelectedHouseRow*sizeof(uint16_t));
     travelHousePlanetStart=housePlanetRangeStarts[travelSelectedHouseRow];
@@ -451,7 +451,7 @@ void MwRestoreTravelHousePlanetListRegion(void)
 uint16_t MwSelectHousePlanetContinuation(void)
 {
     MwRestoreTravelHousePlanetListRegion();
-    uint16_t alphabeticIndex=travelHousePlanetStart+selectedUiRecordIndex;
+    uint16_t alphabeticIndex=travelHousePlanetStart+campaignUi.selectedUiRecordIndex;
     if (alphabeticIndex>=TRAVEL_PLANET_DIRECTORY_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: alphabeticIndex>=TRAVEL_PLANET_DIRECTORY_COUNT");
     uint16_t planetOffset=alphabeticPlanetRecordOffsets[alphabeticIndex];
     if (planetOffset<PLANET_RECORDS_START || planetOffset>=PLANET_RECORDS_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetOffset<PLANET_RECORDS_START || planetOffset>=PLANET_RECORDS_END");
@@ -467,7 +467,7 @@ uint16_t MwConfirmPlanetTravelContinuation(void)
 {
     if (travelDestinationPlanetIndex==currentPlanetIndex)
     {
-        uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_SELECT_TRAVEL_MAP_PLANET;
+        campaignUi.uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_SELECT_TRAVEL_MAP_PLANET;
         return 0;
     }
     uint32_t funds=((uint32_t)campaignFundsHigh<<NATIVE_WORD_BITS)|campaignFundsLow;
@@ -480,7 +480,7 @@ uint16_t MwConfirmPlanetTravelContinuation(void)
         MwTextPanelReturn result=MwShowMonospaceTextPanel(0x0010,0x0010,0x0019,6,&message,0);
         if (result.discardReturnWord) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: result.discardReturnWord");
         MwDrawTravelMarker();
-        uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_SELECT_TRAVEL_MAP_PLANET;
+        campaignUi.uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_SELECT_TRAVEL_MAP_PLANET;
         return 0;
     }
     funds-=quote;
@@ -547,17 +547,17 @@ void MwPlayHiredTransportAnimation(void)
     uint16_t frameIndex=0x0020;
     MwDrawIndexedPicture(0,0,HIRED_TRANSPORT_BACKGROUND_PICTURE);
     EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
-    uint16_t nextFrameTick=campaignTimerTicks+1;
+    uint16_t nextFrameTick=campaignInput.campaignTimerTicks+1;
     for (;;)
     {
         for (;;)
         {
             if (MwPollInputOnce()) return;
-            if (nextFrameTick<=campaignTimerTicks) break;
+            if (nextFrameTick<=campaignInput.campaignTimerTicks) break;
             if (!mwCampaignInput.waitForInterrupt) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.waitForInterrupt");
             mwCampaignInput.waitForInterrupt();
         }
-        nextFrameTick=(uint16_t)(campaignTimerTicks+TRAVEL_ANIMATION_FRAME_TICKS);
+        nextFrameTick=(uint16_t)(campaignInput.campaignTimerTicks+TRAVEL_ANIMATION_FRAME_TICKS);
         uint16_t pictureIndex;
         if (frameIndex==UINT16_MAX)
             pictureIndex=hiredTransportReverseTerminator;
@@ -571,8 +571,8 @@ void MwPlayHiredTransportAnimation(void)
         EgaFlipPages();
         frameIndex += travelAnimationFrameStep;
     }
-    uint16_t finalTick=campaignTimerTicks+TRAVEL_ANIMATION_FINAL_TICKS;
-    while (finalTick>campaignTimerTicks)
+    uint16_t finalTick=campaignInput.campaignTimerTicks+TRAVEL_ANIMATION_FINAL_TICKS;
+    while (finalTick>campaignInput.campaignTimerTicks)
     {
         if (!mwCampaignInput.waitForInterrupt) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.waitForInterrupt");
         mwCampaignInput.waitForInterrupt();
@@ -587,15 +587,15 @@ void MwPlayOwnedDropShipAnimation(void)
     MwDrawAlternateBankPicture(DROPSHIP_X,DROPSHIP_Y,EGA_DRAW_PAGE,DROPSHIP_INITIAL_PICTURE);
     EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
     uint16_t frameIndex=0;
-    uint16_t nextFrameTick=campaignTimerTicks+1;
+    uint16_t nextFrameTick=campaignInput.campaignTimerTicks+1;
     for (;;)
     {
-        while (nextFrameTick>campaignTimerTicks)
+        while (nextFrameTick>campaignInput.campaignTimerTicks)
         {
             if (!mwCampaignInput.waitForInterrupt) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.waitForInterrupt");
             mwCampaignInput.waitForInterrupt();
         }
-        nextFrameTick=(uint16_t)(campaignTimerTicks+TRAVEL_ANIMATION_FRAME_TICKS);
+        nextFrameTick=(uint16_t)(campaignInput.campaignTimerTicks+TRAVEL_ANIMATION_FRAME_TICKS);
         if (frameIndex>=DROPSHIP_TRAVEL_FRAME_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: frameIndex>=DROPSHIP_TRAVEL_FRAME_COUNT");
         uint16_t pictureIndex=dropShipTravelFrames[frameIndex];
         if (pictureIndex==TRAVEL_ANIMATION_TERMINATOR) break;
@@ -603,8 +603,8 @@ void MwPlayOwnedDropShipAnimation(void)
         EgaFlipPages();
         ++frameIndex;
     }
-    uint16_t finalTick=campaignTimerTicks+TRAVEL_ANIMATION_FINAL_TICKS;
-    while (finalTick>campaignTimerTicks)
+    uint16_t finalTick=campaignInput.campaignTimerTicks+TRAVEL_ANIMATION_FINAL_TICKS;
+    while (finalTick>campaignInput.campaignTimerTicks)
     {
         if (!mwCampaignInput.waitForInterrupt) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.waitForInterrupt");
         mwCampaignInput.waitForInterrupt();

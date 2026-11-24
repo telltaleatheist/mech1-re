@@ -34,12 +34,12 @@ bool MwDosWriteFile(const uint8_t *buffer,uint16_t byteCount,uint16_t fileHandle
 uint16_t MwSaveCampaignCallback(void)
 {
 readName:
-    optionsMenuSelection=OPTION_SAVE;
+    campaignUi.optionsMenuSelection=OPTION_SAVE;
     EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
     EgaFillDisplayPageRectangle(SAVE_NAME_BOX_X,SAVE_NAME_BOX_Y,SAVE_NAME_BOX_WIDTH,SAVE_NAME_BOX_HEIGHT,SAVE_PANEL_BACKGROUND);
     MwDrawPicturePanelBorder(SAVE_NAME_BOX_X,SAVE_NAME_BOX_Y,SAVE_NAME_BOX_WIDTH,SAVE_NAME_BOX_HEIGHT);
     EgaSelectFont(TEXT_PANEL_MONOSPACE_FONT);
-    MwNativeByteView prompt={saveNamePrompt,SAVE_NAME_TEXT_OFFSET,sizeof(saveNamePrompt)};
+    MwNativeByteView prompt={campaignOptions.saveNamePrompt,SAVE_NAME_TEXT_OFFSET,sizeof(campaignOptions.saveNamePrompt)};
     EgaDrawTransparentText(SAVE_NAME_LABEL_X,SAVE_NAME_LABEL_Y,SAVE_NAME_LABEL_COLOUR,&prompt,prompt.nativeBase);
     uint16_t transfer=MwReadCampaignTextInput(SAVE_NAME_FIELD_X,SAVE_NAME_FIELD_Y,CAMPAIGN_SAVE_STEM_BYTES+1,SAVE_NAME_FIELD_COLOUR,SAVE_PANEL_BACKGROUND);
     if (transfer) return transfer;
@@ -57,17 +57,17 @@ readName:
     uint16_t handleOrError;
     if (MwDosCreateSaveFile((const char *)campaignTextInputBuffer+leadingSpaces,&handleOrError))
     {
-        MwNativeByteView text={saveDiskErrorText,SAVE_ERROR_TEXT_OFFSET,sizeof(saveDiskErrorText)};
+        MwNativeByteView text={campaignOptions.saveDiskErrorText,SAVE_ERROR_TEXT_OFFSET,sizeof(campaignOptions.saveDiskErrorText)};
         return MwShowOptionsMessageAndReturnContinuation(&text,text.nativeBase);
     }
-    saveFileHandle=handleOrError;
+    campaignOptions.saveFileHandle=handleOrError;
     uint8_t bytes[CAMPAIGN_SAVE_BYTES];MwEncodeCampaignExchange(bytes);
     uint16_t bytesWrittenOrError;
     (void)MwDosWriteFile(bytes,CAMPAIGN_SAVE_BYTES,handleOrError,&bytesWrittenOrError);
-    (void)MwDosCloseFile(saveFileHandle);
+    (void)MwDosCloseFile(campaignOptions.saveFileHandle);
     if (bytesWrittenOrError!=CAMPAIGN_SAVE_BYTES) /* Native ignores write CF and close result. */
     {
-        MwNativeByteView text={saveDiskFullText,SAVE_FULL_TEXT_OFFSET,sizeof(saveDiskFullText)};
+        MwNativeByteView text={campaignOptions.saveDiskFullText,SAVE_FULL_TEXT_OFFSET,sizeof(campaignOptions.saveDiskFullText)};
         return MwShowOptionsMessageAndReturnContinuation(&text,text.nativeBase);
     }
     return CAMPAIGN_CONTINUE_OPTIONS;
@@ -85,14 +85,14 @@ uint16_t MwShowOptionsMessageAndReturnContinuation(const MwNativeByteView *text,
  * neither the row number nor ninth filename byte is initialized here. */
 uint16_t MwShowLoadCampaignCallback(void)
 {
-    optionsMenuSelection=OPTION_RESTORE;
+    campaignUi.optionsMenuSelection=OPTION_RESTORE;
     EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
     for (uint16_t row=0;row<CAMPAIGN_SAVE_ROWS;++row)
         for (uint16_t column=0;column<CAMPAIGN_SAVE_STEM_BYTES;++column)
-            saveListRows[row].caption.columns.filename[column]=' ';
+            campaignOptions.saveListRows[row].caption.columns.filename[column]=' ';
     (void)MwEnumerateCampaignSaves(); /* Caller ignores CF. */
-    MwDrawDescriptorTextPanel(&restorePanel);
-    MwSelectUiRecordTable(0,&restoreMenu);
+    MwDrawDescriptorTextPanel(&campaignOptions.restorePanel);
+    MwSelectUiRecordTable(0,&campaignOptions.restoreMenu);
     return CAMPAIGN_CONTINUE_UI;
 }
 
@@ -101,18 +101,18 @@ uint16_t MwShowLoadCampaignCallback(void)
 bool MwEnumerateCampaignSaves(void)
 {
     if (!mwDosFiles.getDtaFilename || !mwDosFiles.findFirst || !mwDosFiles.findNext) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwDosFiles.getDtaFilename || !mwDosFiles.findFirst || !mwDosFiles.findNext");
-    saveSearchFilename=mwDosFiles.getDtaFilename();
-    saveFileCount=0;
-    if (mwDosFiles.findFirst(saveFindPattern,0)) return true;
-    saveListWriteRow=saveListRows;
+    campaignOptions.saveSearchFilename=mwDosFiles.getDtaFilename();
+    campaignOptions.saveFileCount=0;
+    if (mwDosFiles.findFirst(campaignOptions.saveFindPattern,0)) return true;
+    campaignOptions.saveListWriteRow=campaignOptions.saveListRows;
     do
     {
-        const char *filename=saveSearchFilename;
-        char *stem=saveListWriteRow->caption.columns.filename;
+        const char *filename=campaignOptions.saveSearchFilename;
+        char *stem=campaignOptions.saveListWriteRow->caption.columns.filename;
         while (*filename!='.') *stem++=*filename++;
         *stem='\0';
-        ++saveListWriteRow;
-        if (++saveFileCount==CAMPAIGN_SAVE_ROWS) break;
+        ++campaignOptions.saveListWriteRow;
+        if (++campaignOptions.saveFileCount==CAMPAIGN_SAVE_ROWS) break;
     } while (!mwDosFiles.findNext());
     return false; /* Native swallows every FindNext end/error. */
 }
@@ -121,31 +121,31 @@ bool MwEnumerateCampaignSaves(void)
  * The extra read byte detects oversized files; it is not campaign data. */
 uint16_t MwLoadSelectedCampaignCallback(void)
 {
-    uint16_t row=(uint8_t)selectedUiRecordIndex; /* Native MUL BL uses AL only. */
+    uint16_t row=(uint8_t)campaignUi.selectedUiRecordIndex; /* Native MUL BL uses AL only. */
     if (row>=CAMPAIGN_SAVE_ROWS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: row>=CAMPAIGN_SAVE_ROWS"); /* Out-of-row native storage is unrepresented. */
-    const char *stem=saveListRows[row].caption.columns.filename;
+    const char *stem=campaignOptions.saveListRows[row].caption.columns.filename;
     if (*stem==' ') return 0;
     uint16_t character=0;
     while (stem[character])
     {
-        selectedSaveFilename[character]=stem[character];++character;
+        campaignOptions.selectedSaveFilename[character]=stem[character];++character;
     }
-    memcpy(selectedSaveFilename+character,".GAM",sizeof(".GAM"));
+    memcpy(campaignOptions.selectedSaveFilename+character,".GAM",sizeof(".GAM"));
     uint16_t handleOrError;
-    if (MwDosOpenResourceReadWrite(selectedSaveFilename,&handleOrError)) goto diskError;
-    saveFileHandle=handleOrError;
+    if (MwDosOpenResourceReadWrite(campaignOptions.selectedSaveFilename,&handleOrError)) goto diskError;
+    campaignOptions.saveFileHandle=handleOrError;
     uint8_t bytes[CAMPAIGN_SAVE_BYTES+1];
     uint16_t bytesReadOrError;bytesReadOrError=0;
     bool readError;readError=MwDosReadFile(bytes,sizeof(bytes),handleOrError,&bytesReadOrError);
-    bool closeError;closeError=MwDosCloseFile(saveFileHandle);
+    bool closeError;closeError=MwDosCloseFile(campaignOptions.saveFileHandle);
     if (readError || closeError || bytesReadOrError!=CAMPAIGN_SAVE_BYTES) goto diskError;
     MwDecodeCampaignExchange(bytes);
-    hubSelectedRecordIndex=0;
+    campaignUi.hubSelectedRecordIndex=0;
     MwIndexedPictureCloseHook(); /* RET-only: retain actual directory/cache state. */
     return CAMPAIGN_CONTINUE_PLANET_HUB;
 diskError:
     {
-        MwNativeByteView text={loadDiskErrorText,LOAD_ERROR_TEXT_OFFSET,sizeof(loadDiskErrorText)};
+        MwNativeByteView text={campaignOptions.loadDiskErrorText,LOAD_ERROR_TEXT_OFFSET,sizeof(campaignOptions.loadDiskErrorText)};
         return MwShowOptionsMessageAndReturnContinuation(&text,text.nativeBase);
     }
 }

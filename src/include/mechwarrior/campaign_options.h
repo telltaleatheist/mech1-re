@@ -22,22 +22,27 @@ typedef struct MwSaveListRow
         char text[13];
     } caption;
 } MwSaveListRow;
-extern MwPanelDescriptor optionsPanel,restorePanel,confirmationPanel,newsMenuPanel;
-extern MwServiceCaption optionsLabels[CAMPAIGN_OPTIONS_ROWS],confirmationLabels[4],newsMenuLabels[3];
-extern MwServiceCaption restoreHeading,restoreCancel;
-extern MwSaveListRow saveListRows[CAMPAIGN_SAVE_ROWS];
-extern MwUiMenu optionsMenu,restoreMenu,confirmationMenu,newsMenu;
-extern uint16_t saveFileHandle,saveFileCount;
-extern const char *saveSearchFilename;
-extern MwSaveListRow *saveListWriteRow;
-extern char selectedSaveFilename[CAMPAIGN_SAVE_FILENAME_BYTES],saveFindPattern[6];
-extern uint8_t saveNamePrompt[0x1B];
-extern char audioOptionLabels[2][4],terrainDetailLabels[3][5];
-extern uint8_t saveDiskFullText[0x2B],saveDiskErrorText[0x30],loadDiskErrorText[0x31];
-extern uint8_t newsAtStart,newsAtEnd;
-extern uint16_t newsLastArticleId;
-extern char newsBoundaryText[0x1B];
-extern MwCampaignEvent **newsArticleCursor,**newsArticleListStart;
+/* Campaign state owned by campaign_options.h (plan, slice B2). */
+struct CampaignOptionsState
+{
+    MwPanelDescriptor optionsPanel, restorePanel, confirmationPanel, newsMenuPanel;
+    MwServiceCaption optionsLabels[CAMPAIGN_OPTIONS_ROWS], confirmationLabels[4], newsMenuLabels[3];
+    MwServiceCaption restoreHeading, restoreCancel;
+    MwSaveListRow saveListRows[CAMPAIGN_SAVE_ROWS];
+    MwUiMenu optionsMenu, restoreMenu, confirmationMenu, newsMenu;
+    uint16_t saveFileHandle, saveFileCount;
+    const char *saveSearchFilename;
+    MwSaveListRow *saveListWriteRow;
+    char selectedSaveFilename[CAMPAIGN_SAVE_FILENAME_BYTES], saveFindPattern[6];
+    uint8_t saveNamePrompt[0x1B];
+    char audioOptionLabels[2][4], terrainDetailLabels[3][5];
+    uint8_t saveDiskFullText[0x2B], saveDiskErrorText[0x30], loadDiskErrorText[0x31];
+    uint8_t newsAtStart, newsAtEnd;
+    uint16_t newsLastArticleId;
+    char newsBoundaryText[0x1B];
+    MwCampaignEvent **newsArticleCursor, **newsArticleListStart;
+};
+extern CampaignOptionsState campaignOptions;
 bool MwImportCampaignOptionsData(void);
 uint16_t MwEnterOptionsMenuContinuation(uint16_t entryOffset);
 void MwUpdateAudioOptionLabel(void);

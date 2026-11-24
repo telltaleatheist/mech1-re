@@ -22,7 +22,7 @@ uint16_t MwEnterBarContinuation(uint16_t entryOffset)
         campaignStartMusic(campaignMusicBufferSelector,0);
     }
 drawBackground:
-    hubSelectedRecordIndex=BAR_HUB_ROW;
+    campaignUi.hubSelectedRecordIndex=BAR_HUB_ROW;
     recruitOfferSlot=0;
     EgaClearDrawPage(BAR_BACKGROUND_COLOUR);
     MwDrawIndexedPicture(0,0,BAR_BACKGROUND_PICTURE);
@@ -32,9 +32,9 @@ drawBackground:
 refreshMenu:
     EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
     MwShowPendingNotifications();
-    if (barMenuSelectedRow==BAR_FIRST_VISIT)
+    if (campaignUi.barMenuSelectedRow==BAR_FIRST_VISIT)
     {
-        barMenuSelectedRow=0;
+        campaignUi.barMenuSelectedRow=0;
         campaignEventDispatchReturnContinuation=CAMPAIGN_CONTINUE_BAR_EVENT_RETURN;
         uint16_t transfer=MwDispatchCampaignEvents(BAR_INITIAL_EVENT_CLASS,CAMPAIGN_CALL_DISPATCH_EVENTS);
         if (transfer) return transfer;
@@ -42,7 +42,7 @@ refreshMenu:
     }
 drawMenu:
     MwDrawDescriptorTextPanel(&barMenuPanel);
-    MwSelectUiRecordTable(barMenuSelectedRow,&barMenu);
+    MwSelectUiRecordTable(campaignUi.barMenuSelectedRow,&barMenu);
     return CAMPAIGN_CONTINUE_UI;
 }
 
@@ -52,7 +52,7 @@ uint16_t MwOrderDrinkContinuation(uint16_t entryOffset)
 {
     if (entryOffset==CAMPAIGN_CONTINUE_DRINK_EVENT_RETURN) return CAMPAIGN_CONTINUE_BAR_BACKGROUND;
     if (entryOffset!=CAMPAIGN_CONTINUE_ORDER_DRINK) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: entryOffset!=CAMPAIGN_CONTINUE_ORDER_DRINK");
-    barMenuSelectedRow=BAR_ROW_DRINK;
+    campaignUi.barMenuSelectedRow=BAR_ROW_DRINK;
     EgaClearDrawPage(BAR_BACKGROUND_COLOUR);
     MwDrawIndexedPicture(0,0,BAR_DRINK_PICTURE);
     EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
@@ -83,7 +83,7 @@ bool MwFindNextRecruitCandidate(void)
  * display, so refreshes can alter live ratings/offer state in between. */
 uint16_t MwOpenRecruitInterviewContinuation(void)
 {
-    barMenuSelectedRow=BAR_ROW_RECRUIT;
+    campaignUi.barMenuSelectedRow=BAR_ROW_RECRUIT;
     if (!MwFindNextRecruitCandidate())
     {
         EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
@@ -167,14 +167,14 @@ uint16_t MwRejectSelectedRecruitContinuation(void)
 uint16_t MwEnterCompanyMenuContinuation(uint16_t entryOffset)
 {
     if (entryOffset!=CAMPAIGN_CONTINUE_COMPANY_MENU && entryOffset!=CAMPAIGN_CONTINUE_COMPANY_MENU_WITHOUT_PROFILE) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: entryOffset!=CAMPAIGN_CONTINUE_COMPANY_MENU && entryOffset!=CAMPAIGN_CONTINUE_COMPANY_MENU_WITHOUT_PROFILE");
-    if (entryOffset==CAMPAIGN_CONTINUE_COMPANY_MENU) hubSelectedRecordIndex=0;
+    if (entryOffset==CAMPAIGN_CONTINUE_COMPANY_MENU) campaignUi.hubSelectedRecordIndex=0;
     EgaSelectFont(COMPANY_MENU_FONT);
     if (entryOffset==CAMPAIGN_CONTINUE_COMPANY_MENU_WITHOUT_PROFILE) EgaClearDrawPage(BAR_BACKGROUND_COLOUR);
     MwDrawIndexedPicture(0,0,(uint16_t)(currentPlanetLandscapeIndex+COMPANY_LANDSCAPE_PICTURE_BASE));
     EgaFlipPages();
     if (entryOffset==CAMPAIGN_CONTINUE_COMPANY_MENU) MwDrawCommanderProfile();
     MwDrawDescriptorTextPanel(&companyMenuPanel);
-    MwSelectUiRecordTable(companyMenuSelectedRow,&companyMenu);
+    MwSelectUiRecordTable(campaignUi.companyMenuSelectedRow,&companyMenu);
     return CAMPAIGN_CONTINUE_UI;
 }
 
@@ -216,7 +216,7 @@ void MwDrawCommanderProfile(void)
 /* MW_MAIN081B:260C..273D. POP/time/roster redraw is also the dismissal tail. */
 uint16_t MwEnterCrewMenuContinuation(void)
 {
-    companyMenuSelectedRow=0;
+    campaignUi.companyMenuSelectedRow=0;
     MwAdvanceCampaignTimeAndChargeWages(1);
     for (uint16_t rosterSlot=FIRST_HIRED_PILOT_SLOT;rosterSlot<CAMPAIGN_ROSTER_SLOTS;++rosterSlot)
         crewMenu.records[rosterSlot+CREW_FIRST_PILOT_MENU_RECORD].enabled=0;

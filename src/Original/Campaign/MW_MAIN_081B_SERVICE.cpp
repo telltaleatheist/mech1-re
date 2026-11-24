@@ -10,13 +10,13 @@
  * retains AH from BYTE slot*001D; body path explicitly clears it. */
 uint16_t MwRepairSelectedMechComponentCallback(void)
 {
-    repairMenuSelectedCategory=selectedUiRecordIndex;
-    uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_REFRESH_COMPONENT_QUOTE;
+    repairMenuSelectedCategory=campaignUi.selectedUiRecordIndex;
+    campaignUi.uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_REFRESH_COMPONENT_QUOTE;
     uint16_t slotProduct=(uint8_t)selectedOwnedUnitSlot*CAMPAIGN_DAMAGE_BYTES;
     CampaignUnitDamage *damage=&ownedUnitDamage[(uint8_t)selectedOwnedUnitSlot];
-    uint8_t *damagedComponent=(uint8_t *)damage+selectedUiRecordIndex;
+    uint8_t *damagedComponent=(uint8_t *)damage+campaignUi.selectedUiRecordIndex;
     uint16_t savedDamage;
-    if (selectedUiRecordIndex==REPAIR_BODY)
+    if (campaignUi.selectedUiRecordIndex==REPAIR_BODY)
     {
         damagedComponent=damage->bodyDamageTiers;
         uint16_t remaining=CAMPAIGN_BODY_LOCATION_COUNT;
@@ -26,12 +26,12 @@ uint16_t MwRepairSelectedMechComponentCallback(void)
     }
     else
     {
-        if (selectedUiRecordIndex>REPAIR_BODY) --damagedComponent;
+        if (campaignUi.selectedUiRecordIndex>REPAIR_BODY) --damagedComponent;
         uint8_t tier=*damagedComponent;
         if (tier==0) return 0;
         savedDamage=(slotProduct&0xFF00)|tier;
-        uint16_t damageIndex=selectedUiRecordIndex;
-        if (selectedUiRecordIndex>REPAIR_BODY) --damageIndex;
+        uint16_t damageIndex=campaignUi.selectedUiRecordIndex;
+        if (campaignUi.selectedUiRecordIndex>REPAIR_BODY) --damageIndex;
         bool failed=repairAttemptFailuresByKind[(uint8_t)selectedOwnedUnitKind].failedByDamageIndex[damageIndex]!=0;
         if (!failed)
         {
@@ -43,7 +43,7 @@ uint16_t MwRepairSelectedMechComponentCallback(void)
         }
         if (failed)
         {
-            uint16_t category=selectedUiRecordIndex;
+            uint16_t category=campaignUi.selectedUiRecordIndex;
             if (category!=REPAIR_BODY)
             {
                 damageIndex=category;
@@ -62,7 +62,7 @@ uint16_t MwRepairSelectedMechComponentCallback(void)
     /* Native3FC1 also loads CX from3A6F;0C3E consumes saved AX, not CX.
      * That discarded ordinary-RAM read is not represented as a C lookup. */
     MwAdvanceCampaignTimeAndChargeWages(savedDamage);
-    if (selectedUiRecordIndex!=REPAIR_BODY)
+    if (campaignUi.selectedUiRecordIndex!=REPAIR_BODY)
     {
         --*damagedComponent; /* Captured address, even if calendar changed its BYTE to zero. */
         return CAMPAIGN_CONTINUE_COMPONENT_REPAIR_MENU;
@@ -253,7 +253,7 @@ uint16_t MwOpenMechComponentRepairMenuCallback(void)
     componentRepairPanel.lineCount=unitWeaponCounts[kind]+REPAIR_FIRST_WEAPON+3;
     EgaFillDisplayPageRectangle(REPAIR_PANEL_X,REPAIR_PANEL_Y,REPAIR_PANEL_WIDTH,REPAIR_PANEL_HEIGHT,MECH_DETAIL_BACKGROUND);
     MwDrawDescriptorTextPanel(&componentRepairPanel);
-    uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_REFRESH_COMPONENT_QUOTE;
+    campaignUi.uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_REFRESH_COMPONENT_QUOTE;
     uint32_t funds=((uint32_t)campaignFundsHigh<<NATIVE_WORD_BITS)|campaignFundsLow;
     ++numericGroupingEnabled;
     MwDrawSignedDecimalField(funds,REPAIR_FUNDS_X,1,0,REPAIR_CONDITION_HEALTHY_COLOUR,MECH_DETAIL_BACKGROUND,REPAIR_FUNDS_Y);
@@ -263,7 +263,7 @@ uint16_t MwOpenMechComponentRepairMenuCallback(void)
 /* MW_MAIN081B:3DF3..3E27. Ordinary NEAR selection-change callback, no args. */
 void MwRefreshSelectedComponentRepairQuote(void)
 {
-    repairPriceCategory=selectedUiRecordIndex;
+    repairPriceCategory=campaignUi.selectedUiRecordIndex;
     CampaignUnitDamage *damage=&ownedUnitDamage[(uint8_t)selectedOwnedUnitSlot];
     MwQuoteRepairComponent(damage);
     uint32_t quote=((uint32_t)componentRepairPriceHigh<<NATIVE_WORD_BITS)|componentRepairPriceLow;
@@ -477,7 +477,7 @@ uint16_t MwOpenOwnedMechList(void)
 /* MW_MAIN081B:3021..3062. POP callback IP, map visible row, JMP3063. */
 uint16_t MwSelectOwnedUnitListRowCallback(void)
 {
-    ownedUnitListSelectedRow=selectedUiRecordIndex;
+    ownedUnitListSelectedRow=campaignUi.selectedUiRecordIndex;
     uint16_t ownedUnitSlot=0,visibleRow=0;
     for (;;)
     {
@@ -506,7 +506,7 @@ void MwDrawDescriptorTextPanel(const MwPanelDescriptor *textPanel)
     uint16_t y=textPanel->y;
     uint16_t width=textPanel->width;
     uint16_t background=textPanel->background;
-    panelOriginX=x;panelOriginY=y;panelWidth=width;panelHeight=height;
+    campaignUi.panelOriginX=x;campaignUi.panelOriginY=y;campaignUi.panelWidth=width;campaignUi.panelHeight=height;
     if (textPanel->bottomInset!=0)
     {
         uint16_t bottom=height+y;

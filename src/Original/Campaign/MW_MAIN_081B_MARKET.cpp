@@ -20,7 +20,7 @@ uint16_t MwEnterMechServiceMenuContinuation(uint16_t entryOffset)
 {
     if (entryOffset==CAMPAIGN_CONTINUE_MECH_COMPLEX_EVENT_RETURN) goto showServicePanel;
     if (entryOffset!=CAMPAIGN_CONTINUE_MECH_COMPLEX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: entryOffset!=CAMPAIGN_CONTINUE_MECH_COMPLEX");
-    hubSelectedRecordIndex=MECH_COMPLEX_HUB_ROW;
+    campaignUi.hubSelectedRecordIndex=MECH_COMPLEX_HUB_ROW;
     ownedUnitListSelectedRow=0;
     mechServiceMenuSelectedRow=0;
     marketUnitListSelectedRow=0;
@@ -43,8 +43,8 @@ showServicePanel:
 /* MW_MAIN081B:35E3..362E. Unsigned SUB/borrow gate, not elapsed-tick math. */
 void MwAnimateMechServiceIdle(void)
 {
-    if (campaignTimerTicks<mechServiceNextAnimationTick) return;
-    mechServiceNextAnimationTick=campaignTimerTicks+1;
+    if (campaignInput.campaignTimerTicks<mechServiceNextAnimationTick) return;
+    mechServiceNextAnimationTick=campaignInput.campaignTimerTicks+1;
     uint16_t frameOffset=mechServiceAnimationByteOffset;
     if ((frameOffset&1)!=0 || frameOffset/sizeof(uint16_t)>=MECH_COMPLEX_ANIMATION_FRAMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (frameOffset&1)!=0 || frameOffset/sizeof(uint16_t)>=MECH_COMPLEX_ANIMATION_FRAMES"); /* Unrepresented native adjacent/odd reads. */
     uint16_t picture=mechComplexAnimationFrames[frameOffset/sizeof(uint16_t)];
@@ -307,8 +307,8 @@ purchasePrice:
 /* MW_MAIN081B:2DF4..2E06. Genuine near initializer also used by empty dealer. */
 void MwInitializeMechServiceIdle(void)
 {
-    uiIdleCodeOffset=CAMPAIGN_CALLBACK_MECH_SERVICE_IDLE;
-    mechServiceNextAnimationTick=campaignTimerTicks;
+    campaignUi.uiIdleCodeOffset=CAMPAIGN_CALLBACK_MECH_SERVICE_IDLE;
+    mechServiceNextAnimationTick=campaignInput.campaignTimerTicks;
     mechServiceAnimationByteOffset=0;
 }
 /* MW_MAIN081B:2F32..3020. Empty branch RET; otherwise POP2F5F and JMP089B. */
@@ -352,7 +352,7 @@ uint16_t MwOpenMarketMechList(void)
 /* MW_MAIN081B:4317..4351. POP dispatch IP; shared4352 POP is bypassed. */
 uint16_t MwSelectMarketUnitListRowCallback(void)
 {
-    marketUnitListSelectedRow=selectedUiRecordIndex;
+    marketUnitListSelectedRow=campaignUi.selectedUiRecordIndex;
     uint16_t marketUnitSlot=0,visibleRow=0;
     for (;;)
     {
@@ -562,7 +562,7 @@ uint16_t MwOpenReserveAmmunitionShop(void)
     EgaCopyDisplayToDrawPage(0,0,RESERVE_AMMO_PREVIEW_WIDTH,RESERVE_AMMO_PREVIEW_HEIGHT);
     MwShowReserveAmmunitionCompatibility(0);
     MwDrawReserveAmmunitionPrices(false);MwDrawAmmunitionShopCompanyFunds();
-    uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_REFRESH_RESERVE_AMMO;
+    campaignUi.uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_REFRESH_RESERVE_AMMO;
     MwInitializeMechServiceIdle();MwSelectUiRecordTable(reserveAmmoShopSelectedRow,&reserveAmmoShopMenu);
     return CAMPAIGN_CONTINUE_UI;
 }
@@ -599,8 +599,8 @@ void MwDrawAmmunitionShopCompanyFunds(void)
  * Machine-gun cartridges trade in batches of ten, charged individually. */
 void MwBuyReserveAmmunition(void)
 {
-    uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_REFRESH_RESERVE_AMMO;MwInitializeMechServiceIdle();
-    uint16_t family=selectedUiRecordIndex;
+    campaignUi.uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_REFRESH_RESERVE_AMMO;MwInitializeMechServiceIdle();
+    uint16_t family=campaignUi.selectedUiRecordIndex;
     if (family>=CAMPAIGN_AMMO_FAMILY_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: family>=CAMPAIGN_AMMO_FAMILY_COUNT");
     uint16_t remaining=family==RESERVE_AMMO_MACHINE_GUN_FAMILY?RESERVE_AMMO_MACHINE_GUN_BATCH:1;
     do
@@ -619,7 +619,7 @@ void MwBuyReserveAmmunition(void)
 /* MW_MAIN081B:48E6..49D7, including DONE's49D8..49F1 restore tail. */
 void MwRefreshReserveAmmunitionSelection(void)
 {
-    uint16_t row=selectedUiRecordIndex;
+    uint16_t row=campaignUi.selectedUiRecordIndex;
     if (row>=RESERVE_AMMO_MENU_ROWS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: row>=RESERVE_AMMO_MENU_ROWS");
     bool selling=row>=CAMPAIGN_AMMO_FAMILY_COUNT && row!=RESERVE_AMMO_DONE_ROW;
     if (row!=RESERVE_AMMO_DONE_ROW && selling!=(reserveAmmoSelling!=0))
@@ -675,8 +675,8 @@ void MwShowReserveAmmunitionCompatibility(uint16_t family)
 /* MW_MAIN081B:49F2..4A76. Selling ends by reselecting the live menu row. */
 uint16_t MwSellReserveAmmunition(void)
 {
-    uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_REFRESH_RESERVE_AMMO;MwInitializeMechServiceIdle();
-    uint16_t family=selectedUiRecordIndex-CAMPAIGN_AMMO_FAMILY_COUNT;
+    campaignUi.uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_REFRESH_RESERVE_AMMO;MwInitializeMechServiceIdle();
+    uint16_t family=campaignUi.selectedUiRecordIndex-CAMPAIGN_AMMO_FAMILY_COUNT;
     if (family>=CAMPAIGN_AMMO_FAMILY_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: family>=CAMPAIGN_AMMO_FAMILY_COUNT");
     uint16_t remaining=family==RESERVE_AMMO_MACHINE_GUN_FAMILY?RESERVE_AMMO_MACHINE_GUN_BATCH:1;
     do
@@ -690,7 +690,7 @@ uint16_t MwSellReserveAmmunition(void)
     MwFormatReserveAmmunitionQuantity(family,reserveAmmoQuantitiesByFamily[family]);
     MwDrawSignedDecimalField(reserveAmmoQuantitiesByFamily[family],RESERVE_AMMO_QUANTITY_X,0,5,
         TEXT_PANEL_FOREGROUND,TEXT_PANEL_BACKGROUND,RESERVE_AMMO_ROW_Y+family*RESERVE_AMMO_ROW_HEIGHT);
-    MwDrawAmmunitionShopCompanyFunds();MwSelectUiRecordTable(selectedUiRecordIndex,&reserveAmmoShopMenu);
+    MwDrawAmmunitionShopCompanyFunds();MwSelectUiRecordTable(campaignUi.selectedUiRecordIndex,&reserveAmmoShopMenu);
     return CAMPAIGN_CONTINUE_UI;
 }
 /* MW_MAIN081B:4A77..4AA1. Highlight chassis already in the company roster. */

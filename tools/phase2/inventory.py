@@ -19,6 +19,47 @@ is a word. The offset shown is then the exe's, from those tables.
 """
 import collections, glob, os, re, sys
 
+def owners():
+    """The campaign state's owner structs (plan slice B2): instance -> (type, member lines)."""
+    out={}
+    for p in glob.glob(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),'src','include','mechwarrior','*.h')):
+        text=open(p).read()
+        for m in re.finditer(r'/\* Campaign state owned by [\w.]+ \(plan, slice B2\)\. \*/\nstruct (\w+)\n\{\n(.*?)\n\};\nextern \1 (\w+);',text,re.S):
+            members=[l.strip() for l in re.sub(r'/\*.*?\*/','',m.group(2),flags=re.S).split('\n') if l.strip()]
+            out[m.group(3)]=(m.group(1),members)
+    return out
+OWNERS=owners()
+def top_level(text):
+    """`text` split at the commas outside brackets."""
+    out,depth,cur=[],0,''
+    for c in text:
+        if c in '([{': depth+=1
+        elif c in ')]}': depth-=1
+        if c==',' and depth==0: out.append(cur);cur=''
+        else: cur+=c
+    return out+[cur]
+def unfold(text):
+    """A memory file as it read before B2 grouped its globals: an owner's
+    instance is its members again, one declaration each (an initialiser the
+    instance gives a member stays with it), and `instance.member` is the
+    member. The items, their offsets and their doors read as before."""
+    for inst,(typ,members) in OWNERS.items():
+        m=re.search(r'^'+typ+r' '+inst+r'(?:=\{\n(.*?)\n\})?;$',text,re.S|re.M)
+        if m:
+            inits={}
+            for item in top_level(re.sub(r'/\*.*?\*/','',m.group(1) or '',flags=re.S)):
+                d=re.match(r'\s*\.(\w+)\s*=\s*(.*)$',item,re.S)
+                if d: inits[d.group(1)]=d.group(2).strip()  # its own lines, as the definition had them
+            decls=[]
+            for line in members:
+                t,rest=re.match(r'((?:(?:const|volatile|unsigned|signed|struct)\s+)*[\w:]+(?:\s+(?:const|volatile))*)\s*(.*)$',line.rstrip(';')).groups()
+                for part in [x.strip() for x in re.split(r',\s*(?![^\[]*\])',rest)]:
+                    n=re.match(r'\**\s*(\w+)',part).group(1)
+                    decls.append(f'{t} {part}'+(f' = {inits[n]}' if n in inits else '')+';')
+            text=text[:m.start()]+'\n'.join(decls)+text[m.end():]
+        text=re.sub(r'\b'+inst+r'\.','',text)
+    return text
+
 def scan(memory_dir):
     """Every file-scope item in src/Original/Memory, with the first native
     offset its importer reads ('-' when none)."""
@@ -26,7 +67,7 @@ def scan(memory_dir):
     decl=re.compile(r'^'+TYPES+r'(.+);\s*(?:/\*.*)?$')
     rows=[]
     for path in sorted(glob.glob(os.path.join(memory_dir,'*.cpp'))):
-        f=os.path.basename(path);lines=open(path).read().split('\n');depth=0;names=[]
+        f=os.path.basename(path);lines=unfold(open(path).read()).split('\n');depth=0;names=[]
         for l in lines:
             l=l.replace('(int)','')  # a cast in an array bound
             if depth==0 and not l.startswith((' ','#','/','}','{','\t','static_assert','typedef','enum','extern','namespace','using')) and '(' not in l.split('=')[0]:

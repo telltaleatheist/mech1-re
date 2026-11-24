@@ -23,10 +23,10 @@ uint16_t MwEnterCampaignPlanetHub(uint16_t entryOffset)
 {
     if (entryOffset==CAMPAIGN_CONTINUE_HUB_MENU) goto selectHubMenu;
     if (entryOffset!=CAMPAIGN_CONTINUE_PLANET_HUB) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: entryOffset!=CAMPAIGN_CONTINUE_PLANET_HUB");
-    companyMenuSelectedRow=0;
+    campaignUi.companyMenuSelectedRow=0;
     unitInspectionContextCode=UINT16_MAX;
-    barMenuSelectedRow=UINT16_MAX;
-    optionsMenuSelection=0;
+    campaignUi.barMenuSelectedRow=UINT16_MAX;
+    campaignUi.optionsMenuSelection=0;
     if (!campaignStopMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStopMusic");
     campaignStopMusic();
     EgaSelectFont(0);
@@ -59,10 +59,10 @@ uint16_t MwEnterCampaignPlanetHub(uint16_t entryOffset)
 selectHubMenu:
     planetArrivalEventsPending=0; /* AFTER dispatch/choice return. */
     MwUiMenu *menu;
-    if (acceptedContractActive) menu=&contractHubMenu;
-    else if (currentPlanetFacilityDisplayFlag) menu=&planetHubMenu;
-    else menu=&remotePlanetHubMenu;
-    MwSelectUiRecordTable(hubSelectedRecordIndex,menu);
+    if (acceptedContractActive) menu=&campaignUi.contractHubMenu;
+    else if (currentPlanetFacilityDisplayFlag) menu=&campaignUi.planetHubMenu;
+    else menu=&campaignUi.remotePlanetHubMenu;
+    MwSelectUiRecordTable(campaignUi.hubSelectedRecordIndex,menu);
     return CAMPAIGN_CONTINUE_UI;
 }
 

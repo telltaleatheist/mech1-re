@@ -24,13 +24,13 @@ uint16_t MwCampaignUiEventLoop(void)
 {
     for (;;)
     {
-        if (uiIdleCodeOffset!=0)
+        if (campaignUi.uiIdleCodeOffset!=0)
         {
-            if (uiIdleCodeOffset==CAMPAIGN_CALLBACK_MECH_SERVICE_IDLE) MwAnimateMechServiceIdle();
+            if (campaignUi.uiIdleCodeOffset==CAMPAIGN_CALLBACK_MECH_SERVICE_IDLE) MwAnimateMechServiceIdle();
             else
             {
                 if (!campaignNearCallback) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignNearCallback");
-                campaignNearCallback(uiIdleCodeOffset);
+                campaignNearCallback(campaignUi.uiIdleCodeOffset);
             }
         }
         uint16_t key;
@@ -48,7 +48,7 @@ uint16_t MwCampaignUiEventLoop(void)
             uint16_t codeOffset=record->activateCodeOffset;
             if (codeOffset==0) continue;
             MwFlashActivatedUiRecord(record);
-            uiSelectionChangedCodeOffset=0;uiIdleCodeOffset=0;
+            campaignUi.uiSelectionChangedCodeOffset=0;campaignUi.uiIdleCodeOffset=0;
             do
             {
                 switch (codeOffset)
@@ -197,16 +197,16 @@ uint16_t MwCampaignUiEventLoop(void)
 /* MW_MAIN081B:0A3C..0A50 falls through0A51, no additional native frame. */
 void MwDrawPicturePanelBorder(uint16_t x, uint16_t y, uint16_t width, uint16_t height)
 {
-    panelOriginX = x; panelOriginY = y;
-    panelWidth = width; panelHeight = height;
-    panelBorderPictureBase = 0;
+    campaignUi.panelOriginX = x; campaignUi.panelOriginY = y;
+    campaignUi.panelWidth = width; campaignUi.panelHeight = height;
+    campaignUi.panelBorderPictureBase = 0;
     MwDrawStoredPicturePanelBorder();
 }
 
 /* MW_MAIN081B:0A4B shared CALL target, also fallthrough from0A3C. */
 void MwDrawStoredStandardPanelBorder(void)
 {
-    panelBorderPictureBase=0;
+    campaignUi.panelBorderPictureBase=0;
     MwDrawStoredPicturePanelBorder();
 }
 
@@ -214,63 +214,63 @@ void MwDrawStoredStandardPanelBorder(void)
  * not another source method. No caller return-IP is inspected in this tail. */
 void MwDrawStoredPicturePanelBorder(void)
 {
-    if (panelWidth < PANEL_HORIZONTAL_TILE_PIXELS) return;
-    uint16_t horizontalTiles = panelWidth / PANEL_HORIZONTAL_TILE_PIXELS;
+    if (campaignUi.panelWidth < PANEL_HORIZONTAL_TILE_PIXELS) return;
+    uint16_t horizontalTiles = campaignUi.panelWidth / PANEL_HORIZONTAL_TILE_PIXELS;
     if (horizontalTiles > UINT8_MAX) /* Port emulation of a native CPU fault. */ MW_NATIVE_FAULT("Rejected condition: horizontalTiles > UINT8_MAX"); /* Native DIV BL faults before drawing. */
-    uint16_t x = panelOriginX, tilesRemaining = horizontalTiles;
+    uint16_t x = campaignUi.panelOriginX, tilesRemaining = horizontalTiles;
     do
     {
-        MwDrawGeneralPicture(x,panelOriginY,EGA_DISPLAY_PAGE,panelBorderPictureBase + PANEL_TOP_TILE);
+        MwDrawGeneralPicture(x,campaignUi.panelOriginY,EGA_DISPLAY_PAGE,campaignUi.panelBorderPictureBase + PANEL_TOP_TILE);
         x += PANEL_HORIZONTAL_TILE_PIXELS;
     } while (--tilesRemaining != 0);
-    MwDrawGeneralPicture((uint16_t)(panelOriginX + panelWidth - PANEL_HORIZONTAL_TILE_PIXELS),
-        panelOriginY,EGA_DISPLAY_PAGE,panelBorderPictureBase + PANEL_TOP_TILE);
-    x = panelOriginX; tilesRemaining = horizontalTiles;
+    MwDrawGeneralPicture((uint16_t)(campaignUi.panelOriginX + campaignUi.panelWidth - PANEL_HORIZONTAL_TILE_PIXELS),
+        campaignUi.panelOriginY,EGA_DISPLAY_PAGE,campaignUi.panelBorderPictureBase + PANEL_TOP_TILE);
+    x = campaignUi.panelOriginX; tilesRemaining = horizontalTiles;
     do
     {
-        MwDrawGeneralPicture(x,(uint16_t)(panelOriginY + panelHeight - PANEL_BOTTOM_EDGE_INSET),
-            EGA_DISPLAY_PAGE,panelBorderPictureBase + PANEL_BOTTOM_TILE);
+        MwDrawGeneralPicture(x,(uint16_t)(campaignUi.panelOriginY + campaignUi.panelHeight - PANEL_BOTTOM_EDGE_INSET),
+            EGA_DISPLAY_PAGE,campaignUi.panelBorderPictureBase + PANEL_BOTTOM_TILE);
         x += PANEL_HORIZONTAL_TILE_PIXELS;
     } while (--tilesRemaining != 0);
-    MwDrawGeneralPicture((uint16_t)(panelOriginX + panelWidth - PANEL_HORIZONTAL_TILE_PIXELS),
-        (uint16_t)(panelOriginY + panelHeight - PANEL_BOTTOM_EDGE_INSET),
-        EGA_DISPLAY_PAGE,panelBorderPictureBase + PANEL_BOTTOM_TILE);
-    if (panelHeight < PANEL_VERTICAL_TILE_PIXELS) return;
-    uint16_t verticalTiles = panelHeight / PANEL_VERTICAL_TILE_PIXELS;
+    MwDrawGeneralPicture((uint16_t)(campaignUi.panelOriginX + campaignUi.panelWidth - PANEL_HORIZONTAL_TILE_PIXELS),
+        (uint16_t)(campaignUi.panelOriginY + campaignUi.panelHeight - PANEL_BOTTOM_EDGE_INSET),
+        EGA_DISPLAY_PAGE,campaignUi.panelBorderPictureBase + PANEL_BOTTOM_TILE);
+    if (campaignUi.panelHeight < PANEL_VERTICAL_TILE_PIXELS) return;
+    uint16_t verticalTiles = campaignUi.panelHeight / PANEL_VERTICAL_TILE_PIXELS;
     if (verticalTiles > UINT8_MAX) /* Port emulation of a native CPU fault. */ MW_NATIVE_FAULT("Rejected condition: verticalTiles > UINT8_MAX"); /* Horizontal writes survive native DIV fault. */
-    uint16_t y = panelOriginY; tilesRemaining = verticalTiles;
+    uint16_t y = campaignUi.panelOriginY; tilesRemaining = verticalTiles;
     do
     {
-        MwDrawGeneralPicture(panelOriginX,y,EGA_DISPLAY_PAGE,panelBorderPictureBase + PANEL_LEFT_TILE);
+        MwDrawGeneralPicture(campaignUi.panelOriginX,y,EGA_DISPLAY_PAGE,campaignUi.panelBorderPictureBase + PANEL_LEFT_TILE);
         y += PANEL_VERTICAL_TILE_PIXELS;
     } while (--tilesRemaining != 0);
-    MwDrawGeneralPicture(panelOriginX,(uint16_t)(panelOriginY + panelHeight - PANEL_VERTICAL_TILE_PIXELS),
-        EGA_DISPLAY_PAGE,panelBorderPictureBase + PANEL_LEFT_TILE);
-    y = panelOriginY; tilesRemaining = verticalTiles;
+    MwDrawGeneralPicture(campaignUi.panelOriginX,(uint16_t)(campaignUi.panelOriginY + campaignUi.panelHeight - PANEL_VERTICAL_TILE_PIXELS),
+        EGA_DISPLAY_PAGE,campaignUi.panelBorderPictureBase + PANEL_LEFT_TILE);
+    y = campaignUi.panelOriginY; tilesRemaining = verticalTiles;
     do
     {
-        MwDrawGeneralPicture((uint16_t)(panelOriginX + panelWidth - PANEL_RIGHT_EDGE_INSET),y,
-            EGA_DISPLAY_PAGE,panelBorderPictureBase + PANEL_RIGHT_TILE);
+        MwDrawGeneralPicture((uint16_t)(campaignUi.panelOriginX + campaignUi.panelWidth - PANEL_RIGHT_EDGE_INSET),y,
+            EGA_DISPLAY_PAGE,campaignUi.panelBorderPictureBase + PANEL_RIGHT_TILE);
         y += PANEL_VERTICAL_TILE_PIXELS;
     } while (--tilesRemaining != 0);
-    MwDrawGeneralPicture((uint16_t)(panelOriginX + panelWidth - PANEL_RIGHT_EDGE_INSET),
-        (uint16_t)(panelOriginY + panelHeight - PANEL_VERTICAL_TILE_PIXELS),
-        EGA_DISPLAY_PAGE,panelBorderPictureBase + PANEL_RIGHT_TILE);
-    MwDrawGeneralPicture(panelOriginX,panelOriginY,EGA_DISPLAY_PAGE,panelBorderPictureBase + PANEL_TOP_LEFT);
-    MwDrawGeneralPicture(panelOriginX,(uint16_t)(panelOriginY + panelHeight - PANEL_BOTTOM_CORNER_INSET),
-        EGA_DISPLAY_PAGE,panelBorderPictureBase + PANEL_BOTTOM_LEFT);
-    MwDrawGeneralPicture((uint16_t)(panelOriginX + panelWidth - PANEL_RIGHT_CORNER_INSET),panelOriginY,
-        EGA_DISPLAY_PAGE,panelBorderPictureBase + PANEL_TOP_RIGHT);
-    MwDrawGeneralPicture((uint16_t)(panelOriginX + panelWidth - PANEL_RIGHT_CORNER_INSET),
-        (uint16_t)(panelOriginY + panelHeight - PANEL_BOTTOM_CORNER_INSET),
-        EGA_DISPLAY_PAGE,panelBorderPictureBase + PANEL_BOTTOM_RIGHT);
+    MwDrawGeneralPicture((uint16_t)(campaignUi.panelOriginX + campaignUi.panelWidth - PANEL_RIGHT_EDGE_INSET),
+        (uint16_t)(campaignUi.panelOriginY + campaignUi.panelHeight - PANEL_VERTICAL_TILE_PIXELS),
+        EGA_DISPLAY_PAGE,campaignUi.panelBorderPictureBase + PANEL_RIGHT_TILE);
+    MwDrawGeneralPicture(campaignUi.panelOriginX,campaignUi.panelOriginY,EGA_DISPLAY_PAGE,campaignUi.panelBorderPictureBase + PANEL_TOP_LEFT);
+    MwDrawGeneralPicture(campaignUi.panelOriginX,(uint16_t)(campaignUi.panelOriginY + campaignUi.panelHeight - PANEL_BOTTOM_CORNER_INSET),
+        EGA_DISPLAY_PAGE,campaignUi.panelBorderPictureBase + PANEL_BOTTOM_LEFT);
+    MwDrawGeneralPicture((uint16_t)(campaignUi.panelOriginX + campaignUi.panelWidth - PANEL_RIGHT_CORNER_INSET),campaignUi.panelOriginY,
+        EGA_DISPLAY_PAGE,campaignUi.panelBorderPictureBase + PANEL_TOP_RIGHT);
+    MwDrawGeneralPicture((uint16_t)(campaignUi.panelOriginX + campaignUi.panelWidth - PANEL_RIGHT_CORNER_INSET),
+        (uint16_t)(campaignUi.panelOriginY + campaignUi.panelHeight - PANEL_BOTTOM_CORNER_INSET),
+        EGA_DISPLAY_PAGE,campaignUi.panelBorderPictureBase + PANEL_BOTTOM_RIGHT);
 }
 /* MW_MAIN081B:0BF2..0C09; JMP0A51 retains the original caller's return. */
 void MwDrawAlternatePicturePanelBorder(uint16_t x, uint16_t y, uint16_t width, uint16_t height)
 {
-    panelBorderPictureBase = PANEL_ALTERNATE_PICTURE_BASE;
-    panelOriginX = x; panelOriginY = y;
-    panelWidth = width; panelHeight = height;
+    campaignUi.panelBorderPictureBase = PANEL_ALTERNATE_PICTURE_BASE;
+    campaignUi.panelOriginX = x; campaignUi.panelOriginY = y;
+    campaignUi.panelWidth = width; campaignUi.panelHeight = height;
     MwDrawStoredPicturePanelBorder();
 }
 
@@ -279,61 +279,61 @@ void MwDrawAlternatePicturePanelBorder(uint16_t x, uint16_t y, uint16_t width, u
 MwTextPanelReturn MwShowMonospaceTextPanel(uint16_t insetX, uint16_t insetY,
     uint16_t columns, uint16_t rows, const MwNativeByteView *text, uint16_t textOffset)
 {
-    textPanelFont = TEXT_PANEL_MONOSPACE_FONT;
-    textPanelInsetX = insetX; textPanelInsetY = insetY;
-    textPanelWidthPixels = (uint16_t)(columns << 3);
-    textPanelHeightPixels = (uint16_t)(rows << 3);
+    campaignUi.textPanelFont = TEXT_PANEL_MONOSPACE_FONT;
+    campaignUi.textPanelInsetX = insetX; campaignUi.textPanelInsetY = insetY;
+    campaignUi.textPanelWidthPixels = (uint16_t)(columns << 3);
+    campaignUi.textPanelHeightPixels = (uint16_t)(rows << 3);
     return MwCenterAndShowTextPanel(text,textOffset);
 }
 /* MW_MAIN081B:0EF1..0F25. ES:DI text, not DS:DI. */
 MwTextPanelReturn MwShowCompactTextPanel(uint16_t insetX, uint16_t insetY,
     uint16_t columns, uint16_t rows, const MwNativeByteView *text, uint16_t textOffset)
 {
-    textPanelFont = TEXT_PANEL_COMPACT_FONT;
-    textPanelInsetX = insetX; textPanelInsetY = insetY;
-    textPanelWidthPixels = (uint16_t)(columns << 1);
-    textPanelWidthPixels += (uint16_t)(columns << 2);
-    textPanelHeightPixels = rows;
-    textPanelHeightPixels += (uint16_t)(rows << 1);
-    textPanelHeightPixels += (uint16_t)(rows << 2);
+    campaignUi.textPanelFont = TEXT_PANEL_COMPACT_FONT;
+    campaignUi.textPanelInsetX = insetX; campaignUi.textPanelInsetY = insetY;
+    campaignUi.textPanelWidthPixels = (uint16_t)(columns << 1);
+    campaignUi.textPanelWidthPixels += (uint16_t)(columns << 2);
+    campaignUi.textPanelHeightPixels = rows;
+    campaignUi.textPanelHeightPixels += (uint16_t)(rows << 1);
+    campaignUi.textPanelHeightPixels += (uint16_t)(rows << 2);
     return MwCenterAndShowTextPanel(text,textOffset);
 }
 /* MW_MAIN081B:0F43..1031 shared continuation.0F55/0F5C are interior labels,
  * not callable helpers. The C boundary projects the common fallthrough only. */
 MwTextPanelReturn MwCenterAndShowTextPanel(const MwNativeByteView *text, uint16_t textOffset)
 {
-    textPanelOriginX = (uint16_t)(EGA_COLUMNS - textPanelWidthPixels) >> 1;
-    uint16_t y = textPanelYOverride;
-    if (y == 0) y = (uint16_t)(EGA_ROWS - textPanelHeightPixels) >> 1;
-    textPanelYOverride = 0;
-    textPanelOriginY = y;
-    EgaCopyDisplayToDrawPage(textPanelOriginX,textPanelOriginY,
-        (uint16_t)(textPanelWidthPixels + TEXT_PANEL_CAPTURE_MARGIN),textPanelHeightPixels);
-    EgaFillDisplayPageRectangle(textPanelOriginX,textPanelOriginY,
-        textPanelWidthPixels,textPanelHeightPixels,TEXT_PANEL_BACKGROUND);
-    MwDrawPicturePanelBorder(textPanelOriginX,textPanelOriginY,
-        textPanelWidthPixels,textPanelHeightPixels);
-    textPanelPreviousFont = EgaGetFontIndex();
-    EgaSelectFont(textPanelFont);
-    uint16_t textX = textPanelOriginX + textPanelInsetX;
-    uint16_t textY = textPanelOriginY + textPanelInsetY;
-    if (textPanelFont == TEXT_PANEL_COMPACT_FONT)
+    campaignUi.textPanelOriginX = (uint16_t)(EGA_COLUMNS - campaignUi.textPanelWidthPixels) >> 1;
+    uint16_t y = campaignUi.textPanelYOverride;
+    if (y == 0) y = (uint16_t)(EGA_ROWS - campaignUi.textPanelHeightPixels) >> 1;
+    campaignUi.textPanelYOverride = 0;
+    campaignUi.textPanelOriginY = y;
+    EgaCopyDisplayToDrawPage(campaignUi.textPanelOriginX,campaignUi.textPanelOriginY,
+        (uint16_t)(campaignUi.textPanelWidthPixels + TEXT_PANEL_CAPTURE_MARGIN),campaignUi.textPanelHeightPixels);
+    EgaFillDisplayPageRectangle(campaignUi.textPanelOriginX,campaignUi.textPanelOriginY,
+        campaignUi.textPanelWidthPixels,campaignUi.textPanelHeightPixels,TEXT_PANEL_BACKGROUND);
+    MwDrawPicturePanelBorder(campaignUi.textPanelOriginX,campaignUi.textPanelOriginY,
+        campaignUi.textPanelWidthPixels,campaignUi.textPanelHeightPixels);
+    campaignUi.textPanelPreviousFont = EgaGetFontIndex();
+    EgaSelectFont(campaignUi.textPanelFont);
+    uint16_t textX = campaignUi.textPanelOriginX + campaignUi.textPanelInsetX;
+    uint16_t textY = campaignUi.textPanelOriginY + campaignUi.textPanelInsetY;
+    if (campaignUi.textPanelFont == TEXT_PANEL_COMPACT_FONT)
         textOffset = EgaDrawTextWithLineSpacing(textX,textY,TEXT_PANEL_FOREGROUND,text,textOffset);
     else textOffset = EgaDrawTransparentText(textX,textY,TEXT_PANEL_FOREGROUND,text,textOffset);
-    EgaSelectFont(textPanelPreviousFont);
-    if (textPanelContinuationMode == TEXT_PANEL_MODE_DISCARD_RETURN)
+    EgaSelectFont(campaignUi.textPanelPreviousFont);
+    if (campaignUi.textPanelContinuationMode == TEXT_PANEL_MODE_DISCARD_RETURN)
     {
-        textPanelContinuationMode = 0;
+        campaignUi.textPanelContinuationMode = 0;
         MwTextPanelReturn result = { textOffset,
-            (uint16_t)(textPanelOriginX + textPanelInsetX),
-            (uint16_t)(textPanelOriginY + textPanelInsetY),true };
+            (uint16_t)(campaignUi.textPanelOriginX + campaignUi.textPanelInsetX),
+            (uint16_t)(campaignUi.textPanelOriginY + campaignUi.textPanelInsetY),true };
         return result; /* Native POP DI / POP AX / RET skips the saved return word. */
     }
-    if (textPanelContinuationMode != TEXT_PANEL_MODE_LEAVE_VISIBLE)
+    if (campaignUi.textPanelContinuationMode != TEXT_PANEL_MODE_LEAVE_VISIBLE)
     {
         MwWaitForInputAcknowledgment();
-        EgaCopyDrawPageToDisplay(textPanelOriginX,textPanelOriginY,
-            (uint16_t)(textPanelWidthPixels + TEXT_PANEL_CAPTURE_MARGIN),textPanelHeightPixels);
+        EgaCopyDrawPageToDisplay(campaignUi.textPanelOriginX,campaignUi.textPanelOriginY,
+            (uint16_t)(campaignUi.textPanelWidthPixels + TEXT_PANEL_CAPTURE_MARGIN),campaignUi.textPanelHeightPixels);
     }
     MwTextPanelReturn result = { textOffset, textX, textY, false };
     return result;
@@ -342,8 +342,8 @@ MwTextPanelReturn MwCenterAndShowTextPanel(const MwNativeByteView *text, uint16_
 /* MW_MAIN081B:1032..104B. Close the live text panel, not a copied dialog. */
 void MwRestoreSavedTextPanelRegion(void)
 {
-    EgaCopyDrawPageToDisplay(textPanelOriginX,textPanelOriginY,
-        textPanelWidthPixels+TEXT_PANEL_CAPTURE_MARGIN,textPanelHeightPixels);
+    EgaCopyDrawPageToDisplay(campaignUi.textPanelOriginX,campaignUi.textPanelOriginY,
+        campaignUi.textPanelWidthPixels+TEXT_PANEL_CAPTURE_MARGIN,campaignUi.textPanelHeightPixels);
 }
 
 /* MW_MAIN081B:6122..6152. Four fixed slots, clear only after actual display.
@@ -353,11 +353,11 @@ void MwShowPendingNotifications(void)
     for (uint16_t slot = 0; slot < CAMPAIGN_NOTIFICATION_COUNT; ++slot)
     {
         if (notificationPending[slot] == 0) continue;
-        MwNativeByteView text = { notificationTextStorage, NOTIFICATION_TEXT_START,
-            sizeof(notificationTextStorage) };
-        MwTextPanelReturn result = MwShowMonospaceTextPanel(notificationTextInsetX[slot],
-            notificationTextInsetY[slot],notificationColumns[slot],notificationRows[slot],
-            &text,notificationTextOffsets[slot]);
+        MwNativeByteView text = { campaignUi.notificationTextStorage, NOTIFICATION_TEXT_START,
+            sizeof(campaignUi.notificationTextStorage) };
+        MwTextPanelReturn result = MwShowMonospaceTextPanel(campaignUi.notificationTextInsetX[slot],
+            campaignUi.notificationTextInsetY[slot],campaignUi.notificationColumns[slot],campaignUi.notificationRows[slot],
+            &text,campaignUi.notificationTextOffsets[slot]);
         /* Native mode1 would RET through the saved slot WORD instead of6146.
          * That startup/code continuation is outside this compiled slice. */
         if (result.discardReturnWord) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: result.discardReturnWord");
@@ -367,22 +367,22 @@ void MwShowPendingNotifications(void)
 /* MW_MAIN081B:07FE..0811 falls0812; reset preserves incoming AX/SI. */
 uint16_t MwSelectUiRecordTable(uint16_t selectedIndex, MwUiMenu *menu)
 {
-    if (mouseInstalled != 0)
+    if (campaignInput.mouseInstalled != 0)
     {
         if (mwCampaignInput.resetMouse == NULL) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mwCampaignInput.resetMouse == NULL");
         mwCampaignInput.resetMouse();
     }
-    uiMenu = menu;
+    campaignUi.uiMenu = menu;
     return MwSelectUiRecord(selectedIndex);
 }
 /* MW_MAIN081B:0812..0837. Selection callback is loaded AFTER drawing. The C
  * result transports only598A's native nonlocal exits; ordinary RET is zero. */
 uint16_t MwSelectUiRecord(uint16_t selectedIndex)
 {
-    selectedUiRecordIndex = selectedIndex;
+    campaignUi.selectedUiRecordIndex = selectedIndex;
     const MwUiRecord *record = MwGetSelectedUiRecord();
     MwCaptureAndDrawUiRecord(record->x,record->y,record->pictureIndex,record);
-    uint16_t callback = uiSelectionChangedCodeOffset;
+    uint16_t callback = campaignUi.uiSelectionChangedCodeOffset;
     if (callback != 0)
     {
         if (callback==CAMPAIGN_CALLBACK_REFRESH_COMPONENT_QUOTE) MwRefreshSelectedComponentRepairQuote();
@@ -429,39 +429,39 @@ void MwPresentUiRecord(uint16_t x, uint16_t y, const MwUiRecord *record)
  * aliases are an unconverted boundary, never an out-of-bounds C pointer. */
 MwUiRecord *MwGetSelectedUiRecord(void)
 {
-    uint16_t byteOffset = selectedUiRecordIndex * CAMPAIGN_UI_RECORD_BYTES;
-    if (!uiMenu || byteOffset % CAMPAIGN_UI_RECORD_BYTES != 0
-        || byteOffset / CAMPAIGN_UI_RECORD_BYTES >= uiMenu->recordCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !uiMenu || byteOffset % CAMPAIGN_UI_RECORD_BYTES != 0 || byteOffset / CAMPAIGN_UI_RECORD_BYTES >= uiMenu->recordCount");
-    return &uiMenu->records[byteOffset / CAMPAIGN_UI_RECORD_BYTES];
+    uint16_t byteOffset = campaignUi.selectedUiRecordIndex * CAMPAIGN_UI_RECORD_BYTES;
+    if (!campaignUi.uiMenu || byteOffset % CAMPAIGN_UI_RECORD_BYTES != 0
+        || byteOffset / CAMPAIGN_UI_RECORD_BYTES >= campaignUi.uiMenu->recordCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !uiMenu || byteOffset % CAMPAIGN_UI_RECORD_BYTES != 0 || byteOffset / CAMPAIGN_UI_RECORD_BYTES >= uiMenu->recordCount");
+    return &campaignUi.uiMenu->records[byteOffset / CAMPAIGN_UI_RECORD_BYTES];
 }
 /* MW_MAIN081B:0960..0979. FF probing precedes the caller's sentinel test. */
 bool MwIsUiRecordDisabled(uint16_t recordIndex)
 {
     if (recordIndex==UI_NO_NEIGHBOUR)
     {
-        if (uiMenu->sentinelEnabled) return *uiMenu->sentinelEnabled==0;
-        if (!uiMenu->sentinelEnabledWord) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !uiMenu->sentinelEnabledWord");
-        return (uint8_t)(*uiMenu->sentinelEnabledWord>>uiMenu->sentinelEnabledShift)==0;
+        if (campaignUi.uiMenu->sentinelEnabled) return *campaignUi.uiMenu->sentinelEnabled==0;
+        if (!campaignUi.uiMenu->sentinelEnabledWord) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !uiMenu->sentinelEnabledWord");
+        return (uint8_t)(*campaignUi.uiMenu->sentinelEnabledWord>>campaignUi.uiMenu->sentinelEnabledShift)==0;
     }
     uint16_t byteOffset=recordIndex*CAMPAIGN_UI_RECORD_BYTES;
-    if (byteOffset%CAMPAIGN_UI_RECORD_BYTES!=0 || byteOffset/CAMPAIGN_UI_RECORD_BYTES>=uiMenu->recordCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: byteOffset%CAMPAIGN_UI_RECORD_BYTES!=0 || byteOffset/CAMPAIGN_UI_RECORD_BYTES>=uiMenu->recordCount");
-    return uiMenu->records[byteOffset/CAMPAIGN_UI_RECORD_BYTES].enabled==0;
+    if (byteOffset%CAMPAIGN_UI_RECORD_BYTES!=0 || byteOffset/CAMPAIGN_UI_RECORD_BYTES>=campaignUi.uiMenu->recordCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: byteOffset%CAMPAIGN_UI_RECORD_BYTES!=0 || byteOffset/CAMPAIGN_UI_RECORD_BYTES>=uiMenu->recordCount");
+    return campaignUi.uiMenu->records[byteOffset/CAMPAIGN_UI_RECORD_BYTES].enabled==0;
 }
 /* MW_MAIN081B:097A..09B1. Retain tick equality and live fields after waits. */
 void MwFlashActivatedUiRecord(const MwUiRecord *record)
 {
     for (uint16_t flashesRemaining = UI_ACTIVATION_FLASH_COUNT; flashesRemaining != 0; --flashesRemaining)
     {
-        uint16_t targetTick = campaignTimerTicks + UI_FLASH_FIRST_WAIT_TICKS;
+        uint16_t targetTick = campaignInput.campaignTimerTicks + UI_FLASH_FIRST_WAIT_TICKS;
         MwPresentUiRecord(record->x,record->y,record);
-        while (campaignTimerTicks != targetTick)
+        while (campaignInput.campaignTimerTicks != targetTick)
         {
             if (mwCampaignInput.waitForInterrupt == NULL) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mwCampaignInput.waitForInterrupt == NULL");
             mwCampaignInput.waitForInterrupt();
         }
         targetTick++;
         MwCaptureAndDrawUiRecord(record->x,record->y,record->pictureIndex,record);
-        while (campaignTimerTicks != targetTick)
+        while (campaignInput.campaignTimerTicks != targetTick)
         {
             if (mwCampaignInput.waitForInterrupt == NULL) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mwCampaignInput.waitForInterrupt == NULL");
             mwCampaignInput.waitForInterrupt();

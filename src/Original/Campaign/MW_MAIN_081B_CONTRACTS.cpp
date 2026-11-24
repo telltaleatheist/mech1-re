@@ -24,7 +24,7 @@ uint16_t MwEnterContractOfficeContinuation(uint16_t entryOffset)
     if (entryOffset==CAMPAIGN_CONTINUE_CONTRACT_OFFICE_MENU) goto officeMenu;
     if (entryOffset==CAMPAIGN_CONTINUE_CONTRACT_OFFICE) MwAdvanceCampaignTimeAndChargeWages(1);
     else if (entryOffset!=CAMPAIGN_CONTINUE_CONTRACT_OFFICE_REDRAW) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: entryOffset!=CAMPAIGN_CONTINUE_CONTRACT_OFFICE_REDRAW");
-    hubSelectedRecordIndex=CONTRACT_OFFICE_HUB_ROW;
+    campaignUi.hubSelectedRecordIndex=CONTRACT_OFFICE_HUB_ROW;
     EgaSelectFont(CONTRACT_OFFICE_FONT);
     MwLoadIndexedPicture((uint16_t)(CONTRACT_OFFICE_EMBLEM_BASE+currentPlanetHouseIndex));
     MwDrawCampaignFramedBackground();

@@ -17,8 +17,6 @@ enum { COMMANDER_ROSTER_SLOT=0, FIRST_HIRED_PILOT_SLOT=1,
     PILOT_CARD_COMMANDER_PICTURE=0x16, PILOT_CARD_LABEL_PICTURE=0x1A,
     PILOT_ASSIGNMENT_NONE=0xFFFF, PILOT_ASSIGNMENT_DISMISS=0xFFFE,
     PILOT_CARD_BACKGROUND=Campaign_Pal_EGA_DarkGrey, PILOT_CARD_TEXT_COLOUR=Campaign_Pal_EGA_LightGrey };
-
-extern uint16_t companyMenuSelectedRow,barMenuSelectedRow;
 extern MwPanelDescriptor companyMenuPanel,commanderProfilePanel;
 extern MwPanelDescriptor crewLabelsPanel,barMenuPanel,recruitInterviewPanel;
 extern MwUiMenu companyMenu,crewMenu,barMenu,recruitInterviewMenu;

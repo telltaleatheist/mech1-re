@@ -55,47 +55,47 @@ int main() {
   // The campaign: detection, then the calibration screen with the stick centred.
   sticks[0] = MwJoystickState{false, 0, 0, false, false};
   MwDetectMouseAndJoystick();
-  Check(joystickInstalled == 0 && mouseInstalled == 0, "no joystick connected: none installed");
+  Check(campaignInput.joystickInstalled == 0 && campaignInput.mouseInstalled == 0, "no joystick connected: none installed");
   sticks[0] = Stick(0, 0);
   MwDetectMouseAndJoystick();
-  Check(joystickInstalled == 1, "a connected joystick is installed");
+  Check(campaignInput.joystickInstalled == 1, "a connected joystick is installed");
   MwCalibrateJoystickA();
-  Check(joystickCentreX == 127 && joystickCentreY == 127, "calibrated centred: the centre is 127");
-  Check(joystickXLow == 102 && joystickXHigh == 152 && joystickXFarLow == 52 && joystickXFarHigh == 202,
+  Check(campaignInput.joystickCentreX == 127 && campaignInput.joystickCentreY == 127, "calibrated centred: the centre is 127");
+  Check(campaignInput.joystickXLow == 102 && campaignInput.joystickXHigh == 152 && campaignInput.joystickXFarLow == 52 && campaignInput.joystickXFarHigh == 202,
         "the thresholds the game derives: a fifth of the centre each way, three fifths for far");
 
   CampaignAt(0, 0);
-  Check(joystickDirection == JOYSTICK_CENTRED && joystickDeflection == JOYSTICK_DEFLECTION_NEAR, "centred");
+  Check(campaignInput.joystickDirection == JOYSTICK_CENTRED && campaignInput.joystickDeflection == JOYSTICK_DEFLECTION_NEAR, "centred");
   CampaignAt(-127, 0);
-  Check(joystickDirection == JOYSTICK_LEFT && joystickDeflection == JOYSTICK_DEFLECTION_FAR, "full left: left, far");
+  Check(campaignInput.joystickDirection == JOYSTICK_LEFT && campaignInput.joystickDeflection == JOYSTICK_DEFLECTION_FAR, "full left: left, far");
   CampaignAt(127, 0);
-  Check(joystickDirection == JOYSTICK_RIGHT && joystickDeflection == JOYSTICK_DEFLECTION_FAR, "full right: right, far");
+  Check(campaignInput.joystickDirection == JOYSTICK_RIGHT && campaignInput.joystickDeflection == JOYSTICK_DEFLECTION_FAR, "full right: right, far");
   CampaignAt(0, -127);
-  Check(joystickDirection == JOYSTICK_UP && joystickDeflection == JOYSTICK_DEFLECTION_FAR, "full up: up, far");
+  Check(campaignInput.joystickDirection == JOYSTICK_UP && campaignInput.joystickDeflection == JOYSTICK_DEFLECTION_FAR, "full up: up, far");
   CampaignAt(127, 127);
-  Check(joystickDirection == JOYSTICK_DOWN_RIGHT && joystickDeflection == JOYSTICK_DEFLECTION_FAR, "down right");
+  Check(campaignInput.joystickDirection == JOYSTICK_DOWN_RIGHT && campaignInput.joystickDeflection == JOYSTICK_DEFLECTION_FAR, "down right");
   CampaignAt(-30, 0);
-  Check(joystickDirection == JOYSTICK_LEFT && joystickDeflection == JOYSTICK_DEFLECTION_NEAR, "a little left: left, near");
+  Check(campaignInput.joystickDirection == JOYSTICK_LEFT && campaignInput.joystickDeflection == JOYSTICK_DEFLECTION_NEAR, "a little left: left, near");
   CampaignAt(-25, 25);
-  Check(joystickDirection == JOYSTICK_CENTRED, "within a fifth: centred");
+  Check(campaignInput.joystickDirection == JOYSTICK_CENTRED, "within a fifth: centred");
 
   // Buttons: a press is counted once, when it starts.
   sticks[0] = Stick(0, 0);
   MwPollJoystickA();
   sticks[0] = Stick(0, 0, true);
   MwPollJoystickA();
-  Check(joystickButtonOnePressed == 1 && joystickButtonTwoPressed == 0, "button one pressed");
+  Check(campaignInput.joystickButtonOnePressed == 1 && campaignInput.joystickButtonTwoPressed == 0, "button one pressed");
   MwPollJoystickA();
-  Check(joystickButtonOnePressed == 0, "button one held: no new press");
+  Check(campaignInput.joystickButtonOnePressed == 0, "button one held: no new press");
   sticks[0] = Stick(0, 0, false, true);
   MwPollJoystickA();
-  Check(joystickButtonOnePressed == 0 && joystickButtonTwoPressed == 1, "button two pressed");
+  Check(campaignInput.joystickButtonOnePressed == 0 && campaignInput.joystickButtonTwoPressed == 1, "button two pressed");
 
   // Calibrated while held full right: the game takes that as the centre.
   sticks[0] = Stick(127, 0);
   MwCalibrateJoystickA();
   CampaignAt(0, 0);
-  Check(joystickCentreX == 254 && joystickDirection == JOYSTICK_LEFT && joystickDeflection == JOYSTICK_DEFLECTION_NEAR,
+  Check(campaignInput.joystickCentreX == 254 && campaignInput.joystickDirection == JOYSTICK_LEFT && campaignInput.joystickDeflection == JOYSTICK_DEFLECTION_NEAR,
         "calibrated full right, then centred: the game reads left, near");
   sticks[0] = Stick(0, 0);
   MwCalibrateJoystickA();

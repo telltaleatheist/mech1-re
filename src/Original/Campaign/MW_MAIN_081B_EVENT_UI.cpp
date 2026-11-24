@@ -16,7 +16,7 @@ enum { EVENT_PAGE_PANEL_X=0x001D, EVENT_PAGE_PANEL_Y=0x0017,
  * Without FF,6210 overwrites AX with1AA5 before the next-page test. */
 MwTextPanelReturn MwShowCampaignEventText(uint16_t textId)
 {
-    if (textId==8) textPanelYOverride=0x0082;
+    if (textId==8) campaignUi.textPanelYOverride=0x0082;
     if (textId>=EVENT_TEXT_DIRECTORY_COUNT || !eventTextRecords[textId]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: textId>=EVENT_TEXT_DIRECTORY_COUNT || !eventTextRecords[textId]"); /* Unrepresented zero-directory alias, not a native empty-text test. */
     const uint8_t *page=eventTextRecords[textId];
     MwNativeByteView text={eventTextStorage,EVENT_TEXT_STORAGE_START,sizeof(eventTextStorage)};
@@ -25,7 +25,7 @@ MwTextPanelReturn MwShowCampaignEventText(uint16_t textId)
         if (*page==EVENT_TEXT_PLACEHOLDER)
         {
             ++page;
-            textPanelContinuationMode=TEXT_PANEL_MODE_DISCARD_RETURN;
+            campaignUi.textPanelContinuationMode=TEXT_PANEL_MODE_DISCARD_RETURN;
         }
         const MwEventTextPageHeader *header=(const MwEventTextPageHeader *)page;
         eventTextRowCount=header->rowCount;

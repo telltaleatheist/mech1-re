@@ -25,7 +25,7 @@
 
 static_assert(sizeof(uint8_t) == 1, "Native BYTE width");
 static_assert(sizeof(uint16_t) == 2, "Native WORD width");
-uint8_t campaignTimerInhibited, campaignTimerByte;
+CampaignInputState campaignInput;
 char combatExecutableFilename[10];
 uint8_t deploymentResolvedWithoutCombat;
 char darkWingVictoryText[0x185];
@@ -49,45 +49,10 @@ const char *afterActionSuccessMessages[CAMPAIGN_HOUSE_COUNT]={afterActionKuritaS
     afterActionGeneralSuccess,afterActionGeneralSuccess,afterActionLiaoSuccess,afterActionGeneralSuccess};
 const char *settlementDeductionMessages[3]={settlementSupplyDeductionText,
     settlementPerformanceDeductionText,settlementTransportDeductionText};
-uint16_t campaignTimerTicks;
-uint8_t campaignTimerAlternatingPhase, campaignTimerPhaseTicks;
-uint8_t mouseInstalled, joystickInstalled, inputSinglePoll;
-uint16_t joystickDirection, joystickButtonOnePressed, joystickButtonTwoPressed;
-uint8_t joystickPreviousButtons;
-uint16_t joystickXCount, joystickYCount, joystickDeflection;
-uint16_t mouseMotionX,mouseMotionY;
-uint8_t joystickRepeatActive;
-uint16_t joystickRepeatDeadline,joystickNavigationKeys[9];
-uint16_t joystickCentreX,joystickCentreY;
-uint16_t joystickXDeflectionStep,joystickYDeflectionStep;
-uint16_t joystickXLow, joystickXHigh, joystickYLow, joystickYHigh;
-uint16_t joystickXFarLow, joystickXFarHigh, joystickYFarLow, joystickYFarHigh;
-
-/* Original UI tables occupy1083..1154 without an overlapping raw DS image.
- * Authored records/text still require native-image initialization. */
-MwUiRecord planetHubRecords[HUB_UI_RECORD_COUNT];
-MwUiRecord contractHubRecords[CONTRACT_HUB_UI_RECORD_COUNT];
-MwUiRecord remotePlanetHubRecords[HUB_UI_RECORD_COUNT];
-MwUiMenu *uiMenu;
-uint16_t selectedUiRecordIndex;
-uint16_t uiSelectionChangedCodeOffset, uiIdleCodeOffset;
-/* FF link probes are read BEFORE sentinel rejection. No invented early guard. */
-uint8_t hubFirstNavigationProbe,hubSecondNavigationProbe,hubThirdNavigationProbe;
-uint16_t panelOriginX, panelOriginY, panelWidth, panelHeight;
-uint16_t panelBorderPictureBase;
 uint16_t panelBorderEnabled;
 uint8_t commanderNameBytes[0x000A];
 uint16_t ownedAmmoKindsByGroup[(int)CAMPAIGN_AMMO_GROUPS * CAMPAIGN_OWNED_UNIT_SLOTS];
 uint16_t ownedAmmoQuantitiesByGroup[(int)CAMPAIGN_AMMO_GROUPS * CAMPAIGN_OWNED_UNIT_SLOTS];
-uint16_t textPanelInsetX, textPanelInsetY;
-uint16_t textPanelOriginX, textPanelOriginY;
-uint16_t textPanelWidthPixels, textPanelHeightPixels;
-uint16_t textPanelPreviousFont, textPanelFont;
-uint16_t textPanelContinuationMode, textPanelYOverride;
-uint16_t notificationTextInsetX[4], notificationTextInsetY[4];
-uint16_t notificationColumns[4], notificationRows[4];
-uint16_t notificationTextOffsets[4];
-uint8_t notificationTextStorage[NOTIFICATION_TEXT_END - NOTIFICATION_TEXT_START];
 
 /* Original 1090:016D. The allocator/loader assigns this selector later. */
 uint16_t compressedPictureBufferSelector;
@@ -349,10 +314,11 @@ char *repairWeaponLabels[CAMPAIGN_MECH_KIND_COUNT][CAMPAIGN_WEAPON_SLOTS+2];
 uint8_t *mechDiagramBodyDamage;
 MwMechDiagramRectangle *mechDiagramRectangle;
 MwMechBodyDiagramLayout *mechBodyDiagramLayoutsByKind[CAMPAIGN_MECH_KIND_COUNT];
-
-MwUiMenu planetHubMenu = { planetHubRecords, HUB_UI_RECORD_COUNT, &hubFirstNavigationProbe };
-MwUiMenu contractHubMenu = { contractHubRecords, CONTRACT_HUB_UI_RECORD_COUNT, &hubSecondNavigationProbe };
-MwUiMenu remotePlanetHubMenu = { remotePlanetHubRecords, HUB_UI_RECORD_COUNT, &hubThirdNavigationProbe };
+CampaignUiState campaignUi={
+    .planetHubMenu={ campaignUi.planetHubRecords, HUB_UI_RECORD_COUNT, &campaignUi.hubFirstNavigationProbe },
+    .contractHubMenu={ campaignUi.contractHubRecords, CONTRACT_HUB_UI_RECORD_COUNT, &campaignUi.hubSecondNavigationProbe },
+    .remotePlanetHubMenu={ campaignUi.remotePlanetHubRecords, HUB_UI_RECORD_COUNT, &campaignUi.hubThirdNavigationProbe }
+};
 /* FF probes alias362D (record15 X high),3B45 (kind9 failure8), and3B8B
  * (sensor price for kind8 low). Keep typed aliases, not host-endian BYTE casts. */
 MwUiMenu ownedUnitListMenu = { ownedUnitListUiRecords, 0x0D, NULL, &componentRepairUiRecords[15].x, 8 };
@@ -372,7 +338,6 @@ MwComponentConditionTextRow marketSystemConditionRows[0x0A], marketWeaponConditi
 MwServiceCaption marketComponentDone;
 MwServiceCaption marketWeaponHeading;
 MwServiceCaption positionedText;
-uint16_t hubSelectedRecordIndex;
 MwBodyConditionText marketBodyCondition;
 static MwUiRecord rearmConfirmationRecords[2], saleConfirmationRecords[2], marketUnitListRecords[0x0D];
 static MwUiRecord marketMechRecords[3], marketDropShipRecords[2], marketComponentRecords[1], mechComplexRecords[4];
@@ -407,9 +372,6 @@ MwIntroPositionedText introFifthLeftText,introFifthRightText;
 MwIntroPositionedText introSixthLeftText,introSixthRightText;
 MwIntroPositionedText introSeventhLeftText,introSeventhRightText;
 uint8_t campaignTextInputBuffer[0x29];
-uint16_t textInputCursorX,textInputCursorY,textInputMaximumIndex;
-uint8_t textInputForeground,textInputBackground,textInputLastPhase;
-uint16_t textInputLength;
 uint16_t campaignEventPlanetSelectors[6];
 uint8_t eventPlanetChoicePool0[8],eventPlanetChoicePool1[3];
 uint8_t eventPlanetChoicePool2[4],eventPlanetChoicePool3[3];
@@ -455,7 +417,6 @@ uint16_t acceptedContractAdvancePercent,remainingContractPaymentThousands;
 uint8_t audioOptionLabelIndex,campaignTerrainDetailLevel;
 uint16_t acceptedContractTargetHouseIndex,playerSkillProgress;
 uint8_t defaultHouseMissionTypeLimits[0x28],campaignDefaultCommanderNameBytes[0x0A];
-uint16_t companyMenuSelectedRow,barMenuSelectedRow,optionsMenuSelection;
 
 /* Installation data import. Decode once into the canonical C objects;
  * the input is never retained. These are file-format operations, not new
@@ -598,7 +559,7 @@ static uint8_t companyNavigationPadding;
 MwUiMenu companyMenu={companyRecords,3,&companyNavigationPadding};
 MwUiMenu crewMenu={crewRecords,5,&rearmConfirmationRecords[1].textRecord};
 MwUiMenu barMenu={barRecords,3,NULL};
-MwUiMenu recruitInterviewMenu={recruitInterviewRecords,2,NULL,&saveListRows[4].display.x,0};
+MwUiMenu recruitInterviewMenu={recruitInterviewRecords,2,NULL,&campaignOptions.saveListRows[4].display.x,0};
 static bool ImportPilotUiData(void);
 static bool ImportReserveAmmoUiData(void);
 static bool ImportContractData(void);
@@ -614,8 +575,8 @@ bool MwImportCampaignInitialData(void)
         || !MwStoryCopyText("commander.default_name",(char *)newCampaign+0x003B,0x000A)
         || !ImportRuleBytes("new_campaign.after_name",newCampaign+0x0045,CAMPAIGN_SAVE_BYTES-0x0045)) return false;
     MwDecodeCampaignExchange(newCampaign);
-    memset(&campaignTimerInhibited,0,sizeof(campaignTimerInhibited)); /*0007*/
-    memset(&campaignTimerByte,0,sizeof(campaignTimerByte)); /*0008*/
+    memset(&campaignInput.campaignTimerInhibited,0,sizeof(campaignInput.campaignTimerInhibited)); /*0007*/
+    memset(&campaignInput.campaignTimerByte,0,sizeof(campaignInput.campaignTimerByte)); /*0008*/
     memcpy(combatExecutableFilename,mwCombatExecutableFilename,sizeof(combatExecutableFilename)); /*0EF6*/
     memset(&deploymentResolvedWithoutCombat,0,sizeof(deploymentResolvedWithoutCombat)); /*140C*/
     if (!MwStoryCopyText("dark_wing.victory",darkWingVictoryText,sizeof(darkWingVictoryText))) return false;
@@ -643,67 +604,67 @@ bool MwImportCampaignInitialData(void)
     if (!MwStoryCopyText("settlement.deduction.transport",settlementTransportDeductionText,sizeof(settlementTransportDeductionText))) return false;
     if (!MwStoryCopyText("settlement.no_payment",settlementNoPaymentText,sizeof(settlementNoPaymentText))) return false;
     if (!MwStoryCopyText("dark_wing.attack_failed",darkWingAttackFailedText,sizeof(darkWingAttackFailedText))) return false;
-    campaignTimerTicks=0; /*000C*/
-    memset(&campaignTimerAlternatingPhase,0,sizeof(campaignTimerAlternatingPhase)); /*000E*/
-    memset(&campaignTimerPhaseTicks,0,sizeof(campaignTimerPhaseTicks)); /*000F*/
-    memset(&mouseInstalled,0,sizeof(mouseInstalled)); /*02AC*/
-    memset(&joystickInstalled,0,sizeof(joystickInstalled)); /*02AD*/
-    memset(&inputSinglePoll,0,sizeof(inputSinglePoll)); /*03E2*/
-    joystickDirection=0; /*02E6*/
-    joystickButtonOnePressed=0; /*02E8*/
-    joystickButtonTwoPressed=0; /*02EA*/
-    joystickPreviousButtons=MW_JOYSTICK_PREVIOUS_BUTTONS_START;
-    joystickXCount=0; /*02ED*/
-    joystickYCount=0; /*02EF*/
-    joystickDeflection=MW_JOYSTICK_DEFLECTION_START;
-    mouseMotionX=0; /*03DA*/
-    mouseMotionY=0; /*03DC*/
-    memset(&joystickRepeatActive,0,sizeof(joystickRepeatActive)); /*02F3*/
-    joystickRepeatDeadline=0; /*02F4*/
-    memcpy(joystickNavigationKeys,mwJoystickNavigationKeysStart,sizeof(joystickNavigationKeys)); /*02F6*/
-    joystickCentreX=0; /*0308*/
-    joystickCentreY=0; /*030A*/
-    joystickXDeflectionStep=0; /*031C*/
-    joystickYDeflectionStep=0; /*031E*/
-    joystickXLow=0; /*030C*/
-    joystickXHigh=0; /*030E*/
-    joystickYLow=0; /*0310*/
-    joystickYHigh=0; /*0312*/
-    joystickXFarLow=0; /*0314*/
-    joystickXFarHigh=0; /*0316*/
-    joystickYFarLow=0; /*0318*/
-    joystickYFarHigh=0; /*031A*/
-    selectedUiRecordIndex=0; /*03E5*/
-    uiSelectionChangedCodeOffset=0; /*03E7*/
-    uiIdleCodeOffset=0; /*03E9*/
+    campaignInput.campaignTimerTicks=0; /*000C*/
+    memset(&campaignInput.campaignTimerAlternatingPhase,0,sizeof(campaignInput.campaignTimerAlternatingPhase)); /*000E*/
+    memset(&campaignInput.campaignTimerPhaseTicks,0,sizeof(campaignInput.campaignTimerPhaseTicks)); /*000F*/
+    memset(&campaignInput.mouseInstalled,0,sizeof(campaignInput.mouseInstalled)); /*02AC*/
+    memset(&campaignInput.joystickInstalled,0,sizeof(campaignInput.joystickInstalled)); /*02AD*/
+    memset(&campaignInput.inputSinglePoll,0,sizeof(campaignInput.inputSinglePoll)); /*03E2*/
+    campaignInput.joystickDirection=0; /*02E6*/
+    campaignInput.joystickButtonOnePressed=0; /*02E8*/
+    campaignInput.joystickButtonTwoPressed=0; /*02EA*/
+    campaignInput.joystickPreviousButtons=MW_JOYSTICK_PREVIOUS_BUTTONS_START;
+    campaignInput.joystickXCount=0; /*02ED*/
+    campaignInput.joystickYCount=0; /*02EF*/
+    campaignInput.joystickDeflection=MW_JOYSTICK_DEFLECTION_START;
+    campaignInput.mouseMotionX=0; /*03DA*/
+    campaignInput.mouseMotionY=0; /*03DC*/
+    memset(&campaignInput.joystickRepeatActive,0,sizeof(campaignInput.joystickRepeatActive)); /*02F3*/
+    campaignInput.joystickRepeatDeadline=0; /*02F4*/
+    memcpy(campaignInput.joystickNavigationKeys,mwJoystickNavigationKeysStart,sizeof(campaignInput.joystickNavigationKeys)); /*02F6*/
+    campaignInput.joystickCentreX=0; /*0308*/
+    campaignInput.joystickCentreY=0; /*030A*/
+    campaignInput.joystickXDeflectionStep=0; /*031C*/
+    campaignInput.joystickYDeflectionStep=0; /*031E*/
+    campaignInput.joystickXLow=0; /*030C*/
+    campaignInput.joystickXHigh=0; /*030E*/
+    campaignInput.joystickYLow=0; /*0310*/
+    campaignInput.joystickYHigh=0; /*0312*/
+    campaignInput.joystickXFarLow=0; /*0314*/
+    campaignInput.joystickXFarHigh=0; /*0316*/
+    campaignInput.joystickYFarLow=0; /*0318*/
+    campaignInput.joystickYFarHigh=0; /*031A*/
+    campaignUi.selectedUiRecordIndex=0; /*03E5*/
+    campaignUi.uiSelectionChangedCodeOffset=0; /*03E7*/
+    campaignUi.uiIdleCodeOffset=0; /*03E9*/
     /* The hub menus' past-end probes (story/native.json, src/Import/pieces.txt). */
-    if (!MwStoryCopyBytes("probe.hub_planet",&hubFirstNavigationProbe,1)
-        || !MwStoryCopyBytes("probe.hub_contract",&hubSecondNavigationProbe,1)
-        || !MwStoryCopyBytes("probe.hub_remote_planet",&hubThirdNavigationProbe,1)) return false;
-    panelOriginX=0; /*03EB*/
-    panelOriginY=0; /*03ED*/
-    panelWidth=0; /*03EF*/
-    panelHeight=0; /*03F1*/
-    panelBorderPictureBase=0; /*0444*/
+    if (!MwStoryCopyBytes("probe.hub_planet",&campaignUi.hubFirstNavigationProbe,1)
+        || !MwStoryCopyBytes("probe.hub_contract",&campaignUi.hubSecondNavigationProbe,1)
+        || !MwStoryCopyBytes("probe.hub_remote_planet",&campaignUi.hubThirdNavigationProbe,1)) return false;
+    campaignUi.panelOriginX=0; /*03EB*/
+    campaignUi.panelOriginY=0; /*03ED*/
+    campaignUi.panelWidth=0; /*03EF*/
+    campaignUi.panelHeight=0; /*03F1*/
+    campaignUi.panelBorderPictureBase=0; /*0444*/
     panelBorderEnabled=0; /*03F3*/
-    textPanelInsetX=0; /*0432*/
-    textPanelInsetY=0; /*0434*/
-    textPanelOriginX=0; /*0436*/
-    textPanelOriginY=0; /*0438*/
-    textPanelWidthPixels=0; /*043A*/
-    textPanelHeightPixels=0; /*043C*/
-    textPanelPreviousFont=0; /*043E*/
-    textPanelFont=0; /*0440*/
-    textPanelContinuationMode=0; /*0442*/
-    textPanelYOverride=0; /*0446*/
+    campaignUi.textPanelInsetX=0; /*0432*/
+    campaignUi.textPanelInsetY=0; /*0434*/
+    campaignUi.textPanelOriginX=0; /*0436*/
+    campaignUi.textPanelOriginY=0; /*0438*/
+    campaignUi.textPanelWidthPixels=0; /*043A*/
+    campaignUi.textPanelHeightPixels=0; /*043C*/
+    campaignUi.textPanelPreviousFont=0; /*043E*/
+    campaignUi.textPanelFont=0; /*0440*/
+    campaignUi.textPanelContinuationMode=0; /*0442*/
+    campaignUi.textPanelYOverride=0; /*0446*/
     /* The notification boxes (data/ui/hub.json): all insets x, then y, columns, rows (5EB3). */
-    if (!MwUiCopyWords("hub.table.notification_boxes",notificationTextInsetX,4,0)
-        || !MwUiCopyWords("hub.table.notification_boxes",notificationTextInsetY,4,8)
-        || !MwUiCopyWords("hub.table.notification_boxes",notificationColumns,4,16)
-        || !MwUiCopyWords("hub.table.notification_boxes",notificationRows,4,24)) return false;
+    if (!MwUiCopyWords("hub.table.notification_boxes",campaignUi.notificationTextInsetX,4,0)
+        || !MwUiCopyWords("hub.table.notification_boxes",campaignUi.notificationTextInsetY,4,8)
+        || !MwUiCopyWords("hub.table.notification_boxes",campaignUi.notificationColumns,4,16)
+        || !MwUiCopyWords("hub.table.notification_boxes",campaignUi.notificationRows,4,24)) return false;
     /* The notification texts (hub.word.notification.*) and the pointers to them (hub.json's notification_words). */
-    if (!MwUiCopyWords("hub.table.notification_words",notificationTextOffsets,4,0)) return false; /*5ED3*/
-    memcpy(notificationTextStorage,mainWords+0x5EDB,sizeof(notificationTextStorage));
+    if (!MwUiCopyWords("hub.table.notification_words",campaignUi.notificationTextOffsets,4,0)) return false; /*5ED3*/
+    memcpy(campaignUi.notificationTextStorage,mainWords+0x5EDB,sizeof(campaignUi.notificationTextStorage));
     compressedPictureBufferSelector=0; /*016D*/
     /* 03F5, 03F7: the random generator's words as an EXEC starts them (data/rules/new_campaign.json "start"). */
     uint16_t randomSeed[2];
@@ -871,7 +832,7 @@ bool MwImportCampaignInitialData(void)
     memcpy(repairCompleteText,mainWords+0x2C01,sizeof(repairCompleteText));
     memcpy(repairIncompleteText,mainWords+0x2C21,sizeof(repairIncompleteText));
     memcpy(repairFailedText,mainWords+0x3CB5,sizeof(repairFailedText));
-    hubSelectedRecordIndex=0; /*1080*/
+    campaignUi.hubSelectedRecordIndex=0; /*1080*/
     memcpy(ammoBayFullText,mainWords+0x315B,sizeof(ammoBayFullText));
     memcpy(noMarketMechsText,mainWords+0x31BB,sizeof(noMarketMechsText));
     memcpy(dealerPurchaseLimitText,mainWords+0x258A,sizeof(dealerPurchaseLimitText));
@@ -891,13 +852,13 @@ bool MwImportCampaignInitialData(void)
     memset(&keyboardInterruptState,0,sizeof(keyboardInterruptState)); /*02AB*/
     musicFileHandle=0; /*0E39*/
     memset(campaignTextInputBuffer,0,sizeof(campaignTextInputBuffer)); /*03A5*/
-    textInputCursorX=0; /*03CE*/
-    textInputCursorY=0; /*03D0*/
-    textInputMaximumIndex=0; /*03D2*/
-    memset(&textInputForeground,0,sizeof(textInputForeground)); /*03D4*/
-    memset(&textInputBackground,0,sizeof(textInputBackground)); /*03D5*/
-    memset(&textInputLastPhase,0,sizeof(textInputLastPhase)); /*03D8*/
-    textInputLength=0; /*03D6*/
+    campaignInput.textInputCursorX=0; /*03CE*/
+    campaignInput.textInputCursorY=0; /*03D0*/
+    campaignInput.textInputMaximumIndex=0; /*03D2*/
+    memset(&campaignInput.textInputForeground,0,sizeof(campaignInput.textInputForeground)); /*03D4*/
+    memset(&campaignInput.textInputBackground,0,sizeof(campaignInput.textInputBackground)); /*03D5*/
+    memset(&campaignInput.textInputLastPhase,0,sizeof(campaignInput.textInputLastPhase)); /*03D8*/
+    campaignInput.textInputLength=0; /*03D6*/
     {
         /* The story-planet pools from story/events.json (1090:8FDA..8FF3). */
         uint8_t *const pools[6]={eventPlanetChoicePool0,eventPlanetChoicePool1,eventPlanetChoicePool2,
@@ -921,9 +882,9 @@ bool MwImportCampaignInitialData(void)
     eventChoiceSavedFontIndex=0; /*5E66*/
     if (!ImportRuleBytes("houses.mission_type_limits",defaultHouseMissionTypeLimits,sizeof(defaultHouseMissionTypeLimits))) return false;
     if (!MwStoryCopyText("commander.default_name",(char *)campaignDefaultCommanderNameBytes,sizeof(campaignDefaultCommanderNameBytes))) return false;
-    companyMenuSelectedRow=0; /*21CC*/
-    barMenuSelectedRow=0; /*8FF4*/
-    optionsMenuSelection=0; /*9D50*/
+    campaignUi.companyMenuSelectedRow=0; /*21CC*/
+    campaignUi.barMenuSelectedRow=0; /*8FF4*/
+    campaignUi.optionsMenuSelection=0; /*9D50*/
     for (unsigned line=0;line<10;++line)
     {
         char id[24];snprintf(id,sizeof(id),"intro.narration.%u",line+1);
@@ -1169,9 +1130,9 @@ bool MwImportCampaignInitialData(void)
         || !MwImportUiMenu("dealer.menu.mech",&marketMechMenu,dealerOwners,dealerCount)
         || !MwImportUiMenu("dealer.menu.dropship",&marketDropShipMenu,dealerOwners,dealerCount)
         || !MwImportUiMenu("dealer.menu.component",&marketComponentMenu,dealerOwners,dealerCount)) return false;
-    if (!MwImportUiMenu("hub.menu.planet",&planetHubMenu,NULL,0)) return false; /*1083*/
-    if (!MwImportUiMenu("hub.menu.contract",&contractHubMenu,NULL,0)) return false; /*10D7*/
-    if (!MwImportUiMenu("hub.menu.remote_planet",&remotePlanetHubMenu,NULL,0)) return false; /*1101*/
+    if (!MwImportUiMenu("hub.menu.planet",&campaignUi.planetHubMenu,NULL,0)) return false; /*1083*/
+    if (!MwImportUiMenu("hub.menu.contract",&campaignUi.contractHubMenu,NULL,0)) return false; /*10D7*/
+    if (!MwImportUiMenu("hub.menu.remote_planet",&campaignUi.remotePlanetHubMenu,NULL,0)) return false; /*1101*/
     /* The body diagrams (3CEE): a background and nine regions each. */
     uint16_t diagrams[8*10*4];
     if (!MwUiCopyWords("complex.table.body_diagrams",diagrams,sizeof(diagrams)/sizeof(diagrams[0]),0)) return false;
@@ -1184,7 +1145,7 @@ bool MwImportCampaignInitialData(void)
         }
     /* These initial near values have no live object until their callers set them. */
     repairQuoteDamage=NULL;componentRepairDamage=NULL;
-    mechDiagramBodyDamage=NULL;mechDiagramRectangle=NULL;uiMenu=NULL;
+    mechDiagramBodyDamage=NULL;mechDiagramRectangle=NULL;campaignUi.uiMenu=NULL;
     return ImportPilotUiData() && ImportTravelUiData() && MwImportCampaignEventData()
         && MwImportCampaignOptionsData()
         && CheckTextBoundTables();

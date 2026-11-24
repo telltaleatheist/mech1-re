@@ -24,15 +24,6 @@ typedef struct MwCampaignInputCalls
     void (*readMousePosition)(uint16_t *x,uint16_t *y);
 } MwCampaignInputCalls;
 extern MwCampaignInputCalls mwCampaignInput;
-extern uint8_t campaignTimerInhibited, campaignTimerByte;
-extern uint16_t campaignTimerTicks;
-extern uint8_t campaignTimerAlternatingPhase, campaignTimerPhaseTicks;
-extern uint8_t mouseInstalled, joystickInstalled, inputSinglePoll;
-extern uint16_t joystickDirection, joystickButtonOnePressed, joystickButtonTwoPressed;
-extern uint8_t joystickPreviousButtons;
-extern uint16_t joystickXCount, joystickYCount, joystickDeflection;
-extern uint16_t joystickXLow, joystickXHigh, joystickYLow, joystickYHigh;
-extern uint16_t joystickXFarLow, joystickXFarHigh, joystickYFarLow, joystickYFarHigh;
 /* joystickPreviousButtons keeps the buttons as the game port showed them:
  * a bit clear while its button is held. */
 enum { JOYSTICK_BUTTON_ONE_UP = 0x10, JOYSTICK_BUTTON_TWO_UP = 0x20,
@@ -51,14 +42,28 @@ void MwCalibrateJoystickA(void);
 uint16_t MwReadCampaignTextInput(uint16_t x,uint16_t y,uint16_t capacity,
     uint8_t foreground,uint8_t background);
 void MwEraseTextInputCursor(void);
-extern uint16_t mouseMotionX,mouseMotionY;
-extern uint8_t joystickRepeatActive;
-extern uint16_t joystickRepeatDeadline,joystickNavigationKeys[9];
-extern uint16_t joystickCentreX,joystickCentreY;
-extern uint16_t joystickXDeflectionStep,joystickYDeflectionStep;
-extern uint16_t textInputCursorX,textInputCursorY,textInputMaximumIndex;
-extern uint8_t textInputForeground,textInputBackground,textInputLastPhase;
-extern uint16_t textInputLength;
+/* Campaign state owned by campaign_input.h (plan, slice B2). */
+struct CampaignInputState
+{
+    uint8_t campaignTimerInhibited, campaignTimerByte;
+    uint16_t campaignTimerTicks;
+    uint8_t campaignTimerAlternatingPhase, campaignTimerPhaseTicks;
+    uint8_t mouseInstalled, joystickInstalled, inputSinglePoll;
+    uint16_t joystickDirection, joystickButtonOnePressed, joystickButtonTwoPressed;
+    uint8_t joystickPreviousButtons;
+    uint16_t joystickXCount, joystickYCount, joystickDeflection;
+    uint16_t joystickXLow, joystickXHigh, joystickYLow, joystickYHigh;
+    uint16_t joystickXFarLow, joystickXFarHigh, joystickYFarLow, joystickYFarHigh;
+    uint16_t mouseMotionX, mouseMotionY;
+    uint8_t joystickRepeatActive;
+    uint16_t joystickRepeatDeadline, joystickNavigationKeys[9];
+    uint16_t joystickCentreX, joystickCentreY;
+    uint16_t joystickXDeflectionStep, joystickYDeflectionStep;
+    uint16_t textInputCursorX, textInputCursorY, textInputMaximumIndex;
+    uint8_t textInputForeground, textInputBackground, textInputLastPhase;
+    uint16_t textInputLength;
+};
+extern CampaignInputState campaignInput;
 enum { CAMPAIGN_KEY_ENTER=0x1C0D,CAMPAIGN_KEY_UP=0x4800,CAMPAIGN_KEY_DOWN=0x5000,
     CAMPAIGN_KEY_LEFT=0x4B00,CAMPAIGN_KEY_RIGHT=0x4D00,CAMPAIGN_KEY_CALIBRATE=0x3B00,
     CAMPAIGN_KEY_UP_LEFT=0x4700,CAMPAIGN_KEY_UP_RIGHT=0x4900,

@@ -12,7 +12,7 @@ uint16_t MwEnterOptionsMenuContinuation(uint16_t entryOffset)
 {
     if (entryOffset==CAMPAIGN_CONTINUE_OPTIONS_REDRAW) goto publishMenu;
     if (entryOffset!=CAMPAIGN_CONTINUE_OPTIONS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: entryOffset!=CAMPAIGN_CONTINUE_OPTIONS");
-    hubSelectedRecordIndex=OPTIONS_HUB_ROW;
+    campaignUi.hubSelectedRecordIndex=OPTIONS_HUB_ROW;
     EgaSelectFont(TEXT_PANEL_MONOSPACE_FONT);
     EgaClearDrawPage(Campaign_Pal_EGA_Magenta);
     MwDrawIndexedPicture(0,0,(uint16_t)(currentPlanetLandscapeIndex+OPTIONS_LANDSCAPE_PICTURE_BASE));
@@ -20,8 +20,8 @@ publishMenu:
     EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
     MwUpdateAudioOptionLabel();
     MwUpdateTerrainDetailOptionLabel();
-    MwDrawDescriptorTextPanel(&optionsPanel);
-    MwSelectUiRecordTable(optionsMenuSelection,&optionsMenu);
+    MwDrawDescriptorTextPanel(&campaignOptions.optionsPanel);
+    MwSelectUiRecordTable(campaignUi.optionsMenuSelection,&campaignOptions.optionsMenu);
     return CAMPAIGN_CONTINUE_UI;
 }
 
@@ -32,8 +32,8 @@ void MwUpdateAudioOptionLabel(void)
     uint16_t character=0;
     do
     {
-        optionsLabels[OPTION_SOUND].text[OPTIONS_SOUND_LABEL_COLUMN+character]=audioOptionLabels[audioOptionLabelIndex][character];
-    } while (audioOptionLabels[audioOptionLabelIndex][character++]!='\0');
+        campaignOptions.optionsLabels[OPTION_SOUND].text[OPTIONS_SOUND_LABEL_COLUMN+character]=campaignOptions.audioOptionLabels[audioOptionLabelIndex][character];
+    } while (campaignOptions.audioOptionLabels[audioOptionLabelIndex][character++]!='\0');
 }
 
 /* MW_MAIN081B:702B..7046. BYTE detail times5, including trailing space/NUL. */
@@ -43,18 +43,18 @@ void MwUpdateTerrainDetailOptionLabel(void)
     uint16_t character=0;
     do
     {
-        optionsLabels[OPTION_DETAIL].text[OPTIONS_DETAIL_LABEL_COLUMN+character]=terrainDetailLabels[campaignTerrainDetailLevel][character];
-    } while (terrainDetailLabels[campaignTerrainDetailLevel][character++]!='\0');
+        campaignOptions.optionsLabels[OPTION_DETAIL].text[OPTIONS_DETAIL_LABEL_COLUMN+character]=campaignOptions.terrainDetailLabels[campaignTerrainDetailLevel][character];
+    } while (campaignOptions.terrainDetailLabels[campaignTerrainDetailLevel][character++]!='\0');
 }
 
 /* MW_MAIN081B:6FB9..6FDD. Ordinary callback; the flag toggles without
  * an immediate music start/stop call. Opaque ordinal0F uses current font. */
 void MwToggleAudioOption(void)
 {
-    optionsMenuSelection=OPTION_SOUND;
+    campaignUi.optionsMenuSelection=OPTION_SOUND;
     audioOptionLabelIndex^=1;
     MwUpdateAudioOptionLabel();
-    MwNativeByteView text={(const uint8_t *)optionsLabels[OPTION_SOUND].text,0x9D97,sizeof(optionsLabels[OPTION_SOUND].text)};
+    MwNativeByteView text={(const uint8_t *)campaignOptions.optionsLabels[OPTION_SOUND].text,0x9D97,sizeof(campaignOptions.optionsLabels[OPTION_SOUND].text)};
     uint16_t y=OPTIONS_SOUND_Y,offset=0x9D97;
     EgaDrawString(OPTIONS_SOUND_X,&y,(Campaign_Pal_EGA_DarkGrey<<EGA_BYTE_BITS)|Campaign_Pal_EGA_Yellow,&text,&offset);
 }
@@ -62,11 +62,11 @@ void MwToggleAudioOption(void)
 /* MW_MAIN081B:6FFA..702A. Native JL compares the incremented BYTE signed. */
 void MwCycleTerrainDetailOption(void)
 {
-    optionsMenuSelection=OPTION_DETAIL;
+    campaignUi.optionsMenuSelection=OPTION_DETAIL;
     ++campaignTerrainDetailLevel;
     if ((int8_t)campaignTerrainDetailLevel>=TERRAIN_DETAIL_LABEL_COUNT) campaignTerrainDetailLevel=0;
     MwUpdateTerrainDetailOptionLabel();
-    MwNativeByteView text={(const uint8_t *)optionsLabels[OPTION_DETAIL].text,0x9DAB,sizeof(optionsLabels[OPTION_DETAIL].text)};
+    MwNativeByteView text={(const uint8_t *)campaignOptions.optionsLabels[OPTION_DETAIL].text,0x9DAB,sizeof(campaignOptions.optionsLabels[OPTION_DETAIL].text)};
     uint16_t y=OPTIONS_DETAIL_Y,offset=0x9DAB;
     EgaDrawString(OPTIONS_DETAIL_X,&y,(Campaign_Pal_EGA_DarkGrey<<EGA_BYTE_BITS)|Campaign_Pal_EGA_Yellow,&text,&offset);
 }
@@ -75,24 +75,24 @@ void MwCycleTerrainDetailOption(void)
  * used by restart707F; the NO record rejoins6D23 without rebuilding scenery. */
 uint16_t MwConfirmQuitCampaignContinuation(void)
 {
-    optionsMenuSelection=OPTION_QUIT;
+    campaignUi.optionsMenuSelection=OPTION_QUIT;
     EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
-    confirmationPanel.lines[0]=&confirmationLabels[0].display;
-    confirmationMenu.records[0].activateCodeOffset=CAMPAIGN_CONTINUE_QUIT_FROM_OPTIONS;
-    MwDrawDescriptorTextPanel(&confirmationPanel);
-    MwSelectUiRecordTable(0,&confirmationMenu);
+    campaignOptions.confirmationPanel.lines[0]=&campaignOptions.confirmationLabels[0].display;
+    campaignOptions.confirmationMenu.records[0].activateCodeOffset=CAMPAIGN_CONTINUE_QUIT_FROM_OPTIONS;
+    MwDrawDescriptorTextPanel(&campaignOptions.confirmationPanel);
+    MwSelectUiRecordTable(0,&campaignOptions.confirmationMenu);
     return CAMPAIGN_CONTINUE_UI;
 }
 
 /* MW_MAIN081B:707F..70B6, separate native callback/entry, not a new helper. */
 uint16_t MwConfirmRestartCampaignContinuation(void)
 {
-    optionsMenuSelection=OPTION_RESTART;
+    campaignUi.optionsMenuSelection=OPTION_RESTART;
     EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
-    confirmationPanel.lines[0]=&confirmationLabels[1].display;
-    confirmationMenu.records[0].activateCodeOffset=CAMPAIGN_CONTINUE_RESTART_FROM_OPTIONS;
-    MwDrawDescriptorTextPanel(&confirmationPanel);
-    MwSelectUiRecordTable(0,&confirmationMenu);
+    campaignOptions.confirmationPanel.lines[0]=&campaignOptions.confirmationLabels[1].display;
+    campaignOptions.confirmationMenu.records[0].activateCodeOffset=CAMPAIGN_CONTINUE_RESTART_FROM_OPTIONS;
+    MwDrawDescriptorTextPanel(&campaignOptions.confirmationPanel);
+    MwSelectUiRecordTable(0,&campaignOptions.confirmationMenu);
     return CAMPAIGN_CONTINUE_UI;
 }
 
@@ -105,6 +105,6 @@ uint16_t MwQuitFromOptionsContinuation(void)
 /* MW_MAIN081B:70B7..70C1. PUSH balances6855's inherited frame. */
 uint16_t MwRestartFromOptionsContinuation(void)
 {
-    hubSelectedRecordIndex=0;
+    campaignUi.hubSelectedRecordIndex=0;
     return CAMPAIGN_CONTINUE_RESTART;
 }

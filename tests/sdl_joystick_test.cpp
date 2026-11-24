@@ -125,15 +125,15 @@ int main() {
   // The campaign on the pad.
   Pad(pad, 0, 0);
   MwDetectMouseAndJoystick();
-  Check(joystickInstalled == 1, "campaign: the pad installed");
+  Check(campaignInput.joystickInstalled == 1, "campaign: the pad installed");
   MwCalibrateJoystickA();
-  Check(joystickCentreX == 127 && joystickCentreY == 127, "campaign: calibrated at 127");
+  Check(campaignInput.joystickCentreX == 127 && campaignInput.joystickCentreY == 127, "campaign: calibrated at 127");
   Pad(pad, -32768, 0);
   MwPollJoystickA();
-  Check(joystickDirection == JOYSTICK_LEFT && joystickDeflection == JOYSTICK_DEFLECTION_FAR, "campaign: left, far");
+  Check(campaignInput.joystickDirection == JOYSTICK_LEFT && campaignInput.joystickDeflection == JOYSTICK_DEFLECTION_FAR, "campaign: left, far");
   Pad(pad, 0, 32767, true);
   MwPollJoystickA();
-  Check(joystickDirection == JOYSTICK_DOWN && joystickButtonOnePressed == 1, "campaign: down, button one pressed");
+  Check(campaignInput.joystickDirection == JOYSTICK_DOWN && campaignInput.joystickButtonOnePressed == 1, "campaign: down, button one pressed");
 
   // A second device, a stick with four axes, as B; only its X and Y drive us.
   Device stick = AttachStick();
@@ -177,7 +177,7 @@ int main() {
         "combat: no held turn once the pad is gone");
   Check(BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_ONE) == 0, "combat: no held fire once the pad is gone");
   MwPollJoystickA();
-  Check(joystickDirection == JOYSTICK_CENTRED && joystickButtonOnePressed == 0, "campaign: centred once the pad is gone");
+  Check(campaignInput.joystickDirection == JOYSTICK_CENTRED && campaignInput.joystickButtonOnePressed == 0, "campaign: centred once the pad is gone");
   Check(Reads(JOYSTICK_B, true, 0, -127, false, true), "B unchanged");
 
   // Plugged in again while B is in: it takes the free slot, A.

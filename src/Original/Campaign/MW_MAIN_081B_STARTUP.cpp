@@ -541,17 +541,17 @@ void MwMixBiosTicksIntoRandomState(void)
  * host instead, so those reads and their CLI/STI are gone. */
 void MwDetectMouseAndJoystick(void)
 {
-    mouseInstalled=0;joystickInstalled=0;
+    campaignInput.mouseInstalled=0;campaignInput.joystickInstalled=0;
     if (!mwCampaignPlatform.mousePresent || !mwCampaignInput.readJoystick) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignPlatform.mousePresent || !mwCampaignInput.readJoystick");
-    if (mwCampaignPlatform.mousePresent()) mouseInstalled=1;
-    if (mwCampaignInput.readJoystick().connected) joystickInstalled=1;
+    if (mwCampaignPlatform.mousePresent()) campaignInput.mouseInstalled=1;
+    if (mwCampaignInput.readJoystick().connected) campaignInput.joystickInstalled=1;
 }
 /* MW_MAIN081B:03DD..03F6. The apparently empty mouse branch really is empty. */
 void MwDetectAndCalibrateInputDevices(void)
 {
     MwDetectMouseAndJoystick();
     keyboardInterruptState=0;
-    if (joystickInstalled) MwCalibrateJoystickA();
+    if (campaignInput.joystickInstalled) MwCalibrateJoystickA();
 }
 
 /* MW_MAIN081B:136C entry falls136F;1375 is its successful-open shared entry.
@@ -595,9 +595,9 @@ void MwDrawIntroNarrationLines(uint8_t colour)
  * immediately. The host IRQ boundary delivers time, not input/RNG polling. */
 void MwDrawVictoryTransitionPictureAndWait(void)
 {
-    uint16_t deadline=campaignTimerTicks+VICTORY_TRANSITION_TICKS;
+    uint16_t deadline=campaignInput.campaignTimerTicks+VICTORY_TRANSITION_TICKS;
     MwDrawIndexedPicture(0,0,VICTORY_TRANSITION_PICTURE);
-    while (deadline>campaignTimerTicks)
+    while (deadline>campaignInput.campaignTimerTicks)
     {
         if (!mwCampaignInput.waitForInterrupt) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.waitForInterrupt");
         mwCampaignInput.waitForInterrupt();
@@ -607,11 +607,11 @@ void MwDrawVictoryTransitionPictureAndWait(void)
  * Even delay0 polls once and consumes the input/RNG side effects. */
 bool MwWaitTicksOrInputInterruption(uint16_t delayTicks)
 {
-    uint16_t deadline=campaignTimerTicks+delayTicks;
+    uint16_t deadline=campaignInput.campaignTimerTicks+delayTicks;
     do
     {
         if (MwPollInputOnce()) return true;
-    } while (campaignTimerTicks!=deadline);
+    } while (campaignInput.campaignTimerTicks!=deadline);
     return false;
 }
 /* MW_MAIN081B:1625..162D. BIOS palette register2, BH supplies its code. */
@@ -678,7 +678,7 @@ uint16_t MwStartNewCampaign(uint16_t entryOffset)
     else if (entryOffset!=CAMPAIGN_CONTINUE_INITIALIZE_COMPANY) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: entryOffset is neither new-campaign entry"); /* Only the two proven shared entries. */
     /* The start-world check (event_log.h): the 18.2 Hz count and the random
      * words the start world is drawn from, kept before the draw. */
-    const uint16_t startTicks=campaignTimerTicks,startWord0=randomStateWord0,startWord1=randomStateWord1;
+    const uint16_t startTicks=campaignInput.campaignTimerTicks,startWord0=randomStateWord0,startWord1=randomStateWord1;
     campaignEventPlanetSelectors[0]=eventPlanetChoicePool0[MwRandomUpTo(7)];
     currentPlanetIndex=campaignEventPlanetSelectors[0]-1;
     MwEventLogCampaignStart(startTicks,startWord0,startWord1,currentPlanetIndex);

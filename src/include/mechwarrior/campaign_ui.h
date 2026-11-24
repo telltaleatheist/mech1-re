@@ -71,35 +71,43 @@ typedef struct MwUiMenu
     const uint16_t *sentinelEnabledWord;
     uint8_t sentinelEnabledShift;
 } MwUiMenu;
-extern MwUiRecord planetHubRecords[HUB_UI_RECORD_COUNT];
-extern MwUiRecord contractHubRecords[CONTRACT_HUB_UI_RECORD_COUNT];
-extern MwUiRecord remotePlanetHubRecords[HUB_UI_RECORD_COUNT];
-extern MwUiMenu planetHubMenu, contractHubMenu, remotePlanetHubMenu;
-extern MwUiMenu *uiMenu;
-extern uint16_t selectedUiRecordIndex;
-extern uint16_t uiSelectionChangedCodeOffset, uiIdleCodeOffset;
-extern uint16_t panelOriginX, panelOriginY, panelWidth, panelHeight;
-extern uint16_t panelBorderPictureBase;
-extern uint16_t textPanelInsetX, textPanelInsetY;
-extern uint16_t textPanelOriginX, textPanelOriginY;
-extern uint16_t textPanelWidthPixels, textPanelHeightPixels;
-extern uint16_t textPanelPreviousFont, textPanelFont;
-extern uint16_t textPanelContinuationMode, textPanelYOverride;
-extern uint16_t notificationTextInsetX[4], notificationTextInsetY[4];
-extern uint16_t notificationColumns[4], notificationRows[4];
-extern uint16_t notificationTextOffsets[4];
-extern uint8_t notificationTextStorage[NOTIFICATION_TEXT_END - NOTIFICATION_TEXT_START];
 void MwShowPendingNotifications(void);
 /* Original CALL AX/BX transport. Bind native offsets to actual converted
  * callees. Unbound nonzero offsets fail; they are never success stubs. */
 extern void (*campaignNearCallback)(uint16_t codeOffset);
-extern uint8_t hubFirstNavigationProbe,hubSecondNavigationProbe,hubThirdNavigationProbe;
 /* Return transports the native shared exit JMP, not an AX/native RET result. */
 uint16_t MwCampaignUiEventLoop(void);
 /* Shared1909 entry or its1A0D post-event label. Host JMP transport only. */
 uint16_t MwEnterCampaignPlanetHub(uint16_t entryOffset);
-extern uint16_t companyMenuSelectedRow,barMenuSelectedRow,optionsMenuSelection;
-extern uint16_t hubSelectedRecordIndex;
+/* Campaign state owned by campaign_ui.h (plan, slice B2). */
+struct CampaignUiState
+{
+    /* Original UI tables occupy1083..1154 without an overlapping raw DS image.
+     * Authored records/text still require native-image initialization. */
+    MwUiRecord planetHubRecords[HUB_UI_RECORD_COUNT];
+    MwUiRecord contractHubRecords[CONTRACT_HUB_UI_RECORD_COUNT];
+    MwUiRecord remotePlanetHubRecords[HUB_UI_RECORD_COUNT];
+    MwUiMenu planetHubMenu, contractHubMenu, remotePlanetHubMenu;
+    MwUiMenu *uiMenu;
+    uint16_t selectedUiRecordIndex;
+    uint16_t uiSelectionChangedCodeOffset, uiIdleCodeOffset;
+    uint16_t panelOriginX, panelOriginY, panelWidth, panelHeight;
+    uint16_t panelBorderPictureBase;
+    uint16_t textPanelInsetX, textPanelInsetY;
+    uint16_t textPanelOriginX, textPanelOriginY;
+    uint16_t textPanelWidthPixels, textPanelHeightPixels;
+    uint16_t textPanelPreviousFont, textPanelFont;
+    uint16_t textPanelContinuationMode, textPanelYOverride;
+    uint16_t notificationTextInsetX[4], notificationTextInsetY[4];
+    uint16_t notificationColumns[4], notificationRows[4];
+    uint16_t notificationTextOffsets[4];
+    uint8_t notificationTextStorage[NOTIFICATION_TEXT_END - NOTIFICATION_TEXT_START];
+    /* FF link probes are read BEFORE sentinel rejection. No invented early guard. */
+    uint8_t hubFirstNavigationProbe, hubSecondNavigationProbe, hubThirdNavigationProbe;
+    uint16_t companyMenuSelectedRow, barMenuSelectedRow, optionsMenuSelection;
+    uint16_t hubSelectedRecordIndex;
+};
+extern CampaignUiState campaignUi;
 /* Suspended6236 CALL return, not a new1090 game variable. */
 extern uint16_t campaignEventDispatchReturnContinuation;
 uint16_t MwSelectUiRecordTable(uint16_t selectedIndex, MwUiMenu *menu);

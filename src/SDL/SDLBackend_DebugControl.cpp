@@ -311,13 +311,13 @@ static void WriteStatus(const char *path)
     fprintf(file,",\"combat\":%s,\"campaign\":{\"planet\":%u,\"contractActive\":%u,\"missionCategory\":%u,\"scenario\":%u,\"destination\":%u,\"targetHouse\":%u,\"paymentThousands\":%u,\"result\":%u,\"selectedRow\":%u,\"random\":[%u,%u],\"funds\":%lu,\"months\":%u,\"menu\":[",
         mwSdlCombatActive?"true":"false",currentPlanetIndex,acceptedContractActive,missionCategoryOrMemoryTier,
         combatScenarioCode,combatPlanetSelector,acceptedContractTargetHouseIndex,
-        acceptedContractPaymentThousands,combatTransitionResult,selectedUiRecordIndex,
+        acceptedContractPaymentThousands,combatTransitionResult,campaignUi.selectedUiRecordIndex,
         randomStateWord0,randomStateWord1,
         ((unsigned long)campaignFundsHigh<<16)|campaignFundsLow,elapsedBillingMonths);
-    if (!mwSdlCombatActive && uiMenu)
-        for(unsigned i=0;i<uiMenu->recordCount;++i)
+    if (!mwSdlCombatActive && campaignUi.uiMenu)
+        for(unsigned i=0;i<campaignUi.uiMenu->recordCount;++i)
         {
-            const MwUiRecord *row=&uiMenu->records[i];
+            const MwUiRecord *row=&campaignUi.uiMenu->records[i];
             fprintf(file,"%s{\"index\":%u,\"enabled\":%u,\"callback\":%u,\"picture\":%u,\"links\":[%u,%u,%u,%u],\"label\":",
                 i?",":"",i,row->enabled,row->activateCodeOffset,row->pictureIndex,
                 row->upRecordIndex,row->downRecordIndex,row->leftRecordIndex,row->rightRecordIndex);
