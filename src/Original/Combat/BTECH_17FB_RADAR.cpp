@@ -13,7 +13,7 @@ void BtechDrawTerrainRadar(void)
     uint16_t tickDiscontinuity=(uint16_t)(combatCockpit.radarPreviousTick+1)!=combatStartup.combatTickCounter;
     combatCockpit.radarPreviousTick=combatStartup.combatTickCounter;
     combatCockpit.radarCachePage=hudColourSchemeIndex?0:combatStartup.combatTickCounter&1;
-    drawPageSelector=backPageSelector;
+    combatVideo.drawPageSelector=combatVideo.backPageSelector;
     if (!playerUnitBinding) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding");
     combatCockpit.radarPlayerObject=playerUnitBinding->positionedLeftLeg;
     if (activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS");
@@ -28,10 +28,10 @@ void BtechDrawTerrainRadar(void)
     uint16_t mapY=TERRAIN_TILE_COLUMNS-halfHeight-BtechShiftSignedDwordRightLow(player->positionB,TERRAIN_WORLD_CELL_SHIFT);
     if (mapX!=combatCockpit.radarMapOriginX || mapY!=combatCockpit.radarMapOriginY || combatCockpit.cockpitFullRedrawPending || tickDiscontinuity)
     {
-        combatCockpit.radarMapOriginX=mapX;combatCockpit.radarMapOriginY=mapY;drawPolygonFilled=true;
+        combatCockpit.radarMapOriginX=mapX;combatCockpit.radarMapOriginY=mapY;combatVideo.drawPolygonFilled=true;
         if (hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
-        drawLineColour=(uint8_t)combatCockpit.hudColourSchemes[hudColourSchemeIndex].radarBackground;
-        drawFillColour=drawLineColour;
+        combatVideo.drawLineColour=(uint8_t)combatCockpit.hudColourSchemes[hudColourSchemeIndex].radarBackground;
+        combatVideo.drawFillColour=combatVideo.drawLineColour;
         BtechDrawStyledRectangle(combatCockpit.radarRectangle->x,combatCockpit.radarRectangle->y,combatCockpit.radarRectangle->width,combatCockpit.radarRectangle->height);
         for (uint16_t panelX=0;(int16_t)panelX<combatCockpit.radarRectangle->width;++panelX,++mapX)
         {

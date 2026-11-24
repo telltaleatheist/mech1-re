@@ -36,7 +36,6 @@ enum { COMBAT_NATIVE_GRAPHICS_DISPATCH_START=0x3F34,COMBAT_NATIVE_GRAPHICS_DISPA
     COMBAT_NATIVE_FAR_POINTER_BYTES=4,
     COMBAT_NATIVE_GRAPHICS_DISPATCH_END=COMBAT_NATIVE_GRAPHICS_DISPATCH_START
         +COMBAT_NATIVE_GRAPHICS_DISPATCH_ENTRIES*COMBAT_NATIVE_FAR_POINTER_BYTES };
-extern void (*graphicsSwapScreenPages)(uint16_t waitForRetrace);
 void BtechSwapScreenPages(uint16_t waitForRetrace);
 void BtechEgaSwapScreenPages(uint16_t waitForRetrace);
 extern const uint8_t glyphTailMasks[8];
@@ -63,30 +62,8 @@ typedef struct BtechBitmapList {
     uint16_t imageCount;
     BtechResourceAllocation pixels;
 } BtechBitmapList;
-extern uint16_t bitmapRegistryCounts[COMBAT_BITMAP_LISTS];
-extern BtechBitmapList *bitmapRegistryLists[COMBAT_BITMAP_LISTS],*promptBitmaps;
-extern BtechBitmapList *pointPictures,*smallMechPictures,*strutPictures;
-extern BtechBitmapList *cockpitPictures,*hudGlyphPictures,*inspectionDamagePictures;
-extern uint8_t graphicsColourMode;
-extern uint32_t (*graphicsBitmapStorageSize)(const BtechBitmapList *,uint16_t *);
-extern void (*graphicsPrepareBitmapList)(BtechBitmapList *,BtechResourceAllocation,uint32_t);
-extern void (*graphicsDrawBitmap)(const BtechBitmap *,uint16_t,uint16_t);
-extern uint16_t egaBitmapRoundedEndX,egaBitmapShiftPhase;
-extern uint8_t egaBitmapClipSides;
-extern uint16_t egaBitmapSourceRowSkip,egaBitmapDestinationRowSkip,egaBitmapPlaneStride;
 void BtechDrawBitmap(const BtechBitmap *bitmap,int16_t x,int16_t y);
 void BtechEgaDrawBitmap(const BtechBitmap *bitmap,uint16_t x,uint16_t y);
-extern uint8_t textForegroundColour,textBackgroundColour,textTransparentBackground;
-extern int16_t clipMinimumX,clipMaximumX,clipMinimumY,clipMaximumY;
-extern uint8_t screenPolygonNeedsClip,drawPolygonFilled,egaBitmapEnabledPlanes;
-extern uint8_t drawLineColour,drawFillColour;
-extern uint16_t drawColourPattern,spanPrimaryPattern,spanSecondaryPattern,spanAlternationState;
-extern uint8_t egaSpanLeadingMasks[8],egaSpanTrailingMasks[8],egaSpanPrimaryColour,egaSpanSecondaryColour;
-extern uint8_t egaPixelBitMasks[8],egaLinePixelMask;
-extern uint16_t egaLineRunLength,egaLineFractionStep,egaLineRemainingBeforeRun,egaLineFractionAccumulator;
-extern void (*graphicsWritePixel)(uint16_t x,uint16_t y,uint16_t colour);
-extern uint16_t (*graphicsReadPixel)(uint16_t x,uint16_t y);
-extern void (*graphicsSetOverscanColour)(uint16_t colour);
 void BtechWriteClippedPixel(int16_t x,int16_t y,uint16_t colour);
 uint16_t BtechReadClippedPixel(int16_t x,int16_t y);
 void BtechSetOverscanColour(uint16_t colour);
@@ -95,7 +72,6 @@ uint16_t BtechEgaReadPixel(uint16_t x,uint16_t y);
 void BtechEgaWritePixel(uint16_t x,uint16_t y,uint16_t colour);
 void BtechEgaSetOverscanColour(uint16_t colour);
 void BtechEgaDrawLine(uint16_t firstX,uint16_t firstY,uint16_t secondX,uint16_t secondY,uint16_t page);
-extern void (*graphicsCopyScreenRectangle)(uint16_t,uint16_t,uint16_t,uint16_t);
 void BtechCopyScreenRectangle(uint16_t x,uint16_t y,uint16_t width,uint16_t height);
 void BtechEgaCopyScreenRectangle(uint16_t x,uint16_t y,uint16_t width,uint16_t height);
 typedef void (*BtechSolidSpan)(uint16_t pattern,uint16_t x,int16_t count,uint16_t rowOffset,uint16_t page);
@@ -103,52 +79,19 @@ typedef void (*BtechAlternatingSpan)(uint16_t primary,uint16_t x,int16_t count,u
 /* One native code reference has two proved register interfaces. Exactly one
  * member is active; no unused DX argument or invented drawing adapter. */
 typedef struct BtechShapeSpanCallback {BtechSolidSpan solid;BtechAlternatingSpan alternating;} BtechShapeSpanCallback;
-extern BtechSolidSpan graphicsFillSolidSpan;
-extern BtechAlternatingSpan graphicsFillAlternatingSpan;
-extern BtechShapeSpanCallback shapeSpanCallback;
 uint16_t BtechDrawStyledRectangle(uint16_t left,uint16_t top,uint16_t width,uint16_t height);
 enum { COMBAT_ELLIPSE_MAX_RADIUS=0x66,COMBAT_ELLIPSE_ROWS=COMBAT_ELLIPSE_MAX_RADIUS+1 };
-extern uint8_t ellipseLeftInsets[COMBAT_ELLIPSE_ROWS],ellipseBorderWidths[COMBAT_ELLIPSE_ROWS],ellipseInteriorWidths[COMBAT_ELLIPSE_ROWS];
-extern uint16_t ellipsePageSelector;
 void BtechDrawStyledEllipse(int16_t radius,uint16_t centerX,uint16_t centerY);
 void BtechEgaFillSolidSpan(uint16_t pattern,uint16_t x,int16_t count,uint16_t rowOffset,uint16_t page);
 void BtechEgaFillAlternatingSpan(uint16_t primary,uint16_t x,int16_t count,uint16_t alternate,uint16_t rowOffset,uint16_t page);
-extern uint16_t videoScratchPageSelector,backPageSelector,frontPageSelector;
-extern uint16_t copySourcePageSelector,drawPageSelector;
-extern uint8_t videoColourCount;
-extern uint8_t pcjrTandyCompatible,combatRendererKind;
-extern uint8_t textForegroundPattern,textBackgroundPattern,glyphTailMask;
-extern uint16_t graphicsRowOffsets[COMBAT_SCREEN_HEIGHT];
-extern uint16_t herculesDisplayRowOffsets[0x15C]; /* Adjacent native table, also read after EGA row199. */
-extern uint16_t palettePrimarySlots[COMBAT_PALETTE_SLOTS][COMBAT_PALETTE_WORDS];
-extern uint16_t paletteSecondarySlots[COMBAT_PALETTE_SLOTS][COMBAT_PALETTE_WORDS];
-extern uint16_t graphicsColourPatterns[COMBAT_PALETTE_SLOTS*COMBAT_PALETTE_WORDS];
-extern uint8_t fontAdvanceWidths[COMBAT_FONT_SLOTS],combatFontHeights[COMBAT_FONT_SLOTS];
-extern uint8_t fontFirstCharacters[COMBAT_FONT_SLOTS],fontCharacterCounts[COMBAT_FONT_SLOTS];
-extern BtechFont fonts[COMBAT_FONT_SLOTS];
-extern uint8_t *egaFontBuffer;
-extern uint16_t egaFontChunkCounter;
-extern uint8_t paletteSlotIds[COMBAT_PALETTE_SLOTS];
-extern void (*graphicsDrawGlyph)(uint16_t character,uint16_t x,uint16_t y,uint16_t page);
-extern uint16_t (*graphicsLoadFont)(BtechRuntimeStream *,uint16_t,uint8_t *);
-extern uint16_t (*graphicsLoadPalette)(BtechRuntimeStream *,uint16_t);
-extern void (*graphicsSelectPalette)(uint16_t);
-extern uint8_t videoAdapterAllowedMask;
-extern uint32_t (*graphicsCaptureStorageSize)(uint16_t width,uint16_t height);
 typedef void (*BtechScreenRectangleTransfer)(BtechResourceAllocation buffer,uint16_t x,uint16_t y,uint16_t width,uint16_t height);
-extern BtechScreenRectangleTransfer graphicsCaptureRectangle,graphicsRestoreRectangle;
 void BtechCaptureScreenRectangle(BtechResourceAllocation buffer,uint16_t x,uint16_t y,uint16_t width,uint16_t height);
 void BtechRestoreScreenRectangle(BtechResourceAllocation buffer,uint16_t x,uint16_t y,uint16_t width,uint16_t height);
 void BtechEgaCaptureScreenRectangle(BtechResourceAllocation buffer,uint16_t x,uint16_t y,uint16_t width,uint16_t height);
 void BtechEgaRestoreScreenRectangle(BtechResourceAllocation buffer,uint16_t x,uint16_t y,uint16_t width,uint16_t height);
 /* Packed screen bytes are decoded IO, not a native segment-memory registry. */
 typedef void (*BtechScreenRegionUpload)(BtechResourceAllocation source,uint16_t left,uint16_t top,uint16_t width,uint16_t height);
-extern BtechScreenRegionUpload graphicsUploadPackedScreenRegion;
-/* Converted EGA alternate-upload/present targets are the genuine000B RETF.
- * It consumes no inputs; wrapper arguments remain in their original domains. */
-extern void (*graphicsUploadAlternateScreenRegion)(void),(*graphicsPresentRectangle)(void);
 void BtechPresentScreenRectangle(int16_t x,int16_t y,uint16_t width,uint16_t height);
-extern uint16_t egaScreenUploadColumns,egaScreenUploadRowSkip,egaScreenUploadRowsRemaining;
 uint16_t BtechLoadScreenImage(const char *filename,BtechRuntimeStream *stream);
 void BtechDispatchImageRegionPrimary(BtechResourceAllocation source,uint16_t left,uint16_t top,uint16_t width,uint16_t height);
 void BtechDispatchImageRegionAlternate(BtechResourceAllocation source,uint16_t left,uint16_t top,uint16_t width,uint16_t height);
@@ -207,14 +150,76 @@ typedef struct BtechLandscapeCameraColourRow {
     uint16_t headingTickPaletteIndex;
     uint8_t unidentifiedField12[4];
 } BtechLandscapeCameraColourRow;
-extern BtechLandscapeCameraColourRow landscapeCameraColourRows[COMBAT_HUD_COLOUR_SCHEMES][COMBAT_LANDSCAPES];
-extern uint16_t landscapePaletteSlots[COMBAT_LANDSCAPES],playerCameraFillASuppressed;
-extern uint16_t damagePaletteSlot;
-#define desertPaletteSlot landscapePaletteSlots[0]
-#define tropicalPaletteSlot landscapePaletteSlots[1]
-#define arcticPaletteSlot landscapePaletteSlots[2]
-extern uint8_t inspectionReloadPending;
-extern uint16_t inspectionSetupComplete;
+#define desertPaletteSlot combatVideo.landscapePaletteSlots[0]
+#define tropicalPaletteSlot combatVideo.landscapePaletteSlots[1]
+#define arcticPaletteSlot combatVideo.landscapePaletteSlots[2]
+/* Combat state owned by combat_video.h (plan, slice B3c). */
+struct CombatVideoState
+{
+    void (*graphicsSwapScreenPages)(uint16_t waitForRetrace);
+    uint16_t bitmapRegistryCounts[COMBAT_BITMAP_LISTS];
+    BtechBitmapList *bitmapRegistryLists[COMBAT_BITMAP_LISTS], *promptBitmaps;
+    BtechBitmapList *pointPictures, *smallMechPictures, *strutPictures;
+    BtechBitmapList *cockpitPictures, *hudGlyphPictures, *inspectionDamagePictures;
+    uint8_t graphicsColourMode;
+    uint32_t (*graphicsBitmapStorageSize)(const BtechBitmapList *,uint16_t *);
+    void (*graphicsPrepareBitmapList)(BtechBitmapList *,BtechResourceAllocation,uint32_t);
+    void (*graphicsDrawBitmap)(const BtechBitmap *,uint16_t,uint16_t);
+    uint16_t egaBitmapRoundedEndX, egaBitmapShiftPhase;
+    uint8_t egaBitmapClipSides;
+    uint16_t egaBitmapSourceRowSkip, egaBitmapDestinationRowSkip, egaBitmapPlaneStride;
+    uint8_t textForegroundColour, textBackgroundColour, textTransparentBackground;
+    int16_t clipMinimumX, clipMaximumX, clipMinimumY, clipMaximumY;
+    uint8_t screenPolygonNeedsClip, drawPolygonFilled, egaBitmapEnabledPlanes;
+    uint8_t drawLineColour, drawFillColour;
+    uint16_t drawColourPattern, spanPrimaryPattern, spanSecondaryPattern, spanAlternationState;
+    uint8_t egaSpanLeadingMasks[8], egaSpanTrailingMasks[8], egaSpanPrimaryColour, egaSpanSecondaryColour;
+    uint8_t egaPixelBitMasks[8], egaLinePixelMask;
+    uint16_t egaLineRunLength, egaLineFractionStep, egaLineRemainingBeforeRun, egaLineFractionAccumulator;
+    void (*graphicsWritePixel)(uint16_t x,uint16_t y,uint16_t colour);
+    uint16_t (*graphicsReadPixel)(uint16_t x,uint16_t y);
+    void (*graphicsSetOverscanColour)(uint16_t colour);
+    void (*graphicsCopyScreenRectangle)(uint16_t,uint16_t,uint16_t,uint16_t);
+    BtechSolidSpan graphicsFillSolidSpan;
+    BtechAlternatingSpan graphicsFillAlternatingSpan;
+    BtechShapeSpanCallback shapeSpanCallback;
+    uint8_t ellipseLeftInsets[COMBAT_ELLIPSE_ROWS], ellipseBorderWidths[COMBAT_ELLIPSE_ROWS], ellipseInteriorWidths[COMBAT_ELLIPSE_ROWS];
+    uint16_t ellipsePageSelector;
+    uint16_t videoScratchPageSelector, backPageSelector, frontPageSelector;
+    uint16_t copySourcePageSelector, drawPageSelector;
+    uint8_t videoColourCount;
+    uint8_t pcjrTandyCompatible, combatRendererKind;
+    uint8_t textForegroundPattern, textBackgroundPattern, glyphTailMask;
+    uint16_t graphicsRowOffsets[COMBAT_SCREEN_HEIGHT];
+    uint16_t herculesDisplayRowOffsets[0x15C]; /* Adjacent native table, also read after EGA row199. */
+    uint16_t palettePrimarySlots[COMBAT_PALETTE_SLOTS][COMBAT_PALETTE_WORDS];
+    uint16_t paletteSecondarySlots[COMBAT_PALETTE_SLOTS][COMBAT_PALETTE_WORDS];
+    uint16_t graphicsColourPatterns[COMBAT_PALETTE_SLOTS*COMBAT_PALETTE_WORDS];
+    uint8_t fontAdvanceWidths[COMBAT_FONT_SLOTS], combatFontHeights[COMBAT_FONT_SLOTS];
+    uint8_t fontFirstCharacters[COMBAT_FONT_SLOTS], fontCharacterCounts[COMBAT_FONT_SLOTS];
+    BtechFont fonts[COMBAT_FONT_SLOTS];
+    uint8_t *egaFontBuffer;
+    uint16_t egaFontChunkCounter;
+    uint8_t paletteSlotIds[COMBAT_PALETTE_SLOTS];
+    void (*graphicsDrawGlyph)(uint16_t character,uint16_t x,uint16_t y,uint16_t page);
+    uint16_t (*graphicsLoadFont)(BtechRuntimeStream *,uint16_t,uint8_t *);
+    uint16_t (*graphicsLoadPalette)(BtechRuntimeStream *,uint16_t);
+    void (*graphicsSelectPalette)(uint16_t);
+    uint8_t videoAdapterAllowedMask;
+    uint32_t (*graphicsCaptureStorageSize)(uint16_t width,uint16_t height);
+    BtechScreenRectangleTransfer graphicsCaptureRectangle, graphicsRestoreRectangle;
+    BtechScreenRegionUpload graphicsUploadPackedScreenRegion;
+    /* Converted EGA alternate-upload/present targets are the genuine000B RETF.
+     * It consumes no inputs; wrapper arguments remain in their original domains. */
+    void (*graphicsUploadAlternateScreenRegion)(void), (*graphicsPresentRectangle)(void);
+    uint16_t egaScreenUploadColumns, egaScreenUploadRowSkip, egaScreenUploadRowsRemaining;
+    BtechLandscapeCameraColourRow landscapeCameraColourRows[COMBAT_HUD_COLOUR_SCHEMES][COMBAT_LANDSCAPES];
+    uint16_t landscapePaletteSlots[COMBAT_LANDSCAPES], playerCameraFillASuppressed;
+    uint16_t damagePaletteSlot;
+    uint8_t inspectionReloadPending;
+    uint16_t inspectionSetupComplete;
+};
+extern CombatVideoState combatVideo;
 void BtechApplyLandscapeCameraColours(void);
 void BtechResetMechInspectionState(void);
 #endif

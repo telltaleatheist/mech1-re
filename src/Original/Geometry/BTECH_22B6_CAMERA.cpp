@@ -59,19 +59,19 @@ void BtechPrepareCameraContext(BtechCameraContext *camera)
     for (uint8_t shifts=combatRender.combatProjectionShift;shifts;--shifts) projectionUnit=(uint16_t)(projectionUnit<<1);
     combatRender.combatProjectionUnit=projectionUnit;
     combatRender.nearClipDepth=projectionUnit;
-    clipMinimumX=camera->clipMinimumA;
-    clipMaximumX=camera->clipMaximumA;
-    clipMinimumY=camera->clipMinimumB;
-    clipMaximumY=camera->clipMaximumB;
+    combatVideo.clipMinimumX=camera->clipMinimumA;
+    combatVideo.clipMaximumX=camera->clipMaximumA;
+    combatVideo.clipMinimumY=camera->clipMinimumB;
+    combatVideo.clipMaximumY=camera->clipMaximumB;
     BtechTransformWordVectorFar(cameraReferenceVector,&combatRender.viewTransformBasis,combatRender.transformedReferenceVector);
     combatRender.activeColourShadeClasses=camera->colourShadeClasses;
     combatRender.activePaletteRemap=camera->paletteRemap;
     if (!(camera->flags&CAMERA_KEEP_SCREEN_CENTRE))
     {
-        uint16_t difference=clipMaximumX-clipMinimumX;
-        combatRender.screenCentreA=(int16_t)(clipMinimumX+((difference>>1)|(difference&0x8000)));
-        difference=(uint16_t)(clipMaximumY-clipMinimumY);
-        combatRender.screenCentreB=(int16_t)(clipMinimumY+((difference>>1)|(difference&0x8000)));
+        uint16_t difference=combatVideo.clipMaximumX-combatVideo.clipMinimumX;
+        combatRender.screenCentreA=(int16_t)(combatVideo.clipMinimumX+((difference>>1)|(difference&0x8000)));
+        difference=(uint16_t)(combatVideo.clipMaximumY-combatVideo.clipMinimumY);
+        combatRender.screenCentreB=(int16_t)(combatVideo.clipMinimumY+((difference>>1)|(difference&0x8000)));
     }
     if (!(camera->flags&CAMERA_NO_BACKGROUND))
     {
@@ -79,7 +79,7 @@ void BtechPrepareCameraContext(BtechCameraContext *camera)
         if (combatRender.activePaletteRemap) fillA=combatRender.activePaletteRemap[fillA];
         uint8_t fillB=combatRender.activeCameraContext->fillPaletteB;
         if (combatRender.activePaletteRemap) fillB=combatRender.activePaletteRemap[fillB];
-        if ((camera->flags&CAMERA_GRADIENT_BACKGROUND) && graphicsColourMode) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (camera->flags&CAMERA_GRADIENT_BACKGROUND) && graphicsColourMode"); /*2D03 alternate adapter. */
+        if ((camera->flags&CAMERA_GRADIENT_BACKGROUND) && combatVideo.graphicsColourMode) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (camera->flags&CAMERA_GRADIENT_BACKGROUND) && graphicsColourMode"); /*2D03 alternate adapter. */
         BtechFillTiltedCameraHorizonRegions(fillA,fillB,combatRender.cameraViewOrientation[0],combatRender.cameraViewOrientation[1]);
     }
 }
@@ -110,8 +110,8 @@ void BtechCullAndRenderWorldObject(BtechHeapWorldObject *object)
             combatRender.projectionRatio.ratio.third=phase?magnitude+combatRender.resourceScaledExtent:magnitude-combatRender.resourceScaledExtent;
             builderCx=BtechProjectViewPosition(&combatRender.projectionRatio.vector,&combatRender.projectionVectorScratch);
             BtechOffsetProjectedScreenPair(&combatRender.projectionVectorScratch);
-            uint8_t outside=clipMaximumX<(int32_t)combatRender.projectionVectorScratch.positionA
-                || clipMinimumY>(int32_t)combatRender.projectionVectorScratch.positionB;
+            uint8_t outside=combatVideo.clipMaximumX<(int32_t)combatRender.projectionVectorScratch.positionA
+                || combatVideo.clipMinimumY>(int32_t)combatRender.projectionVectorScratch.positionB;
             if (!phase && outside) return;
             if (phase) combatRender.objectNeedsScreenClip=outside;
         }

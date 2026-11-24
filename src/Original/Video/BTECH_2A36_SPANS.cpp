@@ -14,10 +14,10 @@ void BtechEgaFillSolidSpan(uint16_t pattern,uint16_t x,int16_t count,uint16_t ro
     BtechEgaCanvasWriter ega(page);
     uint16_t cursor=rowOffset+(x>>3);
     uint16_t firstPixel=x&7,endPixel=(uint16_t)(firstPixel+(uint16_t)count);
-    uint8_t mask=egaSpanLeadingMasks[firstPixel];
+    uint8_t mask=combatVideo.egaSpanLeadingMasks[firstPixel];
     if ((int16_t)endPixel<8)
     {
-        mask&=egaSpanTrailingMasks[(uint8_t)endPixel];
+        mask&=combatVideo.egaSpanTrailingMasks[(uint8_t)endPixel];
         ega.setMask((uint8_t)(mask));
         ega.write(cursor,(uint8_t)pattern);
         return;
@@ -34,7 +34,7 @@ void BtechEgaFillSolidSpan(uint16_t pattern,uint16_t x,int16_t count,uint16_t ro
     uint16_t tail=remaining&7;
     if (tail)
     {
-        mask=egaSpanTrailingMasks[tail];
+        mask=combatVideo.egaSpanTrailingMasks[tail];
         ega.setMask((uint8_t)(mask));
         ega.write(cursor,(uint8_t)pattern);
     }
@@ -46,23 +46,23 @@ void BtechEgaFillSolidSpan(uint16_t pattern,uint16_t x,int16_t count,uint16_t ro
  * its mask has a 1 (G4; BTECH_2A36_CANVAS.h). */
 void BtechEgaFillAlternatingSpan(uint16_t primary,uint16_t x,int16_t count,uint16_t alternate,uint16_t rowOffset,uint16_t page)
 {
-    spanAlternationState^=1;
-    uint16_t pattern=spanAlternationState?alternate:primary;
+    combatVideo.spanAlternationState^=1;
+    uint16_t pattern=combatVideo.spanAlternationState?alternate:primary;
     if (count<=0) return;
     BtechEgaCanvasWriter ega(page);
-    egaSpanPrimaryColour=(uint8_t)(pattern>>8);
-    egaSpanSecondaryColour=(uint8_t)pattern;
+    combatVideo.egaSpanPrimaryColour=(uint8_t)(pattern>>8);
+    combatVideo.egaSpanSecondaryColour=(uint8_t)pattern;
     uint16_t firstPixel=x&7,endPixel=(uint16_t)(firstPixel+(uint16_t)count);
-    uint8_t leading=egaSpanLeadingMasks[firstPixel];
+    uint8_t leading=combatVideo.egaSpanLeadingMasks[firstPixel];
     uint16_t firstByte=rowOffset+(x>>3);
     for (uint16_t phase=0;phase<2;++phase)
     {
         uint8_t columns=phase?0x55:0xAA;
-        uint8_t colour=phase?egaSpanSecondaryColour:egaSpanPrimaryColour;
+        uint8_t colour=phase?combatVideo.egaSpanSecondaryColour:combatVideo.egaSpanPrimaryColour;
         uint16_t cursor=firstByte;
         if ((int16_t)endPixel<8)
         {
-            uint8_t mask=leading&egaSpanTrailingMasks[(uint8_t)endPixel]&columns;
+            uint8_t mask=leading&combatVideo.egaSpanTrailingMasks[(uint8_t)endPixel]&columns;
             ega.setMask((uint8_t)(mask));
             ega.write(cursor,colour);
             continue;
@@ -79,7 +79,7 @@ void BtechEgaFillAlternatingSpan(uint16_t primary,uint16_t x,int16_t count,uint1
         uint16_t tail=remaining&7;
         if (tail)
         {
-            uint8_t mask=egaSpanTrailingMasks[tail]&columns;
+            uint8_t mask=combatVideo.egaSpanTrailingMasks[tail]&columns;
             ega.setMask((uint8_t)(mask));
             ega.write(cursor,colour);
         }

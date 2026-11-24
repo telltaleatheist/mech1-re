@@ -43,7 +43,7 @@ void BtechRenderWidePolygonPayload(const BtechRenderPolygonPayload *payload)
     {
         if ((int16_t)combatRender.widePolygonsRemaining--<=0) return; /* DEC/JGE, including overflow. */
         uint8_t flags=polygon->flags;
-        drawPolygonFilled=(flags&POLYGON_FILLED)!=0;
+        combatVideo.drawPolygonFilled=(flags&POLYGON_FILLED)!=0;
         if ((flags&POLYGON_FACING_MASK)==2) continue;
         if ((flags&POLYGON_FACING_MASK)!=0)
         {
@@ -113,7 +113,7 @@ divideCoordinate:
             combatPolygons.screenPolygonX[vertex]=(int16_t)wideScreenX[vertex];
             combatPolygons.screenPolygonY[vertex]=(int16_t)wideScreenY[vertex];
         }
-        screenPolygonNeedsClip=false;
+        combatVideo.screenPolygonNeedsClip=false;
         BtechDrawScreenPolygon((int16_t)combatPolygons.polygonVertexCount,combatPolygons.screenPolygonX,combatPolygons.screenPolygonY);
     }
 }

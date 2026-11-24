@@ -21,7 +21,7 @@ void BtechRefreshCockpitAndSensorTarget(void)
 {
     BtechPooledWorldObject *movementObject=unitBindings[0].positionedLeftLeg;
     if (!combatStartup.combatTickCounter) combatCockpit.rememberedSensorTargetSlot=0;
-    drawPageSelector=backPageSelector;screenPolygonNeedsClip=false;drawPolygonFilled=true;
+    combatVideo.drawPageSelector=combatVideo.backPageSelector;combatVideo.screenPolygonNeedsClip=false;combatVideo.drawPolygonFilled=true;
     BtechDrawMechSubsystemLamps(playerMechState);
     if (!playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState");
     BtechUpdateHeatGauge((int16_t)playerMechState->heatUnits/COMBAT_HEAT_UNITS_PER_DISPLAY_POINT);
@@ -53,9 +53,9 @@ void BtechRefreshCockpitAndSensorTarget(void)
 void BtechDrawCockpitAimReticle(uint16_t x,uint16_t y)
 {
     if (combatStartup.viewScaleShift!=AIM_RETICLE_VIEW_SHIFT) return;
-    drawPageSelector=backPageSelector;
+    combatVideo.drawPageSelector=combatVideo.backPageSelector;
     if (combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
-    drawFillColour=landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex].hudReticleColour;
+    combatVideo.drawFillColour=combatVideo.landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex].hudReticleColour;
     BtechDrawClippedLine((int16_t)x,(int16_t)(y-AIM_RETICLE_OUTER_RADIUS),(int16_t)x,(int16_t)(y-AIM_RETICLE_INNER_RADIUS));
     BtechDrawClippedLine((int16_t)x,(int16_t)(y+AIM_RETICLE_INNER_RADIUS),(int16_t)x,(int16_t)(y+AIM_RETICLE_OUTER_RADIUS));
     BtechDrawClippedLine((int16_t)(x-AIM_RETICLE_OUTER_RADIUS),(int16_t)y,(int16_t)(x-AIM_RETICLE_INNER_RADIUS),(int16_t)y);
@@ -65,14 +65,14 @@ void BtechDrawCockpitAimReticle(uint16_t x,uint16_t y)
 /*0810:0720. Up to six strut placements; sentinel12 and byte-aligned X. */
 void BtechDrawCockpitBitmapPlacements(void)
 {
-    screenPolygonNeedsClip=false;
+    combatVideo.screenPolygonNeedsClip=false;
     if (activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS");
     const BtechCockpitBitmapPlacement *placement=combatCockpit.cockpitLayouts[activeCockpitLayoutIndex].bitmapPlacements;
     for (uint16_t index=0;index<COMBAT_COCKPIT_PLACEMENTS;++index,++placement)
     {
         if (placement->bitmapIndex==COCKPIT_BITMAP_END_INDEX) return;
-        if (!strutPictures || placement->bitmapIndex>=strutPictures->imageCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !strutPictures || placement->bitmapIndex>=strutPictures->imageCount");
-        BtechDrawBitmap(&strutPictures->images[placement->bitmapIndex],
+        if (!combatVideo.strutPictures || placement->bitmapIndex>=combatVideo.strutPictures->imageCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !strutPictures || placement->bitmapIndex>=strutPictures->imageCount");
+        BtechDrawBitmap(&combatVideo.strutPictures->images[placement->bitmapIndex],
             (int16_t)((uint16_t)placement->x&COCKPIT_BITMAP_X_ALIGNMENT_MASK),placement->y);
     }
 }
@@ -88,15 +88,15 @@ void BtechDrawPendingFiringIndicator(void)
     if (combatStartup.firingIndicatorBank1Pending)
     {
         const BtechHudGaugeAnchor *anchor=&layout->firingIndicatorBank1[pitchClass];
-        if (!cockpitPictures || FIRING_INDICATOR_BANK_ONE_BITMAP+pitchClass>=cockpitPictures->imageCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !cockpitPictures || FIRING_INDICATOR_BANK_ONE_BITMAP+pitchClass>=cockpitPictures->imageCount");
-        BtechDrawBitmap(&cockpitPictures->images[FIRING_INDICATOR_BANK_ONE_BITMAP+pitchClass],anchor->x,anchor->y);
+        if (!combatVideo.cockpitPictures || FIRING_INDICATOR_BANK_ONE_BITMAP+pitchClass>=combatVideo.cockpitPictures->imageCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !cockpitPictures || FIRING_INDICATOR_BANK_ONE_BITMAP+pitchClass>=cockpitPictures->imageCount");
+        BtechDrawBitmap(&combatVideo.cockpitPictures->images[FIRING_INDICATOR_BANK_ONE_BITMAP+pitchClass],anchor->x,anchor->y);
         combatStartup.firingIndicatorBank1Pending=0;
     }
     else if (combatStartup.firingIndicatorBank0Pending)
     {
         const BtechHudGaugeAnchor *anchor=&layout->firingIndicatorBank0[pitchClass];
-        if (!cockpitPictures || FIRING_INDICATOR_BANK_ZERO_BITMAP+pitchClass>=cockpitPictures->imageCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !cockpitPictures || FIRING_INDICATOR_BANK_ZERO_BITMAP+pitchClass>=cockpitPictures->imageCount");
-        BtechDrawBitmap(&cockpitPictures->images[FIRING_INDICATOR_BANK_ZERO_BITMAP+pitchClass],anchor->x,anchor->y);
+        if (!combatVideo.cockpitPictures || FIRING_INDICATOR_BANK_ZERO_BITMAP+pitchClass>=combatVideo.cockpitPictures->imageCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !cockpitPictures || FIRING_INDICATOR_BANK_ZERO_BITMAP+pitchClass>=cockpitPictures->imageCount");
+        BtechDrawBitmap(&combatVideo.cockpitPictures->images[FIRING_INDICATOR_BANK_ZERO_BITMAP+pitchClass],anchor->x,anchor->y);
         combatStartup.firingIndicatorBank0Pending=0;
     }
 }

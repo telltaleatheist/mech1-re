@@ -71,8 +71,8 @@ int16_t BtechProbePcjrTandyRomSignatures(void)
 {
     if (!btechHostReadRomByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostReadRomByte");
     if (btechHostReadRomByte(BIOS_ROM_SELECTOR,BIOS_MODEL_OFFSET)==BIOS_PCJR_MODEL_BYTE && btechHostReadRomByte(BIOS_ROM_SELECTOR,TANDY_ROM_SIGNATURE_OFFSET)==TANDY_ROM_SIGNATURE_BYTE)
-        pcjrTandyCompatible=1;
-    return (int8_t)pcjrTandyCompatible;
+        combatVideo.pcjrTandyCompatible=1;
+    return (int8_t)combatVideo.pcjrTandyCompatible;
 }
 
 /*1BF5:2BC8. Repeated calls still adjust BIOS shift state. The compatibility

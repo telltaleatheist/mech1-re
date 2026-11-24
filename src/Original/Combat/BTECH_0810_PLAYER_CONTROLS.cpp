@@ -86,7 +86,7 @@ void BtechProcessPlayerControls(void)
     case COMBAT_KEY_H:
     {
         if (combatLandscapeIndex>=COMBAT_LANDSCAPES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatLandscapeIndex>=COMBAT_LANDSCAPES");
-        BtechLandscapeCameraColourRow *colours=&landscapeCameraColourRows[0][combatLandscapeIndex];
+        BtechLandscapeCameraColourRow *colours=&combatVideo.landscapeCameraColourRows[0][combatLandscapeIndex];
         /* Native WORD increment/mask clears the adjacent0017 byte, too. */
         colours->hudReticleColour=(uint8_t)((colours->hudReticleColour+1)&PLAYER_HUD_COLOUR_MASK);
         colours->unidentifiedField11=0;

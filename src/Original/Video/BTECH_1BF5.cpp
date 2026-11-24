@@ -21,68 +21,68 @@ uint16_t BtechSelectCombatRenderer(uint8_t adapterOverride,uint8_t allowedMask)
 {
     static const uint8_t overrideMasks[]={0,1,2,4,8,0x10,0x20,0x40,0x80};
     if (adapterOverride>=sizeof(overrideMasks)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: adapterOverride>=sizeof(overrideMasks)");
-    videoAdapterAllowedMask=adapterOverride?overrideMasks[adapterOverride]:allowedMask;
+    combatVideo.videoAdapterAllowedMask=adapterOverride?overrideMasks[adapterOverride]:allowedMask;
     combatStartup.videoAdapter=(uint8_t)BtechGetBiosDisplayAdapterBits();
-    combatRendererKind=(uint8_t)BtechDetectVideoAdapter();
-    if (combatRendererKind==COMBAT_VIDEO_EGA)
+    combatVideo.combatRendererKind=(uint8_t)BtechDetectVideoAdapter();
+    if (combatVideo.combatRendererKind==COMBAT_VIDEO_EGA)
     {
-        graphicsDrawGlyph=BtechEgaDrawGlyph;
-        graphicsLoadFont=BtechEgaLoadFont;
-        graphicsLoadPalette=BtechEgaLoadPalette;
-        graphicsSelectPalette=BtechEgaSelectPalette;
-        graphicsBitmapStorageSize=BtechEgaBitmapStorageSize;
-        graphicsPrepareBitmapList=BtechEgaPrepareBitmapList;
-        graphicsDrawBitmap=BtechEgaDrawBitmap;
-        graphicsCaptureStorageSize=BtechEgaGetCaptureStorageSize;
-        graphicsCaptureRectangle=BtechEgaCaptureScreenRectangle;
-        graphicsRestoreRectangle=BtechEgaRestoreScreenRectangle;
-        graphicsUploadPackedScreenRegion=BtechEgaUploadPackedScreenRegion;
-        graphicsUploadAlternateScreenRegion=BtechEgaNoOperation;
-        graphicsPresentRectangle=BtechEgaNoOperation;
-        graphicsFillSolidSpan=BtechEgaFillSolidSpan;
-        graphicsFillAlternatingSpan=BtechEgaFillAlternatingSpan;
+        combatVideo.graphicsDrawGlyph=BtechEgaDrawGlyph;
+        combatVideo.graphicsLoadFont=BtechEgaLoadFont;
+        combatVideo.graphicsLoadPalette=BtechEgaLoadPalette;
+        combatVideo.graphicsSelectPalette=BtechEgaSelectPalette;
+        combatVideo.graphicsBitmapStorageSize=BtechEgaBitmapStorageSize;
+        combatVideo.graphicsPrepareBitmapList=BtechEgaPrepareBitmapList;
+        combatVideo.graphicsDrawBitmap=BtechEgaDrawBitmap;
+        combatVideo.graphicsCaptureStorageSize=BtechEgaGetCaptureStorageSize;
+        combatVideo.graphicsCaptureRectangle=BtechEgaCaptureScreenRectangle;
+        combatVideo.graphicsRestoreRectangle=BtechEgaRestoreScreenRectangle;
+        combatVideo.graphicsUploadPackedScreenRegion=BtechEgaUploadPackedScreenRegion;
+        combatVideo.graphicsUploadAlternateScreenRegion=BtechEgaNoOperation;
+        combatVideo.graphicsPresentRectangle=BtechEgaNoOperation;
+        combatVideo.graphicsFillSolidSpan=BtechEgaFillSolidSpan;
+        combatVideo.graphicsFillAlternatingSpan=BtechEgaFillAlternatingSpan;
         combatPolygons.graphicsFillPolygonSpans=BtechEgaFillPolygonSpans;
         combatPolygons.graphicsDrawLine=BtechEgaDrawLine;
-        graphicsWritePixel=BtechEgaWritePixel;graphicsReadPixel=BtechEgaReadPixel;
-        graphicsSetOverscanColour=BtechEgaSetOverscanColour;
-        graphicsCopyScreenRectangle=BtechEgaCopyScreenRectangle;
-        graphicsSwapScreenPages=BtechEgaSwapScreenPages;
+        combatVideo.graphicsWritePixel=BtechEgaWritePixel;combatVideo.graphicsReadPixel=BtechEgaReadPixel;
+        combatVideo.graphicsSetOverscanColour=BtechEgaSetOverscanColour;
+        combatVideo.graphicsCopyScreenRectangle=BtechEgaCopyScreenRectangle;
+        combatVideo.graphicsSwapScreenPages=BtechEgaSwapScreenPages;
         BtechInitializeEgaVideo(0); /* Native dispatch copy exhaustsCX. */
     }
     if (!btechHostWriteBiosWord) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWriteBiosWord");
     btechHostWriteBiosWord(0xF0,0x304E); /* Physical0000:04F0, not game state. */
-    copySourcePageSelector=frontPageSelector;
-    drawPageSelector=backPageSelector;
-    return combatRendererKind;
+    combatVideo.copySourcePageSelector=combatVideo.frontPageSelector;
+    combatVideo.drawPageSelector=combatVideo.backPageSelector;
+    return combatVideo.combatRendererKind;
 }
 
 /*1BF5:0455. FAR tail through the installed backend; DX:AX is a byte count. */
 uint32_t BtechGetCaptureStorageSize(uint16_t width,uint16_t height)
 {
-    if (!graphicsCaptureStorageSize) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsCaptureStorageSize");
-    return graphicsCaptureStorageSize(width,height);
+    if (!combatVideo.graphicsCaptureStorageSize) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsCaptureStorageSize");
+    return combatVideo.graphicsCaptureStorageSize(width,height);
 }
 
 /*1BF5:0451. FAR tail dispatch. Typed paragraph-aligned allocation replaces
  * the original offset0/selector pair, not the remaining four native WORDs. */
 void BtechCaptureScreenRectangle(BtechResourceAllocation buffer,uint16_t x,uint16_t y,uint16_t width,uint16_t height)
 {
-    if (!graphicsCaptureRectangle) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsCaptureRectangle");
-    graphicsCaptureRectangle(buffer,x,y,width,height);
+    if (!combatVideo.graphicsCaptureRectangle) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsCaptureRectangle");
+    combatVideo.graphicsCaptureRectangle(buffer,x,y,width,height);
 }
 
 /*1BF5:0459. Same native buffer, but destination is live drawPage. */
 void BtechRestoreScreenRectangle(BtechResourceAllocation buffer,uint16_t x,uint16_t y,uint16_t width,uint16_t height)
 {
-    if (!graphicsRestoreRectangle) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsRestoreRectangle");
-    graphicsRestoreRectangle(buffer,x,y,width,height);
+    if (!combatVideo.graphicsRestoreRectangle) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsRestoreRectangle");
+    combatVideo.graphicsRestoreRectangle(buffer,x,y,width,height);
 }
 
 /*1BF5:0449. FAR tail to the selected bitmap backend, three native WORDs. */
 void BtechDrawBitmap(const BtechBitmap *bitmap,int16_t x,int16_t y)
 {
-    if (!graphicsDrawBitmap) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsDrawBitmap");
-    graphicsDrawBitmap(bitmap,(uint16_t)x,(uint16_t)y);
+    if (!combatVideo.graphicsDrawBitmap) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsDrawBitmap");
+    combatVideo.graphicsDrawBitmap(bitmap,(uint16_t)x,(uint16_t)y);
 }
 
 /*1BF5:00FD. Shipped22D8 mask7/forced-EGA path. Preserve this original NEAR
@@ -90,14 +90,14 @@ void BtechDrawBitmap(const BtechBitmap *bitmap,int16_t x,int16_t y)
  * Incidental BX/DX results are unobserved by the supported EGA installer. */
 uint16_t BtechDetectVideoAdapter(void)
 {
-    if (videoAdapterAllowedMask&~COMBAT_VIDEO_ALLOWED) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: videoAdapterAllowedMask&~COMBAT_VIDEO_ALLOWED");
+    if (combatVideo.videoAdapterAllowedMask&~COMBAT_VIDEO_ALLOWED) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: videoAdapterAllowedMask&~COMBAT_VIDEO_ALLOWED");
     if (!btechHostQueryEgaInfo || !btechHostReadBiosByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostQueryEgaInfo || !btechHostReadBiosByte");
-    if ((videoAdapterAllowedMask&COMBAT_VIDEO_EGA) && btechHostQueryEgaInfo()!=0x0010)
+    if ((combatVideo.videoAdapterAllowedMask&COMBAT_VIDEO_EGA) && btechHostQueryEgaInfo()!=0x0010)
     {
         if (btechHostReadBiosByte(0x87)&8) BtechSetBiosTextModeAndAdapterBits(2);
         return COMBAT_VIDEO_EGA;
     }
-    else if (videoAdapterAllowedMask&5)
+    else if (combatVideo.videoAdapterAllowedMask&5)
     {
         /*00FD: without an EGA, the original writes 66h to CRTC register 0Fh,
          * reads it back and restores 0Fh, to tell a CGA or Tandy adapter from
@@ -120,26 +120,26 @@ uint16_t BtechGetBiosDisplayAdapterBits(void)
  * the compiled glyph path is consequently always forward. */
 void BtechDrawNearText(const char *text,int16_t x,int16_t y)
 {
-    uint16_t page=drawPageSelector;
-    textBackgroundPattern=(uint8_t)graphicsColourPatterns[textBackgroundColour];
-    textForegroundPattern=(uint8_t)graphicsColourPatterns[textForegroundColour];
-    if (screenPolygonNeedsClip)
+    uint16_t page=combatVideo.drawPageSelector;
+    combatVideo.textBackgroundPattern=(uint8_t)combatVideo.graphicsColourPatterns[combatVideo.textBackgroundColour];
+    combatVideo.textForegroundPattern=(uint8_t)combatVideo.graphicsColourPatterns[combatVideo.textForegroundColour];
+    if (combatVideo.screenPolygonNeedsClip)
     {
-        if (y<clipMinimumY) return;
-        int16_t bottom=((uint16_t)y&0xFF00)|(uint8_t)((uint8_t)y+combatFontHeights[0]);
-        if (bottom>clipMaximumY) return;
+        if (y<combatVideo.clipMinimumY) return;
+        int16_t bottom=((uint16_t)y&0xFF00)|(uint8_t)((uint8_t)y+combatVideo.combatFontHeights[0]);
+        if (bottom>combatVideo.clipMaximumY) return;
     }
     while (*text)
     {
         uint8_t character=(uint8_t)*text++;
-        if (!screenPolygonNeedsClip || x>=clipMinimumX)
+        if (!combatVideo.screenPolygonNeedsClip || x>=combatVideo.clipMinimumX)
         {
-            if (screenPolygonNeedsClip
-                && (int16_t)(x+fontAdvanceWidths[0]-1)>clipMaximumX) return;
-            if (!graphicsDrawGlyph) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsDrawGlyph");
-            graphicsDrawGlyph(character,(uint16_t)x,(uint16_t)y,page);
+            if (combatVideo.screenPolygonNeedsClip
+                && (int16_t)(x+combatVideo.fontAdvanceWidths[0]-1)>combatVideo.clipMaximumX) return;
+            if (!combatVideo.graphicsDrawGlyph) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsDrawGlyph");
+            combatVideo.graphicsDrawGlyph(character,(uint16_t)x,(uint16_t)y,page);
         }
-        x=(int16_t)(x+fontAdvanceWidths[0]);
+        x=(int16_t)(x+combatVideo.fontAdvanceWidths[0]);
     }
 }
 
@@ -148,7 +148,7 @@ void BtechDrawNearText(const char *text,int16_t x,int16_t y)
 uint16_t BtechLoadFontSlot(const char *filename,BtechRuntimeStream *stream)
 {
     uint16_t slot=1;
-    while (slot<COMBAT_FONT_SLOTS && fonts[slot].bytes) ++slot;
+    while (slot<COMBAT_FONT_SLOTS && combatVideo.fonts[slot].bytes) ++slot;
     if (slot==COMBAT_FONT_SLOTS) return 0;
     union {uint8_t bytes[COMBAT_FONT_READ_BYTES];BtechFontMetrics metrics;} scratch;
     uint16_t openedHere=0;
@@ -163,12 +163,12 @@ uint16_t BtechLoadFontSlot(const char *filename,BtechRuntimeStream *stream)
         || BtechReadStreamElements(scratch.bytes,1,sizeof(scratch.metrics),stream->file)!=sizeof(scratch.metrics)) slot=0;
     else
     {
-        fontAdvanceWidths[slot]=scratch.metrics.advancePixels;
-        combatFontHeights[slot]=scratch.metrics.heightPixels;
-        fontFirstCharacters[slot]=scratch.metrics.firstCharacter;
-        fontCharacterCounts[slot]=scratch.metrics.characterCount;
-        if (!graphicsLoadFont) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsLoadFont");
-        slot=graphicsLoadFont(stream,slot,scratch.bytes);
+        combatVideo.fontAdvanceWidths[slot]=scratch.metrics.advancePixels;
+        combatVideo.combatFontHeights[slot]=scratch.metrics.heightPixels;
+        combatVideo.fontFirstCharacters[slot]=scratch.metrics.firstCharacter;
+        combatVideo.fontCharacterCounts[slot]=scratch.metrics.characterCount;
+        if (!combatVideo.graphicsLoadFont) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsLoadFont");
+        slot=combatVideo.graphicsLoadFont(stream,slot,scratch.bytes);
     }
     if (openedHere) BtechCloseTaggedResourceStream(stream);
     return slot;
@@ -181,18 +181,18 @@ uint16_t BtechSelectFontSlot(int16_t slot)
     uint16_t selected=0;
     if (!slot)
     {
-        if (fonts[0].bytes)
+        if (combatVideo.fonts[0].bytes)
             for (selected=1;selected<COMBAT_FONT_SLOTS;++selected)
-                if (fonts[selected].bytes==fonts[0].bytes) break;
+                if (combatVideo.fonts[selected].bytes==combatVideo.fonts[0].bytes) break;
     }
     else if (BtechIsFontSlotLoaded(slot))
     {
         selected=(uint16_t)slot;
-        fontAdvanceWidths[0]=fontAdvanceWidths[selected];
-        combatFontHeights[0]=combatFontHeights[selected];
-        fontFirstCharacters[0]=fontFirstCharacters[selected];
-        fontCharacterCounts[0]=fontCharacterCounts[selected];
-        fonts[0]=fonts[selected];
+        combatVideo.fontAdvanceWidths[0]=combatVideo.fontAdvanceWidths[selected];
+        combatVideo.combatFontHeights[0]=combatVideo.combatFontHeights[selected];
+        combatVideo.fontFirstCharacters[0]=combatVideo.fontFirstCharacters[selected];
+        combatVideo.fontCharacterCounts[0]=combatVideo.fontCharacterCounts[selected];
+        combatVideo.fonts[0]=combatVideo.fonts[selected];
     }
     return selected;
 }
@@ -200,7 +200,7 @@ uint16_t BtechSelectFontSlot(int16_t slot)
 /*1BF5:1CE0. Signed bounds, excluding active slot zero. */
 uint16_t BtechIsFontSlotLoaded(int16_t slot)
 {
-    return slot>0 && slot<COMBAT_FONT_SLOTS && fonts[slot].bytes!=NULL;
+    return slot>0 && slot<COMBAT_FONT_SLOTS && combatVideo.fonts[slot].bytes!=NULL;
 }
 
 /*1BF5:1FA8. The EGA startup path; native adapter-indexed tag selection is
@@ -208,7 +208,7 @@ uint16_t BtechIsFontSlotLoaded(int16_t slot)
 uint16_t BtechLoadPaletteSlot(const char *filename,BtechRuntimeStream *stream)
 {
     uint16_t slot=1;
-    while (slot<COMBAT_PALETTE_SLOTS && paletteSlotIds[slot]) ++slot;
+    while (slot<COMBAT_PALETTE_SLOTS && combatVideo.paletteSlotIds[slot]) ++slot;
     if (slot==COMBAT_PALETTE_SLOTS) slot=0;
     else
     {
@@ -221,33 +221,33 @@ uint16_t BtechLoadPaletteSlot(const char *filename,BtechRuntimeStream *stream)
             if (!strchr(name,'.')) strcat(name,".pal");
             stream=BtechOpenTaggedResourceStream(name);openedHere=1;
         }
-        if (combatRendererKind!=COMBAT_VIDEO_EGA) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatRendererKind!=COMBAT_VIDEO_EGA");
+        if (combatVideo.combatRendererKind!=COMBAT_VIDEO_EGA) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatRendererKind!=COMBAT_VIDEO_EGA");
         if (BtechFindResourceTagPosition(stream,"PAL:EGA:",0)==UINT32_MAX) slot=0;
         else
         {
-            if (!graphicsLoadPalette) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsLoadPalette");
-            slot=graphicsLoadPalette(stream,slot);
+            if (!combatVideo.graphicsLoadPalette) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsLoadPalette");
+            slot=combatVideo.graphicsLoadPalette(stream,slot);
         }
         if (openedHere) BtechCloseTaggedResourceStream(stream);
     }
     if (slot>=COMBAT_PALETTE_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: slot>=COMBAT_PALETTE_SLOTS"); // Foreign callback's wrapped registration aliases remain gated.
-    paletteSlotIds[slot]=(uint8_t)slot; // Failure clears active ID, not palette contents.
+    combatVideo.paletteSlotIds[slot]=(uint8_t)slot; // Failure clears active ID, not palette contents.
     return slot;
 }
 
 /*1BF5:2092. Query sign-extends the active BYTE. Backend precedes ID store. */
 uint16_t BtechSelectPaletteSlot(int16_t slot)
 {
-    if (!slot) return (int8_t)paletteSlotIds[0];
+    if (!slot) return (int8_t)combatVideo.paletteSlotIds[0];
     if (!BtechIsPaletteSlotLoaded(slot)) return 0;
-    if (!graphicsSelectPalette) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsSelectPalette");
-    graphicsSelectPalette((uint16_t)slot);
-    paletteSlotIds[0]=(uint8_t)slot;
+    if (!combatVideo.graphicsSelectPalette) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsSelectPalette");
+    combatVideo.graphicsSelectPalette((uint16_t)slot);
+    combatVideo.paletteSlotIds[0]=(uint8_t)slot;
     return (uint16_t)slot;
 }
 
 /*1BF5:20FC. */
 uint16_t BtechIsPaletteSlotLoaded(int16_t slot)
 {
-    return slot>0 && slot<COMBAT_PALETTE_SLOTS && paletteSlotIds[slot]!=0;
+    return slot>0 && slot<COMBAT_PALETTE_SLOTS && combatVideo.paletteSlotIds[slot]!=0;
 }

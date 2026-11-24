@@ -110,14 +110,14 @@ void BtechProgramMain(uint16_t argumentCount,const char *const *arguments)
 /*0810:01C0. Twenty native flashes, not a redraw/damage implementation. */
 void BtechFlashPlayerMechLoss(void)
 {
-    screenPolygonNeedsClip=false;drawPolygonFilled=true;
+    combatVideo.screenPolygonNeedsClip=false;combatVideo.drawPolygonFilled=true;
     BtechPlaySoundIfEnabled(COMBAT_LOSS_SOUND,COMBAT_LOSS_SOUND_PRIORITY);
     for (uint16_t flash=0;flash<COMBAT_LOSS_FLASHES;++flash)
     {
         uint16_t colour=(flash&1)?COMBAT_LOSS_COLOUR_B:COMBAT_LOSS_COLOUR_A;
         if (combatStartup.combatDispatchState==COMBAT_SCREEN_COCKPIT)
         {
-            drawFillColour=(uint8_t)colour;drawLineColour=(uint8_t)colour;
+            combatVideo.drawFillColour=(uint8_t)colour;combatVideo.drawLineColour=(uint8_t)colour;
             if (!playerPoseCameraContext) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerPoseCameraContext");
             BtechCameraContext *camera=playerPoseCameraContext;
             BtechDrawStyledRectangle((uint16_t)camera->clipMinimumA,(uint16_t)camera->clipMinimumB,

@@ -27,29 +27,29 @@ void BtechUpdateMechInspectionScreen(uint16_t unitSlot)
     combatCockpit.inspectionMechState=unitBindings[unitSlot].mech;
     if (combatCockpit.inspectionMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: inspectionMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
     combatCockpit.inspectionMechTemplate=&mechTemplates[combatCockpit.inspectionMechState->templateIndex];
-    if (inspectionReloadPending)
+    if (combatVideo.inspectionReloadPending)
     {
         combatCockpit.cockpitFullRedrawPending=0;
         BtechUnloadCockpitHudResources();
         BtechClearInspectionBackground();
-        BtechSelectPaletteSlot(damagePaletteSlot);
-        inspectionDamagePictures=BtechLoadBitmapList(combatCockpit.inspectionDamageBitmapFilenames[combatCockpit.inspectionMechState->templateIndex],NULL);
-        if (!inspectionDamagePictures) BtechShowFatalErrorAndExit(errorInspectionShapeMemory);
-        inspectionSetupComplete=1;inspectionReloadPending=0;
+        BtechSelectPaletteSlot(combatVideo.damagePaletteSlot);
+        combatVideo.inspectionDamagePictures=BtechLoadBitmapList(combatCockpit.inspectionDamageBitmapFilenames[combatCockpit.inspectionMechState->templateIndex],NULL);
+        if (!combatVideo.inspectionDamagePictures) BtechShowFatalErrorAndExit(errorInspectionShapeMemory);
+        combatVideo.inspectionSetupComplete=1;combatVideo.inspectionReloadPending=0;
     }
     uint16_t scanCode=combatInput.combatInputScanCode;
     switch (scanCode)
     {
     case COMBAT_KEY_Q:
     case COMBAT_KEY_SPACE:
-        combatStartup.combatDispatchState=COMBAT_SCREEN_COCKPIT;inspectionReloadPending=1;combatCockpit.cockpitFullRedrawPending=1;
+        combatStartup.combatDispatchState=COMBAT_SCREEN_COCKPIT;combatVideo.inspectionReloadPending=1;combatCockpit.cockpitFullRedrawPending=1;
         break;
     case COMBAT_KEY_P:BtechShowSimulationPausedDialog();break;
     case COMBAT_KEY_S:combatSoundEnabled=combatSoundEnabled==0;break;
-    case COMBAT_KEY_C:combatStartup.combatDispatchState=PLAYER_SCREEN_ORDERS;inspectionReloadPending=1;break;
+    case COMBAT_KEY_C:combatStartup.combatDispatchState=PLAYER_SCREEN_ORDERS;combatVideo.inspectionReloadPending=1;break;
     default:break;
     }
-    drawPageSelector=backPageSelector;
+    combatVideo.drawPageSelector=combatVideo.backPageSelector;
     BtechDrawMechInspectionStatus();
     BtechDrawMechInspectionDiagramAndLegend();
     BtechSwapScreenPages(false);
@@ -69,8 +69,8 @@ void BtechClearInspectionBackground(void)
 {
     if (hudColourSchemeIndex)
     {
-        drawPageSelector=backPageSelector;
-        drawPolygonFilled=true;screenPolygonNeedsClip=false;drawLineColour=Combat_Pal_EGA_Black;drawFillColour=Combat_Pal_EGA_Black;
+        combatVideo.drawPageSelector=combatVideo.backPageSelector;
+        combatVideo.drawPolygonFilled=true;combatVideo.screenPolygonNeedsClip=false;combatVideo.drawLineColour=Combat_Pal_EGA_Black;combatVideo.drawFillColour=Combat_Pal_EGA_Black;
         BtechDrawStyledRectangle(0,0,COMBAT_SCREEN_WIDTH,COMBAT_SCREEN_HEIGHT);
         BtechCopyHudRectangleIfReady(0,0,COMBAT_SCREEN_WIDTH,COMBAT_SCREEN_HEIGHT);
     }
@@ -84,12 +84,12 @@ void BtechDrawMechInspectionStatus(void)
     if (!mech || mech->templateIndex>=COMBAT_MECH_TEMPLATES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mech || mech->templateIndex>=COMBAT_MECH_TEMPLATES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
     const BtechMechTemplate *chassis=&mechTemplates[mech->templateIndex];
     const BtechHudColourScheme *colours=&combatCockpit.hudColourSchemes[hudColourSchemeIndex];
-    screenPolygonNeedsClip=false;drawFillColour=(uint8_t)colours->inspectionBackground;drawLineColour=Combat_Pal_EGA_Black;
+    combatVideo.screenPolygonNeedsClip=false;combatVideo.drawFillColour=(uint8_t)colours->inspectionBackground;combatVideo.drawLineColour=Combat_Pal_EGA_Black;
     BtechDrawStyledRectangle(0,0,COMBAT_SCREEN_WIDTH,COMBAT_SCREEN_HEIGHT);
     BtechDrawClippedLine(INSPECTION_DIVIDER_X,0,INSPECTION_DIVIDER_X,COMBAT_SCREEN_HEIGHT);
-    textForegroundColour=(uint8_t)colours->inspectionMechName;textBackgroundColour=Combat_Pal_EGA_Black;
+    combatVideo.textForegroundColour=(uint8_t)colours->inspectionMechName;combatVideo.textBackgroundColour=Combat_Pal_EGA_Black;
     BtechDrawNearText(combatCockpit.mechTemplateNames[mech->templateIndex],INSPECTION_NAME_X,INSPECTION_NAME_Y);
-    textForegroundColour=(uint8_t)colours->inspectionSubsystemText;
+    combatVideo.textForegroundColour=(uint8_t)colours->inspectionSubsystemText;
     for (uint16_t system=0;system<5;++system)
         BtechDrawNearText(combatCockpit.inspectionSubsystemLabels[system],INSPECTION_LABEL_X,INSPECTION_FIRST_SYSTEM_Y+system*INSPECTION_ROW_STEP);
     if (mech->engineHits>COMBAT_ENGINE_HIT_LIMIT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mech->engineHits>COMBAT_ENGINE_HIT_LIMIT");
@@ -118,9 +118,9 @@ void BtechDrawMechInspectionStatus(void)
         BtechDrawNearText(BtechFormatSignedDecimalField((int16_t)chassis->jumpJetGroupCount,1,' '),INSPECTION_JUMP_MAXIMUM_X,INSPECTION_JUMP_ROW_Y);
         BtechDrawNearText(combatCockpit.jumpJetsOfText,INSPECTION_JUMP_OF_X,INSPECTION_JUMP_ROW_Y);
     }
-    textForegroundColour=(uint8_t)colours->inspectionEquipmentHeading;
+    combatVideo.textForegroundColour=(uint8_t)colours->inspectionEquipmentHeading;
     BtechDrawNearText(combatCockpit.inspectionWeaponHeading,INSPECTION_LABEL_X,INSPECTION_WEAPON_HEADING_Y);
-    textForegroundColour=(uint8_t)colours->inspectionEquipmentText;
+    combatVideo.textForegroundColour=(uint8_t)colours->inspectionEquipmentText;
     rowY=INSPECTION_FIRST_WEAPON_Y;
     for (int16_t mountIndex=0;mountIndex<COMBAT_WEAPON_MOUNTS;++mountIndex,rowY+=INSPECTION_ROW_STEP)
     {
@@ -149,7 +149,7 @@ void BtechDrawMechInspectionDiagramAndLegend(void)
 void BtechDrawMechDamageDiagram(void)
 {
     if (!combatCockpit.inspectionMechState || !combatCockpit.inspectionMechTemplate) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !inspectionMechState || !inspectionMechTemplate");
-    drawLineColour=INSPECTION_UNDAMAGED_COLOUR;drawFillColour=INSPECTION_UNDAMAGED_COLOUR;
+    combatVideo.drawLineColour=INSPECTION_UNDAMAGED_COLOUR;combatVideo.drawFillColour=INSPECTION_UNDAMAGED_COLOUR;
     BtechDrawStyledRectangle(INSPECTION_DIAGRAM_X,INSPECTION_DIAGRAM_Y,INSPECTION_DIAGRAM_WIDTH,INSPECTION_DIAGRAM_HEIGHT);
     for (uint16_t armor=0;armor<COMBAT_ARMOR_LOCATIONS;++armor)
     {
@@ -164,19 +164,19 @@ void BtechDrawMechDamageDiagram(void)
         if (chassis>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: chassis>=COMBAT_MECH_TEMPLATES");
         const BtechScreenRectangle *region=&combatCockpit.inspectionDiagramRegions[chassis][armor];
         const BtechHudGaugeAnchor *origin=&combatCockpit.inspectionDiagramOrigins[chassis];
-        drawFillColour=colour;drawLineColour=colour;
+        combatVideo.drawFillColour=colour;combatVideo.drawLineColour=colour;
         BtechDrawStyledRectangle((uint16_t)(region->x-origin->x+INSPECTION_DIAGRAM_X),
             (uint16_t)(region->y-origin->y+INSPECTION_DIAGRAM_Y),(uint16_t)region->width,(uint16_t)region->height);
     }
-    if (!inspectionDamagePictures || !inspectionDamagePictures->images || !inspectionDamagePictures->imageCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !inspectionDamagePictures || !inspectionDamagePictures->images || !inspectionDamagePictures->imageCount");
-    BtechDrawBitmap(&inspectionDamagePictures->images[0],INSPECTION_DIAGRAM_X,INSPECTION_DIAGRAM_Y);
+    if (!combatVideo.inspectionDamagePictures || !combatVideo.inspectionDamagePictures->images || !combatVideo.inspectionDamagePictures->imageCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !inspectionDamagePictures || !inspectionDamagePictures->images || !inspectionDamagePictures->imageCount");
+    BtechDrawBitmap(&combatVideo.inspectionDamagePictures->images[0],INSPECTION_DIAGRAM_X,INSPECTION_DIAGRAM_Y);
 }
 
 /*0810:19F1. Does not set background/transparency or select a font. */
 void BtechDrawMechInspectionLegend(void)
 {
     if (hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
-    textForegroundColour=(uint8_t)combatCockpit.hudColourSchemes[hudColourSchemeIndex].inspectionFooter;
+    combatVideo.textForegroundColour=(uint8_t)combatCockpit.hudColourSchemes[hudColourSchemeIndex].inspectionFooter;
     BtechDrawNearText(combatCockpit.inspectionLegendText[0],INSPECTION_LABEL_X,INSPECTION_LEGEND_FIRST_Y);
     BtechDrawNearText(combatCockpit.inspectionLegendText[1],INSPECTION_LABEL_X,INSPECTION_LEGEND_SECOND_Y);
 }

@@ -86,8 +86,8 @@ uint32_t BtechBuildOrderMapPositionMask(void)
 /*17FB:1458. AL foreground, but background tests the FULL source WORD. */
 void BtechSetConditionTextColours(uint16_t conditionColour)
 {
-    textForegroundColour=(uint8_t)conditionColour;
-    textBackgroundColour=conditionColour?(int)Combat_Pal_EGA_Black:ORDER_CONDITION_FAILED_BACKGROUND;
+    combatVideo.textForegroundColour=(uint8_t)conditionColour;
+    combatVideo.textBackgroundColour=conditionColour?(int)Combat_Pal_EGA_Black:ORDER_CONDITION_FAILED_BACKGROUND;
 }
 
 /*17FB:1472. Combined armour/internal condition band, with exact system-hit
@@ -120,10 +120,10 @@ uint16_t BtechGetMechConditionColour(int16_t unitSlot)
 void BtechUpdateLanceOrderHighlight(void)
 {
     if (!unitBindings[1].mech) return;
-    drawPolygonFilled=false;drawPageSelector=backPageSelector;
+    combatVideo.drawPolygonFilled=false;combatVideo.drawPageSelector=combatVideo.backPageSelector;
     if ((int16_t)previousOrderHighlightRow>=0)
     {
-        drawFillColour=Combat_Pal_EGA_Black;
+        combatVideo.drawFillColour=Combat_Pal_EGA_Black;
         uint16_t previousY=previousOrderHighlightRow? (uint16_t)(ORDER_HIGHLIGHT_ROW_BASE_Y+(uint16_t)(previousOrderHighlightRow*ORDER_PANEL_ROW_STEP)):ORDER_HIGHLIGHT_FIRST_ROW_Y;
         if (previousOrderHighlightPanel>=ORDER_WINGMATE_PANELS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: previousOrderHighlightPanel>=ORDER_WINGMATE_PANELS");
         uint16_t previousX=lanceOrderPanelTextX[previousOrderHighlightPanel]-ORDER_PANEL_INSET;
@@ -133,7 +133,7 @@ void BtechUpdateLanceOrderHighlight(void)
     }
     if (hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
     const BtechHudColourScheme *colours=&combatCockpit.hudColourSchemes[hudColourSchemeIndex];
-    drawFillColour=(uint8_t)(selectedOrderPanelRow==ORDER_REFERENCE_ROW && (orderPanelMode==ORDER_PANEL_TARGET || orderPanelMode==ORDER_PANEL_DESTINATION)
+    combatVideo.drawFillColour=(uint8_t)(selectedOrderPanelRow==ORDER_REFERENCE_ROW && (orderPanelMode==ORDER_PANEL_TARGET || orderPanelMode==ORDER_PANEL_DESTINATION)
         ?colours->orderReferenceHighlight:colours->orderHighlight);
     uint16_t selectedY=selectedOrderPanelRow? (uint16_t)(ORDER_HIGHLIGHT_ROW_BASE_Y+(uint16_t)(selectedOrderPanelRow*ORDER_PANEL_ROW_STEP)):ORDER_HIGHLIGHT_FIRST_ROW_Y;
     if (selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS");
@@ -148,11 +148,11 @@ void BtechUpdateLanceOrderHighlight(void)
 /*17FB:16A7. Clear panel body but not its heading; leave outline mode set. */
 void BtechClearLanceOrderPanel(uint16_t panelIndex)
 {
-    drawPageSelector=backPageSelector;drawPolygonFilled=true;
-    drawFillColour=Combat_Pal_EGA_Black;drawLineColour=Combat_Pal_EGA_Black;
+    combatVideo.drawPageSelector=combatVideo.backPageSelector;combatVideo.drawPolygonFilled=true;
+    combatVideo.drawFillColour=Combat_Pal_EGA_Black;combatVideo.drawLineColour=Combat_Pal_EGA_Black;
     if (panelIndex>=ORDER_WINGMATE_PANELS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: panelIndex>=ORDER_WINGMATE_PANELS");
     BtechDrawStyledRectangle((uint16_t)(lanceOrderPanelTextX[panelIndex]-ORDER_PANEL_INSET),ORDER_PANEL_TOP,ORDER_PANEL_WIDTH,ORDER_PANEL_HEIGHT);
-    drawPolygonFilled=false;
+    combatVideo.drawPolygonFilled=false;
 }
 
 /*17FB:0CFE. Command codes and editor panel modes are different domains.

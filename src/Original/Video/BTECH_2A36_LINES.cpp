@@ -13,20 +13,20 @@ void BtechEgaDrawLine(uint16_t firstX,uint16_t firstY,uint16_t secondX,uint16_t 
     BtechEgaCanvasWriter ega(page);
     // Coordinates are native BX/CX/DX/SI; page denotes AMBIENT ES,
     // not a fifth pushed argument. DS=304E; all general registers are scratch.
-    drawColourPattern=palettePrimarySlots[drawFillColour/COMBAT_PALETTE_WORDS][drawFillColour%COMBAT_PALETTE_WORDS];
-    egaLinePixelMask=egaPixelBitMasks[firstX&0x0007];
+    combatVideo.drawColourPattern=combatVideo.palettePrimarySlots[combatVideo.drawFillColour/COMBAT_PALETTE_WORDS][combatVideo.drawFillColour%COMBAT_PALETTE_WORDS];
+    combatVideo.egaLinePixelMask=combatVideo.egaPixelBitMasks[firstX&0x0007];
     uint16_t row=(uint16_t)(firstY*2)>>1;
     if (row>=COMBAT_SCREEN_HEIGHT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: row>=COMBAT_SCREEN_HEIGHT"); /* Other row-table owners are outside this caller scope. */
-    uint16_t cursor=graphicsRowOffsets[row];
+    uint16_t cursor=combatVideo.graphicsRowOffsets[row];
     cursor += (firstX>>0x0003);
-    uint8_t mask=egaLinePixelMask;
+    uint8_t mask=combatVideo.egaLinePixelMask;
     if (firstX==secondX&&firstY==secondY)
     {
         ega.setMask((uint8_t)(mask));
-        ega.write(cursor,(uint8_t)drawColourPattern); // Pattern reread after OUT.
+        ega.write(cursor,(uint8_t)combatVideo.drawColourPattern); // Pattern reread after OUT.
         return;
     }
-    uint8_t colour=drawColourPattern;
+    uint8_t colour=combatVideo.drawColourPattern;
     uint16_t horizontalExtent=secondX-firstX;
     if (firstY==secondY)
     {
@@ -87,20 +87,20 @@ void BtechEgaDrawLine(uint16_t firstX,uint16_t firstY,uint16_t secondX,uint16_t 
     uint16_t remainingMajorPixels=steep?verticalExtent:horizontalExtent;
     uint16_t divisor=(steep?horizontalExtent:verticalExtent)+0x0001;
     // Major>minor proves divisor nonzero and both DIV results fit WORD here.
-    egaLineRunLength=remainingMajorPixels/divisor;
+    combatVideo.egaLineRunLength=remainingMajorPixels/divisor;
     uint16_t remainder=remainingMajorPixels%divisor;
-    egaLineFractionStep=(uint16_t)(((uint32_t)remainder<<0x0010)/divisor);
-    egaLineFractionAccumulator=0x0000;
-    uint16_t runPixels=egaLineRunLength+0x0001;
+    combatVideo.egaLineFractionStep=(uint16_t)(((uint32_t)remainder<<0x0010)/divisor);
+    combatVideo.egaLineFractionAccumulator=0x0000;
+    uint16_t runPixels=combatVideo.egaLineRunLength+0x0001;
     ega.setMask((uint8_t)(mask));
     ega.write(cursor,colour);
     do
     {
-        egaLineRemainingBeforeRun=remainingMajorPixels;
+        combatVideo.egaLineRemainingBeforeRun=remainingMajorPixels;
         // SUB SI,CX / JGE compares the signed operands, not the wrapped result.
         if ((int16_t)remainingMajorPixels<(int16_t)runPixels)
         {
-            runPixels=egaLineRemainingBeforeRun;
+            runPixels=combatVideo.egaLineRemainingBeforeRun;
             remainingMajorPixels=0x0000;
         }
         else remainingMajorPixels -= runPixels;
@@ -129,10 +129,10 @@ void BtechEgaDrawLine(uint16_t firstX,uint16_t firstY,uint16_t secondX,uint16_t 
             cursor += rowStep; // Shallow Y step keeps the current mask.
         }
         ega.write(cursor,colour);
-        uint16_t fractionStep=egaLineFractionStep;
-        uint16_t oldFraction=egaLineFractionAccumulator;
-        egaLineFractionAccumulator=(uint16_t)(oldFraction+fractionStep);
-        runPixels=egaLineRunLength;
+        uint16_t fractionStep=combatVideo.egaLineFractionStep;
+        uint16_t oldFraction=combatVideo.egaLineFractionAccumulator;
+        combatVideo.egaLineFractionAccumulator=(uint16_t)(oldFraction+fractionStep);
+        runPixels=combatVideo.egaLineRunLength;
         if ((uint32_t)oldFraction+fractionStep>0x0000FFFF)++runPixels;
     } while (1);
     // No CLD, mode/map-mask setup or restoration; last programmed bit mask remains.

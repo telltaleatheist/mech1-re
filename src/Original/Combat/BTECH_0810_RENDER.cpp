@@ -50,10 +50,10 @@ void BtechRenderObjectList(BtechCameraContext *camera,BtechWorldObjectPrefix *co
             {
                 BtechProjectViewPosition(&combatRender.transformedViewPosition,&combatRender.projectionVectorScratch);
                 BtechOffsetProjectedScreenPair(&combatRender.projectionVectorScratch);
-                if (clipMinimumX<=(int32_t)combatRender.projectionVectorScratch.positionA
-                    && clipMaximumX>=(int32_t)combatRender.projectionVectorScratch.positionA
-                    && clipMinimumY<=(int32_t)combatRender.projectionVectorScratch.positionB
-                    && clipMaximumY>=(int32_t)combatRender.projectionVectorScratch.positionB)
+                if (combatVideo.clipMinimumX<=(int32_t)combatRender.projectionVectorScratch.positionA
+                    && combatVideo.clipMaximumX>=(int32_t)combatRender.projectionVectorScratch.positionA
+                    && combatVideo.clipMinimumY<=(int32_t)combatRender.projectionVectorScratch.positionB
+                    && combatVideo.clipMaximumY>=(int32_t)combatRender.projectionVectorScratch.positionB)
                 {
                     object->projectionValue=combatRender.objectProjectionScale;
                     object->projectedScreenA=(int16_t)combatRender.projectionVectorScratch.positionA;

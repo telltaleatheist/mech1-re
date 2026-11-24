@@ -7,11 +7,11 @@
 void BtechDrawClippedLine(int16_t firstX,int16_t firstY,int16_t secondX,int16_t secondY)
 {
     uint16_t x0=(uint16_t)firstX,y0=(uint16_t)firstY,x1=(uint16_t)secondX,y1=(uint16_t)secondY;
-    if (screenPolygonNeedsClip)
+    if (combatVideo.screenPolygonNeedsClip)
         for (uint16_t boundary=0;boundary<4;++boundary)
         {
             bool vertical=!(boundary&1),upper=boundary>=2;
-            uint16_t limit=vertical?(upper?clipMaximumY:clipMinimumY):(upper?clipMaximumX:clipMinimumX);
+            uint16_t limit=vertical?(upper?combatVideo.clipMaximumY:combatVideo.clipMinimumY):(upper?combatVideo.clipMaximumX:combatVideo.clipMinimumX);
             uint16_t start=vertical?y0:x0,end=vertical?y1:x1;
             bool startOutside=upper?start>limit:(int16_t)start<(int16_t)limit;
             bool endOutside=upper?end>limit:(int16_t)end<(int16_t)limit;
@@ -34,7 +34,7 @@ void BtechDrawClippedLine(int16_t firstX,int16_t firstY,int16_t secondX,int16_t 
         }
     if (x0>x1) {uint16_t saved=x0;x0=x1;x1=saved;saved=y0;y0=y1;y1=saved;}
     if (!combatPolygons.graphicsDrawLine) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsDrawLine"); /* Real EGA line backend remains a dependency. */
-    combatPolygons.graphicsDrawLine(x0,y0,x1,y1,drawPageSelector);
+    combatPolygons.graphicsDrawLine(x0,y0,x1,y1,combatVideo.drawPageSelector);
 }
 
 /*1BF5:082E. Native register entry; next endpoint is passed before previous. */

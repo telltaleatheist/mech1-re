@@ -20,17 +20,17 @@ void BtechRenderCockpitSceneAndHud(void)
         playerPoseCameraContext->fillPaletteA=COMBAT_COCKPIT_IMPACT_COLOUR;
     else
     {
-        if (playerCameraFillASuppressed) playerPoseCameraContext->fillPaletteA=0;
+        if (combatVideo.playerCameraFillASuppressed) playerPoseCameraContext->fillPaletteA=0;
         else
         {
             if (combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
-            playerPoseCameraContext->fillPaletteA=landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex].playerFillPaletteA;
+            playerPoseCameraContext->fillPaletteA=combatVideo.landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex].playerFillPaletteA;
         }
     }
     BtechApplyBodyHeadingToMechParts();
     if (!torso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !torso");
     BtechUpdatePlayerMechPose(&torso->object.prefix);
-    drawPolygonFilled=true;
+    combatVideo.drawPolygonFilled=true;
     cockpitWorldObjectCount=(uint16_t)BtechFilterNearbyWorldObjects(playerPoseCameraContext,worldObjects,
         (int16_t)worldObjectCount,cockpitWorldObjects,(int16_t)cockpitWorldObjectCount);
     BtechSortFarWorldObjectsForView(playerPoseCameraContext,cockpitWorldObjects,
@@ -42,7 +42,7 @@ void BtechRenderCockpitSceneAndHud(void)
     uint32_t projectedAim=BtechDivideSignedDword(BtechShiftDwordLeft(aimSine,(uint8_t)combatStartup.viewScaleShift),aimCosine);
     uint16_t viewportYSum=playerPoseCameraContext->clipMaximumB+playerPoseCameraContext->clipMinimumB;
     combatStartup.aimReticleScreenY=(uint16_t)((uint16_t)projectedAim+(uint16_t)((int16_t)viewportYSum>>1));
-    drawPageSelector=backPageSelector;
+    combatVideo.drawPageSelector=combatVideo.backPageSelector;
     uint16_t probeY=BtechRandomSignedSpread(combatStartup.heatAimJitterTiers[0])+combatStartup.aimReticleScreenY;
     uint16_t probeX=BtechRandomSignedSpread(combatStartup.heatAimJitterTiers[0])+COMBAT_SCREEN_WIDTH/2;
     BtechBeginSelectionPixelProbe(probeX,probeY);
@@ -53,8 +53,8 @@ void BtechRenderCockpitSceneAndHud(void)
     BtechRefreshCockpitAndSensorTarget();
     BtechDrawPendingFiringIndicator();
     BtechDrawCockpitBitmapPlacements();
-    textTransparentBackground=true;
-    textForegroundColour=landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex].hudReticleColour;
+    combatVideo.textTransparentBackground=true;
+    combatVideo.textForegroundColour=combatVideo.landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex].hudReticleColour;
     uint16_t zoomX=COCKPIT_RIGHT_LABEL_X,automaticWeaponsX=COCKPIT_LEFT_LABEL_X;
     if (playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
     if (combatCockpit.mechCockpitLayoutIndices[playerMechState->templateIndex]==2)
@@ -64,21 +64,21 @@ void BtechRenderCockpitSceneAndHud(void)
     if (combatStartup.mountGroupMode) BtechDrawNearText(combatCockpit.automaticWeaponsLabel,automaticWeaponsX,COCKPIT_STATUS_TEXT_Y);
     if (heatInhibitFlags[0] && (combatStartup.combatTickCounter&COCKPIT_WARNING_FLASH_MASK))
     {
-        textForegroundColour=COCKPIT_REACTOR_WARNING_COLOUR;
+        combatVideo.textForegroundColour=COCKPIT_REACTOR_WARNING_COLOUR;
         BtechDrawNearText(combatCockpit.reactorShutdownText,COCKPIT_REACTOR_WARNING_X,COCKPIT_REACTOR_WARNING_Y);
     }
-    textTransparentBackground=false;
+    combatVideo.textTransparentBackground=false;
     BtechSwapScreenPages(false);
     if (combatCockpit.cockpitFullRedrawPending)
     {
         BtechSetOverscanColour(Combat_Pal_EGA_Black);
         BtechPresentScreenRectangle(0,0,COMBAT_SCREEN_WIDTH,COMBAT_SCREEN_HEIGHT);
         combatCockpit.cockpitFullRedrawPending=0;
-        drawPageSelector=backPageSelector;copySourcePageSelector=frontPageSelector;
+        combatVideo.drawPageSelector=combatVideo.backPageSelector;combatVideo.copySourcePageSelector=combatVideo.frontPageSelector;
         BtechCopyScreenRectangle(0,0,COMBAT_SCREEN_WIDTH,COMBAT_SCREEN_HEIGHT);
     }
     else BtechPresentScreenRectangle(playerPoseCameraContext->clipMinimumA,playerPoseCameraContext->clipMinimumB,
         (uint16_t)(playerPoseCameraContext->clipMaximumA-playerPoseCameraContext->clipMinimumA),
         (uint16_t)(playerPoseCameraContext->clipMaximumB-playerPoseCameraContext->clipMinimumB+1));
-    drawPolygonFilled=true;screenPolygonNeedsClip=true;
+    combatVideo.drawPolygonFilled=true;combatVideo.screenPolygonNeedsClip=true;
 }

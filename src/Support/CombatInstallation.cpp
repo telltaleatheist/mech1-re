@@ -101,17 +101,17 @@ void BtechHostDiscardChildData(void)
 {
     bool paragraphs=false;
     for (uint16_t slot=0;slot<COMBAT_BITMAP_LISTS;++slot)
-        if (bitmapRegistryLists[slot])
+        if (combatVideo.bitmapRegistryLists[slot])
         {
-            BtechBitmapList *list=bitmapRegistryLists[slot];
+            BtechBitmapList *list=combatVideo.bitmapRegistryLists[slot];
             paragraphs|=list->pixels.bytes!=NULL;
             for (uint16_t alias=slot;alias<COMBAT_BITMAP_LISTS;++alias)
-                if (bitmapRegistryLists[alias]==list) bitmapRegistryLists[alias]=NULL;
+                if (combatVideo.bitmapRegistryLists[alias]==list) combatVideo.bitmapRegistryLists[alias]=NULL;
             /* Near owners are retained until the whole child heap is disposed. */
         }
-    promptBitmaps=NULL;
-    pointPictures=NULL;smallMechPictures=NULL;strutPictures=NULL;
-    cockpitPictures=NULL;hudGlyphPictures=NULL;inspectionDamagePictures=NULL;
+    combatVideo.promptBitmaps=NULL;
+    combatVideo.pointPictures=NULL;combatVideo.smallMechPictures=NULL;combatVideo.strutPictures=NULL;
+    combatVideo.cockpitPictures=NULL;combatVideo.hudGlyphPictures=NULL;combatVideo.inspectionDamagePictures=NULL;
     paragraphs|=orderPanelCaptureBuffer.bytes!=NULL;
     orderPanelCaptureBuffer=BtechResourceAllocation{};
     for (uint16_t slot=0;slot<RESOURCE_ARCHIVE_SLOTS;++slot)
@@ -156,12 +156,12 @@ void BtechHostDiscardChildData(void)
     BtechHostDiscardDecodedSurfaceBank(&surfaceResourceBank);
     initialShapeResourceBank=BtechResourceBank{};surfaceResourceBank=BtechSurfaceBank{};
     shapeResourceBanks=NULL;shapeResourceBankCount=0;
-    for (uint16_t slot=1;slot<COMBAT_FONT_SLOTS;++slot) paragraphs|=fonts[slot].bytes!=NULL;
+    for (uint16_t slot=1;slot<COMBAT_FONT_SLOTS;++slot) paragraphs|=combatVideo.fonts[slot].bytes!=NULL;
     paragraphs|=soundAllocationOverride.bytes!=NULL;
     if (paragraphs && !btechHostReleaseChildDosAllocations) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: paragraphs && !btechHostReleaseChildDosAllocations");
     if (btechHostReleaseChildDosAllocations) btechHostReleaseChildDosAllocations();
-    for (uint16_t slot=0;slot<COMBAT_FONT_SLOTS;++slot) fonts[slot]=BtechFont{};
-    egaFontBuffer=NULL; // Borrowed staging reference, not a second allocation owner.
+    for (uint16_t slot=0;slot<COMBAT_FONT_SLOTS;++slot) combatVideo.fonts[slot]=BtechFont{};
+    combatVideo.egaFontBuffer=NULL; // Borrowed staging reference, not a second allocation owner.
     BtechHostDiscardNearHeap();
 }
 

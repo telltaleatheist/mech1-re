@@ -119,7 +119,7 @@ void BtechDrawPolygonPayload(const BtechRenderPolygonPayload *payload)
         /* DEC/JGE observes overflow too:8000 ->7FFF still exits. */
         if ((int16_t)combatRender.wordPolygonsRemaining--<=0) return;
         uint8_t flags=polygon->flags;
-        drawPolygonFilled=(flags&POLYGON_FILLED)!=0;
+        combatVideo.drawPolygonFilled=(flags&POLYGON_FILLED)!=0;
         if ((flags&POLYGON_FACING_MASK)==2) continue;
         if ((flags&POLYGON_FACING_MASK)!=0
             && BtechGetPolygonFacingDotHighWord(polygon->normalVectorIndex,polygon->vertexIndices[0])>=0) continue;
@@ -173,7 +173,7 @@ divideCoordinate:
                 combatPolygons.screenPolygonY[index]=(int16_t)((uint16_t)combatRender.screenCentreB-geometryProjectedY.words[vertex]);
             }
         }
-        screenPolygonNeedsClip=combatRender.objectNeedsScreenClip;
+        combatVideo.screenPolygonNeedsClip=combatRender.objectNeedsScreenClip;
         BtechDrawScreenPolygon((int16_t)combatPolygons.polygonVertexCount,combatPolygons.screenPolygonX,combatPolygons.screenPolygonY);
     }
 }

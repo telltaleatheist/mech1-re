@@ -39,17 +39,17 @@ uint16_t BtechShowCapturedTwoLineDialog(const BtechDialogMessagePair *message)
     BtechResourceAllocation capture={BtechAllocateDosMemoryBlock(captureBytes).bytes,captureBytes};
     if (capture.bytes)
     {
-        drawPageSelector=frontPageSelector;copySourcePageSelector=frontPageSelector;
+        combatVideo.drawPageSelector=combatVideo.frontPageSelector;combatVideo.copySourcePageSelector=combatVideo.frontPageSelector;
         BtechCaptureScreenRectangle(capture,DIALOG_LEFT,DIALOG_TOP,DIALOG_WIDTH,DIALOG_HEIGHT);
-        screenPolygonNeedsClip=false;drawPolygonFilled=true;textTransparentBackground=true;
-        textForegroundColour=hudColourSchemeIndex?DIALOG_MONOCHROME_TEXT_COLOUR:DIALOG_TEXT_COLOUR;
-        if (!promptBitmaps || !promptBitmaps->images || !promptBitmaps->imageCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !promptBitmaps || !promptBitmaps->images || !promptBitmaps->imageCount");
-        BtechDrawBitmap(&promptBitmaps->images[0],DIALOG_LEFT,DIALOG_TOP);
+        combatVideo.screenPolygonNeedsClip=false;combatVideo.drawPolygonFilled=true;combatVideo.textTransparentBackground=true;
+        combatVideo.textForegroundColour=hudColourSchemeIndex?DIALOG_MONOCHROME_TEXT_COLOUR:DIALOG_TEXT_COLOUR;
+        if (!combatVideo.promptBitmaps || !combatVideo.promptBitmaps->images || !combatVideo.promptBitmaps->imageCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !promptBitmaps || !promptBitmaps->images || !promptBitmaps->imageCount");
+        BtechDrawBitmap(&combatVideo.promptBitmaps->images[0],DIALOG_LEFT,DIALOG_TOP);
         uint16_t textHalfWidth=strlen(message->firstText)*DIALOG_HALF_CHARACTER_WIDTH;
         BtechDrawNearText(message->firstText,(int16_t)(DIALOG_CENTRE_X-textHalfWidth),DIALOG_FIRST_TEXT_Y);
         textHalfWidth=(uint16_t)(strlen(message->secondText)*DIALOG_HALF_CHARACTER_WIDTH);
         BtechDrawNearText(message->secondText,(int16_t)(DIALOG_CENTRE_X-textHalfWidth),DIALOG_SECOND_TEXT_Y);
-        textTransparentBackground=false;
+        combatVideo.textTransparentBackground=false;
     }
     uint16_t scanCode=BtechWaitForDialogKey();
     if (capture.bytes) BtechRestoreScreenRectangle(capture,DIALOG_LEFT,DIALOG_TOP,DIALOG_WIDTH,DIALOG_HEIGHT);
@@ -61,20 +61,20 @@ uint16_t BtechShowCapturedTwoLineDialog(const BtechDialogMessagePair *message)
  * are NOT saved by the original. Keep these independent native owners. */
 void BtechSaveDrawingState(void)
 {
-    combatCockpit.savedPolygonFilled=(int8_t)drawPolygonFilled;
-    combatCockpit.savedPolygonClip=(int8_t)screenPolygonNeedsClip;
-    combatCockpit.savedTextBackground=(int8_t)textBackgroundColour;
-    combatCockpit.savedTextForeground=(int8_t)textForegroundColour;
-    combatCockpit.savedFillColour=(int8_t)drawFillColour;
-    combatCockpit.savedLineColour=(int8_t)drawLineColour;
-    combatCockpit.savedCopySourcePage=copySourcePageSelector;combatCockpit.savedDrawPage=drawPageSelector;
+    combatCockpit.savedPolygonFilled=(int8_t)combatVideo.drawPolygonFilled;
+    combatCockpit.savedPolygonClip=(int8_t)combatVideo.screenPolygonNeedsClip;
+    combatCockpit.savedTextBackground=(int8_t)combatVideo.textBackgroundColour;
+    combatCockpit.savedTextForeground=(int8_t)combatVideo.textForegroundColour;
+    combatCockpit.savedFillColour=(int8_t)combatVideo.drawFillColour;
+    combatCockpit.savedLineColour=(int8_t)combatVideo.drawLineColour;
+    combatCockpit.savedCopySourcePage=combatVideo.copySourcePageSelector;combatCockpit.savedDrawPage=combatVideo.drawPageSelector;
 }
 
 /*0810:2999. Restore LOW BYTEs in original order, then page WORDs. */
 void BtechRestoreDrawingState(void)
 {
-    drawPolygonFilled=(uint8_t)combatCockpit.savedPolygonFilled;screenPolygonNeedsClip=(uint8_t)combatCockpit.savedPolygonClip;
-    textBackgroundColour=(uint8_t)combatCockpit.savedTextBackground;textForegroundColour=(uint8_t)combatCockpit.savedTextForeground;
-    drawFillColour=(uint8_t)combatCockpit.savedFillColour;drawLineColour=(uint8_t)combatCockpit.savedLineColour;
-    copySourcePageSelector=combatCockpit.savedCopySourcePage;drawPageSelector=combatCockpit.savedDrawPage;
+    combatVideo.drawPolygonFilled=(uint8_t)combatCockpit.savedPolygonFilled;combatVideo.screenPolygonNeedsClip=(uint8_t)combatCockpit.savedPolygonClip;
+    combatVideo.textBackgroundColour=(uint8_t)combatCockpit.savedTextBackground;combatVideo.textForegroundColour=(uint8_t)combatCockpit.savedTextForeground;
+    combatVideo.drawFillColour=(uint8_t)combatCockpit.savedFillColour;combatVideo.drawLineColour=(uint8_t)combatCockpit.savedLineColour;
+    combatVideo.copySourcePageSelector=combatCockpit.savedCopySourcePage;combatVideo.drawPageSelector=combatCockpit.savedDrawPage;
 }

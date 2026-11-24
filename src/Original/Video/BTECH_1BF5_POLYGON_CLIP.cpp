@@ -15,8 +15,8 @@ void BtechClipScreenPolygonToViewport(void)
         int16_t *destinationY=axis?combatPolygons.screenPolygonY:combatPolygons.polygonWorkY;
         int16_t *plane=axis?sourceY:sourceX,*other=axis?sourceX:sourceY;
         int16_t *outPlane=axis?destinationY:destinationX,*outOther=axis?destinationX:destinationY;
-        int16_t minimum=axis?clipMinimumY:clipMinimumX;
-        int16_t maximum=axis?clipMaximumY:clipMaximumX;
+        int16_t minimum=axis?combatVideo.clipMinimumY:combatVideo.clipMinimumX;
+        int16_t maximum=axis?combatVideo.clipMaximumY:combatVideo.clipMaximumX;
         uint8_t minimumBit=axis?8:1,maximumBit=axis?4:2;
         if (combatPolygons.polygonVertexCount>COMBAT_POLYGON_VERTEX_WORDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: polygonVertexCount>COMBAT_POLYGON_VERTEX_WORDS");
         uint16_t previous=combatPolygons.polygonVertexCount-1,output=0;

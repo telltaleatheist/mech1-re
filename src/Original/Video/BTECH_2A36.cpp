@@ -20,23 +20,23 @@ uint32_t BtechEgaGetCaptureStorageSize(uint16_t width,uint16_t height)
 void BtechInitializeEgaVideo(uint16_t paletteByteOffset)
 {
     if (paletteByteOffset) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: paletteByteOffset");
-    videoColourCount=COMBAT_EGA_COLOURS;
-    frontPageSelector=COMBAT_EGA_FRONT_PAGE;
-    backPageSelector=COMBAT_EGA_BACK_PAGE;
-    videoScratchPageSelector=COMBAT_EGA_SCRATCH_PAGE;
+    combatVideo.videoColourCount=COMBAT_EGA_COLOURS;
+    combatVideo.frontPageSelector=COMBAT_EGA_FRONT_PAGE;
+    combatVideo.backPageSelector=COMBAT_EGA_BACK_PAGE;
+    combatVideo.videoScratchPageSelector=COMBAT_EGA_SCRATCH_PAGE;
     MwSetVideoMode(COMBAT_EGA_MODE_320X200);
     uint16_t pattern=0;
     for (uint16_t colour=0;colour<COMBAT_EGA_COLOURS;++colour)
     {
-        palettePrimarySlots[0][colour]=pattern;
-        palettePrimarySlots[0][colour+COMBAT_EGA_COLOURS]=pattern;
-        paletteSecondarySlots[0][colour]=pattern;
-        paletteSecondarySlots[0][colour+COMBAT_EGA_COLOURS]=pattern;
-        graphicsColourPatterns[colour]=pattern;
+        combatVideo.palettePrimarySlots[0][colour]=pattern;
+        combatVideo.palettePrimarySlots[0][colour+COMBAT_EGA_COLOURS]=pattern;
+        combatVideo.paletteSecondarySlots[0][colour]=pattern;
+        combatVideo.paletteSecondarySlots[0][colour+COMBAT_EGA_COLOURS]=pattern;
+        combatVideo.graphicsColourPatterns[colour]=pattern;
         pattern+=0x0101; /* One repeated colour BYTE in each WORD half. */
     }
     for (uint16_t row=0,offset=0;row<COMBAT_SCREEN_HEIGHT;++row,offset+=COMBAT_SCREEN_ROW_BYTES)
-        graphicsRowOffsets[row]=offset;
+        combatVideo.graphicsRowOffsets[row]=offset;
     /* The original then selects all planes and write mode 2: what every combat
      * drawing routine starts from. On the canvas there is nothing to set (G4). */
 }
@@ -68,29 +68,29 @@ void BtechEgaDrawGlyph(uint16_t character,uint16_t x,uint16_t y,uint16_t page)
     GlyphCanvas canvas{page};
     // FAR AX/DX/BP entry, ambient ES page; DX/SI/BP/DS preserved. DI is scratch.
     // No clipping here; the shared text caller owns clipping decisions.
-    uint8_t width=fontAdvanceWidths[0x0000];
+    uint8_t width=combatVideo.fontAdvanceWidths[0x0000];
     uint8_t byteAligned=(x&0x0007)==0x0000&&(width&0x07)==0x00;
     uint8_t bytesPerRow=(width>>0x03)+(!byteAligned&&(width&0x07)!=0x00);
     uint8_t shift=x&0x0007;
     uint16_t cursor=0x0000;
     if (!byteAligned)
     {
-        cursor=(uint16_t)(graphicsRowOffsets[y]+(x>>0x0003));
-        glyphTailMask=glyphTailMasks[width&0x07];
+        cursor=(uint16_t)(combatVideo.graphicsRowOffsets[y]+(x>>0x0003));
+        combatVideo.glyphTailMask=glyphTailMasks[width&0x07];
     } // Native scratch write precedes character rejection on general path.
-    uint8_t rowsRemaining=combatFontHeights[0x0000];
+    uint8_t rowsRemaining=combatVideo.combatFontHeights[0x0000];
     uint8_t glyphStride=rowsRemaining*bytesPerRow; // MUL BYTE then MUL BL: high product BYTE discarded.
-    uint8_t characterByte=(uint8_t)character,firstCharacter=fontFirstCharacters[0x0000];
+    uint8_t characterByte=(uint8_t)character,firstCharacter=combatVideo.fontFirstCharacters[0x0000];
     uint8_t relativeCharacter=characterByte-firstCharacter;
     if ((int8_t)characterByte<(int8_t)firstCharacter)return; // SUB/JL includes overflow, not just relative sign.
-    uint8_t characterCount=fontCharacterCounts[0x0000];
+    uint8_t characterCount=combatVideo.fontCharacterCounts[0x0000];
     if (byteAligned?relativeCharacter>=characterCount:(int8_t)relativeCharacter>=(int8_t)characterCount)return;
     uint16_t glyphCursor=relativeCharacter*glyphStride;
     if (byteAligned)
-        cursor=(uint16_t)(graphicsRowOffsets[y]+(x>>0x0003));
-    uint8_t foreground=textForegroundPattern,background=textBackgroundPattern;
-    uint8_t transparent=textTransparentBackground!=0x00;
-    BtechFont *font=&fonts[0];
+        cursor=(uint16_t)(combatVideo.graphicsRowOffsets[y]+(x>>0x0003));
+    uint8_t foreground=combatVideo.textForegroundPattern,background=combatVideo.textBackgroundPattern;
+    uint8_t transparent=combatVideo.textTransparentBackground!=0x00;
+    BtechFont *font=&combatVideo.fonts[0];
     if (byteAligned)
     {
         do
@@ -136,16 +136,16 @@ void BtechEgaDrawGlyph(uint16_t character,uint16_t x,uint16_t y,uint16_t page)
                     if (!font->bytes || glyphCursor>=font->byteCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !font->bytes || glyphCursor>=font->byteCount");
                     uint8_t glyphBits=font->bytes[glyphCursor];
                     glyphCursor++;
-                    GlyphPattern(canvas,cursor,(uint8_t)(glyphBits),textForegroundPattern);
-                    GlyphPattern(canvas,cursor,(uint8_t)((uint8_t)~glyphBits),textBackgroundPattern);
+                    GlyphPattern(canvas,cursor,(uint8_t)(glyphBits),combatVideo.textForegroundPattern);
+                    GlyphPattern(canvas,cursor,(uint8_t)((uint8_t)~glyphBits),combatVideo.textBackgroundPattern);
                     cursor++;
                 }
                 if (!font->bytes || glyphCursor>=font->byteCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !font->bytes || glyphCursor>=font->byteCount");
                 uint8_t glyphBits=font->bytes[glyphCursor];
                 glyphCursor++;
-                GlyphPattern(canvas,cursor,(uint8_t)(glyphBits),textForegroundPattern);
-                uint8_t backgroundMask=(uint8_t)~glyphBits&glyphTailMask;
-                GlyphPattern(canvas,cursor,(uint8_t)(backgroundMask),textBackgroundPattern);
+                GlyphPattern(canvas,cursor,(uint8_t)(glyphBits),combatVideo.textForegroundPattern);
+                uint8_t backgroundMask=(uint8_t)~glyphBits&combatVideo.glyphTailMask;
+                GlyphPattern(canvas,cursor,(uint8_t)(backgroundMask),combatVideo.textBackgroundPattern);
                 cursor++;
             }
         }
@@ -161,12 +161,12 @@ void BtechEgaDrawGlyph(uint16_t character,uint16_t x,uint16_t y,uint16_t page)
                 uint16_t joinedBits=(uint16_t)((uint16_t)previousBits<<0x0008)|glyphBits;
                 previousBits=glyphBits;
                 uint8_t shiftedBits=joinedBits>>shift;
-                GlyphPattern(canvas,cursor,(uint8_t)(shiftedBits),textForegroundPattern);
+                GlyphPattern(canvas,cursor,(uint8_t)(shiftedBits),combatVideo.textForegroundPattern);
                 cursor++;
             }
             uint16_t joinedBits=(uint16_t)previousBits<<0x0008;
             uint8_t shiftedBits=joinedBits>>shift;
-            GlyphPattern(canvas,cursor,(uint8_t)(shiftedBits),textForegroundPattern);
+            GlyphPattern(canvas,cursor,(uint8_t)(shiftedBits),combatVideo.textForegroundPattern);
             cursor++;
         }
         else
@@ -180,11 +180,11 @@ void BtechEgaDrawGlyph(uint16_t character,uint16_t x,uint16_t y,uint16_t page)
                 glyphCursor++;
                 uint8_t foregroundMask=((uint16_t)((uint16_t)previousBits<<0x0008)|glyphBits)>>shift;
                 previousBits=glyphBits;
-                GlyphPattern(canvas,cursor,(uint8_t)(foregroundMask),textForegroundPattern);
+                GlyphPattern(canvas,cursor,(uint8_t)(foregroundMask),combatVideo.textForegroundPattern);
                 uint8_t invertedBits=(uint8_t)~previousBits;
                 uint8_t backgroundMask=((uint16_t)((uint16_t)previousBackground<<0x0008)|invertedBits)>>shift;
                 previousBackground=invertedBits;
-                GlyphPattern(canvas,cursor,(uint8_t)(backgroundMask),textBackgroundPattern);
+                GlyphPattern(canvas,cursor,(uint8_t)(backgroundMask),combatVideo.textBackgroundPattern);
                 cursor++;
             }
             if (!font->bytes || glyphCursor>=font->byteCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !font->bytes || glyphCursor>=font->byteCount");
@@ -192,16 +192,16 @@ void BtechEgaDrawGlyph(uint16_t character,uint16_t x,uint16_t y,uint16_t page)
             glyphCursor++;
             uint8_t foregroundMask=((uint16_t)((uint16_t)previousBits<<0x0008)|glyphBits)>>shift;
             previousBits=glyphBits;
-            GlyphPattern(canvas,cursor,(uint8_t)(foregroundMask),textForegroundPattern);
-            uint8_t invertedBits=(uint8_t)~previousBits&glyphTailMask;
+            GlyphPattern(canvas,cursor,(uint8_t)(foregroundMask),combatVideo.textForegroundPattern);
+            uint8_t invertedBits=(uint8_t)~previousBits&combatVideo.glyphTailMask;
             uint8_t backgroundMask=((uint16_t)((uint16_t)previousBackground<<0x0008)|invertedBits)>>shift;
             previousBackground=invertedBits;
-            GlyphPattern(canvas,cursor,(uint8_t)(backgroundMask),textBackgroundPattern);
+            GlyphPattern(canvas,cursor,(uint8_t)(backgroundMask),combatVideo.textBackgroundPattern);
             cursor++;
             foregroundMask=(uint8_t)((uint16_t)((uint16_t)previousBits<<0x0008)>>shift);
-            GlyphPattern(canvas,cursor,(uint8_t)(foregroundMask),textForegroundPattern);
+            GlyphPattern(canvas,cursor,(uint8_t)(foregroundMask),combatVideo.textForegroundPattern);
             backgroundMask=(uint8_t)((uint16_t)((uint16_t)previousBackground<<0x0008)>>shift);
-            GlyphPattern(canvas,cursor,(uint8_t)(backgroundMask),textBackgroundPattern);
+            GlyphPattern(canvas,cursor,(uint8_t)(backgroundMask),combatVideo.textBackgroundPattern);
             // Extra opaque tail uses MOV, not STOSB: no cursor increment.
         }
         uint16_t rowBytes=bytesPerRow;
@@ -218,31 +218,31 @@ void BtechEgaDrawGlyph(uint16_t character,uint16_t x,uint16_t y,uint16_t page)
 uint16_t BtechEgaLoadFont(BtechRuntimeStream *stream,uint16_t slot,uint8_t *scratch)
 {
     if (slot>=COMBAT_FONT_SLOTS || !stream || !btechHostAllocateParagraphs) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: slot>=COMBAT_FONT_SLOTS || !stream || !btechHostAllocateParagraphs");
-    uint8_t bytesPerRow=(fontAdvanceWidths[slot]+7)/8;
-    uint16_t bytes=(uint8_t)(combatFontHeights[slot]*bytesPerRow)*fontCharacterCounts[slot];
-    egaFontChunkCounter=bytes;
+    uint8_t bytesPerRow=(combatVideo.fontAdvanceWidths[slot]+7)/8;
+    uint16_t bytes=(uint8_t)(combatVideo.combatFontHeights[slot]*bytesPerRow)*combatVideo.fontCharacterCounts[slot];
+    combatVideo.egaFontChunkCounter=bytes;
     uint16_t paragraphs=(uint16_t)((bytes>>4)+((bytes&0x0F)!=0)),largestFreeParagraphs;
     uint8_t *allocation=btechHostAllocateParagraphs(paragraphs,&largestFreeParagraphs);
     if (!allocation) return 0;
-    fonts[slot]=BtechFont{allocation,(size_t)paragraphs*0x10};
-    egaFontBuffer=allocation;
+    combatVideo.fonts[slot]=BtechFont{allocation,(size_t)paragraphs*0x10};
+    combatVideo.egaFontBuffer=allocation;
     if (bytes/COMBAT_FONT_READ_BYTES>UINT8_MAX) /* Port emulation of a native CPU fault. */ MW_NATIVE_FAULT("Rejected condition: bytes/COMBAT_FONT_READ_BYTES>UINT8_MAX"); // Native DIV BL fault after allocation stores.
-    egaFontChunkCounter=(uint16_t)((bytes/COMBAT_FONT_READ_BYTES)|((bytes%COMBAT_FONT_READ_BYTES)<<8));
+    combatVideo.egaFontChunkCounter=(uint16_t)((bytes/COMBAT_FONT_READ_BYTES)|((bytes%COMBAT_FONT_READ_BYTES)<<8));
     uint16_t cursor=0;
     do
     {
         size_t read=BtechReadStreamElements(scratch,COMBAT_FONT_READ_BYTES,1,stream->file);
         if (!cursor && read!=1) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !cursor && read!=1"); // First short block can expose unknown inherited stack bytes.
-        if ((uint32_t)cursor+COMBAT_FONT_READ_BYTES>fonts[slot].byteCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint32_t)cursor+COMBAT_FONT_READ_BYTES>fonts[slot].byteCount");
-        memcpy(egaFontBuffer+cursor,scratch,COMBAT_FONT_READ_BYTES);
+        if ((uint32_t)cursor+COMBAT_FONT_READ_BYTES>combatVideo.fonts[slot].byteCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint32_t)cursor+COMBAT_FONT_READ_BYTES>fonts[slot].byteCount");
+        memcpy(combatVideo.egaFontBuffer+cursor,scratch,COMBAT_FONT_READ_BYTES);
         cursor+=COMBAT_FONT_READ_BYTES;
-        egaFontChunkCounter=(uint16_t)((egaFontChunkCounter&0xFF00)
-            |(uint8_t)(egaFontChunkCounter-1));
-    } while ((uint8_t)egaFontChunkCounter);
-    uint16_t tail=egaFontChunkCounter>>8;
+        combatVideo.egaFontChunkCounter=(uint16_t)((combatVideo.egaFontChunkCounter&0xFF00)
+            |(uint8_t)(combatVideo.egaFontChunkCounter-1));
+    } while ((uint8_t)combatVideo.egaFontChunkCounter);
+    uint16_t tail=combatVideo.egaFontChunkCounter>>8;
     BtechReadStreamElements(scratch,tail,1,stream->file); // Native ignores short counts; retains previous staging bytes.
-    if ((uint32_t)cursor+tail>fonts[slot].byteCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint32_t)cursor+tail>fonts[slot].byteCount");
-    memcpy(egaFontBuffer+cursor,scratch,tail);
+    if ((uint32_t)cursor+tail>combatVideo.fonts[slot].byteCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint32_t)cursor+tail>fonts[slot].byteCount");
+    memcpy(combatVideo.egaFontBuffer+cursor,scratch,tail);
     return slot;
 }
 
@@ -256,9 +256,9 @@ uint16_t BtechEgaLoadPalette(BtechRuntimeStream *stream,uint16_t slot)
     if (BtechReadStreamElements(encoded,1,sizeof(encoded),stream->file)!=sizeof(encoded)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: BtechReadStreamElements(encoded,1,sizeof(encoded),stream->file)!=sizeof(encoded)");
     uint16_t cursor=0;
     for (uint16_t colour=0;colour<COMBAT_PALETTE_WORDS;++colour,cursor+=2)
-        palettePrimarySlots[slot][colour]=(encoded[cursor]&0x0F)|((uint16_t)(encoded[cursor+1]>>4)<<8);
+        combatVideo.palettePrimarySlots[slot][colour]=(encoded[cursor]&0x0F)|((uint16_t)(encoded[cursor+1]>>4)<<8);
     for (uint16_t colour=0;colour<COMBAT_PALETTE_WORDS;++colour,cursor+=2)
-        paletteSecondarySlots[slot][colour]=(encoded[cursor]&0x0F)|((uint16_t)(encoded[cursor+1]>>4)<<8);
+        combatVideo.paletteSecondarySlots[slot][colour]=(encoded[cursor]&0x0F)|((uint16_t)(encoded[cursor+1]>>4)<<8);
     return slot;
 }
 
@@ -272,12 +272,12 @@ void BtechEgaSelectPalette(uint16_t slot)
     if (slot>=COMBAT_PALETTE_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: slot>=COMBAT_PALETTE_SLOTS");
     for (uint16_t colour=0;colour<COMBAT_EGA_COLOURS;++colour)
     {
-        palettePrimarySlots[0][colour]=colour;
-        paletteSecondarySlots[0][colour]=colour;
-        graphicsColourPatterns[colour]=colour;
-        palettePrimarySlots[0][colour+COMBAT_EGA_COLOURS]=palettePrimarySlots[slot][colour+COMBAT_EGA_COLOURS];
-        paletteSecondarySlots[0][colour+COMBAT_EGA_COLOURS]=paletteSecondarySlots[slot][colour+COMBAT_EGA_COLOURS];
-        uint8_t hardwareColour=palettePrimarySlots[slot][colour]&0x0F;
+        combatVideo.palettePrimarySlots[0][colour]=colour;
+        combatVideo.paletteSecondarySlots[0][colour]=colour;
+        combatVideo.graphicsColourPatterns[colour]=colour;
+        combatVideo.palettePrimarySlots[0][colour+COMBAT_EGA_COLOURS]=combatVideo.palettePrimarySlots[slot][colour+COMBAT_EGA_COLOURS];
+        combatVideo.paletteSecondarySlots[0][colour+COMBAT_EGA_COLOURS]=combatVideo.paletteSecondarySlots[slot][colour+COMBAT_EGA_COLOURS];
+        uint8_t hardwareColour=combatVideo.palettePrimarySlots[slot][colour]&0x0F;
         if (hardwareColour>=8) hardwareColour+=8;
         mw1o::video::GameCanvas().setPaletteEntry(colour,mw1o::video::PaletteCodeColour(hardwareColour));
     }

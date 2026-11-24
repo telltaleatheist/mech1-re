@@ -11,15 +11,15 @@
  * where its mask has a 1 (BTECH_2A36_CANVAS.h). */
 void BtechEgaFillPolygonSpans(const BtechPolygonSpan *header)
 {
-    uint16_t page=drawPageSelector,row=header->header.firstRow;
+    uint16_t page=combatVideo.drawPageSelector,row=header->header.firstRow;
     BtechEgaCanvasWriter ega(page);
     combatPolygons.egaSpanRowsRemaining=header->header.rowCount;
     const BtechPolygonSpan *span=header+1;
-    uint8_t colour=drawLineColour;
-    spanPrimaryPattern=palettePrimarySlots[colour/COMBAT_PALETTE_WORDS][colour%COMBAT_PALETTE_WORDS];
-    uint16_t secondary=paletteSecondarySlots[colour/COMBAT_PALETTE_WORDS][colour%COMBAT_PALETTE_WORDS];
-    bool alternating=secondary!=spanPrimaryPattern;
-    if (alternating) spanSecondaryPattern=secondary;
+    uint8_t colour=combatVideo.drawLineColour;
+    combatVideo.spanPrimaryPattern=combatVideo.palettePrimarySlots[colour/COMBAT_PALETTE_WORDS][colour%COMBAT_PALETTE_WORDS];
+    uint16_t secondary=combatVideo.paletteSecondarySlots[colour/COMBAT_PALETTE_WORDS][colour%COMBAT_PALETTE_WORDS];
+    bool alternating=secondary!=combatVideo.spanPrimaryPattern;
+    if (alternating) combatVideo.spanSecondaryPattern=secondary;
     uint8_t parity=row&1;
     for (;;)
     {
@@ -28,8 +28,8 @@ void BtechEgaFillPolygonSpans(const BtechPolygonSpan *header)
         {
             if (row>=COMBAT_SCREEN_HEIGHT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: row>=COMBAT_SCREEN_HEIGHT"); /* Unmapped adjacent row-table reads. */
             uint16_t width=right-left+1;
-            uint16_t firstByte=graphicsRowOffsets[row]+(left>>3);
-            uint16_t pattern=alternating && parity?spanSecondaryPattern:spanPrimaryPattern;
+            uint16_t firstByte=combatVideo.graphicsRowOffsets[row]+(left>>3);
+            uint16_t pattern=alternating && parity?combatVideo.spanSecondaryPattern:combatVideo.spanPrimaryPattern;
             if (alternating) {combatPolygons.egaSpanHighColour=(uint8_t)(pattern>>8);combatPolygons.egaSpanLowColour=(uint8_t)pattern;}
             uint16_t firstPixel=left&7,endPixel=(uint16_t)(firstPixel+width);
             uint8_t leading=combatPolygons.egaPolygonLeadingMasks[firstPixel];

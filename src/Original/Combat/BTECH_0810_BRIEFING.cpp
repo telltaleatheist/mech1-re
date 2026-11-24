@@ -20,11 +20,11 @@ enum { BRIEFING_MISSION_LABEL_X=0x14,BRIEFING_MISSION_LABEL_Y=0x96,
  * wait, then remove only friendly bindings with a Mech but no head object. */
 void BtechShowCombatStageBriefing(void)
 {
-    drawPageSelector=backPageSelector;
+    combatVideo.drawPageSelector=combatVideo.backPageSelector;
     BtechLoadScreenImage("status.scr",NULL);
-    textTransparentBackground=true;
-    screenPolygonNeedsClip=false;
-    textForegroundColour=hudColourSchemeIndex?(int)Combat_Pal_EGA_Black:COMBAT_BRIEFING_TEXT_COLOUR;
+    combatVideo.textTransparentBackground=true;
+    combatVideo.screenPolygonNeedsClip=false;
+    combatVideo.textForegroundColour=hudColourSchemeIndex?(int)Combat_Pal_EGA_Black:COMBAT_BRIEFING_TEXT_COLOUR;
     BtechDrawNearText(combatCockpit.briefingMissionLabel,BRIEFING_MISSION_LABEL_X,BRIEFING_MISSION_LABEL_Y);
     if (combatMissionDefinitionIndex>=COMBAT_BRIEFING_MISSIONS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatMissionDefinitionIndex>=COMBAT_BRIEFING_MISSIONS"); /* Adjacent directory alias not mapped. */
     BtechDrawNearText(combatCockpit.combatMissionTitles[combatMissionDefinitionIndex],BRIEFING_MISSION_TITLE_X,BRIEFING_MISSION_TITLE_Y);
@@ -46,7 +46,7 @@ void BtechShowCombatStageBriefing(void)
             BtechDrawNearText(condition,BRIEFING_MECH_STATUS_X,rowY+BRIEFING_MECH_LABEL_Y);
         }
     }
-    textTransparentBackground=false;
+    combatVideo.textTransparentBackground=false;
     if (!orderMapCameraObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !orderMapCameraObject");
     orderMapCameraObject->object.prefix.position.positionC=COMBAT_BRIEFING_MAP_ALTITUDE;
     if (!orderMapCameraContext) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !orderMapCameraContext");
@@ -61,7 +61,7 @@ void BtechShowCombatStageBriefing(void)
     orderMapCameraContext->clipMaximumB=BRIEFING_RESTORED_MAP_BOTTOM;
     orderMapCameraContext->clipMinimumA=BRIEFING_RESTORED_MAP_LEFT;
     orderMapCameraContext->clipMaximumA=BRIEFING_RESTORED_MAP_RIGHT;
-    screenPolygonNeedsClip=false;
+    combatVideo.screenPolygonNeedsClip=false;
     BtechSetOverscanColour(Combat_Pal_EGA_LightGrey);
     BtechCopyHudRectangleIfReady(0,0,COMBAT_SCREEN_WIDTH,COMBAT_SCREEN_HEIGHT);
     BtechWaitForCombatInputReleaseThenPress();

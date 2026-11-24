@@ -129,14 +129,14 @@ void BtechDrawReferencePointEllipse(const BtechRenderEllipse *ellipse)
     if ((int32_t)radius>0x0100) radius=0x0100;
     BtechProjectViewPosition(&combatRender.projectionRatio.vector,&combatRender.projectionVectorScratch);
     BtechOffsetProjectedScreenPair(&combatRender.projectionVectorScratch);
-    if ((int32_t)(int16_t)(clipMinimumX-0x0100)>(int32_t)combatRender.projectionVectorScratch.positionA
-        || (int32_t)(int16_t)(clipMaximumX+0x0100)<(int32_t)combatRender.projectionVectorScratch.positionA
-        || (int32_t)(int16_t)(clipMinimumY-0x0100)>(int32_t)combatRender.projectionVectorScratch.positionB
-        || (int32_t)(int16_t)(clipMaximumY+0x0100)<(int32_t)combatRender.projectionVectorScratch.positionB) return;
-    screenPolygonNeedsClip=true;drawPolygonFilled=true;
-    uint8_t colour=graphicsColourMode?ellipse->colour:ellipse->alternateColour;
-    drawLineColour=combatRender.activePaletteRemap?combatRender.activePaletteRemap[colour]:colour;
-    if (!graphicsColourMode) drawLineColour&=0x1F;
-    drawFillColour=drawLineColour;
+    if ((int32_t)(int16_t)(combatVideo.clipMinimumX-0x0100)>(int32_t)combatRender.projectionVectorScratch.positionA
+        || (int32_t)(int16_t)(combatVideo.clipMaximumX+0x0100)<(int32_t)combatRender.projectionVectorScratch.positionA
+        || (int32_t)(int16_t)(combatVideo.clipMinimumY-0x0100)>(int32_t)combatRender.projectionVectorScratch.positionB
+        || (int32_t)(int16_t)(combatVideo.clipMaximumY+0x0100)<(int32_t)combatRender.projectionVectorScratch.positionB) return;
+    combatVideo.screenPolygonNeedsClip=true;combatVideo.drawPolygonFilled=true;
+    uint8_t colour=combatVideo.graphicsColourMode?ellipse->colour:ellipse->alternateColour;
+    combatVideo.drawLineColour=combatRender.activePaletteRemap?combatRender.activePaletteRemap[colour]:colour;
+    if (!combatVideo.graphicsColourMode) combatVideo.drawLineColour&=0x1F;
+    combatVideo.drawFillColour=combatVideo.drawLineColour;
     BtechDrawStyledEllipse((int16_t)radius,(uint16_t)combatRender.projectionVectorScratch.positionA,(uint16_t)combatRender.projectionVectorScratch.positionB);
 }

@@ -6,15 +6,15 @@
 /*1BF5:045D. Genuine FAR tail, one native retrace WORD forwarded unchanged. */
 void BtechSwapScreenPages(uint16_t waitForRetrace)
 {
-    if (!graphicsSwapScreenPages) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsSwapScreenPages");
-    graphicsSwapScreenPages(waitForRetrace);
+    if (!combatVideo.graphicsSwapScreenPages) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsSwapScreenPages");
+    combatVideo.graphicsSwapScreenPages(waitForRetrace);
 }
 
 /*1BF5:044D. Original FAR tail forwards the same four rectangle WORDs. */
 void BtechCopyScreenRectangle(uint16_t x,uint16_t y,uint16_t width,uint16_t height)
 {
-    if (!graphicsCopyScreenRectangle) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsCopyScreenRectangle");
-    graphicsCopyScreenRectangle(x,y,width,height);
+    if (!combatVideo.graphicsCopyScreenRectangle) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsCopyScreenRectangle");
+    combatVideo.graphicsCopyScreenRectangle(x,y,width,height);
 }
 
 /*1BF5:3470. The original sets write mode 2, copy and every pixel bit here for
@@ -27,22 +27,22 @@ void BtechSetEgaSpriteWriteRegisters(void)
 /*1BF5:3441/3445. Genuine FAR tails, typed source instead of selector:offset. */
 void BtechDispatchImageRegionPrimary(BtechResourceAllocation source,uint16_t left,uint16_t top,uint16_t width,uint16_t height)
 {
-    if (!graphicsUploadPackedScreenRegion) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsUploadPackedScreenRegion");
-    graphicsUploadPackedScreenRegion(source,left,top,width,height);
+    if (!combatVideo.graphicsUploadPackedScreenRegion) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsUploadPackedScreenRegion");
+    combatVideo.graphicsUploadPackedScreenRegion(source,left,top,width,height);
 }
 void BtechDispatchImageRegionAlternate(BtechResourceAllocation source,uint16_t left,uint16_t top,uint16_t width,uint16_t height)
 {
     (void)source;(void)left;(void)top;(void)width;(void)height;
-    if (!graphicsUploadAlternateScreenRegion) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsUploadAlternateScreenRegion");
-    graphicsUploadAlternateScreenRegion(); /* Actual selected000B ignores all incoming arguments. */
+    if (!combatVideo.graphicsUploadAlternateScreenRegion) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsUploadAlternateScreenRegion");
+    combatVideo.graphicsUploadAlternateScreenRegion(); /* Actual selected000B ignores all incoming arguments. */
 }
 
 /*1BF5:0461. FAR dispatch; EGA000B ignores the caller's rectangle entirely. */
 void BtechPresentScreenRectangle(int16_t x,int16_t y,uint16_t width,uint16_t height)
 {
     (void)x;(void)y;(void)width;(void)height;
-    if (!graphicsPresentRectangle) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsPresentRectangle");
-    graphicsPresentRectangle();
+    if (!combatVideo.graphicsPresentRectangle) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsPresentRectangle");
+    combatVideo.graphicsPresentRectangle();
 }
 
 /*1BF5:14BE. Real SCR:BIN: archive reads; ignored read counts retain stale tail.
@@ -72,7 +72,7 @@ uint16_t BtechLoadScreenImage(const char *filename,BtechRuntimeStream *stream)
         BtechReadArchiveIntoFarBuffer((uint16_t)archive,buffer.bytes,bufferBytes);
         BtechDispatchImageRegionPrimary(buffer,0,firstRow,COMBAT_SCREEN_WIDTH,rowsPerBuffer);
     } /* No EOF guard, zero-row escape or shortened last read/upload. */
-    if (graphicsColourMode)
+    if (combatVideo.graphicsColourMode)
     {
         BtechFlushAndCloseCompressedArchive((uint16_t)archive);
         if (BtechFindResourceTagPosition(stream,"SCR:VGA:",0)!=UINT32_MAX)

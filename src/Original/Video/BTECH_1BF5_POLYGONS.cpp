@@ -21,7 +21,7 @@ BtechPolygonSpan *BtechDrawScreenPolygon(int16_t count,const int16_t *x,const in
     }
     if (count<2) goto returnPolygon;
     if (count==2) goto drawSingleSegment;
-    if (!drawPolygonFilled)
+    if (!combatVideo.drawPolygonFilled)
     {
         uint16_t vertices=combatPolygons.polygonVertexCount;
         if (vertices>=COMBAT_POLYGON_VERTEX_WORDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: vertices>=COMBAT_POLYGON_VERTEX_WORDS");
@@ -29,7 +29,7 @@ BtechPolygonSpan *BtechDrawScreenPolygon(int16_t count,const int16_t *x,const in
         BtechDrawScreenPolyline(vertices,combatPolygons.screenPolygonX,combatPolygons.screenPolygonY);
         goto returnPolygon;
     }
-    if (drawFillColour!=drawLineColour)
+    if (combatVideo.drawFillColour!=combatVideo.drawLineColour)
     {
         combatPolygons.polygonOutlineVertexCount=combatPolygons.polygonVertexCount;
         if (combatPolygons.polygonOutlineVertexCount>=COMBAT_POLYGON_VERTEX_WORDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: polygonOutlineVertexCount>=COMBAT_POLYGON_VERTEX_WORDS");
@@ -42,7 +42,7 @@ BtechPolygonSpan *BtechDrawScreenPolygon(int16_t count,const int16_t *x,const in
             destination[combatPolygons.polygonOutlineVertexCount]=first;
         }
     }
-    if (screenPolygonNeedsClip) BtechClipScreenPolygonToViewport();
+    if (combatVideo.screenPolygonNeedsClip) BtechClipScreenPolygonToViewport();
     if (combatPolygons.polygonVertexCount==2) goto drawSingleSegment;
     if ((int16_t)combatPolygons.polygonVertexCount<2) goto returnPolygon;
     combatPolygons.polygonPreviousVertexY=(uint16_t)combatPolygons.screenPolygonY[0];combatPolygons.polygonPreviousVertexX=(uint16_t)combatPolygons.screenPolygonX[0];
@@ -167,7 +167,7 @@ BtechPolygonSpan *BtechDrawScreenPolygon(int16_t count,const int16_t *x,const in
     combatPolygons.polygonScanlineHeader->header.rowCount=(uint16_t)(maximumY-minimumY+1);
     if (!combatPolygons.graphicsFillPolygonSpans) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsFillPolygonSpans");
     combatPolygons.graphicsFillPolygonSpans(combatPolygons.polygonScanlineHeader);
-    if (drawFillColour!=drawLineColour) BtechDrawScreenPolyline(combatPolygons.polygonOutlineVertexCount,combatPolygons.polygonOutlineX,combatPolygons.polygonOutlineY);
+    if (combatVideo.drawFillColour!=combatVideo.drawLineColour) BtechDrawScreenPolyline(combatPolygons.polygonOutlineVertexCount,combatPolygons.polygonOutlineX,combatPolygons.polygonOutlineY);
     goto returnPolygon;
 drawSingleSegment:
     BtechDrawScreenPolyline(1,combatPolygons.screenPolygonX,combatPolygons.screenPolygonY);

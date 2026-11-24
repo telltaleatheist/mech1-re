@@ -148,7 +148,7 @@ void BtechExportCombatResultsAndTransition(uint16_t resultCode)
                 selectedWorldObjects[selectedObjectCount++]=worldObjects[object];
             }
         }
-        playerCameraFillASuppressed=BtechRandomBelowBound(3)<1;
+        combatVideo.playerCameraFillASuppressed=BtechRandomBelowBound(3)<1;
         BtechApplyLandscapeCameraColours();
         BtechInitializeOrderPanelState();
         BtechResetMechInspectionState();
