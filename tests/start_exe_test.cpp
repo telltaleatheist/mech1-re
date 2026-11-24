@@ -40,6 +40,42 @@ std::vector<std::uint8_t> btech_image(const fs::path& path, BtechRevision* revis
     return out;
 }
 
+// The words past BTECH's file data that the importers take as zero: they are in no row, as the exe's file ends before
+// them (304E:4EE0) and its startup clears them. The addresses are the reference's: nothing proves the 1990 exe keeps
+// each variable at the same one, only that its clear covers them all.
+struct ClearedWord {
+    std::uint16_t at;
+    const char* field;
+};
+const ClearedWord kClearedWords[] = {
+    {0x4EEC, "orderScreenFullRedrawPending"}, {0x4EFC, "lanceOrderControls[0]"}, {0x4EFE, "lanceOrderControls[1]"},
+    {0x4F00, "lanceOrderControls[2]"},        {0x4F2E, "orders 4F2E"},           {0x4F30, "orders 4F30"},
+    {0x7750, "pose 7750"},                    {0x7754, "cockpitFullRedrawPending"}, {0x798C, "objectNeedsScreenClip"},
+    {0x798D, "mirrorProjectionA"},            {0xC332, "render C332"},           {0xC34A, "render C34A"},
+    {0xC358, "projectionMode10"},             {0xC35C, "pose C35C"},             {0xC8F8, "render C8F8"},
+    {0xC944, "render C944"},                  {0xC946, "pose C946"},             {0xC94A, "useViewBasisDirectly"},
+    {0xC953, "forceObjectScreenClip"},        {0xD1EE, "pose D1EE"},
+};
+
+// Whether the startup's clear (mov di,first / mov cx,end / sub cx,di / xor ax,ax / rep stosb) is in `image` once and
+// clears every word above; what is wrong, or nothing.
+std::string cleared_words_fault(const std::vector<std::uint8_t>& image) {
+    int found = 0;
+    std::uint16_t first = 0, end = 0;
+    for (std::size_t i = 0; i + 12 <= image.size(); ++i) {
+        const std::uint8_t* p = image.data() + i;
+        if (p[0] != 0xBF || p[3] != 0xB9 || p[6] != 0x2B || p[7] != 0xCF || p[8] != 0x33 || p[9] != 0xC0 || p[10] != 0xF3 ||
+            p[11] != 0xAA)
+            continue;
+        ++found;
+        first = std::uint16_t(p[1] | p[2] << 8), end = std::uint16_t(p[4] | p[5] << 8);
+    }
+    if (found != 1) return "the startup's clear is there " + std::to_string(found) + " times";
+    for (const ClearedWord& word : kClearedWords)
+        if (word.at < first || word.at + 2 > end) return std::string(word.field) + " is outside the startup's clear";
+    return {};
+}
+
 // Every code, zero and generated row of BTECH's start image against one revision.
 int check_btech(const fs::path& path) {
     BtechRevision revision{};
@@ -47,6 +83,24 @@ int check_btech(const fs::path& path) {
     check(!image.empty(), path.string() + " is not a known BTECH.EXE");
     if (image.empty()) return 0;
     const char* name = revision == BTECH_REVISION_REFERENCE ? "the reference BTECH" : "the 1990 BTECH";
+    const std::string fault = cleared_words_fault(image);
+    check(fault.empty(), fault + " in " + name);
+    // The check's own check: a clear that ends before the last word, starts after the first, or isn't there.
+    for (std::size_t i = 0; i + 12 <= image.size(); ++i) {
+        if (image[i] != 0xBF || image[i + 3] != 0xB9 || image[i + 6] != 0x2B || image[i + 10] != 0xF3 || image[i + 11] != 0xAA)
+            continue;
+        auto changed = image;
+        changed[i + 4] = 0xEF, changed[i + 5] = 0xD1;
+        check(!cleared_words_fault(changed).empty(), "a clear up to D1EF passes");
+        changed[i + 4] = 0xF0;
+        check(cleared_words_fault(changed).empty(), "a clear up to D1F0 fails");
+        changed = image;
+        changed[i + 1] = 0xED, changed[i + 2] = 0x4E;
+        check(!cleared_words_fault(changed).empty(), "a clear from 4EED passes");
+        changed = image;
+        changed[i + 11] = 0x90;
+        check(!cleared_words_fault(changed).empty(), "an exe without the clear passes");
+    }
     int same = 0;
     for (std::size_t i = 0; i < btechStartRowCount; ++i) {
         const BtechStartRow& row = btechStartRows[i];
