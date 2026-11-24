@@ -6,7 +6,7 @@ Every package carries the full texts in its `licenses` folder.
 **The rights in the original.** MechWarrior (1989), BattleTech, BattleMech and the original's art, music, sound, text
 and data belong to their rights holders. Nothing of the game is in the packages. You need your own copy.
 
-**The program.** The program is under the MIT licence (LICENSE). It is built on Elthial's reconstruction, also MIT
+**The program.** The program is under the MIT licence. It is built on Elthial's reconstruction, also MIT
 (copyright Elthial, 2026), whose notices are kept.
 
 ## What the packages ship
