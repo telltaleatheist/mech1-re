@@ -42,16 +42,27 @@ typedef struct BtechToneChannelState {
     uint16_t modulationPhaseLimit,levelSequenceOffset,modulationTableOffset;
 } BtechToneChannelState;
 typedef struct BtechToneChannelFlags {uint8_t activityMask,unidentifiedField2;} BtechToneChannelFlags;
-extern uint16_t soundEventIndices[COMBAT_TONE_CHANNELS],soundPriorities[COMBAT_TONE_CHANNELS];
-extern BtechToneChannelFlags channelFlags[COMBAT_TONE_CHANNELS];
-extern BtechToneChannelState toneChannels[COMBAT_TONE_CHANNELS];
-extern BtechToneChannelState *toneChannelStates[COMBAT_TONE_CHANNELS];
-extern MwNativeByteView toneEventData[COMBAT_TONE_CHANNELS],toneFallbackData[COMBAT_TONE_CHANNELS];
-extern uint16_t fallbackAllocationOffsets[COMBAT_TONE_CHANNELS],levelSequenceDirectoryOffsets[COMBAT_TONE_CHANNELS];
-extern uint16_t bytecodeReturnOffset,currentChannelDisplacement,selectedSpeakerPriority;
-extern uint16_t bytecodeBranchHandlers[4];
-extern BtechToneChannelState *selectedSpeakerState;
-extern uint8_t soundOutputEnableMask,soundEffectsEnableMask;
+/* Combat state owned by combat_sound.h (plan, slice B3b). */
+struct CombatToneState
+{
+    uint16_t soundEventIndices[COMBAT_TONE_CHANNELS],soundPriorities[COMBAT_TONE_CHANNELS];
+    BtechToneChannelFlags channelFlags[COMBAT_TONE_CHANNELS];
+    BtechToneChannelState toneChannels[COMBAT_TONE_CHANNELS];
+    BtechToneChannelState *toneChannelStates[COMBAT_TONE_CHANNELS];
+    MwNativeByteView toneEventData[COMBAT_TONE_CHANNELS],toneFallbackData[COMBAT_TONE_CHANNELS];
+    uint16_t fallbackAllocationOffsets[COMBAT_TONE_CHANNELS],levelSequenceDirectoryOffsets[COMBAT_TONE_CHANNELS];
+    uint16_t bytecodeReturnOffset,currentChannelDisplacement,selectedSpeakerPriority;
+    uint16_t bytecodeBranchHandlers[4];
+    BtechToneChannelState *selectedSpeakerState;
+    uint8_t soundOutputEnableMask;
+    uint8_t musicNoteBase,musicChannelBias;
+    uint16_t musicPitchTableOffset,musicPriority,musicHandlerOffsets[8];
+    uint16_t speakerMusicPeriods[TONE_SPEAKER_PITCH_WORDS],tandyMusicPeriods[TONE_TANDY_PITCH_WORDS],noiseMusicPeriods[TONE_NOISE_PERIOD_WORDS];
+    /*00AF is priority entry8, immediately after the eight tone priorities. */
+    uint16_t sampleSoundPriority;
+};
+extern CombatToneState combatTones;
+extern uint8_t soundEffectsEnableMask;
 extern void (*audioTickCallback)(void);
 typedef uint16_t (*BtechMusicMessage)(uint16_t statusDisplacement,uint16_t channel,uint16_t packedData);
 extern BtechMusicMessage audioMusicCallback;
@@ -66,9 +77,6 @@ extern MwNativeByteView midiStreamData;
 extern bool midiStreamSelectorPresent;
 extern uint16_t activeMusicBankIndex;
 extern int16_t musicSequences[COMBAT_MUSIC_SEQUENCE_ROWS][COMBAT_MUSIC_SEQUENCE_WORDS];
-extern uint8_t musicNoteBase,musicChannelBias;
-extern uint16_t musicPitchTableOffset,musicPriority,musicHandlerOffsets[8];
-extern uint16_t speakerMusicPeriods[TONE_SPEAKER_PITCH_WORDS],tandyMusicPeriods[TONE_TANDY_PITCH_WORDS],noiseMusicPeriods[TONE_NOISE_PERIOD_WORDS];
 /* Authored229C:0020 is RETF. AX residue is needed by the parser. */
 uint16_t BtechMusicMessageNoOperation(uint16_t statusDisplacement,uint16_t channel,uint16_t packedData);
 uint16_t BtechDispatchToneMidiMessage(uint16_t statusDisplacement,uint16_t channel,uint16_t packedData);
@@ -96,8 +104,6 @@ void BtechTickSpeakerToneChannels(void);
 void BtechAdvanceToneChannel(BtechToneChannelState *state,MwNativeByteView event,uint16_t channel);
 void BtechParseToneCommands(BtechToneChannelState *state,MwNativeByteView event,uint16_t cursor,uint16_t channel);
 void BtechStartToneInterpreterChannel(MwNativeByteView event,uint16_t eventOffset,uint16_t channel,MwNativeByteView fallback,uint16_t fallbackOffset);
-/*00AF is priority entry8, immediately after the eight tone priorities. */
-extern uint16_t sampleSoundPriority;
 extern uint16_t timerSoundEventIndex,savedSoundTimerDivisor;
 extern uint8_t soundTimerInstalled;
 extern uint16_t *samplePriorityOwner;

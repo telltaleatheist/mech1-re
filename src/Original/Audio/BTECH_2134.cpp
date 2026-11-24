@@ -7,11 +7,11 @@
 /*2134:02BE. Native speaker bias is CH of a mask already reduced to2: zero. */
 void BtechSetToneMusicPriorityAndTranslation(uint16_t priority)
 {
-    musicPriority=priority;
+    combatTones.musicPriority=priority;
     if (selectedAudioBackendMask&COMBAT_SOUND_TANDY)
-    {musicPitchTableOffset=TONE_TANDY_PITCH_TABLE;musicChannelBias=4;musicNoteBase=0x1E;}
+    {combatTones.musicPitchTableOffset=TONE_TANDY_PITCH_TABLE;combatTones.musicChannelBias=4;combatTones.musicNoteBase=0x1E;}
     else
-    {musicChannelBias=0;musicPitchTableOffset=TONE_SPEAKER_PITCH_TABLE;musicNoteBase=0x0E;}
+    {combatTones.musicChannelBias=0;combatTones.musicPitchTableOffset=TONE_SPEAKER_PITCH_TABLE;combatTones.musicNoteBase=0x0E;}
 }
 
 /*2134:0342. Native table dispatch retains AX residue for229C:00E2.
@@ -20,43 +20,43 @@ void BtechSetToneMusicPriorityAndTranslation(uint16_t priority)
 uint16_t BtechDispatchToneMidiMessage(uint16_t statusDisplacement,uint16_t channel,uint16_t packedData)
 {
     if ((statusDisplacement&1) || statusDisplacement/2>=8) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (statusDisplacement&1) || statusDisplacement/2>=8");
-    uint16_t handler=musicHandlerOffsets[statusDisplacement/2];
+    uint16_t handler=combatTones.musicHandlerOffsets[statusDisplacement/2];
     if (handler==TONE_MUSIC_NO_OPERATION) return packedData;
     if (handler==TONE_MUSIC_PITCH_BEND) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: handler==TONE_MUSIC_PITCH_BEND");
     if (handler!=TONE_MUSIC_NOTE_OFF && handler!=TONE_MUSIC_NOTE_ON) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: handler!=TONE_MUSIC_NOTE_OFF && handler!=TONE_MUSIC_NOTE_ON");
-    channel=(channel&0xFF00)|(uint8_t)((uint8_t)channel+musicChannelBias);
+    channel=(channel&0xFF00)|(uint8_t)((uint8_t)channel+combatTones.musicChannelBias);
     if (handler==TONE_MUSIC_NOTE_OFF || !(packedData&0xFF00))
     {
-        uint16_t residue=musicPriority;
+        uint16_t residue=combatTones.musicPriority;
         if ((int16_t)channel>=COMBAT_TONE_CHANNELS) return residue;
         if (channel>=COMBAT_TONE_CHANNELS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: channel>=COMBAT_TONE_CHANNELS"); /* Signed-negative adjacent-owner alias. */
-        residue=(residue&0xFF00)|(channelFlags[channel].activityMask&2);
-        if (residue&2) channelFlags[channel].activityMask=0;
+        residue=(residue&0xFF00)|(combatTones.channelFlags[channel].activityMask&2);
+        if (residue&2) combatTones.channelFlags[channel].activityMask=0;
         return residue;
     }
     if ((int8_t)(uint8_t)channel>=COMBAT_TONE_CHANNELS) return packedData;
     if (channel>=COMBAT_TONE_CHANNELS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: channel>=COMBAT_TONE_CHANNELS");
-    if (soundPriorities[channel]>musicPriority) return packedData;
-    channelFlags[channel].activityMask=2;
-    BtechToneChannelState *state=toneChannelStates[channel];
+    if (combatTones.soundPriorities[channel]>combatTones.musicPriority) return packedData;
+    combatTones.channelFlags[channel].activityMask=2;
+    BtechToneChannelState *state=combatTones.toneChannelStates[channel];
     if (!state) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !state");
-    soundPriorities[channel]=musicPriority;
+    combatTones.soundPriorities[channel]=combatTones.musicPriority;
     state->modulationScale=0;state->periodStep=0;state->bytecodeOffset=0;
     packedData=(packedData&0x00FF)|((packedData&0x7F00)<<1);
     state->outputLevel=packedData;
     uint16_t period;
-    if (state==&toneChannels[TONE_NOISE_STATE_INDEX]) /* Native state024E, selected by its address, not channel number. */
+    if (state==&combatTones.toneChannels[TONE_NOISE_STATE_INDEX]) /* Native state024E, selected by its address, not channel number. */
     {
         state->levelSequenceOffset=TONE_NOISE_ENVELOPES+packedData*TONE_NOISE_ENVELOPE_BYTES;
-        if (musicPriority>=TONE_NOISE_PERIOD_WORDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: musicPriority>=TONE_NOISE_PERIOD_WORDS"); /* Adjacent noise-period/envelope aliases not recovered. */
-        period=noiseMusicPeriods[musicPriority];
+        if (combatTones.musicPriority>=TONE_NOISE_PERIOD_WORDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: musicPriority>=TONE_NOISE_PERIOD_WORDS"); /* Adjacent noise-period/envelope aliases not recovered. */
+        period=combatTones.noiseMusicPeriods[combatTones.musicPriority];
     }
     else
     {
-        uint8_t note=(uint8_t)packedData-musicNoteBase;
+        uint8_t note=(uint8_t)packedData-combatTones.musicNoteBase;
         if ((int8_t)note<0) return packedData; /* Activity/priority/level have already changed. */
-        if (musicPitchTableOffset==TONE_SPEAKER_PITCH_TABLE) period=speakerMusicPeriods[note];
-        else if (musicPitchTableOffset==TONE_TANDY_PITCH_TABLE) period=tandyMusicPeriods[note];
+        if (combatTones.musicPitchTableOffset==TONE_SPEAKER_PITCH_TABLE) period=combatTones.speakerMusicPeriods[note];
+        else if (combatTones.musicPitchTableOffset==TONE_TANDY_PITCH_TABLE) period=combatTones.tandyMusicPeriods[note];
         else /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Tone MIDI message selected an unsupported pitch table.");
     }
     state->basePeriod=period;state->outputPeriod=period;
@@ -73,11 +73,11 @@ void BtechParseToneCommands(BtechToneChannelState *state,MwNativeByteView event,
         uint16_t field=command&TONE_STATE_FIELD_MASK;
         if (field>0x78)
         {
-            uint16_t handler=bytecodeBranchHandlers[(field-0x78)/2];
+            uint16_t handler=combatTones.bytecodeBranchHandlers[(field-0x78)/2];
             if (handler==TONE_BRANCH_STOP) goto stopChannel;
-            if (handler==TONE_BRANCH_RETURN) {cursor=bytecodeReturnOffset;continue;}
+            if (handler==TONE_BRANCH_RETURN) {cursor=combatTones.bytecodeReturnOffset;continue;}
             uint16_t relative=MwReadNativeViewWord(&event,cursor);cursor+=2;
-            if (handler==TONE_BRANCH_CALL) bytecodeReturnOffset=cursor;
+            if (handler==TONE_BRANCH_CALL) combatTones.bytecodeReturnOffset=cursor;
             else if (handler==TONE_BRANCH_REPEAT)
             {
                 if (state->branchRepeatCount && !--state->branchRepeatCount) continue;
@@ -113,18 +113,18 @@ void BtechParseToneCommands(BtechToneChannelState *state,MwNativeByteView event,
         }
         if (field==0x2C)
         {
-            uint16_t entry=levelSequenceDirectoryOffsets[channel]+parameter*2;
+            uint16_t entry=combatTones.levelSequenceDirectoryOffsets[channel]+parameter*2;
             state->levelSequenceOffset=MwReadNativeViewWord(&event,entry);
             state->commandDelayTicks=0;break;
         }
-        uint16_t entry=fallbackAllocationOffsets[channel]+parameter*4;
-        state->modulationTableOffset=MwReadNativeViewWord(&toneFallbackData[channel],entry);
-        state->modulationPhaseLimit=MwReadNativeViewWord(&toneFallbackData[channel],(uint16_t)(entry+2));
+        uint16_t entry=combatTones.fallbackAllocationOffsets[channel]+parameter*4;
+        state->modulationTableOffset=MwReadNativeViewWord(&combatTones.toneFallbackData[channel],entry);
+        state->modulationPhaseLimit=MwReadNativeViewWord(&combatTones.toneFallbackData[channel],(uint16_t)(entry+2));
     }
     state->bytecodeOffset=cursor;return;
 stopChannel:
-    channelFlags[channel].activityMask=0;
-    soundPriorities[channel]=0;
+    combatTones.channelFlags[channel].activityMask=0;
+    combatTones.soundPriorities[channel]=0;
     state->bytecodeOffset=cursor;
 }
 
@@ -144,7 +144,7 @@ void BtechAdvanceToneChannel(BtechToneChannelState *state,MwNativeByteView event
         state->modulationPhase=phase;
         uint16_t shiftedPhase=(phase>>4)|((phase&0x8000)?0xF000:0);
         uint16_t entry=shiftedPhase+state->modulationTableOffset;
-        int16_t modulation=(uint16_t)MwReadNativeViewByte(&toneFallbackData[channel],entry)<<8;
+        int16_t modulation=(uint16_t)MwReadNativeViewByte(&combatTones.toneFallbackData[channel],entry)<<8;
         int32_t product=(int32_t)modulation*state->modulationScale;
         modulationHigh=(uint16_t)((uint32_t)product>>16);
     }
@@ -173,34 +173,34 @@ void BtechTickSpeakerToneChannels(void)
 {
     if (!audioTickCallback) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !audioTickCallback");
     audioTickCallback();
-    soundOutputEnableMask=soundEffectsEnableMask;
-    selectedSpeakerState=NULL;selectedSpeakerPriority=0;
+    combatTones.soundOutputEnableMask=soundEffectsEnableMask;
+    combatTones.selectedSpeakerState=NULL;combatTones.selectedSpeakerPriority=0;
     for (int16_t channel=COMBAT_SPEAKER_CHANNELS-1;channel>=0;--channel)
     {
-        uint8_t activity=channelFlags[channel].activityMask;
+        uint8_t activity=combatTones.channelFlags[channel].activityMask;
         if (!activity) continue;
-        BtechToneChannelState *state=toneChannelStates[channel];
-        if ((activity&soundOutputEnableMask) && soundPriorities[channel]>=selectedSpeakerPriority)
-        {selectedSpeakerPriority=soundPriorities[channel];selectedSpeakerState=state;}
-        currentChannelDisplacement=channel*2;
-        BtechAdvanceToneChannel(state,toneEventData[channel],channel);
+        BtechToneChannelState *state=combatTones.toneChannelStates[channel];
+        if ((activity&combatTones.soundOutputEnableMask) && combatTones.soundPriorities[channel]>=combatTones.selectedSpeakerPriority)
+        {combatTones.selectedSpeakerPriority=combatTones.soundPriorities[channel];combatTones.selectedSpeakerState=state;}
+        combatTones.currentChannelDisplacement=channel*2;
+        BtechAdvanceToneChannel(state,combatTones.toneEventData[channel],channel);
     }
     if (!btechHostPlayTone) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostPlayTone");
-    bool sounding=selectedSpeakerState && selectedSpeakerState->outputLevel;
-    btechHostPlayTone(sounding?MwTonePeriodFrequency(selectedSpeakerState->outputPeriod):0);
+    bool sounding=combatTones.selectedSpeakerState && combatTones.selectedSpeakerState->outputLevel;
+    btechHostPlayTone(sounding?MwTonePeriodFrequency(combatTones.selectedSpeakerState->outputPeriod):0);
     /* Test instrument (event_log.h): what the effect player chose this tick. */
-    MwEventLogToneTick(selectedSpeakerState?selectedSpeakerState->outputPeriod:0,sounding);
+    MwEventLogToneTick(combatTones.selectedSpeakerState?combatTones.selectedSpeakerState->outputPeriod:0,sounding);
 }
 
 /*2134:0248. Zero state WORDs descending, except cursor until the final store.
  * Bytecode/fallback views borrow real allocations; no copied segment image. */
 void BtechStartToneInterpreterChannel(MwNativeByteView event,uint16_t eventOffset,uint16_t channel,MwNativeByteView fallback,uint16_t fallbackOffset)
 {
-    if (channel>=COMBAT_TONE_CHANNELS || !toneChannelStates[channel]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: channel>=COMBAT_TONE_CHANNELS || !toneChannelStates[channel]");
-    channelFlags[channel].activityMask=1;
-    BtechToneChannelState *state=toneChannelStates[channel];
-    toneEventData[channel]=event;
-    fallbackAllocationOffsets[channel]=fallbackOffset;toneFallbackData[channel]=fallback;
+    if (channel>=COMBAT_TONE_CHANNELS || !combatTones.toneChannelStates[channel]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: channel>=COMBAT_TONE_CHANNELS || !toneChannelStates[channel]");
+    combatTones.channelFlags[channel].activityMask=1;
+    BtechToneChannelState *state=combatTones.toneChannelStates[channel];
+    combatTones.toneEventData[channel]=event;
+    combatTones.fallbackAllocationOffsets[channel]=fallbackOffset;combatTones.toneFallbackData[channel]=fallback;
     state->modulationTableOffset=0;state->levelSequenceOffset=0;state->modulationPhaseLimit=0;
     for (uint16_t word=4;word;--word) state->unidentifiedField13[word-1]=0;
     state->branchRepeatCount=0;state->modulationScale=0;state->modulationPhaseStep=0;
@@ -218,12 +218,12 @@ void BtechStopMatchingToneChannels(uint16_t soundEventIndex,uint8_t activityMask
 {
     for (int16_t channel=COMBAT_TONE_CHANNELS-1;channel>=0;--channel)
     {
-        if (soundEventIndices[channel]==soundEventIndex || (channelFlags[channel].activityMask&activityMask))
+        if (combatTones.soundEventIndices[channel]==soundEventIndex || (combatTones.channelFlags[channel].activityMask&activityMask))
         {
-            soundPriorities[channel]=0;
-            channelFlags[channel].activityMask=0;
-            toneChannelStates[channel]->outputLevel=0;
-            channelFlags[channel].activityMask=0; /* Repeated native store. */
+            combatTones.soundPriorities[channel]=0;
+            combatTones.channelFlags[channel].activityMask=0;
+            combatTones.toneChannelStates[channel]->outputLevel=0;
+            combatTones.channelFlags[channel].activityMask=0; /* Repeated native store. */
         }
     }
 }

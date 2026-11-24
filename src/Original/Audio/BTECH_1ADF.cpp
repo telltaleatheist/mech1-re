@@ -437,15 +437,15 @@ uint16_t BtechAllocateToneEventChannels(BtechSoundEvent event,uint16_t priority,
         else {first=4;last=6;}
     }
     uint16_t selected=first;
-    while (selected<=last && soundPriorities[selected]) ++selected;
+    while (selected<=last && combatTones.soundPriorities[selected]) ++selected;
     if (selected>last)
     {
-        uint16_t minimumPriority=soundPriorities[first];
+        uint16_t minimumPriority=combatTones.soundPriorities[first];
         for (uint16_t channel=first;channel<last;++channel)
-            if (minimumPriority>=soundPriorities[channel])
-            {minimumPriority=soundPriorities[channel];selected=channel;}
+            if (minimumPriority>=combatTones.soundPriorities[channel])
+            {minimumPriority=combatTones.soundPriorities[channel];selected=channel;}
     }
-    if (soundPriorities[selected]>priority) return 0;
+    if (combatTones.soundPriorities[selected]>priority) return 0;
     if (activeSoundBankIndex>=COMBAT_SOUND_BANKS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeSoundBankIndex>=COMBAT_SOUND_BANKS");
     BtechSoundAllocationNode *fallback=soundBanks[activeSoundBankIndex].fallback;
     /* A missing ITM still starts native effects. Preserve its ambient WORD
@@ -464,8 +464,8 @@ uint16_t BtechAllocateToneEventChannels(BtechSoundEvent event,uint16_t priority,
         uint16_t secondaryOffset=factor*0x0A+event.offset-0x50;
         BtechStartToneInterpreterChannel(event.data,secondaryOffset,7,fallbackData,fallbackOffset);
     }
-    soundPriorities[selected]=priority;
-    soundEventIndices[selected]=soundEventIndex;
+    combatTones.soundPriorities[selected]=priority;
+    combatTones.soundEventIndices[selected]=soundEventIndex;
     return 1;
 }
 
