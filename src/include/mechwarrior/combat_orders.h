@@ -22,29 +22,34 @@ enum { ORDER_LABELS=7,ORDER_COMMAND_MENU_ROWS=6,ORDER_DISPLAY_CODES=11,ORDER_TAC
     ORDER_PANEL_COMMAND_Y=0x9D,ORDER_PANEL_REFERENCE_Y=0xA5,ORDER_PANEL_DAMAGE_Y=0xAD,ORDER_PANEL_WEAPONS_Y=0xB5,
     ORDER_PANEL_DETAIL_FIRST_Y=0x8D,ORDER_PANEL_MARKER_X=0x42,ORDER_PANEL_MARKER_Y=0x83,
     ORDER_PANEL_TEXT_COLOUR=Combat_Pal_EGA_White };
-extern BtechResourceAllocation orderPanelCaptureBuffer;
-extern uint16_t lanceOrderPanelTextX[3];
-extern uint8_t orderScreenFullRedrawPending;
-extern uint16_t previousOrderHighlightPanel,previousOrderHighlightRow;
-extern uint32_t orderMapPositionMask;
-extern BtechUnitControlState *lanceOrderControls[ORDER_WINGMATE_PANELS];
-extern int16_t orderSelectionFirstRows[ORDER_SELECTION_CLASSES],orderSelectionLastRows[ORDER_SELECTION_CLASSES];
-extern int16_t orderNavigationPanelDeltas[ORDER_NAVIGATION_CODES],orderNavigationRowDeltas[ORDER_NAVIGATION_CODES];
-extern const char *orderLabels[ORDER_LABELS],*tacticalOrderLabels[ORDER_TACTICAL_LABELS];
-extern const char *orderDamageLabels[ORDER_DAMAGE_LABELS],*orderEquipmentWeaponLabels[COMBAT_WEAPON_KINDS];
-extern const char *orderWeaponHeading,*orderOfText,*orderColon,*orderSelectionHeading;
-extern const char *orderLocationText,*orderBaseText,*orderDamageText,*orderWeaponsText;
-extern uint16_t orderDisplayIndices[ORDER_DISPLAY_CODES];
-extern uint16_t orderEngineConditionColours[2][4],orderSystemConditionColours[2][4];
-extern uint16_t mountedWeaponCountsByKind[COMBAT_WEAPON_KINDS],operationalWeaponCountsByKind[COMBAT_WEAPON_KINDS];
-extern uint16_t orderMapScaleIndex,selectedLanceOrderPanel,selectedOrderPanelRow;
-extern uint16_t orderPanelMode,orderActionSelection,pendingOrderCommand;
-extern uint16_t orderDestinationRepeatCountdown,previousOrderMapScaleIndex,previousOrderNavigationKey;
 enum { ORDER_MAP_SCALE_COUNT=3,ORDER_MAP_MARKER_STYLES=4,ORDER_MAP_MARKER_WIDTH=3 };
-extern uint8_t orderMapScaleShifts[ORDER_MAP_SCALE_COUNT];
-extern uint8_t orderMapMarkerMasks[ORDER_MAP_MARKER_STYLES][ORDER_MAP_MARKER_WIDTH][ORDER_MAP_MARKER_WIDTH];
-extern BtechPosition3D combatWorldBoundaryCorners[2];
-extern int16_t unitOrderMapScreenX[COMBAT_MECH_SLOTS],unitOrderMapScreenY[COMBAT_MECH_SLOTS];
+/* Combat state owned by combat_orders.h (plan, slice B3d). */
+struct CombatOrderState
+{
+    BtechResourceAllocation orderPanelCaptureBuffer;
+    uint16_t lanceOrderPanelTextX[3];
+    uint8_t orderScreenFullRedrawPending;
+    uint16_t previousOrderHighlightPanel, previousOrderHighlightRow;
+    uint32_t orderMapPositionMask;
+    BtechUnitControlState *lanceOrderControls[ORDER_WINGMATE_PANELS];
+    int16_t orderSelectionFirstRows[ORDER_SELECTION_CLASSES], orderSelectionLastRows[ORDER_SELECTION_CLASSES];
+    int16_t orderNavigationPanelDeltas[ORDER_NAVIGATION_CODES], orderNavigationRowDeltas[ORDER_NAVIGATION_CODES];
+    const char *orderLabels[ORDER_LABELS], *tacticalOrderLabels[ORDER_TACTICAL_LABELS];
+    const char *orderDamageLabels[ORDER_DAMAGE_LABELS], *orderEquipmentWeaponLabels[COMBAT_WEAPON_KINDS];
+    const char *orderWeaponHeading, *orderOfText, *orderColon, *orderSelectionHeading;
+    const char *orderLocationText, *orderBaseText, *orderDamageText, *orderWeaponsText;
+    uint16_t orderDisplayIndices[ORDER_DISPLAY_CODES];
+    uint16_t orderEngineConditionColours[2][4], orderSystemConditionColours[2][4];
+    uint16_t mountedWeaponCountsByKind[COMBAT_WEAPON_KINDS], operationalWeaponCountsByKind[COMBAT_WEAPON_KINDS];
+    uint16_t orderMapScaleIndex, selectedLanceOrderPanel, selectedOrderPanelRow;
+    uint16_t orderPanelMode, orderActionSelection, pendingOrderCommand;
+    uint16_t orderDestinationRepeatCountdown, previousOrderMapScaleIndex, previousOrderNavigationKey;
+    uint8_t orderMapScaleShifts[ORDER_MAP_SCALE_COUNT];
+    uint8_t orderMapMarkerMasks[ORDER_MAP_MARKER_STYLES][ORDER_MAP_MARKER_WIDTH][ORDER_MAP_MARKER_WIDTH];
+    BtechPosition3D combatWorldBoundaryCorners[2];
+    int16_t unitOrderMapScreenX[COMBAT_MECH_SLOTS], unitOrderMapScreenY[COMBAT_MECH_SLOTS];
+};
+extern CombatOrderState combatOrders;
 uint16_t BtechShiftSignedDwordRightLow(uint32_t value,uint16_t shifts);
 uint8_t BtechProjectPositionToOrderMap(const BtechPosition3D *position,int16_t *screenX,int16_t *screenY);
 void BtechDrawThreeByThreeMarker(int16_t x,int16_t y,uint16_t colour,uint16_t style);

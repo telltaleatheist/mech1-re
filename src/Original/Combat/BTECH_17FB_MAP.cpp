@@ -28,16 +28,16 @@ uint16_t BtechShiftSignedDwordRightLow(uint32_t value,uint16_t shifts)
 /*17FB:059F. Strict map bounds. Neither output changes on either rejection. */
 uint8_t BtechProjectPositionToOrderMap(const BtechPosition3D *position,int16_t *screenX,int16_t *screenY)
 {
-    if (orderMapScaleIndex>=ORDER_MAP_SCALE_COUNT || !orderMapCameraObject || !orderMapCameraContext) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: orderMapScaleIndex>=ORDER_MAP_SCALE_COUNT || !orderMapCameraObject || !orderMapCameraContext");
+    if (combatOrders.orderMapScaleIndex>=ORDER_MAP_SCALE_COUNT || !orderMapCameraObject || !orderMapCameraContext) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: orderMapScaleIndex>=ORDER_MAP_SCALE_COUNT || !orderMapCameraObject || !orderMapCameraContext");
     uint32_t relative=position->positionA-orderMapCameraObject->object.prefix.position.positionA;
-    uint16_t scaled=BtechShiftSignedDwordRightLow(relative,(uint16_t)(orderMapScaleShifts[orderMapScaleIndex]-7));
+    uint16_t scaled=BtechShiftSignedDwordRightLow(relative,(uint16_t)(combatOrders.orderMapScaleShifts[combatOrders.orderMapScaleIndex]-7));
     BtechCameraContext *viewport=orderMapCameraContext;
     uint16_t midpoint=(uint16_t)viewport->clipMinimumA+(uint16_t)viewport->clipMaximumA;
     midpoint=(midpoint>>1)|(midpoint&0x8000);
     int16_t x=scaled+midpoint;
     if (x<=viewport->clipMinimumA || x>=viewport->clipMaximumA) return 0;
     relative=orderMapCameraObject->object.prefix.position.positionB-position->positionB;
-    scaled=BtechShiftSignedDwordRightLow(relative,(uint16_t)(orderMapScaleShifts[orderMapScaleIndex]-7));
+    scaled=BtechShiftSignedDwordRightLow(relative,(uint16_t)(combatOrders.orderMapScaleShifts[combatOrders.orderMapScaleIndex]-7));
     viewport=orderMapCameraContext;
     midpoint=(uint16_t)((uint16_t)viewport->clipMinimumB+(uint16_t)viewport->clipMaximumB);
     midpoint=(midpoint>>1)|(midpoint&0x8000);
@@ -53,7 +53,7 @@ void BtechDrawThreeByThreeMarker(int16_t x,int16_t y,uint16_t colour,uint16_t st
     if (style>=ORDER_MAP_MARKER_STYLES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: style>=ORDER_MAP_MARKER_STYLES"); /* Other near table/owner aliases are not extra styles. */
     for (uint16_t column=0;column<ORDER_MAP_MARKER_WIDTH;++column)
         for (uint16_t row=0;row<ORDER_MAP_MARKER_WIDTH;++row)
-            if (orderMapMarkerMasks[style][column][row])
+            if (combatOrders.orderMapMarkerMasks[style][column][row])
                 BtechWriteClippedPixel((int16_t)(x+column-1),(int16_t)(y+row-1),colour);
 }
 
@@ -87,11 +87,11 @@ void BtechDrawLanceMapUnitMarkers(void)
             if (!binding->positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !binding->positionedLeftLeg");
             position=&binding->positionedLeftLeg->object.prefix.position;
         }
-        if (!BtechProjectPositionToOrderMap(position,&unitOrderMapScreenX[slot],&unitOrderMapScreenY[slot])) continue;
+        if (!BtechProjectPositionToOrderMap(position,&combatOrders.unitOrderMapScreenX[slot],&combatOrders.unitOrderMapScreenY[slot])) continue;
         uint16_t style=control->sideIndex==0?slot:0,paletteEntry=control->sideIndex==0?slot:4;
         if (combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || paletteEntry>=5) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || paletteEntry>=5");
         uint16_t colour=combatVideo.landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex].unitMarkerColours[paletteEntry];
-        BtechDrawThreeByThreeMarker(unitOrderMapScreenX[slot],unitOrderMapScreenY[slot],colour,style);
+        BtechDrawThreeByThreeMarker(combatOrders.unitOrderMapScreenX[slot],combatOrders.unitOrderMapScreenY[slot],colour,style);
     }
 }
 
@@ -103,8 +103,8 @@ void BtechDrawLanceMapRetreatBoundaries(void)
     for (uint16_t side=0;side<2;++side)
         if (sideObjectiveRules[side]==OBJECTIVE_WITHDRAW) retreatMask=scenarioSelectors.sideBoundaryMasks[side];
     int16_t left,right,top,bottom;
-    uint8_t firstVisible=BtechProjectPositionToOrderMap(&combatWorldBoundaryCorners[0],&left,&top);
-    uint8_t secondVisible=BtechProjectPositionToOrderMap(&combatWorldBoundaryCorners[1],&right,&bottom);
+    uint8_t firstVisible=BtechProjectPositionToOrderMap(&combatOrders.combatWorldBoundaryCorners[0],&left,&top);
+    uint8_t secondVisible=BtechProjectPositionToOrderMap(&combatOrders.combatWorldBoundaryCorners[1],&right,&bottom);
     if (!firstVisible || !secondVisible) return;
     combatVideo.clipMinimumY=top;combatVideo.clipMaximumY=bottom;combatVideo.clipMinimumX=left;combatVideo.clipMaximumX=right;
     combatVideo.screenPolygonNeedsClip=true;

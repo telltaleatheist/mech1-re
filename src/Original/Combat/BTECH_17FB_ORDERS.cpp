@@ -55,8 +55,8 @@ struct SelectedOrderControl
     bool usingNull=false;
     BtechUnitControlState *Get()
     {
-        if (selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS");
-        if (BtechUnitControlState *control=lanceOrderControls[selectedLanceOrderPanel]) return control;
+        if (combatOrders.selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS");
+        if (BtechUnitControlState *control=combatOrders.lanceOrderControls[combatOrders.selectedLanceOrderPanel]) return control;
         if (!usingNull) {usingNull=true;if (!nullControlUsers++) TransferNullControl(true);}
         return &nullControl;
     }
@@ -79,8 +79,8 @@ uint32_t BtechShiftDwordLeftPair(uint32_t value,uint16_t shiftCount)
 /*17FB:0002. DX:AX position-grid mask, no pushed source arguments. */
 uint32_t BtechBuildOrderMapPositionMask(void)
 {
-    if (orderMapScaleIndex>=ORDER_MAP_SCALE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: orderMapScaleIndex>=ORDER_MAP_SCALE_COUNT");
-    return BtechShiftDwordLeftPair(UINT32_MAX,(uint16_t)(orderMapScaleShifts[orderMapScaleIndex]-ORDER_MAP_PROJECTION_BASE_SHIFT));
+    if (combatOrders.orderMapScaleIndex>=ORDER_MAP_SCALE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: orderMapScaleIndex>=ORDER_MAP_SCALE_COUNT");
+    return BtechShiftDwordLeftPair(UINT32_MAX,(uint16_t)(combatOrders.orderMapScaleShifts[combatOrders.orderMapScaleIndex]-ORDER_MAP_PROJECTION_BASE_SHIFT));
 }
 
 /*17FB:1458. AL foreground, but background tests the FULL source WORD. */
@@ -121,28 +121,28 @@ void BtechUpdateLanceOrderHighlight(void)
 {
     if (!unitBindings[1].mech) return;
     combatVideo.drawPolygonFilled=false;combatVideo.drawPageSelector=combatVideo.backPageSelector;
-    if ((int16_t)previousOrderHighlightRow>=0)
+    if ((int16_t)combatOrders.previousOrderHighlightRow>=0)
     {
         combatVideo.drawFillColour=Combat_Pal_EGA_Black;
-        uint16_t previousY=previousOrderHighlightRow? (uint16_t)(ORDER_HIGHLIGHT_ROW_BASE_Y+(uint16_t)(previousOrderHighlightRow*ORDER_PANEL_ROW_STEP)):ORDER_HIGHLIGHT_FIRST_ROW_Y;
-        if (previousOrderHighlightPanel>=ORDER_WINGMATE_PANELS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: previousOrderHighlightPanel>=ORDER_WINGMATE_PANELS");
-        uint16_t previousX=lanceOrderPanelTextX[previousOrderHighlightPanel]-ORDER_PANEL_INSET;
+        uint16_t previousY=combatOrders.previousOrderHighlightRow? (uint16_t)(ORDER_HIGHLIGHT_ROW_BASE_Y+(uint16_t)(combatOrders.previousOrderHighlightRow*ORDER_PANEL_ROW_STEP)):ORDER_HIGHLIGHT_FIRST_ROW_Y;
+        if (combatOrders.previousOrderHighlightPanel>=ORDER_WINGMATE_PANELS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: previousOrderHighlightPanel>=ORDER_WINGMATE_PANELS");
+        uint16_t previousX=combatOrders.lanceOrderPanelTextX[combatOrders.previousOrderHighlightPanel]-ORDER_PANEL_INSET;
         BtechDrawStyledRectangle(previousX,previousY,ORDER_PANEL_WIDTH,ORDER_HIGHLIGHT_HEIGHT);
-        if (!orderScreenFullRedrawPending)
+        if (!combatOrders.orderScreenFullRedrawPending)
             BtechCopyHudRectangleIfReady(previousX,previousY,ORDER_PANEL_WIDTH,ORDER_HIGHLIGHT_HEIGHT);
     }
     if (hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
     const BtechHudColourScheme *colours=&combatCockpit.hudColourSchemes[hudColourSchemeIndex];
-    combatVideo.drawFillColour=(uint8_t)(selectedOrderPanelRow==ORDER_REFERENCE_ROW && (orderPanelMode==ORDER_PANEL_TARGET || orderPanelMode==ORDER_PANEL_DESTINATION)
+    combatVideo.drawFillColour=(uint8_t)(combatOrders.selectedOrderPanelRow==ORDER_REFERENCE_ROW && (combatOrders.orderPanelMode==ORDER_PANEL_TARGET || combatOrders.orderPanelMode==ORDER_PANEL_DESTINATION)
         ?colours->orderReferenceHighlight:colours->orderHighlight);
-    uint16_t selectedY=selectedOrderPanelRow? (uint16_t)(ORDER_HIGHLIGHT_ROW_BASE_Y+(uint16_t)(selectedOrderPanelRow*ORDER_PANEL_ROW_STEP)):ORDER_HIGHLIGHT_FIRST_ROW_Y;
-    if (selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS");
-    uint16_t selectedX=lanceOrderPanelTextX[selectedLanceOrderPanel]-ORDER_PANEL_INSET;
+    uint16_t selectedY=combatOrders.selectedOrderPanelRow? (uint16_t)(ORDER_HIGHLIGHT_ROW_BASE_Y+(uint16_t)(combatOrders.selectedOrderPanelRow*ORDER_PANEL_ROW_STEP)):ORDER_HIGHLIGHT_FIRST_ROW_Y;
+    if (combatOrders.selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedLanceOrderPanel>=ORDER_WINGMATE_PANELS");
+    uint16_t selectedX=combatOrders.lanceOrderPanelTextX[combatOrders.selectedLanceOrderPanel]-ORDER_PANEL_INSET;
     BtechDrawStyledRectangle(selectedX,selectedY,ORDER_PANEL_WIDTH,ORDER_HIGHLIGHT_HEIGHT);
-    if (!orderScreenFullRedrawPending)
+    if (!combatOrders.orderScreenFullRedrawPending)
         BtechCopyHudRectangleIfReady(selectedX,selectedY,ORDER_PANEL_WIDTH,ORDER_HIGHLIGHT_HEIGHT);
-    previousOrderHighlightRow=selectedOrderPanelRow;
-    previousOrderHighlightPanel=selectedLanceOrderPanel;
+    combatOrders.previousOrderHighlightRow=combatOrders.selectedOrderPanelRow;
+    combatOrders.previousOrderHighlightPanel=combatOrders.selectedLanceOrderPanel;
 }
 
 /*17FB:16A7. Clear panel body but not its heading; leave outline mode set. */
@@ -151,7 +151,7 @@ void BtechClearLanceOrderPanel(uint16_t panelIndex)
     combatVideo.drawPageSelector=combatVideo.backPageSelector;combatVideo.drawPolygonFilled=true;
     combatVideo.drawFillColour=Combat_Pal_EGA_Black;combatVideo.drawLineColour=Combat_Pal_EGA_Black;
     if (panelIndex>=ORDER_WINGMATE_PANELS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: panelIndex>=ORDER_WINGMATE_PANELS");
-    BtechDrawStyledRectangle((uint16_t)(lanceOrderPanelTextX[panelIndex]-ORDER_PANEL_INSET),ORDER_PANEL_TOP,ORDER_PANEL_WIDTH,ORDER_PANEL_HEIGHT);
+    BtechDrawStyledRectangle((uint16_t)(combatOrders.lanceOrderPanelTextX[panelIndex]-ORDER_PANEL_INSET),ORDER_PANEL_TOP,ORDER_PANEL_WIDTH,ORDER_PANEL_HEIGHT);
     combatVideo.drawPolygonFilled=false;
 }
 
@@ -202,34 +202,34 @@ void BtechEditSelectedUnitOrders(void)
     {
     case COMBAT_KEY_Q:
     case COMBAT_KEY_SPACE:
-        combatStartup.combatDispatchState=COMBAT_SCREEN_COCKPIT;orderScreenFullRedrawPending=1;
+        combatStartup.combatDispatchState=COMBAT_SCREEN_COCKPIT;combatOrders.orderScreenFullRedrawPending=1;
         BtechRefreshCockpitViewportAndGaugesFar();combatCockpit.cockpitFullRedrawPending=1;
         break;
     case COMBAT_KEY_P:BtechShowSimulationPausedDialogFar();break;
     case COMBAT_KEY_S:combatSoundEnabled=combatSoundEnabled==0;break;
-    case COMBAT_KEY_D:combatStartup.combatDispatchState=PLAYER_SCREEN_INSPECTION;orderScreenFullRedrawPending=1;break;
+    case COMBAT_KEY_D:combatStartup.combatDispatchState=PLAYER_SCREEN_INSPECTION;combatOrders.orderScreenFullRedrawPending=1;break;
     case COMBAT_KEY_Z:
-        --orderMapScaleIndex;
-        if ((int16_t)orderMapScaleIndex<0) orderMapScaleIndex=ORDER_MAP_FULL_SCALE;
-        orderMapPositionMask=BtechBuildOrderMapPositionMask();
+        --combatOrders.orderMapScaleIndex;
+        if ((int16_t)combatOrders.orderMapScaleIndex<0) combatOrders.orderMapScaleIndex=ORDER_MAP_FULL_SCALE;
+        combatOrders.orderMapPositionMask=BtechBuildOrderMapPositionMask();
         break;
     default:break;
     }
     BtechUnitControlState *control;
     if (scan!=COMBAT_KEY_ENTER && !combatInput.combatInputButton1State && !combatInput.combatInputButton0State)
     {
-        if (orderPanelMode==ORDER_PANEL_SUMMARY || (int16_t)orderPanelMode>=ORDER_PANEL_DAMAGE) goto navigation;
+        if (combatOrders.orderPanelMode==ORDER_PANEL_SUMMARY || (int16_t)combatOrders.orderPanelMode>=ORDER_PANEL_DAMAGE) goto navigation;
         if (selected.Get()->conditionScoreOrExitCode>=COMBAT_CONDITION_SCORE_MINIMUM) goto navigation;
     }
-    if (orderPanelMode==ORDER_PANEL_SUMMARY)
+    if (combatOrders.orderPanelMode==ORDER_PANEL_SUMMARY)
     {
-        switch (orderActionSelection)
+        switch (combatOrders.orderActionSelection)
         {
         case ORDER_ACTION_COMMAND:
             control=selected.Get();
             if (control->conditionScoreOrExitCode<=COMBAT_CONDITION_SCORE_MINIMUM) goto navigation;
-            orderPanelMode=ORDER_PANEL_COMMAND;pendingOrderCommand=control->commandCode;
-            selectedOrderPanelRow=control->commandCode+orderSelectionFirstRows[1];
+            combatOrders.orderPanelMode=ORDER_PANEL_COMMAND;combatOrders.pendingOrderCommand=control->commandCode;
+            combatOrders.selectedOrderPanelRow=control->commandCode+combatOrders.orderSelectionFirstRows[1];
             break;
         case ORDER_ACTION_REFERENCE:
             control=selected.Get();
@@ -240,80 +240,80 @@ void BtechEditSelectedUnitOrders(void)
                 {
                 case OBJECTIVE_ELIMINATE_OPPOSITION:
                 case OBJECTIVE_OPPOSE_WITHDRAWAL:
-                case OBJECTIVE_SPECIAL_TARGET:orderPanelMode=ORDER_PANEL_TARGET;control->commandCode=TACTICAL_ORDER_ATTACK;break;
-                case OBJECTIVE_WITHDRAW:orderPanelMode=ORDER_PANEL_DESTINATION;control->commandCode=TACTICAL_ORDER_MOVE_ATTACK;break;
-                case OBJECTIVE_DEFEND_SPECIAL_TARGET:orderPanelMode=ORDER_PANEL_DESTINATION;control->commandCode=TACTICAL_ORDER_DEFEND;break;
+                case OBJECTIVE_SPECIAL_TARGET:combatOrders.orderPanelMode=ORDER_PANEL_TARGET;control->commandCode=TACTICAL_ORDER_ATTACK;break;
+                case OBJECTIVE_WITHDRAW:combatOrders.orderPanelMode=ORDER_PANEL_DESTINATION;control->commandCode=TACTICAL_ORDER_MOVE_ATTACK;break;
+                case OBJECTIVE_DEFEND_SPECIAL_TARGET:combatOrders.orderPanelMode=ORDER_PANEL_DESTINATION;control->commandCode=TACTICAL_ORDER_DEFEND;break;
                 default:break; /* Native unknown objective leaves the current panel mode alone. */
                 }
             }
-            else orderPanelMode=BtechClassifyOrderSelection(control->commandCode);
-            if (orderPanelMode==ORDER_PANEL_TARGET) BtechSeedSelectedOrderTracking();
-            else if (orderPanelMode==ORDER_PANEL_DESTINATION) control->navigationReferenceSlot=-1;
+            else combatOrders.orderPanelMode=BtechClassifyOrderSelection(control->commandCode);
+            if (combatOrders.orderPanelMode==ORDER_PANEL_TARGET) BtechSeedSelectedOrderTracking();
+            else if (combatOrders.orderPanelMode==ORDER_PANEL_DESTINATION) control->navigationReferenceSlot=-1;
             BtechUpdateLanceOrderHighlight();goto navigation;
-        case ORDER_ACTION_SYSTEMS:orderPanelMode=ORDER_PANEL_DAMAGE;selectedOrderPanelRow=0;break;
-        case ORDER_ACTION_WEAPONS:orderPanelMode=ORDER_PANEL_WEAPONS;selectedOrderPanelRow=0;break;
+        case ORDER_ACTION_SYSTEMS:combatOrders.orderPanelMode=ORDER_PANEL_DAMAGE;combatOrders.selectedOrderPanelRow=0;break;
+        case ORDER_ACTION_WEAPONS:combatOrders.orderPanelMode=ORDER_PANEL_WEAPONS;combatOrders.selectedOrderPanelRow=0;break;
         default:goto navigation;
         }
     }
     else
     {
-        if (orderPanelMode==ORDER_PANEL_COMMAND)
+        if (combatOrders.orderPanelMode==ORDER_PANEL_COMMAND)
         {
             control=selected.Get();
-            if (pendingOrderCommand!=COMBAT_ORDER_ACT_ON_OWN && control->commandCode==COMBAT_ORDER_ACT_ON_OWN)
+            if (combatOrders.pendingOrderCommand!=COMBAT_ORDER_ACT_ON_OWN && control->commandCode==COMBAT_ORDER_ACT_ON_OWN)
             {
                 control->trackedUnitOrSpecialSlot=-1;
                 control->orderDestinationPosition[1]=0;control->orderDestinationPosition[0]=0;
                 control->orderDestinationPosition[2]=-1;
             }
-            control->commandCode=pendingOrderCommand;control->navigationReferenceSlot=-1;
-            orderPanelMode=BtechClassifyOrderSelection(pendingOrderCommand);
-            if (orderPanelMode!=ORDER_PANEL_SUMMARY)
+            control->commandCode=combatOrders.pendingOrderCommand;control->navigationReferenceSlot=-1;
+            combatOrders.orderPanelMode=BtechClassifyOrderSelection(combatOrders.pendingOrderCommand);
+            if (combatOrders.orderPanelMode!=ORDER_PANEL_SUMMARY)
             {
-                orderActionSelection=ORDER_ACTION_REFERENCE;
-                if (orderPanelMode==ORDER_PANEL_DESTINATION)
+                combatOrders.orderActionSelection=ORDER_ACTION_REFERENCE;
+                if (combatOrders.orderPanelMode==ORDER_PANEL_DESTINATION)
                 {
                     if (control->orderDestinationPosition[2]<0)
                         for (uint16_t axis=0;axis<3;++axis) control->orderDestinationPosition[axis]=control->trackedPosition[axis];
                     control->trackedUnitOrSpecialSlot=-1;
                 }
-                else if (orderPanelMode==ORDER_PANEL_TARGET) BtechSeedSelectedOrderTracking();
+                else if (combatOrders.orderPanelMode==ORDER_PANEL_TARGET) BtechSeedSelectedOrderTracking();
             }
         }
-        else orderPanelMode=ORDER_PANEL_SUMMARY;
-        selectedOrderPanelRow=orderActionSelection+orderSelectionFirstRows[0];
+        else combatOrders.orderPanelMode=ORDER_PANEL_SUMMARY;
+        combatOrders.selectedOrderPanelRow=combatOrders.orderActionSelection+combatOrders.orderSelectionFirstRows[0];
     }
-    BtechClearLanceOrderPanel(selectedLanceOrderPanel);
+    BtechClearLanceOrderPanel(combatOrders.selectedLanceOrderPanel);
     BtechUpdateLanceOrderHighlight();
 navigation:
     {
         uint16_t direction=combatInput.combatInputDirectionMask;
-        if (!direction) {previousOrderNavigationKey=0;return;}
+        if (!direction) {combatOrders.previousOrderNavigationKey=0;return;}
         if (direction>=ORDER_NAVIGATION_CODES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: direction>=ORDER_NAVIGATION_CODES"); /* Unsupported adjacent-table aliases, not a new direction. */
-        if (orderPanelMode==ORDER_PANEL_SUMMARY || orderPanelMode==ORDER_PANEL_COMMAND)
+        if (combatOrders.orderPanelMode==ORDER_PANEL_SUMMARY || combatOrders.orderPanelMode==ORDER_PANEL_COMMAND)
         {
-            uint16_t selectionClass=orderPanelMode!=ORDER_PANEL_SUMMARY;
-            int16_t panel=(int16_t)selectedLanceOrderPanel,row=(int16_t)selectedOrderPanelRow;
-            if (!selectionClass) panel=(int16_t)(panel+orderNavigationPanelDeltas[direction]);
-            row=(int16_t)(row+orderNavigationRowDeltas[direction]);
+            uint16_t selectionClass=combatOrders.orderPanelMode!=ORDER_PANEL_SUMMARY;
+            int16_t panel=(int16_t)combatOrders.selectedLanceOrderPanel,row=(int16_t)combatOrders.selectedOrderPanelRow;
+            if (!selectionClass) panel=(int16_t)(panel+combatOrders.orderNavigationPanelDeltas[direction]);
+            row=(int16_t)(row+combatOrders.orderNavigationRowDeltas[direction]);
             int16_t lastPanel=reducedMemoryMode?1:ORDER_WINGMATE_PANELS-1;
-            if (panel<0 || panel>lastPanel) panel=(int16_t)selectedLanceOrderPanel;
-            if (row<orderSelectionFirstRows[selectionClass]) row=orderSelectionLastRows[selectionClass];
-            else if (row>orderSelectionLastRows[selectionClass]) row=orderSelectionFirstRows[selectionClass];
+            if (panel<0 || panel>lastPanel) panel=(int16_t)combatOrders.selectedLanceOrderPanel;
+            if (row<combatOrders.orderSelectionFirstRows[selectionClass]) row=combatOrders.orderSelectionLastRows[selectionClass];
+            else if (row>combatOrders.orderSelectionLastRows[selectionClass]) row=combatOrders.orderSelectionFirstRows[selectionClass];
             if ((uint16_t)panel>=ORDER_WINGMATE_PANELS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)panel>=ORDER_WINGMATE_PANELS");
-            if (((uint16_t)panel!=selectedLanceOrderPanel || (uint16_t)row!=selectedOrderPanelRow) && lanceOrderControls[panel])
+            if (((uint16_t)panel!=combatOrders.selectedLanceOrderPanel || (uint16_t)row!=combatOrders.selectedOrderPanelRow) && combatOrders.lanceOrderControls[panel])
             {
-                selectedLanceOrderPanel=(uint16_t)panel;selectedOrderPanelRow=(uint16_t)row;
+                combatOrders.selectedLanceOrderPanel=(uint16_t)panel;combatOrders.selectedOrderPanelRow=(uint16_t)row;
                 BtechUpdateLanceOrderHighlight();
             }
-            uint16_t selection=selectedOrderPanelRow-orderSelectionFirstRows[selectionClass];
-            if (!selectionClass) orderActionSelection=selection;
-            else pendingOrderCommand=selection;
+            uint16_t selection=combatOrders.selectedOrderPanelRow-combatOrders.orderSelectionFirstRows[selectionClass];
+            if (!selectionClass) combatOrders.orderActionSelection=selection;
+            else combatOrders.pendingOrderCommand=selection;
         }
-        else if (orderPanelMode==ORDER_PANEL_TARGET)
+        else if (combatOrders.orderPanelMode==ORDER_PANEL_TARGET)
         {
             control=selected.Get();
-            int16_t step=orderNavigationPanelDeltas[direction]+orderNavigationRowDeltas[direction];
+            int16_t step=combatOrders.orderNavigationPanelDeltas[direction]+combatOrders.orderNavigationRowDeltas[direction];
             int16_t candidate=control->trackedUnitOrSpecialSlot,target=-1;
             if (candidate==-1) candidate=control->targetUnitSlot>=0?control->targetUnitSlot:COMBAT_LANCE_SLOTS;
             uint16_t scanned;
@@ -334,20 +334,20 @@ navigation:
             }
             if (scanned<ORDER_TARGET_SCAN_LIMIT) {control->trackedUnitOrSpecialSlot=target;control->navigationReferenceSlot=target;}
         }
-        else if (orderPanelMode==ORDER_PANEL_DESTINATION)
+        else if (combatOrders.orderPanelMode==ORDER_PANEL_DESTINATION)
         {
             uint16_t repeatShift=0;
-            if (direction==previousOrderNavigationKey)
+            if (direction==combatOrders.previousOrderNavigationKey)
             {
-                if (orderDestinationRepeatCountdown) --orderDestinationRepeatCountdown;
+                if (combatOrders.orderDestinationRepeatCountdown) --combatOrders.orderDestinationRepeatCountdown;
                 else repeatShift=ORDER_DESTINATION_REPEAT_SHIFT;
             }
-            else orderDestinationRepeatCountdown=ORDER_DESTINATION_REPEAT_TICKS;
-            if (orderMapScaleIndex>=ORDER_MAP_SCALE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: orderMapScaleIndex>=ORDER_MAP_SCALE_COUNT");
+            else combatOrders.orderDestinationRepeatCountdown=ORDER_DESTINATION_REPEAT_TICKS;
+            if (combatOrders.orderMapScaleIndex>=ORDER_MAP_SCALE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: orderMapScaleIndex>=ORDER_MAP_SCALE_COUNT");
             control=selected.Get();
-            uint8_t shift=orderMapScaleShifts[orderMapScaleIndex]+repeatShift-ORDER_MAP_PROJECTION_BASE_SHIFT;
-            int16_t deltaX=shift<16?(int16_t)((uint32_t)(uint16_t)orderNavigationPanelDeltas[direction]<<shift):0;
-            int16_t deltaY=shift<16?(int16_t)((uint32_t)(uint16_t)orderNavigationRowDeltas[direction]<<shift):0;
+            uint8_t shift=combatOrders.orderMapScaleShifts[combatOrders.orderMapScaleIndex]+repeatShift-ORDER_MAP_PROJECTION_BASE_SHIFT;
+            int16_t deltaX=shift<16?(int16_t)((uint32_t)(uint16_t)combatOrders.orderNavigationPanelDeltas[direction]<<shift):0;
+            int16_t deltaY=shift<16?(int16_t)((uint32_t)(uint16_t)combatOrders.orderNavigationRowDeltas[direction]<<shift):0;
             uint32_t x=(uint32_t)control->orderDestinationPosition[0]+(uint32_t)deltaX;
             uint32_t y=(uint32_t)control->orderDestinationPosition[1]-(uint32_t)deltaY;
             uint32_t magnitudeX=x==0x00008000?0x00007FFF:(x&UINT32_C(0x80000000))?0-x:x;
@@ -357,7 +357,7 @@ navigation:
             control->orderDestinationPosition[2]=0;
             for (uint16_t axis=0;axis<3;++axis) control->trackedPosition[axis]=control->orderDestinationPosition[axis];
         }
-        previousOrderNavigationKey=direction;
+        combatOrders.previousOrderNavigationKey=direction;
     }
 }
 
@@ -365,23 +365,23 @@ navigation:
  * Native discards capture-size DX before requesting DOS memory. */
 void BtechInitializeOrderPanelState(void)
 {
-    if (!orderPanelCaptureBuffer.bytes)
+    if (!combatOrders.orderPanelCaptureBuffer.bytes)
     {
         if (!orderMapCameraContext) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !orderMapCameraContext"); /* Native near-zero camera alias not represented. */
         uint16_t height=orderMapCameraContext->clipMaximumB-orderMapCameraContext->clipMinimumB+1;
         uint16_t width=orderMapCameraContext->clipMaximumA-orderMapCameraContext->clipMinimumA;
         uint16_t captureBytes=(uint16_t)BtechGetCaptureStorageSize(width,height);
-        orderPanelCaptureBuffer.bytes=BtechAllocateDosMemoryBlock(captureBytes).bytes;
-        orderPanelCaptureBuffer.byteCount=((uint32_t)captureBytes+0x0F)&~0x0Fu;
-        if (!orderPanelCaptureBuffer.bytes) BtechShowFatalErrorAndExit("the order map's capture buffer doesn't fit in memory");
+        combatOrders.orderPanelCaptureBuffer.bytes=BtechAllocateDosMemoryBlock(captureBytes).bytes;
+        combatOrders.orderPanelCaptureBuffer.byteCount=((uint32_t)captureBytes+0x0F)&~0x0Fu;
+        if (!combatOrders.orderPanelCaptureBuffer.bytes) BtechShowFatalErrorAndExit("the order map's capture buffer doesn't fit in memory");
     }
-    if (reducedMemoryMode) lanceOrderPanelTextX[1]=lanceOrderPanelTextX[2];
-    orderMapScaleIndex=ORDER_MAP_FULL_SCALE;previousOrderMapScaleIndex=ORDER_MAP_FULL_SCALE;
-    orderScreenFullRedrawPending=1;
-    previousOrderHighlightPanel=ORDER_NO_HIGHLIGHT;previousOrderHighlightRow=ORDER_NO_HIGHLIGHT;
-    pendingOrderCommand=0;orderActionSelection=0;selectedLanceOrderPanel=0;
-    selectedOrderPanelRow=ORDER_FIRST_ACTION_ROW;orderPanelMode=ORDER_PANEL_SUMMARY;
-    previousOrderNavigationKey=0;orderDestinationRepeatCountdown=ORDER_DESTINATION_REPEAT_TICKS;
+    if (reducedMemoryMode) combatOrders.lanceOrderPanelTextX[1]=combatOrders.lanceOrderPanelTextX[2];
+    combatOrders.orderMapScaleIndex=ORDER_MAP_FULL_SCALE;combatOrders.previousOrderMapScaleIndex=ORDER_MAP_FULL_SCALE;
+    combatOrders.orderScreenFullRedrawPending=1;
+    combatOrders.previousOrderHighlightPanel=ORDER_NO_HIGHLIGHT;combatOrders.previousOrderHighlightRow=ORDER_NO_HIGHLIGHT;
+    combatOrders.pendingOrderCommand=0;combatOrders.orderActionSelection=0;combatOrders.selectedLanceOrderPanel=0;
+    combatOrders.selectedOrderPanelRow=ORDER_FIRST_ACTION_ROW;combatOrders.orderPanelMode=ORDER_PANEL_SUMMARY;
+    combatOrders.previousOrderNavigationKey=0;combatOrders.orderDestinationRepeatCountdown=ORDER_DESTINATION_REPEAT_TICKS;
 }
 
 /*17FB:001E. Free before clearing the allocation. Other order state stays live.
@@ -389,9 +389,9 @@ void BtechInitializeOrderPanelState(void)
  * halfway clear after the DOS call on this supported non-reentrant path. */
 void BtechReleaseOrderPanelBuffer(void)
 {
-    if (orderPanelCaptureBuffer.bytes)
+    if (combatOrders.orderPanelCaptureBuffer.bytes)
     {
-        BtechFreeDosMemorySelector(orderPanelCaptureBuffer.bytes);
-        orderPanelCaptureBuffer=BtechResourceAllocation{};
+        BtechFreeDosMemorySelector(combatOrders.orderPanelCaptureBuffer.bytes);
+        combatOrders.orderPanelCaptureBuffer=BtechResourceAllocation{};
     }
 }

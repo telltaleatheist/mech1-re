@@ -4,29 +4,8 @@
 #include "mechwarrior/ui_layout.h"
 #include <string.h>
 
-BtechResourceAllocation orderPanelCaptureBuffer;
-uint16_t lanceOrderPanelTextX[3];
-uint8_t orderScreenFullRedrawPending;
-uint16_t previousOrderHighlightPanel,previousOrderHighlightRow;
-uint32_t orderMapPositionMask;
-BtechUnitControlState *lanceOrderControls[ORDER_WINGMATE_PANELS];
-int16_t orderSelectionFirstRows[ORDER_SELECTION_CLASSES],orderSelectionLastRows[ORDER_SELECTION_CLASSES];
-int16_t orderNavigationPanelDeltas[ORDER_NAVIGATION_CODES],orderNavigationRowDeltas[ORDER_NAVIGATION_CODES];
+CombatOrderState combatOrders;
 static char orderPanelText[ORDER_PANEL_TEXT_END-ORDER_PANEL_TEXT_START];
-const char *orderLabels[ORDER_LABELS],*tacticalOrderLabels[ORDER_TACTICAL_LABELS];
-const char *orderDamageLabels[ORDER_DAMAGE_LABELS],*orderEquipmentWeaponLabels[COMBAT_WEAPON_KINDS];
-const char *orderWeaponHeading,*orderOfText,*orderColon,*orderSelectionHeading;
-const char *orderLocationText,*orderBaseText,*orderDamageText,*orderWeaponsText;
-uint16_t orderDisplayIndices[ORDER_DISPLAY_CODES];
-uint16_t orderEngineConditionColours[2][4],orderSystemConditionColours[2][4];
-uint16_t mountedWeaponCountsByKind[COMBAT_WEAPON_KINDS],operationalWeaponCountsByKind[COMBAT_WEAPON_KINDS];
-uint16_t orderMapScaleIndex,selectedLanceOrderPanel,selectedOrderPanelRow;
-uint16_t orderPanelMode,orderActionSelection,pendingOrderCommand;
-uint16_t orderDestinationRepeatCountdown,previousOrderMapScaleIndex,previousOrderNavigationKey;
-uint8_t orderMapScaleShifts[ORDER_MAP_SCALE_COUNT];
-uint8_t orderMapMarkerMasks[ORDER_MAP_MARKER_STYLES][ORDER_MAP_MARKER_WIDTH][ORDER_MAP_MARKER_WIDTH];
-BtechPosition3D combatWorldBoundaryCorners[2];
-int16_t unitOrderMapScreenX[COMBAT_MECH_SLOTS],unitOrderMapScreenY[COMBAT_MECH_SLOTS];
 
 /* Actual fresh image/BSS boundary.0040 itself does not blanket-clear state. */
 /* A layout piece (data/ui, src/Ui) copied into `view` at its native offset,
@@ -64,7 +43,7 @@ bool BtechImportOrderInitialData(const uint8_t *data,size_t bytes)
     {
         const uint16_t bases[]={0x02B6,0x02DA,0x02EC,0x02FA};
         const uint16_t counts[]={ORDER_LABELS,ORDER_TACTICAL_LABELS,ORDER_DAMAGE_LABELS,COMBAT_WEAPON_KINDS};
-        const char **destinations[]={orderLabels,tacticalOrderLabels,orderDamageLabels,orderEquipmentWeaponLabels};
+        const char **destinations[]={combatOrders.orderLabels,combatOrders.tacticalOrderLabels,combatOrders.orderDamageLabels,combatOrders.orderEquipmentWeaponLabels};
         for (uint16_t entry=0;entry<counts[directory];++entry)
         {
             uint16_t offset=MwReadNativeWord(ui,bases[directory]+entry*2);
@@ -72,61 +51,61 @@ bool BtechImportOrderInitialData(const uint8_t *data,size_t bytes)
             destinations[directory][entry]=orderPanelText+offset-ORDER_PANEL_TEXT_START;
         }
     }
-    orderWeaponHeading=orderPanelText+0x026C-ORDER_PANEL_TEXT_START;
-    orderOfText=orderPanelText+0x027A-ORDER_PANEL_TEXT_START;
-    orderColon=orderPanelText+0x027D-ORDER_PANEL_TEXT_START;
-    orderSelectionHeading=orderPanelText+0x027F-ORDER_PANEL_TEXT_START;
-    orderLocationText=orderPanelText+0x028D-ORDER_PANEL_TEXT_START;
-    orderBaseText=orderPanelText+0x029A-ORDER_PANEL_TEXT_START;
-    orderDamageText=orderPanelText+0x02A7-ORDER_PANEL_TEXT_START;
-    orderWeaponsText=orderPanelText+0x02AE -ORDER_PANEL_TEXT_START;
-    for (uint16_t code=0;code<ORDER_DISPLAY_CODES;++code) orderDisplayIndices[code]=MwReadNativeWord(ui,0x02C4+code*2);
+    combatOrders.orderWeaponHeading=orderPanelText+0x026C-ORDER_PANEL_TEXT_START;
+    combatOrders.orderOfText=orderPanelText+0x027A-ORDER_PANEL_TEXT_START;
+    combatOrders.orderColon=orderPanelText+0x027D-ORDER_PANEL_TEXT_START;
+    combatOrders.orderSelectionHeading=orderPanelText+0x027F-ORDER_PANEL_TEXT_START;
+    combatOrders.orderLocationText=orderPanelText+0x028D-ORDER_PANEL_TEXT_START;
+    combatOrders.orderBaseText=orderPanelText+0x029A-ORDER_PANEL_TEXT_START;
+    combatOrders.orderDamageText=orderPanelText+0x02A7-ORDER_PANEL_TEXT_START;
+    combatOrders.orderWeaponsText=orderPanelText+0x02AE -ORDER_PANEL_TEXT_START;
+    for (uint16_t code=0;code<ORDER_DISPLAY_CODES;++code) combatOrders.orderDisplayIndices[code]=MwReadNativeWord(ui,0x02C4+code*2);
     for (uint16_t scheme=0;scheme<2;++scheme)
         for (uint16_t condition=0;condition<4;++condition)
         {
-            orderEngineConditionColours[scheme][condition]=MwReadNativeWord(ui,0x030E +scheme*8+condition*2);
-            orderSystemConditionColours[scheme][condition]=MwReadNativeWord(ui,0x031E +scheme*8+condition*2);
+            combatOrders.orderEngineConditionColours[scheme][condition]=MwReadNativeWord(ui,0x030E +scheme*8+condition*2);
+            combatOrders.orderSystemConditionColours[scheme][condition]=MwReadNativeWord(ui,0x031E +scheme*8+condition*2);
         }
     /* 4F32 and 4F46 lie past BTECH's file data: zero where the exe reloaded them. */
-    memset(mountedWeaponCountsByKind,0,sizeof(mountedWeaponCountsByKind));
-    memset(operationalWeaponCountsByKind,0,sizeof(operationalWeaponCountsByKind));
-    orderPanelCaptureBuffer=BtechResourceAllocation{};
+    memset(combatOrders.mountedWeaponCountsByKind,0,sizeof(combatOrders.mountedWeaponCountsByKind));
+    memset(combatOrders.operationalWeaponCountsByKind,0,sizeof(combatOrders.operationalWeaponCountsByKind));
+    combatOrders.orderPanelCaptureBuffer=BtechResourceAllocation{};
     for (uint16_t selection=0;selection<ORDER_SELECTION_CLASSES;++selection)
     {
-        orderSelectionFirstRows[selection]=(int16_t)MwReadNativeWord(ui,0x0092+selection*2);
-        orderSelectionLastRows[selection]=(int16_t)MwReadNativeWord(ui,0x0096+selection*2);
+        combatOrders.orderSelectionFirstRows[selection]=(int16_t)MwReadNativeWord(ui,0x0092+selection*2);
+        combatOrders.orderSelectionLastRows[selection]=(int16_t)MwReadNativeWord(ui,0x0096+selection*2);
     }
     for (uint16_t direction=0;direction<ORDER_NAVIGATION_CODES;++direction)
     {
-        orderNavigationPanelDeltas[direction]=(int16_t)MwReadNativeWord(ui,0x009A+direction*2);
-        orderNavigationRowDeltas[direction]=(int16_t)MwReadNativeWord(ui,0x00B0+direction*2);
+        combatOrders.orderNavigationPanelDeltas[direction]=(int16_t)MwReadNativeWord(ui,0x009A+direction*2);
+        combatOrders.orderNavigationRowDeltas[direction]=(int16_t)MwReadNativeWord(ui,0x00B0+direction*2);
     }
-    for (uint16_t scale=0;scale<ORDER_MAP_SCALE_COUNT;++scale) orderMapScaleShifts[scale]=data[0x0088+scale];
+    for (uint16_t scale=0;scale<ORDER_MAP_SCALE_COUNT;++scale) combatOrders.orderMapScaleShifts[scale]=data[0x0088+scale];
     for (uint16_t style=0;style<ORDER_MAP_MARKER_STYLES;++style)
         for (uint16_t x=0;x<ORDER_MAP_MARKER_WIDTH;++x)
-            for (uint16_t y=0;y<ORDER_MAP_MARKER_WIDTH;++y) orderMapMarkerMasks[style][x][y]=data[0x00E8+style*9+x*3+y];
+            for (uint16_t y=0;y<ORDER_MAP_MARKER_WIDTH;++y) combatOrders.orderMapMarkerMasks[style][x][y]=data[0x00E8+style*9+x*3+y];
     for (uint16_t corner=0;corner<2;++corner)
     {
-        uint32_t *position[]={&combatWorldBoundaryCorners[corner].positionA,&combatWorldBoundaryCorners[corner].positionB,&combatWorldBoundaryCorners[corner].positionC};
+        uint32_t *position[]={&combatOrders.combatWorldBoundaryCorners[corner].positionA,&combatOrders.combatWorldBoundaryCorners[corner].positionB,&combatOrders.combatWorldBoundaryCorners[corner].positionC};
         for (uint16_t axis=0;axis<3;++axis) *position[axis]=MwReadNativeWord(data,0x0336+corner*12+axis*4)|((uint32_t)MwReadNativeWord(data,0x0338+corner*12+axis*4)<<16);
     }
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
-    {unitOrderMapScreenX[slot]=0; /*4F08*/unitOrderMapScreenY[slot]=0; /*4F18*/}
-    for (uint16_t panel=0;panel<3;++panel) lanceOrderPanelTextX[panel]=MwReadNativeWord(ui,0x008C+panel*2); /* orders.json "start" */
-    orderScreenFullRedrawPending=data[0x4EEC];
-    previousOrderHighlightPanel=0; /*4EEE*/
-    previousOrderHighlightRow=0; /*4EF4*/
-    orderMapPositionMask=0; /* 4EF0, past BTECH's file data: written before it's read, zero where the exe reloaded it. */
+    {combatOrders.unitOrderMapScreenX[slot]=0; /*4F08*/combatOrders.unitOrderMapScreenY[slot]=0; /*4F18*/}
+    for (uint16_t panel=0;panel<3;++panel) combatOrders.lanceOrderPanelTextX[panel]=MwReadNativeWord(ui,0x008C+panel*2); /* orders.json "start" */
+    combatOrders.orderScreenFullRedrawPending=data[0x4EEC];
+    combatOrders.previousOrderHighlightPanel=0; /*4EEE*/
+    combatOrders.previousOrderHighlightRow=0; /*4EF4*/
+    combatOrders.orderMapPositionMask=0; /* 4EF0, past BTECH's file data: written before it's read, zero where the exe reloaded it. */
     for (uint16_t panel=0;panel<ORDER_WINGMATE_PANELS;++panel)
     {
         if (MwReadNativeWord(data,0x4EFC+panel*2)) return false; /* Fresh EXEC has no live near control references. */
-        lanceOrderControls[panel]=NULL;
+        combatOrders.lanceOrderControls[panel]=NULL;
     }
-    orderMapScaleIndex=0; /*4EF6*/
-    selectedLanceOrderPanel=0; /*4EF8*/selectedOrderPanelRow=0; /*4EFA*/
-    orderPanelMode=0; /*4F02*/orderActionSelection=0; /*4F04*/
-    pendingOrderCommand=0; /*4F06*/
-    orderDestinationRepeatCountdown=0; /*4F28*/
-    previousOrderMapScaleIndex=0; /*4F2A*/previousOrderNavigationKey=0; /*4F2C*/
+    combatOrders.orderMapScaleIndex=0; /*4EF6*/
+    combatOrders.selectedLanceOrderPanel=0; /*4EF8*/combatOrders.selectedOrderPanelRow=0; /*4EFA*/
+    combatOrders.orderPanelMode=0; /*4F02*/combatOrders.orderActionSelection=0; /*4F04*/
+    combatOrders.pendingOrderCommand=0; /*4F06*/
+    combatOrders.orderDestinationRepeatCountdown=0; /*4F28*/
+    combatOrders.previousOrderMapScaleIndex=0; /*4F2A*/combatOrders.previousOrderNavigationKey=0; /*4F2C*/
     return true;
 }

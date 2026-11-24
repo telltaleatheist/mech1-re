@@ -112,8 +112,8 @@ void BtechHostDiscardChildData(void)
     combatVideo.promptBitmaps=NULL;
     combatVideo.pointPictures=NULL;combatVideo.smallMechPictures=NULL;combatVideo.strutPictures=NULL;
     combatVideo.cockpitPictures=NULL;combatVideo.hudGlyphPictures=NULL;combatVideo.inspectionDamagePictures=NULL;
-    paragraphs|=orderPanelCaptureBuffer.bytes!=NULL;
-    orderPanelCaptureBuffer=BtechResourceAllocation{};
+    paragraphs|=combatOrders.orderPanelCaptureBuffer.bytes!=NULL;
+    combatOrders.orderPanelCaptureBuffer=BtechResourceAllocation{};
     for (uint16_t slot=0;slot<RESOURCE_ARCHIVE_SLOTS;++slot)
         if (combatResources.archiveDescriptors[slot])
         {
