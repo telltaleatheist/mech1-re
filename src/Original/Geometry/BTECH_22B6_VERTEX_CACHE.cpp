@@ -58,9 +58,9 @@ void BtechCacheTransformedGeometryVector(uint8_t vectorIndex)
     combatGeometryTables.vertexNearPlaneState[vectorIndex]=1;
     for (uint16_t axis=0;axis<3;++axis) combatRender.viewVectorCoefficients[axis]=combatRender.renderGeometry[vectorIndex][axis];
     BtechTransformWordVectorToDword(combatRender.viewVectorCoefficients,combatRender.activeRenderBasis,&combatRender.projectionRatio.vector);
-    geometryViewX.wide[vectorIndex]=combatRender.projectionRatio.vector.positionA+combatRender.transformedViewPosition.positionA;
-    geometryViewDepth.wide[vectorIndex]=combatRender.projectionRatio.vector.positionB+combatRender.transformedViewPosition.positionB;
-    geometryViewZ.wide[vectorIndex]=combatRender.projectionRatio.vector.positionC+combatRender.transformedViewPosition.positionC;
+    combatGeometry.geometryViewX.wide[vectorIndex]=combatRender.projectionRatio.vector.positionA+combatRender.transformedViewPosition.positionA;
+    combatGeometry.geometryViewDepth.wide[vectorIndex]=combatRender.projectionRatio.vector.positionB+combatRender.transformedViewPosition.positionB;
+    combatGeometry.geometryViewZ.wide[vectorIndex]=combatRender.projectionRatio.vector.positionC+combatRender.transformedViewPosition.positionC;
 }
 
 /*22B6:2227. WORD normal values occupy LOW WORDs at DWORD strides. The high
@@ -72,9 +72,9 @@ void BtechCacheRotatedGeometryVector(uint8_t vectorIndex)
     combatGeometryTables.vertexNearPlaneState[vectorIndex]=1;
     for (uint16_t axis=0;axis<3;++axis) combatRender.viewVectorCoefficients[axis]=combatRender.renderGeometry[vectorIndex][axis];
     BtechTransformWordVector(combatRender.viewVectorCoefficients,combatRender.activeRenderBasis,combatRender.transformedEntryVector);
-    geometryViewX.words[vectorIndex*2]=combatRender.transformedEntryVector[0];
-    geometryViewDepth.words[vectorIndex*2]=combatRender.transformedEntryVector[1];
-    geometryViewZ.words[vectorIndex*2]=combatRender.transformedEntryVector[2];
+    combatGeometry.geometryViewX.words[vectorIndex*2]=combatRender.transformedEntryVector[0];
+    combatGeometry.geometryViewDepth.words[vectorIndex*2]=combatRender.transformedEntryVector[1];
+    combatGeometry.geometryViewZ.words[vectorIndex*2]=combatRender.transformedEntryVector[2];
 }
 
 /*22B6:2586, including its24E9 direct-basis tail. Native result DX:AX:CX;
@@ -98,12 +98,12 @@ uint64_t BtechGetWidePolygonFacingDotHighWord(uint8_t normalIndex,uint8_t firstV
     {
         BtechCacheRotatedGeometryVector(normalIndex);
         BtechCacheTransformedGeometryVector(firstVertexIndex);
-        combatRender.projectionVectorScratch.positionA=geometryViewX.wide[firstVertexIndex];
-        combatRender.projectionVectorScratch.positionB=geometryViewDepth.wide[firstVertexIndex];
-        combatRender.projectionVectorScratch.positionC=geometryViewZ.wide[firstVertexIndex];
-        combatRender.viewVectorCoefficients[0]=geometryViewX.words[normalIndex*2];
-        combatRender.viewVectorCoefficients[1]=geometryViewDepth.words[normalIndex*2];
-        combatRender.viewVectorCoefficients[2]=geometryViewZ.words[normalIndex*2];
+        combatRender.projectionVectorScratch.positionA=combatGeometry.geometryViewX.wide[firstVertexIndex];
+        combatRender.projectionVectorScratch.positionB=combatGeometry.geometryViewDepth.wide[firstVertexIndex];
+        combatRender.projectionVectorScratch.positionC=combatGeometry.geometryViewZ.wide[firstVertexIndex];
+        combatRender.viewVectorCoefficients[0]=combatGeometry.geometryViewX.words[normalIndex*2];
+        combatRender.viewVectorCoefficients[1]=combatGeometry.geometryViewDepth.words[normalIndex*2];
+        combatRender.viewVectorCoefficients[2]=combatGeometry.geometryViewZ.words[normalIndex*2];
     }
     return BtechDotSignedVectorByWordCoefficients(&combatRender.projectionVectorScratch,combatRender.viewVectorCoefficients);
 }
@@ -116,15 +116,15 @@ void BtechCachePolygonShadeNormal(uint8_t normalIndex)
     uint16_t wordIndex=normalIndex*(combatRender.widePolygonCoordinates?2:1);
     if (combatGeometryTables.vertexNearPlaneState[normalIndex])
     {
-        combatRender.viewVectorCoefficients[0]=geometryViewX.words[wordIndex];
-        combatRender.viewVectorCoefficients[1]=geometryViewDepth.words[wordIndex];
-        combatRender.viewVectorCoefficients[2]=geometryViewZ.words[wordIndex];
+        combatRender.viewVectorCoefficients[0]=combatGeometry.geometryViewX.words[wordIndex];
+        combatRender.viewVectorCoefficients[1]=combatGeometry.geometryViewDepth.words[wordIndex];
+        combatRender.viewVectorCoefficients[2]=combatGeometry.geometryViewZ.words[wordIndex];
         return;
     }
     combatGeometryTables.vertexNearPlaneState[normalIndex]=1;
     for (uint16_t axis=0;axis<3;++axis) combatRender.transformedEntryVector[axis]=combatRender.renderGeometry[normalIndex][axis];
     BtechTransformWordVector(combatRender.transformedEntryVector,combatRender.activeRenderBasis,combatRender.viewVectorCoefficients);
-    geometryViewX.words[wordIndex]=combatRender.viewVectorCoefficients[0];
-    geometryViewDepth.words[wordIndex]=combatRender.viewVectorCoefficients[1];
-    geometryViewZ.words[wordIndex]=combatRender.viewVectorCoefficients[2];
+    combatGeometry.geometryViewX.words[wordIndex]=combatRender.viewVectorCoefficients[0];
+    combatGeometry.geometryViewDepth.words[wordIndex]=combatRender.viewVectorCoefficients[1];
+    combatGeometry.geometryViewZ.words[wordIndex]=combatRender.viewVectorCoefficients[2];
 }

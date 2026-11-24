@@ -14,8 +14,8 @@ void BtechCopyRendererWorkingCoordinateArrays(void)
 {
     uint16_t count=(uint16_t)(combatPolygons.polygonVertexCount*2)>>1; /* Native WORD count wraps before REP. */
     if (count>WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: count>WIDE_POLYGON_VERTICES");
-    for (uint16_t vertex=0;vertex<count;++vertex) wideScreenX[vertex]=widePolygonWorkX[vertex];
-    for (uint16_t vertex=0;vertex<count;++vertex) wideScreenY[vertex]=widePolygonWorkY[vertex];
+    for (uint16_t vertex=0;vertex<count;++vertex) combatGeometry.wideScreenX[vertex]=combatGeometry.widePolygonWorkX[vertex];
+    for (uint16_t vertex=0;vertex<count;++vertex) combatGeometry.wideScreenY[vertex]=combatGeometry.widePolygonWorkY[vertex];
 }
 
 /*22B6:67E0. Do/while is native: a direct zero-count call still emits vertex0. */
@@ -26,10 +26,10 @@ void BtechOffsetWidePolygonVerticesToScreen(void)
     do
     {
         if (destination>=WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: destination>=WIDE_POLYGON_VERTICES");
-        uint8_t vertex=polygonVertexIndices[destination];
+        uint8_t vertex=combatGeometry.polygonVertexIndices[destination];
         if (vertex>=GEOMETRY_CACHE_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: vertex>=GEOMETRY_CACHE_VERTICES");
-        wideScreenX[destination]=centreX+geometryProjectedX.wide[vertex];
-        wideScreenY[destination]=centreY-geometryProjectedY.wide[vertex];
+        combatGeometry.wideScreenX[destination]=centreX+combatGeometry.geometryProjectedX.wide[vertex];
+        combatGeometry.wideScreenY[destination]=centreY-combatGeometry.geometryProjectedY.wide[vertex];
         ++destination;
     } while ((int16_t)destination<(int16_t)combatPolygons.polygonVertexCount);
 }
@@ -59,7 +59,7 @@ void BtechRenderWidePolygonPayload(const BtechRenderPolygonPayload *payload)
             BtechCacheTransformedGeometryVector(vertex);
             if (combatGeometryTables.vertexNearPlaneState[vertex]!=GEOMETRY_VERTEX_PROJECTED)
             {
-                uint32_t depth=geometryViewDepth.wide[vertex];
+                uint32_t depth=combatGeometry.geometryViewDepth.wide[vertex];
                 if ((int16_t)(depth>>16)<0 || (!(depth>>16) && (uint16_t)depth<combatRender.nearClipDepth))
                 {
                     combatGeometryTables.vertexNearPlaneState[vertex]=GEOMETRY_VERTEX_BEHIND;
@@ -68,13 +68,13 @@ void BtechRenderWidePolygonPayload(const BtechRenderPolygonPayload *payload)
                 else
                 {
                     combatGeometryTables.vertexNearPlaneState[vertex]=GEOMETRY_VERTEX_PROJECTED;
-                    BtechGeometryCoordinateCache *source[]={&geometryViewX,&geometryViewZ};
-                    BtechGeometryCoordinateCache *destination[]={&geometryProjectedX,&geometryProjectedY};
+                    BtechGeometryCoordinateCache *source[]={&combatGeometry.geometryViewX,&combatGeometry.geometryViewZ};
+                    BtechGeometryCoordinateCache *destination[]={&combatGeometry.geometryProjectedX,&combatGeometry.geometryProjectedY};
                     for (uint16_t axis=0;axis<2;++axis)
                     {
                         uint32_t value=source[axis]->wide[vertex];
                         uint16_t low=(uint16_t)value,middle=(uint16_t)(value>>16),high=(int16_t)middle<0?UINT16_MAX:0;
-                        depth=geometryViewDepth.wide[vertex];
+                        depth=combatGeometry.geometryViewDepth.wide[vertex];
                         uint16_t shifts=combatRender.combatProjectionShift;
                         if ((int8_t)(uint8_t)shifts>=8)
                         {
@@ -90,7 +90,7 @@ divideCoordinate:
                 }
             }
             if (combatPolygons.polygonVertexCount>=POLYGON_VERTEX_INDEX_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: polygonVertexCount>=POLYGON_VERTEX_INDEX_BYTES");
-            polygonVertexIndices[combatPolygons.polygonVertexCount++]=vertex;
+            combatGeometry.polygonVertexIndices[combatPolygons.polygonVertexCount++]=vertex;
         }
         if (combatRender.polygonHasNearClippedVertex)
         {
@@ -110,8 +110,8 @@ divideCoordinate:
         for (uint16_t vertex=0;vertex<combatPolygons.polygonVertexCount;++vertex)
         {
             if (vertex>=COMBAT_POLYGON_VERTEX_WORDS || vertex>=WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: vertex>=COMBAT_POLYGON_VERTEX_WORDS || vertex>=WIDE_POLYGON_VERTICES");
-            combatPolygons.screenPolygonX[vertex]=(int16_t)wideScreenX[vertex];
-            combatPolygons.screenPolygonY[vertex]=(int16_t)wideScreenY[vertex];
+            combatPolygons.screenPolygonX[vertex]=(int16_t)combatGeometry.wideScreenX[vertex];
+            combatPolygons.screenPolygonY[vertex]=(int16_t)combatGeometry.wideScreenY[vertex];
         }
         combatVideo.screenPolygonNeedsClip=false;
         BtechDrawScreenPolygon((int16_t)combatPolygons.polygonVertexCount,combatPolygons.screenPolygonX,combatPolygons.screenPolygonY);

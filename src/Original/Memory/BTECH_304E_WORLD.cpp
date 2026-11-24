@@ -126,14 +126,14 @@ bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t 
     for (uint16_t index=0;index<0x801;++index) combatGeometryTables.orientationCosines[index]=MwReadNativeWord(segment22B6,0x486D+index*2);
     for (uint16_t index=0;index<0x402;++index) combatGeometryTables.coefficientAngles[index]=MwReadNativeWord(segment22B6,0x586F+index*2);
     memcpy(combatGeometryTables.vertexNearPlaneState,segment22B6+0x312C,sizeof(combatGeometryTables.vertexNearPlaneState));
-    memcpy(polygonShadeDeltas,segment22B6+0x476D,sizeof(polygonShadeDeltas));
-    memcpy(polygonVertexIndices,segment22B6+0x4617,sizeof(polygonVertexIndices));
-    uint32_t *wideCoordinates[]={wideScreenX,wideScreenY,widePolygonWorkX,widePolygonWorkY};
+    memcpy(combatGeometry.polygonShadeDeltas,segment22B6+0x476D,sizeof(combatGeometry.polygonShadeDeltas));
+    memcpy(combatGeometry.polygonVertexIndices,segment22B6+0x4617,sizeof(combatGeometry.polygonVertexIndices));
+    uint32_t *wideCoordinates[]={combatGeometry.wideScreenX,combatGeometry.wideScreenY,combatGeometry.widePolygonWorkX,combatGeometry.widePolygonWorkY};
     for (uint16_t axis=0;axis<4;++axis)
         for (uint16_t vertex=0;vertex<WIDE_POLYGON_VERTICES;++vertex)
             wideCoordinates[axis][vertex]=MwReadNativeWord(segment22B6,0x462D+axis*0x50+vertex*4)
                 |((uint32_t)MwReadNativeWord(segment22B6,0x462F+axis*0x50+vertex*4)<<16);
-    BtechGeometryCoordinateCache *coordinateCaches[]={&geometryViewX,&geometryViewDepth,&geometryViewZ,&geometryProjectedX,&geometryProjectedY};
+    BtechGeometryCoordinateCache *coordinateCaches[]={&combatGeometry.geometryViewX,&combatGeometry.geometryViewDepth,&combatGeometry.geometryViewZ,&combatGeometry.geometryProjectedX,&combatGeometry.geometryProjectedY};
     for (uint16_t axis=0;axis<5;++axis)
         for (uint16_t word=0;word<GEOMETRY_CACHE_VERTICES*2;++word)
             coordinateCaches[axis]->words[word]=MwReadNativeWord(segment22B6,0x322B+axis*0x3FC+word*2);

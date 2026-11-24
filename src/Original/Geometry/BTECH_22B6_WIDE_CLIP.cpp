@@ -7,12 +7,12 @@
 void BtechIntersectWideEdgeWithNearPlane(uint16_t outsideVertex,uint16_t insideVertex)
 {
     if (outsideVertex>=GEOMETRY_CACHE_VERTICES || insideVertex>=GEOMETRY_CACHE_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: outsideVertex>=GEOMETRY_CACHE_VERTICES || insideVertex>=GEOMETRY_CACHE_VERTICES");
-    uint32_t denominator=(geometryViewDepth.wide[insideVertex]-geometryViewDepth.wide[outsideVertex]);
-    BtechGeometryCoordinateCache *coordinates[]={&geometryViewX,&geometryViewZ};
-    BtechGeometryCoordinateCache *projected[]={&geometryProjectedX,&geometryProjectedY};
+    uint32_t denominator=(combatGeometry.geometryViewDepth.wide[insideVertex]-combatGeometry.geometryViewDepth.wide[outsideVertex]);
+    BtechGeometryCoordinateCache *coordinates[]={&combatGeometry.geometryViewX,&combatGeometry.geometryViewZ};
+    BtechGeometryCoordinateCache *projected[]={&combatGeometry.geometryProjectedX,&combatGeometry.geometryProjectedY};
     for (uint16_t axis=0;axis<2;++axis)
     {
-        uint32_t planeDistance=(uint32_t)(int16_t)combatRender.nearClipDepth-geometryViewDepth.wide[outsideVertex];
+        uint32_t planeDistance=(uint32_t)(int16_t)combatRender.nearClipDepth-combatGeometry.geometryViewDepth.wide[outsideVertex];
         uint32_t difference=coordinates[axis]->wide[insideVertex]-coordinates[axis]->wide[outsideVertex];
         uint64_t product=BtechMultiplySignedDwordsWide(difference,planeDistance);
         uint32_t displacement=BtechDivideSignedWideNumerator((int16_t)(product>>48),(uint16_t)(product>>32),(uint16_t)(product>>16),(uint16_t)product,(uint16_t)denominator,(int16_t)(denominator>>16),NULL);
@@ -25,12 +25,12 @@ void BtechIntersectWideEdgeWithNearPlane(uint16_t outsideVertex,uint16_t insideV
 void BtechIntersectDwordNearEdgeWithWordProducts(uint16_t outsideVertex,uint16_t insideVertex)
 {
     if (outsideVertex>=GEOMETRY_CACHE_VERTICES || insideVertex>=GEOMETRY_CACHE_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: outsideVertex>=GEOMETRY_CACHE_VERTICES || insideVertex>=GEOMETRY_CACHE_VERTICES");
-    int16_t denominator=geometryViewDepth.wide[insideVertex]-geometryViewDepth.wide[outsideVertex];
-    BtechGeometryCoordinateCache *coordinates[]={&geometryViewX,&geometryViewZ};
-    BtechGeometryCoordinateCache *projected[]={&geometryProjectedX,&geometryProjectedY};
+    int16_t denominator=combatGeometry.geometryViewDepth.wide[insideVertex]-combatGeometry.geometryViewDepth.wide[outsideVertex];
+    BtechGeometryCoordinateCache *coordinates[]={&combatGeometry.geometryViewX,&combatGeometry.geometryViewZ};
+    BtechGeometryCoordinateCache *projected[]={&combatGeometry.geometryProjectedX,&combatGeometry.geometryProjectedY};
     for (uint16_t axis=0;axis<2;++axis)
     {
-        uint32_t planeDistance=(uint32_t)(int16_t)combatRender.nearClipDepth-geometryViewDepth.wide[outsideVertex];
+        uint32_t planeDistance=(uint32_t)(int16_t)combatRender.nearClipDepth-combatGeometry.geometryViewDepth.wide[outsideVertex];
         uint32_t difference=coordinates[axis]->wide[insideVertex]-coordinates[axis]->wide[outsideVertex];
         uint32_t product=(int32_t)(int16_t)difference*(int16_t)planeDistance;
         if (!denominator) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !denominator"); /* A zero-divisor IRQ retries forever, not a valid crossing. */
@@ -50,10 +50,10 @@ void BtechIntersectDwordNearEdgeWithWordProducts(uint16_t outsideVertex,uint16_t
 void BtechClipWidePolygonNearPlane(void)
 {
     if (!combatPolygons.polygonVertexCount || combatPolygons.polygonVertexCount>POLYGON_VERTEX_INDEX_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !polygonVertexCount || polygonVertexCount>POLYGON_VERTEX_INDEX_BYTES"); /* Native empty-list read aliases4616. */
-    uint16_t previous=polygonVertexIndices[combatPolygons.polygonVertexCount-1],output=0,input=0;
+    uint16_t previous=combatGeometry.polygonVertexIndices[combatPolygons.polygonVertexCount-1],output=0,input=0;
     do
     {
-        uint16_t current=polygonVertexIndices[input];
+        uint16_t current=combatGeometry.polygonVertexIndices[input];
         if (current>=GEOMETRY_CACHE_VERTICES || previous>=GEOMETRY_CACHE_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: current>=GEOMETRY_CACHE_VERTICES || previous>=GEOMETRY_CACHE_VERTICES");
         uint16_t emit[2],emitted=0;
         if (combatGeometryTables.vertexNearPlaneState[current]!=GEOMETRY_VERTEX_BEHIND)
@@ -73,8 +73,8 @@ void BtechClipWidePolygonNearPlane(void)
         for (uint16_t vertex=0;vertex<emitted;++vertex)
         {
             if (output>=WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: output>=WIDE_POLYGON_VERTICES");
-            wideScreenX[output]=(uint32_t)combatRender.screenCentreA+geometryProjectedX.wide[emit[vertex]];
-            wideScreenY[output]=(uint32_t)combatRender.screenCentreB-geometryProjectedY.wide[emit[vertex]];
+            combatGeometry.wideScreenX[output]=(uint32_t)combatRender.screenCentreA+combatGeometry.geometryProjectedX.wide[emit[vertex]];
+            combatGeometry.wideScreenY[output]=(uint32_t)combatRender.screenCentreB-combatGeometry.geometryProjectedY.wide[emit[vertex]];
             ++output;
         }
         previous=current;++input;
@@ -87,10 +87,10 @@ void BtechClipWidePolygonNearPlane(void)
 void BtechClipDwordNearPolygonWithWordProducts(void)
 {
     if (!combatPolygons.polygonVertexCount || combatPolygons.polygonVertexCount>POLYGON_VERTEX_INDEX_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !polygonVertexCount || polygonVertexCount>POLYGON_VERTEX_INDEX_BYTES"); /* Native empty-list read aliases4616. */
-    uint16_t previous=polygonVertexIndices[combatPolygons.polygonVertexCount-1],output=0,input=0;
+    uint16_t previous=combatGeometry.polygonVertexIndices[combatPolygons.polygonVertexCount-1],output=0,input=0;
     do
     {
-        uint16_t current=polygonVertexIndices[input];
+        uint16_t current=combatGeometry.polygonVertexIndices[input];
         if (current>=GEOMETRY_CACHE_VERTICES || previous>=GEOMETRY_CACHE_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: current>=GEOMETRY_CACHE_VERTICES || previous>=GEOMETRY_CACHE_VERTICES");
         uint16_t emit[2],emitted=0;
         if (combatGeometryTables.vertexNearPlaneState[current]!=GEOMETRY_VERTEX_BEHIND)
@@ -110,8 +110,8 @@ void BtechClipDwordNearPolygonWithWordProducts(void)
         for (uint16_t vertex=0;vertex<emitted;++vertex)
         {
             if (output>=WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: output>=WIDE_POLYGON_VERTICES");
-            wideScreenX[output]=(uint32_t)combatRender.screenCentreA+geometryProjectedX.wide[emit[vertex]];
-            wideScreenY[output]=(uint32_t)combatRender.screenCentreB-geometryProjectedY.wide[emit[vertex]];
+            combatGeometry.wideScreenX[output]=(uint32_t)combatRender.screenCentreA+combatGeometry.geometryProjectedX.wide[emit[vertex]];
+            combatGeometry.wideScreenY[output]=(uint32_t)combatRender.screenCentreB-combatGeometry.geometryProjectedY.wide[emit[vertex]];
             ++output;
         }
         previous=current;++input;
@@ -125,14 +125,14 @@ uint16_t BtechIntersectWideScreenEdgeA(uint16_t base,uint16_t next,uint16_t dest
 {
     if (!(flags&(POLYGON_LEFT|POLYGON_RIGHT))) return destination;
     if (base>=WIDE_POLYGON_VERTICES || next>=WIDE_POLYGON_VERTICES || destination>=WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: base>=WIDE_POLYGON_VERTICES || next>=WIDE_POLYGON_VERTICES || destination>=WIDE_POLYGON_VERTICES");
-    uint32_t denominator=(wideScreenX[next]-wideScreenX[base]);
+    uint32_t denominator=(combatGeometry.wideScreenX[next]-combatGeometry.wideScreenX[base]);
     uint32_t boundary=(uint32_t)((flags&POLYGON_LEFT)?combatVideo.clipMinimumX:combatVideo.clipMaximumX);
-    widePolygonWorkX[destination]=boundary;
-    uint32_t planeDistance=boundary-wideScreenX[base];
-    uint32_t difference=wideScreenY[next]-wideScreenY[base];
+    combatGeometry.widePolygonWorkX[destination]=boundary;
+    uint32_t planeDistance=boundary-combatGeometry.wideScreenX[base];
+    uint32_t difference=combatGeometry.wideScreenY[next]-combatGeometry.wideScreenY[base];
     uint64_t product=BtechMultiplySignedDwordsWide(difference,planeDistance);
     uint32_t displacement=BtechDivideSignedWideNumerator((int16_t)(product>>48),(uint16_t)(product>>32),(uint16_t)(product>>16),(uint16_t)product,(uint16_t)denominator,(int16_t)(denominator>>16),NULL);
-    widePolygonWorkY[destination]=wideScreenY[base]+displacement;
+    combatGeometry.widePolygonWorkY[destination]=combatGeometry.wideScreenY[base]+displacement;
     return destination+1;
 }
 
@@ -142,14 +142,14 @@ uint16_t BtechIntersectWideScreenEdgeB(uint16_t base,uint16_t next,uint16_t dest
 {
     if (!(flags&(POLYGON_TOP|POLYGON_BOTTOM))) return destination;
     if (base>=WIDE_POLYGON_VERTICES || next>=WIDE_POLYGON_VERTICES || destination>=WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: base>=WIDE_POLYGON_VERTICES || next>=WIDE_POLYGON_VERTICES || destination>=WIDE_POLYGON_VERTICES");
-    uint32_t denominator=(widePolygonWorkY[next]-widePolygonWorkY[base]);
+    uint32_t denominator=(combatGeometry.widePolygonWorkY[next]-combatGeometry.widePolygonWorkY[base]);
     uint32_t boundary=(uint32_t)((flags&POLYGON_TOP)?combatVideo.clipMinimumY:combatVideo.clipMaximumY);
-    wideScreenY[destination]=boundary;
-    uint32_t planeDistance=boundary-widePolygonWorkY[base];
-    uint32_t difference=widePolygonWorkX[next]-widePolygonWorkX[base];
+    combatGeometry.wideScreenY[destination]=boundary;
+    uint32_t planeDistance=boundary-combatGeometry.widePolygonWorkY[base];
+    uint32_t difference=combatGeometry.widePolygonWorkX[next]-combatGeometry.widePolygonWorkX[base];
     uint64_t product=BtechMultiplySignedDwordsWide(difference,planeDistance);
     uint32_t displacement=BtechDivideSignedWideNumerator((int16_t)(product>>48),(uint16_t)(product>>32),(uint16_t)(product>>16),(uint16_t)product,(uint16_t)denominator,(int16_t)(denominator>>16),NULL);
-    wideScreenX[destination]=widePolygonWorkX[base]+displacement;
+    combatGeometry.wideScreenX[destination]=combatGeometry.widePolygonWorkX[base]+displacement;
     return destination+1;
 }
 
@@ -159,11 +159,11 @@ uint16_t BtechIntersectScreenEdgeWordProductA(uint16_t base,uint16_t next,uint16
 {
     if (!(flags&(POLYGON_LEFT|POLYGON_RIGHT))) return destination;
     if (base>=WIDE_POLYGON_VERTICES || next>=WIDE_POLYGON_VERTICES || destination>=WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: base>=WIDE_POLYGON_VERTICES || next>=WIDE_POLYGON_VERTICES || destination>=WIDE_POLYGON_VERTICES");
-    int16_t denominator=wideScreenX[next]-wideScreenX[base];
+    int16_t denominator=combatGeometry.wideScreenX[next]-combatGeometry.wideScreenX[base];
     uint32_t boundary=(uint32_t)((flags&POLYGON_LEFT)?combatVideo.clipMinimumX:combatVideo.clipMaximumX);
-    widePolygonWorkX[destination]=boundary;
-    uint32_t planeDistance=boundary-wideScreenX[base];
-    uint32_t difference=wideScreenY[next]-wideScreenY[base];
+    combatGeometry.widePolygonWorkX[destination]=boundary;
+    uint32_t planeDistance=boundary-combatGeometry.wideScreenX[base];
+    uint32_t difference=combatGeometry.wideScreenY[next]-combatGeometry.wideScreenY[base];
     uint32_t product=(int32_t)(int16_t)difference*(int16_t)planeDistance;
     if (!denominator) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !denominator");
     int64_t quotient=(int64_t)(int32_t)product/denominator;
@@ -173,7 +173,7 @@ uint16_t BtechIntersectScreenEdgeWordProductA(uint16_t base,uint16_t next,uint16
         quotient=(int64_t)(int32_t)product/denominator;
     }
     uint32_t displacement=(int16_t)quotient;
-    widePolygonWorkY[destination]=wideScreenY[base]+displacement;
+    combatGeometry.widePolygonWorkY[destination]=combatGeometry.wideScreenY[base]+displacement;
     return destination+1;
 }
 
@@ -183,11 +183,11 @@ uint16_t BtechIntersectScreenEdgeWordProductB(uint16_t base,uint16_t next,uint16
 {
     if (!(flags&(POLYGON_TOP|POLYGON_BOTTOM))) return destination;
     if (base>=WIDE_POLYGON_VERTICES || next>=WIDE_POLYGON_VERTICES || destination>=WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: base>=WIDE_POLYGON_VERTICES || next>=WIDE_POLYGON_VERTICES || destination>=WIDE_POLYGON_VERTICES");
-    int16_t denominator=widePolygonWorkY[next]-widePolygonWorkY[base];
+    int16_t denominator=combatGeometry.widePolygonWorkY[next]-combatGeometry.widePolygonWorkY[base];
     uint32_t boundary=(uint32_t)((flags&POLYGON_TOP)?combatVideo.clipMinimumY:combatVideo.clipMaximumY);
-    wideScreenY[destination]=boundary;
-    uint32_t planeDistance=boundary-widePolygonWorkY[base];
-    uint32_t difference=widePolygonWorkX[next]-widePolygonWorkX[base];
+    combatGeometry.wideScreenY[destination]=boundary;
+    uint32_t planeDistance=boundary-combatGeometry.widePolygonWorkY[base];
+    uint32_t difference=combatGeometry.widePolygonWorkX[next]-combatGeometry.widePolygonWorkX[base];
     uint32_t product=(int32_t)(int16_t)difference*(int16_t)planeDistance;
     if (!denominator) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !denominator");
     int64_t quotient=(int64_t)(int32_t)product/denominator;
@@ -197,7 +197,7 @@ uint16_t BtechIntersectScreenEdgeWordProductB(uint16_t base,uint16_t next,uint16
         quotient=(int64_t)(int32_t)product/denominator;
     }
     uint32_t displacement=(int16_t)quotient;
-    wideScreenX[destination]=widePolygonWorkX[base]+displacement;
+    combatGeometry.wideScreenX[destination]=combatGeometry.widePolygonWorkX[base]+displacement;
     return destination+1;
 }
 
@@ -209,21 +209,21 @@ void BtechClipWidePolygonToScreen(void)
     if (combatPolygons.polygonVertexCount>WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: polygonVertexCount>WIDE_POLYGON_VERTICES");
     {
         uint16_t previous=combatPolygons.polygonVertexCount-1,current=0,output=0;
-        uint32_t coordinate=wideScreenX[previous];
+        uint32_t coordinate=combatGeometry.wideScreenX[previous];
         int16_t upper=coordinate>>16;
         uint8_t previousFlags=0;
         if (upper<0 || (!upper && (uint16_t)coordinate<(uint16_t)combatVideo.clipMinimumX)) previousFlags|=POLYGON_LEFT;
         if (upper>0 || (!upper && (uint16_t)coordinate>(uint16_t)combatVideo.clipMaximumX)) previousFlags|=POLYGON_RIGHT;
         do
         {
-            coordinate=wideScreenX[current];upper=(int16_t)(coordinate>>16);
+            coordinate=combatGeometry.wideScreenX[current];upper=(int16_t)(coordinate>>16);
             uint8_t currentFlags=0;
             if (upper<0 || (!upper && (uint16_t)coordinate<(uint16_t)combatVideo.clipMinimumX)) currentFlags|=POLYGON_LEFT;
             if (upper>0 || (!upper && (uint16_t)coordinate>(uint16_t)combatVideo.clipMaximumX)) currentFlags|=POLYGON_RIGHT;
             if (!(previousFlags|currentFlags))
             {
                 if (output>=WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: output>=WIDE_POLYGON_VERTICES");
-                widePolygonWorkX[output]=wideScreenX[current];widePolygonWorkY[output]=wideScreenY[current];++output;
+                combatGeometry.widePolygonWorkX[output]=combatGeometry.wideScreenX[current];combatGeometry.widePolygonWorkY[output]=combatGeometry.wideScreenY[current];++output;
             }
             else if (!(previousFlags&currentFlags))
             {
@@ -232,7 +232,7 @@ void BtechClipWidePolygonToScreen(void)
                 {
                     output=BtechIntersectWideScreenEdgeA(previous,current,output,previousFlags);
                     if (output>=WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: output>=WIDE_POLYGON_VERTICES");
-                    widePolygonWorkX[output]=wideScreenX[current];widePolygonWorkY[output]=wideScreenY[current];++output;
+                    combatGeometry.widePolygonWorkX[output]=combatGeometry.wideScreenX[current];combatGeometry.widePolygonWorkY[output]=combatGeometry.wideScreenY[current];++output;
                 }
                 else
                 {
@@ -251,21 +251,21 @@ void BtechClipWidePolygonToScreen(void)
     }
     {
         uint16_t previous=combatPolygons.polygonVertexCount-1,current=0,output=0;
-        uint32_t coordinate=widePolygonWorkY[previous];
+        uint32_t coordinate=combatGeometry.widePolygonWorkY[previous];
         int16_t upper=coordinate>>16;
         uint8_t previousFlags=0;
         if (upper<0 || (!upper && (uint16_t)coordinate<(uint16_t)combatVideo.clipMinimumY)) previousFlags|=POLYGON_TOP;
         if (upper>0 || (!upper && (uint16_t)coordinate>(uint16_t)combatVideo.clipMaximumY)) previousFlags|=POLYGON_BOTTOM;
         do
         {
-            coordinate=widePolygonWorkY[current];upper=(int16_t)(coordinate>>16);
+            coordinate=combatGeometry.widePolygonWorkY[current];upper=(int16_t)(coordinate>>16);
             uint8_t currentFlags=0;
             if (upper<0 || (!upper && (uint16_t)coordinate<(uint16_t)combatVideo.clipMinimumY)) currentFlags|=POLYGON_TOP;
             if (upper>0 || (!upper && (uint16_t)coordinate>(uint16_t)combatVideo.clipMaximumY)) currentFlags|=POLYGON_BOTTOM;
             if (!(previousFlags|currentFlags))
             {
                 if (output>=WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: output>=WIDE_POLYGON_VERTICES");
-                wideScreenX[output]=widePolygonWorkX[current];wideScreenY[output]=widePolygonWorkY[current];++output;
+                combatGeometry.wideScreenX[output]=combatGeometry.widePolygonWorkX[current];combatGeometry.wideScreenY[output]=combatGeometry.widePolygonWorkY[current];++output;
             }
             else if (!(previousFlags&currentFlags))
             {
@@ -274,7 +274,7 @@ void BtechClipWidePolygonToScreen(void)
                 {
                     output=BtechIntersectWideScreenEdgeB(previous,current,output,previousFlags);
                     if (output>=WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: output>=WIDE_POLYGON_VERTICES");
-                    wideScreenX[output]=widePolygonWorkX[current];wideScreenY[output]=widePolygonWorkY[current];++output;
+                    combatGeometry.wideScreenX[output]=combatGeometry.widePolygonWorkX[current];combatGeometry.wideScreenY[output]=combatGeometry.widePolygonWorkY[current];++output;
                 }
                 else
                 {
@@ -296,21 +296,21 @@ void BtechClipPolygonWithWordProducts(void)
     if (combatPolygons.polygonVertexCount>WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: polygonVertexCount>WIDE_POLYGON_VERTICES");
     {
         uint16_t previous=combatPolygons.polygonVertexCount-1,current=0,output=0;
-        uint32_t coordinate=wideScreenX[previous];
+        uint32_t coordinate=combatGeometry.wideScreenX[previous];
         int16_t upper=coordinate>>16;
         uint8_t previousFlags=0;
         if (upper<0 || (!upper && (uint16_t)coordinate<(uint16_t)combatVideo.clipMinimumX)) previousFlags|=POLYGON_LEFT;
         if (upper>0 || (!upper && (uint16_t)coordinate>(uint16_t)combatVideo.clipMaximumX)) previousFlags|=POLYGON_RIGHT;
         do
         {
-            coordinate=wideScreenX[current];upper=(int16_t)(coordinate>>16);
+            coordinate=combatGeometry.wideScreenX[current];upper=(int16_t)(coordinate>>16);
             uint8_t currentFlags=0;
             if (upper<0 || (!upper && (uint16_t)coordinate<(uint16_t)combatVideo.clipMinimumX)) currentFlags|=POLYGON_LEFT;
             if (upper>0 || (!upper && (uint16_t)coordinate>(uint16_t)combatVideo.clipMaximumX)) currentFlags|=POLYGON_RIGHT;
             if (!(previousFlags|currentFlags))
             {
                 if (output>=WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: output>=WIDE_POLYGON_VERTICES");
-                widePolygonWorkX[output]=wideScreenX[current];widePolygonWorkY[output]=wideScreenY[current];++output;
+                combatGeometry.widePolygonWorkX[output]=combatGeometry.wideScreenX[current];combatGeometry.widePolygonWorkY[output]=combatGeometry.wideScreenY[current];++output;
             }
             else if (!(previousFlags&currentFlags))
             {
@@ -319,7 +319,7 @@ void BtechClipPolygonWithWordProducts(void)
                 {
                     output=BtechIntersectScreenEdgeWordProductA(previous,current,output,previousFlags);
                     if (output>=WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: output>=WIDE_POLYGON_VERTICES");
-                    widePolygonWorkX[output]=wideScreenX[current];widePolygonWorkY[output]=wideScreenY[current];++output;
+                    combatGeometry.widePolygonWorkX[output]=combatGeometry.wideScreenX[current];combatGeometry.widePolygonWorkY[output]=combatGeometry.wideScreenY[current];++output;
                 }
                 else
                 {
@@ -338,21 +338,21 @@ void BtechClipPolygonWithWordProducts(void)
     }
     {
         uint16_t previous=combatPolygons.polygonVertexCount-1,current=0,output=0;
-        uint32_t coordinate=widePolygonWorkY[previous];
+        uint32_t coordinate=combatGeometry.widePolygonWorkY[previous];
         int16_t upper=coordinate>>16;
         uint8_t previousFlags=0;
         if (upper<0 || (!upper && (uint16_t)coordinate<(uint16_t)combatVideo.clipMinimumY)) previousFlags|=POLYGON_TOP;
         if (upper>0 || (!upper && (uint16_t)coordinate>(uint16_t)combatVideo.clipMaximumY)) previousFlags|=POLYGON_BOTTOM;
         do
         {
-            coordinate=widePolygonWorkY[current];upper=(int16_t)(coordinate>>16);
+            coordinate=combatGeometry.widePolygonWorkY[current];upper=(int16_t)(coordinate>>16);
             uint8_t currentFlags=0;
             if (upper<0 || (!upper && (uint16_t)coordinate<(uint16_t)combatVideo.clipMinimumY)) currentFlags|=POLYGON_TOP;
             if (upper>0 || (!upper && (uint16_t)coordinate>(uint16_t)combatVideo.clipMaximumY)) currentFlags|=POLYGON_BOTTOM;
             if (!(previousFlags|currentFlags))
             {
                 if (output>=WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: output>=WIDE_POLYGON_VERTICES");
-                wideScreenX[output]=widePolygonWorkX[current];wideScreenY[output]=widePolygonWorkY[current];++output;
+                combatGeometry.wideScreenX[output]=combatGeometry.widePolygonWorkX[current];combatGeometry.wideScreenY[output]=combatGeometry.widePolygonWorkY[current];++output;
             }
             else if (!(previousFlags&currentFlags))
             {
@@ -361,7 +361,7 @@ void BtechClipPolygonWithWordProducts(void)
                 {
                     output=BtechIntersectScreenEdgeWordProductB(previous,current,output,previousFlags);
                     if (output>=WIDE_POLYGON_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: output>=WIDE_POLYGON_VERTICES");
-                    wideScreenX[output]=widePolygonWorkX[current];wideScreenY[output]=widePolygonWorkY[current];++output;
+                    combatGeometry.wideScreenX[output]=combatGeometry.widePolygonWorkX[current];combatGeometry.wideScreenY[output]=combatGeometry.widePolygonWorkY[current];++output;
                 }
                 else
                 {

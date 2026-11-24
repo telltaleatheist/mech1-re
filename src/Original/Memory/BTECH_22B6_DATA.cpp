@@ -1,8 +1,3 @@
 #include "mechwarrior/combat_render.h"
 CombatGeometryTableState combatGeometryTables;
-BtechGeometryCoordinateCache geometryViewX,geometryViewDepth,geometryViewZ;
-BtechGeometryCoordinateCache geometryProjectedX,geometryProjectedY;
-uint8_t polygonShadeDeltas[POLYGON_SHADE_CLASSES][POLYGON_SHADE_STEPS];
-uint8_t polygonVertexIndices[POLYGON_VERTEX_INDEX_BYTES];
-uint32_t wideScreenX[WIDE_POLYGON_VERTICES],wideScreenY[WIDE_POLYGON_VERTICES];
-uint32_t widePolygonWorkX[WIDE_POLYGON_VERTICES],widePolygonWorkY[WIDE_POLYGON_VERTICES];
+CombatGeometryState combatGeometry;
