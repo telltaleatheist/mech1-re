@@ -93,8 +93,8 @@ uint8_t BtechTestUnitMovementObstruction(uint16_t unitSlot)
         }
         if (withinContactBounds)
         {
-            if (!activeUnitPositionedObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject"); /* Native null near-owner access is not fabricated. */
-            if (activeUnitPositionedObject->forwardStepScale>UNIT_CONTACT_DAMAGE_SPEED_MINIMUM)
+            if (!combatPose.activeUnitPositionedObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject"); /* Native null near-owner access is not fabricated. */
+            if (combatPose.activeUnitPositionedObject->forwardStepScale>UNIT_CONTACT_DAMAGE_SPEED_MINIMUM)
             {
                 if (!activeUnitControl) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl");
                 if (unitControls[otherSlot].sideIndex!=activeUnitControl->sideIndex)

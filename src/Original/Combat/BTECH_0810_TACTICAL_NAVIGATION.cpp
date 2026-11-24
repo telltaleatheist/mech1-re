@@ -17,7 +17,7 @@
  * Normal complete owners cannot overlap their forward coordinate copies. */
 void BtechUpdateTacticalNavigation(void)
 {
-    if (!activeUnitControl || !activeUnitPositionedObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl || !activeUnitPositionedObject");
+    if (!activeUnitControl || !combatPose.activeUnitPositionedObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl || !activeUnitPositionedObject");
     BtechUnitControlState *control=activeUnitControl;
     BtechPosition3D waypoint;
     if (BtechHasNearbyVisibleThreat() && combatStartup.combatTickCounter)
@@ -59,7 +59,7 @@ void BtechUpdateTacticalNavigation(void)
     control->lastDirectHitUnitSlot=-1;control->trackedPosition[2]=-1;control->navigationReferenceSlot=-1;
     if (BtechShouldDisengageForWeaponsOrStructure())
     {
-        waypoint=activeUnitPositionedObject->object.prefix.position;
+        waypoint=combatPose.activeUnitPositionedObject->object.prefix.position;
         uint32_t magnitudeX=(int32_t)waypoint.positionA<0?0-waypoint.positionA:waypoint.positionA;
         uint32_t magnitudeY=(int32_t)waypoint.positionB<0?0-waypoint.positionB:waypoint.positionB;
         if ((int32_t)magnitudeX>(int32_t)magnitudeY)
@@ -111,7 +111,7 @@ void BtechUpdateTacticalNavigation(void)
     case OBJECTIVE_OPPOSE_WITHDRAWAL: BtechRefreshTargetAndNavigate();break;
     case OBJECTIVE_WITHDRAW:
     {
-        waypoint=activeUnitPositionedObject->object.prefix.position;
+        waypoint=combatPose.activeUnitPositionedObject->object.prefix.position;
         if (control->sideIndex>=2) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: control->sideIndex>=2");
         uint8_t mask=scenarioSelectors.sideBoundaryMasks[control->sideIndex];
         if (mask&1) waypoint.positionB=TACTICAL_RETREAT_Y;
@@ -134,9 +134,9 @@ void BtechUpdateTacticalNavigation(void)
  * Retain the current heading when threats and orders supply no new direction. */
 void BtechSelectUnitTacticalState(void)
 {
-    if (!activeUnitControl || !activeUnitPositionedObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl || !activeUnitPositionedObject");
+    if (!activeUnitControl || !combatPose.activeUnitPositionedObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl || !activeUnitPositionedObject");
     BtechUnitControlState *control=activeUnitControl;
-    BtechWorldObjectPrefix *root=&activeUnitPositionedObject->object.prefix;
+    BtechWorldObjectPrefix *root=&combatPose.activeUnitPositionedObject->object.prefix;
     --control->decisionCountdown;
     if ((int16_t)control->decisionCountdown<0)
     {
@@ -260,15 +260,15 @@ steer:
  * Preserve the unused charging RNG draw and strict hysteresis range tests. */
 void BtechApplyActiveUnitTacticalSteering(uint16_t desiredHeading)
 {
-    if (!activeUnitTorsoObject || !activeUnitPositionedObject || !activeUnitControl) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitTorsoObject || !activeUnitPositionedObject || !activeUnitControl");
-    int16_t relativeTorsoHeading=activeUnitTorsoObject->object.prefix.orientationC;
-    int16_t torsoHeadingError=activeUnitPositionedObject->object.prefix.orientationC+relativeTorsoHeading-desiredHeading;
+    if (!combatPose.activeUnitTorsoObject || !combatPose.activeUnitPositionedObject || !activeUnitControl) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitTorsoObject || !activeUnitPositionedObject || !activeUnitControl");
+    int16_t relativeTorsoHeading=combatPose.activeUnitTorsoObject->object.prefix.orientationC;
+    int16_t torsoHeadingError=combatPose.activeUnitPositionedObject->object.prefix.orientationC+relativeTorsoHeading-desiredHeading;
     int16_t headingErrorMagnitude=(uint16_t)torsoHeadingError==0x8000?INT16_MAX:torsoHeadingError<0?-torsoHeadingError:torsoHeadingError;
     int16_t turnDirection=torsoHeadingError<0?-1:torsoHeadingError!=0;
     if (headingErrorMagnitude>TACTICAL_TORSO_TURN_STEP) headingErrorMagnitude=TACTICAL_TORSO_TURN_STEP;
     relativeTorsoHeading=(int16_t)(relativeTorsoHeading-headingErrorMagnitude*turnDirection);
     headingErrorMagnitude=(uint16_t)relativeTorsoHeading==0x8000?INT16_MAX:relativeTorsoHeading<0?-relativeTorsoHeading:relativeTorsoHeading;
-    if (headingErrorMagnitude<TACTICAL_TORSO_TURN_LIMIT) activeUnitTorsoObject->object.prefix.orientationC=(uint16_t)relativeTorsoHeading;
+    if (headingErrorMagnitude<TACTICAL_TORSO_TURN_LIMIT) combatPose.activeUnitTorsoObject->object.prefix.orientationC=(uint16_t)relativeTorsoHeading;
     BtechUnitControlState *control=activeUnitControl;
     switch (control->tacticalState)
     {
@@ -287,13 +287,13 @@ void BtechApplyActiveUnitTacticalSteering(uint16_t desiredHeading)
     case TACTICAL_WANDERING:
     {
         uint16_t maneuverHeadingOffset=(control->maneuverFlags&TACTICAL_POSITIVE_QUARTER_TURN)?TACTICAL_POSITIVE_QUARTER:TACTICAL_NEGATIVE_QUARTER;
-        desiredHeading=activeUnitPositionedObject->object.prefix.orientationC+maneuverHeadingOffset;
+        desiredHeading=combatPose.activeUnitPositionedObject->object.prefix.orientationC+maneuverHeadingOffset;
         BtechSetActiveUnitGroundOrJumpMotion(desiredHeading,!(control->maneuverFlags&TACTICAL_OUTER_RANGE));break;
     }
     case TACTICAL_CHARGING_BASE:
     {
         if (!specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
-        int32_t distance=(int32_t)BtechApproximatePlanarDistance(&activeUnitPositionedObject->object.prefix.position,&specialTargetObject->object.prefix.position);
+        int32_t distance=(int32_t)BtechApproximatePlanarDistance(&combatPose.activeUnitPositionedObject->object.prefix.position,&specialTargetObject->object.prefix.position);
         if (control->readyWeaponRangeMinusMargin>=distance && !specialTargetInteractionBlocked) BtechSetActiveUnitGroundOrJumpMotion(desiredHeading,MOTION_DIRECTION_STOP);
         else BtechSteerActiveUnitAroundObstacles(desiredHeading,1);
         break;

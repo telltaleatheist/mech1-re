@@ -15,11 +15,11 @@ void BtechSelectActiveUnitContext(uint16_t unitSlot)
 {
     if (unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitSlot>=COMBAT_MECH_SLOTS");
     BtechUnitBinding *binding=&unitBindings[unitSlot];
-    activeMechState=binding->mech;
-    if (!activeMechState || activeMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeMechState || activeMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
-    activeMechTemplate=&mechTemplates[activeMechState->templateIndex];
-    activeUnitPositionedObject=binding->positionedLeftLeg;
-    activeUnitTorsoObject=binding->torso;
+    combatPose.activeMechState=binding->mech;
+    if (!combatPose.activeMechState || combatPose.activeMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeMechState || activeMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
+    combatPose.activeMechTemplate=&mechTemplates[combatPose.activeMechState->templateIndex];
+    combatPose.activeUnitPositionedObject=binding->positionedLeftLeg;
+    combatPose.activeUnitTorsoObject=binding->torso;
     activeUnitControl=&unitControls[unitSlot];
 }
 
@@ -27,27 +27,27 @@ void BtechSelectActiveUnitContext(uint16_t unitSlot)
  * equality at half maximum internal structure requests disengagement. */
 uint16_t BtechShouldDisengageForWeaponsOrStructure(void)
 {
-    if (!activeMechTemplate || !activeMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeMechTemplate || !activeMechState");
-    int16_t mountIndex=0,weaponMountCount=(int16_t)activeMechTemplate->weaponMountCount;
+    if (!combatPose.activeMechTemplate || !combatPose.activeMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeMechTemplate || !activeMechState");
+    int16_t mountIndex=0,weaponMountCount=(int16_t)combatPose.activeMechTemplate->weaponMountCount;
     for (;mountIndex<weaponMountCount;++mountIndex)
     {
         if (mountIndex>=COMBAT_WEAPON_MOUNTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mountIndex>=COMBAT_WEAPON_MOUNTS");
-        int16_t weaponKind=activeMechTemplate->weaponMounts[mountIndex].weaponKind;
+        int16_t weaponKind=combatPose.activeMechTemplate->weaponMounts[mountIndex].weaponKind;
         if (weaponKind<0 || weaponKind>=COMBAT_WEAPON_KINDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: weaponKind<0 || weaponKind>=COMBAT_WEAPON_KINDS");
         int16_t ammoFamily=weaponDefinitions[weaponKind].ammoFamily;
         if ((uint16_t)ammoFamily!=COMBAT_AMMO_NONE)
         {
             if ((uint16_t)ammoFamily>=COMBAT_AMMO_FAMILIES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)ammoFamily>=COMBAT_AMMO_FAMILIES");
-            if (!activeMechState->ammoSalvosRemaining[ammoFamily]) continue;
+            if (!combatPose.activeMechState->ammoSalvosRemaining[ammoFamily]) continue;
         }
-        if (activeMechState->weapons[mountIndex].operational) break;
+        if (combatPose.activeMechState->weapons[mountIndex].operational) break;
     }
     if (mountIndex==weaponMountCount) return 1;
     uint16_t maximumStructure=0,currentStructure=0;
     for (uint16_t location=0;location<COMBAT_BODY_LOCATIONS;++location)
     {
-        maximumStructure+=activeMechTemplate->maximumInternalStructure[location];
-        currentStructure+=activeMechState->currentInternalStructure[location];
+        maximumStructure+=combatPose.activeMechTemplate->maximumInternalStructure[location];
+        currentStructure+=combatPose.activeMechState->currentInternalStructure[location];
     }
     int16_t halfMaximumStructure=(maximumStructure>>1)|(maximumStructure&0x8000);
     return halfMaximumStructure>=(int16_t)currentStructure;
@@ -61,8 +61,8 @@ uint8_t BtechHasNearbyVisibleThreat(void)
     BtechUnitControlState *control=activeUnitControl;
     if (sideObjectiveRules[control->sideIndex]==OBJECTIVE_SPECIAL_TARGET && specialTargetDamageRemaining)
     {
-        if (!activeUnitPositionedObject || !specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject || !specialTargetObject");
-        int32_t distance=(int32_t)BtechApproximatePlanarDistance(&activeUnitPositionedObject->object.prefix.position,&specialTargetObject->object.prefix.position);
+        if (!combatPose.activeUnitPositionedObject || !specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject || !specialTargetObject");
+        int32_t distance=(int32_t)BtechApproximatePlanarDistance(&combatPose.activeUnitPositionedObject->object.prefix.position,&specialTargetObject->object.prefix.position);
         if (control->readyWeaponRangeMinusMargin>distance
             && (control->commandCode==COMBAT_ORDER_ACT_ON_OWN || control->commandCode==TACTICAL_ORDER_ATTACK || control->commandCode==TACTICAL_ORDER_MOVE_ATTACK)) return 1;
     }
@@ -93,8 +93,8 @@ void BtechRefreshTargetAndNavigate(void)
     }
     else
     {
-        if (!activeUnitPositionedObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject");
-        BtechSteerActiveUnitAroundObstacles(activeUnitPositionedObject->object.prefix.orientationC,1);
+        if (!combatPose.activeUnitPositionedObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject");
+        BtechSteerActiveUnitAroundObstacles(combatPose.activeUnitPositionedObject->object.prefix.orientationC,1);
     }
 }
 
