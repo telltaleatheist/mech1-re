@@ -551,6 +551,12 @@ Every slice below is its own branch with the full gate green: both setups, the t
 | H5 | The port bus retired: `MwSdlWriteDevicePort`, `ReadDevicePort` and the port-word hooks removed with their last callers; the sound-port event log keeps its tones and snaps as the tone log (its name is historical), and its port lines are gone. Its first part (ports 0 and 1) went ahead, after H4d; the rest follows S4, S8 and S9, since its last callers are the MT-32 and AdLib backends S8 removes | everything above exact | 2 |
 | R | The release gate: every gate on Windows, macOS and Linux from fresh builds. Packages from a local tag. The listening list and the visual acceptance list signed off on the packaged builds. The controller path is covered by the SDL virtual-device test (H3b); no physical controller is available | all of the above | 2 |
 
+**From R's packages:**
+- A release label is packaged only from its tag, with nothing uncommitted. The three platforms refuse it otherwise.
+- One libSDL3 in the tar.gz, under the name the program loads (`libSDL3.so.0`). The build holds it twice (SDL's own folder and beside the program), so libraries are told apart by their bytes.
+- Every package is checked for its notices as it is finished, hidapi's among them.
+- Measured: what the Mac, Windows and Linux packages load and hold. Windows ships the whole redistributable folder of the MSVC runtime, and the installer Inno Setup's loader and uninstaller; neither has a notice in the package. Nothing is changed on that.
+
 **For R** (found by earlier slices, to be done or decided there):
 - A refused start in a Windows GUI build: does the player see the reason anywhere but a log? (The missing soundfont's message was only ever printed to stderr.)
 - A port failsafe's message: started with no arguments, the program writes its log, with the message, to mechwarrior.log beside the saves. Started with a game folder, a Windows GUI build has no stderr, so it is lost. There is no message box (B4e).
@@ -558,10 +564,6 @@ Every slice below is its own branch with the full gate green: both setups, the t
 - ega_canvas_writer_test, combat_records_test and start_rows_test define their own MwAbortWithReason and rely on the linker not taking the library's object. MSVC may report a duplicate symbol: link and run all three on Windows before trusting them there.
 - A damaged story folder stops every start, naming the file but no remedy; only deleting it helps. The start should import again by itself when a story file can't be read or has the wrong length, or name the folder to delete. That needs the player's copy of the game, so the case where no copy is found must be said plainly. The start with no arguments isn't run by any test (B4f).
 - The failure in combat's load names "BTECH.EXE", a file that play never opens (`MwFailGameFileRead`). It did not go with the built image (B4f).
-- A package built on each platform with hidapi's notice (`licenses/hidapi-LICENSE-bsd.txt`), and what the Mac and Windows packages link and ship: the MSVC runtime DLLs and Inno Setup's parts among them. Only the Linux package has been measured (S9).
-- The Linux tar.gz holds libSDL3 three times (.so, .so.0, .so.0.2.0); the AppImage holds .so.0 alone.
-- "The C17 port" in `docs/THIRD_PARTY_NOTICES.md`, and the README's stale passages.
-- Packaging with a release's label should refuse a tree that isn't at that tag, or has uncommitted changes.
 - On Windows: the program's path and the player's folder in the launcher's record, with a path that isn't plain ASCII (the UTF-8 manifest, and the kit's `self_path`).
 - The kit's recognise rules on a real copy of MechWarrior 2, MechWarrior 3 and Pirate's Moon, `DATA1.HDR` included.
 - The AppImage may ship, with libfuse and its notice in its runtime (the project owner's word, 2026-11-24); the licence wording for it is R's.
