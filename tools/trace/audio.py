@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Record or check the sound-port goldens (docs/phase5/AUDIO_PLAN.md, level 1).
+"""Record or check the tone log's goldens (docs/phase5/AUDIO_PLAN.md, level 1),
+the sound-port goldens until the ports went (H5): the name is historical.
 
     audio.py record --port BUILD/mechwarrior --game DIR --work DIR   # write the goldens
     audio.py check  --port BUILD/mechwarrior --game DIR --work DIR   # compare a build

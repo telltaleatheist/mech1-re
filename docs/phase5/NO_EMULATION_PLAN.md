@@ -319,6 +319,12 @@ Changes per piece:
 - **Packaging** needs SDL3 only and refuses a package holding a library named mt32emu or nukedopl, so an old build folder can't ship one.
 - **The Linux package is the .tar.gz alone.** The AppImage step was pinned and given its runtime's notices first, then removed: a project decision that nothing LGPL is shipped, and the AppImage's runtime holds libfuse. One commit, so it can be undone.
 
+**From H5, the rest** (the port bus; no golden moves):
+- **What went.** The host's `MwSdlWriteDevicePort` and `MwSdlReadDevicePort`, combat's `btechHostReadPort` and `btechHostWritePort`, and the `writePort`, `readPort` and `waitForInterrupt` members of `MwMusicHardwareCalls`, which had no caller left.
+- **One procedure left deliberately:** 2134:0086, `BtechTickTandyToneChannels`, combat's Tandy sound chip tick, a hardware backend like the ones S8 removed, and the port bus's last writer. It couldn't be reached: its one caller is the selector 1ADF:0000, which needs the Tandy bit, and the probe (1ADF:00BE's platform half) returns the speaker alone unless the BIOS model byte is FFh, where the host returns an AT's. The selector's case is now a failsafe that says so. `TONE_TANDY_DATA_PORT` went with it; the Tandy pitch table and 2134's other Tandy branches stay, the table as checked start-image data.
+- **`docs/phase2/INVENTORY.md` is unchanged:** it lists memory items, and none moved.
+- **The sound-port log** is kept as the tone log, its goldens untouched.
+
 **From B3c** (combat's video, render, polygons, scene, pose and cockpit state as owner structs; a pure move, no golden re-recorded):
 - **What changed.** 287 globals are now the fields of six structs, one per memory file: `combatVideo` (101 fields, combat_video.h), `combatRender` (63, combat_render.h), `combatPolygons` (26, combat_polygons.h), `combatScene` (8, combat_scene.h), `combatPose` (18, combat_pose.h), `combatCockpit` (71, combat_cockpit.h). Every name is kept, and the macros that name fields point at the instances. No field has an initialiser.
 - **Left outside.** The constants `glyphTailMasks`, `errorCardNotFound` and `errorInspectionShapeMemory`, and the cockpit importer's six private text buffers.
@@ -358,7 +364,7 @@ The traces compare snaps. Today a snap holds:
 - with the audio scripts, the sound-port event log.
 
 Two of those are port-level, and group A retires them:
-- **The sound-port log** (OPL, MPU, PIT channel 2 and 61h writes) is replaced by the **note log and tone log** (section 3). These are game events: what the score and the effect player asked to sound, and when.
+- **The sound-port log** (OPL, MPU, PIT channel 2 and 61h writes; since H5 the tone log, its tones and snaps kept) is replaced by the **note log and tone log** (section 3). These are game events: what the score and the effect player asked to sound, and when.
 - **The video bytes** (planes and latches) are already reduced to the frame's 320×200 indices. That frame, and its hash, stays the graphics check.
 
 **New, from slice T1:** a **game-event log** alongside each snap. It records:
@@ -434,7 +440,7 @@ Every slice below is its own branch with the full gate green: both setups, the t
 | H4d | Idle: under the real clock, a host wait sleeps until the next due tick instead of 100 µs steps; the test clock keeps its steps, so no log moves | every log identical; CPU of a held combat pause and of the title's wait, measured before and after (a combat pause: 27% of a core at H4b and H4c's first commit) | 1 |
 | S8 | The campaign's AdLib and MPU backends and combat's 21CA and 2176 removed. 1ADF reports the rebuild's sound (see "From S8") | event logs and traces exact but for the one named re-record; done | 2 |
 | S9 | Nuked-OPL3, Munt and MPU401/Adlib/MT32 removed from the build. ROM settings dropped; `sound_system` replaced by `music`. Notices, AUDIO.md and packaging (no nukedopl or mt32emu library) updated. The AppImage tooling's licence settled | packaging tests; the game's own libraries hold no LGPL; the AppImage, whose runtime does, isn't made (see "From S9") | 2 |
-| H5 | The port bus retired: `MwSdlWriteDevicePort`, `ReadDevicePort` and the port-word hooks removed with their last callers; the sound-port event log retired in favour of the note and tone logs. Its first part (ports 0 and 1) went ahead, after H4d; the rest follows S4, S8 and S9, since its last callers are the MT-32 and AdLib backends S8 removes | everything above exact | 2 |
+| H5 | The port bus retired: `MwSdlWriteDevicePort`, `ReadDevicePort` and the port-word hooks removed with their last callers; the sound-port event log keeps its tones and snaps as the tone log (its name is historical), and its port lines are gone. Its first part (ports 0 and 1) went ahead, after H4d; the rest follows S4, S8 and S9, since its last callers are the MT-32 and AdLib backends S8 removes | everything above exact | 2 |
 | R | The release gate: every gate on Windows, macOS and Linux from fresh builds. Packages from a local tag. The listening list and the visual acceptance list signed off on the packaged builds. The controller path is covered by the SDL virtual-device test (H3b); no physical controller is available | all of the above | 2 |
 
 **Group A total:** about 51-52 developer days plus the listening sessions. That is roughly 10 weeks, planned for **one developer, in order**.

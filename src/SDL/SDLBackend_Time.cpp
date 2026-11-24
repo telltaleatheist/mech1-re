@@ -168,13 +168,6 @@ void MwSdlAudioLogSnap(const char *name)
 {
     if (audioLog) {fprintf(audioLog,"[%llu, \"snap\", \"%s\"]\n",(unsigned long long)hardwareTime,name);fflush(audioLog);}
 }
-/* The devices' ports are gone (S9): tones (S5, S6), the timer period (H4b), the
- * AdLib's and the MPU's. The hooks that still name them stop at H5. */
-void MwSdlWriteDevicePort(uint16_t port,uint8_t value)
-{
-    (void)port;(void)value;
-    MwSdlFail("Unsupported hardware write");
-}
 /* The timer's period (H4b), where the games programmed PIT channel 0: in the
  * PIT's clock units, so the interrupts fall where they did; 0 is the PIT's
  * 65536. The next interrupt is one period on, as when the count was loaded. */
@@ -182,11 +175,6 @@ void MwSdlSetTimerPeriod(uint32_t pitCycles)
 {
     timerPeriod=pitCycles&&pitCycles<PIT_COUNTER_MODULUS?pitCycles:PIT_COUNTER_MODULUS;
     nextIrq=hardwareTime+timerPeriod;
-}
-uint8_t MwSdlReadDevicePort(uint16_t port)
-{
-    (void)port;
-    MwSdlFail("Unsupported hardware read");
 }
 void MwSdlInitializeTimer(void)
 {
@@ -205,11 +193,10 @@ void MwSdlInitializeTimer(void)
     nextIrq=timerPeriod;irq0=BiosTimerInterrupt;
     enabledDeviceIrqs=(uint8_t)MwDeviceIrq::All;
     campaignInterruptsInstalled=inInterrupt=nestingAllowed=false;
-    mwMusicHardware=MwMusicHardwareCalls{MwSdlAllowNestedTicks,MwSdlReadTimerHandler,MwSdlWriteTimerHandler,MwSdlWriteDevicePort,MwSdlReadDevicePort,
-        MwSdlPumpTimer,MwSdlPlayTone,MwSdlSetTimerPeriod};
+    mwMusicHardware=MwMusicHardwareCalls{MwSdlAllowNestedTicks,MwSdlReadTimerHandler,MwSdlWriteTimerHandler,
+        MwSdlPlayTone,MwSdlSetTimerPeriod};
     /* Same physical PIT/speaker, different original sequencer. No backend
      * selection or invented combat callback is installed at this boundary. */
-    btechHostWritePort=MwSdlWriteDevicePort;btechHostReadPort=MwSdlReadDevicePort;
     btechHostEnableDeviceIrqs=MwSdlEnableDeviceIrqs;
 }
 void MwSdlPumpTimer(void)

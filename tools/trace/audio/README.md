@@ -1,4 +1,9 @@
-# Sound-port goldens
+# The tone log's goldens
+
+These were the sound-port goldens: the port lines left with S8 and S9, the
+host's port bus with H5. What remains, the tones the host plays and the snaps,
+is the tone log. `audio.py`, `tools/trace/audio` and `MECHWARRIOR_AUDIO_LOG`
+keep their names.
 
 Level 1 of the Phase 5 audio plan (`docs/phase5/AUDIO_PLAN.md`): an exact log
 of what the game sends to the sound hardware, recorded from the port before

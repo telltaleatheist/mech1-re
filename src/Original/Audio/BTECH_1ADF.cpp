@@ -9,10 +9,11 @@
 #include <string.h>
 
 /*1ADF:0000. Genuine DX:AX code pair becomes a typed callback, not an SDL
- * audio decision. Tandy selection precedes the speaker/fallback selector. */
+ * audio decision. Tandy selection precedes the speaker/fallback selector; the
+ * Tandy tick (2134:0086), a hardware backend, left with H5. */
 BtechAudioTick BtechSelectTandyOrFallbackAudioCallback(void)
 {
-    if (selectedAudioBackendMask&COMBAT_SOUND_TANDY) return BtechTickTandyToneChannels;
+    if (selectedAudioBackendMask&COMBAT_SOUND_TANDY) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("The Tandy sound chip is not converted; it can't be selected, the host's BIOS model byte being an AT's.");
     return BtechSelectSpeakerCallback();
 }
 

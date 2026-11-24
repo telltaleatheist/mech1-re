@@ -12,8 +12,6 @@
 #include <stdlib.h>
 MwNativeByteView (*btechHostBorrowDosMemory)(uint16_t);
 FILE *(*btechHostOpenStream)(const char *,const char *);
-uint8_t (*btechHostReadPort)(uint16_t);
-void (*btechHostWritePort)(uint16_t,uint8_t);
 void (*btechHostRunDue)(void);
 void (*btechHostWaitIdle)(void);
 MwJoystickState (*btechHostReadJoystick)(uint16_t);

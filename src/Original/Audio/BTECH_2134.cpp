@@ -192,35 +192,6 @@ void BtechTickSpeakerToneChannels(void)
     MwEventLogToneTick(selectedSpeakerState?selectedSpeakerState->outputPeriod:0,sounding);
 }
 
-/*2134:0086. Noise inherits transformed period AX for volume; masked/inactive
- * channels inherit flags AX. Neither path reads a fabricated mute level. */
-void BtechTickTandyToneChannels(void)
-{
-    BtechTickSpeakerToneChannels();
-    for (uint16_t channel=COMBAT_SPEAKER_CHANNELS;channel<COMBAT_TONE_CHANNELS;++channel)
-    {
-        uint8_t latch=0x80+(channel-COMBAT_SPEAKER_CHANNELS)*0x20;
-        uint16_t output=channelFlags[channel].activityMask;
-        if (output)
-        {
-            BtechToneChannelState *state=toneChannelStates[channel];
-            currentChannelDisplacement=channel*2;
-            BtechAdvanceToneChannel(state,toneEventData[channel],channel);
-            output=channelFlags[channel].activityMask;
-            if (output&soundOutputEnableMask)
-            {
-                output=state->outputPeriod>>2;
-                output=(output&0xFF00)|((uint8_t)output>>4);output^=latch;
-                btechHostWritePort(TONE_TANDY_DATA_PORT,(uint8_t)output);
-                if (latch!=0xE0)
-                {btechHostWritePort(TONE_TANDY_DATA_PORT,(uint8_t)(output>>8));output=state->outputLevel;}
-            }
-        }
-        output^=UINT16_MAX;
-        btechHostWritePort(TONE_TANDY_DATA_PORT,(uint8_t)(((output>>12)^latch)+0x10));
-    }
-}
-
 /*2134:0248. Zero state WORDs descending, except cursor until the final store.
  * Bytecode/fallback views borrow real allocations; no copied segment image. */
 void BtechStartToneInterpreterChannel(MwNativeByteView event,uint16_t eventOffset,uint16_t channel,MwNativeByteView fallback,uint16_t fallbackOffset)
