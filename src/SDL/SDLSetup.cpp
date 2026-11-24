@@ -102,9 +102,10 @@ std::string run_screen(bool setupOnly, const std::string& found, bool searched, 
     bool s = false;
     return setup::find_install("", user, pdir, &s);
   };
-  g.describe = [imported = setup::story_imported(user)](const rekit::Found& f) { return describe(f, imported); };
+  const bool imported = setup::story_imported(user);
+  g.describe = [imported](const rekit::Found& f) { return describe(f, imported); };
   g.recognise = setup::recognise;
-  g.install = [](const rekit::Found& f, const std::string& out, const std::string&, const rekit::sdl::ProgressFn& progress) {
+  g.install = [imported](const rekit::Found& f, const std::string& out, const std::string&, const rekit::sdl::ProgressFn& progress) {
     const setup::Installed r = setup::install(f, out, [&](double at, const std::string& file) {
       return progress(rekit::sdl::Progress{"Copying the game files", at, file});
     });
@@ -113,6 +114,8 @@ std::string run_screen(bool setupOnly, const std::string& found, bool searched, 
     o.summary = r.ok ? std::string(setup::kTitle) + " is set up: " + std::to_string(r.files) + " files copied into " + r.dir + "."
                 : r.cancelled ? "Stopped. Nothing was changed."
                               : "Nothing was copied: " + r.error;
+    if (r.ok)
+      if (const std::string files = setup::files_note(setup::check_folder(r.dir, imported)); !files.empty()) o.summary += " " + files;
     return o;
   };
   rekit::sdl::SetupOptions o;

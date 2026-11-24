@@ -238,6 +238,8 @@ def main():
               "setup: work: INSTALLING MECHWARRIOR 1" in out, "the screen's log: offered, then installing")
         check(any(l.startswith("setup: found plate: ") and "Missing: MW_EGA.EXE, 6X6.FNT, FOX88.FNT and 114 more. As it is, " in l for l in out),
               "the screen's offer names what is missing")
+        check(any(" files copied into " in l and "Missing: MW_EGA.EXE, 6X6.FNT, FOX88.FNT and 114 more." in l for l in out),
+              "and so does what it says when it is set up")
         check(os.path.isfile(os.path.join(user, "install", "BTECH.EXE")), "the screen's copy in the player's folder")
         games = os.path.join(work, "games")
         os.makedirs(os.path.join(games, "something else"))
