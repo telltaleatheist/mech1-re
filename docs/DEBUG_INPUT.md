@@ -84,7 +84,10 @@ so `idle:0` marks where the campaign resumes after the battle.
 the BIOS clock that the campaign's one startup read sees (081B:0C0A mixes it
 into the random words), as if the DOS clock had been set before the run. With
 a feed present at start and the clock pinned, two runs of one script are
-byte-identical.
+byte-identical. `record.py` also runs on the test clock
+(`MECHWARRIOR_DEBUG_VIRTUAL_CLOCK`), so a snap taken while an animation
+waits on the timer doesn't depend on the host's speed; `--real-clock` turns
+that off for a check.
 
 The interface changes neither jump physics nor the combat tick length
 (`combat_tick_ms`, docs/CPU_TIMING_PROFILE.md).

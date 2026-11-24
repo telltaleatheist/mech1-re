@@ -10,6 +10,15 @@ original draws one random number per wait-loop pass (081B:02FB), so feeding
 at counted polls, with the startup clock pinned, makes a run repeat exactly:
 two recordings of one script are byte-identical.
 
+The run is on the test clock (MECHWARRIOR_DEBUG_VIRTUAL_CLOCK): time moves
+only where the port would wait, so the timer ticks between two polls don't
+depend on how fast the host draws. On the host's clock a wait that polls for
+keys while it waits for IRQ0 (the hired transport's lift-off,
+MwPlayHiredTransportAnimation) can be a frame further on at the 4th empty
+poll in a slow build, and the snap sees that frame. --real-clock runs on the
+host's clock instead: a check that real time still gives the goldens, not a
+gate (docs/phase5/NO_EMULATION_PLAN.md, From the clock slice).
+
 Script tokens (whitespace or commas; '#' comments to the end of the line):
     Return Escape Up Down Left Right Space Tab F1 A 1 ...   SDL key names
     idle:N            N more empty polls before the next item
@@ -154,6 +163,8 @@ def main():
     ap.add_argument("--out", required=True, help="trace JSONL to write")
     ap.add_argument("--frames", required=True, help="directory for indexed frames (outside the repo)")
     ap.add_argument("--bios-ticks", default="0x10000", help="the pinned startup clock")
+    ap.add_argument("--real-clock", action="store_true",
+                    help="run on the host's clock, not the test clock (a check, not a gate)")
     ap.add_argument("--work", help="control/save/capture dir (default: a fresh temp dir)")
     ap.add_argument("--timeout", type=float, default=300.0)
     ap.add_argument("--story", help="a story folder to play from (an earlier run's saves/story)")
@@ -185,6 +196,10 @@ def main():
     env = dict(os.environ, **headless, SDL_AUDIO_DRIVER="dummy",
                MECHWARRIOR_SAVE_DIRECTORY=saves, MECHWARRIOR_DEBUG_CONTROL_DIRECTORY=ctl,
                MECHWARRIOR_DEBUG_BIOS_TICKS=args.bios_ticks)
+    if args.real_clock:
+        env.pop("MECHWARRIOR_DEBUG_VIRTUAL_CLOCK", None)
+    else:
+        env["MECHWARRIOR_DEBUG_VIRTUAL_CLOCK"] = "1"
     # The feed is in place before the game starts, so it counts every poll.
     with open(os.path.join(ctl, "feed.txt"), "w") as f:
         f.write(" ".join(tokens) + "\n")

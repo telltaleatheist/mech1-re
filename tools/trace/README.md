@@ -135,6 +135,20 @@ seconds.
         --json docs/phase0/handler_map.json tools/trace/traces/*.jsonl
     python3 tools/trace/frames.py ~/mw1-frames ~/mw1-frames/png --sheet ~/mw1-frames/sheet.png
 
+## The real-clock check (not a gate)
+
+`record.py` runs on the test clock, so the gate's snaps don't depend on how
+fast the host draws. Whether real time still gives the goldens is a separate
+check, run by hand after a change to the host's timing or waits (as H4d did):
+
+    python3 tools/trace/check.py --port build/mechwarrior --game ~/MECHWAR \
+        --work ~/mw1-realclock --only combat_cockpit bar --real-clock
+
+It can fail by speed alone. combat_cockpit's deploy snap is taken while the
+hired transport's lift-off waits on the timer, so a slow build (Debug, or a
+sanitizer build) can snap it a frame further on. A failure there is a
+question to look into, not a regression by itself; the test-clock run decides.
+
 ## The original
 
 `state.py` reads a run of MWSNAP captures (`MW1Snnnn.BIN`, in the script's
