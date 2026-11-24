@@ -91,7 +91,13 @@ uint32_t BtechEgaGetCaptureStorageSize(uint16_t width,uint16_t height);
 /* BIOS register replies and physical ROM accesses only (combat draws on the
  * canvas, G4); no renderer or game-decision callbacks. The live SDL BTECH entry remains gated. */
 extern uint16_t (*btechHostQueryEgaInfo)(void); /* INT10 AX1200/BX0010 -> BX. */
-extern uint8_t (*btechHostReadRomByte)(uint16_t selector,uint16_t offset);
+/* The two ROM bytes combat looks at to tell a PCjr or Tandy from the rest. */
+enum class CombatRomByte : uint8_t
+{
+    Model,         /* FFFF:000E, the same byte as F000:FFFE: the PC's model. */
+    TandySignature /* F000:C000, the same byte as FC00:0000. */
+};
+extern uint8_t (*btechHostReadRomByte)(CombatRomByte byte);
 bool BtechImportVideoInitialData(const uint8_t *data,size_t bytes);
 uint16_t BtechSelectCombatRenderer(uint8_t adapterOverride,uint8_t allowedMask);
 uint16_t BtechDetectVideoAdapter(void);

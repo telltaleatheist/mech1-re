@@ -70,7 +70,7 @@ void BtechTimerSchedulerInterrupt(void)
 int16_t BtechProbePcjrTandyRomSignatures(void)
 {
     if (!btechHostReadRomByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostReadRomByte");
-    if (btechHostReadRomByte(BIOS_ROM_SELECTOR,BIOS_MODEL_OFFSET)==BIOS_PCJR_MODEL_BYTE && btechHostReadRomByte(BIOS_ROM_SELECTOR,TANDY_ROM_SIGNATURE_OFFSET)==TANDY_ROM_SIGNATURE_BYTE)
+    if (btechHostReadRomByte(CombatRomByte::Model)==BIOS_PCJR_MODEL_BYTE && btechHostReadRomByte(CombatRomByte::TandySignature)==TANDY_ROM_SIGNATURE_BYTE)
         combatVideo.pcjrTandyCompatible=1;
     return (int8_t)combatVideo.pcjrTandyCompatible;
 }
