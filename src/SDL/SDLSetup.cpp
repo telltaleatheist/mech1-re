@@ -69,8 +69,11 @@ std::string say_files(const setup::FilesReport& r) {
 // The words for a find: which BTECH.EXE it holds, and what is amiss with its files.
 std::string describe(const rekit::Found& f, bool imported) {
   const std::string what = f.version == "1990-01-22" ? " (the 1990-01-22 revision)" : f.version == "reference" ? " (the 1989 release)" : "";
-  const std::string files = say_files(setup::check_found(f, imported));
-  return std::string(f.on_disk ? "An installed copy of " : "A download of ") + setup::kTitle + what + "." + (files.empty() ? "" : " " + files);
+  const setup::FilesReport report = setup::check_found(f, imported);
+  say_files(report);
+  if (const std::string files = setup::files_pick_note(report); !files.empty())
+    return std::string(setup::kTitle) + (f.version == "1990-01-22" ? " (1990-01-22)" : f.version == "reference" ? " (1989)" : "") + ". " + files;
+  return std::string(f.on_disk ? "An installed copy of " : "A download of ") + setup::kTitle + what + ".";
 }
 
 // MW1's look on the kit's screen: the rebuild's badge, its screens' face (Saira Condensed Bold, SIL OFL, beside it

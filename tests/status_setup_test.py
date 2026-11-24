@@ -247,8 +247,9 @@ def main():
         check(p.returncode == 0, "the screen: --setup exits 0 (%d)" % p.returncode)
         check("setup: screen confirm: MECHWAR, INSTALL, CHANGE FOLDER, BACK" in out and
               "setup: work: INSTALLING MECHWARRIOR 1" in out, "the screen's log: offered, then installing")
-        check(any(l.startswith("setup: found plate: ") and "Missing: MW_EGA.EXE, 6X6.FNT, FOX88.FNT and 114 more. As it is, " in l for l in out),
-              "the screen's offer names what is missing")
+        check(any(l.startswith("setup: found plate: ") and "MechWarrior 1 (1990-01-22). 117 files missing: the first start can't import the story, and more. "
+                  "You can continue." in l for l in out),
+              "the screen's offer says what is missing, in short")
         check(any(" files copied into " in l and "Missing: MW_EGA.EXE, 6X6.FNT, FOX88.FNT and 114 more." in l for l in out),
               "and so does what it says when it is set up")
         check(os.path.isfile(os.path.join(user, "install", "BTECH.EXE")), "the screen's copy in the player's folder")

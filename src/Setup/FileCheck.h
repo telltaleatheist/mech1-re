@@ -70,6 +70,9 @@ inline constexpr uint64_t kMaxCheckedArchive = uint64_t(64) << 20;
 // For the player: "" when every file is one this program knows. At most kNamed names a list, "and N more".
 std::string files_note(const FilesReport& report);
 inline constexpr size_t kNamed = 3;
+// The same in short, beside INSTALL: the screen has three lines for it, with what the copy is and the kit's own words.
+// A file is named when it is the only one of its kind, else they are counted.
+std::string files_pick_note(const FilesReport& report);
 // For the launcher's one line (--status); "" when there is nothing to say, or it wasn't checked.
 std::string files_status_note(const FilesReport& report);
 // For the log: one line, every name.

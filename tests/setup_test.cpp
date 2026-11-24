@@ -371,6 +371,7 @@ void files_game_free(const fs::path& work) {
   std::string note = setup::files_note(r);
   check(note == "Missing: A.DAT, B.DAT, C.DAT. Known to be damaged: D.DAT. As it is, nothing starts; a battle stops and 1 more. "
                 "You can continue, or choose another copy.", "files: the note: " + note);
+  check(setup::files_pick_note(r) == "3 files missing, D.DAT damaged: nothing starts, and more. You can continue.", "files: beside INSTALL, in short");
   check(setup::files_status_note(r) == "Missing, damaged or different: A.DAT, B.DAT, C.DAT and 1 more.", "files: --status' line");
   // Different: the same length, another length, empty. Never called damaged.
   write(dir / "A.DAT", "the fixst"), write(dir / "B.DAT", b + " and more"), fs::remove(dir / "C.DAT"), write(dir / "C.DAT", "");
@@ -380,6 +381,8 @@ void files_game_free(const fs::path& work) {
   check(joined(r.different) == "A.DAT B.DAT C.DAT" && r.missing.empty() && r.damaged.empty() && r.effects.empty(), "files: three differ");
   check(note == "3 files differ from the copies this program knows: A.DAT, B.DAT, C.DAT. You can continue. A changed or different edition "
                 "may still work." && note.find("amage") == std::string::npos, "break: what differs is not called damaged");
+  check(setup::files_pick_note(r) == "3 files differ from the copies this program knows. A changed or different edition may still work. "
+                                     "You can continue.", "files: beside INSTALL, only different ones");
   write(dir / "D.DAT", "x");
   r = look();
   check(setup::files_note(r).find("4 files differ from the copies this program knows: A.DAT, B.DAT, C.DAT and 1 more.") == 0 &&

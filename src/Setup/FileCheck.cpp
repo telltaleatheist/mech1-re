@@ -188,6 +188,23 @@ std::string files_note(const FilesReport& r) {
   return out;
 }
 
+std::string files_pick_note(const FilesReport& r) {
+  if (!r.unchecked.empty() || r.all_known()) return files_note(r);
+  const auto count = [](const std::vector<std::string>& v, const char* plural) {
+    return v.size() == 1 ? v[0] : std::to_string(v.size()) + plural;
+  };
+  if (r.missing.empty() && r.damaged.empty())
+    return count(r.different, " files") + (r.different.size() == 1 ? " differs" : " differ") +
+           " from the copies this program knows. A changed or different edition may still work. You can continue.";
+  std::string out;
+  const auto add = [&out](const std::string& part) { out += (out.empty() ? "" : ", ") + part; };
+  if (!r.missing.empty()) add(count(r.missing, " files") + " missing");
+  if (!r.damaged.empty()) add(count(r.damaged, " files") + " damaged");
+  if (!r.different.empty()) add(count(r.different, " files") + " different");
+  out += ": " + (r.effects.empty() ? std::string("something may stop") : r.effects[0]) + (r.effects.size() > 1 ? ", and more" : "") + ".";
+  return out + " You can continue.";
+}
+
 std::string files_status_note(const FilesReport& r) {
   if (!r.unchecked.empty() || r.all_known()) return "";
   std::vector<std::string> names = r.missing;
