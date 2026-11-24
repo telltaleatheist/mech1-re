@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include "mechwarrior/hardware_ports.h"
 
-enum { COMBAT_SCREEN_COCKPIT=0,BIOS_VIDEO_EQUIPMENT=0x10,PIC_MASK_PORT=0x21 };
+enum { COMBAT_SCREEN_COCKPIT=0,BIOS_VIDEO_EQUIPMENT=0x10 };
 
 enum { COMBAT_SCHEDULER_INVALID_SLOT_BITS=0xF0,COMBAT_SCHEDULER_MAX_POSITIVE_PERIOD=0xFF,
     BIOS_ROM_SELECTOR=0xF000,BIOS_MODEL_OFFSET=0xFFFE,BIOS_PCJR_MODEL_BYTE=0xFF,
@@ -41,8 +41,13 @@ typedef void (*BtechTimerCallback)(void);
 typedef struct BtechSchedulerTiming {uint16_t ticksRemaining,period;} BtechSchedulerTiming;
 extern BtechTimerCallback schedulerCallbacks[COMBAT_SCHEDULER_SLOTS];
 extern BtechSchedulerTiming schedulerTimings[COMBAT_SCHEDULER_SLOTS];
-/* The tail to IRQ0's saved owner, not an audio/game callback seam. */
-extern void (*btechHostChainTimerInterrupt)(MwTimerOwner owner);
+/* The scheduler's chain (H4c): every schedulerPeriod-th tick the host runs
+ * IRQ0's previous owner, an explicit event at the chain's cadence. Neither the
+ * vector nor a resampled 18.2 Hz; not an audio/game callback seam. */
+extern void (*btechHostRunPreviousTimerOwner)(void);
+/* The device IRQs passed to their owners (H4c), where the PIC mask was written. */
+extern void (*btechHostEnableDeviceIrqs)(MwDeviceIrq irqs);
+extern void (*btechHostDisableDeviceIrqs)(MwDeviceIrq irqs);
 /* The timer's period (H4b), where PIT channel 0 was programmed: in the PIT's
  * clock units; PIT_COUNTER_MODULUS is the BIOS's 18.2 Hz. */
 extern void (*btechHostSetTimerPeriod)(uint32_t pitCycles);
@@ -62,7 +67,6 @@ extern MwDivideOwner (*btechHostGetDivideOwner)(void);
 extern void (*btechHostSetDivideOwner)(MwDivideOwner owner);
 extern MwMpuIrqOwner (*btechHostGetMpuIrqOwner)(void);
 extern void (*btechHostSetMpuIrqOwner)(MwMpuIrqOwner owner);
-extern uint16_t (*btechHostReadBiosWord)(uint16_t offset);
 extern void (*btechHostWriteBiosWord)(uint16_t offset,uint16_t value);
 extern uint8_t (*btechHostReadBiosByte)(uint16_t offset);
 extern void (*btechHostWriteBiosByte)(uint16_t offset,uint8_t value);

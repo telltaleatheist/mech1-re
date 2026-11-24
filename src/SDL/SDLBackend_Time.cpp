@@ -79,7 +79,11 @@ static bool campaignInterruptsInstalled,inInterrupt,nestingAllowed;
 static uint64_t startNanoseconds;
 static double hardwareTime,nextIrq;
 static uint32_t timerPeriod,biosTicks;
-static uint8_t picMask;
+/* The device IRQs passed to their owners (H4c), where the PIC mask was. */
+static uint8_t enabledDeviceIrqs;
+void MwSdlEnableDeviceIrqs(MwDeviceIrq irqs) {enabledDeviceIrqs|=(uint8_t)irqs;}
+void MwSdlDisableDeviceIrqs(MwDeviceIrq irqs) {enabledDeviceIrqs&=(uint8_t)~(uint8_t)irqs;}
+static bool DeviceIrqEnabled(MwDeviceIrq irq) {return enabledDeviceIrqs&(uint8_t)irq;}
 
 static void BiosTimerInterrupt(void)
 {
@@ -103,7 +107,6 @@ template<class Handler> static void RunHandler(Handler handler)
 }
 MwMusicTimerHandler MwSdlReadTimerHandler(void) {return irq0;}
 void MwSdlWriteTimerHandler(MwMusicTimerHandler handler) {irq0=handler;}
-uint32_t MwSdlBiosTicksValue(void) {return biosTicks;}
 /* Combat's key reads run the host's due work first (H4c), where the CLI's
  * pump used to: outside an interrupt, with interrupts on. Only the due work:
  * a read takes no time; combat's waits take it in MwSdlWaitIdle. */
@@ -166,8 +169,6 @@ void MwSdlWriteDevicePort(uint16_t port,uint8_t value)
     /* Device writes occur at the delivered hardware time, including inside
      * an IRQ. No game state is ever touched by an SDL audio thread. */
     MwSdlAdvanceAudio(hardwareTime);
-    if (port==PIC_COMMAND_PORT && value==PIC_END_OF_INTERRUPT) return;
-    if (port==PIC_MASK_PORT) {picMask=value;return;}
     if (port==MPU_DATA_PORT || port==MPU_STATUS_COMMAND_PORT)
     {
         if (mwSdlSoundSystem==MW_SOUND_MT32) MwMpuWritePort(port,value);
@@ -201,7 +202,6 @@ uint8_t MwSdlReadDevicePort(uint16_t port)
 }
 static uint8_t ReadDevicePort(uint16_t port)
 {
-    if (port==PIC_MASK_PORT) return picMask;
     if (port==MPU_DATA_PORT || port==MPU_STATUS_COMMAND_PORT)
         return mwSdlSoundSystem==MW_SOUND_MT32?MwMpuReadPort(port):UINT8_MAX;
     if (port==ADLIB_INDEX_PORT)
@@ -225,14 +225,15 @@ void MwSdlInitializeTimer(void)
     AudioLogOpen();
     startNanoseconds=MwSdlNowNanoseconds();hardwareTime=0;timerPeriod=PIT_COUNTER_MODULUS;
     nextIrq=timerPeriod;irq0=BiosTimerInterrupt;
-    picMask=0;
+    enabledDeviceIrqs=(uint8_t)MwDeviceIrq::All;
     campaignInterruptsInstalled=inInterrupt=nestingAllowed=false;
     MwMpuReset();
     mwMusicHardware=MwMusicHardwareCalls{MwSdlAllowNestedTicks,MwSdlReadTimerHandler,MwSdlWriteTimerHandler,MwSdlWriteDevicePort,MwSdlReadDevicePort,
-        MwSdlPumpTimer,btechHostGetMpuIrqOwner,btechHostSetMpuIrqOwner,MwSdlPlayTone,MwSdlSetTimerPeriod};
+        MwSdlPumpTimer,btechHostGetMpuIrqOwner,btechHostSetMpuIrqOwner,MwSdlEnableDeviceIrqs,MwSdlPlayTone,MwSdlSetTimerPeriod};
     /* Same physical PIT/speaker, different original sequencer. No backend
      * selection or invented combat callback is installed at this boundary. */
     btechHostWritePort=MwSdlWriteDevicePort;btechHostReadPort=MwSdlReadDevicePort;
+    btechHostEnableDeviceIrqs=MwSdlEnableDeviceIrqs;btechHostDisableDeviceIrqs=MwSdlDisableDeviceIrqs;
 }
 void MwSdlPumpTimer(void)
 {
@@ -245,19 +246,19 @@ void MwSdlPumpTimer(void)
 #endif
     if (inInterrupt && !nestingAllowed) return;
     if (!inInterrupt && mwSdlCombatActive && mwSdlSoundSystem==MW_SOUND_MT32
-        && !(picMask&BTECH_MPU_IRQ_MASK) && !(MwMpuReadPort(MPU_STATUS_COMMAND_PORT)&BTECH_MPU_INPUT_EMPTY))
+        && DeviceIrqEnabled(MwDeviceIrq::Mpu) && !(MwMpuReadPort(MPU_STATUS_COMMAND_PORT)&BTECH_MPU_INPUT_EMPTY))
         RunHandler(MwSdlDeliverCombatMpuInterrupt);
-    if (!inInterrupt && !(picMask&PIC_KEYBOARD_IRQ_MASK) && MwSdlCombatKeyboardPending())
+    if (!inInterrupt && DeviceIrqEnabled(MwDeviceIrq::Keyboard) && MwSdlCombatKeyboardPending())
         RunHandler(MwSdlDeliverCombatKeyEvent);
     double target=(double)(MwSdlNowNanoseconds()-startNanoseconds)*(double)HOST_PIT_CLOCK_HZ/(double)HOST_NS_PER_SECOND;
     for (;;)
     {
         double mpuEvent=mwSdlCombatActive && mwSdlSoundSystem==MW_SOUND_MT32?MwMpuNextEventTime():DBL_MAX;
-        double timerEvent=(picMask&PIC_TIMER_IRQ_MASK)?DBL_MAX:nextIrq;
+        double timerEvent=DeviceIrqEnabled(MwDeviceIrq::Timer)?nextIrq:DBL_MAX;
         if (mpuEvent<=target && mpuEvent<timerEvent)
         {
             hardwareTime=mpuEvent;MwSdlAdvanceAudio(hardwareTime);MwMpuAdvance(hardwareTime);
-            if (!(picMask&BTECH_MPU_IRQ_MASK) && !(MwMpuReadPort(MPU_STATUS_COMMAND_PORT)&BTECH_MPU_INPUT_EMPTY))
+            if (DeviceIrqEnabled(MwDeviceIrq::Mpu) && !(MwMpuReadPort(MPU_STATUS_COMMAND_PORT)&BTECH_MPU_INPUT_EMPTY))
                 RunHandler(MwSdlDeliverCombatMpuInterrupt);
             continue;
         }

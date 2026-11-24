@@ -62,12 +62,6 @@ static void WriteBiosByte(uint16_t offset,uint8_t value)
     if (offset>=sizeof(biosData)) MwSdlFail("Write outside represented BIOS data");
     biosData[offset]=value;
 }
-static uint16_t ReadBiosWord(uint16_t offset)
-{
-    if (offset==BIOS_TIMER_TICKS_LOW) return (uint16_t)MwSdlBiosTicksValue();
-    if (offset==BIOS_TIMER_TICKS_HIGH) return (uint16_t)(MwSdlBiosTicksValue()>>16);
-    return ReadBiosByte(offset)|((uint16_t)ReadBiosByte(offset+1)<<8);
-}
 static void WriteBiosWord(uint16_t offset,uint16_t value)
 {WriteBiosByte(offset,(uint8_t)value);WriteBiosByte(offset+1,(uint8_t)(value>>8));}
 void MwSdlDeliverCombatMpuInterrupt(void)
@@ -83,14 +77,12 @@ static void SetTimerOwner(MwTimerOwner owner)
     MwSdlWriteTimerHandler(owner==MwTimerOwner::CombatScheduler?BtechTimerSchedulerInterrupt
         :owner==MwTimerOwner::CombatMusic?BtechMusicTimerInterrupt:previousTimerHandler);
 }
-static void ChainTimerInterrupt(MwTimerOwner owner)
+/* The scheduler's chain (H4c): IRQ0's previous owner, the campaign's timer
+ * handler, runs its tick inside the scheduler's, as the chained jump did. */
+static void RunPreviousTimerOwner(void)
 {
-    if (owner==MwTimerOwner::CombatMusic) BtechMusicTimerInterrupt();
-    else
-    {
-        if (owner!=MwTimerOwner::Previous || !previousTimerHandler) MwSdlFail("No previous IRQ0 owner to chain to");
-        previousTimerHandler();
-    }
+    if (!previousTimerHandler) MwSdlFail("No previous IRQ0 owner to run");
+    previousTimerHandler();
 }
 static MwKeyboardOwner GetKeyboardOwner(void) {return keyboardOwner;}
 static void SetKeyboardOwner(MwKeyboardOwner owner) {keyboardOwner=owner;}
@@ -117,13 +109,13 @@ void MwSdlResetCombatHardware(void)
 void MwSdlInitializeCombatHardware(void)
 {
     btechHostReadBiosByte=ReadBiosByte;btechHostWriteBiosByte=WriteBiosByte;
-    btechHostReadBiosWord=ReadBiosWord;btechHostWriteBiosWord=WriteBiosWord;
+    btechHostWriteBiosWord=WriteBiosWord;
     btechHostGetTimerOwner=GetTimerOwner;btechHostSetTimerOwner=SetTimerOwner;
     btechHostGetKeyboardOwner=GetKeyboardOwner;btechHostSetKeyboardOwner=SetKeyboardOwner;
     btechHostGetDivideOwner=GetDivideOwner;btechHostSetDivideOwner=SetDivideOwner;
     btechHostGetMpuIrqOwner=GetMpuIrqOwner;btechHostSetMpuIrqOwner=SetMpuIrqOwner;
     btechHostBorrowDosMemory=BorrowToneDosMemory;
-    btechHostChainTimerInterrupt=ChainTimerInterrupt;
+    btechHostRunPreviousTimerOwner=RunPreviousTimerOwner;
     btechHostSetTimerPeriod=MwSdlSetTimerPeriod;
     btechHostRunDue=MwSdlRunDue;btechHostWaitIdle=MwSdlWaitIdle;
     btechHostReadRomByte=ReadRomByte;btechHostQueryEgaInfo=QueryEgaInfo;

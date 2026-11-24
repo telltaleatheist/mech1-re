@@ -9,7 +9,7 @@ MwMusicHardwareCalls mwMusicHardware;
 
 /* MW_MAIN0F41:003E..00B4. The host IRQ boundary owns CPU entry/IRET flags.
  * Valid original code references become typed functions, not a CS registry.
- * BIOS chain performs its own EOI. Only the coarse callback enables nesting. */
+ * No EOI is sent (H4c). Only the coarse callback allows nested ticks. */
 void MwCampaignTimerInterrupt(void)
 {
     uint16_t divisorAndPhase=pitDivisorHigh|((uint16_t)timerPhase<<8);
@@ -27,8 +27,6 @@ void MwCampaignTimerInterrupt(void)
         timerCallbackSlots[0]();
         return;
     }
-    if (!mwMusicHardware.writePort) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.writePort");
-    mwMusicHardware.writePort(PIC_COMMAND_PORT,PIC_END_OF_INTERRUPT);
     if (!(previousPhase&MUSIC_TIMER_PHASE_MASK))
     {
         /* The original's STI in the coarse callback: the only place a timer

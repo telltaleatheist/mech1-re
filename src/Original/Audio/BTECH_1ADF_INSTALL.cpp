@@ -7,8 +7,7 @@
 
 enum { MPU_WRITE_BUSY=0x40,MPU_INPUT_EMPTY=0x80,MPU_ACK=0xFE,
     MPU_RESET=0xFF,MPU_VERSION=0xAC,MPU_PROBE_READY_POLLS=0x1F40,
-    MPU_PROBE_ACK_POLLS=0xFFFF,MPU_PROBE_IRQ_POLLS=0x4E20,
-    MPU_IRQ_MASK=4 };
+    MPU_PROBE_ACK_POLLS=0xFFFF,MPU_PROBE_IRQ_POLLS=0x4E20 };
 
 /*1ADF:0032. A zero request means all detected backends. Failed device
  * initializers do not remove bits or restore the previously stored callbacks. */
@@ -71,10 +70,10 @@ uint16_t BtechProbeMpuWithTemporaryInterrupt(void)
     uint16_t response=BtechSendMpuProbeCommandAndWaitAck(MPU_RESET);
     if (!(uint8_t)response) return 0;
     btechHostReadPort(mpuProbeDataPort);
-    if (!btechHostGetMpuIrqOwner || !btechHostSetMpuIrqOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetMpuIrqOwner || !btechHostSetMpuIrqOwner");
+    if (!btechHostGetMpuIrqOwner || !btechHostSetMpuIrqOwner || !btechHostEnableDeviceIrqs || !btechHostDisableDeviceIrqs) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetMpuIrqOwner || !btechHostSetMpuIrqOwner || !btechHostEnableDeviceIrqs || !btechHostDisableDeviceIrqs");
     mpuProbePreviousOwner=btechHostGetMpuIrqOwner();
     btechHostSetMpuIrqOwner(MwMpuIrqOwner::CombatProbe);
-    btechHostWritePort(PIC_MASK_PORT,btechHostReadPort(PIC_MASK_PORT)&~MPU_IRQ_MASK);
+    btechHostEnableDeviceIrqs(MwDeviceIrq::Mpu);
     mpuProbeReceivedByteCount=0;
     response=BtechSendMpuProbeCommandAndWaitAck(MPU_VERSION);
     if (response)
@@ -84,7 +83,7 @@ uint16_t BtechProbeMpuWithTemporaryInterrupt(void)
             if (btechHostPollInterrupts) btechHostPollInterrupts();
             if (mpuProbeReceivedByteCount) break;
         }
-    btechHostWritePort(PIC_MASK_PORT,btechHostReadPort(PIC_MASK_PORT)|MPU_IRQ_MASK);
+    btechHostDisableDeviceIrqs(MwDeviceIrq::Mpu);
     btechHostSetMpuIrqOwner(mpuProbePreviousOwner);
     return (uint8_t)response;
 }
@@ -93,11 +92,10 @@ uint16_t BtechProbeMpuWithTemporaryInterrupt(void)
  * The original neither saves DS nor selects its own data segment. */
 void BtechMpuProbeInterrupt(void)
 {
-    if (!btechHostReadPort || !btechHostWritePort) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostReadPort || !btechHostWritePort");
+    if (!btechHostReadPort) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostReadPort");
     if (!(btechHostReadPort(mpuProbeStatusPort)&MPU_INPUT_EMPTY))
     {
         btechHostReadPort(mpuProbeDataPort);
         ++mpuProbeReceivedByteCount;
-    }
-    btechHostWritePort(PIC_COMMAND_PORT,PIC_END_OF_INTERRUPT);
+    } /* Its EOI is gone (H4c). */
 }

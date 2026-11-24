@@ -50,17 +50,19 @@ void BtechTimerSchedulerInterrupt(void)
         schedulerTimings[slot].ticksRemaining=remaining;
     }
     remaining=schedulerCountdown-1;
-    if (remaining)
-    {
-        schedulerCountdown=remaining;
-        if (!btechHostWritePort) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePort");
-        btechHostWritePort(PIC_COMMAND_PORT,PIC_END_OF_INTERRUPT);
-    }
+    if (remaining) schedulerCountdown=remaining; /* Its EOI is gone (H4c). */
     else
     {
+        /* The original chained to IRQ0's saved owner here, every
+         * schedulerPeriod-th tick (13 in combat: 13 x 5041 = 65533 PIT
+         * cycles, the BIOS's 18.2 Hz). The host runs that owner's tick (H4c):
+         * the campaign's timer handler, whose slot 0 is the BIOS tick. Only
+         * the previous owner was ever saved; combat's music timer saved
+         * under the scheduler is not converted. */
         schedulerCountdown=schedulerPeriod;
-        if (!btechHostChainTimerInterrupt) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostChainTimerInterrupt");
-        btechHostChainTimerInterrupt(savedTimerOwner); /* Old handler owns EOI. */
+        if (savedTimerOwner!=MwTimerOwner::Previous) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: savedTimerOwner!=MwTimerOwner::Previous");
+        if (!btechHostRunPreviousTimerOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostRunPreviousTimerOwner");
+        btechHostRunPreviousTimerOwner();
     }
 }
 
@@ -132,10 +134,10 @@ void BtechInstallTimerScheduler(uint16_t period)
     if ((int16_t)period>COMBAT_SCHEDULER_MAX_POSITIVE_PERIOD || !period) return;
     schedulerPeriod=period;schedulerCountdown=period;
     pitChannel0DivisorShadow=UINT16_MAX/period;
-    if (!btechHostWritePort || !btechHostSetTimerOwner || !btechHostSetTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePort || !btechHostSetTimerOwner || !btechHostSetTimerPeriod");
+    if (!btechHostEnableDeviceIrqs || !btechHostSetTimerOwner || !btechHostSetTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostEnableDeviceIrqs || !btechHostSetTimerOwner || !btechHostSetTimerPeriod");
     /* The PIT programming (43h, 40h low, 40h high) is the host's timer period since H4b. */
     btechHostSetTimerPeriod(pitChannel0DivisorShadow);
-    btechHostWritePort(PIC_MASK_PORT,COMBAT_PIC_DEVICE_MASK);
+    btechHostEnableDeviceIrqs(MwDeviceIrq::All); /* Mask 28h: off only IRQ3 and 5, which the host has no device on. */
     btechHostSetTimerOwner(MwTimerOwner::CombatScheduler);
     runtimeDelayActive=1;
 }

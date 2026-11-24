@@ -120,12 +120,11 @@ void BtechRestoreSoundTimerInterrupt(void)
 }
 
 /*1ADF:0F39. The native private IRQ stack becomes the C call frame. There is
- * no STI or previous-handler chain, and a faulting callback never sends EOI. */
+ * no STI or previous-handler chain; its EOI is gone (H4c). */
 void BtechMusicTimerInterrupt(void)
 {
-    if (!musicTimerCallback || !btechHostWritePort) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !musicTimerCallback || !btechHostWritePort");
+    if (!musicTimerCallback) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !musicTimerCallback");
     musicTimerCallback();
-    btechHostWritePort(PIC_COMMAND_PORT,PIC_END_OF_INTERRUPT);
 }
 
 /*1ADF:0F76. Reinstallation changes the callback/divisor, not the saved vector.

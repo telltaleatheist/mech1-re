@@ -51,14 +51,14 @@ void BtechShutdownMouseDriver(void)
     btechHostResetMouse();
 }
 
-/*1BF5:25AB. Preserve literal PIC mask28 on the active path (its CLI/STI are
- * gone since H4c). */
+/*1BF5:25AB. The literal mask 28h on the active path passes the host's three
+ * devices (its CLI/STI and the mask port are gone since H4c). */
 void BtechRestoreTimerScheduler(void)
 {
     if (!runtimeDelayActive) return;
-    if (!btechHostWritePort || !btechHostSetTimerOwner || !btechHostSetTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostWritePort || !btechHostSetTimerOwner || !btechHostSetTimerPeriod");
+    if (!btechHostEnableDeviceIrqs || !btechHostSetTimerOwner || !btechHostSetTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostEnableDeviceIrqs || !btechHostSetTimerOwner || !btechHostSetTimerPeriod");
     btechHostSetTimerPeriod(PIT_COUNTER_MODULUS); /* The BIOS's period (H4b; was 43h, 40h 0, 40h 0). */
-    btechHostWritePort(PIC_MASK_PORT,COMBAT_PIC_DEVICE_MASK);
+    btechHostEnableDeviceIrqs(MwDeviceIrq::All);
     btechHostSetTimerOwner(savedTimerOwner);
     runtimeDelayActive=0;
 }

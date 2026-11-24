@@ -30,14 +30,13 @@ failed:
 /* MW_MAIN0F41:0946. The saved IRQ2 owner is a typed owner, not a host pointer (H4c). */
 void MwInitializeMpuUartBackend(void)
 {
-    if (!mwMusicHardware.readMpuIrqOwner || !mwMusicHardware.writeMpuIrqOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.readMpuIrqOwner || !mwMusicHardware.writeMpuIrqOwner");
+    if (!mwMusicHardware.readMpuIrqOwner || !mwMusicHardware.writeMpuIrqOwner || !mwMusicHardware.enableDeviceIrqs) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.readMpuIrqOwner || !mwMusicHardware.writeMpuIrqOwner || !mwMusicHardware.enableDeviceIrqs");
     mwMusicHardware.writePort(MPU_STATUS_COMMAND_PORT,MPU_UART_COMMAND);
     mpuQueueByteCount=0; mpuQueueReadIndex=mpuQueueByteCount; mpuQueueWriteIndex=mpuQueueReadIndex; /* Each read back, as the chained assignment did. */
     mpuPreviousIrqOwner=mwMusicHardware.readMpuIrqOwner();
     mwMusicHardware.writeMpuIrqOwner(MwMpuIrqOwner::CampaignReceive);
     for (uint16_t reads=10;reads;--reads) mwMusicHardware.readPort(MPU_DATA_PORT);
-    mwMusicHardware.writePort(PIC_COMMAND_PORT,PIC_END_OF_INTERRUPT);
-    mwMusicHardware.writePort(PIC_MASK_PORT,0);
+    mwMusicHardware.enableDeviceIrqs(MwDeviceIrq::All); /* Mask 0; its EOI is gone (H4c). */
 }
 /* MW_MAIN0F41:098A. Waits for IRQ0 progress, never drains bytes synchronously. */
 void MwDrainAndShutdownMpuBackend(void)
@@ -67,6 +66,5 @@ void MwTickMpuTransmitQueue(void)
 /* MW_MAIN0F41:0A01. CPU entry/IRET is owned by the host interrupt boundary. */
 void MwMpuReceiveInterrupt(void)
 {
-    mwMusicHardware.readPort(MPU_DATA_PORT);
-    mwMusicHardware.writePort(PIC_COMMAND_PORT,PIC_END_OF_INTERRUPT);
+    mwMusicHardware.readPort(MPU_DATA_PORT); /* Its EOI is gone (H4c). */
 }

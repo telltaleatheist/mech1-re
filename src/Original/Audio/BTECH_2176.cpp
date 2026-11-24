@@ -12,13 +12,13 @@ uint16_t BtechInstallMpuInterruptHandler(uint16_t unusedBasePort,uint8_t irq)
     (void)unusedBasePort;
     if (combatMpuInstalled!=1)
     {
-        combatMpuVector=(uint8_t)(irq+8);combatMpuPicUnmask=(uint8_t)~(irq<8?(1u<<irq):0);
+        combatMpuVector=(uint8_t)(irq+8);
         BtechSendMpuCommandAndWaitAck(BTECH_MPU_RESET);btechHostReadPort(combatMpuDataPort);
         /* The only caller passes IRQ2, the one the host delivers (H4c). */
         if (combatMpuVector!=BTECH_MPU_VECTOR) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatMpuVector!=BTECH_MPU_VECTOR");
         combatMpuPreviousOwner=btechHostGetMpuIrqOwner();
         btechHostSetMpuIrqOwner(MwMpuIrqOwner::CombatReceive);
-        btechHostWritePort(PIC_MASK_PORT,btechHostReadPort(PIC_MASK_PORT)&combatMpuPicUnmask);
+        btechHostEnableDeviceIrqs(MwDeviceIrq::Mpu); /* Its IRQ unmasked. */
         combatMpuInstalled=1;combatMpuReceivedBytes=0;
         BtechSendMpuCommandAndWaitAck(BTECH_MPU_VERSION);
         for (uint16_t polls=0x4E20;polls;--polls)
@@ -56,7 +56,7 @@ void BtechRestoreMpuInterruptHandler(void)
 {
     if (combatMpuInstalled==1)
     {
-        btechHostWritePort(PIC_MASK_PORT,btechHostReadPort(PIC_MASK_PORT)|(uint8_t)~combatMpuPicUnmask);
+        btechHostDisableDeviceIrqs(MwDeviceIrq::Mpu); /* Its IRQ masked. */
         BtechSendMpuCommandAndWaitAck(BTECH_MPU_RESET);
         if (combatMpuVector!=BTECH_MPU_VECTOR) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatMpuVector!=BTECH_MPU_VECTOR");
         btechHostSetMpuIrqOwner(combatMpuPreviousOwner);
@@ -157,8 +157,7 @@ uint16_t BtechInitializeRolandMpuBackend(void)
 void BtechMpuInterrupt(void)
 {
     if (btechHostReadPort(combatMpuStatusPort)&BTECH_MPU_INPUT_EMPTY) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: btechHostReadPort(combatMpuStatusPort)&BTECH_MPU_INPUT_EMPTY");
-    MpuHandleReceivedByte(btechHostReadPort(combatMpuDataPort));
-    btechHostWritePort(PIC_COMMAND_PORT,PIC_END_OF_INTERRUPT);
+    MpuHandleReceivedByte(btechHostReadPort(combatMpuDataPort)); /* Its EOI is gone (H4c). */
 }
 /* 2176:0244. */
 uint16_t BtechStopMpuMusicTrack(void)
