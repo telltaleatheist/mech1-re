@@ -81,7 +81,6 @@ typedef union BtechProjectionRatio {
     struct {uint32_t numerator,denominator,third;} ratio;
     BtechPosition3D vector;
 } BtechProjectionRatio;
-typedef struct BtechDwordDivisionResult {uint16_t quotientLow,quotientHigh,remainderLow,remainderHigh;} BtechDwordDivisionResult;
 extern BtechCameraContext *activeCameraContext;
 extern BtechPosition3D cameraReferencePosition,cameraRelativePosition,transformedViewPosition,projectionVectorScratch;
 extern BtechProjectionRatio projectionRatio;
@@ -97,7 +96,6 @@ extern int16_t screenCentreA,screenCentreB;
 extern const uint8_t *activeColourShadeClasses,*activePaletteRemap;
 extern BtechOrientationBasis *activeRenderBasis;
 extern uint16_t dotProductScratchHigh,dotProductScratchMiddle,dotProductScratchLow;
-extern BtechDwordDivisionResult signedDivisionResult;
 extern uint16_t selectionCount;
 enum { SELECTION_LIST_PREFIX=9,SELECTION_MARKER_COLOUR=Combat_Pal_EGA_LightMagenta };
 extern uint16_t selectionPointScreenX,selectionPointScreenY;
@@ -129,8 +127,13 @@ void BtechCullAndRenderWorldObject(BtechHeapWorldObject *object);
 void BtechPrepareSelectionPixels(BtechWorldObjectPrefix *const *objects,int16_t count);
 void BtechRestoreSelectionPixels(BtechWorldObjectPrefix *const *objects);
 void BtechUpdateObjectSelectionPixels(BtechHeapWorldObject *object,uint16_t ordinal);
-BtechDwordDivisionResult *BtechDivideSignedDwordWithRemainder(uint32_t numerator,uint32_t denominator);
-BtechDwordDivisionResult *BtechDivideSignedDwordStoreQuotientRemainder(uint16_t numeratorLow,uint16_t numeratorHigh,uint16_t denominatorLow,uint16_t denominatorHigh);
+/* The 1989 C runtime's arithmetic kept as game maths (B5): its signed long divide (BTECH_0810_DIVISION.cpp) and the
+ * horizon's and clippers' fallback for a divide that overflows a word (BTECH_1BF5_DIVIDE.cpp). */
+namespace runtime_1989 {
+struct LongDivision {int32_t quotient,remainder;};
+LongDivision signed_long_divide(uint32_t numerator,uint32_t denominator);
+uint32_t horizon_divide_fallback(uint32_t dividend);
+}
 uint32_t BtechMultiplyDwordLow(uint16_t leftLow,uint16_t leftHigh,uint16_t rightLow,uint16_t rightHigh);
 uint32_t BtechDivideSignedDword(uint32_t numerator,uint32_t denominator);
 uint32_t BtechShiftDwordLeft(uint32_t value,uint8_t count);
@@ -140,6 +143,5 @@ int32_t BtechMultiplySignedWords(int16_t left,int16_t right);
  * source argument. NULL means that the original caller discards that register. */
 uint32_t BtechDivideSignedDwordNormalized(uint16_t numeratorLow,int16_t numeratorHigh,uint16_t denominatorLow,int16_t denominatorHigh,uint16_t *cxOut);
 uint32_t BtechDivideSignedWideNumerator(int16_t highest,uint16_t upper,uint16_t middle,uint16_t low,uint16_t denominatorLow,int16_t denominatorHigh,uint16_t *cxOut);
-uint32_t BtechDivideErrorInterrupt(uint32_t dividend);
 void BtechFillTiltedCameraHorizonRegions(uint16_t fillA,uint16_t fillB,uint16_t pitch,uint16_t roll);
 #endif

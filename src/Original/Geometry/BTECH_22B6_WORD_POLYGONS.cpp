@@ -71,7 +71,7 @@ void BtechIntersectWordEdgeWithNearPlane(uint16_t outsideVertex,uint16_t insideV
         if (!denominator) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !denominator"); /* Native zero-divisor retries forever. */
         int64_t quotient=(int64_t)(int32_t)product/denominator;
         while (quotient<INT16_MIN || quotient>INT16_MAX)
-        {product=BtechDivideErrorInterrupt(product);quotient=(int64_t)(int32_t)product/denominator;}
+        {product=runtime_1989::horizon_divide_fallback(product);quotient=(int64_t)(int32_t)product/denominator;}
         destination[axis]->words[outsideVertex]=(uint16_t)(source[axis]->words[outsideVertex]+(int16_t)quotient);
     }
 }
@@ -152,7 +152,7 @@ divideCoordinate:
                         if (!depth) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !depth"); /* Native division fault cannot progress on zero. */
                         int64_t quotient=(int64_t)(int32_t)numerator/depth;
                         while (quotient<INT16_MIN || quotient>INT16_MAX)
-                        {numerator=BtechDivideErrorInterrupt(numerator);quotient=(int64_t)(int32_t)numerator/depth;}
+                        {numerator=runtime_1989::horizon_divide_fallback(numerator);quotient=(int64_t)(int32_t)numerator/depth;}
                         destination[axis]->words[vertex]=(uint16_t)quotient;
                     }
                     vertexNearPlaneState[vertex]=GEOMETRY_VERTEX_PROJECTED;
