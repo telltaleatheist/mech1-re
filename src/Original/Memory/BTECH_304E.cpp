@@ -33,19 +33,17 @@ uint16_t savedArgumentCount;
 const char *const *savedArguments;
 BtechUnitControlState *activeUnitControl;
 uint16_t startupControlMovementAlias;
-uint8_t playerDamageSuppressed;
-uint16_t damageTransferArmorLocations[COMBAT_BODY_LOCATIONS];
-uint16_t criticalTransferBodyLocations[COMBAT_BODY_LOCATIONS],actuatorIndicesByBodyLocation[4];
+CombatDamageState combatDamage;
 
 bool BtechImportCombatStageInitialData(const uint8_t *data,size_t byteCount)
 {
     if (!BtechImportMechInitialData(data,byteCount)) return false;
     startupControlMovementAlias=MwReadNativeWord(data,0x0051);
-    playerDamageSuppressed=data[0x0E1A];
+    combatDamage.playerDamageSuppressed=data[0x0E1A];
     /* The rule tables come from data/rules (src/Rules), laid out as the exe's. */
-    if (!MwRulesCopyWords("combat.damage_transfer",damageTransferArmorLocations,COMBAT_BODY_LOCATIONS,0)
-        || !MwRulesCopyWords("combat.critical_transfer",criticalTransferBodyLocations,COMBAT_BODY_LOCATIONS,0)
-        || !MwRulesCopyWords("combat.actuator_of_limb",actuatorIndicesByBodyLocation,4,0)) return false;
+    if (!MwRulesCopyWords("combat.damage_transfer",combatDamage.damageTransferArmorLocations,COMBAT_BODY_LOCATIONS,0)
+        || !MwRulesCopyWords("combat.critical_transfer",combatDamage.criticalTransferBodyLocations,COMBAT_BODY_LOCATIONS,0)
+        || !MwRulesCopyWords("combat.actuator_of_limb",combatDamage.actuatorIndicesByBodyLocation,4,0)) return false;
     if (!MwStoryCopyText("combat.commander.default_name",(char *)combatDefaultCommanderNameBytes,sizeof(combatDefaultCommanderNameBytes))) return false;
     salvageEntryCount=0; /*0976*/
     uint16_t steps[8],costs[16];

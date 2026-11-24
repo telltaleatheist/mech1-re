@@ -25,7 +25,7 @@ uint8_t BtechApplyDestroyedBodyLocationEffects(BtechMechState *mech,int16_t body
         mech->destroyedHeatSinks+=(int16_t)(damagedMechTemplate->heatSinkCount+bodyLocation)/COMBAT_HEAT_SINK_LOCATION_DIVISOR;
     if (bodyLocation>=COMBAT_BODY_LEFT_ARM && bodyLocation<=COMBAT_BODY_RIGHT_LEG)
     {
-        uint16_t actuatorIndex=actuatorIndicesByBodyLocation[bodyLocation];
+        uint16_t actuatorIndex=combatDamage.actuatorIndicesByBodyLocation[bodyLocation];
         if (actuatorIndex>=COMBAT_ACTUATORS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: actuatorIndex>=COMBAT_ACTUATORS");
         mech->actuatorCondition[actuatorIndex]=0;
     }

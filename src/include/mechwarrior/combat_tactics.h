@@ -18,12 +18,17 @@ enum { TACTICAL_AVOIDING=1,TACTICAL_TARGET_VALUE_FLOOR=-100,
     TACTICAL_OBJECTIVE_COMMIT_ROLL=10,TACTICAL_RETREAT_X=0xB480,TACTICAL_RETREAT_Y=0x65C0 };
 enum { OBJECTIVE_CANDIDATE_DISTANCE_LIMIT=0xFFFF,OBJECTIVE_DEFENDER_RADIUS=0x7080,
     AI_RECOVERY_TICK_MASK=7,AI_RECOVERY_ROLL_LIMIT=2,AI_LEFT_LEG_ACTUATOR=2,AI_RIGHT_LEG_ACTUATOR=3 };
-/* These actual numeric cursor values become the reused native heading WORD. */
-extern uint8_t boundaryMaskByCode[TACTICAL_BOUNDARY_CODES];
-extern const uint16_t *activeSideRule;
-extern uint16_t tacticalThreatUnitSlots[COMBAT_MECH_SLOTS],tacticalThreatHeadings[COMBAT_MECH_SLOTS];
-extern int32_t unitDistancesToSpecialTarget[COMBAT_MECH_SLOTS];
-extern uint16_t opposingSideFirstUnitSlots[2];
+/* Combat state owned by combat_tactics.h (plan, slice B3d). */
+struct CombatTacticsState
+{
+    /* These actual numeric cursor values become the reused native heading WORD. */
+    uint8_t boundaryMaskByCode[TACTICAL_BOUNDARY_CODES];
+    const uint16_t *activeSideRule;
+    uint16_t tacticalThreatUnitSlots[COMBAT_MECH_SLOTS], tacticalThreatHeadings[COMBAT_MECH_SLOTS];
+    int32_t unitDistancesToSpecialTarget[COMBAT_MECH_SLOTS];
+    uint16_t opposingSideFirstUnitSlots[2];
+};
+extern CombatTacticsState combatTactics;
 void BtechUpdateAiMechUnits(void);
 void BtechCoordinateSpecialObjectiveUnits(void);
 void BtechUpdateTacticalNavigation(void);

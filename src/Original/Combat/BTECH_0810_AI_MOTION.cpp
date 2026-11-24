@@ -76,7 +76,7 @@ void BtechApplyJumpMotion(uint16_t desiredHeading,uint16_t movementDirection)
         uint32_t savedMechAltitude=jumpingMechObject->object.prefix.position.positionC;
         uint16_t landingSurfaceClass=BtechResolveGroundSurfaceAndSlope(jumpingMechObject,0,selectedWorldObjects,selectedObjectCount);
         jumpingMechObject=combatPose.activeUnitPositionedObject;
-        jumpGroundHeight=jumpingMechObject->object.prefix.position.positionC;
+        combatMovement.jumpGroundHeight=jumpingMechObject->object.prefix.position.positionC;
         jumpingMechObject->object.prefix.position.positionC=savedMechAltitude;
         int16_t descentStepThreshold;
         if (landingSurfaceClass==SURFACE_BLOCKS_GROUND_MOVEMENT)
@@ -136,11 +136,11 @@ void BtechAdvanceActiveAiUnitMotion(void)
         uint32_t feetAltitude=movingMechObject->object.prefix.position.positionC-(uint32_t)(int16_t)chassisHalfHeight;
         uint16_t jumpPitchSpeed=((uint16_t)movingMechObject->forwardStepScale>>2)|(movingMechObject->forwardStepScale<0?0xC000:0);
         movingMechObject->object.prefix.orientationA=(uint16_t)(0-(uint16_t)(jumpPitchSpeed*AI_JUMP_PITCH_SCALE));
-        if ((int32_t)feetAltitude<AI_JUMP_LANDING_HEIGHT_LIMIT && (int32_t)feetAltitude<(int32_t)jumpGroundHeight)
+        if ((int32_t)feetAltitude<AI_JUMP_LANDING_HEIGHT_LIMIT && (int32_t)feetAltitude<(int32_t)combatMovement.jumpGroundHeight)
         {
             chassisHalfHeight=(combatPose.activeMechTemplate->displayScale>>1)|((combatPose.activeMechTemplate->displayScale&0x8000)?0x8000:0);
             movingMechObject=combatPose.activeUnitPositionedObject;
-            movingMechObject->object.prefix.position.positionC=jumpGroundHeight+(uint32_t)(int16_t)chassisHalfHeight;
+            movingMechObject->object.prefix.position.positionC=combatMovement.jumpGroundHeight+(uint32_t)(int16_t)chassisHalfHeight;
             movingMechObject->positionSteps[2]=0;
             if (activeUnitControl->conditionScoreOrExitCode!=COMBAT_MECH_DISABLED_VALUE
                 && combatPose.activeMechState->currentInternalStructure[COMBAT_BODY_LEFT_LEG]
@@ -149,7 +149,7 @@ void BtechAdvanceActiveAiUnitMotion(void)
             else activeUnitControl->animationRequestFlags|=ANIMATION_REQUEST_FALL_POSE;
         }
         if (activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS");
-        unitMovementObstructionHistory[activeUnitControl->unitSlot]=0;
+        combatMovement.unitMovementObstructionHistory[activeUnitControl->unitSlot]=0;
         return;
     }
     uint16_t groundSurfaceClass=BtechResolveGroundSurfaceAndSlope(combatPose.activeUnitPositionedObject,0,selectedWorldObjects,selectedObjectCount);
@@ -158,13 +158,13 @@ void BtechAdvanceActiveAiUnitMotion(void)
     {
         activeUnitControl->animationRequestFlags|=ANIMATION_REQUEST_WALK;
         if (activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS");
-        uint16_t previousObstruction=unitMovementObstructionHistory[activeUnitControl->unitSlot];
+        uint16_t previousObstruction=combatMovement.unitMovementObstructionHistory[activeUnitControl->unitSlot];
         int16_t movementObstructed=(int8_t)BtechTestUnitMovementObstruction(activeUnitControl->unitSlot);
         if (activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS");
-        unitMovementObstructionHistory[activeUnitControl->unitSlot]=(uint16_t)movementObstructed;
-        if ((unitMovementObstructionHistory[activeUnitControl->unitSlot] && !previousObstruction) || groundSurfaceClass==SURFACE_BLOCKS_GROUND_MOVEMENT)
+        combatMovement.unitMovementObstructionHistory[activeUnitControl->unitSlot]=(uint16_t)movementObstructed;
+        if ((combatMovement.unitMovementObstructionHistory[activeUnitControl->unitSlot] && !previousObstruction) || groundSurfaceClass==SURFACE_BLOCKS_GROUND_MOVEMENT)
         {
-            unitMovementObstructionHistory[activeUnitControl->unitSlot]=previousObstruction;
+            combatMovement.unitMovementObstructionHistory[activeUnitControl->unitSlot]=previousObstruction;
             movingMechObject=combatPose.activeUnitPositionedObject;
             movingMechObject->object.prefix.position=savedPosition;
             movingMechObject->object.prefix.orientationA=savedOrientation[0];movingMechObject->object.prefix.orientationB=savedOrientation[1];

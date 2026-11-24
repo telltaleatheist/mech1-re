@@ -16,7 +16,7 @@ void BtechSpawnBodyDamageEffect(const BtechPosition3D *position)
         || cockpitWorldObjectCount>=COMBAT_WORLD_OBJECTS) return;
     for (uint16_t slot=0;slot<COMBAT_BODY_EFFECT_SLOTS;++slot)
     {
-        BtechBodyDamageEffect *effect=&bodyDamageEffects[slot];
+        BtechBodyDamageEffect *effect=&combatEffects.bodyDamageEffects[slot];
         if (effect->worldObject) continue;
         effect->worldObject=BtechAllocatePooledWorldObject(otherShapeResourceBase+COMBAT_BODY_EFFECT_INITIAL_RESOURCE,position);
         if (effect->worldObject)
@@ -32,7 +32,7 @@ void BtechSpawnBodyDamageEffect(const BtechPosition3D *position)
 /*0810:5B83. No pool release and no anchor/frame clearing. */
 void BtechResetBodyDamageEffectHandles(void)
 {
-    for (uint16_t slot=0;slot<COMBAT_BODY_EFFECT_SLOTS;++slot) bodyDamageEffects[slot].worldObject=NULL;
+    for (uint16_t slot=0;slot<COMBAT_BODY_EFFECT_SLOTS;++slot) combatEffects.bodyDamageEffects[slot].worldObject=NULL;
     for (uint16_t slot=0;slot<COMBAT_DESTRUCTION_EMITTER_SLOTS;++slot) bodyDestructionEmitters[slot].ticksRemaining=0;
 }
 
@@ -57,7 +57,7 @@ void BtechUpdateBodyDestructionEffects(void)
     }
     for (uint16_t slot=0;slot<COMBAT_BODY_EFFECT_SLOTS;++slot)
     {
-        BtechBodyDamageEffect *effect=&bodyDamageEffects[slot];
+        BtechBodyDamageEffect *effect=&combatEffects.bodyDamageEffects[slot];
         if (!effect->worldObject) continue;
         BtechPooledWorldObject *object=effect->worldObject;
         if (!effect->animationTicksRemaining)
@@ -68,7 +68,7 @@ void BtechUpdateBodyDestructionEffects(void)
         --effect->animationTicksRemaining;
         if (effect->animationTicksRemaining>=COMBAT_BODY_EFFECT_FRAMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: effect->animationTicksRemaining>=COMBAT_BODY_EFFECT_FRAMES"); /* Adjacent-owner alias unsupported. */
         BtechWorldObjectPrefix *pose=&object->object.prefix;
-        pose->resourceId=otherShapeResourceBase+bodyDamageEffectResourceDeltas[effect->animationTicksRemaining];
+        pose->resourceId=otherShapeResourceBase+combatEffects.bodyDamageEffectResourceDeltas[effect->animationTicksRemaining];
         uint32_t extent=BtechGetResourceScaledValue(pose->resourceId);
         pose->resourceScaledValue=(pose->resourceScaledValue&0xFFFF0000)|(extent&0xFFFF);
         pose->resourceScaledValue=(pose->resourceScaledValue&0xFFFF)|(extent&0xFFFF0000);
@@ -87,7 +87,7 @@ void BtechAdvanceEffectResourceSequences(void)
 {
     for (uint16_t slot=0;slot<COMBAT_EFFECT_SLOTS;++slot)
     {
-        BtechEffectSequenceState *effect=&effectSequences[slot];
+        BtechEffectSequenceState *effect=&combatEffects.effectSequences[slot];
         if (!effect->worldObject) continue;
         uint16_t sequence=effect->sequenceIndex;
         /* Native unchecked reads outside the two recovered arrays remain unsupported. */
@@ -116,13 +116,13 @@ void BtechAdvanceEffectResourceSequences(void)
 void BtechSpawnSequencedWorldEffect(const BtechPosition3D *position,uint16_t sequenceIndex)
 {
     uint16_t slot=0;
-    while (slot<COMBAT_EFFECT_SLOTS && effectSequences[slot].worldObject) ++slot;
+    while (slot<COMBAT_EFFECT_SLOTS && combatEffects.effectSequences[slot].worldObject) ++slot;
     if (slot==COMBAT_EFFECT_SLOTS) return; /* Drop a cosmetic effect when all slots are busy. */
     uint16_t freeObject=0;
     while (freeObject<COMBAT_POOLED_OBJECTS && pooledWorldObjects[freeObject].occupied) ++freeObject;
     if (freeObject==COMBAT_POOLED_OBJECTS || worldObjectCount>=COMBAT_WORLD_OBJECTS
         || cockpitWorldObjectCount>=COMBAT_WORLD_OBJECTS) return;
-    BtechEffectSequenceState *effect=&effectSequences[slot];
+    BtechEffectSequenceState *effect=&combatEffects.effectSequences[slot];
     effect->worldObject=BtechAllocatePooledWorldObject(0,position);
     BtechWorldObjectPrefix *object=&effect->worldObject->object.prefix;
     if (!unitBindings[0].positionedLeftLeg || !unitBindings[0].torso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[0].positionedLeftLeg || !unitBindings[0].torso");
@@ -139,5 +139,5 @@ void BtechSpawnSequencedWorldEffect(const BtechPosition3D *position,uint16_t seq
 /*0810:5F85. Drop only handles; frame/sequence words survive. No pool release. */
 void BtechResetEffectObjectHandles(void)
 {
-    for (uint16_t slot=0;slot<COMBAT_EFFECT_SLOTS;++slot) effectSequences[slot].worldObject=NULL;
+    for (uint16_t slot=0;slot<COMBAT_EFFECT_SLOTS;++slot) combatEffects.effectSequences[slot].worldObject=NULL;
 }

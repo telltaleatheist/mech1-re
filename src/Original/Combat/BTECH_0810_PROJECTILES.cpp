@@ -17,7 +17,7 @@ void BtechUpdateProjectiles(void)
 {
     for (uint16_t slot=0;slot<COMBAT_PROJECTILE_SLOTS;++slot)
     {
-        BtechProjectileState *projectile=&projectiles[slot];
+        BtechProjectileState *projectile=&combatProjectiles.projectiles[slot];
         if (!projectile->worldObject) continue;
         --projectile->lifetimeRemaining;
         if (!projectile->lifetimeRemaining)
@@ -88,14 +88,14 @@ uint8_t BtechTestProjectileAgainstSpecialObject(BtechProjectileState *projectile
 int16_t BtechCalculateProjectileImpactDamage(const BtechProjectileState *projectile)
 {
     if (projectile->profileIndex>=COMBAT_PROJECTILE_PROFILES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: projectile->profileIndex>=COMBAT_PROJECTILE_PROFILES");
-    uint16_t weaponKind=projectileProfiles[projectile->profileIndex].weaponKind;
+    uint16_t weaponKind=combatProjectiles.projectileProfiles[projectile->profileIndex].weaponKind;
     if (weaponKind>=COMBAT_WEAPON_KINDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: weaponKind>=COMBAT_WEAPON_KINDS");
     if (weaponKind==COMBAT_WEAPON_AC5) return (int16_t)weaponDefinitions[weaponKind].damageOrMissileCount;
-    int16_t clusterRow=missileClusterRowByWeapon[weaponKind];
+    int16_t clusterRow=combatProjectiles.missileClusterRowByWeapon[weaponKind];
     if ((uint16_t)clusterRow>=COMBAT_MISSILE_CLUSTER_ROWS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)clusterRow>=COMBAT_MISSILE_CLUSTER_ROWS");
     uint16_t firstDie=BtechRandomBelowBound(DICE_1D6);
     uint16_t secondDie=BtechRandomBelowBound(DICE_1D6);
-    uint16_t missilesHit=missileClusterRows[clusterRow][firstDie+secondDie];
+    uint16_t missilesHit=combatProjectiles.missileClusterRows[clusterRow][firstDie+secondDie];
     if (weaponKind!=COMBAT_WEAPON_LRM5) return (int16_t)(missilesHit<<COMBAT_SRM_DAMAGE_SHIFT);
     return (int16_t)missilesHit;
 }
@@ -109,18 +109,18 @@ BtechProjectileState *BtechAllocateProjectileFromWeaponProfile(int16_t weaponKin
         || cockpitWorldObjectCount>=COMBAT_WORLD_OBJECTS) return NULL;
     for (uint16_t slot=0;slot<COMBAT_PROJECTILE_SLOTS;++slot)
     {
-        BtechProjectileState *projectile=&projectiles[slot];
+        BtechProjectileState *projectile=&combatProjectiles.projectiles[slot];
         if (projectile->worldObject) continue;
         if ((uint16_t)weaponKind>=COMBAT_WEAPON_KINDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)weaponKind>=COMBAT_WEAPON_KINDS");
-        projectile->profileIndex=projectileProfileIndicesByWeapon[weaponKind];
+        projectile->profileIndex=combatProjectiles.projectileProfileIndicesByWeapon[weaponKind];
         if (projectile->profileIndex>=COMBAT_PROJECTILE_PROFILES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: projectile->profileIndex>=COMBAT_PROJECTILE_PROFILES");
-        const BtechProjectileProfile *profile=&projectileProfiles[projectile->profileIndex];
+        const BtechProjectileProfile *profile=&combatProjectiles.projectileProfiles[projectile->profileIndex];
         projectile->lifetimeRemaining=profile->lifetimeTicks;
         uint16_t resource=profile->resourceIdDelta+otherShapeResourceBase;
         projectile->worldObject=BtechAllocatePooledWorldObject(resource,placement);
         if (!projectile->worldObject || projectile->profileIndex>=COMBAT_PROJECTILE_PROFILES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !projectile->worldObject || projectile->profileIndex>=COMBAT_PROJECTILE_PROFILES");
         /* Original reload AFTER allocation, before speed write. */
-        projectile->worldObject->forwardStepScale=(int16_t)projectileProfiles[projectile->profileIndex].speedScale;
+        projectile->worldObject->forwardStepScale=(int16_t)combatProjectiles.projectileProfiles[projectile->profileIndex].speedScale;
         projectile->worldObject->object.prefix.renderFlags=0;
         return projectile;
     }
@@ -154,7 +154,7 @@ BtechProjectileState *BtechSpawnUnitWeaponProjectile(uint16_t unitSlot,int16_t w
 /*0810:5A35. Clear only handles; caller owns world-pool teardown. */
 void BtechResetProjectileHandles(void)
 {
-    for (uint16_t slot=0;slot<COMBAT_PROJECTILE_SLOTS;++slot) projectiles[slot].worldObject=NULL;
+    for (uint16_t slot=0;slot<COMBAT_PROJECTILE_SLOTS;++slot) combatProjectiles.projectiles[slot].worldObject=NULL;
 }
 
 /*0810:5A55. Body reference supplies origin; selected render part supplies target. */
@@ -163,7 +163,7 @@ void BtechFirePlayerWeaponProjectile(uint16_t mountIndex)
     if (!playerMechTemplate || mountIndex>=COMBAT_WEAPON_MOUNTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechTemplate || mountIndex>=COMBAT_WEAPON_MOUNTS");
     const BtechWeaponMount *weaponMount=&playerMechTemplate->weaponMounts[mountIndex];
     if (weaponMount->bodyLocation>=COMBAT_BODY_LOCATIONS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: weaponMount->bodyLocation>=COMBAT_BODY_LOCATIONS");
-    BtechPosition3D *launchPosition=BtechGetUnitBodyReferencePosition(0,(int16_t)bodyLocationReferenceIndices[weaponMount->bodyLocation]);
+    BtechPosition3D *launchPosition=BtechGetUnitBodyReferencePosition(0,(int16_t)combatProjectiles.bodyLocationReferenceIndices[weaponMount->bodyLocation]);
     BtechProjectileState *projectile=BtechSpawnUnitWeaponProjectile(0,weaponMount->weaponKind,launchPosition);
     if (!projectile) return; /* No projectile means no guidance target or fabricated hit. */
     uint16_t targetUnitSlot,targetArmorLocation;BtechMapSelectedRenderPartToArmorLocation(&targetArmorLocation,&targetUnitSlot);

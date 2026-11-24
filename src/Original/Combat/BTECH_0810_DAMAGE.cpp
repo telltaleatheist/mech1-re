@@ -18,7 +18,7 @@ void BtechRollCriticalLosses(BtechMechState *mech,int16_t bodyLocation)
         else
         {
             if ((uint16_t)bodyLocation>=COMBAT_BODY_LOCATIONS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)bodyLocation>=COMBAT_BODY_LOCATIONS");
-            uint16_t criticalTransferLocation=criticalTransferBodyLocations[bodyLocation];
+            uint16_t criticalTransferLocation=combatDamage.criticalTransferBodyLocations[bodyLocation];
             if (criticalTransferLocation==(uint16_t)bodyLocation) return;
             bodyLocation=(int16_t)criticalTransferLocation;
         }
@@ -68,7 +68,7 @@ uint8_t BtechSelectAndApplyCriticalLoss(BtechMechState *mech,int16_t bodyLocatio
         }
         else if (bodyLocation>=COMBAT_BODY_LEFT_ARM && bodyLocation<=COMBAT_BODY_RIGHT_LEG)
         {
-            uint16_t actuatorIndex=actuatorIndicesByBodyLocation[bodyLocation];
+            uint16_t actuatorIndex=combatDamage.actuatorIndicesByBodyLocation[bodyLocation];
             if (actuatorIndex>=COMBAT_ACTUATORS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: actuatorIndex>=COMBAT_ACTUATORS");
             remainingEquipmentWeight-=mech->actuatorCondition[actuatorIndex];
             if (remainingEquipmentWeight<=0) {--mech->actuatorCondition[actuatorIndex];return 1;}
@@ -134,7 +134,7 @@ void BtechApplyArmorAndInternalDamage(uint16_t unitSlot,int16_t damageArmorLocat
     {
         BtechPlaySoundIfEnabled(COMBAT_DAMAGE_SOUND,COMBAT_DAMAGE_SOUND_PRIORITY);
         combatStartup.playerImpactThisTick=1;
-        if (playerDamageSuppressed) return;
+        if (combatDamage.playerDamageSuppressed) return;
     }
     else if (unitSlot==COMBAT_SPECIAL_TARGET_SLOT) {BtechApplySpecialTargetDamage(residualDamage);return;}
     if (unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitSlot>=COMBAT_MECH_SLOTS");
@@ -151,7 +151,7 @@ void BtechApplyArmorAndInternalDamage(uint16_t unitSlot,int16_t damageArmorLocat
         if (!damagedMech->currentInternalStructure[internalBodyLocation])
         {
             if (internalBodyLocation==COMBAT_BODY_CENTER_TORSO) residualDamage=0;
-            else damageArmorLocation=(int16_t)damageTransferArmorLocations[internalBodyLocation];
+            else damageArmorLocation=(int16_t)combatDamage.damageTransferArmorLocations[internalBodyLocation];
             continue;
         }
         BtechRollCriticalLosses(damagedMech,(int16_t)internalBodyLocation);
@@ -162,7 +162,7 @@ void BtechApplyArmorAndInternalDamage(uint16_t unitSlot,int16_t damageArmorLocat
         BtechQueueBodyDestructionEmitter(unitSlot,damageArmorLocation);
         residualDamage=(int16_t)((uint16_t)residualDamage-*internalStructurePoints);*internalStructurePoints=0;
         if (BtechApplyDestroyedBodyLocationEffects(damagedMech,(int16_t)internalBodyLocation)) residualDamage=0;
-        else damageArmorLocation=(int16_t)damageTransferArmorLocations[internalBodyLocation];
+        else damageArmorLocation=(int16_t)combatDamage.damageTransferArmorLocations[internalBodyLocation];
     }
 }
 

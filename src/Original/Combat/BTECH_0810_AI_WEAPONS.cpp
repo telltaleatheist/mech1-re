@@ -104,7 +104,7 @@ void BtechFireAiWeaponAtUnit(int16_t targetUnitSlot,int16_t weaponKind,uint16_t 
     int16_t attackAspect=firingHeading-targetObject->object.prefix.orientationC+ATTACK_ASPECT_HEADING_BIAS;
     int16_t attackAspectMagnitude=(uint16_t)attackAspect==0x8000?INT16_MAX:attackAspect<0?-attackAspect:attackAspect;
     uint16_t attackArc=attackAspectMagnitude<FRONT_ATTACK_ARC_LIMIT?ATTACK_ARC_FRONT:attackAspectMagnitude>REAR_ATTACK_ARC_LIMIT?ATTACK_ARC_REAR:attackAspect>0?ATTACK_ARC_LEFT:ATTACK_ARC_RIGHT;
-    BtechPosition3D shotOrigin=*BtechGetUnitBodyReferencePosition(activeUnitControl->unitSlot,(int16_t)bodyLocationReferenceIndices[firingBodyLocation]);
+    BtechPosition3D shotOrigin=*BtechGetUnitBodyReferencePosition(activeUnitControl->unitSlot,(int16_t)combatProjectiles.bodyLocationReferenceIndices[firingBodyLocation]);
     uint8_t shotHitsTarget=1;
     if (targetUnitSlot!=COMBAT_SPECIAL_TARGET_SLOT)
     {

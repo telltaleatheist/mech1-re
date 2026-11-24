@@ -104,8 +104,8 @@ void BtechUpdateTacticalNavigation(void)
         }
         return;
     }
-    if (!activeSideRule) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeSideRule");
-    switch (*activeSideRule)
+    if (!combatTactics.activeSideRule) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeSideRule");
+    switch (*combatTactics.activeSideRule)
     {
     case OBJECTIVE_ELIMINATE_OPPOSITION:
     case OBJECTIVE_OPPOSE_WITHDRAWAL: BtechRefreshTargetAndNavigate();break;
@@ -164,8 +164,8 @@ void BtechSelectUnitTacticalState(void)
         case TACTICAL_ORDER_MOVE_ATTACK:control->tacticalState=control->trackedUnitOrSpecialSlot==COMBAT_SPECIAL_TARGET_SLOT?TACTICAL_CHARGING_BASE:TACTICAL_CHARGING;break;
         case TACTICAL_ORDER_MOVE_AVOID:control->tacticalState=TACTICAL_AVOIDING;break;
         case COMBAT_ORDER_ACT_ON_OWN:
-            if (!activeSideRule) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeSideRule");
-            switch (*activeSideRule)
+            if (!combatTactics.activeSideRule) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeSideRule");
+            switch (*combatTactics.activeSideRule)
             {
             case OBJECTIVE_ELIMINATE_OPPOSITION:
             case OBJECTIVE_OPPOSE_WITHDRAWAL:control->tacticalState=TACTICAL_CHARGING;break;
@@ -195,7 +195,7 @@ void BtechSelectUnitTacticalState(void)
         if (!enemyRoot || !enemyTorso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !enemyRoot || !enemyTorso");
         int16_t threatFacingDifference=enemyRoot->object.prefix.orientationC+enemyTorso->object.prefix.orientationC-heading+AVOIDANCE_HALF_TURN;
         if (threatFacingDifference>=TACTICAL_THREAT_FACING_LIMIT) continue; /* Signed one-sided, not abs(angle). */
-        tacticalThreatUnitSlots[threatCount]=slot;tacticalThreatHeadings[threatCount]=heading;
+        combatTactics.tacticalThreatUnitSlots[threatCount]=slot;combatTactics.tacticalThreatHeadings[threatCount]=heading;
         combinedThreatValue=(int16_t)(combinedThreatValue+enemy->conditionScoreOrExitCode);
         if (strongestThreatSlot<0 || unitControls[strongestThreatSlot].conditionScoreOrExitCode<enemy->conditionScoreOrExitCode)
         {strongestThreatHeadingIndex=threatCount;strongestThreatSlot=slot;}
@@ -211,7 +211,7 @@ void BtechSelectUnitTacticalState(void)
             if (distance<=TACTICAL_OBJECTIVE_COMMIT_RANGE && (int16_t)(BtechRandomBelowBound(TACTICAL_OBJECTIVE_COMMIT_ROLL)+TACTICAL_OBJECTIVE_COMMIT_ROLL)>=(int16_t)specialTargetDamageRemaining) goto steer;
         }
         if (control->tacticalState==TACTICAL_CHARGING_BASE || control->tacticalState==TACTICAL_DEFENDING) control->tacticalState=TACTICAL_CHARGING;
-        control->targetUnitSlot=strongestThreatSlot;selectedHeading=tacticalThreatHeadings[strongestThreatHeadingIndex];
+        control->targetUnitSlot=strongestThreatSlot;selectedHeading=combatTactics.tacticalThreatHeadings[strongestThreatHeadingIndex];
         if (control->tacticalState!=TACTICAL_WANDERING)
         {
             if ((int16_t)(control->conditionScoreOrExitCode*3)<combinedThreatValue) control->tacticalState=TACTICAL_FLEEING;
@@ -243,7 +243,7 @@ steer:
         if (threatCount)
         {
             uint16_t headingSum=0;
-            for (uint16_t threat=0;threat<threatCount;++threat) headingSum+=tacticalThreatHeadings[threat];
+            for (uint16_t threat=0;threat<threatCount;++threat) headingSum+=combatTactics.tacticalThreatHeadings[threat];
             selectedHeading=(uint16_t)((int16_t)headingSum/(int16_t)threatCount);
         }
         else {control->tacticalState=COMBAT_TACTICAL_UNENGAGED;selectedHeading=root->orientationC;}

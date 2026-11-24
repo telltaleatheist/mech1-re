@@ -75,7 +75,7 @@ void BtechProgramMain(uint16_t argumentCount,const char *const *arguments)
                     /* Use the same four-edge decoding as the withdrawal
                      * objective check. Other game state is not an exit mask. */
                     if (exitBoundaryIndex<TACTICAL_BOUNDARY_CODES
-                        && (scenarioSelectors.sideBoundaryMasks[0]&boundaryMaskByCode[exitBoundaryIndex]))
+                        && (scenarioSelectors.sideBoundaryMasks[0]&combatTactics.boundaryMaskByCode[exitBoundaryIndex]))
                         missionResult=COMBAT_RESULT_SUCCESS;
                 }
             }

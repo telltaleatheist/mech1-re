@@ -15,11 +15,7 @@
 #include <string.h>
 
 BtechChassisResourceBases chassisResourceBases;
-uint8_t boundaryMaskByCode[TACTICAL_BOUNDARY_CODES];
-const uint16_t *activeSideRule;
-uint16_t tacticalThreatUnitSlots[COMBAT_MECH_SLOTS],tacticalThreatHeadings[COMBAT_MECH_SLOTS];
-int32_t unitDistancesToSpecialTarget[COMBAT_MECH_SLOTS];
-uint16_t opposingSideFirstUnitSlots[2];
+CombatTacticsState combatTactics;
 BtechScenarioSelectors scenarioSelectors;
 BtechFormationPosition unitFormationPositions[8];
 uint8_t terrainHeightGrid[TERRAIN_GRID_ROWS][TERRAIN_GRID_COLUMNS];
@@ -53,14 +49,11 @@ uint16_t combatInputReplayMode;
 BtechCharacterClassStorage characterClassStorage;
 BtechResourceBank *shapeResourceBanks,initialShapeResourceBank;
 BtechSurfaceBank surfaceResourceBank;
-BtechEffectSequenceState effectSequences[COMBAT_EFFECT_SLOTS];
+CombatEffectState combatEffects;
 BtechBodyDestructionEmitter bodyDestructionEmitters[COMBAT_DESTRUCTION_EMITTER_SLOTS];
-BtechBodyDamageEffect bodyDamageEffects[COMBAT_BODY_EFFECT_SLOTS];
-uint16_t bodyDamageEffectResourceDeltas[COMBAT_BODY_EFFECT_FRAMES];
 BtechBodyReferencePoint fallenBodyReferenceBanks[COMBAT_MECH_TEMPLATES][COMBAT_ARMOR_LOCATIONS];
 BtechPosition3D bodyReferenceWorldPosition;
-uint32_t jumpGroundHeight;
-uint16_t unitMovementObstructionHistory[COMBAT_MECH_SLOTS];
+CombatMovementState combatMovement;
 uint16_t aiCandidateTargetSlot,aiCandidateDistance;
 uint16_t hitLocationRows[ATTACK_ARCS][HIT_LOCATION_ROLLS],rangeHitModifiers[WEAPON_RANGE_BANDS];
 int16_t avoidanceStepX,avoidanceStepY;
@@ -72,11 +65,7 @@ const int16_t *avoidanceProbeComponentsX[AVOIDANCE_PROBES],*avoidanceProbeCompon
 uint32_t unitDistances[COMBAT_MECH_SLOTS][COMBAT_MECH_SLOTS];
 uint16_t beamHalfWidths[COMBAT_WEAPON_KINDS];
 int16_t muzzleLateralOffsetsByBodyLocation[COMBAT_BODY_LOCATIONS];
-BtechProjectileState projectiles[COMBAT_PROJECTILE_SLOTS];
-BtechProjectileProfile projectileProfiles[COMBAT_PROJECTILE_PROFILES];
-uint16_t projectileProfileIndicesByWeapon[COMBAT_WEAPON_KINDS],bodyLocationReferenceIndices[COMBAT_BODY_LOCATIONS];
-int16_t missileClusterRowByWeapon[COMBAT_WEAPON_KINDS];
-uint16_t missileClusterRows[COMBAT_MISSILE_CLUSTER_ROWS][COMBAT_MISSILE_CLUSTER_ROLLS];
+CombatProjectileState combatProjectiles;
 uint8_t beamSlotOccupied[COMBAT_BEAM_SLOTS];
 BtechShapeResource beamResources[COMBAT_BEAM_SLOTS];
 BtechRenderEntry beamRenderEntries[COMBAT_BEAM_SLOTS];
@@ -86,8 +75,7 @@ BtechRenderVariant ppcBeamVariant,laserBeamVariant;
 static BtechRenderPrimitive ppcBeamPrimitive,laserBeamPrimitive;
 static BtechRenderPolygon ppcBeamPolygons[2],laserBeamPolygons[2];
 static uint8_t beamVerticalTriangleIndices[4],beamHorizontalTriangleIndices[4];
-uint16_t defaultEffectResourceDeltas[7],machineGunEffectResourceDeltas[3];
-uint16_t *const effectResourceSequences[2]={defaultEffectResourceDeltas,machineGunEffectResourceDeltas};
+uint16_t *const effectResourceSequences[2]={combatEffects.defaultEffectResourceDeltas,combatEffects.machineGunEffectResourceDeltas};
 uint16_t shapeResourceBankCount;
 char resourceFilename[0x50];
 BtechArchiveDescriptor *archiveDescriptors[RESOURCE_ARCHIVE_SLOTS],*selectedArchive;
@@ -113,9 +101,9 @@ bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t 
     if (MwReadNativeWord(data,0x4A6C) || MwReadNativeWord(data,0x4A6E)) return false;
     borrowedArchiveWorkspace=NULL;
     memcpy(nullNearSegment,data,sizeof(nullNearSegment));
-    memcpy(boundaryMaskByCode,data+0x0EB6,sizeof(boundaryMaskByCode));
+    memcpy(combatTactics.boundaryMaskByCode,data+0x0EB6,sizeof(combatTactics.boundaryMaskByCode));
     /* The rule tables come from data/rules (src/Rules), laid out as the exe's. */
-    if (!MwRulesCopyWords("combat.opposing_side_first_unit_slots",opposingSideFirstUnitSlots,2,0)
+    if (!MwRulesCopyWords("combat.opposing_side_first_unit_slots",combatTactics.opposingSideFirstUnitSlots,2,0)
         || !MwRulesCopyWords("combat.avoidance_heading_offsets",avoidanceHeadingOffsets,AVOIDANCE_TURNS,0)) return false;
     for (uint16_t probe=0;probe<AVOIDANCE_PROBES;++probe)
     {
@@ -128,19 +116,19 @@ bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t 
     }
     uint16_t clusterRows[COMBAT_WEAPON_KINDS];
     if (!MwRulesCopyWords("weapons.missile_cluster_rows",clusterRows,COMBAT_WEAPON_KINDS,0)) return false;
-    for (uint16_t kind=0;kind<COMBAT_WEAPON_KINDS;++kind) missileClusterRowByWeapon[kind]=(int16_t)clusterRows[kind];
+    for (uint16_t kind=0;kind<COMBAT_WEAPON_KINDS;++kind) combatProjectiles.missileClusterRowByWeapon[kind]=(int16_t)clusterRows[kind];
     for (uint16_t row=0;row<COMBAT_MISSILE_CLUSTER_ROWS;++row)
-        if (!MwRulesCopyWords("combat.missile_cluster_rows",missileClusterRows[row],COMBAT_MISSILE_CLUSTER_ROLLS,row*0x18)) return false;
+        if (!MwRulesCopyWords("combat.missile_cluster_rows",combatProjectiles.missileClusterRows[row],COMBAT_MISSILE_CLUSTER_ROLLS,row*0x18)) return false;
     for (uint16_t arc=0;arc<ATTACK_ARCS;++arc)
         if (!MwRulesCopyWords("combat.hit_locations",hitLocationRows[arc],HIT_LOCATION_ROLLS,arc*0x16)) return false;
     if (!MwRulesCopyWords("combat.range_hit_modifiers",rangeHitModifiers,WEAPON_RANGE_BANDS,0)) return false;
     for (uint16_t profile=0;profile<COMBAT_PROJECTILE_PROFILES;++profile)
     {
         uint16_t at=0x0E6E +profile*8;
-        projectileProfiles[profile]=BtechProjectileProfile{MwReadNativeWord(data,at),MwReadNativeWord(data,at+2),MwReadNativeWord(data,at+4),MwReadNativeWord(data,at+6)};
+        combatProjectiles.projectileProfiles[profile]=BtechProjectileProfile{MwReadNativeWord(data,at),MwReadNativeWord(data,at+2),MwReadNativeWord(data,at+4),MwReadNativeWord(data,at+6)};
     }
-    if (!MwRulesCopyWords("weapons.projectile_profiles",projectileProfileIndicesByWeapon,COMBAT_WEAPON_KINDS,0)
-        || !MwRulesCopyWords("combat.body_reference_point",bodyLocationReferenceIndices,COMBAT_BODY_LOCATIONS,0)) return false;
+    if (!MwRulesCopyWords("weapons.projectile_profiles",combatProjectiles.projectileProfileIndicesByWeapon,COMBAT_WEAPON_KINDS,0)
+        || !MwRulesCopyWords("combat.body_reference_point",combatProjectiles.bodyLocationReferenceIndices,COMBAT_BODY_LOCATIONS,0)) return false;
     for (uint16_t location=0;location<COMBAT_BODY_LOCATIONS;++location) muzzleLateralOffsetsByBodyLocation[location]=(int16_t)MwReadNativeWord(data,0x2302+location*2);
     for (uint16_t kind=0;kind<COMBAT_WEAPON_KINDS;++kind) beamHalfWidths[kind]=MwReadNativeWord(data,0x2802+kind*2);
     memcpy(beamVerticalTriangleIndices,data+0x27C2,4);memcpy(beamHorizontalTriangleIndices,data+0x27C6,4);
@@ -168,11 +156,11 @@ bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t 
             uint16_t at=0x0FC8+chassis*0x36+location*6;
             fallenBodyReferenceBanks[chassis][location]=BtechBodyReferencePoint{(int16_t)MwReadNativeWord(data,at),(int16_t)MwReadNativeWord(data,at+2),(int16_t)MwReadNativeWord(data,at+4)};
         }
-    if (!MwRulesCopyWords("assets.body_damage_effect_steps",bodyDamageEffectResourceDeltas,COMBAT_BODY_EFFECT_FRAMES,0)) return false;
+    if (!MwRulesCopyWords("assets.body_damage_effect_steps",combatEffects.bodyDamageEffectResourceDeltas,COMBAT_BODY_EFFECT_FRAMES,0)) return false;
     /* The exe's near directory of the two effect step lists (304E:0EAA, 0EAC)
      * is not needed: the lists are read by id. */
-    if (!MwRulesCopyWords("assets.default_effect_steps",defaultEffectResourceDeltas,7,0)
-        || !MwRulesCopyWords("assets.machine_gun_effect_steps",machineGunEffectResourceDeltas,3,0)) return false;
+    if (!MwRulesCopyWords("assets.default_effect_steps",combatEffects.defaultEffectResourceDeltas,7,0)
+        || !MwRulesCopyWords("assets.machine_gun_effect_steps",combatEffects.machineGunEffectResourceDeltas,3,0)) return false;
     for (uint16_t tile=0;tile<TERRAIN_TILE_COUNT;++tile)
     {
         terrainTileGridRowBases[tile]=MwReadNativeWord(data,0x07E4+tile*2);
@@ -219,15 +207,15 @@ bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t 
 void BtechInitializeFreshWorldOwners(const uint8_t *data)
 {
     bodyReferenceWorldPosition=BtechPosition3D{};
-    jumpGroundHeight=0;
+    combatMovement.jumpGroundHeight=0;
     aiCandidateTargetSlot=aiCandidateDistance=0;
     avoidanceStepX=avoidanceStepY=0;avoidancePosition=NULL;avoidanceOrientation=NULL;
-    activeSideRule=NULL;
-    memset(unitDistancesToSpecialTarget,0,sizeof(unitDistancesToSpecialTarget));
-    memset(tacticalThreatUnitSlots,0,sizeof(tacticalThreatUnitSlots));
-    memset(tacticalThreatHeadings,0,sizeof(tacticalThreatHeadings));
-    for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot) unitMovementObstructionHistory[slot]=0;
-    for (uint16_t slot=0;slot<COMBAT_PROJECTILE_SLOTS;++slot) projectiles[slot]=BtechProjectileState{};
+    combatTactics.activeSideRule=NULL;
+    memset(combatTactics.unitDistancesToSpecialTarget,0,sizeof(combatTactics.unitDistancesToSpecialTarget));
+    memset(combatTactics.tacticalThreatUnitSlots,0,sizeof(combatTactics.tacticalThreatUnitSlots));
+    memset(combatTactics.tacticalThreatHeadings,0,sizeof(combatTactics.tacticalThreatHeadings));
+    for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot) combatMovement.unitMovementObstructionHistory[slot]=0;
+    for (uint16_t slot=0;slot<COMBAT_PROJECTILE_SLOTS;++slot) combatProjectiles.projectiles[slot]=BtechProjectileState{};
     for (uint16_t row=0;row<COMBAT_MECH_SLOTS;++row)
         for (uint16_t column=0;column<COMBAT_MECH_SLOTS;++column) unitDistances[row][column]=0;
     for (uint16_t slot=0;slot<COMBAT_BEAM_SLOTS;++slot)
@@ -237,9 +225,9 @@ void BtechInitializeFreshWorldOwners(const uint8_t *data)
         for (uint16_t vector=0;vector<COMBAT_BEAM_VECTORS;++vector)
             for (uint16_t axis=0;axis<3;++axis) beamGeometry[slot][vector][axis]=0;
     }
-    for (uint16_t slot=0;slot<COMBAT_BODY_EFFECT_SLOTS;++slot) bodyDamageEffects[slot]=BtechBodyDamageEffect{};
+    for (uint16_t slot=0;slot<COMBAT_BODY_EFFECT_SLOTS;++slot) combatEffects.bodyDamageEffects[slot]=BtechBodyDamageEffect{};
     for (uint16_t slot=0;slot<COMBAT_DESTRUCTION_EMITTER_SLOTS;++slot) bodyDestructionEmitters[slot]=BtechBodyDestructionEmitter{};
-    for (uint16_t slot=0;slot<COMBAT_EFFECT_SLOTS;++slot) effectSequences[slot]=BtechEffectSequenceState{};
+    for (uint16_t slot=0;slot<COMBAT_EFFECT_SLOTS;++slot) combatEffects.effectSequences[slot]=BtechEffectSequenceState{};
     for (uint16_t byte=0;byte<sizeof(archiveStreamScratch);++byte) archiveStreamScratch[byte]=0;
     scenarioSelectors=BtechScenarioSelectors{};
     for (uint16_t slot=0;slot<8;++slot)

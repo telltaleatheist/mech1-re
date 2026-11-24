@@ -57,9 +57,9 @@ void BtechFirePlayerDirectWeapon(uint16_t mountIndex)
                 uint16_t projectileSlot=0;
                 for (;projectileSlot<COMBAT_PROJECTILE_SLOTS;++projectileSlot)
                 {
-                    BtechPooledWorldObject *projectileObject=projectiles[projectileSlot].worldObject;
+                    BtechPooledWorldObject *projectileObject=combatProjectiles.projectiles[projectileSlot].worldObject;
                     if (projectileObject && &projectileObject->object.prefix==combatStartup.selectedHitObject)
-                    {BtechDestroyProjectileAndSpawnEffect(&projectiles[projectileSlot]);break;}
+                    {BtechDestroyProjectileAndSpawnEffect(&combatProjectiles.projectiles[projectileSlot]);break;}
                 }
                 /* Native reloads selected object AFTER projectile destruction. */
                 if (specialTargetObject && &specialTargetObject->object.prefix==combatStartup.selectedHitObject)

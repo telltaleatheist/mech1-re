@@ -91,7 +91,7 @@ uint8_t BtechTestSideEliminationOrExitObjective(uint16_t sideIndex)
         else
         {
             if (exitBoundaryIndex>=TACTICAL_BOUNDARY_CODES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: exitBoundaryIndex>=TACTICAL_BOUNDARY_CODES"); /* Adjacent authored0EB6 table alias. */
-            if ((allowedExitBoundaryMask&boundaryMaskByCode[exitBoundaryIndex]) && sideObjectiveRule==OBJECTIVE_WITHDRAW)
+            if ((allowedExitBoundaryMask&combatTactics.boundaryMaskByCode[exitBoundaryIndex]) && sideObjectiveRule==OBJECTIVE_WITHDRAW)
             {
                 combatStartup.sideCompletionFlags[sideIndex]=1;
                 noMechsStillInBattle=0;
