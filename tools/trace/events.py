@@ -33,7 +33,9 @@ scripts also run on AdLib and MT-32 (MT-32 without ROMs, silent) and must give:
 - its tone and game streams exactly.
 They also run with music=soundfont (slice S3), which sets the game up as for
 an MT-32 and plays its sequencer's output through the soundfont: that run must
-give the MT-32 run's log exactly, every stream, ticks included.
+give the MT-32 run's log exactly, every stream, ticks included. It also has
+its own golden (events/<revision>/<script>.soundfont.jsonl.gz, from S8, which
+removes the MT-32 path): every stream exactly, ticks included.
 
 The speaker runs also write the start-world log (MECHWARRIOR_START_LOG, H4b;
 event_log.h): the campaign's 18.2 Hz count, the random words and the world
@@ -231,6 +233,20 @@ def main():
             if not all(compare(f"{name}: soundfont {k} against MT-32's", stream(runs["mt32"], kinds),
                                stream(runs["soundfont"], kinds), print) for k, kinds in STREAMS.items()):
                 failed.append(f"{name}.soundfont")
+            sf_path = os.path.join(folder, name + ".soundfont.jsonl.gz")
+            if a.mode == "record":
+                os.makedirs(folder, exist_ok=True)
+                with gzip.GzipFile(sf_path, "wb", mtime=0) as f:
+                    f.write(("\n".join(runs["soundfont"]) + "\n").encode())
+            elif not os.path.exists(sf_path):
+                print(f"{name}: no soundfont golden")
+                failed.append(f"{name}.soundfont-golden")
+            else:
+                with gzip.open(sf_path, "rt", encoding="utf-8") as f:
+                    sf_golden = f.read().splitlines()
+                if not all(compare(f"{name}: soundfont {k} against its golden", stream(sf_golden, kinds),
+                                   stream(runs["soundfont"], kinds), print) for k, kinds in STREAMS.items()):
+                    failed.append(f"{name}.soundfont-golden")
         golden_path = os.path.join(folder, name + ".jsonl.gz")
         if a.mode == "record":
             os.makedirs(folder, exist_ok=True)
