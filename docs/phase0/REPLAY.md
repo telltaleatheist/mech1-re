@@ -80,10 +80,13 @@ rebuild.
 
 ## Known differences
 
-`tools/trace/known/<trace>.json` lists differences that are understood and
-not yet fixed, so they are reported rather than failed:
+check.py reads `tools/trace/known/<trace>.json`, if there is one: differences
+that are understood and not yet fixed, reported rather than failed. There are
+none now, so the folder is not in the tree. An entry is:
 
     {"hub": {"frame": "the rebuild draws the clock later", "fields": {"menu.3.": "why"}}}
 
 `fields` keys are field-name prefixes. Each entry should name its cause and go when
-it is fixed.
+it is fixed. The files don't know the game's revision, so the two traces that
+differ on the 1989 game are not entries (docs/phase5/NO_EMULATION_PLAN.md says
+why they do).

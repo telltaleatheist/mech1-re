@@ -323,6 +323,9 @@ Changes per piece:
    - Every sound slice keeps the note log identical. The instrument table changes the sound, never the notes or their times.
 2. **The tone log, exact.** Combat's effects as (game ms, effect, frequency steps). The goldens are converted from today's port-event log, whose PIT divisors give the frequencies.
 3. **The traces, unchanged.** Sound doesn't touch game state, so check.py stays at 8/8 for 1990 and 6/8 for 1989 (combat_cockpit and combat_retreat are the known two), and exe_free stays 8/8.
+   - **Why those two fail on 1989.** The goldens were recorded with the 1990-01-22 BTECH.EXE, first on 2026-11-20 (5bc567b, and combat_retreat as its own in 1d5d0e1); there has never been a 1989 one. The two BTECH revisions wait for keys differently, by design: after a press, the 1990 one waits for the release too (7d4bb10, `btechLoadedRevision` in `BTECH_0810_INPUT.cpp`). The 1990 game starts combat one poll later for it, so the 1989 game's tick is one ahead of the goldens at all 20 combat snaps of both traces.
+   - **Measured 2026-11-24 at 8ccc109.** Besides the tick: in combat_cockpit unit 4's position, orientation and step; in both, unit 0's armor from orders_command and the screen at the two order snaps. In a throwaway build with the 1990 waits forced on the 1989 game, both traces match, so the waits are the whole cause.
+   - **For R.** 6 of 8 is the expected result on 1989, with these two names. Any other name, or a tick not exactly one ahead, is new. 1989 goldens of those two would make it 8 of 8.
 4. **Listening checks.**
    - A fixed list is rendered headless to files, never played aloud by automation: each song (MECH, MECHBAR, LAUNCH, DEATH, VICTORY) and the thirteen effects the game requests, on the soundfont and on speaker-style.
    - The project owner listens to them next to the original's MT-32, AdLib and speaker captures, using the listening sheet (section 5), and signs off the instrument table and levels.
