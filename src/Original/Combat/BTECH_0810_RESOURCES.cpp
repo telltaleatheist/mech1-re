@@ -1,7 +1,6 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/combat_runtime.h"
 #include "mechwarrior/combat_resources.h"
-#include "mechwarrior/native_address.h"
 #include <stdlib.h>
 #include <string.h>
 

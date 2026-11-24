@@ -3,6 +3,7 @@
  * menus and the dispatch check from the installation. No runtime address
  * registry, retained executable image or additional game procedure. */
 #include "mechwarrior/campaign_events.h"
+#include "mechwarrior/native_address.h"
 #include "mechwarrior/story.h"
 #include "mechwarrior/ui_layout.h"
 #include <string.h>

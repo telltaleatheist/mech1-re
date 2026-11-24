@@ -27,9 +27,6 @@ extern void (*btechHostPaceCombatTick)(void);
 extern void (*btechHostNoteCombatInputPoll)(void);
 extern uint8_t *(*btechHostAllocateParagraphs)(uint16_t paragraphs,uint16_t *largestFreeParagraphs);
 extern void (*btechHostFreeDosAllocation)(uint8_t *allocation);
-extern void (*btechHostFreeDosSelector)(uint16_t selector);
-/* Query the existing DOS MCB owner; this is not a host-pointer cache key. */
-extern uint16_t (*btechHostDosAllocationSelector)(const uint8_t *allocation);
 /* Physical foreign-memory edge of the signed, wrapping BA56 directory read.
  * Returns a real recovered byte owner, never a synthetic surface/priority. */
 struct BtechPosition3D;

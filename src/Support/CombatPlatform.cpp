@@ -10,7 +10,7 @@
 #include "mechwarrior/combat_import.h"
 #include "mechwarrior/combat_render.h"
 #include <stdlib.h>
-MwNativeByteView (*btechHostBorrowDosMemory)(uint16_t);
+uint8_t (*btechHostReadToneDosByte)(uint16_t);
 FILE *(*btechHostOpenStream)(const char *,const char *);
 void (*btechHostRunDue)(void);
 void (*btechHostWaitIdle)(void);
@@ -24,8 +24,6 @@ void (*btechHostEnableDeviceIrqs)(MwDeviceIrq);
 void (*btechHostSetTimerPeriod)(uint32_t);
 uint8_t *(*btechHostAllocateParagraphs)(uint16_t,uint16_t *);
 void (*btechHostFreeDosAllocation)(uint8_t *);
-void (*btechHostFreeDosSelector)(uint16_t);
-uint16_t (*btechHostDosAllocationSelector)(const uint8_t *);
 
 MwTimerOwner (*btechHostGetTimerOwner)(void);
 void (*btechHostSetTimerOwner)(MwTimerOwner);

@@ -1,4 +1,5 @@
 #include "mechwarrior/port_diagnostics.h"
+#include "mechwarrior/native_address.h"
 #include "mechwarrior/campaign_continuations.h"
 #include "mechwarrior/campaign_mechanics.h"
 #include "mechwarrior/campaign_travel.h"

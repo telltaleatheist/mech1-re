@@ -3,7 +3,6 @@
 #include "mechwarrior/ega_campaign.h"
 #include "mechwarrior/campaign.h"
 #include "mechwarrior/campaign_continuations.h"
-#include "mechwarrior/native_address.h"
 
 enum { CAMPAIGN_UI_RECORD_BYTES = 0x000E, HUB_UI_RECORD_COUNT = 0x0006,
     CONTRACT_HUB_UI_RECORD_COUNT = 0x0003, UI_HIGHLIGHT_WIDTH = 0x0022,

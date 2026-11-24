@@ -2,7 +2,7 @@
 #define MECHWARRIOR_EGA_CAMPAIGN_H
 #include "mechwarrior/game_files.h"
 #include "mechwarrior/campaign_text.h"
-#include "mechwarrior/native_address.h"
+#include "mechwarrior/campaign_buffer.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

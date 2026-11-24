@@ -13,15 +13,15 @@ uint16_t BtechMusicMessageNoOperation(uint16_t statusDisplacement,uint16_t chann
 }
 
 /*229C:0021. DIV BYTE leaves its remainder in AH before the whole-WORD SHR.
- * The selector-presence flag transports a real native pair, not a game flag. */
-void BtechStartSoftwareMusicTrack(MwNativeByteView musicHeader,uint16_t headerOffset,bool selectorPresent)
+ * The presence flag stands for the native pair's selector, not a game flag. */
+void BtechStartSoftwareMusicTrack(BtechSoundBytes musicHeader,uint16_t headerOffset)
 {
-    uint16_t division=MwReadNativeViewWord(&musicHeader,(uint16_t)(headerOffset+4));
+    uint16_t division=BtechReadSoundWord(musicHeader,(uint16_t)(headerOffset+4));
     if (!combatSound.softwareMusicDivisionScale || division/combatSound.softwareMusicDivisionScale>UINT8_MAX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !softwareMusicDivisionScale || division/softwareMusicDivisionScale>UINT8_MAX");
     uint16_t divided=((division%combatSound.softwareMusicDivisionScale)<<8)|(division/combatSound.softwareMusicDivisionScale);
     divided>>=1;combatSound.softwareMusicRateShift=(uint8_t)divided;
     combatSound.combatMidiStreamOffset=headerOffset+COMBAT_TONE_HEADER_BYTES;
-    combatSound.midiStreamData=musicHeader;combatSound.midiStreamSelectorPresent=selectorPresent;
+    combatSound.midiStreamData=musicHeader;combatSound.midiStreamPresent=musicHeader.bytes!=NULL;
     BtechDecodeNextMidiEvent((uint8_t)(divided>>8));
     combatSound.softwareMusicDelayTicks=1;
 }
@@ -31,7 +31,7 @@ void BtechStartSoftwareMusicTrack(MwNativeByteView musicHeader,uint16_t headerOf
 void BtechTickSoftwareMusic(void)
 {
     if (--combatSound.softwareMusicDelayTicks) return;
-    if (!combatSound.combatMidiStreamOffset && !combatSound.midiStreamSelectorPresent) return;
+    if (!combatSound.combatMidiStreamOffset && !combatSound.midiStreamPresent) return;
     for (;;)
     {
         uint16_t statusDisplacement=(combatSound.midiRunningStatus>>3)&0x0E;
@@ -80,12 +80,12 @@ nextTrack:
     uint8_t deltaHighByte;
     for (;;)
     {
-        uint8_t first=MwReadNativeViewByte(&combatSound.midiStreamData,cursor++);
+        uint8_t first=BtechReadSoundByte(combatSound.midiStreamData,cursor++);
         uint16_t delta=first;
         if (first&MIDI_STATUS_FLAG)
-            delta=((uint16_t)(first&0x7F)<<7)|MwReadNativeViewByte(&combatSound.midiStreamData,cursor++);
+            delta=((uint16_t)(first&0x7F)<<7)|BtechReadSoundByte(combatSound.midiStreamData,cursor++);
         combatSound.queuedMidiDeltaTicks=delta;deltaHighByte=(uint8_t)(delta>>8);
-        uint8_t status=MwReadNativeViewByte(&combatSound.midiStreamData,cursor);
+        uint8_t status=BtechReadSoundByte(combatSound.midiStreamData,cursor);
         if (!(status&MIDI_STATUS_FLAG)) break; /* Running status retains this first data BYTE. */
         ++cursor;
         if (status!=MIDI_META)
@@ -94,18 +94,18 @@ nextTrack:
             combatSound.midiMessageDataLength=combatSound.midiMessageLengths[(status>>4)&7];
             deltaHighByte=0;break;
         }
-        uint8_t meta=MwReadNativeViewByte(&combatSound.midiStreamData,cursor);
+        uint8_t meta=BtechReadSoundByte(combatSound.midiStreamData,cursor);
         if (meta==MIDI_END_OF_TRACK)
         {
             BtechSoundEvent next=BtechAdvanceMusicSequence();
             combatSound.combatMidiStreamOffset=next.offset;combatSound.midiStreamData=next.data;
-            combatSound.midiStreamSelectorPresent=next.data.bytes!=NULL;
+            combatSound.midiStreamPresent=next.data.bytes!=NULL;
             ++combatSound.midiTrackIndex;
             inheritedDeltaHighByte=(uint8_t)(next.offset>>8);goto nextTrack;
         }
         if (meta==MIDI_SET_TEMPO)
         {
-            uint16_t tempo=MwReadNativeViewWord(&combatSound.midiStreamData,(uint16_t)(cursor+2));
+            uint16_t tempo=BtechReadSoundWord(combatSound.midiStreamData,(uint16_t)(cursor+2));
             combatSound.midiTempoHighBytes=(tempo<<8)|(tempo>>8);
             if (!combatSound.midiTempoHighBytes || MIDI_TEMPO_DIVIDEND/combatSound.midiTempoHighBytes>UINT16_MAX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !midiTempoHighBytes || MIDI_TEMPO_DIVIDEND/midiTempoHighBytes>UINT16_MAX");
             combatSound.mpuTempoInterval=MIDI_TEMPO_DIVIDEND/combatSound.midiTempoHighBytes;
@@ -113,11 +113,11 @@ nextTrack:
         }
         else
         {
-            uint8_t firstLength=MwReadNativeViewByte(&combatSound.midiStreamData,(uint16_t)(cursor+1));
+            uint8_t firstLength=BtechReadSoundByte(combatSound.midiStreamData,(uint16_t)(cursor+1));
             uint16_t payload=cursor+2,length=firstLength;
             if (firstLength&MIDI_STATUS_FLAG)
             {
-                length=((uint16_t)(firstLength>>1)<<8)|MwReadNativeViewByte(&combatSound.midiStreamData,(uint16_t)(cursor+2));
+                length=((uint16_t)(firstLength>>1)<<8)|BtechReadSoundByte(combatSound.midiStreamData,(uint16_t)(cursor+2));
                 ++payload; /* Native AND clears Carry: no OR80 on this length path. */
             }
             cursor=payload+length;
@@ -130,6 +130,6 @@ nextTrack:
      * could not bound the loop by the check above. */
     const uint16_t messageLength=combatSound.midiMessageDataLength;
     for (uint16_t byte=0;byte<messageLength;++byte)
-        combatSound.midiMessageData[byte]=MwReadNativeViewByte(&combatSound.midiStreamData,cursor++);
+        combatSound.midiMessageData[byte]=BtechReadSoundByte(combatSound.midiStreamData,cursor++);
     combatSound.combatMidiStreamOffset=cursor;return deltaHighByte;
 }

@@ -39,7 +39,7 @@ bool BtechImportSoundInitialData(const uint8_t *data,size_t bytes)
     combatSound.mpuTempoInterval=MwReadNativeWord(data,0x2C86);
     combatSound.combatMidiStreamOffset=0; /*2C88*/
     if (combatSound.combatMidiStreamOffset || MwReadNativeWord(data,0x2C8A)) return false;
-    combatSound.midiStreamData=MwNativeByteView{};combatSound.midiStreamSelectorPresent=false;
+    combatSound.midiStreamData=BtechSoundBytes{};combatSound.midiStreamPresent=false;
     combatSound.queuedMidiDeltaTicks=0; /*2C8C*/combatSound.midiRunningStatus=0; /*2C8E*/
     combatSound.midiMessageData[0]=data[0x2C8F];combatSound.midiMessageData[1]=data[0x2C90];
     combatSound.softwareMusicDelayTicks=MwReadNativeWord(data,0x2C91);

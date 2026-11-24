@@ -200,8 +200,7 @@ uint16_t BtechMergeSoundBackendDirectory(BtechSoundBank *bank,BtechRuntimeStream
         uint32_t eventOffset=(uint32_t)paragraph*0x10+offset;
         if (eventOffset>=node->allocation.byteCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: eventOffset>=node->allocation.byteCount");
         uint32_t paragraphBase=(uint32_t)paragraph*0x10;
-        bank->events[event]=BtechSoundEvent{{node->allocation.bytes+paragraphBase,0,node->allocation.byteCount-paragraphBase},
-            offset,(uint16_t)(node->allocationSelector+paragraph)};
+        bank->events[event]=BtechSoundEvent{{node->allocation.bytes+paragraphBase,node->allocation.byteCount-paragraphBase},offset};
     }
     return 1;
 }
@@ -251,9 +250,6 @@ BtechSoundAllocationNode *BtechLoadTaggedSoundAllocation(BtechSoundBank *bank,Bt
             else {combatSound.soundAllocationError=2;failed=2;}
         }
         node->allocation=allocation;
-        if (!btechHostDosAllocationSelector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostDosAllocationSelector");
-        node->allocationSelector=btechHostDosAllocationSelector(allocation.bytes);
-        node->allocationOffset=0;
         if (strlen(tag)>=sizeof(node->chunkTag)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: strlen(tag)>=sizeof(node->chunkTag)");
         strcpy(node->chunkTag,tag);
     }
@@ -340,10 +336,10 @@ uint16_t BtechSelectActiveMusicBank(uint16_t bankHandle)
     return (int16_t)bankHandle>0?bankHandle:0;
 }
 
-/*1ADF:024C. Clear the selector before the cursor. */
+/*1ADF:024C. Clear the presence before the cursor. */
 void BtechStopMusicStreams(void)
 {
-    combatSound.midiStreamSelectorPresent=false;combatSound.combatMidiStreamOffset=0;
+    combatSound.midiStreamPresent=false;combatSound.combatMidiStreamOffset=0;
     if (combatSound.selectedAudioBackendMask&COMBAT_SOUND_SPEAKER) BtechStopMatchingToneChannels(0,2);
 }
 
@@ -359,7 +355,7 @@ uint16_t BtechStartSelectedMusicBankTrack(uint16_t trackIndex,uint16_t priority)
     BtechSoundBank *bank=&combatSound.soundBanks[COMBAT_MUSIC_FIRST_ROOT+combatSound.activeMusicBankIndex];
     if (!bank->root.allocation.bytes || !bank->events || trackIndex>=bank->eventReferenceCapacity) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !bank->root.allocation.bytes || !bank->events || trackIndex>=bank->eventReferenceCapacity");
     BtechSoundEvent track=bank->events[trackIndex];
-    BtechStartSoftwareMusicTrack(track.data,track.offset,track.selector!=0);
+    BtechStartSoftwareMusicTrack(track.data,track.offset);
     BtechSetToneMusicPriorityAndTranslation(priority);
     combatSound.musicSequenceIndex=trackIndex;
     return 1;
@@ -371,24 +367,21 @@ uint16_t BtechStartSelectedMusicBankTrack(uint16_t trackIndex,uint16_t priority)
  * the subsequent native next-field read is valid C, never a use-after-free.
  * The original could read a released node's bytes after another owner reused
  * them; B5's step 0 saw no such read in the traces and sound scripts, so a
- * released node keeps its own last link. */
+ * released node keeps its own last link, but not its allocation: the original
+ * kept the selector, and a second release of the chain freed it again. A node
+ * whose append failed still names its freed bytes, as its selector did; the host
+ * refuses to free those, where DOS ignored it. Nothing calls the two unloads
+ * below, so no program run reaches either. */
 uint16_t BtechFreeSoundAllocationChain(BtechSoundBank *bank)
 {
     BtechSoundAllocationNode *node=&bank->root;
     if (!node->allocation.bytes) return 0;
-    if (!combatSound.soundAllocationOverride.bytes)
-    {
-        if (!btechHostFreeDosSelector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostFreeDosSelector");
-        btechHostFreeDosSelector(node->allocationSelector);
-    }
-    node->allocationSelector=0;node->allocationOffset=0;node->allocation=BtechResourceAllocation{};
+    if (!combatSound.soundAllocationOverride.bytes) BtechFreeDosMemoryBlock(node->allocation.bytes);
+    node->allocation=BtechResourceAllocation{};
     while ((node=node->next)!=NULL)
     {
-        if (!combatSound.soundAllocationOverride.bytes && (node->allocationOffset|node->allocationSelector))
-        {
-            if (!btechHostFreeDosSelector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostFreeDosSelector");
-            btechHostFreeDosSelector(node->allocationSelector);
-        }
+        if (!combatSound.soundAllocationOverride.bytes && node->allocation.bytes) BtechFreeDosMemoryBlock(node->allocation.bytes);
+        node->allocation=BtechResourceAllocation{};
         BtechReleaseNearBlockAndProbeAllocation(node);
     }
     /* Decoded directory metadata has no native allocation identity. */
@@ -420,11 +413,20 @@ uint16_t BtechUnloadSoundBank(uint16_t bankHandle)
     return BtechFreeSoundAllocationChain(&combatSound.soundBanks[bankHandle]);
 }
 
+/* The modulation source of a bank's tones. A missing ITM reads DOS memory at the
+ * pair the runtime's prefix holds, whose selector is 0: only that is recovered. */
+static BtechToneFallback ToneFallback(const BtechSoundAllocationNode *itm)
+{
+    if (itm) return BtechToneFallback{{itm->allocation.bytes,itm->allocation.byteCount},false};
+    if (missingSoundFallbackSelectorAlias) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Unrecovered DOS selector for the tone fallback");
+    return BtechToneFallback{{NULL,0},true};
+}
+
 /*1ADF:0AAC. Native minimum-priority search excludes the last channel. The
  * busy paired-channel6 path retains channel7; do not repair that quirk. */
 uint16_t BtechAllocateToneEventChannels(BtechSoundEvent event,uint16_t priority,uint16_t soundEventIndex)
 {
-    uint16_t type=MwReadNativeViewWord(&event.data,event.offset),first,last;
+    uint16_t type=BtechReadSoundWord(event.data,event.offset),first,last;
     if (!type)
     {
         if (!(combatSound.selectedAudioBackendMask&COMBAT_SOUND_SPEAKER)) return 0;
@@ -433,7 +435,7 @@ uint16_t BtechAllocateToneEventChannels(BtechSoundEvent event,uint16_t priority,
     else
     {
         if (type!=1 || !(combatSound.selectedAudioBackendMask&COMBAT_SOUND_TANDY)) return 0;
-        if (MwReadNativeViewWord(&event.data,(uint16_t)(event.offset+6))) first=last=6;
+        if (BtechReadSoundWord(event.data,(uint16_t)(event.offset+6))) first=last=6;
         else {first=4;last=6;}
     }
     uint16_t selected=first;
@@ -449,18 +451,16 @@ uint16_t BtechAllocateToneEventChannels(BtechSoundEvent event,uint16_t priority,
     if (combatSound.activeSoundBankIndex>=COMBAT_SOUND_BANKS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeSoundBankIndex>=COMBAT_SOUND_BANKS");
     BtechSoundAllocationNode *fallback=combatSound.soundBanks[combatSound.activeSoundBankIndex].fallback;
     /* A missing ITM still starts native effects. Preserve its ambient WORD
-     * offset; physical selector0/unknown fallback memory is gated ONLY if read. */
+     * offset; DOS memory outside what is recovered is gated ONLY if read. */
     uint16_t fallbackOffset=fallback?0:missingSoundFallbackOffsetAlias;
-    MwNativeByteView fallbackData=fallback?MwNativeByteView{fallback->allocation.bytes,0,fallback->allocation.byteCount}:MwNativeByteView{};
-    if (!fallback && btechHostBorrowDosMemory) fallbackData=btechHostBorrowDosMemory(missingSoundFallbackSelectorAlias);
+    BtechToneFallback fallbackData=ToneFallback(fallback);
     BtechStartToneInterpreterChannel(event.data,event.offset,selected,fallbackData,fallbackOffset);
-    if (MwReadNativeViewWord(&event.data,(uint16_t)(event.offset+6)) && MwReadNativeViewWord(&event.data,event.offset)==1)
+    if (BtechReadSoundWord(event.data,(uint16_t)(event.offset+6)) && BtechReadSoundWord(event.data,event.offset)==1)
     {
         fallback=combatSound.soundBanks[combatSound.activeSoundBankIndex].fallback;
         fallbackOffset=fallback?0:missingSoundFallbackOffsetAlias;
-        fallbackData=fallback?MwNativeByteView{fallback->allocation.bytes,0,fallback->allocation.byteCount}:MwNativeByteView{};
-        if (!fallback && btechHostBorrowDosMemory) fallbackData=btechHostBorrowDosMemory(missingSoundFallbackSelectorAlias);
-        uint16_t factor=MwReadNativeViewWord(&event.data,(uint16_t)(event.offset+6));
+        fallbackData=ToneFallback(fallback);
+        uint16_t factor=BtechReadSoundWord(event.data,(uint16_t)(event.offset+6));
         uint16_t secondaryOffset=factor*0x0A+event.offset-0x50;
         BtechStartToneInterpreterChannel(event.data,secondaryOffset,7,fallbackData,fallbackOffset);
     }
@@ -479,7 +479,7 @@ uint16_t BtechDispatchSoundBankEvent(int16_t soundEventIndex,uint16_t priority)
     if ((int16_t)(bank->eventCount-1)<soundEventIndex) return 0;
     if (soundEventIndex<0 || (uint16_t)soundEventIndex>=bank->eventReferenceCapacity || !bank->events) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: soundEventIndex<0 || (uint16_t)soundEventIndex>=bank->eventReferenceCapacity || !bank->events");
     BtechSoundEvent event=bank->events[soundEventIndex];
-    uint16_t type=MwReadNativeViewWord(&event.data,event.offset);
+    uint16_t type=BtechReadSoundWord(event.data,event.offset);
     switch (type)
     {
     case 0:case 1:return BtechAllocateToneEventChannels(event,priority,(uint16_t)soundEventIndex);

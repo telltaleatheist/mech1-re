@@ -65,18 +65,18 @@ uint16_t BtechDispatchToneMidiMessage(uint16_t statusDisplacement,uint16_t chann
 
 /*2134:0196. Binary commands select even state fields. Signed CMP BL,80/JGE
  * always takes the command path: high-bit opcodes are NOT stop markers. */
-void BtechParseToneCommands(BtechToneChannelState *state,MwNativeByteView event,uint16_t cursor,uint16_t channel)
+void BtechParseToneCommands(BtechToneChannelState *state,const BtechSoundBytes &event,uint16_t cursor,uint16_t channel)
 {
     for (;;)
     {
-        uint8_t command=MwReadNativeViewByte(&event,cursor++);
+        uint8_t command=BtechReadSoundByte(event,cursor++);
         uint16_t field=command&TONE_STATE_FIELD_MASK;
         if (field>0x78)
         {
             uint16_t handler=combatTones.bytecodeBranchHandlers[(field-0x78)/2];
             if (handler==TONE_BRANCH_STOP) goto stopChannel;
             if (handler==TONE_BRANCH_RETURN) {cursor=combatTones.bytecodeReturnOffset;continue;}
-            uint16_t relative=MwReadNativeViewWord(&event,cursor);cursor+=2;
+            uint16_t relative=BtechReadSoundWord(event,cursor);cursor+=2;
             if (handler==TONE_BRANCH_CALL) combatTones.bytecodeReturnOffset=cursor;
             else if (handler==TONE_BRANCH_REPEAT)
             {
@@ -85,7 +85,7 @@ void BtechParseToneCommands(BtechToneChannelState *state,MwNativeByteView event,
             else /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Tone stream selected an unsupported command handler."); /* Unrecovered modified code-table target. */
             cursor+=relative;continue;
         }
-        uint16_t parameter=MwReadNativeViewWord(&event,cursor);cursor+=2;
+        uint16_t parameter=BtechReadSoundWord(event,cursor);cursor+=2;
         if (field<0x2C)
         {
             switch (field)
@@ -114,12 +114,12 @@ void BtechParseToneCommands(BtechToneChannelState *state,MwNativeByteView event,
         if (field==0x2C)
         {
             uint16_t entry=combatTones.levelSequenceDirectoryOffsets[channel]+parameter*2;
-            state->levelSequenceOffset=MwReadNativeViewWord(&event,entry);
+            state->levelSequenceOffset=BtechReadSoundWord(event,entry);
             state->commandDelayTicks=0;break;
         }
         uint16_t entry=combatTones.fallbackAllocationOffsets[channel]+parameter*4;
-        state->modulationTableOffset=MwReadNativeViewWord(&combatTones.toneFallbackData[channel],entry);
-        state->modulationPhaseLimit=MwReadNativeViewWord(&combatTones.toneFallbackData[channel],(uint16_t)(entry+2));
+        state->modulationTableOffset=BtechReadToneFallbackWord(combatTones.toneFallbackData[channel],entry);
+        state->modulationPhaseLimit=BtechReadToneFallbackWord(combatTones.toneFallbackData[channel],(uint16_t)(entry+2));
     }
     state->bytecodeOffset=cursor;return;
 stopChannel:
@@ -130,7 +130,7 @@ stopChannel:
 
 /*2134:0101. Zero phase sum does not publish phase; subtraction wraps once.
  * Native SAR4 and signed IMUL high WORD are made explicit without signed UB. */
-void BtechAdvanceToneChannel(BtechToneChannelState *state,MwNativeByteView event,uint16_t channel)
+void BtechAdvanceToneChannel(BtechToneChannelState *state,const BtechSoundBytes &event,uint16_t channel)
 {
     if (!--state->commandDelayTicks && state->bytecodeOffset)
         BtechParseToneCommands(state,event,state->bytecodeOffset,channel);
@@ -144,7 +144,7 @@ void BtechAdvanceToneChannel(BtechToneChannelState *state,MwNativeByteView event
         state->modulationPhase=phase;
         uint16_t shiftedPhase=(phase>>4)|((phase&0x8000)?0xF000:0);
         uint16_t entry=shiftedPhase+state->modulationTableOffset;
-        int16_t modulation=(uint16_t)MwReadNativeViewByte(&combatTones.toneFallbackData[channel],entry)<<8;
+        int16_t modulation=(uint16_t)BtechReadToneFallbackByte(combatTones.toneFallbackData[channel],entry)<<8;
         int32_t product=(int32_t)modulation*state->modulationScale;
         modulationHigh=(uint16_t)((uint32_t)product>>16);
     }
@@ -153,7 +153,7 @@ void BtechAdvanceToneChannel(BtechToneChannelState *state,MwNativeByteView event
     for (;;)
     {
         uint16_t entry=state->levelSequenceOffset+state->levelSequencePosition;
-        uint16_t level=MwReadNativeViewWord(&event,entry),ticks=MwReadNativeViewWord(&event,(uint16_t)(entry+2));
+        uint16_t level=BtechReadSoundWord(event,entry),ticks=BtechReadSoundWord(event,(uint16_t)(entry+2));
         state->levelSequencePosition+=4;
         if (ticks==UINT16_MAX)
         {
@@ -194,7 +194,7 @@ void BtechTickSpeakerToneChannels(void)
 
 /*2134:0248. Zero state WORDs descending, except cursor until the final store.
  * Bytecode/fallback views borrow real allocations; no copied segment image. */
-void BtechStartToneInterpreterChannel(MwNativeByteView event,uint16_t eventOffset,uint16_t channel,MwNativeByteView fallback,uint16_t fallbackOffset)
+void BtechStartToneInterpreterChannel(BtechSoundBytes event,uint16_t eventOffset,uint16_t channel,BtechToneFallback fallback,uint16_t fallbackOffset)
 {
     if (channel>=COMBAT_TONE_CHANNELS || !combatTones.toneChannelStates[channel]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: channel>=COMBAT_TONE_CHANNELS || !toneChannelStates[channel]");
     combatTones.channelFlags[channel].activityMask=1;

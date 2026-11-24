@@ -1,4 +1,5 @@
 #include "mechwarrior/port_diagnostics.h"
+#include "mechwarrior/native_address.h"
 #include "mechwarrior/ega_campaign.h"
 #include "mechwarrior/game_files.h"
 #include "mechwarrior/video_mode.h"

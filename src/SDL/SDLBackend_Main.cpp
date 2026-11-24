@@ -1,4 +1,5 @@
 #include "mechwarrior/port_diagnostics.h"
+#include "mechwarrior/native_address.h"
 #include "SDLBackend.h"
 #include "mechwarrior/campaign_runtime.h"
 #include "mechwarrior/campaign_ui.h"

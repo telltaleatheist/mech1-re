@@ -28,7 +28,7 @@ bool BtechImportToneInitialData(const uint8_t *data,size_t bytes,const uint8_t *
     for (uint16_t entry=0;entry<4;++entry) combatTones.bytecodeBranchHandlers[entry]=MwReadNativeWord(toneData,0x00F6+entry*2);
     for (uint16_t channel=0;channel<COMBAT_TONE_CHANNELS;++channel)
     {
-        combatTones.toneEventData[channel]=MwNativeByteView{};combatTones.toneFallbackData[channel]=MwNativeByteView{};
+        combatTones.toneEventData[channel]=BtechSoundBytes{};combatTones.toneFallbackData[channel]=BtechToneFallback{};
         combatTones.fallbackAllocationOffsets[channel]=MwReadNativeWord(toneData,0x003F+channel*2);
         combatTones.levelSequenceDirectoryOffsets[channel]=MwReadNativeWord(toneData,0x007F+channel*2);
         combatTones.soundEventIndices[channel]=MwReadNativeWord(toneData,0x001D+channel*2);

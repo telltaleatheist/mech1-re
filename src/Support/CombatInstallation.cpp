@@ -11,7 +11,6 @@
 #include "mechwarrior/combat_render.h"
 #include "mechwarrior/combat_pose.h"
 #include "mechwarrior/combat_scene.h"
-#include "mechwarrior/native_address.h"
 #include "mechwarrior/btech_start_image.h"
 #include "mechwarrior/story.h"
 #include <stdio.h>
