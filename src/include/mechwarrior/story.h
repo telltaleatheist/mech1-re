@@ -22,13 +22,10 @@ bool MwStoryCopyBytes(const char *id, uint8_t *bytes, size_t size);
 /* The UI words (docs/phase2/PLAN.md section 7), from story/words.json, as
  * the exe holds them. MwWordsCopyText copies a string word into `text` and
  * zeroes the rest of the buffer; MwWordsCopyBlock copies a block word, whose
- * length must be `size`. MwWordsCopyInto copies every word whose id starts
- * with `prefix` into `view` at its data-segment offset, so an importer's
- * reads keep the exe's addresses. False (with the reason on stderr) if there
- * is no such word or it doesn't fit. */
+ * length must be `size`. False (with the reason on stderr) if there is no
+ * such word or it doesn't fit. */
 bool MwWordsCopyText(const char *id, char *text, size_t capacity);
 bool MwWordsCopyBlock(const char *id, uint8_t *bytes, size_t size);
-bool MwWordsCopyInto(const char *prefix, uint8_t *view, size_t viewBytes);
 /* Whether the game's table (src/Import/word_pieces.txt) has the word `id`:
  * a fact of the build, not of story/words.json, which load refuses when a
  * word of the table is missing. Prints nothing. */

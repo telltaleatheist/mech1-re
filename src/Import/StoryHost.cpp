@@ -5,7 +5,6 @@
 
 #include <cstdio>
 #include <cstring>
-#include <string_view>
 
 #include "Events.h"
 #include "Records.h"
@@ -236,25 +235,6 @@ bool MwWordsCopyBlock(const char *id, uint8_t *bytes, size_t size)
     }
     std::memcpy(bytes, it->second.data(), size);
     return true;
-}
-
-bool MwWordsCopyInto(const char *prefix, uint8_t *view, size_t viewBytes)
-{
-    const std::string_view wanted(prefix);
-    size_t copied = 0;
-    for (const auto &piece : mw1o::import::import_table()) {
-        if (!mw1o::import::is_word(piece.kind) || piece.id.substr(0, wanted.size()) != wanted) continue;
-        const auto it = g_story.words.find(piece.id);
-        if (it == g_story.words.end() || piece.offset > viewBytes || it->second.size() > viewBytes - piece.offset) {
-            std::fprintf(stderr, "MechWarrior: the word \"%.*s\" doesn't fit its place\n", int(piece.id.size()),
-                         piece.id.data());
-            return false;
-        }
-        std::memcpy(view + piece.offset, it->second.data(), it->second.size());
-        ++copied;
-    }
-    if (!copied) std::fprintf(stderr, "MechWarrior: the game has no words \"%s*\"\n", prefix);
-    return copied != 0;
 }
 
 bool MwStoryBuildPilots(uint8_t *storage, size_t capacity, uint16_t base, uint16_t *offsets, size_t offsetCount)
