@@ -12,7 +12,7 @@ These are exact logs of what the game *asked for*, recorded from today's port be
     python3 tools/trace/events.py check  --port build/mechwarrior --game ~/MECHWAR --work ~/mw1-events
     python3 tools/trace/events.py record --port build/mechwarrior --game ~/MECHWAR --work ~/mw1-events
 
-`--only campaign_contract audio-music feed-effects` limits the run, and `--no-devices` skips the AdLib and MT-32 runs.
+`--only campaign_contract audio-music feed-effects` limits the run, and `--no-devices` skips the soundfont runs.
 
 - **Exit status:** 0 all match, 1 a mismatch, 77 skipped.
 - **macOS:** set `MW1O_HIDDEN=1`, as for `check.py`.
@@ -45,11 +45,11 @@ Game-state traces (`check.py`, `exe_free.py`) still come from input alone.
 
 **Effects 9 and 12** are in BTECHSND.SND's bank, but neither BTECH revision requests them. Both revisions have the same sixteen call sites, requesting 0–8, 10, 11, 13 and 14, so these two have no golden.
 
-The goldens are the speaker's, the default device. The sound scripts also run on AdLib and on MT-32 (no ROMs, silent), and those runs must match the speaker's:
+The goldens are the speaker's, the default device. The sound scripts also run with `music=soundfont`, against goldens of their own (`*.soundfont.jsonl.gz`) and the speaker's run. Against the speaker's:
 - **Notes**, ticks and snap marks left out, are cut into pieces wherever a key can cut the music: at each song start and at each all-notes-off sweep (a stop). The runs must give the same number of pieces. Within each piece, one run's notes must be a prefix of the other's, because a key, or the last snap, may cut a piece a note or so earlier or later.
 - **The tone and game streams** must match exactly.
 
-The ticks, and where a snap falls among the notes, can differ by device. The test clock charges 1 µs for every port read, and AdLib's calibrated reads make more of them, so a key or a snap can arrive some sequencer ticks earlier or later. That cost comes from the port model, not the game, and slice H4 removes it.
+The ticks, and where a snap falls among the notes, can differ between the two: the music paths run the sequencer at different rates, so a key or a snap can arrive some sequencer ticks earlier or later.
 
 ## The log
 

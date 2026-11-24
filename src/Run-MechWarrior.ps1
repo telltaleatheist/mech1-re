@@ -10,9 +10,7 @@ param(
 # Launch the actual campaign/launcher executable, not a mission fixture.
 $mechExecutable = Join-Path $BuildDirectory 'mechwarrior.exe'
 $mechSdlLibrary = Join-Path $BuildDirectory 'SDL3.dll'
-$mechMt32Library = Join-Path $BuildDirectory 'mt32emu-2.dll'
-$mechAdlibLibrary = Join-Path $BuildDirectory 'nukedopl.dll'
-foreach ($mechRequiredFile in @($mechExecutable, $mechSdlLibrary, $mechMt32Library, $mechAdlibLibrary, (Join-Path $GameDirectory 'BTECH.EXE')))
+foreach ($mechRequiredFile in @($mechExecutable, $mechSdlLibrary, (Join-Path $GameDirectory 'BTECH.EXE')))
 {
     if (!(Test-Path -LiteralPath $mechRequiredFile -PathType Leaf))
     { throw "Missing required file: $mechRequiredFile. See docs/PLAYABLE_TEST_BUILD.md." }

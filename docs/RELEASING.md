@@ -17,9 +17,8 @@ Each package workflow uploads its archive as a workflow artifact
 
 Windows uses MSVC x64 on Windows Server 2022. Linux uses GCC on Ubuntu 24.04
 x86-64 (glibc 2.39+). SDL 3.2.0 is pinned by commit, matching the supported CMake
-minimum; CMake 3.31.6 is pinned for the older dependency build scripts. Munt and
-Nuked-OPL3 use the project's existing pinned commits. SDL and the LGPL audio
-libraries are bundled as shared libraries. Windows also bundles the MSVC CRT.
+minimum; CMake 3.31.6 is pinned for the older dependency build scripts. SDL is
+bundled as a shared library. Windows also bundles the MSVC CRT.
 Linux requires compatible system C/C++ runtime, desktop and audio libraries.
 
 ## What a package holds
@@ -33,7 +32,7 @@ Linux requires compatible system C/C++ runtime, desktop and audio libraries.
   game reads beside the program; packaging refuses a tree without them;
 - `MechWarrior.ini`, `LICENSE`, a `README.txt` and the licence notices.
 
-No original game files, saves, story files or synthesizer ROMs are packaged.
+No original game files, saves or story files are packaged.
 On the first run the game reads the player's copy's programs once (MW_MAIN.EXE,
 BTECH.EXE and MW_EGA.EXE, in a revision `SUPPORTED_VERSIONS.md` lists) and
 writes a `story/` folder into the save directory; from then on it plays from

@@ -122,7 +122,7 @@ BUNDLE_ID = "io.github.mech1re.mechwarrior"  # its own, so it never replaces ano
 README = (
     "MechWarrior 1 Rebuild\n\n"
     "A rebuild of MechWarrior (1989)'s program. Your own copy of the game is required and is\n"
-    "not included: no game data, saves or MT-32 ROMs are in this package.\n\n"
+    "not included: no game data or saves are in this package.\n\n"
     "The first time it starts without your game, it asks for your copy of MechWarrior: its\n"
     "BTECH.EXE, any file in its folder, or the archive it came in (a .zip, for example). It\n"
     "copies the game into your own folder and plays from there; your copy is never changed.\n"
@@ -215,6 +215,19 @@ def stage_soundfont(root, build, resources, notices):
         shutil.copy2(source, notices / name)
 
 
+# Libraries the game no longer uses (S9): an old build folder's copy must not ship.
+REMOVED_LIBRARIES = ("mt32emu", "nukedopl")
+
+
+def require_libraries(folder, sdl_name):
+    """SDL3 is in `folder`, and none of REMOVED_LIBRARIES."""
+    if not list(folder.glob(sdl_name)):
+        raise RuntimeError(f"Missing runtime dependency: {sdl_name}")
+    stale = sorted(f.name for f in folder.rglob("*") if any(name in f.name.lower() for name in REMOVED_LIBRARIES))
+    if stale:
+        raise RuntimeError("Removed libraries in the package (an old build folder?): " + ", ".join(stale))
+
+
 def stage_common(root, build, sdl, resources):
     """The configuration, our data, the read-me and the notices, into `resources`
     (beside the program, or a Mac app's Contents/Resources)."""
@@ -224,9 +237,8 @@ def stage_common(root, build, sdl, resources):
     notices = resources / "licenses"
     notices.mkdir()
     shutil.copytree(root / "docs/LICENSES", notices / "project")
-    for source in [root / "docs/NOTICE.md", root / "docs/THIRD_PARTY_NOTICES.md", sdl / "LICENSE.txt",
-                   build / "_deps/munt-src/mt32emu/COPYING.LESSER.txt", build / "_deps/nukedopl-src/LICENSE"]:
-        prefix = "SDL-" if source.parent == sdl else "Munt-" if source.name == "COPYING.LESSER.txt" else "Nuked-" if source.name == "LICENSE" else ""
+    for source in [root / "docs/NOTICE.md", root / "docs/THIRD_PARTY_NOTICES.md", sdl / "LICENSE.txt"]:
+        prefix = "SDL-" if source.parent == sdl else ""
         shutil.copy2(source, notices / (prefix + source.name))
     archive_licences(build, notices)
     stage_soundfont(root, build, resources, notices)
@@ -278,9 +290,7 @@ def package(root, build, sdl, output, label, game=None, installer=False, tools=N
             raise RuntimeError("Cannot locate redistributable MSVC runtime")
         for dll in crt_dirs[-1].glob("*.dll"):
             shutil.copy2(dll, stage / dll.name)
-    for required in (["SDL3.dll", "mt32emu-*.dll", "nukedopl.dll"] if windows else ["libSDL3.so*", "libmt32emu.so*", "libnukedopl.so*"]):
-        if not list(stage.glob(required)):
-            raise RuntimeError(f"Missing runtime dependency: {required}")
+    require_libraries(stage, "SDL3.dll" if windows else "libSDL3.so*")
     stage_common(root, build, sdl, stage)
     check_paths(root, stage, root, sdl)
     archive = output / (name + (".zip" if windows else ".tar.gz"))
@@ -432,9 +442,7 @@ def package_mac(root, build, sdl, output, label, game):
             if not (system(d) or d.startswith("@"))]
     if left:
         raise RuntimeError("still outside the app: " + ", ".join(sorted(set(left))))
-    for required in ("libSDL3*", "libmt32emu*", "libnukedopl*"):
-        if not list(frameworks.glob(required)):
-            raise RuntimeError(f"Missing runtime dependency: {required}")
+    require_libraries(frameworks, "libSDL3*")
 
     stage_common(root, build, sdl, resources)
     iconset = output / "mechwarrior.iconset"

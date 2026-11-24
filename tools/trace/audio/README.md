@@ -20,15 +20,10 @@ Each script in `scripts/` runs on the speaker through `record.py`. Until S8 it
 also ran on AdLib and MT-32; those paths left the game, and their four goldens
 with them (they are in the history up to 6aebf22). It runs with two switches:
 
-- `MECHWARRIOR_AUDIO_LOG=FILE`: every access to the speaker (42h, 43h, 61h),
-  PIT channel 0 (40h), AdLib (388h, 389h) and MPU (330h, 331h) ports, plus
-  ports 0 and 1. The rhythm note-off quirk writes there; see
-  `SDLBackend_Time.cpp`. Each line is one JSON array:
-  - `[PIT cycle, "w", port, value]` for a write;
-  - `[PIT cycle, "r", port, value]` for a read, with the value returned;
+- `MECHWARRIOR_AUDIO_LOG=FILE`: each change of the tone and each snap. The
+  port lines left with the ports (S9). Each line is one JSON array:
+  - `[PIT cycle, "tone", Hz]` for a tone's start, change or stop (0);
   - `[PIT cycle, "snap", name]` for each snap.
-
-  Latched PIT counter reads aren't logged; they're timing, not sound.
 - `MECHWARRIOR_DEBUG_VIRTUAL_CLOCK=1`: the port's PIT time normally follows
   the wall clock. Under this switch, time moves only where the port would
   wait:
@@ -39,7 +34,7 @@ with them (they are in the history up to 6aebf22). It runs with two switches:
 
   The log then depends on the script alone. Game logic never reads the
   clock, so the snaps match the normal goldens: combat_cockpit matches under
-  this clock on all three devices.
+  this clock.
 
 The log is cut after the last snap, because what follows is the shutdown,
 timed by the harness. It's stored as `traces/<script>.<device>.jsonl.gz`.

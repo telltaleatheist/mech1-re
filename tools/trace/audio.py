@@ -49,7 +49,7 @@ def run(port, game, work, script, device, pcm=False):
     os.makedirs(base, exist_ok=True)
     ini = os.path.join(base, "sound.ini")
     with open(ini, "w") as f:
-        f.write(f"combat_tick_ms=60\ncombat_speed=1\nsound_system={device}\n")
+        f.write(f"combat_tick_ms=60\ncombat_speed=1\nmusic={device}\n")
     log = os.path.join(base, "sound.log")
     env = dict(os.environ, MECHWARRIOR_TIMING_CONFIG=ini, MECHWARRIOR_AUDIO_LOG=log,
                MECHWARRIOR_DEBUG_VIRTUAL_CLOCK="1")
