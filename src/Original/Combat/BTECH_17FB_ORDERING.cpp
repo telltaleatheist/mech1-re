@@ -58,7 +58,7 @@ void BtechOrderMechRenderParts(BtechCameraContext *camera,BtechWorldObjectPrefix
             {if (!objects[index+part]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !objects[index+part]");objects[index+part]->renderFlags&=(uint8_t)~OBJECT_LAST_MECH_DRAW_PART;}
             if (!objects[index+5]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !objects[index+5]");
             objects[index+5]->renderFlags|=OBJECT_LAST_MECH_DRAW_PART;
-            unitLastDrawParts[slot]=(BtechPooledWorldObject *)objects[index+5];
+            combatStartup.unitLastDrawParts[slot]=(BtechPooledWorldObject *)objects[index+5];
             index+=5;break;
         }
     }

@@ -19,7 +19,7 @@ void BtechShutdownPlatformHandlers(void)
 /*1BF5:00EA. FF means no saved adapter, not a request to force mode03. */
 void BtechRestoreTextVideoMode(void)
 {
-    if (videoAdapter!=VIDEO_ADAPTER_UNSAVED) BtechSetBiosTextModeAndAdapterBits(videoAdapter);
+    if (combatStartup.videoAdapter!=VIDEO_ADAPTER_UNSAVED) BtechSetBiosTextModeAndAdapterBits(combatStartup.videoAdapter);
 }
 
 /*1BF5:0287. Native BIOS equipment BYTE has two ordered read/modify/writes. */
@@ -34,10 +34,10 @@ void BtechSetBiosTextModeAndAdapterBits(uint16_t displayBits)
 /*1BF5:2C8D. Flag clears before discarding queued keys and restoring IVT. */
 void BtechRestoreKeyboardAndTickVectors(void)
 {
-    if (!keyboardHandlersInstalled) return;
-    keyboardHandlersInstalled=0;
+    if (!combatStartup.keyboardHandlersInstalled) return;
+    combatStartup.keyboardHandlersInstalled=0;
     if (!btechHostSetKeyboardOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetKeyboardOwner");
-    combatKeyQueueHead=combatKeyQueueTail;
+    combatInput.combatKeyQueueHead=combatInput.combatKeyQueueTail;
     btechHostSetKeyboardOwner(combatHandlers.savedKeyboardOwner);
     /* INT 1Ch's restore is gone with its never-installed hook (H4c). */
 }
@@ -45,8 +45,8 @@ void BtechRestoreKeyboardAndTickVectors(void)
 /*1BF5:2428. INT33 reset is a hardware boundary, not a game-input callback. */
 void BtechShutdownMouseDriver(void)
 {
-    if (!mouseDriverInstalled) return;
-    mouseDriverInstalled=0;
+    if (!combatStartup.mouseDriverInstalled) return;
+    combatStartup.mouseDriverInstalled=0;
     if (!btechHostResetMouse) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostResetMouse");
     btechHostResetMouse();
 }
@@ -68,6 +68,6 @@ void BtechRestoreTimerScheduler(void)
  * stays the owner. The discarded read went with the vectors (H4c). */
 void BtechDeactivateDivideErrorHook(void)
 {
-    if (!divideErrorHookMarkedActive) return;
-    divideErrorHookMarkedActive=0;
+    if (!combatStartup.divideErrorHookMarkedActive) return;
+    combatStartup.divideErrorHookMarkedActive=0;
 }

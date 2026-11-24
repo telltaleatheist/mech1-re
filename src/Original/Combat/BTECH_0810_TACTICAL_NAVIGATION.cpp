@@ -20,7 +20,7 @@ void BtechUpdateTacticalNavigation(void)
     if (!activeUnitControl || !activeUnitPositionedObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl || !activeUnitPositionedObject");
     BtechUnitControlState *control=activeUnitControl;
     BtechPosition3D waypoint;
-    if (BtechHasNearbyVisibleThreat() && combatTickCounter)
+    if (BtechHasNearbyVisibleThreat() && combatStartup.combatTickCounter)
     {
         BtechSelectUnitTacticalState();
         if (control->trackedUnitOrSpecialSlot>=0)

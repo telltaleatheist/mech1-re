@@ -118,7 +118,7 @@ void BtechExportCombatResultsAndTransition(uint16_t resultCode)
     if ((int16_t)combatContinuationStage>=0 && (int16_t)combatContinuationStage<COMBAT_FINAL_CONTINUATION_STAGE
         && resultCode==COMBAT_RESULT_SUCCESS && (!specialAssaultMode || (int16_t)combatContinuationStage<1))
     {
-        if (hudColourSchemeIndex && (combatDispatchState==PLAYER_SCREEN_TARGET_INSPECTION || combatDispatchState==PLAYER_SCREEN_INSPECTION))
+        if (hudColourSchemeIndex && (combatStartup.combatDispatchState==PLAYER_SCREEN_TARGET_INSPECTION || combatStartup.combatDispatchState==PLAYER_SCREEN_INSPECTION))
         {
             BtechClearInspectionBackground();
             BtechApplyLandscapeCameraColours();

@@ -16,7 +16,7 @@ void BtechRenderCockpitSceneAndHud(void)
     BtechPooledWorldObject *torso=playerUnitBinding->torso;
     BtechPooledWorldObject *positionedBody=playerUnitBinding->positionedLeftLeg;
     if (!playerPoseCameraContext) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerPoseCameraContext");
-    if (playerImpactThisTick && playerPoseCameraContext->fillPaletteA!=COMBAT_COCKPIT_IMPACT_COLOUR)
+    if (combatStartup.playerImpactThisTick && playerPoseCameraContext->fillPaletteA!=COMBAT_COCKPIT_IMPACT_COLOUR)
         playerPoseCameraContext->fillPaletteA=COMBAT_COCKPIT_IMPACT_COLOUR;
     else
     {
@@ -39,12 +39,12 @@ void BtechRenderCockpitSceneAndHud(void)
     if (!playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState");
     uint32_t aimCosine=(int16_t)BtechLookupCosine(playerMechState->aimPitch);
     uint32_t aimSine=(int16_t)BtechLookupSine(playerMechState->aimPitch);
-    uint32_t projectedAim=BtechDivideSignedDword(BtechShiftDwordLeft(aimSine,(uint8_t)viewScaleShift),aimCosine);
+    uint32_t projectedAim=BtechDivideSignedDword(BtechShiftDwordLeft(aimSine,(uint8_t)combatStartup.viewScaleShift),aimCosine);
     uint16_t viewportYSum=playerPoseCameraContext->clipMaximumB+playerPoseCameraContext->clipMinimumB;
-    aimReticleScreenY=(uint16_t)((uint16_t)projectedAim+(uint16_t)((int16_t)viewportYSum>>1));
+    combatStartup.aimReticleScreenY=(uint16_t)((uint16_t)projectedAim+(uint16_t)((int16_t)viewportYSum>>1));
     drawPageSelector=backPageSelector;
-    uint16_t probeY=BtechRandomSignedSpread(heatAimJitterTiers[0])+aimReticleScreenY;
-    uint16_t probeX=BtechRandomSignedSpread(heatAimJitterTiers[0])+COMBAT_SCREEN_WIDTH/2;
+    uint16_t probeY=BtechRandomSignedSpread(combatStartup.heatAimJitterTiers[0])+combatStartup.aimReticleScreenY;
+    uint16_t probeX=BtechRandomSignedSpread(combatStartup.heatAimJitterTiers[0])+COMBAT_SCREEN_WIDTH/2;
     BtechBeginSelectionPixelProbe(probeX,probeY);
     BtechRenderObjectList(playerPoseCameraContext,cockpitWorldObjects,(int16_t)cockpitWorldObjectCount);
     BtechRemoveBodyHeadingFromMechParts();
@@ -60,9 +60,9 @@ void BtechRenderCockpitSceneAndHud(void)
     if (mechCockpitLayoutIndices[playerMechState->templateIndex]==2)
     {zoomX=COCKPIT_LEFT_LABEL_X;automaticWeaponsX=COCKPIT_RIGHT_LABEL_X;}
     BtechDrawNearText(zoomLabel,zoomX,COCKPIT_STATUS_TEXT_Y);
-    BtechDrawNearText(BtechFormatSignedDecimalField((int16_t)(viewScaleShift-COCKPIT_ZOOM_SHIFT_BASE),1,' '),zoomX+COCKPIT_ZOOM_VALUE_X_OFFSET,COCKPIT_STATUS_TEXT_Y);
-    if (mountGroupMode) BtechDrawNearText(automaticWeaponsLabel,automaticWeaponsX,COCKPIT_STATUS_TEXT_Y);
-    if (heatInhibitFlags[0] && (combatTickCounter&COCKPIT_WARNING_FLASH_MASK))
+    BtechDrawNearText(BtechFormatSignedDecimalField((int16_t)(combatStartup.viewScaleShift-COCKPIT_ZOOM_SHIFT_BASE),1,' '),zoomX+COCKPIT_ZOOM_VALUE_X_OFFSET,COCKPIT_STATUS_TEXT_Y);
+    if (combatStartup.mountGroupMode) BtechDrawNearText(automaticWeaponsLabel,automaticWeaponsX,COCKPIT_STATUS_TEXT_Y);
+    if (heatInhibitFlags[0] && (combatStartup.combatTickCounter&COCKPIT_WARNING_FLASH_MASK))
     {
         textForegroundColour=COCKPIT_REACTOR_WARNING_COLOUR;
         BtechDrawNearText(reactorShutdownText,COCKPIT_REACTOR_WARNING_X,COCKPIT_REACTOR_WARNING_Y);

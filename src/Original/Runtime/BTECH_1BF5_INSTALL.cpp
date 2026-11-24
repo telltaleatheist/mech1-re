@@ -9,13 +9,13 @@
  * that update are gone, H4c). */
 uint16_t BtechRegisterTimerCallback(BtechTimerCallback callback,uint16_t period)
 {
-    if (!runtimeDelayActive || schedulerActiveSlots==UINT16_MAX) return 0;
-    uint16_t slot=0,slotMask=1,pendingSlots=schedulerActiveSlots;
+    if (!runtimeDelayActive || combatStartup.schedulerActiveSlots==UINT16_MAX) return 0;
+    uint16_t slot=0,slotMask=1,pendingSlots=combatStartup.schedulerActiveSlots;
     while (pendingSlots&1) {++slot;slotMask<<=1;pendingSlots>>=1;}
-    schedulerTimings[slot].period=period;
-    schedulerTimings[slot].ticksRemaining=period;
-    schedulerCallbacks[slot]=callback;
-    schedulerActiveSlots|=slotMask;
+    combatStartup.schedulerTimings[slot].period=period;
+    combatStartup.schedulerTimings[slot].ticksRemaining=period;
+    combatStartup.schedulerCallbacks[slot]=callback;
+    combatStartup.schedulerActiveSlots|=slotMask;
     return slot+1;
 }
 
@@ -25,7 +25,7 @@ uint16_t BtechUnregisterTimerCallback(uint16_t callbackHandle)
 {
     --callbackHandle;
     if ((uint8_t)callbackHandle&COMBAT_SCHEDULER_INVALID_SLOT_BITS) return 0;
-    schedulerActiveSlots&=(uint16_t)~(1u<<(uint8_t)callbackHandle);
+    combatStartup.schedulerActiveSlots&=(uint16_t)~(1u<<(uint8_t)callbackHandle);
     return 1;
 }
 
@@ -36,21 +36,21 @@ void BtechTimerSchedulerInterrupt(void)
 {
     uint16_t remaining=runtimeDelayRemaining-1;
     runtimeDelayRemaining=remaining^((remaining&NATIVE_WORD_SIGN_BIT)?UINT16_MAX:0);
-    uint16_t pendingSlots=schedulerActiveSlots;
+    uint16_t pendingSlots=combatStartup.schedulerActiveSlots;
     for (uint16_t slot=0;pendingSlots;++slot,pendingSlots>>=1)
     {
         if (!(pendingSlots&1)) continue;
-        remaining=schedulerTimings[slot].ticksRemaining-1;
+        remaining=combatStartup.schedulerTimings[slot].ticksRemaining-1;
         if (!remaining)
         {
-            if (!schedulerCallbacks[slot]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !schedulerCallbacks[slot]"); /* Native NULL FAR fault. */
-            schedulerCallbacks[slot]();
-            remaining=schedulerTimings[slot].period; /* Live AFTER callback. */
+            if (!combatStartup.schedulerCallbacks[slot]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !schedulerCallbacks[slot]"); /* Native NULL FAR fault. */
+            combatStartup.schedulerCallbacks[slot]();
+            remaining=combatStartup.schedulerTimings[slot].period; /* Live AFTER callback. */
         }
-        schedulerTimings[slot].ticksRemaining=remaining;
+        combatStartup.schedulerTimings[slot].ticksRemaining=remaining;
     }
-    remaining=schedulerCountdown-1;
-    if (remaining) schedulerCountdown=remaining; /* Its EOI is gone (H4c). */
+    remaining=combatStartup.schedulerCountdown-1;
+    if (remaining) combatStartup.schedulerCountdown=remaining; /* Its EOI is gone (H4c). */
     else
     {
         /* The original chained to IRQ0's saved owner here, every
@@ -59,7 +59,7 @@ void BtechTimerSchedulerInterrupt(void)
          * the campaign's timer handler, whose slot 0 is the BIOS tick. Only
          * the previous owner was ever saved; combat's music timer saved
          * under the scheduler is not converted. */
-        schedulerCountdown=schedulerPeriod;
+        combatStartup.schedulerCountdown=combatStartup.schedulerPeriod;
         if (combatHandlers.savedTimerOwner!=MwTimerOwner::Previous) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: savedTimerOwner!=MwTimerOwner::Previous");
         if (!btechHostRunPreviousTimerOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostRunPreviousTimerOwner");
         btechHostRunPreviousTimerOwner();
@@ -83,31 +83,31 @@ void BtechInstallKeyboardAndTickHandlers(void)
 {
     if (!btechHostGetKeyboardOwner || !btechHostSetKeyboardOwner
         || !btechHostReadBiosByte || !btechHostWriteBiosByte) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetKeyboardOwner || !btechHostSetKeyboardOwner || !btechHostReadBiosByte || !btechHostWriteBiosByte");
-    if (!keyboardHandlersInstalled)
+    if (!combatStartup.keyboardHandlersInstalled)
     {
         combatHandlers.savedKeyboardOwner=btechHostGetKeyboardOwner();
         btechHostSetKeyboardOwner(MwKeyboardOwner::Combat);
-        keyboardBiosIntercept=0;
+        combatStartup.keyboardBiosIntercept=0;
         int16_t compatibility=BtechProbePcjrTandyRomSignatures();
         if (compatibility)
         {
             if (!btechHostQueryKeyboardIntercept) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostQueryKeyboardIntercept");
             /* NEG AX leavesFFFF when3449 returns1; it is not BIOS C0. */
             if (btechHostQueryKeyboardIntercept((uint16_t)-compatibility)
-                && btechHostReadBiosByte(BIOS_KEYBOARD_COMPATIBILITY_STATE)==KEYBOARD_COMPATIBILITY_INTERCEPT_STATE) keyboardBiosIntercept=1;
+                && btechHostReadBiosByte(BIOS_KEYBOARD_COMPATIBILITY_STATE)==KEYBOARD_COMPATIBILITY_INTERCEPT_STATE) combatStartup.keyboardBiosIntercept=1;
             else
             {
                 combatHandlers.keyboardScanMask=KEYBOARD_ATTRIBUTE_CLEAR_HELD;combatHandlers.keyboardExtendedScanMask=KEYBOARD_ATTRIBUTE_CLEAR_HELD;
-                keyboardScanTranslations[COMBAT_KEY_GRAVE]=keyboardScanTranslations[COMBAT_KEY_UP];
-                keyboardScanTranslations[COMBAT_KEY_BACKSLASH]=keyboardScanTranslations[COMBAT_KEY_LEFT];
-                keyboardScanTranslations[COMBAT_KEY_KEYPAD_PLUS]=keyboardScanTranslations[COMBAT_KEY_RIGHT];
-                keyboardScanTranslations[COMBAT_KEY_KEYPAD_MINUS]=keyboardScanTranslations[COMBAT_KEY_DOWN];
+                combatStartup.keyboardScanTranslations[COMBAT_KEY_GRAVE]=combatStartup.keyboardScanTranslations[COMBAT_KEY_UP];
+                combatStartup.keyboardScanTranslations[COMBAT_KEY_BACKSLASH]=combatStartup.keyboardScanTranslations[COMBAT_KEY_LEFT];
+                combatStartup.keyboardScanTranslations[COMBAT_KEY_KEYPAD_PLUS]=combatStartup.keyboardScanTranslations[COMBAT_KEY_RIGHT];
+                combatStartup.keyboardScanTranslations[COMBAT_KEY_KEYPAD_MINUS]=combatStartup.keyboardScanTranslations[COMBAT_KEY_DOWN];
             }
         }
-        keyboardHandlersInstalled=1;
+        combatStartup.keyboardHandlersInstalled=1;
     }
-    keyboardShiftFlags&=BIOS_SHIFT_CLEAR_NUM_LOCK;
-    if (keyboardCapsLockRequested) keyboardShiftFlags|=BIOS_SHIFT_CAPS_LOCK;
+    combatInput.keyboardShiftFlags&=BIOS_SHIFT_CLEAR_NUM_LOCK;
+    if (combatStartup.keyboardCapsLockRequested) combatInput.keyboardShiftFlags|=BIOS_SHIFT_CAPS_LOCK;
 }
 
 /*1BF5:1F20. Saved offset/selector are captured first (the CLI/STI around
@@ -116,8 +116,8 @@ void BtechInstallKeyboardAndTickHandlers(void)
 void BtechInstallDivideErrorHandler(void)
 {
     if (!btechHostGetDivideOwner || !btechHostSetDivideOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetDivideOwner || !btechHostSetDivideOwner");
-    divideErrorHookMarkedActive=1;
-    savedDivideErrorOwner=btechHostGetDivideOwner();
+    combatStartup.divideErrorHookMarkedActive=1;
+    combatStartup.savedDivideErrorOwner=btechHostGetDivideOwner();
     btechHostSetDivideOwner(MwDivideOwner::Combat);
 }
 
@@ -127,16 +127,16 @@ void BtechInstallDivideErrorHandler(void)
 void BtechInstallTimerScheduler(uint16_t period)
 {
     if (runtimeDelayActive) return;
-    schedulerActiveSlots=0;
+    combatStartup.schedulerActiveSlots=0;
     BtechProbePcjrTandyRomSignatures();
     if (!btechHostGetTimerOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostGetTimerOwner");
     combatHandlers.savedTimerOwner=btechHostGetTimerOwner();
     if ((int16_t)period>COMBAT_SCHEDULER_MAX_POSITIVE_PERIOD || !period) return;
-    schedulerPeriod=period;schedulerCountdown=period;
-    pitChannel0DivisorShadow=UINT16_MAX/period;
+    combatStartup.schedulerPeriod=period;combatStartup.schedulerCountdown=period;
+    combatStartup.pitChannel0DivisorShadow=UINT16_MAX/period;
     if (!btechHostEnableDeviceIrqs || !btechHostSetTimerOwner || !btechHostSetTimerPeriod) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostEnableDeviceIrqs || !btechHostSetTimerOwner || !btechHostSetTimerPeriod");
     /* The PIT programming (43h, 40h low, 40h high) is the host's timer period since H4b. */
-    btechHostSetTimerPeriod(pitChannel0DivisorShadow);
+    btechHostSetTimerPeriod(combatStartup.pitChannel0DivisorShadow);
     btechHostEnableDeviceIrqs(MwDeviceIrq::All); /* Mask 28h: off only IRQ3 and 5, which the host has no device on. */
     btechHostSetTimerOwner(MwTimerOwner::CombatScheduler);
     runtimeDelayActive=1;

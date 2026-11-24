@@ -32,45 +32,45 @@ void BtechProcessPlayerControls(void)
         || !playerMechState || !playerMechTemplate) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->torso || !playerUnitBinding->positionedLeftLeg || !playerMechState || !playerMechTemplate");
     BtechWorldObjectPrefix *torso=&playerUnitBinding->torso->object.prefix;
     BtechPooledWorldObject *motion=playerUnitBinding->positionedLeftLeg;
-    if (!combatTickCounter)
+    if (!combatStartup.combatTickCounter)
     {
-        unidentifiedField24=previousFireButtonState=previousAimButtonState=0;
-        requestedTorsoAngle=requestedAimPitch=fireCycleActive=0;
+        combatInput.unidentifiedField24=combatInput.previousFireButtonState=combatInput.previousAimButtonState=0;
+        combatInput.requestedTorsoAngle=combatInput.requestedAimPitch=combatInput.fireCycleActive=0;
     }
-    if (fireCycleActive && selectedWeaponMount==fireCycleStartMount) fireCycleActive=0;
+    if (combatInput.fireCycleActive && combatStartup.selectedWeaponMount==combatInput.fireCycleStartMount) combatInput.fireCycleActive=0;
     uint16_t altHeld=BtechReadHeldKeyState(COMBAT_KEY_ALT);
-    int16_t scanCode=combatInputScanCode;
+    int16_t scanCode=combatInput.combatInputScanCode;
     switch (scanCode)
     {
     case COMBAT_KEY_P:
         BtechShowSimulationPausedDialog();break;
     case COMBAT_KEY_ESCAPE:
-        if (!sideCompletionFlags[1] && !sideCompletionFlags[0] && BtechConfirmRetreatDialog())
+        if (!combatStartup.sideCompletionFlags[1] && !combatStartup.sideCompletionFlags[0] && BtechConfirmRetreatDialog())
             BtechExportCombatResultsAndTransition(COMBAT_RESULT_RETREAT);
         break;
     case COMBAT_KEY_TAB:
-        fireCycleActive^=1;
-        if (fireCycleActive) fireCycleStartMount=selectedWeaponMount;
+        combatInput.fireCycleActive^=1;
+        if (combatInput.fireCycleActive) combatInput.fireCycleStartMount=combatStartup.selectedWeaponMount;
         break;
     case COMBAT_KEY_W:
-        mountGroupMode^=1;
+        combatStartup.mountGroupMode^=1;
         for (uint16_t mount=0;mount<playerMechTemplate->weaponMountCount && mount<COMBAT_WEAPON_MOUNTS;++mount)
         {
-            playerMountFireFlags[mount]=(int8_t)playerMechState->weapons[mount].operational;
+            combatStartup.playerMountFireFlags[mount]=(int8_t)playerMechState->weapons[mount].operational;
         }
         break;
     case COMBAT_KEY_E:
-        if (!cockpitFullRedrawPending && (playerTargetSlot&PLAYER_MECH_TARGET_INDEX_MASK) && !playerMechState->sensorHits)
-            combatDispatchState=PLAYER_SCREEN_TARGET_INSPECTION;
+        if (!cockpitFullRedrawPending && (combatStartup.playerTargetSlot&PLAYER_MECH_TARGET_INDEX_MASK) && !playerMechState->sensorHits)
+            combatStartup.combatDispatchState=PLAYER_SCREEN_TARGET_INSPECTION;
         break;
     case COMBAT_KEY_R:
-        if (headingRadarSelected)
+        if (combatStartup.headingRadarSelected)
         {
-            --radarRangeShift;
-            if ((int16_t)radarRangeShift<PLAYER_RADAR_RANGE_MINIMUM) radarRangeShift=PLAYER_RADAR_RANGE_MAXIMUM;
+            --combatStartup.radarRangeShift;
+            if ((int16_t)combatStartup.radarRangeShift<PLAYER_RADAR_RANGE_MINIMUM) combatStartup.radarRangeShift=PLAYER_RADAR_RANGE_MAXIMUM;
         }
         break;
-    case COMBAT_KEY_T: headingRadarSelected=headingRadarSelected<1;break;
+    case COMBAT_KEY_T: combatStartup.headingRadarSelected=combatStartup.headingRadarSelected<1;break;
     case COMBAT_KEY_U:
         if (unitControls[0].movementMode==MOVEMENT_MODE_FALLEN_POSE
             && playerMechState->currentInternalStructure[COMBAT_BODY_LEFT_LEG]
@@ -80,8 +80,8 @@ void BtechProcessPlayerControls(void)
                 ?ANIMATION_REQUEST_RECOVER:ANIMATION_REQUEST_FAILED_RECOVERY;
         break;
     case COMBAT_KEY_O:
-        if (selectedWeaponMount<COMBAT_WEAPON_MOUNTS && selectedWeaponMount<playerMechTemplate->weaponMountCount)
-            playerMountFireFlags[selectedWeaponMount]^=1;
+        if (combatStartup.selectedWeaponMount<COMBAT_WEAPON_MOUNTS && combatStartup.selectedWeaponMount<playerMechTemplate->weaponMountCount)
+            combatStartup.playerMountFireFlags[combatStartup.selectedWeaponMount]^=1;
         break;
     case COMBAT_KEY_H:
     {
@@ -108,42 +108,42 @@ void BtechProcessPlayerControls(void)
         }
         break;
     case COMBAT_KEY_Z:
-        ++viewScaleShift;
-        if ((int16_t)viewScaleShift>PLAYER_ZOOM_MAXIMUM) viewScaleShift=PLAYER_ZOOM_MINIMUM;
+        ++combatStartup.viewScaleShift;
+        if ((int16_t)combatStartup.viewScaleShift>PLAYER_ZOOM_MAXIMUM) combatStartup.viewScaleShift=PLAYER_ZOOM_MINIMUM;
         if (!playerPoseCameraContext) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerPoseCameraContext");
-        playerPoseCameraContext->projectionShift=(uint8_t)viewScaleShift;
+        playerPoseCameraContext->projectionShift=(uint8_t)combatStartup.viewScaleShift;
         break;
     case COMBAT_KEY_C:
-        if (!cockpitFullRedrawPending) combatDispatchState=PLAYER_SCREEN_ORDERS;
+        if (!cockpitFullRedrawPending) combatStartup.combatDispatchState=PLAYER_SCREEN_ORDERS;
         break;
     case COMBAT_KEY_KEYPAD_MINUS:
-        selectedWeaponMount=BtechFindPreviousReadyPlayerWeaponMount(selectedWeaponMount,1);break;
+        combatStartup.selectedWeaponMount=BtechFindPreviousReadyPlayerWeaponMount(combatStartup.selectedWeaponMount,1);break;
     case COMBAT_KEY_KEYPAD_PLUS:
-        selectedWeaponMount=BtechFindNextReadyPlayerWeaponMount(selectedWeaponMount,1);break;
+        combatStartup.selectedWeaponMount=BtechFindNextReadyPlayerWeaponMount(combatStartup.selectedWeaponMount,1);break;
     case COMBAT_KEY_ENTER:
         if ((int16_t)playerMechState->sensorHits<COMBAT_SENSORS_DESTROYED_HITS)
-            playerTargetSlot=BtechCyclePlayerVisibleTarget(playerTargetSlot);
+            combatStartup.playerTargetSlot=BtechCyclePlayerVisibleTarget(combatStartup.playerTargetSlot);
         break;
     case COMBAT_KEY_S: combatSoundEnabled=combatSoundEnabled<1;break;
     case COMBAT_KEY_D:
-        if (!cockpitFullRedrawPending) combatDispatchState=PLAYER_SCREEN_INSPECTION;
+        if (!cockpitFullRedrawPending) combatStartup.combatDispatchState=PLAYER_SCREEN_INSPECTION;
         break;
     default:
-        if (scanCode>=COMBAT_KEY_1 && scanCode<=COMBAT_KEY_0 && BtechIsPlayerWeaponMountReady(scanCode-COMBAT_KEY_1)) selectedWeaponMount=scanCode-COMBAT_KEY_1;
+        if (scanCode>=COMBAT_KEY_1 && scanCode<=COMBAT_KEY_0 && BtechIsPlayerWeaponMountReady(scanCode-COMBAT_KEY_1)) combatStartup.selectedWeaponMount=scanCode-COMBAT_KEY_1;
         break;
     }
-    uint16_t directions=combatInputDirectionMask,aimButton=combatInputButton1State,fireButton=combatInputButton0State;
-    if (selectedWeaponMount>=COMBAT_WEAPON_MOUNTS || selectedWeaponMount>=playerMechTemplate->weaponMountCount
-        || (uint16_t)playerMechTemplate->weaponMounts[selectedWeaponMount].weaponKind>=COMBAT_WEAPON_KINDS)
-        fireCycleActive=0;
-    else if ((previousFireButtonState && !fireButton) || scanCode==COMBAT_KEY_SPACE || fireCycleActive)
+    uint16_t directions=combatInput.combatInputDirectionMask,aimButton=combatInput.combatInputButton1State,fireButton=combatInput.combatInputButton0State;
+    if (combatStartup.selectedWeaponMount>=COMBAT_WEAPON_MOUNTS || combatStartup.selectedWeaponMount>=playerMechTemplate->weaponMountCount
+        || (uint16_t)playerMechTemplate->weaponMounts[combatStartup.selectedWeaponMount].weaponKind>=COMBAT_WEAPON_KINDS)
+        combatInput.fireCycleActive=0;
+    else if ((combatInput.previousFireButtonState && !fireButton) || scanCode==COMBAT_KEY_SPACE || combatInput.fireCycleActive)
     {
-        BtechWeaponState *weapon=&playerMechState->weapons[selectedWeaponMount];
+        BtechWeaponState *weapon=&playerMechState->weapons[combatStartup.selectedWeaponMount];
         if (weapon->reloadTicksRemaining || heatInhibitFlags[0] || unitControls[0].conditionScoreOrExitCode<=COMBAT_CONDITION_SCORE_MINIMUM || !weapon->operational)
-            fireCycleActive=0;
+            combatInput.fireCycleActive=0;
         else
         {
-            int16_t kind=playerMechTemplate->weaponMounts[selectedWeaponMount].weaponKind;
+            int16_t kind=playerMechTemplate->weaponMounts[combatStartup.selectedWeaponMount].weaponKind;
             if ((uint16_t)kind>=COMBAT_WEAPON_KINDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)kind>=COMBAT_WEAPON_KINDS");
             BtechWeaponDefinition *definition=&weaponDefinitions[kind];
             int16_t ammoFamily=definition->ammoFamily;
@@ -157,7 +157,7 @@ void BtechProcessPlayerControls(void)
                 uint16_t sound;
                 if ((uint16_t)ammoFamily==COMBAT_AMMO_NONE)
                 {
-                    BtechFirePlayerDirectWeapon(selectedWeaponMount);
+                    BtechFirePlayerDirectWeapon(combatStartup.selectedWeaponMount);
                     sound=kind==COMBAT_WEAPON_PPC?PLAYER_PPC_SOUND:PLAYER_LASER_SOUND;
                 }
                 else
@@ -166,16 +166,16 @@ void BtechProcessPlayerControls(void)
                     if (kind==COMBAT_WEAPON_MACHINE_GUN)
                     {
                         sound=PLAYER_MACHINE_GUN_SOUND;
-                        BtechFirePlayerDirectWeapon(selectedWeaponMount);
+                        BtechFirePlayerDirectWeapon(combatStartup.selectedWeaponMount);
                         /* Reload live globals after firing, as0B19 does. */
-                        if (playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES || selectedWeaponMount>=COMBAT_WEAPON_MOUNTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES || selectedWeaponMount>=COMBAT_WEAPON_MOUNTS");
-                        uint16_t location=mechTemplates[playerMechState->templateIndex].weaponMounts[selectedWeaponMount].bodyLocation;
-                        if (location==COMBAT_BODY_LEFT_ARM || location==COMBAT_BODY_LEFT_TORSO) firingIndicatorBank0Pending=1;
-                        else firingIndicatorBank1Pending=1;
+                        if (playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES || combatStartup.selectedWeaponMount>=COMBAT_WEAPON_MOUNTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES || selectedWeaponMount>=COMBAT_WEAPON_MOUNTS");
+                        uint16_t location=mechTemplates[playerMechState->templateIndex].weaponMounts[combatStartup.selectedWeaponMount].bodyLocation;
+                        if (location==COMBAT_BODY_LEFT_ARM || location==COMBAT_BODY_LEFT_TORSO) combatStartup.firingIndicatorBank0Pending=1;
+                        else combatStartup.firingIndicatorBank1Pending=1;
                     }
                     else
                     {
-                        BtechFirePlayerWeaponProjectile(selectedWeaponMount);
+                        BtechFirePlayerWeaponProjectile(combatStartup.selectedWeaponMount);
                         sound=kind==COMBAT_WEAPON_AC5?PLAYER_AC5_SOUND:PLAYER_MISSILE_SOUND;
                     }
                 }
@@ -185,17 +185,17 @@ void BtechProcessPlayerControls(void)
     }
     else if (fireButton && !aimButton)
     {
-        if (directions==COMBAT_DIRECTION_UP) selectedWeaponMount=BtechFindPreviousReadyPlayerWeaponMount(selectedWeaponMount,0);
-        else if (directions==COMBAT_DIRECTION_DOWN) selectedWeaponMount=BtechFindNextReadyPlayerWeaponMount(selectedWeaponMount,0);
+        if (directions==COMBAT_DIRECTION_UP) combatStartup.selectedWeaponMount=BtechFindPreviousReadyPlayerWeaponMount(combatStartup.selectedWeaponMount,0);
+        else if (directions==COMBAT_DIRECTION_DOWN) combatStartup.selectedWeaponMount=BtechFindNextReadyPlayerWeaponMount(combatStartup.selectedWeaponMount,0);
     }
-    previousFireButtonState=fireButton;
+    combatInput.previousFireButtonState=fireButton;
     if (!aimButton && !fireButton)
     {
         int16_t turn=motion->orientationSteps[2],forward=motion->forwardStepScale;
         if (unitControls[0].movementMode==MOVEMENT_MODE_JUMP)
         {
             if (!directions || heatInhibitFlags[0])
-            {requestedPlayerForwardStepScale=(uint16_t)forward;goto dampTurn;}
+            {combatStartup.requestedPlayerForwardStepScale=(uint16_t)forward;goto dampTurn;}
             int16_t charge=(int16_t)playerMechState->jumpCharge,vertical=motion->positionSteps[2];
             int16_t turnSign=directions&COMBAT_DIRECTION_LEFT?1:-1;
             if ((directions&COMBAT_DIRECTION_UP) && charge>=PLAYER_JUMP_FORWARD_COST)
@@ -215,7 +215,7 @@ void BtechProcessPlayerControls(void)
             playerMechState->jumpCharge=(uint16_t)charge;
             motion->orientationSteps[2]=turn; /* No airborne turn clamp. */
             if (forward<(int16_t)playerMechTemplate->jumpSpeedLimit)
-            {requestedPlayerForwardStepScale=(uint16_t)forward;motion->forwardStepScale=forward;}
+            {combatStartup.requestedPlayerForwardStepScale=(uint16_t)forward;motion->forwardStepScale=forward;}
             if (vertical<(int16_t)playerMechTemplate->jumpSpeedLimit) motion->positionSteps[2]=vertical;
             goto aiming;
         }
@@ -241,7 +241,7 @@ dampTurn:
             uint16_t reverse=limit-(limit<0?UINT16_MAX:0);
             reverse=(reverse>>1)|((reverse&NATIVE_WORD_SIGN_BIT)?NATIVE_WORD_SIGN_BIT:0);
             int16_t reverseLimit=(int16_t)(0-reverse),requested=(int16_t)(forward-PLAYER_THROTTLE_STEP);
-            requestedPlayerForwardStepScale=(uint16_t)(requested<reverseLimit?reverseLimit:requested);
+            combatStartup.requestedPlayerForwardStepScale=(uint16_t)(requested<reverseLimit?reverseLimit:requested);
             if (directions&COMBAT_DIRECTION_LEFT) turn=(int16_t)(turn-PLAYER_GROUND_TURN_STEP);
             else if (directions&COMBAT_DIRECTION_RIGHT) turn=(int16_t)(turn+PLAYER_GROUND_TURN_STEP);
         }
@@ -250,7 +250,7 @@ dampTurn:
             if (directions&COMBAT_DIRECTION_UP)
             {
                 int16_t requested=forward+PLAYER_THROTTLE_STEP;
-                requestedPlayerForwardStepScale=(uint16_t)(requested>limit?limit:requested);
+                combatStartup.requestedPlayerForwardStepScale=(uint16_t)(requested>limit?limit:requested);
             }
             if (directions&COMBAT_DIRECTION_LEFT) turn=(int16_t)(turn+PLAYER_GROUND_TURN_STEP);
             else if (directions&COMBAT_DIRECTION_RIGHT) turn=(int16_t)(turn-PLAYER_GROUND_TURN_STEP);
@@ -264,53 +264,53 @@ dampTurn:
     }
 aiming:;
     int16_t torsoHeading=(int16_t)torso->orientationC,aimPitch=(int16_t)playerMechState->aimPitch;
-    if (!aimButton || !directions) requestedAimPitch=(uint16_t)aimPitch;
+    if (!aimButton || !directions) combatInput.requestedAimPitch=(uint16_t)aimPitch;
     else
     {
-        unidentifiedField24=0;
+        combatInput.unidentifiedField24=0;
         if (directions&COMBAT_DIRECTION_LEFT)
         {
             int16_t requested=torsoHeading+PLAYER_TORSO_STEP;
-            requestedTorsoAngle=(uint16_t)(requested>PLAYER_TORSO_LIMIT?PLAYER_TORSO_LIMIT:requested);
+            combatInput.requestedTorsoAngle=(uint16_t)(requested>PLAYER_TORSO_LIMIT?PLAYER_TORSO_LIMIT:requested);
         }
         else if (directions&COMBAT_DIRECTION_RIGHT)
         {
             int16_t requested=torsoHeading-PLAYER_TORSO_STEP;
-            requestedTorsoAngle=(uint16_t)(requested< -PLAYER_TORSO_LIMIT?-PLAYER_TORSO_LIMIT:requested);
+            combatInput.requestedTorsoAngle=(uint16_t)(requested< -PLAYER_TORSO_LIMIT?-PLAYER_TORSO_LIMIT:requested);
         }
         if (directions&COMBAT_DIRECTION_DOWN)
         {
             int16_t requested=aimPitch+PLAYER_AIM_STEP;
-            requestedAimPitch=(uint16_t)(requested>PLAYER_AIM_LIMIT?PLAYER_AIM_LIMIT:requested);
+            combatInput.requestedAimPitch=(uint16_t)(requested>PLAYER_AIM_LIMIT?PLAYER_AIM_LIMIT:requested);
         }
         else if (directions&COMBAT_DIRECTION_UP)
         {
             int16_t minimum=(activeCockpitLayoutIndex<1?PLAYER_FIRST_COCKPIT_AIM_MARGIN:0)-PLAYER_AIM_LIMIT;
             int16_t requested=aimPitch-PLAYER_AIM_STEP;
-            requestedAimPitch=(uint16_t)(requested<minimum?minimum:requested);
+            combatInput.requestedAimPitch=(uint16_t)(requested<minimum?minimum:requested);
         }
     }
-    if (scanCode==COMBAT_KEY_KEYPAD_STOP) {motion->orientationSteps[2]=0;requestedPlayerForwardStepScale=0;}
-    previousAimButtonState=aimButton;
-    if (scanCode==COMBAT_KEY_A) requestedTorsoAngle=0;
+    if (scanCode==COMBAT_KEY_KEYPAD_STOP) {motion->orientationSteps[2]=0;combatStartup.requestedPlayerForwardStepScale=0;}
+    combatInput.previousAimButtonState=aimButton;
+    if (scanCode==COMBAT_KEY_A) combatInput.requestedTorsoAngle=0;
     if (playerMechState->engineHits==PLAYER_ENGINE_DISABLED_HITS || heatInhibitFlags[0] || playerMechState->gyroHits==COMBAT_GYRO_DESTROYED_HITS)
-    {requestedPlayerForwardStepScale=0;motion->orientationSteps[2]=0;}
+    {combatStartup.requestedPlayerForwardStepScale=0;motion->orientationSteps[2]=0;}
     else
     {
         /* Signed comparisons, WORD differences and8000 special case are native.
          * These are three inline convergence blocks, not invented game helpers. */
         aimPitch=(int16_t)playerMechState->aimPitch;
         torsoHeading=(int16_t)torso->orientationC;
-        int16_t target=requestedAimPitch;
+        int16_t target=combatInput.requestedAimPitch;
         int16_t step=(uint16_t)(aimPitch-target)==NATIVE_WORD_SIGN_BIT?INT16_MAX:(int16_t)(aimPitch<target?target-aimPitch:aimPitch-target);
         if (step>PLAYER_AIM_STEP) step=PLAYER_AIM_STEP;
         playerMechState->aimPitch=(uint16_t)(aimPitch+(aimPitch>target?-step:step));
-        target=(int16_t)requestedTorsoAngle;
+        target=(int16_t)combatInput.requestedTorsoAngle;
         step=(uint16_t)(torsoHeading-target)==NATIVE_WORD_SIGN_BIT?INT16_MAX:(int16_t)(torsoHeading<target?target-torsoHeading:torsoHeading-target);
         if (step>PLAYER_TORSO_STEP) step=PLAYER_TORSO_STEP;
         torso->orientationC=(uint16_t)(torsoHeading+(torsoHeading>target?-step:step));
     }
-    int16_t forward=motion->forwardStepScale,target=(int16_t)requestedPlayerForwardStepScale;
+    int16_t forward=motion->forwardStepScale,target=(int16_t)combatStartup.requestedPlayerForwardStepScale;
     int16_t step=(uint16_t)(forward-target)==NATIVE_WORD_SIGN_BIT?INT16_MAX:(int16_t)(forward<target?target-forward:forward-target);
     if (step>PLAYER_THROTTLE_STEP) step=PLAYER_THROTTLE_STEP;
     motion->forwardStepScale=(int16_t)(forward+(forward>target?-step:step));

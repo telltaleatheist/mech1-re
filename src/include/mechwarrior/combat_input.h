@@ -27,18 +27,6 @@ enum { COMBAT_DIRECTION_UP=1,COMBAT_DIRECTION_DOWN=2,COMBAT_DIRECTION_LEFT=4,COM
     COMBAT_KEY_LEFT=0x4B,COMBAT_KEY_RIGHT=0x4D,COMBAT_KEY_END=0x4F,COMBAT_KEY_DOWN=0x50,COMBAT_KEY_PAGE_DOWN=0x51,
     COMBAT_CONTROL_ESCAPE_KEY=(COMBAT_KEY_ESCAPE<<BIOS_KEY_SCAN_SHIFT)|('\x1B'|ASCII_CONTROL_MARKER),
     COMBAT_KEY_QUEUE_SLOTS=16 };
-extern uint16_t terminationFlag,combatInputScanCode,combatInputDirectionMask;
-extern uint16_t combatInputButton1State,combatInputButton0State,combatInputReplayCancelLatched;
-extern uint8_t heldDirectionKeyMasks[2],heldDirectionMasks[0x10];
-extern uint16_t keyboardLastKey;
-/* Combat's key queue and shift flags (H2), where the original used the PC
- * BIOS's 16-slot key ring and shift-flag byte: a key word is the scan above the
- * character, and the flags keep the BIOS's bits (BIOS_SHIFT_*). Empty and zero
- * at each combat's start, as the BIOS data the port gave each combat. */
-extern uint16_t combatKeyQueue[COMBAT_KEY_QUEUE_SLOTS];
-extern uint8_t combatKeyQueueHead,combatKeyQueueTail,keyboardShiftFlags;
-extern uint8_t keyboardUnshiftedCharacters[COMBAT_KEYBOARD_SCAN_CODES],keyboardShiftedCharacters[COMBAT_KEYBOARD_SCAN_CODES];
-extern uint8_t keyboardCompatibilityScans[COMBAT_KEYBOARD_COMPATIBILITY_CODES],keyboardCompatibilityReplacements[COMBAT_KEYBOARD_COMPATIBILITY_CODES];
 void BtechHandleKeyEvent(MwKeyEvent event);
 void BtechRequestTermination(void);
 uint16_t BtechPopKey(void);
@@ -49,7 +37,24 @@ uint16_t BtechReadJoystickPresenceState(uint16_t button);
 void BtechPollCombatCommandInput(void);
 uint16_t BtechWaitForCombatInputReleaseThenPress(void);
 uint16_t BtechWaitForDialogKey(void);
-extern uint16_t fireCycleStartMount,requestedTorsoAngle,previousAimButtonState;
-extern uint16_t previousFireButtonState,fireCycleActive,requestedAimPitch,unidentifiedField24;
+/* Combat state owned by combat_input.h (plan, slice B3a). */
+struct CombatInputState
+{
+    uint16_t terminationFlag, combatInputScanCode, combatInputDirectionMask;
+    uint16_t combatInputButton1State, combatInputButton0State, combatInputReplayCancelLatched;
+    uint8_t heldDirectionKeyMasks[2], heldDirectionMasks[0x10];
+    uint16_t keyboardLastKey;
+    /* Combat's key queue and shift flags (H2), where the original used the PC
+     * BIOS's 16-slot key ring and shift-flag byte: a key word is the scan above the
+     * character, and the flags keep the BIOS's bits (BIOS_SHIFT_*). Empty and zero
+     * at each combat's start, as the BIOS data the port gave each combat. */
+    uint16_t combatKeyQueue[COMBAT_KEY_QUEUE_SLOTS];
+    uint8_t combatKeyQueueHead, combatKeyQueueTail, keyboardShiftFlags;
+    uint8_t keyboardUnshiftedCharacters[COMBAT_KEYBOARD_SCAN_CODES], keyboardShiftedCharacters[COMBAT_KEYBOARD_SCAN_CODES];
+    uint8_t keyboardCompatibilityScans[COMBAT_KEYBOARD_COMPATIBILITY_CODES], keyboardCompatibilityReplacements[COMBAT_KEYBOARD_COMPATIBILITY_CODES];
+    uint16_t fireCycleStartMount, requestedTorsoAngle, previousAimButtonState;
+    uint16_t previousFireButtonState, fireCycleActive, requestedAimPitch, unidentifiedField24;
+};
+extern CombatInputState combatInput;
 void BtechProcessPlayerControls(void);
 #endif

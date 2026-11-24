@@ -129,16 +129,16 @@ void BtechApplyArmorAndInternalDamage(uint16_t unitSlot,int16_t damageArmorLocat
 {
     /* Native 4EEB reads the low byte of this existing music row. Keep the
      * shared owner; this is not an independent invulnerability flag. */
-    if (sideCompletionFlags[1] || ((uint16_t)musicSequences[0][0]&0xFF)) return;
+    if (combatStartup.sideCompletionFlags[1] || ((uint16_t)musicSequences[0][0]&0xFF)) return;
     if (!unitSlot)
     {
         BtechPlaySoundIfEnabled(COMBAT_DAMAGE_SOUND,COMBAT_DAMAGE_SOUND_PRIORITY);
-        playerImpactThisTick=1;
+        combatStartup.playerImpactThisTick=1;
         if (playerDamageSuppressed) return;
     }
     else if (unitSlot==COMBAT_SPECIAL_TARGET_SLOT) {BtechApplySpecialTargetDamage(residualDamage);return;}
     if (unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitSlot>=COMBAT_MECH_SLOTS");
-    targetDamagePanelDirty[unitSlot]=1;
+    combatDamagePanels.targetDamagePanelDirty[unitSlot]=1;
     BtechMechState *damagedMech=unitBindings[unitSlot].mech;
     while (residualDamage)
     {
@@ -200,7 +200,7 @@ void BtechQueueBodyDestructionEmitter(uint16_t unitSlot,int16_t armorLocation)
 void BtechApplySpecialTargetDamage(int16_t damage)
 {
     if (!specialTargetDamageRemaining || specialTargetInteractionBlocked) return;
-    specialTargetDamagePanelDirty=1;
+    combatDamagePanels.specialTargetDamagePanelDirty=1;
     if (damage<(int16_t)specialTargetDamageRemaining) {specialTargetDamageRemaining-=(uint16_t)damage;return;}
     specialTargetDamageRemaining=0;
     if (!specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");

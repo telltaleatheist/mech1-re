@@ -54,7 +54,7 @@ void BtechClearObjectMotionTail(BtechPooledWorldObject *object)
     object->forwardStepScale=0;
     if (!playerUnitBinding) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding");
     if (playerUnitBinding->positionedLeftLeg==object)
-    {requestedPlayerForwardStepScale=0;unidentifiedField21=0;}
+    {combatStartup.requestedPlayerForwardStepScale=0;combatStartup.unidentifiedField21=0;}
 }
 
 /*0810:CBD6. WORD SHL/INC bound and wrapped subtraction, not host rand(). */
@@ -67,7 +67,7 @@ uint16_t BtechRandomSignedSpread(int16_t radius)
  * Pose displacement is rendering motion, not the physics integrator. */
 void BtechUpdatePlayerMechPose(const BtechWorldObjectPrefix *source)
 {
-    if (!combatTickCounter)
+    if (!combatStartup.combatTickCounter)
     {
         playerPoseSequence=ANIMATION_SEQUENCE_IDLE;
         playerPoseDistanceAccumulator=0;unidentifiedField26=0;playerPoseFrame=0;
@@ -145,7 +145,7 @@ drawPose:;
     playerPoseObject->object.prefix.position.positionB=source->position.positionB+(uint32_t)(int16_t)rotated[1];
     playerPoseObject->object.prefix.position.positionC=source->position.positionC+(uint32_t)(int16_t)rotated[2];
     playerPoseObject->object.prefix.orientationA+=keyframe->orientationStepA;
-    if (playerImpactThisTick) playerPosePerturbationTicks=0;
+    if (combatStartup.playerImpactThisTick) playerPosePerturbationTicks=0;
     if ((int16_t)playerPosePerturbationTicks<PLAYER_POSE_PERTURBATION_TICKS)
     {
         uint16_t perturbation=BtechRandomSignedSpread(PLAYER_POSE_PERTURBATION_RADIUS);
@@ -167,7 +167,7 @@ drawPose:;
         {
             playerPoseDistanceAccumulator-=threshold;
             ++playerPoseFrame;
-            if ((playerPoseFrame&3)==3 && combatDispatchState==COMBAT_SCREEN_COCKPIT)
+            if ((playerPoseFrame&3)==3 && combatStartup.combatDispatchState==COMBAT_SCREEN_COCKPIT)
                 BtechPlaySoundIfEnabled(PLAYER_FOOTSTEP_EVENT,1);
         }
     }

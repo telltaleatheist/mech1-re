@@ -38,7 +38,7 @@ uint16_t BtechResolveUnitContactWithSpecialTarget(uint16_t unitSlot)
     uint16_t contactingSideIndex=unitControls[unitSlot].sideIndex;
     if (contactingSideIndex>=2) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: contactingSideIndex>=2");
     if (sideObjectiveRules[contactingSideIndex]==OBJECTIVE_SPECIAL_TARGET && specialTargetInteractionBlocked)
-        sideCompletionFlags[contactingSideIndex]=1;
+        combatStartup.sideCompletionFlags[contactingSideIndex]=1;
     else
     {
         uint16_t contactDamageProductLow=(int32_t)(int16_t)contactingMech->movementReferenceScale*(int16_t)contactingMechTemplate->tonnage;
@@ -189,7 +189,7 @@ void BtechUpdatePlayerMechMotion(void)
     uint16_t savedOrientation[3]={playerMechPose->orientationA,playerMechPose->orientationB,playerMechPose->orientationC};
     if (unitControls[0].movementMode==MOVEMENT_MODE_JUMP)
     {
-        playerMechObject->orientationSteps[1]=0;playerMechObject->orientationSteps[0]=0;playerSpecialTargetLandingLatch=0;
+        playerMechObject->orientationSteps[1]=0;playerMechObject->orientationSteps[0]=0;combatStartup.playerSpecialTargetLandingLatch=0;
         BtechAdvancePooledObjectMotion(playerMechObject);
         uint32_t groundHeight=0;
         if (BtechQueryWorldSurface(&playerMechObject->surfaceQuery,&playerMechPose->position,selectedWorldObjects,(int16_t)selectedObjectCount))
@@ -218,14 +218,14 @@ void BtechUpdatePlayerMechMotion(void)
         else if (BtechResolveUnitContactWithSpecialTarget(0))
         {
             BtechPlaySoundIfEnabled(MOVEMENT_IMPACT_SOUND,MOVEMENT_IMPACT_SOUND_PRIORITY);
-            playerImpactThisTick=1;playerMechObject->forwardStepScale=0;
+            combatStartup.playerImpactThisTick=1;playerMechObject->forwardStepScale=0;
             if ((int32_t)savedPosition.positionC<PLAYER_SPECIAL_LANDING_HEIGHT)
             {playerMechPose->position.positionA=savedPosition.positionA;playerMechPose->position.positionB=savedPosition.positionB;}
             else
             {
                 /*9367..9379 computes a height comparison then discards AX. No height clamp. */
                 playerMechObject->positionSteps[2]=0;unitControls[0].movementMode=MOVEMENT_MODE_LANDING;
-                unitControls[0].animationRequestFlags|=ANIMATION_REQUEST_LANDING;playerSpecialTargetLandingLatch=1;
+                unitControls[0].animationRequestFlags|=ANIMATION_REQUEST_LANDING;combatStartup.playerSpecialTargetLandingLatch=1;
             }
         }
     }
@@ -240,9 +240,9 @@ void BtechUpdatePlayerMechMotion(void)
         playerMechObject->orientationSteps[1]=0;playerMechPose->orientationB=0;
         if (playerMechObject->forwardStepScale)
         {
-            if (BtechTestUnitMovementObstruction(0) || groundSurfaceClass==SURFACE_BLOCKS_GROUND_MOVEMENT || playerSpecialTargetLandingLatch)
+            if (BtechTestUnitMovementObstruction(0) || groundSurfaceClass==SURFACE_BLOCKS_GROUND_MOVEMENT || combatStartup.playerSpecialTargetLandingLatch)
             {
-                BtechPlaySoundIfEnabled(MOVEMENT_IMPACT_SOUND,MOVEMENT_IMPACT_SOUND_PRIORITY);playerImpactThisTick=1;
+                BtechPlaySoundIfEnabled(MOVEMENT_IMPACT_SOUND,MOVEMENT_IMPACT_SOUND_PRIORITY);combatStartup.playerImpactThisTick=1;
                 BtechClearObjectMotionTail(playerMechObject);
                 playerMechPose->position=savedPosition;
                 playerMechPose->orientationA=savedOrientation[0];playerMechPose->orientationB=savedOrientation[1];playerMechPose->orientationC=savedOrientation[2];
@@ -257,7 +257,7 @@ void BtechUpdatePlayerMechMotion(void)
         else
         {
             playerMechPose->position=savedPosition;
-            if (groundSurfaceClass==SURFACE_BLOCKS_GROUND_MOVEMENT || playerSpecialTargetLandingLatch)
+            if (groundSurfaceClass==SURFACE_BLOCKS_GROUND_MOVEMENT || combatStartup.playerSpecialTargetLandingLatch)
             {playerMechPose->orientationB=0;playerMechPose->orientationA=0;playerMechObject->orientationSteps[1]=0;playerMechObject->orientationSteps[0]=0;}
         }
     }

@@ -64,7 +64,7 @@ tacticalUpdate:
             {
                 if (activeMechState->currentInternalStructure[COMBAT_BODY_LEFT_LEG] && activeMechState->currentInternalStructure[COMBAT_BODY_RIGHT_LEG]
                     && activeMechState->actuatorCondition[AI_LEFT_LEG_ACTUATOR] && activeMechState->actuatorCondition[AI_RIGHT_LEG_ACTUATOR]
-                    && !((uint8_t)combatTickCounter&AI_RECOVERY_TICK_MASK))
+                    && !((uint8_t)combatStartup.combatTickCounter&AI_RECOVERY_TICK_MASK))
                 {
                     if (activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS");
                     int16_t roll=(int16_t)BtechRandomBelowBound(pilotingRecoveryBounds[activeUnitControl->unitSlot]);

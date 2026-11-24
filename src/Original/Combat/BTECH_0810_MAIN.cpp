@@ -33,7 +33,7 @@ void BtechProgramMain(uint16_t argumentCount,const char *const *arguments)
         /* Host pacing: each tick lasts a fixed length (docs/timing/PLAN.md).
          * Not a game clock: the logic reads none. Unbound in pure C fixtures. */
         if (btechHostPaceCombatTick) btechHostPaceCombatTick();
-        if (terminationFlag) BtechTerminateToLauncher(1);
+        if (combatInput.terminationFlag) BtechTerminateToLauncher(1);
         runtimeDelayRemaining=COMBAT_FRAME_DELAY_TICKS;
         BtechPollCombatCommandInput();
         BtechRefreshOpposingUnitVisibility();
@@ -42,23 +42,23 @@ void BtechProgramMain(uint16_t argumentCount,const char *const *arguments)
         BtechRechargeJumpCharge();
         BtechUpdateUnitHeatEffects();
         BtechStopSoundEventAndTimer(0);
-        if (combatDispatchState==COMBAT_SCREEN_COCKPIT) BtechProcessPlayerControls();
+        if (combatStartup.combatDispatchState==COMBAT_SCREEN_COCKPIT) BtechProcessPlayerControls();
         BtechUpdatePlayerMechMotion();
-        if (!aiUpdatesSuppressed) BtechUpdateAiMechUnits();
+        if (!combatStartup.aiUpdatesSuppressed) BtechUpdateAiMechUnits();
         BtechUpdateProjectiles();
         BtechAdvanceEffectResourceSequences();
         BtechUpdateBodyDestructionEffects();
-        if (mountGroupMode) BtechAdvancePlayerGroupedWeaponSelection();
-        if (combatDispatchState==COMBAT_SCREEN_COCKPIT) BtechRenderCockpitSceneAndHud();
+        if (combatStartup.mountGroupMode) BtechAdvancePlayerGroupedWeaponSelection();
+        if (combatStartup.combatDispatchState==COMBAT_SCREEN_COCKPIT) BtechRenderCockpitSceneAndHud();
         else
         {
             BtechApplyBodyHeadingToMechParts();
             if (!playerUnitBinding || !playerUnitBinding->torso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->torso");
             BtechUpdatePlayerMechPose(&playerUnitBinding->torso->object.prefix);
             BtechRemoveBodyHeadingFromMechParts();
-            if (combatDispatchState==PLAYER_SCREEN_ORDERS) BtechRefreshLanceOrderScreen();
-            else if (combatDispatchState==PLAYER_SCREEN_INSPECTION) BtechUpdateMechInspectionScreen(0);
-            else if (combatDispatchState==PLAYER_SCREEN_TARGET_INSPECTION) BtechUpdateMechInspectionScreen(playerTargetSlot);
+            if (combatStartup.combatDispatchState==PLAYER_SCREEN_ORDERS) BtechRefreshLanceOrderScreen();
+            else if (combatStartup.combatDispatchState==PLAYER_SCREEN_INSPECTION) BtechUpdateMechInspectionScreen(0);
+            else if (combatStartup.combatDispatchState==PLAYER_SCREEN_TARGET_INSPECTION) BtechUpdateMechInspectionScreen(combatStartup.playerTargetSlot);
         }
         BtechUnregisterTransientWorldObjects();
         BtechDampJumpMotion();
@@ -88,22 +88,22 @@ void BtechProgramMain(uint16_t argumentCount,const char *const *arguments)
             if (missionResult!=COMBAT_RESULT_UNRESOLVED)
             {
                 BtechExportCombatResultsAndTransition(missionResult);
-                combatTickCounter=COMBAT_TICK_RESTART_SENTINEL;outcomeCountdownActive=0;
+                combatStartup.combatTickCounter=COMBAT_TICK_RESTART_SENTINEL;outcomeCountdownActive=0;
             }
         }
-        if (combatTickCounter!=COMBAT_TICK_RESTART_SENTINEL && (sideCompletionFlags[0] || sideCompletionFlags[1]))
+        if (combatStartup.combatTickCounter!=COMBAT_TICK_RESTART_SENTINEL && (combatStartup.sideCompletionFlags[0] || combatStartup.sideCompletionFlags[1]))
         {
-            if (!outcomeCountdownActive) {outcomeCountdownStartTick=combatTickCounter;outcomeCountdownActive=1;}
-            uint16_t outcomeTicksRemaining=outcomeCountdownStartTick-combatTickCounter+COMBAT_OUTCOME_DELAY_TICKS;
-            if (!outcomeTicksRemaining || (combatDispatchState==COMBAT_SCREEN_COCKPIT && combatInputScanCode==COMBAT_KEY_ESCAPE))
+            if (!outcomeCountdownActive) {outcomeCountdownStartTick=combatStartup.combatTickCounter;outcomeCountdownActive=1;}
+            uint16_t outcomeTicksRemaining=outcomeCountdownStartTick-combatStartup.combatTickCounter+COMBAT_OUTCOME_DELAY_TICKS;
+            if (!outcomeTicksRemaining || (combatStartup.combatDispatchState==COMBAT_SCREEN_COCKPIT && combatInput.combatInputScanCode==COMBAT_KEY_ESCAPE))
             {
-                uint16_t missionResult=COMBAT_RESULT_FAILURE-(int16_t)(int8_t)sideCompletionFlags[0];
+                uint16_t missionResult=COMBAT_RESULT_FAILURE-(int16_t)(int8_t)combatStartup.sideCompletionFlags[0];
                 BtechExportCombatResultsAndTransition(missionResult);
-                outcomeCountdownActive=0;combatTickCounter=COMBAT_TICK_RESTART_SENTINEL;
+                outcomeCountdownActive=0;combatStartup.combatTickCounter=COMBAT_TICK_RESTART_SENTINEL;
             }
         }
-        playerImpactThisTick=0;
-        ++combatTickCounter;
+        combatStartup.playerImpactThisTick=0;
+        ++combatStartup.combatTickCounter;
     }
 }
 
@@ -115,7 +115,7 @@ void BtechFlashPlayerMechLoss(void)
     for (uint16_t flash=0;flash<COMBAT_LOSS_FLASHES;++flash)
     {
         uint16_t colour=(flash&1)?COMBAT_LOSS_COLOUR_B:COMBAT_LOSS_COLOUR_A;
-        if (combatDispatchState==COMBAT_SCREEN_COCKPIT)
+        if (combatStartup.combatDispatchState==COMBAT_SCREEN_COCKPIT)
         {
             drawFillColour=(uint8_t)colour;drawLineColour=(uint8_t)colour;
             if (!playerPoseCameraContext) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerPoseCameraContext");

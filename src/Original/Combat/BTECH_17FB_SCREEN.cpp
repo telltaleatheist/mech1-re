@@ -102,7 +102,7 @@ void BtechRefreshLanceOrderScreen(void)
                 if (hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || combatLandscapeIndex>=COMBAT_LANDSCAPES || unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || combatLandscapeIndex>=COMBAT_LANDSCAPES || unitSlot>=COMBAT_MECH_SLOTS");
                 drawFillColour=(uint8_t)landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex].orderTrackingLineColour;
                 BtechDrawClippedLine(unitOrderMapScreenX[unitSlot],unitOrderMapScreenY[unitSlot],trackedX,trackedY);
-                if ((orderPanelMode==ORDER_PANEL_DESTINATION || orderPanelMode==ORDER_PANEL_TARGET) && (combatTickCounter&ORDER_DESTINATION_BLINK_MASK))
+                if ((orderPanelMode==ORDER_PANEL_DESTINATION || orderPanelMode==ORDER_PANEL_TARGET) && (combatStartup.combatTickCounter&ORDER_DESTINATION_BLINK_MASK))
                 {
                     drawFillColour=Combat_Pal_EGA_Black;drawPolygonFilled=false;
                     BtechDrawStyledRectangle((uint16_t)(trackedX-ORDER_DESTINATION_MARKER_INSET),(uint16_t)(trackedY-ORDER_DESTINATION_MARKER_INSET),ORDER_DESTINATION_MARKER_SIZE,ORDER_DESTINATION_MARKER_SIZE);
@@ -114,7 +114,7 @@ void BtechRefreshLanceOrderScreen(void)
     screenPolygonNeedsClip=false;drawPolygonFilled=false;
     previousOrderMapScaleIndex=orderMapScaleIndex;
     BtechEditSelectedUnitOrders();
-    if (combatDispatchState!=PLAYER_SCREEN_ORDERS)
+    if (combatStartup.combatDispatchState!=PLAYER_SCREEN_ORDERS)
     {screenPolygonNeedsClip=true;drawPolygonFilled=true;return;}
     BtechDrawUnitOrderPanels();
     while (BtechGetActiveRuntimeDelayFar())

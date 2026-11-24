@@ -62,16 +62,16 @@ void BtechScoreAndSelectTacticalTarget(void)
  * objective-exit testing can mutate a latch before the survivor fallback. */
 void BtechUpdateSideCompletionFlags(void)
 {
-    if (sideCompletionFlags[0] || sideCompletionFlags[1]) return;
+    if (combatStartup.sideCompletionFlags[0] || combatStartup.sideCompletionFlags[1]) return;
     /* Side 0 tests side 1, and vice versa; the callee can also set its own latch. */
     for (uint16_t benefitingSideIndex=0;benefitingSideIndex<2;++benefitingSideIndex)
         if (BtechTestSideEliminationOrExitObjective(benefitingSideIndex<1)
-            || (sideObjectiveRules[benefitingSideIndex]==OBJECTIVE_SPECIAL_TARGET && !specialTargetDamageRemaining)) sideCompletionFlags[benefitingSideIndex]=1;
-    if (sideCompletionFlags[1] || sideCompletionFlags[0]) return;
-    sideCompletionFlags[1]=1;sideCompletionFlags[0]=1;
+            || (sideObjectiveRules[benefitingSideIndex]==OBJECTIVE_SPECIAL_TARGET && !specialTargetDamageRemaining)) combatStartup.sideCompletionFlags[benefitingSideIndex]=1;
+    if (combatStartup.sideCompletionFlags[1] || combatStartup.sideCompletionFlags[0]) return;
+    combatStartup.sideCompletionFlags[1]=1;combatStartup.sideCompletionFlags[0]=1;
     for (uint16_t survivingUnitSlot=0;survivingUnitSlot<COMBAT_MECH_SLOTS;++survivingUnitSlot)
         if (unitBindings[survivingUnitSlot].mech && unitControls[survivingUnitSlot].conditionScoreOrExitCode>COMBAT_CONDITION_SCORE_MINIMUM)
-            sideCompletionFlags[unitControls[survivingUnitSlot].sideIndex<1]=0;
+            combatStartup.sideCompletionFlags[unitControls[survivingUnitSlot].sideIndex<1]=0;
 }
 
 /*17FB:27F2. Withdrawal success sets THIS side but returns not-eliminated.
@@ -93,7 +93,7 @@ uint8_t BtechTestSideEliminationOrExitObjective(uint16_t sideIndex)
             if (exitBoundaryIndex>=TACTICAL_BOUNDARY_CODES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: exitBoundaryIndex>=TACTICAL_BOUNDARY_CODES"); /* Adjacent authored0EB6 table alias. */
             if ((allowedExitBoundaryMask&boundaryMaskByCode[exitBoundaryIndex]) && sideObjectiveRule==OBJECTIVE_WITHDRAW)
             {
-                sideCompletionFlags[sideIndex]=1;
+                combatStartup.sideCompletionFlags[sideIndex]=1;
                 noMechsStillInBattle=0;
             }
         }

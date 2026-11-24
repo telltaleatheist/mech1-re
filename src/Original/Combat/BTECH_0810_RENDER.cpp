@@ -122,7 +122,7 @@ void BtechUpdateObjectSelectionPixels(BtechHeapWorldObject *object,uint16_t ordi
         selectionCapturedPixels=BtechCaptureSelectionPixels((int16_t)selectionPointScreenX,(int16_t)selectionPointScreenY);
         if (!BtechTestSelectionMarkerPixels(&selectionCapturedPixels))
         {
-            if (!retainCoveredEntry) selectedHitObject=&object->prefix;
+            if (!retainCoveredEntry) combatStartup.selectedHitObject=&object->prefix;
             selectionPointBackground=selectionCapturedPixels;
             BtechWriteSelectionPixels((int16_t)selectionPointScreenX,(int16_t)selectionPointScreenY,&selectionMarkerPixels);
         }
@@ -167,7 +167,7 @@ void BtechUpdateObjectSelectionPixels(BtechHeapWorldObject *object,uint16_t ordi
 void BtechBeginSelectionPixelProbe(uint16_t x,uint16_t y)
 {
     selectionPointScreenX=x;selectionPointScreenY=y;
-    selectedHitObject=NULL;targetSelectionProbeActive=1;
+    combatStartup.selectedHitObject=NULL;targetSelectionProbeActive=1;
 }
 
 /*0810:C2CE. Single-pixel mode observes only AL. The other three returned

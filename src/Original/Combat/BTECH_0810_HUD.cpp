@@ -20,7 +20,7 @@ void BtechPresentHudRectangleIfReady(uint16_t x,uint16_t y,uint16_t width,uint16
 void BtechRefreshCockpitAndSensorTarget(void)
 {
     BtechPooledWorldObject *movementObject=unitBindings[0].positionedLeftLeg;
-    if (!combatTickCounter) rememberedSensorTargetSlot=0;
+    if (!combatStartup.combatTickCounter) rememberedSensorTargetSlot=0;
     drawPageSelector=backPageSelector;screenPolygonNeedsClip=false;drawPolygonFilled=true;
     BtechDrawMechSubsystemLamps(playerMechState);
     if (!playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState");
@@ -33,26 +33,26 @@ void BtechRefreshCockpitAndSensorTarget(void)
     BtechUpdateRadarPanel();
     uint16_t sensorAvailable=0;
     if ((int16_t)playerMechState->sensorHits<2)
-        sensorAvailable=((uint8_t)(BtechRandomBelowBound(3)+(uint8_t)combatTickCounter)&8)!=0;
+        sensorAvailable=((uint8_t)(BtechRandomBelowBound(3)+(uint8_t)combatStartup.combatTickCounter)&8)!=0;
     sensorAvailable|=playerMechState->sensorHits<1; /*069B is UNSIGNED. */
-    if (!playerTargetSlot && sensorAvailable)
+    if (!combatStartup.playerTargetSlot && sensorAvailable)
     {
-        if (BtechTestPlayerTargetRenderVisibility((int16_t)rememberedSensorTargetSlot)) playerTargetSlot=rememberedSensorTargetSlot;
+        if (BtechTestPlayerTargetRenderVisibility((int16_t)rememberedSensorTargetSlot)) combatStartup.playerTargetSlot=rememberedSensorTargetSlot;
     }
-    else if (playerTargetSlot)
+    else if (combatStartup.playerTargetSlot)
     {
-        if (!BtechTestPlayerTargetRenderVisibility((int16_t)playerTargetSlot) || !sensorAvailable)
-        {rememberedSensorTargetSlot=playerTargetSlot;playerTargetSlot=0;}
+        if (!BtechTestPlayerTargetRenderVisibility((int16_t)combatStartup.playerTargetSlot) || !sensorAvailable)
+        {rememberedSensorTargetSlot=combatStartup.playerTargetSlot;combatStartup.playerTargetSlot=0;}
     }
-    BtechDrawWeaponStatusList(selectedWeaponMount,playerTargetSlot);
-    BtechUpdateTargetPanelAndReticle(playerTargetSlot);
-    if (sensorAvailable) BtechDrawCockpitAimReticle(COMBAT_SCREEN_WIDTH/2,aimReticleScreenY);
+    BtechDrawWeaponStatusList(combatStartup.selectedWeaponMount,combatStartup.playerTargetSlot);
+    BtechUpdateTargetPanelAndReticle(combatStartup.playerTargetSlot);
+    if (sensorAvailable) BtechDrawCockpitAimReticle(COMBAT_SCREEN_WIDTH/2,combatStartup.aimReticleScreenY);
 }
 
 /*0810:0561. Four short lines only at native view shift07. */
 void BtechDrawCockpitAimReticle(uint16_t x,uint16_t y)
 {
-    if (viewScaleShift!=AIM_RETICLE_VIEW_SHIFT) return;
+    if (combatStartup.viewScaleShift!=AIM_RETICLE_VIEW_SHIFT) return;
     drawPageSelector=backPageSelector;
     if (combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
     drawFillColour=landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex].hudReticleColour;
@@ -85,18 +85,18 @@ void BtechDrawPendingFiringIndicator(void)
     uint16_t pitchClass=(pitch<FIRING_INDICATOR_UPPER_PITCH)+(pitch<(int16_t)FIRING_INDICATOR_LOWER_PITCH);
     if (activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS");
     const BtechCockpitLayout *layout=&cockpitLayouts[activeCockpitLayoutIndex];
-    if (firingIndicatorBank1Pending)
+    if (combatStartup.firingIndicatorBank1Pending)
     {
         const BtechHudGaugeAnchor *anchor=&layout->firingIndicatorBank1[pitchClass];
         if (!cockpitPictures || FIRING_INDICATOR_BANK_ONE_BITMAP+pitchClass>=cockpitPictures->imageCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !cockpitPictures || FIRING_INDICATOR_BANK_ONE_BITMAP+pitchClass>=cockpitPictures->imageCount");
         BtechDrawBitmap(&cockpitPictures->images[FIRING_INDICATOR_BANK_ONE_BITMAP+pitchClass],anchor->x,anchor->y);
-        firingIndicatorBank1Pending=0;
+        combatStartup.firingIndicatorBank1Pending=0;
     }
-    else if (firingIndicatorBank0Pending)
+    else if (combatStartup.firingIndicatorBank0Pending)
     {
         const BtechHudGaugeAnchor *anchor=&layout->firingIndicatorBank0[pitchClass];
         if (!cockpitPictures || FIRING_INDICATOR_BANK_ZERO_BITMAP+pitchClass>=cockpitPictures->imageCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !cockpitPictures || FIRING_INDICATOR_BANK_ZERO_BITMAP+pitchClass>=cockpitPictures->imageCount");
         BtechDrawBitmap(&cockpitPictures->images[FIRING_INDICATOR_BANK_ZERO_BITMAP+pitchClass],anchor->x,anchor->y);
-        firingIndicatorBank0Pending=0;
+        combatStartup.firingIndicatorBank0Pending=0;
     }
 }

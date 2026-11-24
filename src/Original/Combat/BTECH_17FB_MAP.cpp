@@ -78,7 +78,7 @@ void BtechDrawLanceMapUnitMarkers(void)
         if (control->sideIndex==1)
         {
             if (control->positionKnowledgeCode==COMBAT_POSITION_UNKNOWN) continue;
-            if (control->positionKnowledgeCode==COMBAT_POSITION_REMEMBERED && (combatTickCounter&1)) continue;
+            if (control->positionKnowledgeCode==COMBAT_POSITION_REMEMBERED && (combatStartup.combatTickCounter&1)) continue;
             remembered=BtechPosition3D{(uint32_t)control->lastVisiblePosition[0],(uint32_t)control->lastVisiblePosition[1],(uint32_t)control->lastVisiblePosition[2]};
             position=&remembered;
         }
@@ -108,7 +108,7 @@ void BtechDrawLanceMapRetreatBoundaries(void)
     if (!firstVisible || !secondVisible) return;
     clipMinimumY=top;clipMaximumY=bottom;clipMinimumX=left;clipMaximumX=right;
     screenPolygonNeedsClip=true;
-    int16_t phase=(combatTickCounter&7)-4;
+    int16_t phase=(combatStartup.combatTickCounter&7)-4;
     if (combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
     const BtechLandscapeCameraColourRow *colours=&landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex];
     drawFillColour=(uint8_t)((retreatMask&1)?colours->mapRetreatBoundaryColour:colours->mapBoundaryColour);

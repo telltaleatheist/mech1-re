@@ -19,7 +19,7 @@ void BtechFirePlayerDirectWeapon(uint16_t mountIndex)
     const BtechWeaponDefinition *weaponDefinition=&weaponDefinitions[weaponMount->weaponKind];
     int32_t shotDistanceWorld;
     uint8_t spawnImpactEffect=0;
-    if (!selectedHitObject)
+    if (!combatStartup.selectedHitObject)
     {
         if (!playerPoseObject || !playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerPoseObject || !playerMechState");
         int16_t shotPitch=playerPoseObject->object.prefix.orientationA-playerMechState->aimPitch;
@@ -40,7 +40,7 @@ void BtechFirePlayerDirectWeapon(uint16_t mountIndex)
     else
     {
         if (!playerUnitBinding || !playerUnitBinding->torso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->torso");
-        shotDistanceWorld=(int32_t)BtechApproximatePlanarDistance(&playerUnitBinding->torso->object.prefix.position,&selectedHitObject->position);
+        shotDistanceWorld=(int32_t)BtechApproximatePlanarDistance(&playerUnitBinding->torso->object.prefix.position,&combatStartup.selectedHitObject->position);
         uint32_t shiftedTargetDistance=BtechShiftSignedDwordRight((uint32_t)shotDistanceWorld,DIRECT_SHOT_RANGE_SHIFT);
         int16_t targetRangeUnits=(int16_t)BtechDivideSignedDword(shiftedTargetDistance,DIRECT_SHOT_RANGE_MULTIPLIER);
         const uint16_t rangeBoundaries[]={weaponDefinition->minimumRange,weaponDefinition->shortRangeBoundary,weaponDefinition->mediumRangeBoundary,weaponDefinition->longRangeBoundary};
@@ -58,11 +58,11 @@ void BtechFirePlayerDirectWeapon(uint16_t mountIndex)
                 for (;projectileSlot<COMBAT_PROJECTILE_SLOTS;++projectileSlot)
                 {
                     BtechPooledWorldObject *projectileObject=projectiles[projectileSlot].worldObject;
-                    if (projectileObject && &projectileObject->object.prefix==selectedHitObject)
+                    if (projectileObject && &projectileObject->object.prefix==combatStartup.selectedHitObject)
                     {BtechDestroyProjectileAndSpawnEffect(&projectiles[projectileSlot]);break;}
                 }
                 /* Native reloads selected object AFTER projectile destruction. */
-                if (specialTargetObject && &specialTargetObject->object.prefix==selectedHitObject)
+                if (specialTargetObject && &specialTargetObject->object.prefix==combatStartup.selectedHitObject)
                     BtechApplySpecialTargetDamage((int16_t)weaponDefinitions[weaponMount->weaponKind].damageOrMissileCount);
                 spawnImpactEffect=projectileSlot==COMBAT_PROJECTILE_SLOTS;
             }
@@ -82,12 +82,12 @@ void BtechFirePlayerDirectWeapon(uint16_t mountIndex)
 void BtechMapSelectedRenderPartToArmorLocation(uint16_t *armorLocation,uint16_t *unitSlot)
 {
     uint16_t hitArmorLocation=COMBAT_ARMOR_LEFT_ARM,matchedUnitSlot=0;
-    if (selectedHitObject)
+    if (combatStartup.selectedHitObject)
         for (uint16_t candidateUnitSlot=1;candidateUnitSlot<COMBAT_MECH_SLOTS;++candidateUnitSlot)
         {
             BtechUnitBinding *targetBinding=&unitBindings[candidateUnitSlot];
             if (!targetBinding->mech) continue;
-            BtechWorldObjectPrefix *hitPart=selectedHitObject;
+            BtechWorldObjectPrefix *hitPart=combatStartup.selectedHitObject;
             if (targetBinding->leftArm && &targetBinding->leftArm->object.prefix==hitPart) hitArmorLocation=COMBAT_ARMOR_LEFT_ARM;
             else if (targetBinding->rightArm && &targetBinding->rightArm->object.prefix==hitPart) hitArmorLocation=COMBAT_ARMOR_RIGHT_ARM;
             else if (targetBinding->positionedLeftLeg && &targetBinding->positionedLeftLeg->object.prefix==hitPart) hitArmorLocation=COMBAT_ARMOR_LEFT_LEG;
@@ -160,19 +160,19 @@ uint16_t BtechFindPreviousReadyPlayerWeaponMount(uint16_t currentMount,uint16_t 
 void BtechAdvancePlayerGroupedWeaponSelection(void)
 {
     if (!playerMechTemplate || !playerMechTemplate->weaponMountCount) return;
-    if (selectedWeaponMount>=playerMechTemplate->weaponMountCount) selectedWeaponMount=0;
-    if (BtechIsPlayerWeaponMountReady(selectedWeaponMount) || !mountGroupMode) return;
-    uint16_t candidate=selectedWeaponMount;
+    if (combatStartup.selectedWeaponMount>=playerMechTemplate->weaponMountCount) combatStartup.selectedWeaponMount=0;
+    if (BtechIsPlayerWeaponMountReady(combatStartup.selectedWeaponMount) || !combatStartup.mountGroupMode) return;
+    uint16_t candidate=combatStartup.selectedWeaponMount;
     do
     {
         ++candidate;
         if (candidate>=playerMechTemplate->weaponMountCount) candidate=0;
         if (BtechIsPlayerWeaponMountReady(candidate))
         {
-            if (playerMountFireFlags[candidate]) break;
+            if (combatStartup.playerMountFireFlags[candidate]) break;
         }
-    } while (candidate!=selectedWeaponMount);
-    selectedWeaponMount=candidate;
+    } while (candidate!=combatStartup.selectedWeaponMount);
+    combatStartup.selectedWeaponMount=candidate;
 }
 
 /*0810:4AC1. Only present side-zero rows write; same-side pairs become FFFFFFFF.

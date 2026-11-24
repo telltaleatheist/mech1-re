@@ -7,7 +7,7 @@
 /*0810:0010. FAR termination callback reached by keyboard Ctrl-Escape. */
 void BtechRequestTermination(void)
 {
-    terminationFlag=1;
+    combatInput.terminationFlag=1;
 }
 
 /* A pass of a wait for a key: the host sleeps if nothing is due (H4c). The key
@@ -19,7 +19,7 @@ static void WaitIdle(void)
 
 static bool CombatInputHeld(void)
 {
-    return combatInputScanCode || BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_ONE) || BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_TWO);
+    return combatInput.combatInputScanCode || BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_ONE) || BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_TWO);
 }
 
 /*0810:026B. Keep native release phase, then press phase and their original
@@ -32,12 +32,12 @@ uint16_t BtechWaitForCombatInputReleaseThenPress(void)
 {
     while (CombatInputHeld())
     {BtechPollCombatCommandInput();WaitIdle();}
-    while (!combatInputScanCode && !BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_ONE) && !BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_TWO))
+    while (!combatInput.combatInputScanCode && !BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_ONE) && !BtechReadJoystickPresenceState(JOYSTICK_A_BUTTON_TWO))
     {
-        if (terminationFlag) BtechTerminateToLauncher(1);
+        if (combatInput.terminationFlag) BtechTerminateToLauncher(1);
         BtechPollCombatCommandInput();WaitIdle();
     }
-    uint16_t scanCode=combatInputScanCode;
+    uint16_t scanCode=combatInput.combatInputScanCode;
     if (btechLoadedRevision==BTECH_REVISION_1990_01_22)
         while (CombatInputHeld()) {BtechPollCombatCommandInput();WaitIdle();}
     return scanCode;
@@ -53,13 +53,13 @@ uint16_t BtechWaitForDialogKey(void)
     if (btechLoadedRevision==BTECH_REVISION_1990_01_22)
     {
         uint16_t scanCode=BtechWaitForCombatInputReleaseThenPress();
-        combatInputScanCode=combatInputButton1State=combatInputButton0State=0;
+        combatInput.combatInputScanCode=combatInput.combatInputButton1State=combatInput.combatInputButton0State=0;
         return scanCode;
     }
     BtechWaitForCombatInputReleaseThenPress();
-    uint16_t scanCode=combatInputScanCode;
+    uint16_t scanCode=combatInput.combatInputScanCode;
     if (scanCode)
-        while (scanCode==combatInputScanCode) {BtechPollCombatCommandInput();WaitIdle();}
+        while (scanCode==combatInput.combatInputScanCode) {BtechPollCombatCommandInput();WaitIdle();}
     return scanCode;
 }
 
@@ -97,13 +97,13 @@ void BtechPollCombatCommandInput(void)
     }
     if (combatInputReplayMode==COMBAT_INPUT_PLAYBACK)
     {
-        if (scanCode|button1|button0|combatInputReplayCancelLatched)
-        {scanCode=COMBAT_KEY_ESCAPE;combatInputReplayCancelLatched=1;}
+        if (scanCode|button1|button0|combatInput.combatInputReplayCancelLatched)
+        {scanCode=COMBAT_KEY_ESCAPE;combatInput.combatInputReplayCancelLatched=1;}
         else /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Native replay IO/short-read stack residue is not converted."); /* Native replay IO/short-read stack residue is not converted. */
     }
     else if (combatInputReplayMode==COMBAT_INPUT_RECORD) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatInputReplayMode==COMBAT_INPUT_RECORD"); /* Native append-stream writer dependency. */
-    combatInputScanCode=scanCode;
-    combatInputDirectionMask=direction;
-    combatInputButton1State=button1;
-    combatInputButton0State=button0;
+    combatInput.combatInputScanCode=scanCode;
+    combatInput.combatInputDirectionMask=direction;
+    combatInput.combatInputButton1State=button1;
+    combatInput.combatInputButton0State=button0;
 }

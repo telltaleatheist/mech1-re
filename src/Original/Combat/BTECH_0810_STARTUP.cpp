@@ -55,7 +55,7 @@ void BtechInitializeCombatRuntime(void)
     for (int16_t mount=0;mount<(int16_t)playerMechTemplate->weaponMountCount;++mount)
     {
         if (mount>=COMBAT_WEAPON_MOUNTS || !playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mount>=COMBAT_WEAPON_MOUNTS || !playerMechState");
-        playerMountFireFlags[mount]=(int8_t)playerMechState->weapons[mount].operational;
+        combatStartup.playerMountFireFlags[mount]=(int8_t)playerMechState->weapons[mount].operational;
     }
     activeUnitControl=&unitControls[0];
     BtechSynchronizeMechRenderParts();
@@ -117,30 +117,30 @@ void BtechTerminateToLauncher(uint16_t quitWholeGame)
  * this is not memset(bindings).7752 and remaining part links stay untouched. */
 void BtechResetCombatState(void)
 {
-    combatTickCounter=0;
-    mountGroupMode=1;
-    headingRadarSelected=0;
-    combatDispatchState=COMBAT_SCREEN_COCKPIT;
-    playerImpactThisTick=0;
-    playerTargetSlot=0;
-    selectedWeaponMount=0;
-    aimReticleScreenY=0;
-    headingRadarSelected=0;
-    radarRangeShift=0x0A;
-    viewScaleShift=7;
-    firingIndicatorBank0Pending=0;
-    firingIndicatorBank1Pending=0;
-    requestedPlayerForwardStepScale=0;
-    unidentifiedField21=0;
-    selectedHitObject=NULL;
-    sideCompletionFlags[1]=0;sideCompletionFlags[0]=0;
-    for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot) unitLastDrawParts[slot]=NULL;
+    combatStartup.combatTickCounter=0;
+    combatStartup.mountGroupMode=1;
+    combatStartup.headingRadarSelected=0;
+    combatStartup.combatDispatchState=COMBAT_SCREEN_COCKPIT;
+    combatStartup.playerImpactThisTick=0;
+    combatStartup.playerTargetSlot=0;
+    combatStartup.selectedWeaponMount=0;
+    combatStartup.aimReticleScreenY=0;
+    combatStartup.headingRadarSelected=0;
+    combatStartup.radarRangeShift=0x0A;
+    combatStartup.viewScaleShift=7;
+    combatStartup.firingIndicatorBank0Pending=0;
+    combatStartup.firingIndicatorBank1Pending=0;
+    combatStartup.requestedPlayerForwardStepScale=0;
+    combatStartup.unidentifiedField21=0;
+    combatStartup.selectedHitObject=NULL;
+    combatStartup.sideCompletionFlags[1]=0;combatStartup.sideCompletionFlags[0]=0;
+    for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot) combatStartup.unitLastDrawParts[slot]=NULL;
     for (uint16_t chassis=0;chassis<COMBAT_MECH_TEMPLATES;++chassis) mechResourceBaseIds[chassis]=0;
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
     {unitBindings[slot].mech=NULL;unitBindings[slot].positionedLeftLeg=NULL;}
     specialTargetInteractionBlocked=0;
     otherShapeResourceBase=0;firstMechShapeResourceId=0;
-    playerSpecialTargetLandingLatch=0;
+    combatStartup.playerSpecialTargetLandingLatch=0;
 }
 
 /*0810:CE9E. The flag is written where DOS's INT 24 query and install were.
@@ -148,11 +148,11 @@ void BtechResetCombatState(void)
  * save and install are gone (H4c). */
 void BtechInstallDosCriticalErrorHandler(void)
 {
-    criticalErrorHandlerInstalled=1;
+    combatStartup.criticalErrorHandlerInstalled=1;
 }
 
 /*0810:CED5. No installed-flag test; the INT 24 restore went with the hook (H4c). */
 void BtechRestoreDosCriticalErrorHandler(void)
 {
-    criticalErrorHandlerInstalled=0;
+    combatStartup.criticalErrorHandlerInstalled=0;
 }

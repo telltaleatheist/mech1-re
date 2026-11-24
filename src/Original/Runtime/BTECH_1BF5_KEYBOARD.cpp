@@ -16,21 +16,21 @@ void BtechHandleKeyEvent(MwKeyEvent event)
     uint8_t scan=MwKeyEventScanByte(event);
     if (pcjrTandyCompatible==1)
     {
-        if (keyboardBiosIntercept==1)
+        if (combatStartup.keyboardBiosIntercept==1)
         {
             if (scan==COMBAT_KEY_GRAVE) scan=COMBAT_KEY_UP;
             if (scan==COMBAT_KEY_BACKSLASH) scan=COMBAT_KEY_LEFT;
         }
         else
             for (uint16_t index=0;index<COMBAT_KEYBOARD_COMPATIBILITY_CODES;++index)
-                if (scan==keyboardCompatibilityScans[index]) {scan=keyboardCompatibilityReplacements[index];break;}
+                if (scan==combatInput.keyboardCompatibilityScans[index]) {scan=combatInput.keyboardCompatibilityReplacements[index];break;}
     }
     uint8_t scanIndex=scan&KEYBOARD_SCAN_MASK;
     if (scanIndex>=COMBAT_KEYBOARD_SCAN_CODES) return;
-    uint8_t attributes;attributes=keyboardScanTranslations[scanIndex];
-    keyboardScanTranslations[scanIndex]=(attributes
+    uint8_t attributes;attributes=combatStartup.keyboardScanTranslations[scanIndex];
+    combatStartup.keyboardScanTranslations[scanIndex]=(attributes
         &((scan&KEYBOARD_BREAK_FLAG)?UINT8_MAX:KEYBOARD_ATTRIBUTE_CLEAR_HELD))^KEYBOARD_ATTRIBUTE_HELD;
-    if (keyboardBiosIntercept==1)
+    if (combatStartup.keyboardBiosIntercept==1)
     {
         if (scanIndex==COMBAT_KEY_CAPS_LOCK) {scan=scanIndex;attributes&=combatHandlers.keyboardScanMask;}
         else if (scanIndex==COMBAT_KEY_NUM_LOCK) {scan=scanIndex;attributes&=combatHandlers.keyboardExtendedScanMask;}
@@ -41,49 +41,49 @@ void BtechHandleKeyEvent(MwKeyEvent event)
         {
             uint16_t group=(attributes>>KEYBOARD_ATTRIBUTE_GROUP_SHIFT)&KEYBOARD_ATTRIBUTE_GROUP_MASK;
             uint8_t direction=attributes>>KEYBOARD_ATTRIBUTE_DIRECTION_SHIFT;
-            if (heldDirectionKeyMasks[group]==direction) heldDirectionKeyMasks[group]=0;
+            if (combatInput.heldDirectionKeyMasks[group]==direction) combatInput.heldDirectionKeyMasks[group]=0;
         }
-        keyboardLastKey=0;
-        uint8_t character=keyboardUnshiftedCharacters[scan&KEYBOARD_SCAN_MASK];
+        combatInput.keyboardLastKey=0;
+        uint8_t character=combatInput.keyboardUnshiftedCharacters[scan&KEYBOARD_SCAN_MASK];
         if ((character&KEYBOARD_CHARACTER_SPECIAL) && !(character&KEYBOARD_CHARACTER_TOGGLE_MASK))
-            keyboardShiftFlags&=character^KEYBOARD_CHARACTER_VALUE_MASK;
+            combatInput.keyboardShiftFlags&=character^KEYBOARD_CHARACTER_VALUE_MASK;
         return;
     }
     if (attributes&KEYBOARD_ATTRIBUTE_DIRECTION_MASK)
-        heldDirectionKeyMasks[(attributes>>KEYBOARD_ATTRIBUTE_GROUP_SHIFT)&KEYBOARD_ATTRIBUTE_GROUP_MASK]
+        combatInput.heldDirectionKeyMasks[(attributes>>KEYBOARD_ATTRIBUTE_GROUP_SHIFT)&KEYBOARD_ATTRIBUTE_GROUP_MASK]
             =attributes>>KEYBOARD_ATTRIBUTE_DIRECTION_SHIFT;
-    uint8_t character;character=keyboardUnshiftedCharacters[scan];
+    uint8_t character;character=combatInput.keyboardUnshiftedCharacters[scan];
     if (character&KEYBOARD_CHARACTER_SPECIAL)
     {
         character&=KEYBOARD_CHARACTER_VALUE_MASK;
-        if (!(character&KEYBOARD_CHARACTER_TOGGLE_MASK)) keyboardShiftFlags|=character;
-        else if (!((character&KEYBOARD_CHARACTER_CAPS_LOCK) && keyboardCapsLockRequested) && !(attributes&KEYBOARD_ATTRIBUTE_HELD))
-            keyboardShiftFlags^=character;
+        if (!(character&KEYBOARD_CHARACTER_TOGGLE_MASK)) combatInput.keyboardShiftFlags|=character;
+        else if (!((character&KEYBOARD_CHARACTER_CAPS_LOCK) && combatStartup.keyboardCapsLockRequested) && !(attributes&KEYBOARD_ATTRIBUTE_HELD))
+            combatInput.keyboardShiftFlags^=character;
         return;
     }
-    if (keyboardShiftFlags&BIOS_SHIFT_CONTROL)
+    if (combatInput.keyboardShiftFlags&BIOS_SHIFT_CONTROL)
     {character|=ASCII_CONTROL_MARKER;if (attributes&KEYBOARD_ATTRIBUTE_ALPHABETIC) character-=ASCII_CASE_DISTANCE;}
-    else if ((keyboardShiftFlags&BIOS_SHIFT_CAPS_LOCK) && (attributes&KEYBOARD_ATTRIBUTE_ALPHABETIC)) character-=ASCII_CASE_DISTANCE;
-    else if (keyboardShiftFlags&BIOS_SHIFT_EITHER_SHIFT) character=keyboardShiftedCharacters[scan];
+    else if ((combatInput.keyboardShiftFlags&BIOS_SHIFT_CAPS_LOCK) && (attributes&KEYBOARD_ATTRIBUTE_ALPHABETIC)) character-=ASCII_CASE_DISTANCE;
+    else if (combatInput.keyboardShiftFlags&BIOS_SHIFT_EITHER_SHIFT) character=combatInput.keyboardShiftedCharacters[scan];
     uint16_t key;key=((uint16_t)scan<<BIOS_KEY_SCAN_SHIFT)|character;
-    keyboardLastKey=key;
+    combatInput.keyboardLastKey=key;
     /* The original's room test compares the slot after the head with the
      * tail, not the slot after the tail with the head: a key is dropped while
      * exactly one waits, and one more key into 15 leaves the queue empty. The
      * game's rule, kept as it is. */
-    uint8_t tail;tail=combatKeyQueueTail;
-    if (NextKeySlot(combatKeyQueueHead)!=tail)
+    uint8_t tail;tail=combatInput.combatKeyQueueTail;
+    if (NextKeySlot(combatInput.combatKeyQueueHead)!=tail)
     {
-        combatKeyQueue[tail]=key;
-        tail=NextKeySlot(tail);combatKeyQueueTail=tail;
+        combatInput.combatKeyQueue[tail]=key;
+        tail=NextKeySlot(tail);combatInput.combatKeyQueueTail=tail;
     }
-    if (scan==COMBAT_KEY_D && (keyboardShiftFlags&BIOS_SHIFT_CONTROL)) return;
-    if (key==COMBAT_CONTROL_ESCAPE_KEY && (keyboardShiftFlags&BIOS_SHIFT_CONTROL))
+    if (scan==COMBAT_KEY_D && (combatInput.keyboardShiftFlags&BIOS_SHIFT_CONTROL)) return;
+    if (key==COMBAT_CONTROL_ESCAPE_KEY && (combatInput.keyboardShiftFlags&BIOS_SHIFT_CONTROL))
     {
         /* Ctrl-Escape: the slot before the tail cleared, the queue emptied. */
         tail=(uint8_t)((tail+COMBAT_KEY_QUEUE_SLOTS-1)%COMBAT_KEY_QUEUE_SLOTS);
-        combatKeyQueue[tail]=0;
-        combatKeyQueueHead=combatKeyQueueTail;
+        combatInput.combatKeyQueue[tail]=0;
+        combatInput.combatKeyQueueHead=combatInput.combatKeyQueueTail;
         BtechRequestTermination();return;
     }
 }

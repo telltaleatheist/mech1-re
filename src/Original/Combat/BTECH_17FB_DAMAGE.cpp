@@ -37,7 +37,7 @@ uint8_t BtechApplyDestroyedBodyLocationEffects(BtechMechState *mech,int16_t body
     else if (bodyLocation==COMBAT_BODY_CENTER_TORSO)
     {
         mech->gyroHits=COMBAT_GYRO_DESTROYED_HITS;mech->engineHits=COMBAT_ENGINE_HIT_LIMIT;stopDamageTransfer=1;
-        if (mech==playerMechState && !(combatTickCounter&COMBAT_CENTER_TORSO_COCKPIT_TICK_MASK)) mech->cockpitDisabled=1;
+        if (mech==playerMechState && !(combatStartup.combatTickCounter&COMBAT_CENTER_TORSO_COCKPIT_TICK_MASK)) mech->cockpitDisabled=1;
     }
     return stopDamageTransfer;
 }

@@ -22,7 +22,7 @@ uint16_t BtechSelectCombatRenderer(uint8_t adapterOverride,uint8_t allowedMask)
     static const uint8_t overrideMasks[]={0,1,2,4,8,0x10,0x20,0x40,0x80};
     if (adapterOverride>=sizeof(overrideMasks)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: adapterOverride>=sizeof(overrideMasks)");
     videoAdapterAllowedMask=adapterOverride?overrideMasks[adapterOverride]:allowedMask;
-    videoAdapter=(uint8_t)BtechGetBiosDisplayAdapterBits();
+    combatStartup.videoAdapter=(uint8_t)BtechGetBiosDisplayAdapterBits();
     combatRendererKind=(uint8_t)BtechDetectVideoAdapter();
     if (combatRendererKind==COMBAT_VIDEO_EGA)
     {

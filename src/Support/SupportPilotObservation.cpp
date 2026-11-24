@@ -15,28 +15,28 @@ static PilotPoint ReadPosition(const BtechWorldObjectPrefix *object)
 }
 void SupportPilotObserve(PilotObservation *view,bool combatActive)
 {
-    memset(view,0,sizeof(*view));view->tick=combatTickCounter;
+    memset(view,0,sizeof(*view));view->tick=combatStartup.combatTickCounter;
     if(!combatActive || !playerUnitBinding || !playerMechState || !playerMechTemplate)return;
     const BtechPooledWorldObject *body=playerUnitBinding->positionedLeftLeg;
     if(!body || !playerUnitBinding->torso)return;
-    view->cockpit=combatDispatchState==COMBAT_SCREEN_COCKPIT && combatTickCounter!=0;
+    view->cockpit=combatStartup.combatDispatchState==COMBAT_SCREEN_COCKPIT && combatStartup.combatTickCounter!=0;
     view->alive=unitControls[0].conditionScoreOrExitCode>COMBAT_CONDITION_SCORE_MINIMUM;
-    view->missionComplete=sideCompletionFlags[0] || sideCompletionFlags[1];
+    view->missionComplete=combatStartup.sideCompletionFlags[0] || combatStartup.sideCompletionFlags[1];
     view->fallen=unitControls[0].movementMode==MOVEMENT_MODE_FALLEN_POSE;
     view->heatInhibited=heatInhibitFlags[0]!=0;view->heat=playerMechState->heatUnits;
-    view->aws=mountGroupMode!=0;view->salvo=fireCycleActive!=0;
+    view->aws=combatStartup.mountGroupMode!=0;view->salvo=combatInput.fireCycleActive!=0;
     view->position=ReadPosition(&body->object.prefix);
     view->heading=body->object.prefix.orientationC;
     view->torsoHeading=playerUnitBinding->torso->object.prefix.orientationC;
     view->turnRate=body->orientationSteps[2];view->speed=body->forwardStepScale;
-    view->requestedSpeed=(int16_t)requestedPlayerForwardStepScale;
+    view->requestedSpeed=(int16_t)combatStartup.requestedPlayerForwardStepScale;
     view->maximumSpeed=(int16_t)playerMechTemplate->maximumSpeedScale;
-    view->lockedTarget=playerTargetSlot;view->selectedWeapon=selectedWeaponMount;
-    view->reticleX=screenCentreA;view->reticleY=(int16_t)aimReticleScreenY;
+    view->lockedTarget=combatStartup.playerTargetSlot;view->selectedWeapon=combatStartup.selectedWeaponMount;
+    view->reticleX=screenCentreA;view->reticleY=(int16_t)combatStartup.aimReticleScreenY;
     for(unsigned slot=1;slot<COMBAT_MECH_SLOTS;++slot)
     {
         const BtechUnitBinding *binding=&unitBindings[slot];
-        const BtechPooledWorldObject *drawn=unitLastDrawParts[slot];
+        const BtechPooledWorldObject *drawn=combatStartup.unitLastDrawParts[slot];
         if(!binding->mech || !binding->positionedLeftLeg || !binding->torso)continue;
         PilotTarget *target=&view->targets[slot];
         target->visible=drawn && (drawn->object.prefix.flags&WORLD_OBJECT_TARGET_PROBE_VISIBLE)!=0
@@ -56,7 +56,7 @@ void SupportPilotObserve(PilotObservation *view,bool combatActive)
             const BtechPooledWorldObject *parts[]={binding->torso,binding->rightLeg,
                 binding->positionedLeftLeg,binding->rightArm,binding->leftArm,binding->head};
             for(unsigned part=0;part<6;++part)
-                if(parts[part] && selectedHitObject==&parts[part]->object.prefix)target->underReticle=true;
+                if(parts[part] && combatStartup.selectedHitObject==&parts[part]->object.prefix)target->underReticle=true;
             for(unsigned i=0;i<COMBAT_ARMOR_LOCATIONS;++i)target->armor+=binding->mech->currentArmor[i];
             for(unsigned i=0;i<COMBAT_BODY_LOCATIONS;++i)target->internal+=binding->mech->currentInternalStructure[i];
         }
@@ -71,7 +71,7 @@ void SupportPilotObserve(PilotObservation *view,bool combatActive)
         target->position=ReadPosition(&specialTargetObject->object.prefix);
         target->screenX=objectiveVisibilityObject->object.projectedScreenA;
         target->screenY=objectiveVisibilityObject->object.projectedScreenB;
-        target->underReticle=selectedHitObject==&specialTargetObject->object.prefix;
+        target->underReticle=combatStartup.selectedHitObject==&specialTargetObject->object.prefix;
         target->internal=specialTargetDamageRemaining;
     }
     for(unsigned mount=0;mount<playerMechTemplate->weaponMountCount && mount<COMBAT_WEAPON_MOUNTS;++mount)

@@ -10,9 +10,9 @@
 void BtechDrawTerrainRadar(void)
 {
     uint8_t backdropChanged=0;
-    uint16_t tickDiscontinuity=(uint16_t)(radarPreviousTick+1)!=combatTickCounter;
-    radarPreviousTick=combatTickCounter;
-    radarCachePage=hudColourSchemeIndex?0:combatTickCounter&1;
+    uint16_t tickDiscontinuity=(uint16_t)(radarPreviousTick+1)!=combatStartup.combatTickCounter;
+    radarPreviousTick=combatStartup.combatTickCounter;
+    radarCachePage=hudColourSchemeIndex?0:combatStartup.combatTickCounter&1;
     drawPageSelector=backPageSelector;
     if (!playerUnitBinding) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding");
     radarPlayerObject=playerUnitBinding->positionedLeftLeg;

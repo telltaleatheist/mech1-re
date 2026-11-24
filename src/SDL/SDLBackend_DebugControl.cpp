@@ -329,8 +329,8 @@ static void WriteStatus(const char *path)
     fprintf(file,"]},\"feed\":{\"items\":%u,\"next\":%u,\"done\":%s,\"error\":",feedCount,feedIndex,feedActive||!feedCount?"false":"true");
     JsonString(file,feedError);
     fprintf(file,"},\"tick\":%u,\"screen\":%u,\"target\":%u,\"aimY\":%u,\"requestedStep\":%d,\"objectiveRules\":[%u,%u],\"units\":[",
-        combatTickCounter,combatDispatchState,playerTargetSlot,aimReticleScreenY,
-        (int16_t)requestedPlayerForwardStepScale,sideObjectiveRules[0],sideObjectiveRules[1]);
+        combatStartup.combatTickCounter,combatStartup.combatDispatchState,combatStartup.playerTargetSlot,combatStartup.aimReticleScreenY,
+        (int16_t)combatStartup.requestedPlayerForwardStepScale,sideObjectiveRules[0],sideObjectiveRules[1]);
     bool first=true;
     if(mwSdlCombatActive) for(unsigned slot=0;slot<COMBAT_MECH_SLOTS;++slot)
     {
@@ -369,7 +369,7 @@ static void WriteStatus(const char *path)
     if(mwSdlCombatActive) for(unsigned i=0;i<worldObjectCount && i<COMBAT_WORLD_OBJECTS;++i)
     {if(!worldObjects[i])continue;fprintf(file,"%s{\"index\":%u,",first?"":",",i);first=false;Position(file,worldObjects[i]);fputc('}',file);}
     fprintf(file,"],\"radar\":{\"rangeShift\":%u,\"headingMode\":%u,\"origin\":[%u,%u],\"markers\":[",
-        radarRangeShift,headingRadarSelected,radarMapOriginX,radarMapOriginY);
+        combatStartup.radarRangeShift,combatStartup.headingRadarSelected,radarMapOriginX,radarMapOriginY);
     unsigned page=radarCachePage;
     if(mwSdlCombatActive && page<COMBAT_RADAR_CACHE_PAGES)
         for(unsigned i=0;i<radarMarkerCounts[page] && i<COMBAT_RADAR_MARKERS;++i)

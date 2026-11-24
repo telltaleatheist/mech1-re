@@ -24,7 +24,7 @@ static void TraceDiagnosticFrame(void)
     nextDiagnosticFrame=now+1000;
     const BtechPooledWorldObject *body=playerUnitBinding->positionedLeftLeg;
     fprintf(stderr,"Combat time=%llu tick=%u position=%ld,%ld step=%d pose=%u/%u gait=%u sound=%u timerLagMs=%.2f audioQueueMs=%u tickMs=%.1f speed=%u lateAudioFrames=%llu underrunFrames=%llu\n",
-        (unsigned long long)now,combatTickCounter,
+        (unsigned long long)now,combatStartup.combatTickCounter,
         (long)(int32_t)body->object.prefix.position.positionA,
         (long)(int32_t)body->object.prefix.position.positionB,
         body->forwardStepScale,playerPoseSequence,playerPoseFrame,

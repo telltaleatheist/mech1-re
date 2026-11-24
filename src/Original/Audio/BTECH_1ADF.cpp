@@ -112,7 +112,7 @@ uint16_t BtechStopSoundEventAndTimer(uint16_t soundEventIndex)
 void BtechRestoreSoundTimerInterrupt(void)
 {
     if (!soundTimerInstalled) return;
-    pitChannel0DivisorShadow=savedSoundTimerDivisor;
+    combatStartup.pitChannel0DivisorShadow=savedSoundTimerDivisor;
     if (!btechHostSetTimerPeriod || !btechHostSetTimerOwner) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostSetTimerPeriod || !btechHostSetTimerOwner");
     btechHostSetTimerPeriod(savedSoundTimerDivisor); /* Was 40h's low and high bytes (H4b). */
     soundTimerInstalled=0;
@@ -139,10 +139,10 @@ void BtechInstallMusicTimerCallback(BtechAudioTick callback,uint16_t divisor)
         musicTimerInstalled=1;
         savedMusicTimerOwner=btechHostGetTimerOwner();
         btechHostSetTimerOwner(MwTimerOwner::CombatMusic);
-        savedMusicTimerDivisor=pitChannel0DivisorShadow;
+        savedMusicTimerDivisor=combatStartup.pitChannel0DivisorShadow;
     }
     combatSoundIrq.musicTimerCallback=callback;
-    pitChannel0DivisorShadow=divisor;
+    combatStartup.pitChannel0DivisorShadow=divisor;
     btechHostSetTimerPeriod(divisor);
 }
 

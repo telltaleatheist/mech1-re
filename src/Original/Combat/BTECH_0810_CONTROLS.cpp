@@ -90,7 +90,7 @@ uint8_t BtechTestPlayerTargetRenderVisibility(int16_t targetSlot)
     if (deltaB==0x8000) deltaB=0x7FFF;else if ((int32_t)deltaB<0) deltaB=0-deltaB;
     if ((int32_t)deltaA>=COMBAT_VISIBLE_PLANAR_LIMIT || (int32_t)deltaB>=COMBAT_VISIBLE_PLANAR_LIMIT) return 0;
     const BtechPooledWorldObject *lastDrawnPart=targetSlot==COMBAT_SPECIAL_TARGET_SLOT
-        ?objectiveVisibilityObject:unitLastDrawParts[targetSlot];
+        ?objectiveVisibilityObject:combatStartup.unitLastDrawParts[targetSlot];
     return lastDrawnPart?lastDrawnPart->object.prefix.flags&WORLD_OBJECT_TARGET_PROBE_VISIBLE:0;
 }
 
@@ -122,7 +122,7 @@ void BtechRefreshOpposingUnitVisibility(void)
             if (!unitBindings[target].torso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[target].torso");
             uint8_t projection=unitBindings[target].torso->object.prefix.renderFlags&WORLD_OBJECT_PROJECTED;
             uint8_t visible;
-            if (!observer && !combatDispatchState && projection) visible=BtechTestPlayerTargetRenderVisibility((int16_t)target);
+            if (!observer && !combatStartup.combatDispatchState && projection) visible=BtechTestPlayerTargetRenderVisibility((int16_t)target);
             else
             {
                 if (!unitBindings[observer].positionedLeftLeg || !unitBindings[target].positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[observer].positionedLeftLeg || !unitBindings[target].positionedLeftLeg");

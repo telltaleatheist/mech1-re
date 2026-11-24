@@ -37,16 +37,16 @@ void BtechUpdateMechInspectionScreen(uint16_t unitSlot)
         if (!inspectionDamagePictures) BtechShowFatalErrorAndExit(errorInspectionShapeMemory);
         inspectionSetupComplete=1;inspectionReloadPending=0;
     }
-    uint16_t scanCode=combatInputScanCode;
+    uint16_t scanCode=combatInput.combatInputScanCode;
     switch (scanCode)
     {
     case COMBAT_KEY_Q:
     case COMBAT_KEY_SPACE:
-        combatDispatchState=COMBAT_SCREEN_COCKPIT;inspectionReloadPending=1;cockpitFullRedrawPending=1;
+        combatStartup.combatDispatchState=COMBAT_SCREEN_COCKPIT;inspectionReloadPending=1;cockpitFullRedrawPending=1;
         break;
     case COMBAT_KEY_P:BtechShowSimulationPausedDialog();break;
     case COMBAT_KEY_S:combatSoundEnabled=combatSoundEnabled==0;break;
-    case COMBAT_KEY_C:combatDispatchState=PLAYER_SCREEN_ORDERS;inspectionReloadPending=1;break;
+    case COMBAT_KEY_C:combatStartup.combatDispatchState=PLAYER_SCREEN_ORDERS;inspectionReloadPending=1;break;
     default:break;
     }
     drawPageSelector=backPageSelector;
@@ -54,7 +54,7 @@ void BtechUpdateMechInspectionScreen(uint16_t unitSlot)
     BtechDrawMechInspectionDiagramAndLegend();
     BtechSwapScreenPages(false);
     BtechPresentScreenRectangle(0,0,COMBAT_SCREEN_WIDTH,COMBAT_SCREEN_HEIGHT);
-    if (combatDispatchState!=PLAYER_SCREEN_TARGET_INSPECTION && combatDispatchState!=PLAYER_SCREEN_INSPECTION)
+    if (combatStartup.combatDispatchState!=PLAYER_SCREEN_TARGET_INSPECTION && combatStartup.combatDispatchState!=PLAYER_SCREEN_INSPECTION)
     {
         BtechUnloadCockpitHudResources();
         BtechClearInspectionBackground();

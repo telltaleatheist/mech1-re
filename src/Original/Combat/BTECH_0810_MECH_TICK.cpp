@@ -71,13 +71,13 @@ void BtechUpdateUnitHeatEffects(void)
             heatSpeedPenalties[unitSlot]+=COMBAT_HEAT_SPEED_TIER_PENALTY;
             remainingSpeedPenaltyHeat-=COMBAT_HEAT_SPEED_TIER_STEP;
         }
-        heatAimJitterTiers[unitSlot]=-1;
+        combatStartup.heatAimJitterTiers[unitSlot]=-1;
         do
         {
-            ++heatAimJitterTiers[unitSlot];
-            if ((uint16_t)heatAimJitterTiers[unitSlot]>=COMBAT_HEAT_THRESHOLDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)heatAimJitterTiers[unitSlot]>=COMBAT_HEAT_THRESHOLDS");
+            ++combatStartup.heatAimJitterTiers[unitSlot];
+            if ((uint16_t)combatStartup.heatAimJitterTiers[unitSlot]>=COMBAT_HEAT_THRESHOLDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)heatAimJitterTiers[unitSlot]>=COMBAT_HEAT_THRESHOLDS");
         }
-        while ((int16_t)heatAimJitterThresholds[heatAimJitterTiers[unitSlot]]<=(int16_t)heatedMech->heatUnits);
+        while ((int16_t)heatAimJitterThresholds[combatStartup.heatAimJitterTiers[unitSlot]]<=(int16_t)heatedMech->heatUnits);
         heatInhibitFlags[unitSlot]=(int16_t)heatedMech->heatUnits>COMBAT_HEAT_INHIBIT_THRESHOLD;
     }
 }

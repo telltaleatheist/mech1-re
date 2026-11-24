@@ -12,14 +12,14 @@ void BtechUpdateRadarPanel(void)
     if (!playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState");
     if ((int16_t)playerMechState->sensorHits<2)
     {
-        if (headingRadarSelected) BtechDrawHeadingRadar();
+        if (combatStartup.headingRadarSelected) BtechDrawHeadingRadar();
         else BtechDrawTerrainRadar();
         return;
     }
     if (activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS");
     const BtechScreenRectangle *panel=&cockpitLayouts[activeCockpitLayoutIndex].radarPanel;
     drawPolygonFilled=true;
-    if (headingRadarSelected)
+    if (combatStartup.headingRadarSelected)
         drawLineColour=hudColourSchemeIndex?RADAR_ALTERNATE_HEADING_BACKGROUND:RADAR_HEADING_BACKGROUND;
     else
     {
@@ -68,8 +68,8 @@ void BtechDrawHeadingRadar(void)
         const BtechPosition3D nullContact=BtechReadNullNearWorldObjectPosition();
         const BtechPosition3D *contact=unitBindings[slot].torso
             ?&unitBindings[slot].torso->object.prefix.position:&nullContact;
-        int16_t relativeX=(int16_t)BtechShiftSignedDwordRight(contact->positionA-player->position.positionA,(uint8_t)radarRangeShift);
-        int16_t relativeY=(int16_t)BtechShiftSignedDwordRight(contact->positionB-player->position.positionB,(uint8_t)radarRangeShift);
+        int16_t relativeX=(int16_t)BtechShiftSignedDwordRight(contact->positionA-player->position.positionA,(uint8_t)combatStartup.radarRangeShift);
+        int16_t relativeY=(int16_t)BtechShiftSignedDwordRight(contact->positionB-player->position.positionB,(uint8_t)combatStartup.radarRangeShift);
         BtechRotateSignedWordPair(&relativeX,&relativeY,(uint16_t)(0-heading));
         int32_t absoluteX=relativeX==INT16_MIN?INT16_MAX:relativeX<0?-(int32_t)relativeX:relativeX;
         int32_t absoluteY=relativeY==INT16_MIN?INT16_MAX:relativeY<0?-(int32_t)relativeY:relativeY;
@@ -77,8 +77,8 @@ void BtechDrawHeadingRadar(void)
             BtechWriteClippedPixel((int16_t)(centreX+relativeX),(int16_t)(centreY-relativeY-1),paletteIndex);
     }
     textForegroundColour=hudColourSchemeIndex?Combat_Pal_EGA_White:Combat_Pal_EGA_Green;textTransparentBackground=true;
-    if (radarRangeShift<RADAR_MINIMUM_RANGE_SHIFT || radarRangeShift>RADAR_MAXIMUM_RANGE_SHIFT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: radarRangeShift<RADAR_MINIMUM_RANGE_SHIFT || radarRangeShift>RADAR_MAXIMUM_RANGE_SHIFT"); /* ASCII aliases below2406. */
-    BtechDrawNearText(radarRangeLabels[radarRangeShift-RADAR_MINIMUM_RANGE_SHIFT],
+    if (combatStartup.radarRangeShift<RADAR_MINIMUM_RANGE_SHIFT || combatStartup.radarRangeShift>RADAR_MAXIMUM_RANGE_SHIFT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: radarRangeShift<RADAR_MINIMUM_RANGE_SHIFT || radarRangeShift>RADAR_MAXIMUM_RANGE_SHIFT"); /* ASCII aliases below2406. */
+    BtechDrawNearText(radarRangeLabels[combatStartup.radarRangeShift-RADAR_MINIMUM_RANGE_SHIFT],
         (int16_t)(panel->x+panel->width/2-0x12),(int16_t)(panel->y+panel->height-8));
     textTransparentBackground=false;
     BtechPresentScreenRectangle(panel->x,panel->y,panel->width,panel->height);

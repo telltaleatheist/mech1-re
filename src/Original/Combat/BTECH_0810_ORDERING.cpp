@@ -51,7 +51,7 @@ int16_t BtechFilterNearbyWorldObjects(BtechCameraContext *camera,BtechWorldObjec
     if (!camera || !camera->viewObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !camera || !camera->viewObject");
     const BtechPosition3D *position=&camera->viewObject->position;
     uint32_t differences[3];
-    if (!combatTickCounter)
+    if (!combatStartup.combatTickCounter)
     {
         differences[0]=position->positionA-nearbyFilterCameraPosition.positionA;
         differences[1]=position->positionB-nearbyFilterCameraPosition.positionB;

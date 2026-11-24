@@ -9,10 +9,10 @@ uint16_t BtechPopKey(void)
     if (!btechHostRunDue) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostRunDue");
     btechHostRunDue(); /* Keeps when the due ticks and key events land: the original took them as it reached the CLI. */
     uint16_t key=0;
-    if (combatKeyQueueHead!=combatKeyQueueTail)
+    if (combatInput.combatKeyQueueHead!=combatInput.combatKeyQueueTail)
     {
-        key=combatKeyQueue[combatKeyQueueHead];
-        combatKeyQueueHead=(uint8_t)((combatKeyQueueHead+1)%COMBAT_KEY_QUEUE_SLOTS);
+        key=combatInput.combatKeyQueue[combatInput.combatKeyQueueHead];
+        combatInput.combatKeyQueueHead=(uint8_t)((combatInput.combatKeyQueueHead+1)%COMBAT_KEY_QUEUE_SLOTS);
     }
     return key;
 }
@@ -20,17 +20,17 @@ uint16_t BtechPopKey(void)
 /*1BF5:2F87. Any nonzero selector chooses the second held-key mask. */
 uint16_t BtechReadHeldDirectionMask(uint16_t keyGroup)
 {
-    uint8_t mask=heldDirectionKeyMasks[keyGroup!=0];
-    if (mask>=sizeof(heldDirectionMasks)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mask>=sizeof(heldDirectionMasks)"); /* Adjacent owner alias, not another direction. */
-    return heldDirectionMasks[mask];
+    uint8_t mask=combatInput.heldDirectionKeyMasks[keyGroup!=0];
+    if (mask>=sizeof(combatInput.heldDirectionMasks)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mask>=sizeof(heldDirectionMasks)"); /* Adjacent owner alias, not another direction. */
+    return combatInput.heldDirectionMasks[mask];
 }
 
 /*1BF5:2FA1. The original's CLI/STI are gone (H4c). */
 uint16_t BtechReadHeldKeyState(uint16_t scanCode)
 {
-    if (!btechHostRunDue || scanCode>=sizeof(keyboardScanTranslations)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostRunDue || scanCode>=sizeof(keyboardScanTranslations)");
+    if (!btechHostRunDue || scanCode>=sizeof(combatStartup.keyboardScanTranslations)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostRunDue || scanCode>=sizeof(keyboardScanTranslations)");
     btechHostRunDue(); /* Keeps when the due ticks and key events land: the original took them as it reached the CLI. */
-    uint16_t held=keyboardScanTranslations[scanCode]&KEYBOARD_ATTRIBUTE_HELD;
+    uint16_t held=combatStartup.keyboardScanTranslations[scanCode]&KEYBOARD_ATTRIBUTE_HELD;
     return held;
 }
 

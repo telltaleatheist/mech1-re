@@ -196,18 +196,18 @@ void BtechSeedSelectedOrderTracking(void)
  * not reread after pause. No invented editor/update loop or DI argument. */
 void BtechEditSelectedUnitOrders(void)
 {
-    uint16_t scan=combatInputScanCode;
+    uint16_t scan=combatInput.combatInputScanCode;
     SelectedOrderControl selected;
     switch (scan)
     {
     case COMBAT_KEY_Q:
     case COMBAT_KEY_SPACE:
-        combatDispatchState=COMBAT_SCREEN_COCKPIT;orderScreenFullRedrawPending=1;
+        combatStartup.combatDispatchState=COMBAT_SCREEN_COCKPIT;orderScreenFullRedrawPending=1;
         BtechRefreshCockpitViewportAndGaugesFar();cockpitFullRedrawPending=1;
         break;
     case COMBAT_KEY_P:BtechShowSimulationPausedDialogFar();break;
     case COMBAT_KEY_S:combatSoundEnabled=combatSoundEnabled==0;break;
-    case COMBAT_KEY_D:combatDispatchState=PLAYER_SCREEN_INSPECTION;orderScreenFullRedrawPending=1;break;
+    case COMBAT_KEY_D:combatStartup.combatDispatchState=PLAYER_SCREEN_INSPECTION;orderScreenFullRedrawPending=1;break;
     case COMBAT_KEY_Z:
         --orderMapScaleIndex;
         if ((int16_t)orderMapScaleIndex<0) orderMapScaleIndex=ORDER_MAP_FULL_SCALE;
@@ -216,7 +216,7 @@ void BtechEditSelectedUnitOrders(void)
     default:break;
     }
     BtechUnitControlState *control;
-    if (scan!=COMBAT_KEY_ENTER && !combatInputButton1State && !combatInputButton0State)
+    if (scan!=COMBAT_KEY_ENTER && !combatInput.combatInputButton1State && !combatInput.combatInputButton0State)
     {
         if (orderPanelMode==ORDER_PANEL_SUMMARY || (int16_t)orderPanelMode>=ORDER_PANEL_DAMAGE) goto navigation;
         if (selected.Get()->conditionScoreOrExitCode>=COMBAT_CONDITION_SCORE_MINIMUM) goto navigation;
@@ -287,7 +287,7 @@ void BtechEditSelectedUnitOrders(void)
     BtechUpdateLanceOrderHighlight();
 navigation:
     {
-        uint16_t direction=combatInputDirectionMask;
+        uint16_t direction=combatInput.combatInputDirectionMask;
         if (!direction) {previousOrderNavigationKey=0;return;}
         if (direction>=ORDER_NAVIGATION_CODES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: direction>=ORDER_NAVIGATION_CODES"); /* Unsupported adjacent-table aliases, not a new direction. */
         if (orderPanelMode==ORDER_PANEL_SUMMARY || orderPanelMode==ORDER_PANEL_COMMAND)

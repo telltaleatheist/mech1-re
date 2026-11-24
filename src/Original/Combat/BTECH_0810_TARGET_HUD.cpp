@@ -22,7 +22,7 @@ void BtechUpdateTargetPanelAndReticle(uint16_t targetUnitSlot)
     if (layout>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: layout>=COMBAT_COCKPIT_LAYOUTS");
     const BtechScreenRectangle *panel=&cockpitLayouts[layout].targetPanel;
     screenPolygonNeedsClip=false;drawPolygonFilled=true;
-    if (!combatTickCounter) cachedTargetPanelSlot=0;
+    if (!combatStartup.combatTickCounter) cachedTargetPanelSlot=0;
     drawPageSelector=backPageSelector;
     if (!targetUnitSlot)
     {
@@ -35,7 +35,7 @@ void BtechUpdateTargetPanelAndReticle(uint16_t targetUnitSlot)
         return;
     }
     if (targetUnitSlot>COMBAT_SPECIAL_TARGET_SLOT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: targetUnitSlot>COMBAT_SPECIAL_TARGET_SLOT");
-    uint8_t *dirty=targetUnitSlot==COMBAT_SPECIAL_TARGET_SLOT?&specialTargetDamagePanelDirty:&targetDamagePanelDirty[targetUnitSlot];
+    uint8_t *dirty=targetUnitSlot==COMBAT_SPECIAL_TARGET_SLOT?&combatDamagePanels.specialTargetDamagePanelDirty:&combatDamagePanels.targetDamagePanelDirty[targetUnitSlot];
     if (targetUnitSlot!=cachedTargetPanelSlot || *dirty || cockpitFullRedrawPending)
     {
         BtechDrawTargetDamagePanel(targetUnitSlot,panel);
@@ -55,12 +55,12 @@ void BtechUpdateTargetPanelAndReticle(uint16_t targetUnitSlot)
         if (!mech || mech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mech || mech->templateIndex>=COMBAT_MECH_TEMPLATES");
         scale=(int16_t)mechTemplates[mech->templateIndex].displayScale;
     }
-    uint32_t numerator=BtechShiftDwordLeft((uint32_t)scale,(uint8_t)viewScaleShift);
+    uint32_t numerator=BtechShiftDwordLeft((uint32_t)scale,(uint8_t)combatStartup.viewScaleShift);
     int16_t ratio=(int16_t)BtechDivideSignedDword(numerator,distance);
     int16_t width=(ratio-(ratio<0))/2+TARGET_RETICLE_MINIMUM_WIDTH;
     int16_t halfWidth=(width-(width<0))/2;
     /* NativeC958+slot8 aliases the existing C968 special projected object. */
-    BtechPooledWorldObject *projected=targetUnitSlot==COMBAT_SPECIAL_TARGET_SLOT?objectiveVisibilityObject:unitLastDrawParts[targetUnitSlot];
+    BtechPooledWorldObject *projected=targetUnitSlot==COMBAT_SPECIAL_TARGET_SLOT?objectiveVisibilityObject:combatStartup.unitLastDrawParts[targetUnitSlot];
     if (!projected) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !projected");
     uint16_t x=projected->object.projectedScreenA-halfWidth;
     uint16_t y=projected->object.projectedScreenB-width;

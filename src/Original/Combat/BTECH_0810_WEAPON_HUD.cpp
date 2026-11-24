@@ -54,7 +54,7 @@ void BtechDrawWeaponStatusList(uint16_t selectedMountIndex,uint16_t targetUnitSl
         drawLineColour=drawFillColour;drawPolygonFilled=true;
         BtechDrawStyledRectangle(markerX,rowY,WEAPON_HUD_MARKER_WIDTH,WEAPON_HUD_MARKER_HEIGHT);
         drawPolygonFilled=false;
-        drawFillColour=playerMountFireFlags[mount] && mountGroupMode?Combat_Pal_EGA_LightRed:Combat_Pal_EGA_DarkGrey;
+        drawFillColour=combatStartup.playerMountFireFlags[mount] && combatStartup.mountGroupMode?Combat_Pal_EGA_LightRed:Combat_Pal_EGA_DarkGrey;
         BtechDrawStyledRectangle((uint16_t)(markerX-1),(uint16_t)(rowY-1),WEAPON_HUD_OUTER_MARKER_WIDTH,WEAPON_HUD_OUTER_MARKER_HEIGHT);
     }
     BtechPresentHudRectangleIfReady((uint16_t)(cockpit->weaponListX-WEAPON_HUD_MARKER_INSET),(uint16_t)(cockpit->weaponListY-1),WEAPON_HUD_COPY_WIDTH,(uint16_t)(mount*WEAPON_HUD_ROW_HEIGHT+WEAPON_HUD_BANK_GAP));
