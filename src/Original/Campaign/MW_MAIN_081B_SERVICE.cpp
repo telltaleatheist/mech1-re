@@ -413,8 +413,8 @@ void MwRefreshSelectedMechDetailPicture(void)
     uint16_t y=campaignService.unitDetailPictureYOrigins[kind];
     x+=INSPECTION_GRID_X;
     uint16_t picture=kind==CAMPAIGN_UNIT_DROPSHIP?DROPSHIP_DETAIL_PICTURE:(uint16_t)(kind+MECH_DETAIL_PICTURE_BASE);
-    uint16_t selector=MwLoadIndexedPicture(picture);
-    EgaDrawPackedSprite(x,y,EGA_DRAW_PAGE,0,selector);
+    MwCampaignBuffer *loaded=MwLoadIndexedPicture(picture);
+    EgaDrawPackedSprite(x,y,EGA_DRAW_PAGE,0,loaded);
     EgaCopyDrawPageToDisplay(INSPECTION_CAPTURE_X,INSPECTION_PUBLISH_Y,INSPECTION_PUBLISH_WIDTH,INSPECTION_PUBLISH_HEIGHT);
 }
 

@@ -21,10 +21,10 @@ uint16_t MwRandomUpTo(uint16_t maximum)
 /* Original MW_MAIN 081B:12B8..12FD. Whole-bank and indexed-picture callers
  * share this decoder. No size clamp, output clear or bounded replacement RLE:
  * native cursor wrap and partial work remain. */
-void MwDecodePictureBank(uint16_t compressedByteCount, uint16_t outputSelector)
+void MwDecodePictureBank(uint16_t compressedByteCount, MwCampaignBuffer *output)
 {
     campaignCore.pictureCompressedByteCount = compressedByteCount;
-    campaignCore.pictureOutputSelector = outputSelector;
+    campaignCore.pictureOutput = output;
     campaignCore.pictureReadHighNibbleNext = 0;
     campaignCore.pictureReadByteOffset = 0;
     campaignCore.pictureWriteLowNibbleNext = 0;
@@ -57,7 +57,7 @@ void MwDecodePictureBank(uint16_t compressedByteCount, uint16_t outputSelector)
  * even at EOF. The byte read precedes the check and the WORD cursor wraps. */
 bool MwReadPictureNibble(uint8_t *nibble)
 {
-    uint8_t *compressedData = MwResolveNativeSegment(campaignCore.compressedPictureBufferSelector);
+    uint8_t *compressedData = MwCampaignBufferBytes(campaignCore.compressedPictureBuffer);
     uint8_t packedNibbles = compressedData[campaignCore.pictureReadByteOffset];
     if (campaignCore.pictureReadHighNibbleNext == 0)
     {
@@ -75,7 +75,7 @@ bool MwReadPictureNibble(uint8_t *nibble)
  * second ORs the low nibble. An unfinished byte is high-only, not stale RAM. */
 void MwWritePictureNibble(uint8_t nibble)
 {
-    uint8_t *outputData = MwResolveNativeSegment(campaignCore.pictureOutputSelector);
+    uint8_t *outputData = MwCampaignBufferBytes(campaignCore.pictureOutput);
     if (campaignCore.pictureWriteLowNibbleNext == 0)
     {
         outputData[campaignCore.pictureWriteByteOffset] = (uint8_t)((nibble << PICTURE_NIBBLE_SHIFT)

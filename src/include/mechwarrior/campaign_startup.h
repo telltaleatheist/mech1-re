@@ -18,8 +18,10 @@ typedef struct MwCampaignLaunch
 
 typedef struct MwCampaignPlatformCalls
 {
-    bool (*allocateParagraphs)(uint16_t paragraphs,uint16_t *selectorOrError);
-    bool (*loadGraphicsOverlay)(const char *filename,uint16_t selector);
+    /* NULL when there is none to give. `paragraphs` is the original's request; each
+     * buffer is a whole window whatever its size (MwCampaignBuffer). */
+    MwCampaignBuffer *(*allocateParagraphs)(uint16_t paragraphs);
+    bool (*loadGraphicsOverlay)(const char *filename);
     void (*installInterrupts)(void);
     void (*restoreInterrupts)(void);
     uint32_t (*readBiosTicks)(void);
@@ -30,7 +32,7 @@ extern MwCampaignPlatformCalls mwCampaignPlatform;
 /* Original FAR music calls across the campaign/runtime boundary. Host bindings
  * forward to the converted sequencer; they do not choose cues or play files. */
 extern void (*campaignStopMusic)(void);
-extern void (*campaignStartMusic)(uint16_t selector,uint16_t offset);
+extern void (*campaignStartMusic)(MwCampaignBuffer *resource,uint16_t offset);
 uint8_t MwRunCampaign(const MwCampaignLaunch *launch);
 void MwInstallCampaignInterruptHandlers(void);
 void MwRestoreCampaignInterruptHandlers(void);
@@ -59,7 +61,7 @@ uint16_t MwStartNewCampaign(uint16_t entryOffset);
 /* Campaign state owned by campaign_startup.h (plan, slice B2). */
 struct CampaignStartupState
 {
-    uint16_t campaignMusicBufferSelector, graphicsOverlaySelector;
+    MwCampaignBuffer *campaignMusicBuffer, *graphicsOverlay;
     uint16_t launcherMemoryTier;
     uint8_t launcherExitCode, savedVideoMode;
     uint8_t keyboardInterruptState;

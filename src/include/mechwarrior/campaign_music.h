@@ -1,5 +1,6 @@
 #ifndef MECHWARRIOR_CAMPAIGN_MUSIC_H
 #define MECHWARRIOR_CAMPAIGN_MUSIC_H
+#include "mechwarrior/native_address.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -62,8 +63,8 @@ void MwSetMidiTickNumerator(uint16_t division,uint16_t tempo);
 void MwSetMidiBeatBarDivisions(uint16_t beatScale,uint16_t denominatorScale,uint16_t barDivision);
 void MwMidiAllNotesOff(void);
 /* Offset pointer projects live SI, not an extra native stack argument. */
-uint32_t MwReadMidiVariableLengthQuantity(uint16_t resourceSelector,uint16_t *streamOffset);
-uint16_t MwStartMidiTrack(uint16_t resourceSelector,uint16_t streamOffset,uint16_t playbackFlags);
+uint32_t MwReadMidiVariableLengthQuantity(MwCampaignBuffer *resource,uint16_t *streamOffset);
+uint16_t MwStartMidiTrack(MwCampaignBuffer *resource,uint16_t streamOffset,uint16_t playbackFlags);
 void MwPauseMidiTrack(void);
 void MwResumeMidiTrack(void);
 void MwMuteMidiTrack(void);
@@ -170,7 +171,8 @@ struct CampaignMusicState
     /* Native runtime DS28BE ownership. No live segment mirror. */
     uint16_t midiTickDenominator, midiTickNumerator, midiTickRemainder;
     uint16_t midiBeatDivision, midiBarDivision;
-    uint16_t midiStreamOffset, midiStreamSegment;
+    uint16_t midiStreamOffset;
+    MwCampaignBuffer *midiStream; /* NULL before a track starts and once its child ends. */
     uint16_t midiPlaybackFlags, midiEventTickBalance;
     uint16_t midiBeatRemainder, midiBarRemainder, midiElapsedBars;
     uint8_t midiStateUpdateInProgress, midiTickInProgress, midiTrackRunningStatus;

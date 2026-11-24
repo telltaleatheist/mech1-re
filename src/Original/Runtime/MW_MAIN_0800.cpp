@@ -34,7 +34,7 @@ int16_t MwRunCampaignProgram(const MwCampaignLaunch *launch,uint8_t audioCode)
 }
 
 /* MW_MAIN0800:0186..01A3 /01A4..01B4. Genuine FAR wrappers. Native resource
- * DWORD is split into selector/offset only in this host representation. */
-void MwStartMidiTrackFar(uint16_t selector,uint16_t offset)
-{(void)MwStartMidiTrack(selector,offset,MIDI_TRACK_ACTIVE);}
+ * DWORD is split into buffer/offset only in this host representation. */
+void MwStartMidiTrackFar(MwCampaignBuffer *resource,uint16_t offset)
+{(void)MwStartMidiTrack(resource,offset,MIDI_TRACK_ACTIVE);}
 void MwStopMidiTrackFar(void) {MwStopMidiTrack();}

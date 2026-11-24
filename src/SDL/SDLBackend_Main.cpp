@@ -15,9 +15,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <memory>
+#include <new>
 #include <string>
 
-static uint8_t *resourceAllocations[8];
+static std::unique_ptr<MwCampaignBuffer> resourceAllocations[8];
 static uint16_t allocationCount;
 static char installationDirectory[4096];
 static bool initialized;
@@ -26,9 +28,13 @@ static void ReleaseChildResources(void)
 {
     /* DOS frees a child's allocations and files after EXEC returns, including
      * startup failures. Do not move this cleanup into native allocation errors. */
-    for (uint16_t i=0;i<allocationCount;++i)
-    {MwBindNativeSegment((uint16_t)(0x4000+i*0x1000),NULL);free(resourceAllocations[i]);resourceAllocations[i]=NULL;}
+    for (uint16_t i=0;i<allocationCount;++i) resourceAllocations[i].reset();
     allocationCount=0;
+    /* What pointed at them is cleared, so a use (a music tick among them) fails. */
+    campaignCore.indexedPictureOutput=campaignCore.generalPictureBank=campaignCore.cockpitPictureBank=NULL;
+    campaignCore.activePictureBank=campaignCore.secondaryPictureBank=campaignCore.compressedPictureBuffer=NULL;
+    campaignCore.pictureOutput=campaignStartup.campaignMusicBuffer=campaignStartup.graphicsOverlay=NULL;
+    campaignMusic.midiStream=NULL;
 }
 static bool ExecuteChild(const char *filename,const MwCampaignLaunch *launch,uint8_t audioCode,uint8_t *exitCode)
 {
@@ -53,23 +59,21 @@ static bool ExecuteChild(const char *filename,const MwCampaignLaunch *launch,uin
     if (error && *error) fprintf(stderr,". SDL: %s",error);
     fputc('\n',stderr);/* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("SDL backend operation failed; see the preceding operation and SDL diagnostic.");
 }
-static bool AllocateParagraphs(uint16_t paragraphs,uint16_t *selectorOrError)
+static MwCampaignBuffer *AllocateParagraphs(uint16_t paragraphs)
 {
     (void)paragraphs; /* Full resource windows retain native WORD-cursor wrap. */
-    if (allocationCount>=8) { *selectorOrError=8;return true; }
-    uint8_t *buffer=static_cast<uint8_t *>(malloc(NATIVE_SEGMENT_BYTE_COUNT));
-    if (!buffer) { *selectorOrError=8;return true; }
-    *selectorOrError=(uint16_t)(0x4000+allocationCount*0x1000);
-    resourceAllocations[allocationCount++]=buffer;
-    MwBindNativeSegment(*selectorOrError,buffer);
-    return false;
+    if (allocationCount>=8) return NULL;
+    std::unique_ptr<MwCampaignBuffer> buffer(new (std::nothrow) MwCampaignBuffer);
+    if (!buffer) return NULL;
+    resourceAllocations[allocationCount]=std::move(buffer);
+    return resourceAllocations[allocationCount++].get();
 }
 static void ValidateFileDestination(const uint8_t *buffer,uint16_t bytesRead)
 {
     uintptr_t destination=(uintptr_t)buffer;
     for (uint16_t i=0;i<allocationCount;++i)
     {
-        uintptr_t allocation=(uintptr_t)resourceAllocations[i];
+        uintptr_t allocation=(uintptr_t)resourceAllocations[i]->bytes;
         if (destination>=allocation && destination-allocation<NATIVE_SEGMENT_BYTE_COUNT)
         {
             if (bytesRead>NATIVE_SEGMENT_BYTE_COUNT-(destination-allocation))
@@ -79,9 +83,8 @@ static void ValidateFileDestination(const uint8_t *buffer,uint16_t bytesRead)
     }
     /* Other destinations are typed IO buffers supplied by original wrappers. */
 }
-static bool LoadOverlay(const char *filename,uint16_t selector)
+static bool LoadOverlay(const char *filename)
 {
-    (void)selector;
     if (strcmp(filename,"MW_EGA.EXE")) MwSdlFail("Only the native EGA overlay is converted");
     return !MwHostLoadEgaInitialData();
 }

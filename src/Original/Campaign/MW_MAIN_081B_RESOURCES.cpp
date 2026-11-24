@@ -10,10 +10,10 @@ using mw1o::files::open_game_file;
 /* MW_MAIN 081B:108C..113C. Directory read success does NOT require 600 bytes;
  * indexed record decode uses its STORED size, not the successful read count.
  * A failed open, read or seek is fatal (MwFailGameFileRead): no disk prompts. */
-uint16_t MwLoadIndexedPicture(uint16_t pictureIndex)
+MwCampaignBuffer *MwLoadIndexedPicture(uint16_t pictureIndex)
 {
     if (campaignCore.indexedPictureDirectoryLoaded != 0 && pictureIndex == campaignCore.indexedPictureCachedIndex)
-        return campaignCore.indexedPictureOutputSelector;
+        return campaignCore.indexedPictureOutput;
     GameFile file = open_game_file(indexedPictureFilename);
     if (!file) MwFailGameFileRead(indexedPictureFilename);
     if (campaignCore.indexedPictureDirectoryLoaded == 0)
@@ -33,12 +33,12 @@ uint16_t MwLoadIndexedPicture(uint16_t pictureIndex)
     uint16_t sizeEntry = INDEXED_PICTURE_SIZE_TABLE + (uint16_t)(campaignCore.indexedPictureCachedIndex * 2);
     if (sizeEntry + PICTURE_BANK_LOW_OFFSET_WORD > INDEXED_PICTURE_DIRECTORY_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: sizeEntry + PICTURE_BANK_LOW_OFFSET_WORD > INDEXED_PICTURE_DIRECTORY_BYTES");
     campaignCore.indexedPictureStoredBytes = MwReadNativeWord(campaignCore.indexedPictureDirectory, sizeEntry);
-    if (!file.read(MwResolveNativeSegment(campaignCore.compressedPictureBufferSelector), campaignCore.indexedPictureStoredBytes))
+    if (!file.read(MwCampaignBufferBytes(campaignCore.compressedPictureBuffer), campaignCore.indexedPictureStoredBytes))
         MwFailGameFileRead(indexedPictureFilename);
     /* 081B:113E..1152: a failed close is an unreadable file too. */
     if (!file.close()) MwFailGameFileRead(indexedPictureFilename);
-    MwDecodePictureBank(campaignCore.indexedPictureStoredBytes, campaignCore.indexedPictureOutputSelector);
-    return campaignCore.indexedPictureOutputSelector; /* ES result; native SI is zero. */
+    MwDecodePictureBank(campaignCore.indexedPictureStoredBytes, campaignCore.indexedPictureOutput);
+    return campaignCore.indexedPictureOutput; /* ES result; native SI is zero. */
 }
 /* MW_MAIN 081B:113D. Genuine native RET-only hook, not a placeholder. */
 void MwIndexedPictureCloseHook(void) { }
@@ -47,10 +47,10 @@ bool MwLoadGeneralPictureBank(void)
 {
     GameFile file = open_game_file(generalPictureFilename);
     if (!file) return true;
-    const std::optional<uint16_t> bytesRead = file.read(MwResolveNativeSegment(campaignCore.compressedPictureBufferSelector), GENERAL_PICTURE_READ_BYTES);
+    const std::optional<uint16_t> bytesRead = file.read(MwCampaignBufferBytes(campaignCore.compressedPictureBuffer), GENERAL_PICTURE_READ_BYTES);
     if (!bytesRead) return true;
     (void)file.close();
-    MwDecodePictureBank(*bytesRead, campaignCore.generalPictureBankSelector);
+    MwDecodePictureBank(*bytesRead, campaignCore.generalPictureBank);
     return false;
 }
 /* MW_MAIN 081B:1189..11BE. */
@@ -58,10 +58,10 @@ bool MwLoadCockpitPictureBank(void)
 {
     GameFile file = open_game_file(cockpitPictureFilename);
     if (!file) return true;
-    const std::optional<uint16_t> bytesRead = file.read(MwResolveNativeSegment(campaignCore.compressedPictureBufferSelector), WHOLE_PICTURE_READ_BYTES);
+    const std::optional<uint16_t> bytesRead = file.read(MwCampaignBufferBytes(campaignCore.compressedPictureBuffer), WHOLE_PICTURE_READ_BYTES);
     if (!bytesRead) return true;
     (void)file.close();
-    MwDecodePictureBank(*bytesRead, campaignCore.cockpitPictureBankSelector);
+    MwDecodePictureBank(*bytesRead, campaignCore.cockpitPictureBank);
     return false;
 }
 /* MW_MAIN 081B:11BF..11C1 / 11C2..11C5, shared entry/fallthrough. */
@@ -73,10 +73,10 @@ bool MwLoadSelectedPictureBank(void)
 {
     GameFile file = open_game_file(campaignCore.selectedPictureFilename);
     if (!file) MwFailGameFileRead(campaignCore.selectedPictureFilename);
-    const std::optional<uint16_t> bytesRead = file.read(MwResolveNativeSegment(campaignCore.compressedPictureBufferSelector), WHOLE_PICTURE_READ_BYTES);
+    const std::optional<uint16_t> bytesRead = file.read(MwCampaignBufferBytes(campaignCore.compressedPictureBuffer), WHOLE_PICTURE_READ_BYTES);
     if (!bytesRead) return true;
     (void)file.close();
-    MwDecodePictureBank(*bytesRead, campaignCore.activePictureBankSelector);
+    MwDecodePictureBank(*bytesRead, campaignCore.activePictureBank);
     return false;
 }
 /* MW_MAIN 081B:120E..1243. */
@@ -84,10 +84,10 @@ bool MwLoadSecondaryPictureBank(void)
 {
     GameFile file = open_game_file(secondaryPictureFilename);
     if (!file) return true;
-    const std::optional<uint16_t> bytesRead = file.read(MwResolveNativeSegment(campaignCore.compressedPictureBufferSelector), WHOLE_PICTURE_READ_BYTES);
+    const std::optional<uint16_t> bytesRead = file.read(MwCampaignBufferBytes(campaignCore.compressedPictureBuffer), WHOLE_PICTURE_READ_BYTES);
     if (!bytesRead) return true;
     (void)file.close();
-    MwDecodePictureBank(*bytesRead, campaignCore.secondaryPictureBankSelector);
+    MwDecodePictureBank(*bytesRead, campaignCore.secondaryPictureBank);
     return false;
 }
 /* MW_MAIN 081B:1244..1249 / 124A..124F / 1250..1255: native near tails. */
@@ -103,31 +103,31 @@ void MwDrawIndexedPicture(uint16_t x, uint16_t y, uint16_t pictureIndex)
 /* MW_MAIN 081B:079E..07B5. Only the LOW offset WORD is consumed. */
 uint16_t MwDrawGeneralPicture(uint16_t x, uint16_t y, uint8_t page, uint16_t pictureIndex)
 {
-    uint8_t *pictureBank = MwResolveNativeSegment(campaignCore.generalPictureBankSelector);
+    uint8_t *pictureBank = MwCampaignBufferBytes(campaignCore.generalPictureBank);
     uint16_t pictureOffset = MwReadNativeWord(pictureBank, (uint16_t)((uint16_t)(pictureIndex * PICTURE_OFFSET_ENTRY_BYTES) + PICTURE_BANK_LOW_OFFSET_WORD));
-    return EgaDrawPackedSprite(x, y, page, pictureOffset, campaignCore.generalPictureBankSelector);
+    return EgaDrawPackedSprite(x, y, page, pictureOffset, campaignCore.generalPictureBank);
 }
 /* MW_MAIN081B:07B6..07CD. SI doubles twice as a WORD; only directory+02
  * is read.0165 holds MW_CPICS.BIN despite its earlier cockpit-bank name. */
 uint16_t MwDrawAlternateBankPicture(uint16_t x, uint16_t y, uint8_t page, uint16_t pictureIndex)
 {
-    uint8_t *pictureBank=MwResolveNativeSegment(campaignCore.cockpitPictureBankSelector);
+    uint8_t *pictureBank=MwCampaignBufferBytes(campaignCore.cockpitPictureBank);
     uint16_t pictureOffset=MwReadNativeWord(pictureBank,(uint16_t)((uint16_t)(pictureIndex*PICTURE_OFFSET_ENTRY_BYTES)+PICTURE_BANK_LOW_OFFSET_WORD));
-    return EgaDrawPackedSprite(x,y,page,pictureOffset,campaignCore.cockpitPictureBankSelector);
+    return EgaDrawPackedSprite(x,y,page,pictureOffset,campaignCore.cockpitPictureBank);
 }
 /* MW_MAIN 081B:07CE..07E5. */
 uint16_t MwDrawActivePicture(uint16_t x, uint16_t y, uint8_t page, uint16_t pictureIndex)
 {
-    uint8_t *pictureBank = MwResolveNativeSegment(campaignCore.activePictureBankSelector);
+    uint8_t *pictureBank = MwCampaignBufferBytes(campaignCore.activePictureBank);
     uint16_t pictureOffset = MwReadNativeWord(pictureBank, (uint16_t)((uint16_t)(pictureIndex * PICTURE_OFFSET_ENTRY_BYTES) + PICTURE_BANK_LOW_OFFSET_WORD));
-    return EgaDrawPackedSprite(x, y, page, pictureOffset, campaignCore.activePictureBankSelector);
+    return EgaDrawPackedSprite(x, y, page, pictureOffset, campaignCore.activePictureBank);
 }
 /* MW_MAIN 081B:07E6..07FD. The native bank identity is selector0169; keep the
  * neutral ordinal-era name until its installed filename role is proven. */
 uint16_t MwDrawFourthBankPicture(uint16_t x, uint16_t y, uint8_t page, uint16_t pictureIndex)
 {
-    uint8_t *pictureBank=MwResolveNativeSegment(campaignCore.secondaryPictureBankSelector);
+    uint8_t *pictureBank=MwCampaignBufferBytes(campaignCore.secondaryPictureBank);
     uint16_t pictureOffset=MwReadNativeWord(pictureBank,
         (uint16_t)((uint16_t)(pictureIndex*PICTURE_OFFSET_ENTRY_BYTES)+PICTURE_BANK_LOW_OFFSET_WORD));
-    return EgaDrawPackedSprite(x,y,page,pictureOffset,campaignCore.secondaryPictureBankSelector);
+    return EgaDrawPackedSprite(x,y,page,pictureOffset,campaignCore.secondaryPictureBank);
 }

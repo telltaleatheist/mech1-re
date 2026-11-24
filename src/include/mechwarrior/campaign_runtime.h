@@ -5,6 +5,6 @@
 /* Host launch/audio projection of original argv/PSP, not new native ABI.
  * The present conversion supports the default PC-speaker branch only. */
 int16_t MwRunCampaignProgram(const MwCampaignLaunch *launch,uint8_t audioCode);
-void MwStartMidiTrackFar(uint16_t selector,uint16_t offset);
+void MwStartMidiTrackFar(MwCampaignBuffer *resource,uint16_t offset);
 void MwStopMidiTrackFar(void);
 #endif

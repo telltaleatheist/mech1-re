@@ -195,8 +195,8 @@ void MwDrawTravelDestinationDetails(void)
     if (!nameEnd) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !nameEnd");
     MwText nameText={name,nameEnd+1};
     EgaDrawTransparentText(TRAVEL_DESTINATION_TEXT_X,TRAVEL_HEADER_TEXT_Y,Campaign_Pal_EGA_White,nameText);
-    uint16_t pictureSelector=MwLoadIndexedPicture((uint16_t)(TRAVEL_HOUSE_PICTURE_BASE+planet->houseIndex));
-    EgaDrawPackedSprite(TRAVEL_HOUSE_PICTURE_X,TRAVEL_HOUSE_PICTURE_Y,EGA_DISPLAY_PAGE,0,pictureSelector);
+    MwCampaignBuffer *picture=MwLoadIndexedPicture((uint16_t)(TRAVEL_HOUSE_PICTURE_BASE+planet->houseIndex));
+    EgaDrawPackedSprite(TRAVEL_HOUSE_PICTURE_X,TRAVEL_HOUSE_PICTURE_Y,EGA_DISPLAY_PAGE,0,picture);
     uint8_t classification=planet->landscapeAndMarketCode-1;
     const char *landscape=campaignTravel.travelLandscapeLabels[classification%TRAVEL_LANDSCAPE_LABEL_COUNT];
     MwText landscapeView=MwTerminatedText(landscape);

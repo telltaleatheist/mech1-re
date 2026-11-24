@@ -19,7 +19,7 @@ uint16_t MwEnterBarContinuation(uint16_t entryOffset)
     if (campaignMission.audioOptionLabelIndex!=AUDIO_LABEL_OFF)
     {
         if (!campaignStartMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStartMusic");
-        campaignStartMusic(campaignStartup.campaignMusicBufferSelector,0);
+        campaignStartMusic(campaignStartup.campaignMusicBuffer,0);
     }
 drawBackground:
     campaignUi.hubSelectedRecordIndex=BAR_HUB_ROW;
@@ -283,8 +283,8 @@ void MwDrawPilotRosterCard(uint16_t pilotRosterSlot)
     assignedSlot=campaignPilots.pilotCardOwnedUnitSlot;
     if ((int16_t)assignedSlot>=0)
     {
-        uint16_t mechPictureId=MwLoadIndexedPicture((uint16_t)(campaignEconomy.ownedUnitKinds[assignedSlot]+PILOT_MECH_PICTURE_BASE));
-        EgaDrawPackedSprite((uint16_t)(campaignPilots.pilotCardTextX-PILOT_CARD_TEXT_INSET),PILOT_CARD_MECH_Y,EGA_DISPLAY_PAGE,0,mechPictureId);
+        MwCampaignBuffer *mechPicture=MwLoadIndexedPicture((uint16_t)(campaignEconomy.ownedUnitKinds[assignedSlot]+PILOT_MECH_PICTURE_BASE));
+        EgaDrawPackedSprite((uint16_t)(campaignPilots.pilotCardTextX-PILOT_CARD_TEXT_INSET),PILOT_CARD_MECH_Y,EGA_DISPLAY_PAGE,0,mechPicture);
     }
 }
 
@@ -459,8 +459,8 @@ void MwDrawAssignmentMechPreview(uint16_t ownedUnitSlot)
     if ((int16_t)ownedUnitSlot>=0)
     {
         if (ownedUnitSlot>=CAMPAIGN_OWNED_UNIT_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: ownedUnitSlot>=CAMPAIGN_OWNED_UNIT_SLOTS");
-        uint16_t mechPictureId=MwLoadIndexedPicture((uint16_t)(campaignEconomy.ownedUnitKinds[ownedUnitSlot]+PILOT_MECH_PICTURE_BASE));
-        EgaDrawPackedSprite(campaignPilots.pilotCardColumnOrigins[campaignPilots.assignmentSelectedPilotSlot],PILOT_CARD_MECH_Y,EGA_DISPLAY_PAGE,0,mechPictureId);
+        MwCampaignBuffer *mechPicture=MwLoadIndexedPicture((uint16_t)(campaignEconomy.ownedUnitKinds[ownedUnitSlot]+PILOT_MECH_PICTURE_BASE));
+        EgaDrawPackedSprite(campaignPilots.pilotCardColumnOrigins[campaignPilots.assignmentSelectedPilotSlot],PILOT_CARD_MECH_Y,EGA_DISPLAY_PAGE,0,mechPicture);
         return;
     }
     uint16_t x=campaignPilots.pilotCardColumnOrigins[campaignPilots.assignmentSelectedPilotSlot];
