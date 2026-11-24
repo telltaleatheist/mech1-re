@@ -63,7 +63,9 @@ static MwCampaignBuffer *AllocateParagraphs(uint16_t paragraphs)
 {
     (void)paragraphs; /* Full resource windows retain native WORD-cursor wrap. */
     if (allocationCount>=8) return NULL;
-    std::unique_ptr<MwCampaignBuffer> buffer(new (std::nothrow) MwCampaignBuffer);
+    /* Zeroed. One read comes before a write: MwReadPictureNibble's one byte past a
+     * picture's data, decoded at its end. It was whatever the allocation held. */
+    std::unique_ptr<MwCampaignBuffer> buffer(new (std::nothrow) MwCampaignBuffer());
     if (!buffer) return NULL;
     resourceAllocations[allocationCount]=std::move(buffer);
     return resourceAllocations[allocationCount++].get();
