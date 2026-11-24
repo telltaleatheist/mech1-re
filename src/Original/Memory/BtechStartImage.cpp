@@ -1,5 +1,5 @@
-/* BTECH's start image: the bytes its importers read, laid out as the
- * exe's (docs/phase2/PLAN.md 8.5, slices 6c and 6d). Each row names its
+/* BTECH's start rows: the bytes its importers read (docs/phase2/PLAN.md 8.5,
+ * slices 6c and 6d). Each row names its
  * address in the unpacked image (segment:offset, loaded at 0810, as
  * src/Import/ImportTable.h) and where its bytes come from: code, zero,
  * generated, the story file, or a rule or layout piece (data/rules,
@@ -550,26 +550,6 @@ const size_t btechStartRowCount=sizeof(btechStartRows)/sizeof(btechStartRows[0])
 
 size_t BtechStartImageOffset(uint16_t segment,uint16_t offset)
 {return (size_t)(segment-BTECH_IMAGE_LOAD_SELECTOR)*16+offset;}
-
-bool BtechBuildStartImage(uint8_t *image)
-{
-    memset(image,0,BTECH_IMAGE_BYTES);
-    for (size_t index=0;index<btechStartRowCount;++index)
-    {
-        const BtechStartRow *row=&btechStartRows[index];
-        uint8_t *at=image+BtechStartImageOffset(row->segment,row->offset);
-        switch (row->source)
-        {
-        case BTECH_START_CODE: memcpy(at,row->bytes,row->size);break;
-        case BTECH_START_ZERO: break;
-        case BTECH_START_GENERATED: row->generate(at);break;
-        case BTECH_START_STORY: if (!MwStoryCopyBytes(row->id,at,row->size)) return false;break;
-        case BTECH_START_RULES: if (MwRulesPieceSize(row->id)!=row->size || !MwRulesCopyNative(row->id,at,row->size)) return false;break;
-        case BTECH_START_UI: if (MwUiPieceSize(row->id)!=row->size || !MwUiCopyNative(row->id,at,row->size)) return false;break;
-        }
-    }
-    return true;
-}
 
 [[noreturn]] static void StartDataFault(const char *id,const char *what)
 {

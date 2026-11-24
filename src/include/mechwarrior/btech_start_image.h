@@ -5,10 +5,10 @@
 #include <stdint.h>
 #include <vector>
 
-/* BTECH's start image: what its importers read at a combat EXEC, laid out as
- * the exe's unpacked image (BTECH_IMAGE_BYTES, loaded at 0810), built without
- * reading the exe (docs/phase2/PLAN.md 8.5, slices 6c and 6d). Every byte the
- * importers read is a row here; every other byte is zero. */
+/* BTECH's start rows: what its importers read at a combat EXEC, without
+ * reading the exe (docs/phase2/PLAN.md 8.5, slices 6c and 6d). A row keeps the
+ * address its bytes have in the exe's unpacked image (loaded at 0810), so
+ * start_exe_test can check it there; the importers read it by id. */
 typedef enum BtechStartSource
 {
     BTECH_START_CODE,      /* `bytes`: a constant, as the exe holds it */
@@ -59,7 +59,4 @@ private:
 };
 /* The image offset of segment:offset. */
 size_t BtechStartImageOffset(uint16_t segment,uint16_t offset);
-/* Fills `image` (BTECH_IMAGE_BYTES): zero, then the rows. False if a story
- * span or a rule or layout piece is missing or of another length. */
-bool BtechBuildStartImage(uint8_t *image);
 #endif
