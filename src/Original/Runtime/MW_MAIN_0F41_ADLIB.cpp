@@ -21,14 +21,14 @@ enum { OPL_TIMER_ONE=2,OPL_TIMER_CONTROL=4,OPL_TIMER_STATUS_MASK=0xE0,
  * part). Any other port has no device either, and stays a failure. */
 void MwWriteAdlibRegisterPair(uint16_t registerAndValue,uint16_t port)
 {
-    midiAdlibOutputPort=port;
+    campaignMusic.midiAdlibOutputPort=port;
     if (port==0) return;
     if (port!=ADLIB_INDEX_PORT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: port!=ADLIB_INDEX_PORT");
     mwMusicHardware.writePort(port,(uint8_t)registerAndValue);
-    uint16_t remaining=adlibAddressDelayReads;
+    uint16_t remaining=campaignMusic.adlibAddressDelayReads;
     do {mwMusicHardware.readPort(port);} while (--remaining);
     mwMusicHardware.writePort((uint16_t)(port+1),(uint8_t)(registerAndValue>>8));
-    remaining=adlibDataDelayReads;
+    remaining=campaignMusic.adlibDataDelayReads;
     do {mwMusicHardware.readPort(port);} while (--remaining);
 }
 /* MW_MAIN0F41:06B9. Timer overflow calibrates the original bus-read delays. */
@@ -46,8 +46,8 @@ uint16_t MwProbeAdlibAndCalibrateDelays(void)
     while (remaining && status!=OPL_TIMER_ONE_OVERFLOW);
     if (status!=OPL_TIMER_ONE_OVERFLOW) return 0;
     uint16_t measuredReads=0-remaining;
-    adlibDataDelayReads=measuredReads/OPL_DATA_CALIBRATION_SCALE+1;
-    adlibAddressDelayReads=measuredReads/OPL_ADDRESS_CALIBRATION_SCALE+1;
+    campaignMusic.adlibDataDelayReads=measuredReads/OPL_DATA_CALIBRATION_SCALE+1;
+    campaignMusic.adlibAddressDelayReads=measuredReads/OPL_ADDRESS_CALIBRATION_SCALE+1;
     return 1;
 }
 /* MW_MAIN0F41:0712. Rhythm mode and waveform selection are game-owned. */
@@ -58,7 +58,7 @@ void MwInitializeAdlibBackend(void)
     MwWriteAdlibRegisterPair(0x00B7,ADLIB_INDEX_PORT);
     MwWriteAdlibRegisterPair(0x00B8,ADLIB_INDEX_PORT);
     MwWriteAdlibRegisterPair((OPL_RHYTHM_INITIAL<<8)|OPL_RHYTHM_REGISTER,ADLIB_INDEX_PORT);
-    adlibRhythmRegister=OPL_RHYTHM_INITIAL;
+    campaignMusic.adlibRhythmRegister=OPL_RHYTHM_INITIAL;
 }
 /* MW_MAIN0F41:073A. The first register write clears native CX: both later
  * velocity/attenuation calculations therefore use zero. Preserve that quirk. */
@@ -67,11 +67,11 @@ void MwStartAdlibVoice(MwMidiVoice *voice,MwMidiChannel *channel,uint16_t veloci
     (void)velocity;
     if (voice->translatedNote>=MIDI_ADLIB_NOTE_COUNT) {MwStopAdlibVoice(voice);return;}
     MwAdlibVoice *opl=&voice->adlib;
-    opl->packedFrequency=adlibPackedNoteFrequencies[voice->translatedNote];
+    opl->packedFrequency=campaignMusic.adlibPackedNoteFrequencies[voice->translatedNote];
     opl->instrumentOffset=channel->instrumentOffset;
     uint16_t relative=opl->instrumentOffset-MIDI_INSTRUMENTS_OFFSET;
     if (relative%sizeof(MwAdlibInstrument) || relative/sizeof(MwAdlibInstrument)>=MIDI_INSTRUMENT_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: relative%sizeof(MwAdlibInstrument) || relative/sizeof(MwAdlibInstrument)>=MIDI_INSTRUMENT_COUNT");
-    const MwAdlibInstrument *instrument=&adlibInstruments[relative/sizeof(MwAdlibInstrument)];
+    const MwAdlibInstrument *instrument=&campaignMusic.adlibInstruments[relative/sizeof(MwAdlibInstrument)];
     uint8_t reg=opl->operatorIndex;
     reg+=OPL_REGISTER_BANK_STEP;MwWriteAdlibRegisterPair(((uint16_t)instrument->modulatorFlags<<8)|reg,ADLIB_INDEX_PORT);
     if (voice->backendMask==OPL_MELODIC_VOICE || voice->backendMask==OPL_BASS_DRUM_VOICE)
@@ -102,11 +102,11 @@ void MwStartAdlibVoice(MwMidiVoice *voice,MwMidiChannel *channel,uint16_t veloci
         reg+=OPL_REGISTER_BANK_STEP;MwWriteAdlibRegisterPair(((uint16_t)instrument->modulatorSustainRelease<<8)|reg,ADLIB_INDEX_PORT);
         reg+=OPL_WAVEFORM_STEP;MwWriteAdlibRegisterPair(((uint16_t)instrument->modulatorWaveform<<8)|reg,ADLIB_INDEX_PORT);
     }
-    uint8_t rhythm=(uint8_t)~voice->backendMask&adlibRhythmRegister;
+    uint8_t rhythm=(uint8_t)~voice->backendMask&campaignMusic.adlibRhythmRegister;
     MwWriteAdlibRegisterPair(((uint16_t)rhythm<<8)|OPL_RHYTHM_REGISTER,ADLIB_INDEX_PORT);
     rhythm|=voice->backendMask;
     MwWriteAdlibRegisterPair(((uint16_t)rhythm<<8)|OPL_RHYTHM_REGISTER,ADLIB_INDEX_PORT);
-    adlibRhythmRegister=rhythm;
+    campaignMusic.adlibRhythmRegister=rhythm;
 }
 /* MW_MAIN0F41:0841. Rhythm release inherits DX; melodic release selects OPL. */
 void MwStopAdlibVoice(MwMidiVoice *voice)
@@ -115,21 +115,21 @@ void MwStopAdlibVoice(MwMidiVoice *voice)
         MwWriteAdlibRegisterPair((voice->adlib.packedFrequency&0xFF00)|(uint8_t)(OPL_KEY_REGISTER+voice->adlib.channelIndex),ADLIB_INDEX_PORT);
     else
     {
-        uint8_t rhythm=(uint8_t)~voice->backendMask&adlibRhythmRegister;
-        MwWriteAdlibRegisterPair(((uint16_t)rhythm<<8)|OPL_RHYTHM_REGISTER,midiAdlibOutputPort);
-        adlibRhythmRegister=rhythm;
+        uint8_t rhythm=(uint8_t)~voice->backendMask&campaignMusic.adlibRhythmRegister;
+        MwWriteAdlibRegisterPair(((uint16_t)rhythm<<8)|OPL_RHYTHM_REGISTER,campaignMusic.midiAdlibOutputPort);
+        campaignMusic.adlibRhythmRegister=rhythm;
     }
 }
 /* MW_MAIN0F41:0869. Authored route triples assign chip channels/operators. */
 void MwInitializeAdlibVoiceRouting(void)
 {
-    for (uint16_t index=0;index<adlibBackend.selectedVoiceCount;++index)
+    for (uint16_t index=0;index<campaignMusic.adlibBackend.selectedVoiceCount;++index)
     {
         if (index>=MIDI_VOICE_CAPACITY) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: index>=MIDI_VOICE_CAPACITY");
-        MwMidiVoice *voice=MwResolveMidiVoice(adlibBackend.voicePoolOffset+index*sizeof(MwMidiVoice));
-        voice->adlib.channelIndex=adlibVoiceRoutes[index][0];
-        voice->adlib.operatorIndex=adlibVoiceRoutes[index][1];
-        voice->backendMask=adlibVoiceRoutes[index][2];
+        MwMidiVoice *voice=MwResolveMidiVoice(campaignMusic.adlibBackend.voicePoolOffset+index*sizeof(MwMidiVoice));
+        voice->adlib.channelIndex=campaignMusic.adlibVoiceRoutes[index][0];
+        voice->adlib.operatorIndex=campaignMusic.adlibVoiceRoutes[index][1];
+        voice->backendMask=campaignMusic.adlibVoiceRoutes[index][2];
     }
 }
 /* MW_MAIN0F41:0890. Eleven ordered packed-byte reads; padding stays untouched. */

@@ -32,8 +32,8 @@ void MwInitializeMpuUartBackend(void)
 {
     if (!mwMusicHardware.readMpuIrqOwner || !mwMusicHardware.writeMpuIrqOwner || !mwMusicHardware.enableDeviceIrqs) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwMusicHardware.readMpuIrqOwner || !mwMusicHardware.writeMpuIrqOwner || !mwMusicHardware.enableDeviceIrqs");
     mwMusicHardware.writePort(MPU_STATUS_COMMAND_PORT,MPU_UART_COMMAND);
-    mpuQueueByteCount=0; mpuQueueReadIndex=mpuQueueByteCount; mpuQueueWriteIndex=mpuQueueReadIndex; /* Each read back, as the chained assignment did. */
-    mpuPreviousIrqOwner=mwMusicHardware.readMpuIrqOwner();
+    campaignMusic.mpuQueueByteCount=0; campaignMusic.mpuQueueReadIndex=campaignMusic.mpuQueueByteCount; campaignMusic.mpuQueueWriteIndex=campaignMusic.mpuQueueReadIndex; /* Each read back, as the chained assignment did. */
+    campaignMusic.mpuPreviousIrqOwner=mwMusicHardware.readMpuIrqOwner();
     mwMusicHardware.writeMpuIrqOwner(MwMpuIrqOwner::CampaignReceive);
     for (uint16_t reads=10;reads;--reads) mwMusicHardware.readPort(MPU_DATA_PORT);
     mwMusicHardware.enableDeviceIrqs(MwDeviceIrq::All); /* Mask 0; its EOI is gone (H4c). */
@@ -41,27 +41,27 @@ void MwInitializeMpuUartBackend(void)
 /* MW_MAIN0F41:098A. Waits for IRQ0 progress, never drains bytes synchronously. */
 void MwDrainAndShutdownMpuBackend(void)
 {
-    while (mpuQueueByteCount) mwMusicHardware.waitForInterrupt();
-    mwMusicHardware.writeMpuIrqOwner(mpuPreviousIrqOwner);
+    while (campaignMusic.mpuQueueByteCount) mwMusicHardware.waitForInterrupt();
+    mwMusicHardware.writeMpuIrqOwner(campaignMusic.mpuPreviousIrqOwner);
 }
 /* MW_MAIN0F41:09A4. The producer's CLI/STI are gone (H4c). */
 uint16_t MwQueueMpuByte(uint16_t midiWord)
 {
-    while (mpuQueueByteCount>=MIDI_MPU_QUEUE_CAPACITY) mwMusicHardware.waitForInterrupt();
-    if (mpuQueueWriteIndex>=MIDI_MPU_QUEUE_CAPACITY) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mpuQueueWriteIndex>=MIDI_MPU_QUEUE_CAPACITY"); /* Unrepresented corrupt-index alias. */
-    mpuTransmitQueue[mpuQueueWriteIndex]=(uint8_t)midiWord;
-    { const uint16_t next=(uint16_t)(mpuQueueWriteIndex+1); mpuQueueWriteIndex=next; if (next>=MIDI_MPU_QUEUE_CAPACITY) mpuQueueWriteIndex=0; }
-    mpuQueueByteCount=(uint16_t)(mpuQueueByteCount+1);
+    while (campaignMusic.mpuQueueByteCount>=MIDI_MPU_QUEUE_CAPACITY) mwMusicHardware.waitForInterrupt();
+    if (campaignMusic.mpuQueueWriteIndex>=MIDI_MPU_QUEUE_CAPACITY) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mpuQueueWriteIndex>=MIDI_MPU_QUEUE_CAPACITY"); /* Unrepresented corrupt-index alias. */
+    campaignMusic.mpuTransmitQueue[campaignMusic.mpuQueueWriteIndex]=(uint8_t)midiWord;
+    { const uint16_t next=(uint16_t)(campaignMusic.mpuQueueWriteIndex+1); campaignMusic.mpuQueueWriteIndex=next; if (next>=MIDI_MPU_QUEUE_CAPACITY) campaignMusic.mpuQueueWriteIndex=0; }
+    campaignMusic.mpuQueueByteCount=(uint16_t)(campaignMusic.mpuQueueByteCount+1);
     return 1;
 }
 /* MW_MAIN0F41:09D0. Exactly one byte per ready fast callback. */
 void MwTickMpuTransmitQueue(void)
 {
-    if (!mpuQueueByteCount || (mwMusicHardware.readPort(MPU_STATUS_COMMAND_PORT)&MPU_WRITE_BUSY)) return;
-    if (mpuQueueReadIndex>=MIDI_MPU_QUEUE_CAPACITY) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mpuQueueReadIndex>=MIDI_MPU_QUEUE_CAPACITY");
-    mwMusicHardware.writePort(MPU_DATA_PORT,mpuTransmitQueue[mpuQueueReadIndex]);
-    { const uint16_t next=(uint16_t)(mpuQueueReadIndex+1); mpuQueueReadIndex=next; if (next>=MIDI_MPU_QUEUE_CAPACITY) mpuQueueReadIndex=0; }
-    mpuQueueByteCount=(uint16_t)(mpuQueueByteCount-1);
+    if (!campaignMusic.mpuQueueByteCount || (mwMusicHardware.readPort(MPU_STATUS_COMMAND_PORT)&MPU_WRITE_BUSY)) return;
+    if (campaignMusic.mpuQueueReadIndex>=MIDI_MPU_QUEUE_CAPACITY) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mpuQueueReadIndex>=MIDI_MPU_QUEUE_CAPACITY");
+    mwMusicHardware.writePort(MPU_DATA_PORT,campaignMusic.mpuTransmitQueue[campaignMusic.mpuQueueReadIndex]);
+    { const uint16_t next=(uint16_t)(campaignMusic.mpuQueueReadIndex+1); campaignMusic.mpuQueueReadIndex=next; if (next>=MIDI_MPU_QUEUE_CAPACITY) campaignMusic.mpuQueueReadIndex=0; }
+    campaignMusic.mpuQueueByteCount=(uint16_t)(campaignMusic.mpuQueueByteCount-1);
 }
 /* MW_MAIN0F41:0A01. CPU entry/IRET is owned by the host interrupt boundary. */
 void MwMpuReceiveInterrupt(void)

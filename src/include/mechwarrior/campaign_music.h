@@ -49,25 +49,20 @@ typedef struct MwMusicHardwareCalls
     void (*setTimerPeriod)(uint32_t pitCycles);
 } MwMusicHardwareCalls;
 extern MwMusicHardwareCalls mwMusicHardware;
-extern uint16_t timerClockLow,timerClockHigh;
-extern MwMusicTimerHandler volatile timerCallbackSlots[MUSIC_TIMER_CALLBACK_COUNT];
-extern uint8_t pitDivisorHigh,timerPhase;
+/* Campaign state owned by campaign_music.h (plan, slice B2). */
+struct CampaignMusicTimerState
+{
+    uint16_t timerClockLow, timerClockHigh;
+    MwMusicTimerHandler volatile timerCallbackSlots[MUSIC_TIMER_CALLBACK_COUNT];
+    uint8_t pitDivisorHigh, timerPhase;
+};
+extern CampaignMusicTimerState campaignMusicTimer;
 void MwCampaignTimerInterrupt(void);
 void MwInstallMusicTimer(void);
 void MwRestoreBiosTimer(void);
 /* Genuine callers discard AX. Invalid-slot incoming AX is not a C argument;
  * unused0118/0190 register-query APIs are not converted by this projection. */
 void MwTimerSetCallback(uint16_t slot,MwMusicTimerHandler handler,uint16_t rateShift);
-
-/* Native runtime DS28BE ownership. No live segment mirror. */
-extern uint16_t midiTickDenominator,midiTickNumerator,midiTickRemainder;
-extern uint16_t midiBeatDivision,midiBarDivision;
-extern uint16_t midiStreamOffset,midiStreamSegment;
-extern uint16_t midiPlaybackFlags,midiEventTickBalance;
-extern uint16_t midiBeatRemainder,midiBarRemainder,midiElapsedBars;
-extern uint8_t midiStateUpdateInProgress,midiTickInProgress,midiTrackRunningStatus;
-extern uint16_t midiTrackChannelHandlers[MIDI_TRACK_CHANNEL_HANDLERS];
-extern uint16_t midiTrackSystemHandlers[MIDI_TRACK_SYSTEM_HANDLERS];
 
 uint32_t MwDivideMidiTimingRatio(uint32_t numerator,uint32_t denominator);
 uint16_t MwSetMidiTickDenominator(uint16_t denominator);
@@ -184,20 +179,8 @@ static_assert(sizeof(MwCampaignAudioBackend)==0x1A,"Native backend data width");
 static_assert(offsetof(MwMidiSysexWorkspace,speakerBackend)==0x2E,"SysEx/backend alias");
 static_assert(offsetof(MwMidiSysexWorkspace,currentVoiceOffset)==0x5A,"Speaker cursor alias");
 static_assert(offsetof(MwMidiSysexWorkspace,tonePeriodsAndAdjacentWords)==0x60,"Speaker tone alias");
-extern MwMidiVoicePool audioVoicePool;
-#define audioVoiceList audioVoicePool.records.sentinels
-#define audioVoices audioVoicePool.records.voices
-extern MwMidiChannel audioChannels[MIDI_CHANNEL_RECORDS],audioDummyChannel;
-extern MwMidiSysexWorkspace midiSysex;
-extern MwCampaignAudioBackend *selectedAudioBackend;
-extern MwCampaignAudioBackend mpuBackend;
-extern MwCampaignAudioBackend adlibBackend;
-extern MwAdlibInstrument adlibInstruments[MIDI_INSTRUMENT_COUNT];
-extern uint16_t adlibAddressDelayReads,adlibDataDelayReads;
-extern uint8_t adlibRhythmRegister,adlibVoiceRoutes[MIDI_VOICE_CAPACITY][3];
-extern uint16_t adlibPackedNoteFrequencies[MIDI_ADLIB_NOTE_COUNT];
-/* Observable native DX residue: rhythm release can target non-OPL ports. */
-extern uint16_t midiAdlibOutputPort;
+#define audioVoiceList campaignMusic.audioVoicePool.records.sentinels
+#define audioVoices campaignMusic.audioVoicePool.records.voices
 uint16_t MwProbeAdlibAndCalibrateDelays(void);
 void MwInitializeAdlibBackend(void);
 void MwWriteAdlibRegisterPair(uint16_t registerAndValue,uint16_t port);
@@ -205,22 +188,48 @@ void MwStartAdlibVoice(MwMidiVoice *voice,MwMidiChannel *channel,uint16_t veloci
 void MwStopAdlibVoice(MwMidiVoice *voice);
 void MwInitializeAdlibVoiceRouting(void);
 void MwDecodeAdlibInstrument(const uint8_t *source,MwAdlibInstrument *instrument);
-extern uint8_t mpuTransmitQueue[MIDI_MPU_QUEUE_CAPACITY];
-extern volatile uint16_t mpuQueueWriteIndex,mpuQueueReadIndex,mpuQueueByteCount;
-extern MwMpuIrqOwner mpuPreviousIrqOwner;
-extern uint8_t musicRuntimeHeader[0x42];
 uint16_t MwProbeMpuBackend(void);
 void MwInitializeMpuUartBackend(void);
 void MwDrainAndShutdownMpuBackend(void);
 uint16_t MwQueueMpuByte(uint16_t midiWord);
 void MwTickMpuTransmitQueue(void);
 void MwMpuReceiveInterrupt(void);
-extern uint16_t midiByteHandlerDisplacement,midiDispatchChannel,midiFirstDataByte,midiControllerValue;
-extern uint16_t midiByteHandlers[14];
+/* Campaign state owned by campaign_music.h (plan, slice B2). */
+struct CampaignMusicState
+{
+    /* Native runtime DS28BE ownership. No live segment mirror. */
+    uint16_t midiTickDenominator, midiTickNumerator, midiTickRemainder;
+    uint16_t midiBeatDivision, midiBarDivision;
+    uint16_t midiStreamOffset, midiStreamSegment;
+    uint16_t midiPlaybackFlags, midiEventTickBalance;
+    uint16_t midiBeatRemainder, midiBarRemainder, midiElapsedBars;
+    uint8_t midiStateUpdateInProgress, midiTickInProgress, midiTrackRunningStatus;
+    uint16_t midiTrackChannelHandlers[MIDI_TRACK_CHANNEL_HANDLERS];
+    uint16_t midiTrackSystemHandlers[MIDI_TRACK_SYSTEM_HANDLERS];
+    MwMidiVoicePool audioVoicePool;
+    MwMidiChannel audioChannels[MIDI_CHANNEL_RECORDS], audioDummyChannel;
+    MwMidiSysexWorkspace midiSysex;
+    MwCampaignAudioBackend *selectedAudioBackend;
+    MwCampaignAudioBackend mpuBackend;
+    MwCampaignAudioBackend adlibBackend;
+    MwAdlibInstrument adlibInstruments[MIDI_INSTRUMENT_COUNT];
+    uint16_t adlibAddressDelayReads, adlibDataDelayReads;
+    uint8_t adlibRhythmRegister, adlibVoiceRoutes[MIDI_VOICE_CAPACITY][3];
+    uint16_t adlibPackedNoteFrequencies[MIDI_ADLIB_NOTE_COUNT];
+    /* Observable native DX residue: rhythm release can target non-OPL ports. */
+    uint16_t midiAdlibOutputPort;
+    uint8_t mpuTransmitQueue[MIDI_MPU_QUEUE_CAPACITY];
+    volatile uint16_t mpuQueueWriteIndex, mpuQueueReadIndex, mpuQueueByteCount;
+    MwMpuIrqOwner mpuPreviousIrqOwner;
+    uint8_t musicRuntimeHeader[0x42];
+    uint16_t midiByteHandlerDisplacement, midiDispatchChannel, midiFirstDataByte, midiControllerValue;
+    uint16_t midiByteHandlers[14];
+};
+extern CampaignMusicState campaignMusic;
 #define audioVoiceListHead audioVoiceList.fromHead.head.nextOffset
 #define audioVoiceListTailPrevious audioVoiceList.fromTail.tail.previousOffset
-#define audioVoiceCount audioDummyChannel.reservationBalance
-#define speakerBackend midiSysex.speakerBackend
+#define audioVoiceCount campaignMusic.audioDummyChannel.reservationBalance
+#define speakerBackend campaignMusic.midiSysex.speakerBackend
 #define speakerVoiceCount speakerBackend.selectedVoiceCount
 #define speakerVoicePoolOffset speakerBackend.voicePoolOffset
 /* Representation bridges ONLY for genuinely observable near-link values.

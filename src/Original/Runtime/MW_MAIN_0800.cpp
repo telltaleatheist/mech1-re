@@ -12,8 +12,8 @@ int16_t MwRunCampaignProgram(const MwCampaignLaunch *launch,uint8_t audioCode)
     /* Tandy remains unconverted; do not silently substitute another device. */
     if (audioCode=='T' || audioCode=='t') /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: audioCode=='T' || audioCode=='t'");
     MwCampaignAudioBackend *backend=&speakerBackend;
-    if (audioCode=='R' || audioCode=='r') backend=&mpuBackend;
-    if (audioCode=='A' || audioCode=='a') backend=&adlibBackend;
+    if (audioCode=='R' || audioCode=='r') backend=&campaignMusic.mpuBackend;
+    if (audioCode=='A' || audioCode=='a') backend=&campaignMusic.adlibBackend;
     MwInstallMusicTimer();
     MwTimerSetCallback(1,MwTickMidiTrack,0);
     MwTimerSetCallback(3,MwTickMidiTrack,0);

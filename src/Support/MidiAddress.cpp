@@ -18,12 +18,12 @@ MwMidiVoiceLinks *MwResolveMidiVoiceLinks(uint16_t nativeOffset)
 }
 MwMidiChannel *MwResolveMidiChannel(uint16_t nativeOffset)
 {
-    if (nativeOffset==MIDI_LIST_HEAD_OFFSET) return &audioVoicePool.headChannelAlias;
-    if (nativeOffset==MIDI_LIST_TAIL_OFFSET) return &audioVoicePool.tailChannelAlias.channel;
+    if (nativeOffset==MIDI_LIST_HEAD_OFFSET) return &campaignMusic.audioVoicePool.headChannelAlias;
+    if (nativeOffset==MIDI_LIST_TAIL_OFFSET) return &campaignMusic.audioVoicePool.tailChannelAlias.channel;
     uint16_t relative=nativeOffset-MIDI_CHANNELS_OFFSET;
     if (!(relative%sizeof(MwMidiChannel)) && relative/sizeof(MwMidiChannel)<MIDI_CHANNEL_RECORDS)
-        return &audioChannels[relative/sizeof(MwMidiChannel)];
-    if (nativeOffset==MIDI_DUMMY_CHANNEL_OFFSET) return &audioDummyChannel;
+        return &campaignMusic.audioChannels[relative/sizeof(MwMidiChannel)];
+    if (nativeOffset==MIDI_DUMMY_CHANNEL_OFFSET) return &campaignMusic.audioDummyChannel;
     /* Proven0DB2 alias: writer base can become a voice's first eight bytes. */
     return &MwResolveMidiVoice(nativeOffset)->channelAlias;
 }
