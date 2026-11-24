@@ -198,7 +198,8 @@ def configure_and_build(root, build, sdl, label):
     if os.name == "nt":
         args += ["-A", "x64", "-DMECHWARRIOR_WINDOWS_GUI=ON"]
     elif sys.platform == "darwin":
-        args += ["-G", "Ninja", "-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_OSX_DEPLOYMENT_TARGET=12.0"]
+        args += ["-G", "Ninja", "-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_OSX_DEPLOYMENT_TARGET=12.0",
+                 "-DCMAKE_OSX_ARCHITECTURES=" + ";".join(MAC_ARCHITECTURES)]
     else:
         args += ["-DCMAKE_BUILD_TYPE=Release", "-DCMAKE_BUILD_RPATH=$ORIGIN",
                  "-DCMAKE_BUILD_RPATH_USE_ORIGIN=ON"]
@@ -318,6 +319,45 @@ def stage_common(root, build, sdl, resources):
     (resources / "README.txt").write_text(README, encoding="utf-8")
 
 
+# The MSVC runtime DLLs the program and SDL3 load (docs/THIRD_PARTY_NOTICES.md names them).
+MSVC_RUNTIME = ("msvcp140.dll", "vcruntime140.dll", "vcruntime140_1.dll")
+
+
+def dumpbin_imports(dumpbin, file):
+    lines = subprocess.run([str(dumpbin), "/nologo", "/dependents", str(file)], capture_output=True, text=True, check=True).stdout
+    return re.findall(r"^\s+(\S+\.dll)\s*$", lines, re.MULTILINE)
+
+
+def check_windows_imports(folder, imports, system=None):
+    """Every DLL a program or DLL in `folder` loads is in it or part of Windows; the MSVC runtime only counts in
+    the folder (a player may not have it)."""
+    system = system or Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32"
+    files = [f for f in sorted(folder.iterdir()) if f.suffix.lower() in (".exe", ".dll")]
+    here = {f.name.lower() for f in files}
+    missing = []
+    for file in files:
+        for dll in (d.lower() for d in imports(file)):
+            windows = re.match(r"(api|ext)-ms-win-", dll) or (
+                not re.match(r"(vcruntime|msvcp|concrt|vccorlib)\d", dll) and (system / dll).is_file())
+            if dll not in here and not windows:
+                missing.append(f"{file.name} needs {dll}")
+    if missing:
+        raise RuntimeError("Not in the package: " + ", ".join(missing))
+
+
+# The launcher has one dmg for every Mac.
+MAC_ARCHITECTURES = ("x86_64", "arm64")
+
+
+def check_architectures(files, archs=None):
+    """Every one of `files` holds both architectures (`archs` gives a file's, lipo's by default)."""
+    archs = archs or (lambda file: subprocess.run(["lipo", "-archs", str(file)], capture_output=True, text=True, check=True).stdout.split())
+    wrong = [f"{file.name} ({' '.join(found) or 'none'})" for file in files
+             if set(found := archs(file)) != set(MAC_ARCHITECTURES)]
+    if wrong:
+        raise RuntimeError("Not universal: " + ", ".join(wrong))
+
+
 def check_paths(root, folder, *extra):
     """No local path or user name in anything shipped (tools/package/check_paths.py), nor the folders
     the build ran in (`extra`: the tree and SDL's source, which __FILE__ would name)."""
@@ -353,8 +393,12 @@ def package(root, build, sdl, output, label, game=None, installer=False, tools=N
         crt_dirs = sorted((vs / "VC/Redist/MSVC").glob("*/x64/Microsoft.VC*.CRT"))
         if not crt_dirs:
             raise RuntimeError("Cannot locate redistributable MSVC runtime")
-        for dll in crt_dirs[-1].glob("*.dll"):
-            shutil.copy2(dll, stage / dll.name)
+        for dll in MSVC_RUNTIME:
+            shutil.copy2(crt_dirs[-1] / dll, stage / dll)
+        dumpbins = sorted((vs / "VC/Tools/MSVC").glob("*/bin/Hostx64/x64/dumpbin.exe"))
+        if not dumpbins:
+            raise RuntimeError("Cannot locate dumpbin")
+        check_windows_imports(stage, lambda file: dumpbin_imports(dumpbins[-1], file))
     require_libraries(stage, "SDL3.dll" if windows else "libSDL3.so*")
     stage_common(root, build, sdl, stage)
     check_paths(root, stage, root, sdl)
@@ -402,19 +446,22 @@ def find_iscc():
     found = shutil.which("iscc")
     if found:
         return found
-    for base in (os.environ.get("ProgramFiles(x86)"), os.environ.get("ProgramFiles"),
-                 os.path.expandvars(r"%USERPROFILE%\scoop\apps\inno-setup\current")):
-        if base:
-            for candidate in (Path(base) / "Inno Setup 6/ISCC.exe", Path(base) / "ISCC.exe"):
-                if candidate.is_file():
-                    return str(candidate)
+    programs = [os.environ.get("ProgramFiles(x86)"), os.environ.get("ProgramFiles")]
+    folders = [Path(base) / f"Inno Setup {version}" for version in (7, 6) for base in programs if base]
+    folders.insert(2, Path(os.path.expandvars(r"%USERPROFILE%\scoop\apps\inno-setup\current")))
+    for folder in folders:
+        if (folder / "ISCC.exe").is_file():
+            return str(folder / "ISCC.exe")
     raise RuntimeError("Inno Setup's ISCC.exe not found (scoop install inno-setup, or jrsoftware.org)")
 
 
 def windows_installer(root, stage, output, label, sdl):
     """MW1-Rebuild-<label>-Setup.exe from the staged folder (tools/package/installer.iss)."""
     stem = f"{STEM}-{label}"
-    run(find_iscc(), "/Qp", f"/DAppVersion={label}", f"/DDist={stage.resolve()}", f"/DStem={stem}",
+    iscc = find_iscc()
+    banner = subprocess.run([iscc, "/?"], capture_output=True, text=True)
+    print(f"{next(iter((banner.stdout + banner.stderr).splitlines()), 'Inno Setup')} ({iscc})")
+    run(iscc, "/Qp", f"/DAppVersion={label}", f"/DDist={stage.resolve()}", f"/DStem={stem}",
         f"/O{output.resolve()}", str(root / "tools/package/installer.iss"))
     setup = output / f"{stem}-Setup.exe"
     if not setup.is_file():
@@ -493,7 +540,7 @@ def appimage(root, stage, output, label, tools, game, sdl):
 def package_mac(root, build, sdl, output, label, game):
     """MechWarrior 1 Rebuild.app and MW1-Rebuild-<label>-mac.dmg: the program in Contents/MacOS, data/,
     MechWarrior.ini and the notices in Contents/Resources (SDL_GetBasePath), the libraries in
-    Contents/Frameworks named @rpath, every binary signed ad hoc. This Mac's architecture."""
+    Contents/Frameworks named @rpath, every binary universal (x86_64 and arm64) and signed ad hoc."""
     binary = configure_and_build(root, build, sdl, label)
     check_stamp(binary, label)
     app = output / f"{APP_NAME}.app"
@@ -534,15 +581,15 @@ def package_mac(root, build, sdl, output, label, game):
                 todo.append(target)
             copied[dep] = leaf
     rpaths = subprocess.run(["otool", "-l", str(exe)], capture_output=True, text=True, check=True).stdout.splitlines()
-    for i, line in enumerate(rpaths):
-        if "cmd LC_RPATH" in line:
-            run("install_name_tool", "-delete_rpath", rpaths[i + 2].strip().split(" ")[1], str(exe))
+    for rpath in sorted({rpaths[i + 2].strip().split(" ")[1] for i, line in enumerate(rpaths) if "cmd LC_RPATH" in line}):
+        run("install_name_tool", "-delete_rpath", rpath, str(exe))  # (listed once for each architecture, deleted in both)
     run("install_name_tool", "-add_rpath", "@executable_path/../Frameworks", str(exe))
     left = [d for f in [exe, *frameworks.iterdir()] for d in dependencies(f)
             if not (system(d) or d.startswith("@"))]
     if left:
         raise RuntimeError("still outside the app: " + ", ".join(sorted(set(left))))
     require_libraries(frameworks, "libSDL3*")
+    check_architectures([exe, *sorted(frameworks.iterdir())])
 
     stage_common(root, build, sdl, resources)
     iconset = output / "mechwarrior.iconset"

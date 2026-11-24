@@ -81,6 +81,32 @@ class PackageTests(unittest.TestCase):
                     build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
                 self.assertFalse(list((root / "dist").glob("*.tar.gz")))
 
+    def test_windows_imports_are_in_the_package_or_windows(self):
+        with tempfile.TemporaryDirectory() as directory:
+            folder, system = Path(directory) / "dist", Path(directory) / "System32"
+            folder.mkdir(), system.mkdir()
+            for name in ("mw1r.exe", "SDL3.dll", "msvcp140.dll", "vcruntime140.dll", "README.txt"):
+                (folder / name).write_bytes(b"")
+            for name in ("kernel32.dll", "vcruntime140_1.dll", "concrt140.dll"):  # a machine with the runtime installed
+                (system / name).write_bytes(b"")
+            imports = {"mw1r.exe": ["SDL3.dll", "KERNEL32.dll", "MSVCP140.dll", "api-ms-win-crt-heap-l1-1-0.dll"],
+                       "SDL3.dll": ["VCRUNTIME140.dll"], "msvcp140.dll": ["VCRUNTIME140.dll"], "vcruntime140.dll": []}
+            check = lambda: build_package.check_windows_imports(folder, lambda file: imports[file.name], system)
+            check()
+            for file, dll in (("mw1r.exe", "VCRUNTIME140_1.dll"), ("msvcp140.dll", "concrt140.dll"), ("SDL3.dll", "other.dll")):
+                imports[file].append(dll)
+                with self.assertRaisesRegex(RuntimeError, f"{file} needs {dll.lower()}"):
+                    check()
+                imports[file].pop()
+
+    def test_mac_binaries_are_universal(self):
+        exe, lib = Path("mw1r"), Path("libSDL3.0.dylib")
+        both = {exe: ["arm64", "x86_64"], lib: ["x86_64", "arm64"]}
+        build_package.check_architectures([exe, lib], both.get)
+        for one in (["arm64"], ["x86_64"], []):
+            with self.assertRaisesRegex(RuntimeError, r"Not universal: libSDL3.0.dylib"):
+                build_package.check_architectures([exe, lib], {**both, lib: one}.get)
+
     def test_version_stamp(self):
         stamp = b"MW3-PROGRAM-" + b"VERSION:"
         self.assertEqual(build_package.release_tag("mw1r-v1.2.3"), "mw1r-v1.2.3")

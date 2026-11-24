@@ -40,3 +40,8 @@ pinned), a separate program with libfuse (LGPL 2.1) and other libraries linked
 in statically. Its notice and licence texts (`tools/package/appimage-runtime`)
 are in the AppImage's `licenses/appimage-runtime`; the other packages don't
 hold it.
+
+The Windows package holds the Microsoft Visual C++ runtime (msvcp140.dll,
+vcruntime140.dll, vcruntime140_1.dll). Redistributable files of Microsoft Visual
+Studio, included as its licence allows for programs built with it. Copyright
+(C) Microsoft Corporation.
