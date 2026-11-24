@@ -28,13 +28,14 @@ static void ReleaseChildResources(void)
 {
     /* DOS frees a child's allocations and files after EXEC returns, including
      * startup failures. Do not move this cleanup into native allocation errors. */
-    for (uint16_t i=0;i<allocationCount;++i) resourceAllocations[i].reset();
-    allocationCount=0;
-    /* What pointed at them is cleared, so a use (a music tick among them) fails. */
+    /* What points at the buffers is cleared first, so that nothing names a freed
+     * one and a use (a music tick among them) fails. */
     campaignCore.indexedPictureOutput=campaignCore.generalPictureBank=campaignCore.cockpitPictureBank=NULL;
     campaignCore.activePictureBank=campaignCore.secondaryPictureBank=campaignCore.compressedPictureBuffer=NULL;
     campaignCore.pictureOutput=campaignStartup.campaignMusicBuffer=campaignStartup.graphicsOverlay=NULL;
     campaignMusic.midiStream=NULL;
+    for (uint16_t i=0;i<allocationCount;++i) resourceAllocations[i].reset();
+    allocationCount=0;
 }
 static bool ExecuteChild(const char *filename,const MwCampaignLaunch *launch,uint8_t audioCode,uint8_t *exitCode)
 {
