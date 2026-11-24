@@ -205,11 +205,11 @@ bool BtechHostLoadInitialData(void)
         && BtechImportStartupInitialData()
         && BtechImportSoundInitialData(data,0x10000)
         && BtechImportToneInitialData(data,0x10000,image+BTECH_TONE_IMAGE_OFFSET,BTECH_IMAGE_BYTES-BTECH_TONE_IMAGE_OFFSET)
-        && BtechImportVideoInitialData(data,0x10000)
+        && BtechImportVideoInitialData()
         && BtechImportOrderInitialData(data,0x10000)
         && BtechImportCockpitInitialData(data,0x10000)
-        && BtechImportPoseInitialData(data,0x10000)
-        && BtechImportRenderInitialData(data,0x10000)
-        && BtechImportPolygonInitialData(data,0x10000);
+        && BtechImportPoseInitialData()
+        && BtechImportRenderInitialData()
+        && BtechImportPolygonInitialData();
     free(data);free(image);return loaded;
 }

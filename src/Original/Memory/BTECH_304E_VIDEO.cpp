@@ -1,5 +1,6 @@
 #include "mechwarrior/combat_video.h"
 #include "mechwarrior/native_address.h"
+#include "mechwarrior/btech_start_image.h"
 #include "mechwarrior/ui_layout.h"
 
 const uint8_t glyphTailMasks[8]={0xFF,0x80,0xC0,0xE0,0xF0,0xFF,0xFC,0xFE};
@@ -11,19 +12,26 @@ static_assert(sizeof(BtechLandscapeCameraColourRow)==0x1E,"Native landscape colo
 /* EXEPACK data projection, not a runtime segment mirror. The shipped font
  * directory/metrics are ZERO: an early fatal message has no default font.
  * Do not borrow the campaign font or manufacture a BIOS font fallback. */
-bool BtechImportVideoInitialData(const uint8_t *data,size_t bytes)
+bool BtechImportVideoInitialData(void)
 {
-    if (!data || bytes<0x4EDC) return false;
+    const BtechStartRowData videoStateRow("video.state");
+    const BtechStartRowData videoFontDirectoryRow("video.font_directory");
+    const BtechStartRowData videoPaletteSlotIdsRow("video.palette_slot_ids");
+    const BtechStartRowData videoDispatchRow("video.dispatch");
+    const BtechStartRowData videoAdapterRow("video.adapter");
+    const BtechStartRowData videoEllipseRowsRow("video.ellipse_rows");
+    const BtechStartRowData videoGlyphAndPixelMasksRow("video.glyph_and_pixel_masks");
+    const BtechStartRowData videoSpanMasksRow("video.span_masks");
     for (uint16_t slot=0;slot<COMBAT_FONT_SLOTS;++slot)
     {
-        if (MwReadNativeWord(data,0x2ED4+slot*2)) return false;
+        if (videoFontDirectoryRow.word(slot*2)) return false;
         combatVideo.fonts[slot]=BtechFont{};
         /* 2E84, 2E98, 2EAC, 2EC0: a slot's metrics, written when its font
          * loads (BtechLoadFontSlot) and zero where the exe reloaded them. */
         combatVideo.fontAdvanceWidths[slot]=0;combatVideo.combatFontHeights[slot]=0;
         combatVideo.fontFirstCharacters[slot]=0;combatVideo.fontCharacterCounts[slot]=0;
     }
-    if (MwReadNativeWord(data,0x3F38)!=0x0006 || MwReadNativeWord(data,0x3F3A)!=0x1BF5) return false;
+    if (videoDispatchRow.word()!=0x0006 || videoDispatchRow.word(2)!=0x1BF5) return false;
     combatVideo.graphicsDrawGlyph=BtechGraphicsNoOperation;
     /* Other authored RETF dispatch entries have no typed callable adapter
      * before installation. Startup must select a real backend first. */
@@ -38,11 +46,11 @@ bool BtechImportVideoInitialData(const uint8_t *data,size_t bytes)
     combatVideo.graphicsPresentRectangle=NULL;
     combatVideo.egaScreenUploadColumns=0; /*4724*/
     combatVideo.egaScreenUploadRowSkip=0; /*4726*/combatVideo.egaScreenUploadRowsRemaining=0; /*4728*/
-    combatVideo.graphicsColourMode=data[0x2E6F];
+    combatVideo.graphicsColourMode=videoStateRow.byte(0x1F);
     combatVideo.graphicsWritePixel=NULL;combatVideo.graphicsReadPixel=NULL;combatVideo.graphicsSetOverscanColour=NULL;
     combatVideo.graphicsCopyScreenRectangle=NULL;
     combatVideo.graphicsSwapScreenPages=NULL;
-    for (uint16_t bit=0;bit<8;++bit) combatVideo.egaPixelBitMasks[bit]=data[0x46D4+bit];
+    for (uint16_t bit=0;bit<8;++bit) combatVideo.egaPixelBitMasks[bit]=videoGlyphAndPixelMasksRow.byte(2+bit);
     combatVideo.egaLinePixelMask=0; /*46DC*/combatVideo.egaLineRunLength=0; /*46DD*/
     combatVideo.egaLineFractionStep=0; /*46DF*/combatVideo.egaLineRemainingBeforeRun=0; /*46E1*/combatVideo.egaLineFractionAccumulator=0; /*46E3*/
     /* The layout's camera rows (data/ui, src/Ui), at their native offset. */
@@ -73,29 +81,29 @@ bool BtechImportVideoInitialData(const uint8_t *data,size_t bytes)
     combatVideo.promptBitmaps=NULL; // Native fresh-child BSS, not a selective combat reset.
     combatVideo.pointPictures=NULL;combatVideo.smallMechPictures=NULL;combatVideo.strutPictures=NULL;
     combatVideo.cockpitPictures=NULL;combatVideo.hudGlyphPictures=NULL;combatVideo.inspectionDamagePictures=NULL;
-    if (MwReadNativeWord(data,0x4714)) return false;
+    if (videoSpanMasksRow.word(0x12)) return false;
     combatVideo.egaFontBuffer=NULL;combatVideo.egaFontChunkCounter=0; /*4716*/
-    for (uint16_t slot=0;slot<COMBAT_PALETTE_SLOTS;++slot) combatVideo.paletteSlotIds[slot]=data[0x3796+slot];
-    combatVideo.textForegroundColour=data[0x2E50];combatVideo.textBackgroundColour=data[0x2E51];
-    combatVideo.textTransparentBackground=data[0x2E52];combatVideo.screenPolygonNeedsClip=data[0x2E5B];
-    combatVideo.drawPolygonFilled=data[0x2E5C];combatVideo.egaBitmapEnabledPlanes=data[0x2E5F];
-    combatVideo.drawLineColour=data[0x2E5D];combatVideo.drawFillColour=data[0x2E5E];
+    for (uint16_t slot=0;slot<COMBAT_PALETTE_SLOTS;++slot) combatVideo.paletteSlotIds[slot]=videoPaletteSlotIdsRow.byte(slot);
+    combatVideo.textForegroundColour=videoStateRow.byte();combatVideo.textBackgroundColour=videoStateRow.byte(1);
+    combatVideo.textTransparentBackground=videoStateRow.byte(2);combatVideo.screenPolygonNeedsClip=videoStateRow.byte(0xB);
+    combatVideo.drawPolygonFilled=videoStateRow.byte(0xC);combatVideo.egaBitmapEnabledPlanes=videoStateRow.byte(0xF);
+    combatVideo.drawLineColour=videoStateRow.byte(0xD);combatVideo.drawFillColour=videoStateRow.byte(0xE);
     combatVideo.drawColourPattern=0; /*2E72*/combatVideo.spanPrimaryPattern=0; /*2E74*/
     combatVideo.spanSecondaryPattern=0; /*2E76*/combatVideo.spanAlternationState=0; /*2E7A*/
-    for (uint16_t i=0;i<8;++i) {combatVideo.egaSpanLeadingMasks[i]=data[0x4702+i];combatVideo.egaSpanTrailingMasks[i]=data[0x470A+i];}
-    combatVideo.egaSpanPrimaryColour=data[0x4712];combatVideo.egaSpanSecondaryColour=data[0x4713];
+    for (uint16_t i=0;i<8;++i) {combatVideo.egaSpanLeadingMasks[i]=videoSpanMasksRow.byte(i);combatVideo.egaSpanTrailingMasks[i]=videoSpanMasksRow.byte(8+i);}
+    combatVideo.egaSpanPrimaryColour=videoSpanMasksRow.byte(0x10);combatVideo.egaSpanSecondaryColour=videoSpanMasksRow.byte(0x11);
     combatVideo.graphicsFillSolidSpan=NULL;combatVideo.graphicsFillAlternatingSpan=NULL;combatVideo.shapeSpanCallback=BtechShapeSpanCallback{};
-    combatVideo.clipMinimumX=0; /*2E53*/combatVideo.clipMaximumX=(int16_t)MwReadNativeWord(data,0x2E55);
-    combatVideo.clipMinimumY=0; /*2E57*/combatVideo.clipMaximumY=(int16_t)MwReadNativeWord(data,0x2E59);
+    combatVideo.clipMinimumX=0; /*2E53*/combatVideo.clipMaximumX=(int16_t)videoStateRow.word(5);
+    combatVideo.clipMinimumY=0; /*2E57*/combatVideo.clipMaximumY=(int16_t)videoStateRow.word(9);
     combatVideo.backPage=CombatPage::None; /*2E62*/
     combatVideo.frontPage=CombatPage::None; /*2E64*/combatVideo.copySourcePage=CombatPage::None; /*2E66*/
     combatVideo.drawPage=CombatPage::None; /*2E68*/combatVideo.videoColourCount=0; /*2E71*/
-    combatVideo.pcjrTandyCompatible=data[0x2E6C];combatVideo.combatRendererKind=data[0x2E6D];
-    combatVideo.textForegroundPattern=data[0x2E78];combatVideo.textBackgroundPattern=data[0x2E79];
-    combatVideo.glyphTailMask=data[0x46D2];combatVideo.videoAdapterAllowedMask=data[0x3FC5];
+    combatVideo.pcjrTandyCompatible=videoStateRow.byte(0x1C);combatVideo.combatRendererKind=videoStateRow.byte(0x1D);
+    combatVideo.textForegroundPattern=videoStateRow.byte(0x28);combatVideo.textBackgroundPattern=videoStateRow.byte(0x29);
+    combatVideo.glyphTailMask=videoGlyphAndPixelMasksRow.byte();combatVideo.videoAdapterAllowedMask=videoAdapterRow.byte(1);
     combatVideo.ellipsePage=CombatPage::None; /*4151*/
     for (uint16_t row=0;row<COMBAT_ELLIPSE_ROWS;++row)
-    {combatVideo.ellipseLeftInsets[row]=data[0x401C+row];combatVideo.ellipseBorderWidths[row]=data[0x4083+row];combatVideo.ellipseInteriorWidths[row]=data[0x40EA+row];}
+    {combatVideo.ellipseLeftInsets[row]=videoEllipseRowsRow.byte(row);combatVideo.ellipseBorderWidths[row]=videoEllipseRowsRow.byte(0x67+row);combatVideo.ellipseInteriorWidths[row]=videoEllipseRowsRow.byte(0xCE +row);}
     for (uint16_t row=0;row<COMBAT_SCREEN_HEIGHT;++row) combatVideo.graphicsRowOffsets[row]=0; /*334E*/
     for (uint16_t row=0;row<0x15C;++row) combatVideo.herculesDisplayRowOffsets[row]=0; /*34DE*/
     for (uint16_t slot=0;slot<COMBAT_PALETTE_SLOTS;++slot)
