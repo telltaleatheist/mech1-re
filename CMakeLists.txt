@@ -200,7 +200,6 @@ add_library(mechwarrior_original STATIC
     src/Support/VideoMode.cpp
     src/Support/CombatInstallation.cpp
     src/Support/BtechImage.cpp
-    src/Support/CombatNearHeap.cpp
     src/Original/Memory/MW_MAIN_1090_EVENTS.cpp
     src/Original/Memory/MW_MAIN_1AA5.cpp
     src/Original/Memory/MW_MAIN_28BE.cpp

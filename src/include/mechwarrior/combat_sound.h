@@ -136,8 +136,6 @@ typedef struct BtechSoundAllocationNode {
     uint16_t allocationSelector; /* Original DOS allocation identity. */
     uint16_t allocationOffset;
 } BtechSoundAllocationNode;
-BtechSoundAllocationNode *BtechHostResolveReleasedSoundNode(BtechSoundAllocationNode *node);
-void BtechHostStoreSoundAllocationNext(BtechSoundAllocationNode *node,BtechSoundAllocationNode *next);
 
 typedef struct BtechSoundEvent {
     MwNativeByteView data; /* Borrowed selector-relative allocation bytes. */
