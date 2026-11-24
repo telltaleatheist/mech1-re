@@ -42,7 +42,6 @@ void MwSdlInitializeTimer(void);
  * host would wait, so the PIT timeline depends on the input alone. */
 bool MwSdlVirtualClock(void);
 uint64_t MwSdlNowNanoseconds(void);
-void MwSdlSpendNanoseconds(uint64_t nanoseconds);
 void MwSdlAudioLogSnap(const char *name);
 void MwSdlAudioLogTone(double frequency); /* A trace snap, as a mark in the sound-port log. */
 void MwSdlPumpTimer(void);

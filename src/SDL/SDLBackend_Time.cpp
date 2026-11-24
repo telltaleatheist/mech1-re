@@ -5,6 +5,7 @@
 #include "mechwarrior/combat_startup.h"
 #include "mechwarrior/combat_mpu.h"
 #include <float.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -12,7 +13,7 @@
 /* Combat speed (docs/timing/PLAN.md, docs/CPU_TIMING_PROFILE.md): 60 ms per
  * tick at 1x, about 2.1 times the old cycle model's live-cockpit 127 ms. Keep
  * the shipped MechWarrior.ini consistent with it. */
-enum { HOST_DEFAULT_COMBAT_TICK_MS=60,HOST_MINIMUM_TICK_NS=10000000,HOST_IDLE_WAIT_NS=100000,
+enum { HOST_DEFAULT_COMBAT_TICK_MS=60,HOST_MINIMUM_TICK_NS=10000000,HOST_IDLE_WAIT_NS=100000,HOST_IDLE_MAX_NS=10000000,
     HOST_NS_PER_MILLISECOND=1000000,HOST_NS_PER_SECOND=1000000000,
     HOST_MS_PER_SECOND=1000,HOST_SECONDS_PER_MINUTE=60,HOST_SECONDS_PER_HOUR=3600 };
 static const uint64_t HOST_SPEED_NOTICE_NS=UINT64_C(1500000000);
@@ -23,9 +24,10 @@ static bool virtualClock;
 static uint64_t virtualNanoseconds;
 bool MwSdlVirtualClock(void) {return virtualClock;}
 uint64_t MwSdlNowNanoseconds(void) {return virtualClock?virtualNanoseconds:SDL_GetTicksNS();}
-/* A host wait: real sleep, or under the test clock the same time spent at once. */
-void MwSdlSpendNanoseconds(uint64_t nanoseconds)
-{if (virtualClock) virtualNanoseconds+=nanoseconds;else SDL_DelayNS(nanoseconds);}
+/* The host's idle (H4d), defined with the timer below. A wait's deadline, while
+ * one runs, bounds it. */
+static void HostIdle(void);
+static uint64_t idleDeadline;
 static bool combatTickActive;
 static uint64_t combatTickStarted;
 
@@ -56,8 +58,9 @@ bool MwSdlCombatSpeedNotice(char *text,size_t size)
 }
 static void WaitDeadline(uint64_t deadline)
 {
-    while (MwSdlNowNanoseconds()<deadline)
-    {MwSdlPollEvents();MwSdlPumpTimer();MwSdlSpendNanoseconds(HOST_IDLE_WAIT_NS);}
+    idleDeadline=deadline;
+    while (MwSdlNowNanoseconds()<deadline) {MwSdlPollEvents();MwSdlPumpTimer();HostIdle();}
+    idleDeadline=0;
 }
 /* Each combat tick (0810:0019's loop) lasts MwSdlCombatTickNanoseconds from
  * its start, however much it drew and whatever the host. */
@@ -121,8 +124,25 @@ void MwSdlRunDue(void)
  * step, if the pass's key read found nothing due, as the campaign's waits idle. */
 void MwSdlWaitIdle(void)
 {
-    if (idleOwed) MwSdlSpendNanoseconds(HOST_IDLE_WAIT_NS);
+    if (idleOwed) HostIdle();
     idleOwed=false;
+}
+/* The host's idle, when nothing is due (H4d). Under the real clock it sleeps
+ * until the next due event: IRQ0's next tick, or in an MT-32 combat the MPU's
+ * next event, as the pump would deliver them. A running wait's deadline comes
+ * first, and it sleeps at most HOST_IDLE_MAX_NS, so the window, the input and
+ * the audio queue (2048 frames ahead at least, 43 ms) are still served. Under
+ * the test clock it stays the 100 us step, so no log moves. */
+static void HostIdle(void)
+{
+    if (virtualClock) {virtualNanoseconds+=HOST_IDLE_WAIT_NS;return;}
+    uint64_t now=SDL_GetTicksNS(),wake=now+HOST_IDLE_MAX_NS;
+    if (idleDeadline && idleDeadline<wake) wake=idleDeadline;
+    double due=DeviceIrqEnabled(MwDeviceIrq::Timer)?nextIrq:DBL_MAX;
+    if (mwSdlCombatActive && mwSdlSoundSystem==MW_SOUND_MT32) due=fmin(due,MwMpuNextEventTime());
+    double dueNanoseconds=(double)startNanoseconds+due*(double)HOST_NS_PER_SECOND/(double)HOST_PIT_CLOCK_HZ;
+    if (dueNanoseconds<(double)wake) wake=(uint64_t)ceil(dueNanoseconds);
+    if (wake>now) SDL_DelayNS(wake-now);
 }
 double MwSdlHardwareTime(void) {return hardwareTime;}
 double MwSdlTimerLagMilliseconds(void)
@@ -284,7 +304,7 @@ void MwSdlPumpTimer(void)
     if (nextIrq>target)
     {
         hardwareTime=target;MwSdlAdvanceAudio(hardwareTime);
-        if (pumpIdles) MwSdlSpendNanoseconds(HOST_IDLE_WAIT_NS); /* Host idle only; no synthetic game ticks. */
+        if (pumpIdles) HostIdle(); /* Host idle only; no synthetic game ticks. */
         else idleOwed=true; /* A key read's: a wait takes it at the pass's end (MwSdlWaitIdle). */
     }
 }
