@@ -19,7 +19,7 @@ It fails if any trace doesn't finish in either run, if a trace differs
 without the exes, or if a trace with a battle doesn't reach the battle's
 return in both runs (each combat EXEC launches and returns). The host stops
 on any program (.EXE or .COM) opened at play, naming the file and the opener
-(MwHostJoinGamePath); those lines are printed. Names and counts only.
+(find_game_file); those lines are printed. Names and counts only.
 
 Exit status: 0 the same without the exes, 1 not, 77 skipped (not opted in,
 or no game or port).

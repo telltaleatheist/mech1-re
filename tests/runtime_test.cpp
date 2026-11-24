@@ -11,7 +11,7 @@
 #include "mechwarrior/combat_platform.h"
 #include "mechwarrior/combat_render.h"
 #include "mechwarrior/combat_runtime.h"
-#include "mechwarrior/dos_files.h"
+#include "mechwarrior/game_files.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -234,7 +234,7 @@ long FileBytes(const char *path) {
 // The disk fills part of the way through a save (a file-size limit stands in for it; POSIX only).
 void SaveOnFullDisk() {
   const char *const name = "RTFULL.GAM";
-  Check(MwHostSetCampaignSaveDirectory("."), "the save folder");
+  mw1o::files::set_save_directory(".");
   Check(MwWriteCampaignSaveFile(name) == CampaignSaveWrite::Written && FileBytes(name) == CAMPAIGN_SAVE_BYTES,
         "a save with room is written whole");
 #if !defined(_WIN32)

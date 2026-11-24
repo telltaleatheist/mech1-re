@@ -25,7 +25,7 @@
 
 #include "mechwarrior/campaign_events.h"
 #include "mechwarrior/combat_installation.h"
-#include "mechwarrior/dos_files.h"
+#include "mechwarrior/game_files.h"
 #include "mechwarrior/original_data.h"
 #include "mechwarrior/rules.h"
 #include "mechwarrior/story.h"
@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
     fs::create_directories(scratch);
 
     const std::string btech_exe = find_file(game, "BTECH.EXE").string();
-    step(MwHostSetCampaignSaveDirectory(scratch.string().c_str()), "save directory");
+    mw1o::files::set_save_directory(scratch.string());
     step(MwHostPrepareStory(game, scratch.string().c_str()), "story");
     step(MwHostPrepareRules(data.string().c_str()), "rules");
     step(MwHostPrepareUi(data.string().c_str()), "ui");

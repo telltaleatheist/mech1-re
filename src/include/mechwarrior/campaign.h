@@ -34,10 +34,8 @@ extern const char alternatePictureFilename[], fPictureFilename[];
 bool MwDosOpenResourceReadWrite(const char *filename, uint16_t *handleOrError);
 bool MwDosReadFile(uint8_t *buffer, uint16_t byteCount, uint16_t fileHandle, uint16_t *bytesReadOrError);
 bool MwDosCloseFile(uint16_t fileHandle);
-bool MwDosSeekAbsolute(uint32_t fileOffset, uint16_t fileHandle);
 uint16_t MwLoadIndexedPicture(uint16_t pictureIndex);
 void MwIndexedPictureCloseHook(void);
-void MwCloseIndexedPictureBank(void);
 bool MwLoadGeneralPictureBank(void);
 bool MwLoadCockpitPictureBank(void);
 bool MwLoadPrimaryPictureBank(void);
@@ -116,8 +114,6 @@ struct CampaignCoreState
     uint8_t indexedPictureDirectoryLoaded;
     uint16_t indexedPictureCachedIndex, indexedPictureStoredBytes;
     uint8_t indexedPictureDirectory[INDEXED_PICTURE_DIRECTORY_BYTES];
-    uint16_t indexedPictureFileHandle, generalPictureFileHandle;
-    uint16_t selectedPictureFileHandle;
     /* Native private filename pointer; identity is tested only against 0E2C.
      * Host pointer keeps that identity; never serialize this as a native WORD. */
     const char *selectedPictureFilename;

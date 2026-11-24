@@ -1951,7 +1951,7 @@ mingw check.
     `start_exe_test`: 65,536 of 65,536 overlay bytes as the exe's (2,156 of
     them the zeroed ranges).
 - **6f, the test, the guard and the docs.**
-  - **The guard.** `MwHostJoinGamePath` joins every game file play opens
+  - **The guard.** `find_game_file` (`MwHostJoinGamePath` until B6) joins every game file play opens
     (the campaign's DOS open and create, combat's streams); a program's
     name (ending in .EXE or .COM, in any case) stops the program, naming
     the file and the opener (`__func__`). Only the import reads the exes,

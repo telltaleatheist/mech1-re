@@ -4,7 +4,7 @@
 #include "mechwarrior/campaign_ui.h"
 #include "mechwarrior/original_data.h"
 #include "mechwarrior/campaign_events.h"
-#include "mechwarrior/dos_files.h"
+#include "mechwarrior/game_files.h"
 #include "mechwarrior/rules.h"
 #include "mechwarrior/ui_layout.h"
 #include "mechwarrior/story.h"
@@ -25,7 +25,6 @@ static void ReleaseChildResources(void)
 {
     /* DOS frees a child's allocations and files after EXEC returns, including
      * startup failures. Do not move this cleanup into native allocation errors. */
-    MwHostCloseProcessFiles();
     for (uint16_t i=0;i<allocationCount;++i)
     {MwBindNativeSegment((uint16_t)(0x4000+i*0x1000),NULL);free(resourceAllocations[i]);resourceAllocations[i]=NULL;}
     allocationCount=0;
@@ -147,9 +146,11 @@ bool MwSdlInitialize(const char *gameDirectory,const char *captureDirectory)
     if (!MwSdlResolveWriteDirectory(writeDirectory,sizeof(writeDirectory))) return false;
     if (!MwSdlDataDirectory()[0]) return false;
     if (!MwHostPrepareRules(dataDirectory) || !MwHostPrepareUi(dataDirectory)) return false;
-    if (!MwHostSetCampaignSaveDirectory(writeDirectory) || !MwHostPrepareStory(gameDirectory,writeDirectory)) return false;
+    mw1o::files::set_save_directory(writeDirectory);
+    if (!MwHostPrepareStory(gameDirectory,writeDirectory)) return false;
     if (!MwImportCampaignInitialData() || !MwImportCampaignEventText()
-        || !MwImportCampaignMusicData() || !MwHostSetOriginalGameDirectory(gameDirectory)) return false;
+        || !MwImportCampaignMusicData()) return false;
+    mw1o::files::set_game_directory(gameDirectory);
     MwImportLauncherInitialData();
     if (!SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_EVENTS)) return false;
     initialized=true;

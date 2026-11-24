@@ -75,7 +75,7 @@ static const EgaOverlayByteSpan overlayByteSpans[] =
     { 0x09C0, 0x0002, NULL, &egaOverlay.textExtraLeading },
     { 0x09C2, 0x010E, egaTextColourCodeBytes, NULL },
     { 0x0AD0, 0x0002, NULL, &egaOverlay.fontReadBufferOffset },
-    { 0x0AD2, 0x0002, NULL, &egaOverlay.fontFileHandle },
+    { 0x0AD2, 0x0002, NULL, &egaOverlay.fontHandleBytes },
     { 0x0AD4, 0x001A, (uint8_t *)egaOverlay.smallFontFilename, NULL },
     { 0x0AEE, 0x0015, (uint8_t *)egaOverlay.largeFontFilename, NULL },
     { 0x0B03, 0x057B, egaOverlay.fontBitmapStorage, NULL },

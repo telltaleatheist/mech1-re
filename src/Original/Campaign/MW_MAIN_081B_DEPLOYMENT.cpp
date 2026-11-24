@@ -10,7 +10,7 @@
 /* MW_MAIN081B:1423..144D. The original asked for the combat disk until the
  * combat program (BTECH.EXE) opened, then closed it unread. The combat
  * program is ours (slice 6d) and play opens no exe (slice 6f, the guard in
- * MwHostJoinGamePath), so there is no disk to wait for: the open and close
+ * find_game_file), so there is no disk to wait for: the open and close
  * are dropped, an intended difference (docs/phase2/PLAN.md 8.5, 6f). The
  * handle was closed at once, so nothing after it sees the difference. */
 void MwWaitForRequiredResourceFile(void)

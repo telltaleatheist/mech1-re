@@ -343,9 +343,6 @@ bool MwImportCampaignInitialData(void)
     campaignCore.indexedPictureCachedIndex=MW_INDEXED_PICTURE_NO_CACHED_INDEX;
     campaignCore.indexedPictureStoredBytes=0; /*0B65*/
     memset(campaignCore.indexedPictureDirectory,0,sizeof(campaignCore.indexedPictureDirectory)); /*0B67*/
-    campaignCore.indexedPictureFileHandle=0; /*0DBF*/
-    campaignCore.generalPictureFileHandle=0; /*0DDA*/
-    campaignCore.selectedPictureFileHandle=0; /*0DE9*/
     /* The planets from story/planets.json, laid out as the exe holds them
      * (offsets at 6570, storage 67B6.., the alphabetical table at 6694). */
     if (!MwStoryBuildPlanets(campaignCore.planetRecordStorage,sizeof(campaignCore.planetRecordStorage),PLANET_RECORDS_START,
