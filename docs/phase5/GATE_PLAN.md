@@ -4,7 +4,8 @@ Run once, when everything that goes into the release is on main and the project 
 been run for this page. Times are measured on earlier commits unless marked as an estimate.
 
 **The candidate** is one commit of main. Every step below is on fresh builds of it. If it changes afterwards, the
-steps that change can affect are run again. Still to land: B4f's campaign and the setup's file check with the kit's bump.
+steps that change can affect are run again. B4f's campaign and the setup's file check
+are on main (a97a6d5).
 
 **A pass** is the count in the table. A skipped test isn't a pass. A log or golden that moves stops the gate until
 it is attributed.
@@ -15,7 +16,7 @@ it is attributed.
 | --- | --- | --- |
 | Traces, events, frames, 1990 and 1989, and audio; ASan on the 8 traces (1990) and audio | 4632030 (B4g), Mac | B4f's combat (checked in its own slice at 92729fb: tests, 1990 traces, events on both revisions, the sanitizer on two traces), r-windows, r-story. Frames, 1989's traces and audio: not since |
 | Mac ctest | a981d92: 7 of 7 of the tests it touched, fresh build, 0 warnings; 0de343e: 18 of 18, exe_free among them | the rest of the 37 not on one commit |
-| Windows ctest | 0de343e: 35 of 37 (exe_free and events skipped); r-log 3cf061f: 6 of 6 of the tests it touched | nothing of the opt-ins |
+| Windows ctest | 0de343e: 35 of 37 (exe_free and events skipped); r-log 3cf061f: 6 of 6 of the tests it touched; 7d9c5d9: 8 of 8 targeted and two 1990 traces (company, combat_cockpit); a97a6d5: setup, status_setup, notice | the other tests, and nothing of the opt-ins |
 | Windows traces | a run from before R's preparation; its commit isn't recorded here | treat as uncovered |
 | Linux ctest | c4f217c: 28 of 28 on both revisions, events run, exe_free skipped | 9 tests added since; treat as uncovered |
 | Packages, first run | 8122a17, all three platforms (before the story merge; no packaging change since) | the story and the rest of the merge |
@@ -38,8 +39,8 @@ than four jobs, one suite at a time. Opt-ins are set together with the rest: `MW
 | 8 | Sanitizer build (address, and bounds for combat) on the 8 traces and the sound logs | Mac | 0 reports | estimate 4 min each |
 | 9 | Packages from the local tag, the build's stamp and the release-label checks on | all three | zip and Setup.exe; dmg, both architectures; tar.gz and AppImage; smoke test and first run each; `sums.py` over all | Windows about 1 min, Linux 1 min, Mac about 2 min |
 | 10 | `combat_cockpit` on the Intel half of the Mac package, under Rosetta | Mac | the trace matches | 10 s measured |
-| 11 | The kit's non-ASCII name case, its home away from the program's folder, with and without the manifest | Windows | no abort (an open question until dev 1's bump) | 5 min |
-| 12 | The setup's file check on both copies, 1990 and 1989 (and on the served setup, if that is in by then) | Mac, Linux, Windows | each copy accepted as its revision; its own failures named as its branch says | set by the file check's branch |
+| 11 | The kit's non-ASCII name case, its home away from the program's folder, with and without the manifest | Windows | no abort. At 7d9c5d9 (kit 2f0feb1): none, with the manifest and without it; on 9341f31 four of the ten cases abort, all in the program's own folders | 5 min |
+| 12 | The setup's file check on both copies, 1990 and 1989 (and on the served setup, if that is in by then) | Mac, Linux, Windows | each copy accepted as its revision; its own failures named as its branch says | Windows: 13 to 14 ms for the 1990 folder |
 
 Steps 6 (both revisions), 7 and 8's address half, and the events of both revisions that steps 2 and 3 now run, took about 15 minutes together at 4632030 on the Mac, builds included.
 
