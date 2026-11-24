@@ -9,7 +9,7 @@ typedef union BtechPolygonSpan {
 } BtechPolygonSpan;
 static_assert(sizeof(BtechPolygonSpan)==4,"Native row/header aliases two WORDs");
 #define polygonScanlineSpans (combatPolygons.polygonSpanStorage+1)
-bool BtechImportPolygonInitialData(const uint8_t *data,size_t bytes);
+bool BtechImportPolygonInitialData(void);
 BtechPolygonSpan *BtechDrawScreenPolygon(int16_t count,const int16_t *x,const int16_t *y);
 void BtechClipScreenPolygonToViewport(void);
 void BtechAccumulateVerticalPolygonEdge(int16_t firstY,int16_t fixedX,int16_t secondY);

@@ -83,7 +83,7 @@ struct CombatImportState
 };
 extern CombatImportState combatImport;
 
-bool BtechImportCombatStageInitialData(const uint8_t *data,size_t byteCount);
+bool BtechImportCombatStageInitialData(void);
 /* Native has no source arguments. This WORD is explicitly host transport for
  * the observable preceding sound-loader stack residue, NEVER a Reko seed. */
 void BtechPrepareCampaignCombatStage(uint16_t inheritedSoundStreamIdentity);

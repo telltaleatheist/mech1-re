@@ -401,7 +401,7 @@ Names such as planetSelector, houseSelector, scenarioSelectors and the trace sch
 - **Kept as it was.** DOS's memory list itself (first fit, one paragraph a block): how much memory is free decides what the game loads, so its sizes stay.
 
 **From B4e** (combat's file records, read to their end and never past it):
-- **What changed.** `CombatRecord` and `BtechReadFileRecord` (combat_record.h) read a record whole or stop, with the file's name and what to do (run the setup again with a good copy). The shipped files of both releases are never short, except one damaged bank (below), so a good install sees no difference.
+- **What changed.** `CombatRecord` and `BtechReadFileRecord` (combat_record.h) read a record whole or stop, with the file's name and what to do (run the setup again with a good copy). No file of the two copies we have is short, except one damaged bank (below), so an install of either sees no difference.
 - **What a file that ended early did before.** Combat's world state is cleared at each EXEC, so "what was there" is zero.
 
 | Read | Before | Now |
@@ -427,6 +427,19 @@ Names such as planetSelector, houseSelector, scenarioSelectors and the trace sch
 - **`midiStreamPresent`** (was `midiStreamSelectorPresent`) is whether the track has bytes, which is when its selector was not 0.
 - **native_address.h** keeps `MwReadNativeWord` and two constants. `MwCampaignBuffer` is in campaign_buffer.h. The files that read words include native_address.h themselves.
 - **Also.** `ReleaseChildResources` clears its pointers before it frees the buffers again (B4b had freed first). The music tick runs on the main thread, so neither order could show. A start with an unknown option writes no launcher record.
+
+**From B4f, combat** (the start rows read by id; the campaign's windows are a branch of their own):
+- **What changed.** `BtechStartRowData` (btech_start_image.h) reads one row of BTECH's start table by its id, bounds every read by the row, and fetches a story span, rule piece or layout piece at its own length. Every combat importer reads its rows through it. `BtechBuildStartImage`, the 2D2C0h-byte image, the 64 KiB working segment and the host's zeroed copy of the startup clear are gone.
+- **A stop names its row.** An unknown id, a read past a row and a piece that is missing or of another length are faults of the program: the stop names the row and, for a piece, its source, and gives the player no advice. The player's folders are checked at start, before any of this runs. The test's "test.row" is its own.
+- **The saved vectors.** `RequireEmptySavedVector` is gone: the four vectors are zero rows, now the only evidence that the exes hold 0000:0000 there, and start_exe_test compares them with both revisions.
+- **Zeros.** A value that lies in the exe's startup clear is now a literal zero: seven loads. start_exe_test finds the clear once in each exe (4EDC to D5E0, and to D620 in 1990) and checks the 20 words inside it. Its limit: the addresses are the reference's, and nothing proves the 1990 exe keeps each variable at the same one.
+- **What the importers read** was measured first. The probe (scratch, not committed) built the importers with clang's load tracing and hooks on malloc, memcpy, memchr, memcmp and strlen, logged every read of the image and of the working segment, and mapped it to the rows. On 343eb4c and again on 8451732, the last tree that reads the image, on both revisions: 16,470 reads, none across two rows, and none outside a row except the working segment's own copy and the startup clear.
+- **The equality check** (scratch, not committed): one program with main's importers and one with the branch's. Each imports twice, with all of combat's state filled with A5 before the second import, and the two states are compared. Last run on 1621911 against 8451732, 1990 and 1989: 164 symbols, 905,578 bytes, no difference; 93,200 bytes filled. Deliberate errors (a wrong row offset, a wrong byte, a dropped zero) each show. Left out of the fill: aligned words that hold a pointer, and the fields `BtechHostDiscardChildData` reads before the import. 946 bytes are A5 after it on both sides: the import doesn't write them, as before. It compares with main, not with the original.
+- **The bounds reports.** Of the 18 places the bounds sanitizer named, 15 were combat's (BTECH_304E_COCKPIT 6, _ORDERS 9). Two went with the row reads. The other 13 formed a label's pointer past its array before taking the base off; the offset is now worked out first, and so at two more places of the same form that the sanitizer can't see. Of MW_MAIN_1090's three, B4a took one; the campaign branch has the other two.
+- **Still there.** Importers still return false on a table value they don't know (a directory's shape, the tone channels), and BtechHostLoadInitialData on an unknown revision name, so the failure that stops the launcher there (`MwFailGameFileRead` with combat's file name, a file play never opens) has not gone with the image. No caller used false as an ordinary answer.
+- **Rows read in more than one place** stay so: runtime.prefix, runtime.exit_flush, runtime.stream_and_character_tables, startup.mouse_and_delay and video.adapter. Each reader fetches its own copy.
+- **native_address.h** stays for `MwReadNativeWord` and two constants until the campaign branch.
+
 
 ## 3. How we check "play identical"
 
@@ -543,10 +556,12 @@ Every slice below is its own branch with the full gate green: both setups, the t
 - **The reason** is the problem noted (`problem.h`: the rules', the layout's, the story's, `MwSdlFail`'s, a failsafe's), else SDL's. The setup's own failure (`say_error`) doesn't note its reason yet; the box then says the log has it.
 - **An access violation** is not shown: only an abort is.
 - **UTF-8 paths.** The program's manifest makes UTF-8 its code page (Windows 10 1903 and later), so every path it is given or opens may hold any character. `status_setup` starts it from such a folder, with such a player's folder. Without the manifest, a folder named in other characters where the setup looks made even `--status` abort.
-- **ega_canvas_writer and combat_records** link under MSVC (no duplicate symbol) and pass. `Problem.cpp` is apart from `PortDiagnostics.cpp` to keep it so.
+- **ega_canvas_writer, combat_records and start_rows** link under MSVC (no duplicate symbol) and pass. `Problem.cpp` is apart from `PortDiagnostics.cpp` to keep it so.
 
 **For R** (found by earlier slices, to be done or decided there):
 - The setup on a finished install (`mw1r --setup`): FIND THE GAME offers the copy in use first, even a damaged one, and INSTALL on it copies nothing. It should verify the game's files (today only BTECH.EXE and MW_MAIN.EXE are looked at) and offer "choose another" plainly.
+- A damaged story folder stops every start, naming the file but no remedy; only deleting it helps. The start should import again by itself when a story file can't be read or has the wrong length, or name the folder to delete. That needs the player's copy of the game, so the case where no copy is found must be said plainly. The start with no arguments isn't run by any test (B4f).
+- The failure in combat's load names "BTECH.EXE", a file that play never opens (`MwFailGameFileRead`). It did not go with the built image (B4f).
 - A package built on each platform with hidapi's notice (`licenses/hidapi-LICENSE-bsd.txt`), and what the Mac and Windows packages link and ship: the MSVC runtime DLLs and Inno Setup's parts among them. Only the Linux package has been measured (S9).
 - The Linux tar.gz holds libSDL3 three times (.so, .so.0, .so.0.2.0); the AppImage holds .so.0 alone.
 - "The C17 port" in `docs/THIRD_PARTY_NOTICES.md`, and the README's stale passages.
