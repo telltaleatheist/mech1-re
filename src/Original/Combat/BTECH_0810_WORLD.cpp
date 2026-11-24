@@ -4,7 +4,7 @@
 #include "mechwarrior/combat_heap.h"
 #include "mechwarrior/combat_world.h"
 #include "mechwarrior/combat_resources.h"
-#include "mechwarrior/native_address.h"
+#include "mechwarrior/combat_record.h"
 #include "mechwarrior/combat_startup.h"
 #include <stdlib.h>
 #include <string.h>
@@ -198,14 +198,13 @@ void BtechLoadCombatChassisResourceBanks(void)
     BtechRefreshWorldObjectResourceScales();
 }
 
-/*0810:2438. WLD ID and placement are distinct reads. Short later records
- * retain the previous local's bytes; the first incomplete local has unknown
- * native stack residue and is explicitly unsupported, not zero-filled. */
+/*0810:2438. The original read a WLD record's ID and placement apart and went
+ * on with the previous record's bytes, or stack residue, when one was cut; a
+ * cut record is refused here (combat_record.h). */
 void BtechLoadTerrainWorldResources(void)
 {
     if (combatImport.combatTerrainDetailLevel==TERRAIN_DETAIL_LOW) return;
-    uint8_t resourceBytes[2],positionBytes[12];
-    uint8_t haveResource=0,havePosition=0;
+    uint8_t record[2+12]; /* An object's resource, then its position. */
     for (uint16_t tile=0;tile<TERRAIN_TILE_COUNT;++tile)
     {
         uint8_t variant=combatWorld.scenarioSelectors.terrainSelectors[tile];
@@ -215,19 +214,10 @@ void BtechLoadTerrainWorldResources(void)
         strcpy(combatWorld.terrainGridFilename,combatWorld.terrainWorldFilename);
         strcat(combatWorld.terrainWorldFilename,".WLD");strcat(combatWorld.terrainGridFilename,".GRD");
         FILE *stream=BtechOpenStreamWithRetry(combatWorld.terrainWorldFilename,"rb");
-        size_t read;
-        while ((read=BtechReadStreamElements(resourceBytes,1,2,stream))!=0)
+        for (int number=0;BtechReadNextFileRecord(record,sizeof(record),stream,combatWorld.terrainWorldFilename,"object",number);++number)
         {
-            if (read<2 && !haveResource) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: read<2 && !haveResource");
-            haveResource=1;
-            read=BtechReadStreamElements(positionBytes,1,12,stream);
-            if (read<12 && !havePosition) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: read<12 && !havePosition");
-            havePosition=1;
-            BtechPosition3D placement={
-                (uint32_t)MwReadNativeWord(positionBytes,0)|((uint32_t)MwReadNativeWord(positionBytes,2)<<16),
-                (uint32_t)MwReadNativeWord(positionBytes,4)|((uint32_t)MwReadNativeWord(positionBytes,6)<<16),
-                (uint32_t)MwReadNativeWord(positionBytes,8)|((uint32_t)MwReadNativeWord(positionBytes,10)<<16)};
-            BtechWorldObjectPrefix *object=BtechAllocateHeapWorldObject(MwReadNativeWord(resourceBytes,0),&placement);
+            BtechPosition3D placement={BtechRecordDword(record+2),BtechRecordDword(record+6),BtechRecordDword(record+10)};
+            BtechWorldObjectPrefix *object=BtechAllocateHeapWorldObject(BtechRecordWord(record),&placement);
             object->renderFlags=WORLD_OBJECT_SURFACE_QUERY_CANDIDATE;
         }
         BtechCloseStreamFile(stream);
@@ -236,7 +226,7 @@ void BtechLoadTerrainWorldResources(void)
         for (uint16_t row=0;row<TERRAIN_TILE_ROWS;++row)
         {
             if (rowBase+row>=TERRAIN_GRID_ROWS || columnBase+TERRAIN_TILE_COLUMNS>TERRAIN_GRID_COLUMNS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: rowBase+row>=TERRAIN_GRID_ROWS || columnBase+TERRAIN_TILE_COLUMNS>TERRAIN_GRID_COLUMNS");
-            BtechReadStreamElements(&combatWorld.terrainHeightGrid[rowBase+row][columnBase],TERRAIN_TILE_COLUMNS,1,stream);
+            BtechReadFileRecord(&combatWorld.terrainHeightGrid[rowBase+row][columnBase],TERRAIN_TILE_COLUMNS,stream,combatWorld.terrainGridFilename,"row",row);
         }
         BtechCloseStreamFile(stream);
     }
@@ -268,6 +258,25 @@ uint16_t BtechCalculateVectorHeading(uint32_t componentA,uint32_t componentB)
     return (uint16_t)((uint16_t)(angle-0x0400)<<4);
 }
 
+/* 1A2E's two reads at the stream's position: a side's four units, and a
+ * special target. Pieces of 1A2E, not procedures of the original's. */
+void BtechReadUnitFormations(FILE *stream,uint16_t side)
+{
+    uint8_t bytes[4*8];
+    BtechReadFileRecord(bytes,sizeof(bytes),stream,"snario.dat","the formation of side",side);
+    for (uint16_t unit=0;unit<4;++unit)
+    {
+        BtechFormationPosition *position=&combatWorld.unitFormationPositions[side*4+unit];
+        position->positionA=BtechRecordDword(bytes+unit*8);position->positionB=BtechRecordDword(bytes+unit*8+4);
+    }
+}
+BtechPosition3D BtechReadSpecialTargetPosition(FILE *stream,uint16_t terrain)
+{
+    uint8_t bytes[8];
+    BtechReadFileRecord(bytes,sizeof(bytes),stream,"snario.dat","the target of terrain",terrain);
+    return BtechPosition3D{BtechRecordDword(bytes),BtechRecordDword(bytes+4),SPECIAL_TARGET_ALTITUDE};
+}
+
 /*0810:1A2E. Scenario -> terrain -> six part allocations -> resource banks ->
  * cameras -> formations -> headings. No substitute scenario loader. */
 void BtechLoadScenarioAndWorld(uint16_t scenarioIndex)
@@ -276,7 +285,7 @@ void BtechLoadScenarioAndWorld(uint16_t scenarioIndex)
     FILE *stream=BtechOpenStreamWithRetry("snario.dat","rb");
     uint16_t offset=scenarioIndex<<4;
     fseek(stream,offset<0x8000?offset:(long)offset-0x10000,SEEK_SET);
-    BtechReadStreamElements(&combatWorld.scenarioSelectors,1,sizeof(combatWorld.scenarioSelectors),stream);BtechCloseStreamFile(stream);
+    BtechReadFileRecord(&combatWorld.scenarioSelectors,sizeof(combatWorld.scenarioSelectors),stream,"snario.dat","the selectors of scenario",scenarioIndex);BtechCloseStreamFile(stream);
     BtechLoadTerrainWorldResources();
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
     {
@@ -300,31 +309,14 @@ void BtechLoadScenarioAndWorld(uint16_t scenarioIndex)
         uint16_t variant=combatWorld.scenarioSelectors.terrainSelectors[terrainSlot];
         offset=(uint16_t)((combatImport.sideObjectiveRules[side]<<5)+variant*0xA0+0x03C0);
         fseek(stream,offset<0x8000?offset:(long)offset-0x10000,SEEK_SET);
-        uint8_t formationBytes[0x20];
-        for (uint16_t unit=0;unit<4;++unit)
-        {
-            const BtechFormationPosition *position=&combatWorld.unitFormationPositions[side*4+unit];
-            for (uint16_t byte=0;byte<4;++byte)
-            {formationBytes[unit*8+byte]=(uint8_t)(position->positionA>>(byte*8));formationBytes[unit*8+4+byte]=(uint8_t)(position->positionB>>(byte*8));}
-        }
-        BtechReadStreamElements(formationBytes,1,sizeof(formationBytes),stream);
-        for (uint16_t unit=0;unit<4;++unit)
-        {
-            BtechFormationPosition *position=&combatWorld.unitFormationPositions[side*4+unit];
-            position->positionA=(uint32_t)MwReadNativeWord(formationBytes,unit*8)|((uint32_t)MwReadNativeWord(formationBytes,unit*8+2)<<16);
-            position->positionB=(uint32_t)MwReadNativeWord(formationBytes,unit*8+4)|((uint32_t)MwReadNativeWord(formationBytes,unit*8+6)<<16);
-        }
+        BtechReadUnitFormations(stream,side);
         if (combatImport.sideObjectiveRules[side]==OBJECTIVE_DEFEND_SPECIAL_TARGET) specialTerrain=(int16_t)variant;
     }
     if (specialTerrain>=0)
     {
         offset=(uint16_t)((specialTerrain<<3)+0x0DC0);
         fseek(stream,offset<0x8000?offset:(long)offset-0x10000,SEEK_SET);
-        uint8_t positionBytes[8];
-        if (BtechReadStreamElements(positionBytes,1,8,stream)!=8) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: BtechReadStreamElements(positionBytes,1,8,stream)!=8"); /* Unknown initial native local residue. */
-        BtechPosition3D position={
-            (uint32_t)MwReadNativeWord(positionBytes,0)|((uint32_t)MwReadNativeWord(positionBytes,2)<<16),
-            (uint32_t)MwReadNativeWord(positionBytes,4)|((uint32_t)MwReadNativeWord(positionBytes,6)<<16),SPECIAL_TARGET_ALTITUDE};
+        BtechPosition3D position=BtechReadSpecialTargetPosition(stream,(uint16_t)specialTerrain);
         combatWorld.specialTargetDamageRemaining=SPECIAL_TARGET_INITIAL_DAMAGE;
         combatWorld.specialTargetObject=BtechAllocatePooledWorldObject(otherShapeResourceBase+SPECIAL_TARGET_SHAPE_DELTA,&position);
         combatWorld.specialTargetObject->object.prefix.renderFlags|=WORLD_OBJECT_SPECIAL_TARGET;
