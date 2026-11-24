@@ -1,7 +1,7 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/combat_sound.h"
 #include "mechwarrior/combat_runtime.h"
-#include "mechwarrior/native_address.h"
+#include "mechwarrior/combat_record.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -124,7 +124,7 @@ scanFromCurrent:
             taggedStream->payloadPosition+=8;
             uint8_t lengthBytes[4];
             if (BtechReadStreamElements(lengthBytes,4,1,stream->file)!=1) goto restoreBackup;
-            taggedStream->payloadBytes=(uint32_t)MwReadNativeWord(lengthBytes,0)|((uint32_t)MwReadNativeWord(lengthBytes,2)<<16);
+            taggedStream->payloadBytes=BtechRecordDword(lengthBytes);
             taggedStream->branchEnds[taggedStream->tagDepth/4]=taggedStream->payloadPosition+taggedStream->payloadBytes;
             taggedStream->payloadBytes&=0x7FFFFFFF;
             if (!taggedStream->payloadBytes ||

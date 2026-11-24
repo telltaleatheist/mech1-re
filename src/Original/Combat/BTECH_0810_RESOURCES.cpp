@@ -1,6 +1,7 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/combat_runtime.h"
 #include "mechwarrior/combat_resources.h"
+#include "mechwarrior/combat_record.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -11,6 +12,7 @@ uint32_t BtechGetDecodedResourceLength(const char *filename)
     FILE *stream=BtechOpenStreamWithRetry(filename,"rb");
     long savedPosition=ftell(stream);fseek(stream,0,SEEK_END);
     uint32_t physicalBytes=(uint32_t)ftell(stream);fseek(stream,savedPosition,SEEK_SET);
+    if (physicalBytes<5) BtechRefuseDamagedFile(filename,"ends inside its packing header"); /* Method, then the length. */
     int16_t archive=BtechOpenCompressedArchive(UINT16_MAX,stream,"r",physicalBytes);
     if (archive==-1) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: archive==-1");
     uint32_t decodedBytes=BtechGetArchiveDecodedLength((uint16_t)archive);
@@ -35,10 +37,10 @@ void BtechDecodeResourceIntoAllocation(const char *filename,BtechResourceAllocat
     uint8_t decodedChunk[RESOURCE_DECODE_CHUNK];
     while ((decodedBytes=BtechReadArchiveIntoFarBuffer((uint16_t)archive,decodedChunk,RESOURCE_DECODE_CHUNK))!=0)
     {
-        if (decodedBytes>allocation.byteCount-total) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: decodedBytes>allocation.byteCount-total");
+        if (decodedBytes>allocation.byteCount-total) BtechRefuseDamagedFile(filename,"unpacks to more than its header says");
         memcpy(allocation.bytes+total,decodedChunk,decodedBytes);total+=decodedBytes;
     }
-    if (total!=allocation.byteCount) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: total!=allocation.byteCount"); /* Native fatal resource-length mismatch. */
+    if (total!=allocation.byteCount) BtechRefuseDamagedFile(filename,"unpacks to less than its header says"); /* Native fatal resource-length mismatch. */
     BtechFlushAndCloseCompressedArchive((uint16_t)archive);BtechCloseStreamFile(stream);
 }
 

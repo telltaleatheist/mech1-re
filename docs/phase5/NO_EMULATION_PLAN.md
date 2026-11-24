@@ -400,6 +400,26 @@ Names such as planetSelector, houseSelector, scenarioSelectors and the trace sch
 - **Also.** 14 unused EGA register constants and the end of the graphics dispatch table are gone from combat_video.h. ega_canvas_writer_test covers B4c's two refusals (a drawing on no page, a captured or restored word at cursor FFFF).
 - **Kept as it was.** DOS's memory list itself (first fit, one paragraph a block): how much memory is free decides what the game loads, so its sizes stay.
 
+**From B4e** (combat's file records, read to their end and never past it):
+- **What changed.** `CombatRecord` and `BtechReadFileRecord` (combat_record.h) read a record whole or stop, with the file's name and what to do (run the setup again with a good copy). The shipped files of both releases are never short, except one damaged bank (below), so a good install sees no difference.
+- **What a file that ended early did before.** Combat's world state is cleared at each EXEC, so "what was there" is zero.
+
+| Read | Before | Now |
+|---|---|---|
+| SNARIO.DAT, a scenario's selectors (16 bytes) | zeros: up to four copies of tile 0 as the map, deployment from formation 0, no edge to withdraw by | refused |
+| SNARIO.DAT, a side's formation (32) | the missing units at the map's origin | refused |
+| SNARIO.DAT, a special target's position (8) | refused (the original used uninitialised stack) | refused, named |
+| TILE*.WLD, an object (14) | the load's first: refused (stack again). A later one: an extra object, its missing bytes the previous record's, which can be another tile's. The end between two records is the list's end | a cut record refused; the list's end the same |
+| TILE*.GRD, a row (47 bytes, 87 rows) | height 0 from there on: flat ground, on the radar too | refused |
+| Shape and surface banks | every access checked and refused | the same checks, named |
+| A packed file | refused when its length doesn't match its header; a decoder can pass a cut off in its last run (see below) | the same, named, and one shorter than its 5-byte header |
+| The campaign transfer | a fixed 718h bytes in memory, every read inside | by its fields; nothing to refuse |
+| The archive tags | a short tag or length ends the search: not found, a rule of the game's | the same |
+
+- **A packed file cut.** Method 1's literal run counts the bytes it asked for, not those it got, and its repeat takes the end of the file as its value, so a file cut in its last run could pass the length check. The shipped banks are all method 2 (LZW). combat_records_test cuts them at their header, their last 64 bytes and every 257th byte: 1,873 cuts of 11 banks (1990) and 1,705 of 10 (1989), all refused.
+- **The damaged bank.** Our 1989 copy's PHAPCK.TBL holds MARPCK.TBL's bytes from 1800h to 5FFFh and one changed bit at 166Dh, and doesn't unpack to its length: the port already refused a Phoenix Hawk with it, without a name (SUPPORTED_VERSIONS.md). No trace loads one: the combat traces have a Locust and a Jenner. The test knows the file by its hash.
+- **1A2E.** Its formation and target reads are functions of their own (for the test); its formation buffer is no longer prefilled with the current positions.
+
 **From B4g** (combat's sound data; no golden re-recorded):
 - **The views.** `BtechSoundBytes` is a bank's borrowed bytes and their count, for the events, the tone channels and the MIDI stream. A read past the end is refused, and an offset is still a word that wraps. The view had a base too, always 0 here.
 - **The tone fallback.** A bank with no ITM reads its modulation from 0000: of the DOS machine. `BtechToneFallback` says which of the two a channel reads, and DOS memory has one source, `btechHostReadToneDosByte`: INT 0's owner live at each read, as before. A selector other than 0 is refused when the channel starts.
@@ -520,6 +540,9 @@ Every slice below is its own branch with the full gate green: both setups, the t
 
 **For R** (found by earlier slices, to be done or decided there):
 - A refused start in a Windows GUI build: does the player see the reason anywhere but a log? (The missing soundfont's message was only ever printed to stderr.)
+- A port failsafe's message: started with no arguments, the program writes its log, with the message, to mechwarrior.log beside the saves. Started with a game folder, a Windows GUI build has no stderr, so it is lost. There is no message box (B4e).
+- The setup on a finished install (`mw1r --setup`): FIND THE GAME offers the copy in use first, even a damaged one, and INSTALL on it copies nothing. It should verify the game's files (today only BTECH.EXE and MW_MAIN.EXE are looked at) and offer "choose another" plainly.
+- ega_canvas_writer_test and combat_records_test define their own MwAbortWithReason and rely on the linker not taking the library's object. MSVC may report a duplicate symbol: link and run both on Windows before trusting them there.
 - A package built on each platform with hidapi's notice (`licenses/hidapi-LICENSE-bsd.txt`), and what the Mac and Windows packages link and ship: the MSVC runtime DLLs and Inno Setup's parts among them. Only the Linux package has been measured (S9).
 - The Linux tar.gz holds libSDL3 three times (.so, .so.0, .so.0.2.0); the AppImage holds .so.0 alone.
 - "The C17 port" in `docs/THIRD_PARTY_NOTICES.md`, and the README's stale passages.

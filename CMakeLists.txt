@@ -193,6 +193,7 @@ add_library(mechwarrior_original STATIC
     src/Original/Memory/BTECH_1BF5_STATE.cpp
     src/Original/Memory/BTECH_22B6_DATA.cpp
     src/Support/CombatPlatform.cpp
+    src/Support/CombatRecord.cpp
     src/Support/VideoMode.cpp
     src/Support/CombatInstallation.cpp
     src/Support/BtechImage.cpp
@@ -312,6 +313,11 @@ if(MECHWARRIOR_BUILD_TESTS)
         add_test(NAME save_roundtrip COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tests/save_roundtrip.py"
             --program $<TARGET_FILE:save_roundtrip_test> --data "${CMAKE_CURRENT_SOURCE_DIR}/data" --work "${CMAKE_CURRENT_BINARY_DIR}/save_roundtrip_work")
     endif()
+    # Combat's file records (B4e): a file that ends early is refused by name; the game's banks cut, when it is there.
+    add_executable(combat_records_test tests/combat_records_test.cpp)
+    target_link_libraries(combat_records_test PRIVATE mechwarrior_original)
+    target_include_directories(combat_records_test PRIVATE src)
+    add_test(NAME combat_records COMMAND combat_records_test "${CMAKE_CURRENT_BINARY_DIR}/combat_records_work")
     # A connected joystick in both games (H3): calibration and reads on fake axes.
     add_executable(joystick_test tests/joystick_test.cpp)
     target_link_libraries(joystick_test PRIVATE mechwarrior_original)

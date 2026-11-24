@@ -1,6 +1,7 @@
 #ifndef MECHWARRIOR_COMBAT_WORLD_H
 #define MECHWARRIOR_COMBAT_WORLD_H
 #include "mechwarrior/combat_mechs.h"
+#include <stdio.h>
 
 enum { COMBAT_WORLD_OBJECTS=0x80,COMBAT_POOLED_OBJECTS=0x50,COMBAT_CAMERA_CONTEXTS=5,
     COMBAT_SELECTED_WORLD_OBJECTS=0x50,
@@ -133,6 +134,8 @@ struct CombatWorldState
 extern CombatWorldState combatWorld;
 BtechPosition3D BtechReadNullNearWorldObjectPosition(void);
 void BtechLoadScenarioAndWorld(uint16_t scenarioIndex);
+void BtechReadUnitFormations(FILE *stream,uint16_t side);
+BtechPosition3D BtechReadSpecialTargetPosition(FILE *stream,uint16_t terrain);
 void BtechLoadTerrainWorldResources(void);
 void BtechLoadCombatChassisResourceBanks(void);
 void BtechInitializePlayerCameras(void);
