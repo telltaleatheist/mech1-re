@@ -87,8 +87,8 @@ uint16_t MwOpenRecruitInterviewContinuation(void)
     if (!MwFindNextRecruitCandidate())
     {
         EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
-        MwNativeByteView text={(const uint8_t *)campaignPilots.noAvailableRecruitsText,0,sizeof(campaignPilots.noAvailableRecruitsText)};
-        MwShowMonospaceTextPanel(NO_RECRUITS_PANEL_X,NO_RECRUITS_PANEL_Y,NO_RECRUITS_PANEL_WIDTH,NO_RECRUITS_PANEL_HEIGHT,&text,0);
+        MwText text=MwArrayText(campaignPilots.noAvailableRecruitsText);
+        MwShowMonospaceTextPanel(NO_RECRUITS_PANEL_X,NO_RECRUITS_PANEL_Y,NO_RECRUITS_PANEL_WIDTH,NO_RECRUITS_PANEL_HEIGHT,text);
         return CAMPAIGN_CONTINUE_BAR_REFRESH;
     }
     MwAdvanceCampaignTimeAndChargeWages(1);
@@ -96,8 +96,8 @@ uint16_t MwOpenRecruitInterviewContinuation(void)
     MwDrawDescriptorTextPanel(&campaignPilots.recruitInterviewPanel);
     EgaFillDisplayPageRectangle(RECRUIT_STAT_PANEL_X,RECRUIT_STAT_PANEL_Y,RECRUIT_STAT_PANEL_WIDTH,RECRUIT_STAT_PANEL_HEIGHT,PILOT_CARD_BACKGROUND);
     MwDrawPicturePanelBorder(RECRUIT_STAT_PANEL_X,RECRUIT_STAT_PANEL_Y,RECRUIT_STAT_PANEL_WIDTH,RECRUIT_STAT_PANEL_HEIGHT);
-    MwNativeByteView labels={(const uint8_t *)campaignPilots.recruitStatLabels,0,sizeof(campaignPilots.recruitStatLabels)};
-    EgaDrawTransparentText(RECRUIT_LABELS_X,RECRUIT_NAME_Y,PILOT_CARD_TEXT_COLOUR,&labels,0);
+    MwText labels=MwArrayText(campaignPilots.recruitStatLabels);
+    EgaDrawTransparentText(RECRUIT_LABELS_X,RECRUIT_NAME_Y,PILOT_CARD_TEXT_COLOUR,labels);
     const MwPilotDefinitionPrefix *pilot=campaignPilots.pilotDefinitions[campaignPilots.selectedRecruitPilotId]; /* Saved6A9C across drawing. */
     MwDrawRecruitStatText((const char *)pilot->nameBytes,RECRUIT_NAME_Y);
     MwDrawRecruitStatText(campaignPilots.pilotSkillLabels[campaignMechanics.pilotGunneryTiers[campaignPilots.selectedRecruitPilotId]],RECRUIT_GUNNERY_Y);
@@ -106,8 +106,8 @@ uint16_t MwOpenRecruitInterviewContinuation(void)
     ++campaignCore.numericGroupingEnabled;
     MwDrawSignedDecimalField(wage,RECRUIT_STATS_X,1,0,PILOT_CARD_TEXT_COLOUR,PILOT_CARD_BACKGROUND,RECRUIT_WAGE_Y);
     /* Native POP/PUSH DI retains this definition, not a later selection. */
-    MwNativeByteView dialogue={(const uint8_t *)(pilot+1),0,(uint32_t)strlen((const char *)(pilot+1))+1};
-    EgaDrawTransparentText(RECRUIT_DIALOGUE_X,RECRUIT_DIALOGUE_Y,RECRUIT_DIALOGUE_COLOUR,&dialogue,0);
+    MwText dialogue=MwTerminatedText((const char *)(pilot+1));
+    EgaDrawTransparentText(RECRUIT_DIALOGUE_X,RECRUIT_DIALOGUE_Y,RECRUIT_DIALOGUE_COLOUR,dialogue);
     MwDrawAlternateBankPicture(RECRUIT_STATS_X,RECRUIT_PORTRAIT_Y,EGA_DISPLAY_PAGE,pilot->portraitId);
     MwSelectUiRecordTable(0,&campaignPilots.recruitInterviewMenu);
     return CAMPAIGN_CONTINUE_UI;
@@ -116,8 +116,8 @@ uint16_t MwOpenRecruitInterviewContinuation(void)
 /* MW_MAIN081B:6B31..6B3F, genuine DI text/BX Y register-input callee. */
 void MwDrawRecruitStatText(const char *text,uint16_t y)
 {
-    MwNativeByteView caption={(const uint8_t *)text,0,(uint32_t)strlen(text)+1};
-    EgaDrawTransparentText(RECRUIT_STATS_X,y,PILOT_CARD_TEXT_COLOUR,&caption,0);
+    MwText caption=MwTerminatedText(text);
+    EgaDrawTransparentText(RECRUIT_STATS_X,y,PILOT_CARD_TEXT_COLOUR,caption);
 }
 
 /* MW_MAIN081B:6B69..6BF9. UI callback, POP dispatch IP/JMP698F. The capacity
@@ -130,8 +130,8 @@ uint16_t MwHireSelectedRecruitContinuation(void)
     {
         EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
         const char *message=campaignStartup.launcherMemoryTier==FOUR_PILOT_MEMORY_TIER?campaignPilots.fullFourPilotRosterText:campaignPilots.fullThreePilotRosterText;
-        MwNativeByteView text={(const uint8_t *)message,0,(uint32_t)strlen(message)+1};
-        MwShowMonospaceTextPanel(FULL_ROSTER_PANEL_X,FULL_ROSTER_PANEL_Y,FULL_ROSTER_PANEL_WIDTH,FULL_ROSTER_PANEL_HEIGHT,&text,0);
+        MwText text=MwTerminatedText(message);
+        MwShowMonospaceTextPanel(FULL_ROSTER_PANEL_X,FULL_ROSTER_PANEL_Y,FULL_ROSTER_PANEL_WIDTH,FULL_ROSTER_PANEL_HEIGHT,text);
     }
     else
     {
@@ -188,13 +188,13 @@ void MwDrawCommanderProfile(void)
     campaignPilots.commanderProfilePanel.width=campaignMechanics.rosterPayTiers[COMMANDER_ROSTER_SLOT]==COMMANDER_REPUTATION_WORTH_WATCHING?COMPANY_PROFILE_WATCHING_WIDTH:COMPANY_PROFILE_WIDTH;
     campaignPilots.commanderProfilePanel.x=COMPANY_PROFILE_X; /* Native252A discards the centering calculation. */
     MwDrawDescriptorTextPanel(&campaignPilots.commanderProfilePanel);
-    MwNativeByteView name={(const uint8_t *)campaignPilots.commanderProfileName,0,sizeof(campaignPilots.commanderProfileName)};
-    EgaDrawTransparentText((uint16_t)(campaignPilots.commanderProfilePanel.x+COMPANY_PROFILE_NAME_X),COMPANY_PROFILE_NAME_Y,RECRUIT_DIALOGUE_COLOUR,&name,0);
+    MwText name=MwArrayText(campaignPilots.commanderProfileName);
+    EgaDrawTransparentText((uint16_t)(campaignPilots.commanderProfilePanel.x+COMPANY_PROFILE_NAME_X),COMPANY_PROFILE_NAME_Y,RECRUIT_DIALOGUE_COLOUR,name);
     /* The commander's pay-table entry holds reputation, not a salary grade. */
     uint16_t commanderReputationTier=campaignMechanics.rosterPayTiers[COMMANDER_ROSTER_SLOT];
     if (commanderReputationTier>=COMMANDER_REPUTATION_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: commanderReputationTier>=COMMANDER_REPUTATION_COUNT");
-    MwNativeByteView reputationText={(const uint8_t *)campaignPilots.commanderReputationLabels[commanderReputationTier],0,sizeof(campaignPilots.commanderReputationLabels[commanderReputationTier])};
-    EgaDrawTransparentText((uint16_t)(campaignPilots.commanderProfilePanel.x+COMPANY_REPUTATION_X),COMPANY_REPUTATION_Y,PILOT_CARD_TEXT_COLOUR,&reputationText,0);
+    MwText reputationText=MwArrayText(campaignPilots.commanderReputationLabels[commanderReputationTier]);
+    EgaDrawTransparentText((uint16_t)(campaignPilots.commanderProfilePanel.x+COMPANY_REPUTATION_X),COMPANY_REPUTATION_Y,PILOT_CARD_TEXT_COLOUR,reputationText);
     campaignMission.commanderAgeYears=campaignCore.calendarYear-COMMANDER_AGE_YEAR_BIAS;
     if (campaignCore.calendarMonthIndex>=COMMANDER_AGE_MONTH_THRESHOLD) ++campaignMission.commanderAgeYears;
     MwDrawSignedDecimalField(campaignMission.commanderAgeYears,(uint16_t)(campaignPilots.commanderProfilePanel.x+COMPANY_AGE_X),1,0,PILOT_CARD_TEXT_COLOUR,PILOT_CARD_BACKGROUND,COMPANY_AGE_Y);
@@ -207,8 +207,8 @@ void MwDrawCommanderProfile(void)
         if (standing<-COMPANY_HOUSE_STANDING_LIMIT) standing=-COMPANY_HOUSE_STANDING_LIMIT;
         else if (standing>COMPANY_HOUSE_STANDING_LIMIT) standing=COMPANY_HOUSE_STANDING_LIMIT;
         uint16_t attitude=(uint16_t)(((uint16_t)standing&0xFFFE)+COMPANY_HOUSE_STANDING_LIMIT)>>1;
-        MwNativeByteView text={(const uint8_t *)campaignPilots.houseAttitudeText[attitude],0,(uint32_t)strlen(campaignPilots.houseAttitudeText[attitude])+1};
-        EgaDrawTransparentText((uint16_t)(campaignPilots.commanderProfilePanel.x+COMPANY_HOUSE_ATTITUDE_X),(uint16_t)(COMPANY_HOUSE_FIRST_Y+house*COMPANY_HOUSE_ROW_HEIGHT),Campaign_Pal_EGA_LightGrey,&text,0);
+        MwText text=MwTerminatedText(campaignPilots.houseAttitudeText[attitude]);
+        EgaDrawTransparentText((uint16_t)(campaignPilots.commanderProfilePanel.x+COMPANY_HOUSE_ATTITUDE_X),(uint16_t)(COMPANY_HOUSE_FIRST_Y+house*COMPANY_HOUSE_ROW_HEIGHT),Campaign_Pal_EGA_LightGrey,text);
     }
     EgaSelectFont(COMPANY_MENU_FONT);
 }
@@ -300,8 +300,8 @@ void MwDrawPilotCardSeparators(void)
 /* MW_MAIN081B:28A3..28B1, genuine DI text/BX Y callee. */
 void MwDrawPilotCardText(const char *text,uint16_t y)
 {
-    MwNativeByteView caption={(const uint8_t *)text,0,(uint32_t)strlen(text)+1};
-    EgaDrawTransparentText(campaignPilots.pilotCardTextX,y,PILOT_CARD_TEXT_COLOUR,&caption,0);
+    MwText caption=MwTerminatedText(text);
+    EgaDrawTransparentText(campaignPilots.pilotCardTextX,y,PILOT_CARD_TEXT_COLOUR,caption);
 }
 
 /* MW_MAIN081B:28B2..28E6, native DI result becomes a typed caption reference.
@@ -424,8 +424,8 @@ void MwDrawPilotAssignmentCandidate(uint16_t pilotRosterSlot,uint16_t ownedUnitS
     else if (ownedUnitSlot==PILOT_ASSIGNMENT_DISMISS) assignmentCaptionIndex=ASSIGNMENT_DISMISS_CAPTION;
     else assignmentCaptionIndex=campaignEconomy.ownedUnitKinds[ownedUnitSlot]+ASSIGNMENT_MECH_CAPTION_BASE;
     if (assignmentCaptionIndex>=PILOT_ASSIGNMENT_CAPTION_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: assignmentCaptionIndex>=PILOT_ASSIGNMENT_CAPTION_COUNT");
-    MwNativeByteView text={(const uint8_t *)campaignPilots.pilotAssignmentCaptions[assignmentCaptionIndex],0,sizeof(campaignPilots.pilotAssignmentCaptions[assignmentCaptionIndex])};
-    EgaDrawTransparentText(x,PILOT_CARD_ASSIGNMENT_Y,foreground,&text,0);
+    MwText text=MwArrayText(campaignPilots.pilotAssignmentCaptions[assignmentCaptionIndex]);
+    EgaDrawTransparentText(x,PILOT_CARD_ASSIGNMENT_Y,foreground,text);
 }
 
 /* MW_MAIN081B:2ACB..2AE3 tails2A98. Clears any nonzero latch; redraw uses

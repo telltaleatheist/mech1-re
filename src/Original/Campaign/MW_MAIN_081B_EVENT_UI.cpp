@@ -19,7 +19,7 @@ MwTextPanelReturn MwShowCampaignEventText(uint16_t textId)
     if (textId==8) campaignUi.textPanelYOverride=0x0082;
     if (textId>=EVENT_TEXT_DIRECTORY_COUNT || !campaignEventText.eventTextRecords[textId]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: textId>=EVENT_TEXT_DIRECTORY_COUNT || !eventTextRecords[textId]"); /* Unrepresented zero-directory alias, not a native empty-text test. */
     const uint8_t *page=campaignEventText.eventTextRecords[textId];
-    MwNativeByteView text={campaignEventText.eventTextStorage,EVENT_TEXT_STORAGE_START,sizeof(campaignEventText.eventTextStorage)};
+    MwText text=MwArrayText(campaignEventText.eventTextStorage);
     for (;;)
     {
         if (*page==EVENT_TEXT_PLACEHOLDER)
@@ -30,14 +30,15 @@ MwTextPanelReturn MwShowCampaignEventText(uint16_t textId)
         const MwEventTextPageHeader *header=(const MwEventTextPageHeader *)page;
         campaignEvents.eventTextRowCount=header->rowCount;
         page+=sizeof(*header);
+        text.cursor=page;
         MwTextPanelReturn result=MwShowCompactTextPanel(0x000C,0x000A,0x002F,
-            campaignEvents.eventTextRowCount+3,&text,(uint16_t)(page-campaignEventText.eventTextStorage+EVENT_TEXT_STORAGE_START));
+            campaignEvents.eventTextRowCount+3,text);
         if (result.discardReturnWord) return result; /*100C RET bypasses6210..621E. */
-        page=&campaignEventText.eventTextStorage[result.textOffset-EVENT_TEXT_STORAGE_START+1];
-        if (page>=campaignEventText.eventTextStorage+sizeof(campaignEventText.eventTextStorage)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: page>=eventTextStorage+sizeof(eventTextStorage)");
+        page=result.textEnd+1;
+        if (page>=text.end) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: page>=eventTextStorage+sizeof(eventTextStorage)");
         if (!*page)
         {
-            result.textOffset=(uint16_t)(page-campaignEventText.eventTextStorage+EVENT_TEXT_STORAGE_START);
+            result.textEnd=page;
             return result;
         }
     }
@@ -177,16 +178,16 @@ MwTextPanelReturn MwShowClassThreeEventPages(uint16_t textId)
     EgaFillDisplayPageRectangle(EVENT_PAGE_PANEL_X,EVENT_PAGE_PANEL_Y,EVENT_PAGE_PANEL_WIDTH,EVENT_PAGE_PANEL_HEIGHT,Campaign_Pal_EGA_Black);
     if (textId>=EVENT_TEXT_DIRECTORY_COUNT || !campaignEventText.eventTextRecords[textId]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: textId>=EVENT_TEXT_DIRECTORY_COUNT || !eventTextRecords[textId]");
     const uint8_t *page=campaignEventText.eventTextRecords[textId];
-    MwNativeByteView text={campaignEventText.eventTextStorage,EVENT_TEXT_STORAGE_START,sizeof(campaignEventText.eventTextStorage)};
+    MwText text=MwArrayText(campaignEventText.eventTextStorage);
     for (;;)
     {
         page+=sizeof(MwEventTextPageHeader);
-        uint16_t cursor=EgaDrawTextWithLineSpacing(EVENT_PAGE_TEXT_X,EVENT_PAGE_TEXT_Y,Campaign_Pal_EGA_Green,&text,(uint16_t)(page-campaignEventText.eventTextStorage+EVENT_TEXT_STORAGE_START));
-        page=&campaignEventText.eventTextStorage[cursor-EVENT_TEXT_STORAGE_START+1];
-        if (page>=campaignEventText.eventTextStorage+sizeof(campaignEventText.eventTextStorage)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: page>=eventTextStorage+sizeof(eventTextStorage)");
+        text.cursor=page;
+        page=EgaDrawTextWithLineSpacing(EVENT_PAGE_TEXT_X,EVENT_PAGE_TEXT_Y,Campaign_Pal_EGA_Green,text)+1;
+        if (page>=text.end) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: page>=eventTextStorage+sizeof(eventTextStorage)");
         if (!*page)
         {
-            MwTextPanelReturn result={(uint16_t)(page-campaignEventText.eventTextStorage+EVENT_TEXT_STORAGE_START),0x1AA5,0,false};
+            MwTextPanelReturn result={page,0x1AA5,0,false};
             return result; /* Register projection; no class03 choice consumes BX. */
         }
         MwWaitForInputAcknowledgment();

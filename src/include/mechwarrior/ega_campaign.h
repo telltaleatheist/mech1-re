@@ -1,6 +1,7 @@
 #ifndef MECHWARRIOR_EGA_CAMPAIGN_H
 #define MECHWARRIOR_EGA_CAMPAIGN_H
 #include "mechwarrior/game_files.h"
+#include "mechwarrior/campaign_text.h"
 #include "mechwarrior/native_address.h"
 #include <stdbool.h>
 #include <stddef.h>
@@ -102,18 +103,14 @@ uint16_t EgaDrawPackedSprite(uint16_t x, uint16_t y, uint8_t targetPage,
     uint16_t pictureOffset, uint16_t pictureBufferSelector);
 uint16_t EgaDrawCharacter(uint16_t x, uint16_t *y, uint8_t character,
     uint8_t foreground, uint8_t background);
-uint16_t EgaDrawTransparentText(uint16_t x, uint16_t y, uint8_t color,
-    const MwNativeByteView *text, uint16_t textOffset);
-uint16_t EgaDrawTextWithLeading(uint16_t x, uint16_t y, uint8_t color,
-    const MwNativeByteView *text, uint16_t textOffset);
+const uint8_t *EgaDrawTransparentText(uint16_t x, uint16_t y, uint8_t color, MwText text);
+const uint8_t *EgaDrawTextWithLeading(uint16_t x, uint16_t y, uint8_t color, MwText text);
 uint16_t EgaDrawTransparentCharacter(uint8_t character, uint16_t destinationOffset);
-uint16_t EgaDrawTextWithLineSpacing(uint16_t x, uint16_t y, uint8_t color,
-    const MwNativeByteView *text, uint16_t textOffset);
+const uint8_t *EgaDrawTextWithLineSpacing(uint16_t x, uint16_t y, uint8_t color, MwText text);
 void EgaFlipPages(void);
 /* Packed palette indices: foreground in the low byte, background in the high
  * byte. These are palette slots, not fixed RGB colours. */
-uint16_t EgaDrawString(uint16_t x, uint16_t *y, uint16_t colours,
-    const MwNativeByteView *text, uint16_t *textOffset);
+uint16_t EgaDrawString(uint16_t x, uint16_t *y, uint16_t colours, MwText text);
 void EgaFillDrawPageRectangle(uint16_t x, uint16_t y, uint16_t width, uint16_t height, uint16_t colour);
 void EgaFillRectangleOnPage(uint16_t x, uint16_t y, uint16_t width, uint16_t height,
     uint16_t colour, uint16_t page);

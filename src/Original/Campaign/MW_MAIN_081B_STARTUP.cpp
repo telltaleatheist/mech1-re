@@ -585,8 +585,8 @@ void MwDrawIntroNarrationLines(uint8_t colour)
     uint16_t y=0x002C;
     for (uint16_t line=0;line<10;++line)
     {
-        MwNativeByteView text={(const uint8_t *)campaignStartup.introNarrationLines[line],0,sizeof(campaignStartup.introNarrationLines[line])};
-        (void)EgaDrawTransparentText(0x002B,y,colour,&text,0);
+        MwText text=MwArrayText(campaignStartup.introNarrationLines[line]);
+        (void)EgaDrawTransparentText(0x002B,y,colour,text);
         y+=0x000D;
     }
 }
@@ -622,8 +622,8 @@ void MwSetIntroTextPaletteColour(uint8_t paletteCode)
 /* MW_MAIN081B:162E..1643. Original record has X/Y then NUL text, no colour. */
 void MwDrawPositionedIntroText(const MwIntroPositionedText *text)
 {
-    MwNativeByteView view={(const uint8_t *)text->text,0,sizeof(text->text)};
-    (void)EgaDrawTransparentText(text->x,text->y,Campaign_Pal_EGA_White,&view,0);
+    MwText view=MwArrayText(text->text);
+    (void)EgaDrawTransparentText(text->x,text->y,Campaign_Pal_EGA_White,view);
 }
 /* MW_MAIN081B:1644..166C.166D result below transports the POP-IP/JMP path;
  * successful native return has no AX result contract. Do not seed this host

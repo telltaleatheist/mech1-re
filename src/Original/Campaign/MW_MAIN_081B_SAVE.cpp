@@ -11,10 +11,6 @@ enum { SAVE_NAME_BOX_X=0x0028,SAVE_NAME_BOX_Y=0x0064,SAVE_NAME_BOX_WIDTH=0x00F0,
     SAVE_NAME_LABEL_X=0x0038,SAVE_NAME_LABEL_Y=0x0074,SAVE_NAME_LABEL_COLOUR=Campaign_Pal_EGA_White,
     SAVE_NAME_FIELD_X=0x007C,SAVE_NAME_FIELD_Y=0x0084,SAVE_NAME_FIELD_COLOUR=Campaign_Pal_EGA_Red,SAVE_PANEL_BACKGROUND=Campaign_Pal_EGA_DarkGrey,
     SAVE_MESSAGE_INSET=0x0010,SAVE_MESSAGE_COLUMNS=0x001B,SAVE_MESSAGE_ROWS=6 };
-/* Text cursors in the original campaign data; not drawing colours. */
-enum { SAVE_NAME_TEXT_OFFSET=0xA031,
-    SAVE_ERROR_TEXT_OFFSET=0xA0B3, SAVE_FULL_TEXT_OFFSET=0xA088,
-    LOAD_ERROR_TEXT_OFFSET=0xA0E3 };
 
 /* The file half of 081B:6D52..6E6D. The create truncates an existing save
  * before the write, as the original's does, and a write that stops short
@@ -39,8 +35,8 @@ readName:
     EgaFillDisplayPageRectangle(SAVE_NAME_BOX_X,SAVE_NAME_BOX_Y,SAVE_NAME_BOX_WIDTH,SAVE_NAME_BOX_HEIGHT,SAVE_PANEL_BACKGROUND);
     MwDrawPicturePanelBorder(SAVE_NAME_BOX_X,SAVE_NAME_BOX_Y,SAVE_NAME_BOX_WIDTH,SAVE_NAME_BOX_HEIGHT);
     EgaSelectFont(TEXT_PANEL_MONOSPACE_FONT);
-    MwNativeByteView prompt={campaignOptions.saveNamePrompt,SAVE_NAME_TEXT_OFFSET,sizeof(campaignOptions.saveNamePrompt)};
-    EgaDrawTransparentText(SAVE_NAME_LABEL_X,SAVE_NAME_LABEL_Y,SAVE_NAME_LABEL_COLOUR,&prompt,prompt.nativeBase);
+    MwText prompt=MwArrayText(campaignOptions.saveNamePrompt);
+    EgaDrawTransparentText(SAVE_NAME_LABEL_X,SAVE_NAME_LABEL_Y,SAVE_NAME_LABEL_COLOUR,prompt);
     uint16_t transfer=MwReadCampaignTextInput(SAVE_NAME_FIELD_X,SAVE_NAME_FIELD_Y,CAMPAIGN_SAVE_STEM_BYTES+1,SAVE_NAME_FIELD_COLOUR,SAVE_PANEL_BACKGROUND);
     if (transfer) return transfer;
     uint16_t leadingSpaces=0;
@@ -59,23 +55,23 @@ readName:
     case CampaignSaveWrite::Written: break;
     case CampaignSaveWrite::NotCreated:
     {
-        MwNativeByteView text={campaignOptions.saveDiskErrorText,SAVE_ERROR_TEXT_OFFSET,sizeof(campaignOptions.saveDiskErrorText)};
-        return MwShowOptionsMessageAndReturnContinuation(&text,text.nativeBase);
+        MwText text=MwArrayText(campaignOptions.saveDiskErrorText);
+        return MwShowOptionsMessageAndReturnContinuation(text);
     }
     case CampaignSaveWrite::DiskFull:
     {
-        MwNativeByteView text={campaignOptions.saveDiskFullText,SAVE_FULL_TEXT_OFFSET,sizeof(campaignOptions.saveDiskFullText)};
-        return MwShowOptionsMessageAndReturnContinuation(&text,text.nativeBase);
+        MwText text=MwArrayText(campaignOptions.saveDiskFullText);
+        return MwShowOptionsMessageAndReturnContinuation(text);
     }
     }
     return CAMPAIGN_CONTINUE_OPTIONS;
 }
 
 /* MW_MAIN081B:6E7D..6EA2. DI is saved across page copy.6E6A rejoins6CFA. */
-uint16_t MwShowOptionsMessageAndReturnContinuation(const MwNativeByteView *text,uint16_t textOffset)
+uint16_t MwShowOptionsMessageAndReturnContinuation(MwText text)
 {
     EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
-    (void)MwShowMonospaceTextPanel(SAVE_MESSAGE_INSET,SAVE_MESSAGE_INSET,SAVE_MESSAGE_COLUMNS,SAVE_MESSAGE_ROWS,text,textOffset);
+    (void)MwShowMonospaceTextPanel(SAVE_MESSAGE_INSET,SAVE_MESSAGE_INSET,SAVE_MESSAGE_COLUMNS,SAVE_MESSAGE_ROWS,text);
     return CAMPAIGN_CONTINUE_OPTIONS;
 }
 
@@ -139,8 +135,8 @@ uint16_t MwLoadSelectedCampaignCallback(void)
     memcpy(campaignOptions.selectedSaveFilename+character,".GAM",sizeof(".GAM"));
     if (!MwReadCampaignSaveFile(campaignOptions.selectedSaveFilename))
     {
-        MwNativeByteView text={campaignOptions.loadDiskErrorText,LOAD_ERROR_TEXT_OFFSET,sizeof(campaignOptions.loadDiskErrorText)};
-        return MwShowOptionsMessageAndReturnContinuation(&text,text.nativeBase);
+        MwText text=MwArrayText(campaignOptions.loadDiskErrorText);
+        return MwShowOptionsMessageAndReturnContinuation(text);
     }
     campaignUi.hubSelectedRecordIndex=0;
     MwIndexedPictureCloseHook(); /* RET-only: retain actual directory/cache state. */

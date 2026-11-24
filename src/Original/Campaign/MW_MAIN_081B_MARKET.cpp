@@ -69,14 +69,14 @@ uint16_t MwPurchaseSelectedMarketUnit(uint16_t entryOffset)
     uint32_t funds;funds=((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow;
     if (purchasePrice>funds)
     {
-        MwNativeByteView text={(const uint8_t *)campaignMarket.purchaseInsufficientFundsText,0,sizeof(campaignMarket.purchaseInsufficientFundsText)};
-        MwShowMonospaceTextPanel(MARKET_MESSAGE_X,MARKET_MESSAGE_Y,PURCHASE_FUNDS_MESSAGE_COLUMNS,PURCHASE_FUNDS_MESSAGE_ROWS,&text,0);
+        MwText text=MwArrayText(campaignMarket.purchaseInsufficientFundsText);
+        MwShowMonospaceTextPanel(MARKET_MESSAGE_X,MARKET_MESSAGE_Y,PURCHASE_FUNDS_MESSAGE_COLUMNS,PURCHASE_FUNDS_MESSAGE_ROWS,text);
         return 0;
     }
     if (campaignEconomy.ownedUnitCount>=CAMPAIGN_OWNED_UNIT_SLOTS)
     {
-        MwNativeByteView text={(const uint8_t *)campaignMarket.ownedMechCapacityText,0,sizeof(campaignMarket.ownedMechCapacityText)};
-        MwShowMonospaceTextPanel(OWNERSHIP_LIMIT_MESSAGE_X,OWNERSHIP_LIMIT_MESSAGE_Y,OWNERSHIP_LIMIT_MESSAGE_COLUMNS,OWNERSHIP_LIMIT_MESSAGE_ROWS,&text,0);
+        MwText text=MwArrayText(campaignMarket.ownedMechCapacityText);
+        MwShowMonospaceTextPanel(OWNERSHIP_LIMIT_MESSAGE_X,OWNERSHIP_LIMIT_MESSAGE_Y,OWNERSHIP_LIMIT_MESSAGE_COLUMNS,OWNERSHIP_LIMIT_MESSAGE_ROWS,text);
         return 0;
     }
     funds-=purchasePrice;
@@ -244,8 +244,8 @@ marketStatus:
     MwDrawPicturePanelBorder(0,0,EGA_COLUMNS,EGA_ROWS);
     campaignMechanics.selectedMarketUnitKind=campaignEconomy.marketUnitKinds[campaignMarket.selectedMarketUnitByteOffset/sizeof(uint16_t)];
     const char *mechName=campaignService.unitDisplayNames[campaignMechanics.selectedMarketUnitKind];
-    MwNativeByteView name={(const uint8_t *)mechName,0,(uint32_t)strlen(mechName)+1};
-    EgaDrawTransparentText(MECH_DETAIL_NAME_X,MECH_DETAIL_NAME_Y,MECH_DETAIL_TEXT_COLOUR,&name,0);
+    MwText name=MwTerminatedText(mechName);
+    EgaDrawTransparentText(MECH_DETAIL_NAME_X,MECH_DETAIL_NAME_Y,MECH_DETAIL_TEXT_COLOUR,name);
     CampaignUnitDamage *damage=&campaignMechanics.marketUnitDamage[(uint8_t)campaignMarket.selectedMarketUnitSlot];
     /*444A..4484's sum is overwritten at4486, not an overall condition score. */
     const char *conditionText=(const char *)campaignService.mechNonfunctionalTextBytes;
@@ -253,8 +253,8 @@ marketStatus:
         && damage->lifeSupportDamageTier<=MECH_FUNCTIONAL_MAXIMUM_TIER
         && damage->actuatorDamageTiers[2]<=MECH_FUNCTIONAL_MAXIMUM_TIER
         && damage->actuatorDamageTiers[3]<=MECH_FUNCTIONAL_MAXIMUM_TIER) conditionText=mechFunctionalTextBytes;
-    MwNativeByteView condition={(const uint8_t *)conditionText,0,(uint32_t)strlen(conditionText)+1};
-    EgaDrawTransparentText(MECH_DETAIL_CONDITION_X,MECH_DETAIL_CONDITION_Y,MECH_DETAIL_TEXT_COLOUR,&condition,0);
+    MwText condition=MwTerminatedText(conditionText);
+    EgaDrawTransparentText(MECH_DETAIL_CONDITION_X,MECH_DETAIL_CONDITION_Y,MECH_DETAIL_TEXT_COLOUR,condition);
     if (campaignMechanics.selectedMarketUnitKind==CAMPAIGN_UNIT_DROPSHIP) goto purchasePrice;
     damage=&campaignMechanics.marketUnitDamage[(uint8_t)campaignMarket.selectedMarketUnitSlot];
     MwQuoteMechRepairTotal(campaignMechanics.selectedMarketUnitKind,damage); /* Also writes shared2AD5. */
@@ -282,8 +282,8 @@ marketStatus:
         uint16_t quantity=campaignMarket.selectedMarketAmmoQuantities[group];
         const char *ammoName=campaignService.ammoFamilyDisplayNames[family];
         y=MECH_DETAIL_AMMO_FIRST_Y+(uint16_t)(group*DEALER_AMMO_ROW_HEIGHT);
-        MwNativeByteView text={(const uint8_t *)ammoName,0,(uint32_t)strlen(ammoName)+1};
-        EgaDrawTransparentText(MECH_DETAIL_AMMO_LABEL_X,y,MECH_DETAIL_TEXT_COLOUR,&text,0);
+        MwText text=MwTerminatedText(ammoName);
+        EgaDrawTransparentText(MECH_DETAIL_AMMO_LABEL_X,y,MECH_DETAIL_TEXT_COLOUR,text);
         MwDrawSignedDecimalField(quantity,MECH_DETAIL_AMMO_QUANTITY_X,1,0,MECH_DETAIL_TEXT_COLOUR,MECH_DETAIL_BACKGROUND,y);
         ++group;kind=campaignMechanics.selectedMarketUnitKind;
     } while ((uint8_t)group!=campaignEconomy.unitAmmoGroupCounts[kind]);
@@ -318,8 +318,8 @@ uint16_t MwOpenMarketMechList(void)
     if (campaignEconomy.marketUnitCount==0)
     {
         EgaSelectFont(TEXT_PANEL_MONOSPACE_FONT);
-        MwNativeByteView text={(const uint8_t *)campaignMarket.noMarketMechsText,0,sizeof(campaignMarket.noMarketMechsText)};
-        MwShowMonospaceTextPanel(MARKET_MESSAGE_X,DEALER_EMPTY_MESSAGE_Y,DEALER_EMPTY_MESSAGE_COLUMNS,DEALER_EMPTY_MESSAGE_ROWS,&text,0);
+        MwText text=MwArrayText(campaignMarket.noMarketMechsText);
+        MwShowMonospaceTextPanel(MARKET_MESSAGE_X,DEALER_EMPTY_MESSAGE_Y,DEALER_EMPTY_MESSAGE_COLUMNS,DEALER_EMPTY_MESSAGE_ROWS,text);
         MwInitializeMechServiceIdle();
         return 0;
     }
@@ -445,8 +445,8 @@ uint16_t MwBeginOwnedUnitSaleCallback(void)
     if ((int16_t)campaignCore.currentPlanetMarketTier>=DEALER_QUOTA_RESTRICTED_TIER
         && campaignEconomy.unitsSoldSinceMarketRefresh==campaignEconomy.dealerUnitPurchaseLimit)
     {
-        MwNativeByteView text={(const uint8_t *)campaignMarket.dealerPurchaseLimitText,0,sizeof(campaignMarket.dealerPurchaseLimitText)};
-        MwShowMonospaceTextPanel(MARKET_MESSAGE_X,MARKET_MESSAGE_Y,DEALER_QUOTA_MESSAGE_COLUMNS,DEALER_QUOTA_MESSAGE_ROWS,&text,0);
+        MwText text=MwArrayText(campaignMarket.dealerPurchaseLimitText);
+        MwShowMonospaceTextPanel(MARKET_MESSAGE_X,MARKET_MESSAGE_Y,DEALER_QUOTA_MESSAGE_COLUMNS,DEALER_QUOTA_MESSAGE_ROWS,text);
         return 0;
     }
     EgaSelectFont(TEXT_PANEL_MONOSPACE_FONT);
@@ -530,8 +530,8 @@ uint16_t MwQuoteSelectedMechRearm(void)
     } while (--groupsRemaining!=0);
     if ((campaignService.selectedMechRearmQuoteLow|campaignService.selectedMechRearmQuoteHigh)==0)
     {
-        MwNativeByteView text={(const uint8_t *)campaignMarket.ammoBayFullText,0,sizeof(campaignMarket.ammoBayFullText)};
-        MwShowMonospaceTextPanel(REARM_FULL_MESSAGE_X,MARKET_MESSAGE_Y,REARM_FULL_MESSAGE_COLUMNS,REARM_FULL_MESSAGE_ROWS,&text,0);
+        MwText text=MwArrayText(campaignMarket.ammoBayFullText);
+        MwShowMonospaceTextPanel(REARM_FULL_MESSAGE_X,MARKET_MESSAGE_Y,REARM_FULL_MESSAGE_COLUMNS,REARM_FULL_MESSAGE_ROWS,text);
         return 0;
     }
     EgaCopyDisplayToDrawPage(REARM_DIALOG_X,REARM_DIALOG_Y,REARM_DIALOG_WIDTH,REARM_DIALOG_HEIGHT);
@@ -625,10 +625,10 @@ void MwRefreshReserveAmmunitionSelection(void)
     if (row!=RESERVE_AMMO_DONE_ROW && selling!=(campaignMarket.reserveAmmoSelling!=0))
     {
         const char *label=selling?campaignMarket.reserveAmmoSellLabel:campaignMarket.reserveAmmoBuyLabel;
-        MwNativeByteView text={(const uint8_t *)label,0,(uint32_t)strlen(label)+1};
-        uint16_t y=RESERVE_AMMO_TRADE_LABEL_Y,offset=0;
+        MwText text=MwTerminatedText(label);
+        uint16_t y=RESERVE_AMMO_TRADE_LABEL_Y;
         EgaDrawString(RESERVE_AMMO_TRADE_LABEL_X,&y,(Campaign_Pal_EGA_DarkGrey<<EGA_BYTE_BITS)
-            |Campaign_Pal_EGA_LightRed,&text,&offset);
+            |Campaign_Pal_EGA_LightRed,text);
         campaignMarket.reserveAmmoSelling=selling;MwDrawReserveAmmunitionPrices(selling);
     }
     if (row==RESERVE_AMMO_DONE_ROW)
@@ -651,16 +651,16 @@ void MwDrawReserveAmmunitionCompatibleMechs(uint16_t family)
 {
     if (family>=CAMPAIGN_AMMO_FAMILY_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: family>=CAMPAIGN_AMMO_FAMILY_COUNT");
     const char *heading=campaignMarket.reserveAmmoCompatibilityHeadings[family].text;
-    MwNativeByteView text={(const uint8_t *)heading,0,(uint32_t)strlen(heading)+1};
-    EgaDrawTransparentText(RESERVE_AMMO_COMPATIBILITY_TEXT_X,RESERVE_AMMO_COMPATIBILITY_HEADING_Y,TEXT_PANEL_FOREGROUND,&text,0);
+    MwText text=MwTerminatedText(heading);
+    EgaDrawTransparentText(RESERVE_AMMO_COMPATIBILITY_TEXT_X,RESERVE_AMMO_COMPATIBILITY_HEADING_Y,TEXT_PANEL_FOREGROUND,text);
     uint16_t y=RESERVE_AMMO_COMPATIBILITY_FIRST_ROW_Y;
     for (uint16_t index=0;index<RESERVE_AMMO_COMPATIBILITY_ROWS;++index)
     {
         uint16_t kind=campaignMarket.reserveAmmoCompatibleMechs[family][index];
         if (kind==UINT16_MAX) return;
         const char *name=campaignService.unitDisplayNames[kind];
-        text=MwNativeByteView{(const uint8_t *)name,0,(uint32_t)strlen(name)+1};
-        EgaDrawTransparentText(RESERVE_AMMO_COMPATIBILITY_TEXT_X,y,campaignMarket.reserveAmmoMechColours[kind],&text,0);y+=RESERVE_AMMO_COMPATIBILITY_ROW_HEIGHT;
+        text=MwTerminatedText(name);
+        EgaDrawTransparentText(RESERVE_AMMO_COMPATIBILITY_TEXT_X,y,campaignMarket.reserveAmmoMechColours[kind],text);y+=RESERVE_AMMO_COMPATIBILITY_ROW_HEIGHT;
     }
     /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Reserve ammunition has no supported BattleMech compatibility list.");
 }

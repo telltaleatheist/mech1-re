@@ -389,28 +389,28 @@ uint16_t EgaDrawCharacter(uint16_t x, uint16_t *y, uint8_t character,
 }
 
 /* MW_EGA0800:0765..0777. ES:DI is saved around each real078B call.
- * The final DI addresses the NUL, not its successor. AX/BX are live cursors. */
+ * The original leaves DI at the NUL; no caller reads it. AX/BX are live cursors. */
 uint16_t EgaDrawString(uint16_t x, uint16_t *y, uint16_t colours,
-    const MwNativeByteView *text, uint16_t *textOffset)
+    MwText text)
 {
     for (;;)
     {
-        uint8_t character = MwReadNativeViewByte(text,*textOffset);
+        uint8_t character = MwTextByte(text);
         if (character == 0) break;
         x = EgaDrawCharacter(x,y,character,(uint8_t)colours,(uint8_t)(colours >> EGA_BYTE_BITS));
-        (*textOffset)++;
+        text.cursor++;
     }
     return x;
 }
 
 /* MW_EGA 0800:09C2..09C7 and 0AC7..0ACE. */
-uint16_t EgaDrawTransparentText(uint16_t x, uint16_t y, uint8_t color, const MwNativeByteView *text, uint16_t textOffset)
-{ egaOverlay.textExtraLeading = 0; return EgaDrawTextWithLeading(x, y, color, text, textOffset); }
-uint16_t EgaDrawTextWithLineSpacing(uint16_t x, uint16_t y, uint8_t color, const MwNativeByteView *text, uint16_t textOffset)
-{ egaOverlay.textExtraLeading = 1; return EgaDrawTextWithLeading(x, y, color, text, textOffset); }
+const uint8_t *EgaDrawTransparentText(uint16_t x, uint16_t y, uint8_t color, MwText text)
+{ egaOverlay.textExtraLeading = 0; return EgaDrawTextWithLeading(x, y, color, text); }
+const uint8_t *EgaDrawTextWithLineSpacing(uint16_t x, uint16_t y, uint8_t color, MwText text)
+{ egaOverlay.textExtraLeading = 1; return EgaDrawTextWithLeading(x, y, color, text); }
 
 /* MW_EGA 0800:09C8..0A38. CR re-enters setup; FF consumes no glyph/advance. */
-uint16_t EgaDrawTextWithLeading(uint16_t x, uint16_t y, uint8_t color, const MwNativeByteView *text, uint16_t textOffset)
+const uint8_t *EgaDrawTextWithLeading(uint16_t x, uint16_t y, uint8_t color, MwText text)
 {
 setup:
     egaOverlay.textStartX = x;
@@ -422,7 +422,7 @@ setup:
     destinationOffset += x >> EGA_PIXEL_BYTE_SHIFT;
     for (;;)
     {
-        uint8_t character = MwReadNativeViewByte(text,textOffset);
+        uint8_t character = MwTextByte(text);
         if (character == 0) break;
         if (character == EGA_CARRIAGE_RETURN)
         {
@@ -430,13 +430,13 @@ setup:
             y = (uint16_t)(egaOverlay.textCurrentY
                 + egaOverlay.selectedFontHeight
                 + egaOverlay.textExtraLeading);
-            color = egaOverlay.egaTextColour; textOffset++; goto setup;
+            color = egaOverlay.egaTextColour; text.cursor++; goto setup;
         }
         if (character != EGA_SKIP_CHARACTER) destinationOffset = EgaDrawTransparentCharacter(character, destinationOffset);
-        textOffset++;
+        text.cursor++;
     }
     egaLogicalFunction = EGA_COPY;
-    return textOffset; /* Native DI at the NUL; not AX/source return ABI. */
+    return text.cursor; /* Native DI at the NUL; not AX/source return ABI. */
 }
 /* MW_EGA 0800:0A39..0AC6. BYTE height in MUL, WORD row LOOP. At most one byte
  * of horizontal advance; CL shifts >=16 clear the glyph, not masked host UB.

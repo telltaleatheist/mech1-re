@@ -54,9 +54,9 @@ void MwToggleAudioOption(void)
     campaignUi.optionsMenuSelection=OPTION_SOUND;
     campaignMission.audioOptionLabelIndex^=1;
     MwUpdateAudioOptionLabel();
-    MwNativeByteView text={(const uint8_t *)campaignOptions.optionsLabels[OPTION_SOUND].text,0x9D97,sizeof(campaignOptions.optionsLabels[OPTION_SOUND].text)};
-    uint16_t y=OPTIONS_SOUND_Y,offset=0x9D97;
-    EgaDrawString(OPTIONS_SOUND_X,&y,(Campaign_Pal_EGA_DarkGrey<<EGA_BYTE_BITS)|Campaign_Pal_EGA_Yellow,&text,&offset);
+    MwText text=MwArrayText(campaignOptions.optionsLabels[OPTION_SOUND].text);
+    uint16_t y=OPTIONS_SOUND_Y;
+    EgaDrawString(OPTIONS_SOUND_X,&y,(Campaign_Pal_EGA_DarkGrey<<EGA_BYTE_BITS)|Campaign_Pal_EGA_Yellow,text);
 }
 
 /* MW_MAIN081B:6FFA..702A. Native JL compares the incremented BYTE signed. */
@@ -66,9 +66,9 @@ void MwCycleTerrainDetailOption(void)
     ++campaignMission.campaignTerrainDetailLevel;
     if ((int8_t)campaignMission.campaignTerrainDetailLevel>=TERRAIN_DETAIL_LABEL_COUNT) campaignMission.campaignTerrainDetailLevel=0;
     MwUpdateTerrainDetailOptionLabel();
-    MwNativeByteView text={(const uint8_t *)campaignOptions.optionsLabels[OPTION_DETAIL].text,0x9DAB,sizeof(campaignOptions.optionsLabels[OPTION_DETAIL].text)};
-    uint16_t y=OPTIONS_DETAIL_Y,offset=0x9DAB;
-    EgaDrawString(OPTIONS_DETAIL_X,&y,(Campaign_Pal_EGA_DarkGrey<<EGA_BYTE_BITS)|Campaign_Pal_EGA_Yellow,&text,&offset);
+    MwText text=MwArrayText(campaignOptions.optionsLabels[OPTION_DETAIL].text);
+    uint16_t y=OPTIONS_DETAIL_Y;
+    EgaDrawString(OPTIONS_DETAIL_X,&y,(Campaign_Pal_EGA_DarkGrey<<EGA_BYTE_BITS)|Campaign_Pal_EGA_Yellow,text);
 }
 
 /* MW_MAIN081B:7047..707E. Mutate the SAME heading and YES-record owner

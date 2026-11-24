@@ -30,16 +30,16 @@ enum { TEXT_PANEL_MONOSPACE_FONT = 3, TEXT_PANEL_COMPACT_FONT = 0,
  * A caller must honor its own native continuation/frame, never ignore this. */
 typedef struct MwTextPanelReturn
 {
-    uint16_t textOffset, textOriginX, textOriginY;
+    const uint8_t *textEnd; /* The NUL the text ended on. */
+    uint16_t textOriginX, textOriginY;
     bool discardReturnWord;
 } MwTextPanelReturn;
-/* textOffset is the cursor within text, usually text->nativeBase. It is not
- * a colour; TEXT_PANEL_FOREGROUND/BACKGROUND select the panel colours. */
+/* TEXT_PANEL_FOREGROUND/BACKGROUND select the panel colours. */
 MwTextPanelReturn MwShowMonospaceTextPanel(uint16_t insetX, uint16_t insetY,
-    uint16_t columns, uint16_t rows, const MwNativeByteView *text, uint16_t textOffset);
+    uint16_t columns, uint16_t rows, MwText text);
 MwTextPanelReturn MwShowCompactTextPanel(uint16_t insetX, uint16_t insetY,
-    uint16_t columns, uint16_t rows, const MwNativeByteView *text, uint16_t textOffset);
-MwTextPanelReturn MwCenterAndShowTextPanel(const MwNativeByteView *text, uint16_t textOffset);
+    uint16_t columns, uint16_t rows, MwText text);
+MwTextPanelReturn MwCenterAndShowTextPanel(MwText text);
 void MwRestoreSavedTextPanelRegion(void);
 
 /* Coordinates and text are ordinary C objects. The suffixes identify the
