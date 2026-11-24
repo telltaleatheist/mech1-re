@@ -2,9 +2,9 @@
   "images": [
     {
       "file": "docs/screenshots/cockpit.jpg",
-      "description": "Combat cockpit, from the combat_cockpit trace script, 2026-11-24, at 8ccc109.",
-      "sha256": "d92b48e148e51e18a0bcc9b4dd83a98d361b21d2f38c6647bf2e16ba56275727",
-      "sourceSha256": "095afe54055834d7d72734ff443541bb704762e4dd4539fa76bf6f2747e1b53e",
+      "description": "Combat cockpit with a targeted enemy, from the combat_retreat trace script, 2026-11-24, at 8ccc109.",
+      "sha256": "5e58f1f6dfe6d9bdbe426f9af0e0e3586db4cb8a70d76d50062932e64cf08ab2",
+      "sourceSha256": "11a520379758ceb8c81d224468e654638e905125a790dc84da2351bfefd0c311",
       "pixels": [
         960,
         600
@@ -13,10 +13,10 @@
       "rights": "Contains original game artwork; excluded from project MIT licence. Documentation only."
     },
     {
-      "file": "docs/screenshots/orders-map.jpg",
-      "description": "Combat order screen and its map, from the combat_cockpit trace script, 2026-11-24, at 8ccc109.",
-      "sha256": "fb33105dc8ca820d12aaf1897ea54e500dd59c0ffc68a132b86e4ee555b9bb6d",
-      "sourceSha256": "bdb6cda770983aa7d203a2514128ed6a361f5cff0b7a426dd23de7ab127acc27",
+      "file": "docs/screenshots/bar.jpg",
+      "description": "Bar, from the bar trace script, 2026-11-24, at 8ccc109.",
+      "sha256": "c05b6f3e64aa792b6ed991934dd73f91f01a3b2e0ac3c90517ad343d596d3537",
+      "sourceSha256": "ed7e93714a14191c97868efedababb0a485bafa0664c0078a05c6fa735ad1aee",
       "pixels": [
         960,
         600

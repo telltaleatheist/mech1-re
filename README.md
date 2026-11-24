@@ -16,9 +16,9 @@ Fixes that belong in the port itself are offered to Elthial upstream separately;
 **Credit:** the reconstruction, its research and its tools are Elthial's work. Their licence terms (MIT for the host
 code under `src/SDL` and `src/Support`; see `docs/LICENSES/README.md` for the rest) apply to everything taken from it.
 
-| Combat cockpit | Order screen and map |
+| Combat cockpit | Bar |
 | --- | --- |
-| ![Combat cockpit](docs/screenshots/cockpit.jpg) | ![Order screen and map](docs/screenshots/orders-map.jpg) |
+| ![Combat cockpit](docs/screenshots/cockpit.jpg) | ![Bar](docs/screenshots/bar.jpg) |
 | **Star map** | **Mech complex** |
 | ![Star map](docs/screenshots/star-map.jpg) | ![Mech complex](docs/screenshots/mech-complex.jpg) |
 
