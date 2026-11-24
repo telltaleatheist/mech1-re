@@ -1,5 +1,6 @@
 #include "SDLSetup.h"
 #include "SDLBackend.h"
+#include "Setup/ProgramRecord.h"
 #include "Setup/Setup.h"
 
 #include <rekit/sdl/pickers.h>
@@ -87,6 +88,7 @@ std::string run_screen(bool setupOnly, const std::string& found, bool searched, 
     return setup::find_install("", user, pdir, &s);
   };
   g.describe = describe;
+  g.recognise = setup::recognise;
   g.install = [](const rekit::Found& f, const std::string& out, const std::string&, const rekit::sdl::ProgressFn& progress) {
     const setup::Installed r = setup::install(f, out, [&](double at, const std::string& file) {
       return progress(rekit::sdl::Progress{"Copying the game files", at, file});
@@ -115,7 +117,8 @@ std::string take_copy(const std::string& picked, const std::string& user, std::s
   std::printf("setup: looked at %s: %s\n", picked.c_str(), f.kind == rekit::Found::kNothing ? "nothing" : f.version.c_str());
   if (!f.detail.empty()) std::fprintf(stderr, "%s", f.detail.c_str());
   if (f.kind != rekit::Found::kInstall) {
-    *why = "No copy of " + std::string(setup::kTitle) + " this program knows was found in " + picked + ".";
+    *why = setup::recognise(picked);
+    if (why->empty()) *why = "No copy of " + std::string(setup::kTitle) + " this program knows was found in " + picked + ".";
     return "";
   }
   const setup::Installed r = setup::install(f, setup::default_install(user));
@@ -154,6 +157,15 @@ void MwSetupSettleUserFolder(void) {
   else if (s.kind == setup::Settled::kCarried)
     std::fprintf(stderr, "setup: copied %d files once from %s (left as it was)\n", s.files, s.from.c_str());
   if (!s.error.empty() && s.kind != setup::Settled::kMoveFailed) std::fprintf(stderr, "setup: %s\n", s.error.c_str());
+}
+
+void MwSetupRecordProgram(void) {
+  const char *appimage = std::getenv("APPIMAGE"), *appdir = std::getenv("APPDIR");
+  setup::ProgramStart s;
+  s.hidden = unattended(), s.tag = setup::build_tag(), s.self = setup::self_path();
+  s.appimage = appimage ? appimage : "", s.appdir = appdir ? appdir : "";
+  s.user = setup::user_folder();
+  setup::record_program(s);
 }
 
 int MwSetupResolveGame(bool setupOnly, char* folder, size_t size) {

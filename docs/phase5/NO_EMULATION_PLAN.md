@@ -313,11 +313,11 @@ Changes per piece:
 - **Not re-recorded.** The speaker event goldens and the start worlds.
 - **Not removed yet.** `MwStoryCopyAdlibInstruments` and `story/music.json` have no caller left in the game; the importer still writes and reads the file, for S9 or the importer's own slice.
 
-**From S9** (the libraries, the settings, the importer and the Linux package):
+**From S9** (the libraries, the settings, the importer and the AppImage's pins):
 - **What went.** Nuked-OPL3, Munt and the MPU401, Adlib and MT32 host files, the ROM settings and `mwSdlSound`; C left `project()`. `music=speaker|soundfont|off` replaces `sound_system`, which is still read, with a log line; the player's own ini overrides the packaged one. `off` takes the 'R' path with no music loaded, and the effects stay. The default stayed speaker in S9; it is the soundfont since (a project decision; the traces match on both).
 - **The importer** no longer writes `story/music.json`. A folder made with the table this replaced is current, not imported again: `story_state` accepts the old table's hash for the new one only, and a test fails at the next change of the table. An older build does import again on a folder made by this one, and that is accepted; R's notes say so.
 - **Packaging** needs SDL3 only and refuses a package holding a library named mt32emu or nukedopl, so an old build folder can't ship one.
-- **The Linux package is the .tar.gz alone.** The AppImage step was pinned and given its runtime's notices first, then removed: a project decision that nothing LGPL is shipped, and the AppImage's runtime holds libfuse. One commit, so it can be undone.
+- **The AppImage** is built with the tools and runtime the MW1 remake pins, each refused with any other hash. Its runtime's notice was read against the runtime's build recipe at its tag, and its licence texts against each upstream.
 
 **From H5, the rest** (the port bus; no golden moves):
 - **What went.** The host's `MwSdlWriteDevicePort` and `MwSdlReadDevicePort`, combat's `btechHostReadPort` and `btechHostWritePort`, and the `writePort`, `readPort` and `waitForInterrupt` members of `MwMusicHardwareCalls`, which had no caller left.
@@ -336,6 +336,12 @@ Changes per piece:
 - **The month names.** Their view was 0x10000 bytes wide. The reference ends with `calendarMonthText` (0x6E bytes). The import refuses a name with no NUL inside those bytes, so nothing a script can reach reads further. The importer's pointer is formed after the subtraction, one of the places the bounds sanitizer reported.
 - **A notification's text offset** is checked against its storage before the pointer is formed; the view refused the same offset at the first read.
 - **The inventory tool** reads an `MwText`'s cursor as it read a plain pointer; its output is unchanged.
+
+**From B4b** (the campaign's picture and music buffers; no golden re-recorded):
+- **What changed.** The eight 64 KB buffers were reached by a selector through a 65,536-entry table. They are `MwCampaignBuffer`, a whole window each, owned by the host; the pointers that name them replace the selectors, and the bind and resolve calls and `NativeAddress.cpp` are gone. A `uint16_t` index is always inside a window and wraps as before, in the packed sprite's and the MIDI readers too. The failure indices of the startup's allocations are unchanged.
+- **After a program ends** its buffers are released and every pointer to them cleared, so a use after that (a music tick among them) still fails.
+- **The buffers start zeroed,** in a commit of its own. A shadow of every byte (8 traces, 12 event scripts, 1990) found one read before a write: at a picture's end `MwReadPictureNibble` decodes the low nibble of the byte after its data. With the buffers filled with 00, FF and A5, the traces, the events and the frames (432 files) are the same. The byte decoded is not changed.
+- **Bounds.** A loaded count is a word, so that byte is always in the buffer; the largest compressed file is 7F51h bytes and leaves 80AFh. The nibble it may write lands after the picture, and the largest decoded bank, FB70h bytes, leaves 490h. Both revisions' files have the same sizes.
 
 **From B3c** (combat's video, render, polygons, scene, pose and cockpit state as owner structs; a pure move, no golden re-recorded):
 - **What changed.** 287 globals are now the fields of six structs, one per memory file: `combatVideo` (101 fields, combat_video.h), `combatRender` (63, combat_render.h), `combatPolygons` (26, combat_polygons.h), `combatScene` (8, combat_scene.h), `combatPose` (18, combat_pose.h), `combatCockpit` (71, combat_cockpit.h). Every name is kept, and the macros that name fields point at the instances. No field has an initialiser.
@@ -484,7 +490,7 @@ These are build and test tools only; none is linked in, and only the installer b
 - **DOSBox-X (GPL-2.0):** the original's reference captures (`tools/capture`); never shipped.
 - **Python:** the tests and packaging scripts.
 - **Inno Setup:** builds Setup.exe. Its licence allows distributing the installers it makes.
-- **The AppImage's tools** were removed in S9 with the AppImage: its runtime holds LGPL code. The Linux package is the .tar.gz.
+- **The AppImage's tools:** linuxdeploy and appimagetool, pinned (`tools/deps/get_appimage_tools.sh`), not shipped. The runtime ships in the AppImage: MIT, with libfuse (LGPL 2.1) and other libraries linked in statically; its notice and licence texts go with it (`tools/package/appimage-runtime`).
 
 ## 5. The path to mw1r-v1.0.0
 
@@ -520,7 +526,7 @@ Every slice below is its own branch with the full gate green: both setups, the t
 | H4c | Interrupts: first, combat's CLI pumps become explicit delivery points at its two key reads, and its waits for a key idle by name (the one re-record, every move attributed); then the interrupt flag removed, vectors as typed owners, the PIC's end-of-interrupt and mask gone (a set of device IRQs), and the BIOS chain an explicit host event at its own cadence | the re-record: traces, game and note streams and start worlds identical, tone moves attributed; then every log identical to it | 2 |
 | H4d | Idle: under the real clock, a host wait sleeps until the next due tick instead of 100 µs steps; the test clock keeps its steps, so no log moves | every log identical; CPU of a held combat pause and of the title's wait, measured before and after (a combat pause: 27% of a core at H4b and H4c's first commit) | 1 |
 | S8 | The campaign's AdLib and MPU backends and combat's 21CA and 2176 removed. 1ADF reports the rebuild's sound (see "From S8") | event logs and traces exact but for the one named re-record; done | 2 |
-| S9 | Nuked-OPL3, Munt and MPU401/Adlib/MT32 removed from the build. ROM settings dropped; `sound_system` replaced by `music`. Notices, AUDIO.md and packaging (no nukedopl or mt32emu library) updated. The AppImage tooling's licence settled | packaging tests; the game's own libraries hold no LGPL; the AppImage, whose runtime does, isn't made (see "From S9") | 2 |
+| S9 | Nuked-OPL3, Munt and MPU401/Adlib/MT32 removed from the build. ROM settings dropped; `sound_system` replaced by `music`. Notices, AUDIO.md and packaging (no nukedopl or mt32emu library) updated. The AppImage tooling's licence confirmed | packaging tests; the game's own libraries hold no LGPL; the AppImage's runtime does (libfuse, LGPL 2.1), with its notice (see "From S9") | 2 |
 | H5 | The port bus retired: `MwSdlWriteDevicePort`, `ReadDevicePort` and the port-word hooks removed with their last callers; the sound-port event log keeps its tones and snaps as the tone log (its name is historical), and its port lines are gone. Its first part (ports 0 and 1) went ahead, after H4d; the rest follows S4, S8 and S9, since its last callers are the MT-32 and AdLib backends S8 removes | everything above exact | 2 |
 | R | The release gate: every gate on Windows, macOS and Linux from fresh builds. Packages from a local tag. The listening list and the visual acceptance list signed off on the packaged builds. The controller path is covered by the SDL virtual-device test (H3b); no physical controller is available | all of the above | 2 |
 
@@ -530,7 +536,7 @@ Every slice below is its own branch with the full gate green: both setups, the t
 - The setup on a finished install (`mw1r --setup`): FIND THE GAME offers the copy in use first, even a damaged one, and INSTALL on it copies nothing. It should verify the game's files (today only BTECH.EXE and MW_MAIN.EXE are looked at) and offer "choose another" plainly.
 - ega_canvas_writer_test and combat_records_test define their own MwAbortWithReason and rely on the linker not taking the library's object. MSVC may report a duplicate symbol: link and run both on Windows before trusting them there.
 - A package built on each platform with hidapi's notice (`licenses/hidapi-LICENSE-bsd.txt`), and what the Mac and Windows packages link and ship: the MSVC runtime DLLs and Inno Setup's parts among them. Only the Linux package has been measured (S9).
-- The Linux tar.gz holds libSDL3 three times (.so, .so.0, .so.0.2.0).
+- The Linux tar.gz holds libSDL3 three times (.so, .so.0, .so.0.2.0); the AppImage holds .so.0 alone.
 - "The C17 port" in `docs/THIRD_PARTY_NOTICES.md`, and the README's stale passages.
 - In the release notes: an older build imports the story again on a folder made by this one; an old test package's own `MechWarrior.ini` beside the program keeps its `sound_system=speaker`.
 

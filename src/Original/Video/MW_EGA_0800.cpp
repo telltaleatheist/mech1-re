@@ -291,7 +291,7 @@ void EgaCopyDisplayToDrawPage(uint16_t x, uint16_t y, uint16_t width, uint16_t h
  * Mode2 colour expansion becomes the colour drawn by mask; original iteration,
  * odd-row padding, transparent zero, WORD wrap and inherited logic stay here. */
 uint16_t EgaDrawPackedSprite(uint16_t x, uint16_t y, uint8_t targetPage,
-    uint16_t pictureOffset, uint16_t pictureBufferSelector)
+    uint16_t pictureOffset, MwCampaignBuffer *picture)
 {
     uint16_t rowStartOffset = y < EGA_ROWS ? egaOverlay.scanlineOffsets[y]
         : EgaUncheckedWord(EGA_UNCHECKED_ROW, (uint16_t)(EGA_SCANLINE_OFFSETS + y * EGA_WORD_BYTES));
@@ -299,7 +299,7 @@ uint16_t EgaDrawPackedSprite(uint16_t x, uint16_t y, uint8_t targetPage,
         : EgaUncheckedByte(EGA_UNCHECKED_COLUMN, (uint16_t)(EGA_PIXEL_MASKS + x)));
     rowStartOffset += x < EGA_COLUMNS ? egaOverlay.xByteOffsets[x]
         : EgaUncheckedWord(EGA_UNCHECKED_COLUMN, (uint16_t)(EGA_PIXEL_BYTE_OFFSETS + x * EGA_WORD_BYTES));
-    const uint8_t *pictureData = MwResolveNativeSegment(pictureBufferSelector);
+    const uint8_t *pictureData = MwCampaignBufferBytes(picture);
     if (pictureOffset <= NATIVE_SEGMENT_BYTE_COUNT - sizeof(PackedPictureHeader))
     {
         const PackedPictureHeader *pictureHeader = (const PackedPictureHeader *)&pictureData[pictureOffset];

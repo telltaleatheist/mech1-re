@@ -100,7 +100,7 @@ void EgaBuildScanlineOffsets(void);
 void EgaSelectFont(uint16_t fontIndex);
 uint16_t EgaGetFontIndex(void);
 uint16_t EgaDrawPackedSprite(uint16_t x, uint16_t y, uint8_t targetPage,
-    uint16_t pictureOffset, uint16_t pictureBufferSelector);
+    uint16_t pictureOffset, MwCampaignBuffer *picture);
 uint16_t EgaDrawCharacter(uint16_t x, uint16_t *y, uint8_t character,
     uint8_t foreground, uint8_t background);
 const uint8_t *EgaDrawTransparentText(uint16_t x, uint16_t y, uint8_t color, MwText text);

@@ -77,6 +77,30 @@ class PackageTests(unittest.TestCase):
                     build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
                 self.assertFalse(list((root / "dist").glob("*.tar.gz")))
 
+    def test_version_stamp(self):
+        stamp = b"MW3-PROGRAM-" + b"VERSION:"
+        self.assertEqual(build_package.release_tag("mw1r-v1.2.3"), "mw1r-v1.2.3")
+        for label in ("v1.2.3", "mw1r-v1.2.3-test", "mw1r-v1.2", "mw1-v1.2.3", "1.2.3"):
+            self.assertEqual(build_package.release_tag(label), "")
+        for label, held, good in (("mw1r-v1.2.3", b"mw1r-v1.2.3", True), ("mw1r-v1.2.3", b"mw1r-v1.2.4", False), ("mw1r-v1.2.3", None, False),
+                                  ("mw1r-v1.2.3-test", None, True), ("mw1r-v1.2.3-test", b"mw1r-v1.2.3", False), ("test", b"", False)):
+            with tempfile.TemporaryDirectory() as directory:
+                program = Path(directory) / "program"
+                program.write_bytes(b"code" + (b"" if held is None else stamp + held + b"\0") + b"more")
+                if good:
+                    build_package.check_stamp(program, label)
+                else:
+                    with self.assertRaisesRegex(RuntimeError, "version stamp"):
+                        build_package.check_stamp(program, label)
+
+    def test_wrong_stamp_blocks_packaging(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            with patch.object(build_package, "run"), patch.object(build_package, "platform_name", return_value="linux-x86_64"), self.assertRaisesRegex(RuntimeError, "version stamp"):
+                build_package.package(root, root / "build", root / "sdl", root / "dist", "mw1r-v1.2.3")
+            self.assertFalse(list((root / "dist").glob("*.tar.gz")))
+
     def test_missing_kit_or_hidapi_licence_blocks_packaging(self):
         for licence in ("extern/re-setup-kit/third_party/stb/LICENSE", "sdl/src/hidapi/LICENSE-bsd.txt"):
             with tempfile.TemporaryDirectory() as directory:
@@ -116,11 +140,21 @@ class PackageTests(unittest.TestCase):
                     build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
                 self.assertFalse(list((root / "dist").glob("*.tar.gz")))
 
-    def test_linux_has_no_installer(self):
-        with tempfile.TemporaryDirectory() as directory, patch.object(build_package, "platform_name", return_value="linux-x86_64"):
-            root = Path(directory)
-            with self.assertRaisesRegex(ValueError, "Linux has no installer"):
-                build_package.package(root, root / "build", root / "sdl", root / "dist", "test", installer=True)
+    def test_appimage_tools_are_pinned(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tools = Path(directory)
+            for name in build_package.appimage_tools():
+                (tools / name).write_bytes(name.encode())
+            pins = {name: hashlib.sha256(name.encode()).hexdigest() for name in build_package.appimage_tools()}
+            with patch.object(build_package, "appimage_tools", return_value=pins):
+                build_package.check_appimage_tools(tools)
+                (tools / "runtime-x86_64").write_bytes(b"another runtime")
+                found = hashlib.sha256(b"another runtime").hexdigest()
+                with self.assertRaisesRegex(RuntimeError, f"runtime-x86_64 hashes {found}, wanted {pins['runtime-x86_64']}"):
+                    build_package.check_appimage_tools(tools)
+                (tools / "runtime-x86_64").unlink()
+                with self.assertRaisesRegex(RuntimeError, "Missing AppImage tool: .*runtime-x86_64"):
+                    build_package.check_appimage_tools(tools)
 
     def test_program_version_from_the_label(self):
         self.assertEqual(build_package.program_version("mw1r-v1.0.0"), "1.0.0")

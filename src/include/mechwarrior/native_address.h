@@ -5,8 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-enum { NATIVE_SEGMENT_BYTE_COUNT = 0x10000, NATIVE_SELECTOR_COUNT = 0x10000,
-    NATIVE_WORD_SIGN_BIT = 0x8000 };
+enum { NATIVE_SEGMENT_BYTE_COUNT = 0x10000, NATIVE_WORD_SIGN_BIT = 0x8000 };
 
 /* Zero-copy native BYTE window. Named text storage need not be padded into
  * a second64K data segment merely to preserve a wrapping near cursor. */
@@ -36,10 +35,20 @@ static inline uint16_t MwReadNativeViewWord(const MwNativeByteView *view,uint16_
     return low|((uint16_t)MwReadNativeViewByte(view,(uint16_t)(offset+1))<<8);
 }
 
-/* Host representation only. Bind a complete native offset window; aliases
- * must resolve to the same underlying storage. This is not a DOS allocator. */
-void MwBindNativeSegment(uint16_t selector, uint8_t *segmentBytes);
-uint8_t *MwResolveNativeSegment(uint16_t selector);
+/* One of the campaign's resource buffers: a whole native offset window, so a
+ * uint16_t index is always inside it and wraps FFFF->0000 as the original's. */
+struct MwCampaignBuffer
+{
+    uint8_t bytes[NATIVE_SEGMENT_BYTE_COUNT];
+};
+
+/* A buffer's bytes. NULL (not allocated, or released when its program ended) is
+ * an unsupported integration error, never a successful empty read. */
+static inline uint8_t *MwCampaignBufferBytes(MwCampaignBuffer *buffer)
+{
+    if (!buffer) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("A campaign resource buffer that is not allocated");
+    return buffer->bytes;
+}
 
 /* Byte-order/wrap adapters, not additional game procedures. */
 static inline uint16_t MwReadNativeWord(const uint8_t *bytes, uint16_t offset)

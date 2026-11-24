@@ -207,7 +207,6 @@ add_library(mechwarrior_original STATIC
     src/Original/Memory/MW_EGA_0800_STATE.cpp
     src/Original/Video/MW_EGA_0800.cpp
     src/Support/GameFiles.cpp
-    src/Support/NativeAddress.cpp
     src/Support/PortDiagnostics.cpp
     src/Support/MidiAddress.cpp
     src/Support/Sha256.cpp
@@ -383,7 +382,12 @@ if(MECHWARRIOR_BUILD_SDL)
     endif()
     add_subdirectory(extern/re-setup-kit "${CMAKE_CURRENT_BINARY_DIR}/re-setup-kit")
     set(MECHWARRIOR_VERSION "dev" CACHE STRING "The program's version, as --status reports it (packages set it)")
-    add_library(mechwarrior_setup STATIC src/Setup/Setup.cpp)
+    # A release's tag (mw1r-vX.Y.Z), stamped in the program for the launcher (src/Setup/BuildTag.cpp); empty otherwise.
+    set(MECHWARRIOR_RELEASE_TAG "" CACHE STRING "The release's tag, mw1r-vX.Y.Z (release packages set it)")
+    if(NOT MECHWARRIOR_RELEASE_TAG STREQUAL "" AND NOT MECHWARRIOR_RELEASE_TAG MATCHES "^mw1r-v[0-9]+\\.[0-9]+\\.[0-9]+$")
+        message(FATAL_ERROR "MECHWARRIOR_RELEASE_TAG is a release's tag, mw1r-vX.Y.Z, or empty: ${MECHWARRIOR_RELEASE_TAG}")
+    endif()
+    add_library(mechwarrior_setup STATIC src/Setup/Setup.cpp src/Setup/ProgramRecord.cpp)
     target_include_directories(mechwarrior_setup PUBLIC src)
     target_link_libraries(mechwarrior_setup PUBLIC rekit mechwarrior_original)
     add_library(mechwarrior_sdl STATIC
@@ -399,15 +403,25 @@ if(MECHWARRIOR_BUILD_SDL)
         target_link_libraries(mechwarrior_sdl PUBLIC m)
     endif()
     target_include_directories(mechwarrior_sdl PRIVATE src/SDL)
-    add_executable(mechwarrior src/SDL/SDLMain.cpp src/SDL/SDLSetup.cpp)
+    add_executable(mechwarrior src/SDL/SDLMain.cpp src/SDL/SDLSetup.cpp src/Setup/BuildTag.cpp)
     target_link_libraries(mechwarrior PRIVATE mechwarrior_sdl mechwarrior_setup)
     if(TARGET rekit_sdl)
         target_link_libraries(mechwarrior PRIVATE rekit_sdl)
     endif()
     target_compile_definitions(mechwarrior PRIVATE MECHWARRIOR_VERSION="${MECHWARRIOR_VERSION}")
+    if(NOT MECHWARRIOR_RELEASE_TAG STREQUAL "")
+        target_compile_definitions(mechwarrior PRIVATE MECHWARRIOR_RELEASE_TAG="${MECHWARRIOR_RELEASE_TAG}")
+    endif()
     if(MECHWARRIOR_BUILD_TESTS)
         # The recipe: the walk's verdicts, the install from a folder and from an archive, the carry-over, --status's
         # answer. Its game parts need the player's files (MW1O_GAME); without them only the game-free parts run.
+        # The record and the stamp on the program itself: the same program stamped with a tag no release has.
+        add_executable(mechwarrior_stamped src/SDL/SDLMain.cpp src/SDL/SDLSetup.cpp src/Setup/BuildTag.cpp)
+        target_link_libraries(mechwarrior_stamped PRIVATE mechwarrior_sdl mechwarrior_setup)
+        if(TARGET rekit_sdl)
+            target_link_libraries(mechwarrior_stamped PRIVATE rekit_sdl)
+        endif()
+        target_compile_definitions(mechwarrior_stamped PRIVATE MECHWARRIOR_VERSION="0.0.1" MECHWARRIOR_RELEASE_TAG="mw1r-v0.0.1")
         add_executable(setup_test tests/setup_test.cpp)
         target_link_libraries(setup_test PRIVATE mechwarrior_setup)
         add_test(NAME setup COMMAND setup_test "${CMAKE_CURRENT_BINARY_DIR}/setup_work")
@@ -480,7 +494,8 @@ if(MECHWARRIOR_BUILD_SDL)
         find_package(Python3 COMPONENTS Interpreter)
         if(Python3_FOUND)
             add_test(NAME status_setup COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tests/status_setup_test.py"
-                --program $<TARGET_FILE:mechwarrior> --work "${CMAKE_CURRENT_BINARY_DIR}/status_setup_work")
+                --program $<TARGET_FILE:mechwarrior> --stamped $<TARGET_FILE:mechwarrior_stamped>
+                --tag "${MECHWARRIOR_RELEASE_TAG}" --work "${CMAKE_CURRENT_BINARY_DIR}/status_setup_work")
             add_test(NAME read_only_install COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tests/read_only_install_test.py"
                 --port $<TARGET_FILE:mechwarrior> --work "${CMAKE_CURRENT_BINARY_DIR}/read_only_install_work")
             set_tests_properties(read_only_install PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 600)

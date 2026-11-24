@@ -7,10 +7,12 @@
 // an entry climbing out of the archive left out. Prints names and counts only, never the game's bytes.
 //
 //     setup_test <work folder>
+#include "Setup/ProgramRecord.h"
 #include "Setup/Setup.h"
 
 #include <rekit/archive.h>
 
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
@@ -142,6 +144,141 @@ void family_folder(const fs::path& base) {
   fs::remove_all(base, ec);
 }
 
+// What recognise() says of a pick the walk found no copy in: one case each, "" when it is none of them. The other
+// games' files are made here, a few bytes each, in the shape the recogniser judges (nothing of any game's).
+void recognise_picks(const fs::path& work) {
+  const fs::path base = work / "recognise";
+  const auto has = [](const std::string& s, const std::string& w) { return s.find(w) != std::string::npos; };
+  // Trailing words: the version at 8 from the end is 1 for MechWarrior 3, the one 12 from the end is 2 for Pirate's Moon.
+  std::string mw3(64, 'x'), pm(64, 'x');
+  for (int i = 0; i < 4; ++i) mw3[56 + i] = i == 0 ? 1 : 0, pm[52 + i] = i == 0 ? 2 : 0, pm[56 + i] = 9;
+  write(base / "btech" / "BTECH.EXE", std::string(1000, 'x'));
+  write(base / "mw2prj" / "MW2.PRJ", "PROJ the rest");
+  write(base / "mw2cd" / "MECH2" / "MW2.PRJ", "PROJ the rest");
+  write(base / "mw2data" / "Database.mw2", "x");
+  write(base / "notmw2" / "MW2.PRJ", "another file");
+  write(base / "mw3" / "zbd" / "reader.zbd", mw3);
+  write(base / "pm" / "ZBD" / "READER.ZBD", pm);
+  write(base / "othergame" / "zbd" / "reader.zbd", std::string(64, 'x'));
+  write(base / "nothing" / "README.TXT", "x");
+  write(base / "loose" / "README.TXT", "x");
+  write(base / "both" / "MW2.PRJ", "PROJ the rest");
+  write(base / "both" / "BTECH.EXE", std::string(1000, 'x'));
+
+  const std::string unknown = setup::recognise((base / "btech").string());
+  check(has(unknown, "BTECH.EXE was found there") && has(unknown, "1990-01-22") && !has(unknown, "another game"),
+        "recognise: a BTECH.EXE of another revision says so");
+  check(setup::recognise((base / "btech" / "BTECH.EXE").string()) == unknown, "recognise: the file picked itself says the same");
+  for (const char* d : {"mw2prj", "mw2cd", "mw2data"})
+    check(has(setup::recognise((base / d).string()), "That is MechWarrior 2, another game."),
+          std::string("recognise: MechWarrior 2 by ") + d);
+  check(has(setup::recognise((base / "mw3").string()), "That is MechWarrior 3, another game."), "recognise: MechWarrior 3");
+  check(has(setup::recognise((base / "pm").string()), "Pirate's Moon, another game."), "recognise: Pirate's Moon");
+  check(setup::recognise((base / "both").string()) == unknown, "recognise: the BTECH.EXE is named before another game's file");
+  check(setup::recognise((base / "notmw2").string()).empty(), "break: an MW2.PRJ that is not one says nothing (the kit's sentence)");
+  check(setup::recognise((base / "othergame").string()).empty(), "break: a reader.zbd of neither version says nothing");
+  check(setup::recognise((base / "nothing").string()).empty(), "break: a folder with nothing known says nothing (the kit's sentence)");
+  for (const std::string& odd : {(base / "absent").string(), std::string(), std::string("\0x", 2), (base / "nothing" / "README.TXT").string()})
+    check(setup::recognise(odd).empty(), "break: an unreadable or absent pick says nothing and throws nothing");
+#if REKIT_HAVE_LIBARCHIVE
+  const fs::path zips = base / "zips";
+  fs::create_directories(zips);
+  const auto text = [&](const char* name, const std::string& in) { write(base / "src" / name, in); return (base / "src" / name); };
+  make_zip(zips / "btech.zip", {{"GAMES/MECH/BTECH.EXE", text("b.bin", std::string(1000, 'x'))}});
+  make_zip(zips / "mw2.zip", {{"cd/MECH2/MW2.PRJ", text("p.bin", "PROJ the rest")}});
+  make_zip(zips / "mw3.zip", {{"MW3/zbd/reader.zbd", text("r.bin", mw3)}});
+  make_zip(zips / "none.zip", {{"README.TXT", fs::path()}});
+  check(setup::recognise((zips / "btech.zip").string()) == unknown, "recognise: in an archive, a BTECH.EXE of another revision");
+  check(has(setup::recognise((zips / "mw2.zip").string()), "MechWarrior 2"), "recognise: in an archive, MechWarrior 2");
+  check(has(setup::recognise((zips / "mw3.zip").string()), "MechWarrior 3"), "recognise: in an archive, MechWarrior 3");
+  check(setup::recognise((zips / "none.zip").string()).empty(), "break: an archive with nothing known says nothing");
+#endif
+}
+
+std::string own_program;  // argv[0]
+
+// The launcher's record (ProgramRecord.h), one check or more for each rule.
+void program_record(const fs::path& work) {
+  const fs::path base = fs::weakly_canonical(work) / "record";
+  const auto user = [&](const char* name) { return (base / "users" / name).string(); };
+  const auto written = [](const std::string& u) { return fs::exists(fs::path(u) / setup::kProgramRecord); };
+  const std::string program = (base / "place" / "mw1r").string();
+  write(program, "x");
+  setup::ProgramStart plain;
+  plain.tag = "mw1r-v1.2.3", plain.self = program, plain.user = user("plain");
+
+  for (const char* tag : {"mw1r-v1.0.0", "mw1r-v10.20.30"}) check(setup::release_tag(tag), std::string("a release's tag: ") + tag);
+  for (const char* tag : {"", "dev", "1.0.0", "v1.0.0", "mw1-v1.0.0", "mw1r-v1.0", "mw1r-v1.0.0.0", "mw1r-v1.0.0-test", "mw1r-v1.0.0-3-gabcdef",
+                          "mw1r-v1..0", "mw1r-v.1.0", "mw1r-v1.0.0.", "mw1r-v"})
+    check(!setup::release_tag(tag), std::string("break: not a release's tag: \"") + tag + "\"");
+
+  check(setup::record_program(plain) && written(plain.user), "record: a release's start writes it");
+  check(read(fs::path(plain.user) / setup::kProgramRecord) ==
+            "# Where this game is, for the BattleTech launcher (it links a copy installed without it).\ngame=mw1r\nprogram=" +
+                program + "\nversion=mw1r-v1.2.3\n",
+        "record: a comment, then game=, program= and version=");
+
+  // Rewritten only when its contents change.
+  const fs::path record = fs::path(plain.user) / setup::kProgramRecord;
+  const auto old = fs::last_write_time(record) - std::chrono::hours(1);
+  fs::last_write_time(record, old);
+  check(!setup::record_program(plain) && fs::last_write_time(record) == old, "record: the same contents are left alone");
+  setup::ProgramStart newer = plain;
+  newer.tag = "mw1r-v1.2.4";
+  check(setup::record_program(newer) && read(record).find("version=mw1r-v1.2.4\n") != std::string::npos, "record: a newer version rewrites it");
+
+  const auto refused = [&](setup::ProgramStart s, const char* name, const std::string& what) {
+    s.user = user(name);
+    check(!setup::record_program(s) && !written(s.user), "break: " + what);
+  };
+  setup::ProgramStart s = plain;
+  s.tag = "mw1r-v1.2.3-5-gabcdef0";
+  refused(s, "dev", "a build that is no release records nothing");
+  s = plain, s.tag = "";
+  refused(s, "untagged", "an untagged build records nothing");
+  s = plain, s.hidden = true;
+  refused(s, "hidden", "a hidden start records nothing");
+  s = plain, s.self = "";
+  refused(s, "unknown", "a program that can't tell its file records nothing");
+  s = plain, s.self = program + "\nversion=x";
+  refused(s, "newline", "a path that would break the record's lines records nothing");
+  s = plain, s.user = "";
+  check(!setup::record_program(s), "break: no user folder, nothing recorded");
+  s = plain, s.self = "/private/var/folders/x/AppTranslocation/y/d/MW1.app/Contents/MacOS/mw1r";
+  refused(s, "translocated", "a copy under App Translocation records nothing");
+
+  // The launcher's own copy: its mark in a folder above the program.
+  const fs::path installed = base / "installed";
+  write(installed / "game.app" / "Contents" / "MacOS" / "mw1r", "x");
+  s = plain, s.self = (installed / "game.app" / "Contents" / "MacOS" / "mw1r").string();
+  s.user = user("unmarked");
+  check(setup::record_program(s), "record: the same layout without the launcher's mark is recorded");
+  write(installed / setup::kLauncherMark, "game=mw1r\n");
+  check(setup::launchers_own(s.self) && !setup::launchers_own(program), "launchers_own: by the mark in a folder above");
+  refused(s, "launchers", "a copy the launcher installed records nothing");
+
+  // An AppImage: its file, and only from its own mount.
+  const fs::path image = base / "Apps" / "MW1.AppImage", mount = base / "mount";
+  write(image, "x");
+  s = plain, s.appimage = image.string(), s.appdir = mount.string(), s.self = mount.string() + "/usr/bin/mw1r";
+  s.user = user("appimage");
+  check(setup::record_program(s) && read(fs::path(s.user) / setup::kProgramRecord).find("program=" + image.string() + "\n") != std::string::npos,
+        "record: an AppImage names its file, not its mount");
+  s.self = program, s.user = user("inherited");
+  check(setup::record_program(s) && read(fs::path(s.user) / setup::kProgramRecord).find("program=" + program + "\n") != std::string::npos,
+        "record: another AppImage's variables, inherited, change nothing");
+  s.self = mount.string() + "2/mw1r", s.user = user("sibling");
+  check(setup::record_program(s) && read(fs::path(s.user) / setup::kProgramRecord).find("program=" + mount.string() + "2/mw1r\n") != std::string::npos,
+        "record: a folder whose name only starts like the mount is not the mount");
+  s.self = mount.string() + "/usr/bin/mw1r", s.appimage = (base / "gone.AppImage").string();
+  refused(s, "gone", "an AppImage that is gone records nothing");
+  write(base / "Apps" / setup::kLauncherMark, "game=mw1r\n");
+  s.appimage = image.string();
+  refused(s, "launchersimage", "an AppImage in the launcher's folder records nothing");
+
+  check(fs::equivalent(setup::self_path(), fs::path(own_program)), "self_path: this test's own file");
+}
+
 void game_free(const fs::path& work) {
   // The player's folder's name, without making it.
   const std::string pf = setup::pref_folder(setup::kOrganisation, setup::kApplication);
@@ -168,6 +305,8 @@ void game_free(const fs::path& work) {
         "no old folder: nothing made");
 
   family_folder(work / "family");
+  recognise_picks(work);
+  program_record(work);
 
   // MechWarrior.ini's game_folder.
   write(work / "ini" / "MechWarrior.ini", "; a comment\ncombat_speed=2\n  game_folder = /some/where  \n");
@@ -213,6 +352,8 @@ void with_game(const fs::path& work, const char* game_env, const char* ref_env, 
   check(f.kind == rekit::Found::kInstall && f.game == "mech1" && f.version == v_1990, "find_source: the folder is mech1 " + v_1990);
   const rekit::Found by_program = rekit::find_source((copy / "MW_MAIN.EXE").string(), setup::rules());
   check(by_program.kind == rekit::Found::kInstall, "a pick of MW_MAIN.EXE stands for its folder");
+  check(setup::recognise(copy.string()).empty() && setup::recognise((copy / "BTECH.EXE").string()).empty(),
+        "break: a copy of the game is nothing to recognise");
   const fs::path out = work / "user" / "install";
   setup::Installed r = setup::install(f, out.string());
   check(r.ok && setup::check_install(out.string(), false).state == rekit::Status::kReady, "installed from a folder: ready");
@@ -274,6 +415,7 @@ void with_game(const fs::path& work, const char* game_env, const char* ref_env, 
 int main(int argc, char** argv) {
   if (argc != 2) return std::fprintf(stderr, "usage: setup_test <work folder>\n"), 2;
   const fs::path work = argv[1];
+  own_program = argv[0];
   std::error_code ec;
   fs::remove_all(work, ec);  // the test's own folder (the build dir's setup_work)
   fs::create_directories(work);

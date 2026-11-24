@@ -24,7 +24,8 @@ Linux requires compatible system C/C++ runtime, desktop and audio libraries.
 ## What a package holds
 
 `tools/build_package.py` builds the program and stages:
-- the program, `mw1r` (`mw1r.exe`; `Contents/MacOS/mw1r` in the Mac app), and its shared libraries. The build's
+- the program, `mw1r` (`mw1r.exe`; `Contents/MacOS/mw1r` in the Mac app;
+  `usr/bin/mw1r` in the AppImage), and its shared libraries. The build's
   target and file stay `mechwarrior`, which the tools and traces run; the
   package names it;
 - `data/`: our rules (`data/rules`) and screen layout (`data/ui`), which the
@@ -104,9 +105,9 @@ platform's files are named `MW1-Rebuild-<label>-...`:
 |---|---|---|
 | Windows x64 | Windows, MSVC | `-win64.zip`, and with `--installer` `-Setup.exe` (Inno Setup) |
 | macOS | a Mac | `-mac.dmg` (`MechWarrior 1 Rebuild.app`, signed ad hoc), this Mac's architecture |
-| Linux x86-64 | Linux or WSL | `-linux-x86_64.tar.gz` |
+| Linux x86-64 | Linux or WSL | `-linux-x86_64.tar.gz`, and with `--installer` `-x86_64.AppImage` |
 
-    python tools/build_package.py --sdl SDL_SOURCE --label LABEL [--game GAME] [--installer]
+    python tools/build_package.py --sdl SDL_SOURCE --label LABEL [--game GAME] [--installer] [--appimage-tools DIR]
 
 - **Windows**: the program is linked as a GUI program
   (`MECHWARRIOR_WINDOWS_GUI`), so no console window opens, with its icon
@@ -124,10 +125,23 @@ platform's files are named `MW1-Rebuild-<label>-...`:
   `codesign --verify --deep --strict`. The dmg holds the app, a link to
   Applications and the read-me. Unsigned by a developer identity: the first
   start needs right-click, Open.
-- **Linux**: the `.tar.gz`, unpacked anywhere; the program, its SDL3, `data/`
-  and the notices are in one folder. No AppImage is made: its runtime holds
-  LGPL code. The archive itself is unpacked and started, with its first run
-  when a game folder is given, as the other platforms' are.
+- **Linux**: `--appimage-tools DIR` names the folder with
+  `linuxdeploy-x86_64.AppImage`, `appimagetool-x86_64.AppImage` and
+  `runtime-x86_64`, which `tools/deps/get_appimage_tools.sh DIR` fetches; each
+  is refused unless it has the hash pinned there. The
+  AppImage holds `usr/bin/mw1r` with `data/` and `MechWarrior.ini`
+  beside it, and the notices in `usr/share/doc/mw1r`, the AppImage runtime's
+  (`tools/package/appimage-runtime`) among them. Packaging unpacks it with
+  `--appimage-extract` and starts the program from the unpacked folder, as the
+  launcher does.
+
+For the BattleTech launcher, a program built with a release's tag
+(`MECHWARRIOR_RELEASE_TAG`, which packaging sets from the label) holds
+`MW3-PROGRAM-VERSION:<tag>` in its file, and each start with a player at it
+writes `rebuild-program.txt` (game, program, version) into the player's folder,
+so the launcher finds a copy installed without it. Any other label's program
+holds no such string and writes nothing; packaging refuses a program whose
+stamp is not its label's.
 
 Every installer's contents pass `tools/package/check_paths.py`: no local path
 or user name in any file. Each file gets a `.sha256` beside it; for a release,

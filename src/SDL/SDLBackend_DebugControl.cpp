@@ -101,7 +101,7 @@ static void FeedSong(uint16_t row)
     const FeedSongRow *song=&feedSongs[row];
     if (song->load) (void)song->load();
     if (song->offset==DEATH_MUSIC_OFFSET) MwStartDeathMusic();
-    else if (campaignStartMusic) campaignStartMusic(campaignStartup.campaignMusicBufferSelector,song->offset);
+    else if (campaignStartMusic) campaignStartMusic(campaignStartup.campaignMusicBuffer,song->offset);
 }
 /* sound:N: BtechPlaySoundIfEnabled at the priority the game requests effect N
  * with, from its call sites (the same 16 in both BTECH revisions). Priority

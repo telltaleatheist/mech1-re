@@ -26,7 +26,7 @@ static bool DecodeMusicDriver(const uint8_t *data,size_t byteCount)
     campaignMusic.midiBeatDivision=MwReadNativeWord(data,0x0048);
     campaignMusic.midiBarDivision=MwReadNativeWord(data,0x004A);
     campaignMusic.midiStreamOffset=0; /*004C*/
-    campaignMusic.midiStreamSegment=0; /*004E*/
+    campaignMusic.midiStream=NULL; /*004E*/
     campaignMusic.midiPlaybackFlags=0; /*0050*/
     campaignMusic.midiEventTickBalance=0; /*0052*/
     campaignMusic.midiBeatRemainder=0; /*0054*/

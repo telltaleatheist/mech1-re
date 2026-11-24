@@ -13,6 +13,9 @@ bool MwSetupUnattended(void);
 /* The player's folder settled for this start (setup::settle_user_folder: in use,
  * a test version's MicroProse one moved across, or the previews' copied once). Logged. */
 void MwSetupSettleUserFolder(void);
+/* Where this program is, written into the player's folder for the BattleTech launcher (src/Setup/ProgramRecord.h:
+ * a released build's start with a player at it). After MwSetupSettleUserFolder; only at a start that plays. */
+void MwSetupRecordProgram(void);
 /* The game folder a start plays from, into `folder`: the remembered one, the
  * player's own install, else the setup (the player picks a copy, a folder or
  * an archive, which is copied into the player's folder). `setupOnly`: the
