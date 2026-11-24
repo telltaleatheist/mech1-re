@@ -72,6 +72,7 @@ CLAUDE.local.md
 *.jpg
 *.jpeg
 !docs/images/*.png
+!docs/screenshots/*.jpg
 # The program's icon (docs/LICENSES/README.md): the project's own badge, no game artwork.
 !tools/package/mechwarrior.png
 # The setup screen's badge: the same picture (data/setup/README.md).

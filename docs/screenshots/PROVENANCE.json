@@ -1,0 +1,52 @@
+{
+  "images": [
+    {
+      "file": "docs/screenshots/cockpit.jpg",
+      "description": "Combat cockpit, from the combat_cockpit trace script, 2026-11-24, at 8ccc109.",
+      "sha256": "d92b48e148e51e18a0bcc9b4dd83a98d361b21d2f38c6647bf2e16ba56275727",
+      "sourceSha256": "095afe54055834d7d72734ff443541bb704762e4dd4539fa76bf6f2747e1b53e",
+      "pixels": [
+        960,
+        600
+      ],
+      "processing": "JPEG encoding of the 3x integer-scaled renderer readback, 4:4:4; no resizing, compositing or retouching.",
+      "rights": "Contains original game artwork; excluded from project MIT licence. Documentation only."
+    },
+    {
+      "file": "docs/screenshots/orders-map.jpg",
+      "description": "Combat order screen and its map, from the combat_cockpit trace script, 2026-11-24, at 8ccc109.",
+      "sha256": "fb33105dc8ca820d12aaf1897ea54e500dd59c0ffc68a132b86e4ee555b9bb6d",
+      "sourceSha256": "bdb6cda770983aa7d203a2514128ed6a361f5cff0b7a426dd23de7ab127acc27",
+      "pixels": [
+        960,
+        600
+      ],
+      "processing": "JPEG encoding of the 3x integer-scaled renderer readback, 4:4:4; no resizing, compositing or retouching.",
+      "rights": "Contains original game artwork; excluded from project MIT licence. Documentation only."
+    },
+    {
+      "file": "docs/screenshots/star-map.jpg",
+      "description": "Star map, from the travel trace script, 2026-11-24, at 8ccc109.",
+      "sha256": "ee3664720fbd7a588053bd1ba16505c37687478377e68123670461c7fe750a01",
+      "sourceSha256": "94ffda2817f14d45fb7426deb37c212b825a0532c93512f31de63cdf2b9bee5f",
+      "pixels": [
+        960,
+        600
+      ],
+      "processing": "JPEG encoding of the 3x integer-scaled renderer readback, 4:4:4; no resizing, compositing or retouching.",
+      "rights": "Contains original game artwork; excluded from project MIT licence. Documentation only."
+    },
+    {
+      "file": "docs/screenshots/mech-complex.jpg",
+      "description": "Mech complex, from the mech_complex trace script, 2026-11-24, at 8ccc109.",
+      "sha256": "057252b75b1a1e8983a0f3fa05e0032ef8dce092d1b39b5f4ef3dfe90984f610",
+      "sourceSha256": "9ce18acd71d45f8f1697e66d033c653df75bde99db441d199d97c361f62c931e",
+      "pixels": [
+        960,
+        600
+      ],
+      "processing": "JPEG encoding of the 3x integer-scaled renderer readback, 4:4:4; no resizing, compositing or retouching.",
+      "rights": "Contains original game artwork; excluded from project MIT licence. Documentation only."
+    }
+  ]
+}

@@ -12,7 +12,7 @@ assets, music, sound banks, private saves or captured DOS memory dumps. The
 reconstructed program reads required original material locally; it does not
 replace the need to own the game. Do not upload installations or exports here.
 
-The small, explicitly inventoried screenshots in `docs/images` document the
+The small, explicitly inventoried screenshots in `docs/images` and `docs/screenshots` document the
 working software. They contain original-rights artwork and are excluded from
 the MIT grant; they are not asset packs or offered for reuse. The independently
 drawn SVG project banner is not the original game's logo or title screen.
