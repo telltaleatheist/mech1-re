@@ -124,12 +124,11 @@ uint32_t BtechDivideSignedWideNumerator(int16_t numeratorHighest, uint16_t numer
     }
     uint32_t normalizedNumerator=((uint32_t)middle<<0x0010)|low;
     uint32_t foldedDenominator=((uint32_t)foldedDenominatorHigh<<0x0010)|foldedDenominatorLow;
-    BtechDwordDivisionResult *divisionResult=BtechDivideSignedDwordWithRemainder(normalizedNumerator,foldedDenominator);
-    // Native D923 returns the existing shared result owner, not a quotient.
-    uint16_t quotientLow=divisionResult->quotientLow;
-    uint16_t quotientHigh=divisionResult->quotientHigh;
-    uint16_t remainderLow=divisionResult->remainderLow;
-    uint16_t remainderHigh=divisionResult->remainderHigh; // 66F4..66FC: four ordered WORD reads.
+    const runtime_1989::LongDivision division=runtime_1989::signed_long_divide(normalizedNumerator,foldedDenominator);
+    uint16_t quotientLow=(uint16_t)division.quotient;
+    uint16_t quotientHigh=(uint16_t)((uint32_t)division.quotient>>0x0010);
+    uint16_t remainderLow=(uint16_t)division.remainder;
+    uint16_t remainderHigh=(uint16_t)((uint32_t)division.remainder>>0x0010);
     for (uint16_t shifts=normalizationShift; shifts!=0x0000; --shifts)
     {
         uint16_t carry=quotientLow>>0x000F;

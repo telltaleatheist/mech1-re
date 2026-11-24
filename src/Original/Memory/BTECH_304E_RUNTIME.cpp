@@ -31,14 +31,6 @@ bool BtechImportRuntimeInitialData(const uint8_t *data,size_t bytes)
         char reason[96];snprintf(reason,sizeof(reason),"The image's extra CRT vector at 304E:4B8A is active: bytes %02X %02X",data[0x4B8A],data[0x4B8B]);
         MW_PORT_FAILSAFE(reason);
     }
-    combatRuntime.runtimeHandleLimit=MwReadNativeWord(data,0x4B66);
-    if (combatRuntime.runtimeHandleLimit!=COMBAT_DOS_HANDLES) return false;
-    memcpy(combatRuntime.runtimeHandleFlags,data+0x4B68,sizeof(combatRuntime.runtimeHandleFlags));
-    for (uint16_t slot=0;slot<COMBAT_STREAM_SLOTS;++slot)
-    {
-        combatRuntime.runtimeTemporaryFileIds[slot]=0; /*4C64*/
-        combatRuntime.runtimeStreamAuxiliaryFlags[slot]=data[0x4C60+slot*6];
-    }
     uint16_t cursor=0x4E0A;
     for (uint16_t message=0;message<COMBAT_RUNTIME_MESSAGES;++message)
     {

@@ -304,6 +304,10 @@ if(MECHWARRIOR_BUILD_TESTS)
     target_include_directories(ega_canvas_writer_test PRIVATE src/Original/Video)
     target_link_libraries(ega_canvas_writer_test PRIVATE mechwarrior_original)
     add_test(NAME ega_canvas_writer COMMAND ega_canvas_writer_test)
+    # The C runtime's kept rules (B5): the near heap's exhaustion and fragmentation, the 1989 long divide.
+    add_executable(runtime_test tests/runtime_test.cpp)
+    target_link_libraries(runtime_test PRIVATE mechwarrior_original)
+    add_test(NAME runtime COMMAND runtime_test)
     # A connected joystick in both games (H3): calibration and reads on fake axes.
     add_executable(joystick_test tests/joystick_test.cpp)
     target_link_libraries(joystick_test PRIVATE mechwarrior_original)
