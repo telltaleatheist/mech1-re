@@ -188,8 +188,8 @@ def word_source(name,lines,f):
                     bound=re.search(r'\b'+var+r'\s*<\s*(0x[0-9A-Fa-f]+|[A-Z_][A-Z0-9_]+)',back)
                     if not word and bound: word=covering(exe,int(bound.group(1),16) if bound.group(1).startswith('0x') else ENUMS.get(bound.group(1),-1))
             if word: return 'word '+word
-        # A pointer into an item the words fill: name[...]=item+...
-        m=re.search(r'\b'+name+r'\b(?:\[[^\]]*\])*\s*=\s*(?:\([^)]*\))?\s*(\w+)\s*\+',l)
+        # A pointer into an item the words fill: name[...]=item+..., or an MwText's cursor.
+        m=re.search(r'\b'+name+r'\b(?:\[[^\]]*\])*(?:\.cursor)?\s*=\s*(?:\([^)]*\))?\s*(\w+)\s*\+',l)
         if m and m.group(1)!=name:
             via=word_source(m.group(1),lines,f)
             if via: return via
