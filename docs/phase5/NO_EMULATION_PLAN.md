@@ -3,12 +3,12 @@
 Status: plan for review. Docs only; no code until it's approved.
 
 A project decision (2026-11-22) sets the direction:
-- **No emulation.** The rebuild doesn't model a 1989 PC: not its sound chips, its video card, its I/O ports, interrupts, BIOS or timer chip, nor (pending, section 5) its memory layout.
+- **No emulation.** The rebuild doesn't model a 1989 PC: not its sound chips, its video card, its I/O ports, interrupts, BIOS or timer chip, nor its memory layout (group B, section 5).
 - **Libraries.** Use modern open-source libraries, MIT or similarly permissive, where they fit.
 - **SDL3.** Stay on SDL3 for output.
 - **The bar is "play identical", not "byte identical".** That means the same songs, cues, timing, pictures and game, drawn and played by our own code rather than by a model of 1989 hardware.
 
-mw1r-v1.0.0 is tagged only after sound, graphics and the hardware layer under them are rebuilt without emulation and gated (group A in section 5). Whether the memory images also come first (group B) is **pending a project decision**. Section 5 is the single path. Its slices are sized for checking, not speed: each one changes one thing that its check can see.
+mw1r-v1.0.0 is tagged only after sound, graphics and the hardware layer under them are rebuilt without emulation and gated (group A in section 5), and the memory images are rebuilt as typed state (group B, a project decision). Section 5 is the single path. Its slices are sized for checking, not speed: each one changes one thing that its check can see.
 
 This plan replaces two parts of [the phase 5 audio plan](AUDIO_PLAN.md): its own FM synth (`FmChip`, a YM3812 model, so chip emulation) and its MT-32 options. That plan's finished work stays the base:
 - its slice 1, the port-event log and golden audio traces;
@@ -341,7 +341,7 @@ Every slice below is its own branch with the full gate green: both setups, the t
 2. **Music with provisional instruments next (S2-S3),** so the listening material goes to the project early. Listening is the one step a person has to do.
 3. **Graphics and input while the listening happens (G1-G5, H2-H3).** These are checked mechanically (frames pixel-exact, game events exact), so they need no one's time to sign off.
 4. **Sound finished, timers and interrupts, ports retired (S4-S9, H4-H5).** The ports go last because every device has to move off them first.
-5. **The release gate (R),** then the tag.
+5. **Group B after H5 (below), then the release gate (R),** then the tag. R stays in this table but runs last, so it gates both groups.
 
 | # | Slice | Check | Days |
 | --- | --- | --- | --- |
@@ -368,7 +368,7 @@ Every slice below is its own branch with the full gate green: both setups, the t
 | H5 | The port bus retired: `MwSdlWriteDevicePort`, `ReadDevicePort` and the port-word hooks removed with their last callers; the sound-port event log retired in favour of the note and tone logs | everything above exact | 2 |
 | R | The release gate: every gate on Windows, macOS and Linux from fresh builds. Packages from a local tag. The listening list and the visual acceptance list signed off on the packaged builds. The controller path is covered by the SDL virtual-device test (H3b); no physical controller is available | all of the above | 2 |
 
-**Group A total:** about 50-51 developer days plus the listening sessions. That is roughly 10 weeks, planned for **one developer, in order**.
+**Group A total:** about 51-52 developer days plus the listening sessions. That is roughly 10 weeks, planned for **one developer, in order**.
 
 (A note for later, not part of the plan: G1-G5 and H2-H3 touch different files from T1-S4, so a second developer could take them in parallel, with the gate order unchanged. The lead revisits this when a second developer is free.)
 
@@ -387,20 +387,32 @@ Note timing isn't on the sheet: the note log already checks it.
 
 (The earlier S7, the music clock, is folded into H4. S1 became T1.)
 
-### Group B, memory images to typed state: PENDING
+### Group B, memory images to typed state: before the tag, after H5
 
-**Before or after the tag is pending a project decision.** Until it is made, group B is not on the path to the tag.
+**On the path to the tag** (a project decision). Group B runs after group A's H5 and before R, so R gates both groups. It starts the work the fork plan's phases 3-6 would have done (giving the game's state its owners), so it is sized here, by the code each slice touches on main at 786fc8e.
 
-Group B overlaps the fork plan's phases 3-6, which give the game's state its owners. It is sized with those phases rather than here. Its order, if it goes ahead:
+**The order, and why:**
+1. **Snaps by name first (B1),** so every later B slice is compared by field name, and a mismatch names its field.
+2. **Campaign state, then combat state (B2, B3).** The campaign's state is most of what the traces compare. Combat's goes one subsystem per slice (B3a-B3e).
+3. **Native addressing (B4)** goes once every image it points into is typed.
+4. **The C runtime and DOS files (B5, B6)** go last: their callers are B2-B4's structs and references.
 
-| # | Slice | Check |
-| --- | --- | --- |
-| B1 | Snaps by name: a snapshot schema of named fields. `state.py` maps the original's offsets to those names; `check.py` compares by name | traces identical, now by name |
-| B2 | Campaign state (MW_MAIN's 1090, 0F41, 28BE, 1AA5 images; MW_0806's and MW_EGA's) as typed structs with owners | traces by name |
-| B3 | Combat state (BTECH's 304E, 0810, 1ADF, 1BF5, 22B6 and 2FEB images, the start image) as typed structs, one subsystem per slice | traces and frames |
-| B4 | Native addressing removed: references and spans in place of selector bindings and byte windows | traces and frames |
-| B5 | The C runtime: the standard library in place of the 1989 heap, streams and divide, keeping any game-visible limit as an explicit rule with a test | traces and frames |
-| B6 | DOS files: `std::filesystem` in place of the INT 21h handle layer and 8.3 names | traces; the setup and save tests |
+Every B slice keeps the group A logs exact (the note, tone and game-event logs, the frames and the traces), as well as the check in its row.
+
+| # | Slice | Check | Days |
+| --- | --- | --- | --- |
+| B1 | Snaps by name: a snapshot schema of named fields. `state.py` maps the original's offsets to those names; `check.py` compares by name. The schema covers what `record.py`'s state lines hold today, and the campaign exchange block (0x718 bytes, compared as one hash today) by the save format's fields | traces identical, now by name | 3 |
+| B2 | Campaign state (MW_MAIN's 1090, 0F41, 28BE, 1AA5 images; MW_0806's and MW_EGA's) as typed structs with owners. About 530 lines of named globals today, 438 of them 1090's. One commit per owner, each gated: menus and UI, economy and market, pilots and mechs, travel and contracts, the music driver, the EGA overlay | traces by name | 6 |
+| B3a | Combat state, runtime and installation: 0810's, 1ADF's and 1BF5's state, and 304E's runtime and start-up, as typed structs | traces and frames | 2 |
+| B3b | Combat state, sound: 304E's sound state, what S8 leaves of it | traces and frames | 1 |
+| B3c | Combat state, video, render and cockpit: 304E's video, render, polygons, scene, pose and cockpit state, and 2FEB's | traces and frames | 4 |
+| B3d | Combat state, world, units and orders: 304E's world and orders state, and the rest of 304E | traces and frames | 4 |
+| B3e | Combat state, geometry and the start image: 22B6's data and the start image (about 60 lines of named fields) | traces and frames | 2 |
+| B4 | Native addressing removed: references and spans in place of selector bindings and byte windows. Today 50 files use the byte views or resolve a native segment, and 77 name a selector | traces and frames | 6 |
+| B5 | The C runtime: the standard library in place of the 1989 heap (0810's allocator and combat's near heap), streams (0810's) and divide (0810's and 1BF5's), keeping any game-visible limit as an explicit rule with a test. The near heap's native sizes decide when it runs out, and that is the limit to keep | traces and frames | 4 |
+| B6 | DOS files: `std::filesystem` in place of the INT 21h handle layer and 8.3 names: `dos_files.h` and its three campaign callers (resources, saves, start-up), and combat's file streams. The save test is new in this slice: a save written and read back gives the same exchange block, field by field | traces; the setup and save tests | 3 |
+
+**Group B total:** about 35 developer days, roughly 7 weeks. **With group A:** about 86-87 developer days plus the listening sessions, roughly 17 weeks, for one developer, in order.
 
 For later, when the callers become ours (group B, or H5 at the latest):
 - **The mode calls by what they do.** `MwSetVideoMode` and `MwGetVideoMode` (G5) still take the BIOS mode numbers, 0Dh and 3, because their callers are line-for-line conversions. Once those callers are ours, they set up the canvas and close it by name. The numbers stay only where the game's data stores them (the campaign's saved mode).
@@ -412,3 +424,4 @@ For later, when the callers become ours (group B, or H5 at the latest):
 3. **Tone voice and the original speaker.** The original speaker's timbre came from the PC's speaker cone, not from a square-wave formula. The bar is the same pitches and timing (the tone log), not that hardware's sound.
 4. **Clock-derived BIOS ticks.** Game logic that reads the 18.2 Hz count (the title's length rule picks the start world) must see the same counts from the millisecond clock. The game-event log catches any difference exactly. Likewise the music clock depends on the combat tick's timing. The note log's timestamps catch any tempo drift exactly.
 5. **Players who used the MT-32 or AdLib options** lose them. That is the decision. MIDI out to a real device isn't emulation and could return later as an option, but it isn't in this plan.
+6. **The original reads across its own layout.** Some code reads past one field into the next, or at an offset another routine left behind (the campaign's MPU install copies a byte at the offset DOS's GET VECTOR left, H4c). Typed structs end that layout. Each such read becomes an explicit rule with a comment, and a test where the effect can be seen; B1's by-name check names any field that moves. A read that can't be made explicit stops the slice and goes to the lead.
