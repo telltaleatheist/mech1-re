@@ -23,7 +23,6 @@ void BtechInitializeEgaVideo(uint16_t paletteByteOffset)
     combatVideo.videoColourCount=COMBAT_EGA_COLOURS;
     combatVideo.frontPageSelector=COMBAT_EGA_FRONT_PAGE;
     combatVideo.backPageSelector=COMBAT_EGA_BACK_PAGE;
-    combatVideo.videoScratchPageSelector=COMBAT_EGA_SCRATCH_PAGE;
     MwSetVideoMode(COMBAT_EGA_MODE_320X200);
     uint16_t pattern=0;
     for (uint16_t colour=0;colour<COMBAT_EGA_COLOURS;++colour)

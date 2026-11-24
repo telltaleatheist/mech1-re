@@ -87,7 +87,7 @@ bool BtechImportVideoInitialData(const uint8_t *data,size_t bytes)
     combatVideo.graphicsFillSolidSpan=NULL;combatVideo.graphicsFillAlternatingSpan=NULL;combatVideo.shapeSpanCallback=BtechShapeSpanCallback{};
     combatVideo.clipMinimumX=0; /*2E53*/combatVideo.clipMaximumX=(int16_t)MwReadNativeWord(data,0x2E55);
     combatVideo.clipMinimumY=0; /*2E57*/combatVideo.clipMaximumY=(int16_t)MwReadNativeWord(data,0x2E59);
-    combatVideo.videoScratchPageSelector=0; /*2E60*/combatVideo.backPageSelector=0; /*2E62*/
+    combatVideo.backPageSelector=0; /*2E62*/
     combatVideo.frontPageSelector=0; /*2E64*/combatVideo.copySourcePageSelector=0; /*2E66*/
     combatVideo.drawPageSelector=0; /*2E68*/combatVideo.videoColourCount=0; /*2E71*/
     combatVideo.pcjrTandyCompatible=data[0x2E6C];combatVideo.combatRendererKind=data[0x2E6D];
