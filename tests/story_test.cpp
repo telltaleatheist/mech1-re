@@ -204,8 +204,70 @@ int main() {
     check(thrown([&] { import_story(game, home, past); }).find("test.past") != std::string::npos,
           "a piece past the end is refused");
 
+    // A write that fails blames the folder, not the copy, and changes nothing.
+    check(thrown([&] { import_story(game, home, table); }).empty(), "a good import again");
+    const std::string good_text = read(story_dir(home) / "text.json"), good_manifest = read(story_dir(home) / "import.json");
+    check(!good_text.empty() && story_state(home, table) == StoryState::Current, "current again");
+    const fs::path blocker = story_dir(home) / "events.json.part";  // a folder in the way: it can't be opened
+    fs::create_directories(blocker / "x");
+    const std::string blocked = thrown([&] { repair_story("a reason", game, home, table); });
+    check(blocked.find("is damaged (a reason)") != std::string::npos && blocked.find("couldn't be written again") != std::string::npos &&
+              blocked.find("events.json") != std::string::npos && blocked.find("good copy") == std::string::npos,
+          "a folder that can't be written is named, not the copy: " + blocked);
+    check(story_state(home, table) == StoryState::Current && read(story_dir(home) / "text.json") == good_text &&
+              read(story_dir(home) / "import.json") == good_manifest, "a failed write leaves the story as it was");
+    check(!fs::exists(story_dir(home) / "text.json.part"), "and none of its own files");
+    fs::remove_all(blocker);
+#if !defined(_WIN32)
+    fs::permissions(story_dir(home), fs::perms::owner_read | fs::perms::owner_exec);
+    const bool writable = static_cast<bool>(std::ofstream(story_dir(home) / "probe"));  // root
+    const std::string read_only = thrown([&] { repair_story("a reason", game, home, table); });
+    fs::permissions(story_dir(home), fs::perms::owner_all);
+    check(writable || (read_only.find("can't write") != std::string::npos && read_only.find("good copy") == std::string::npos &&
+                       story_state(home, table) == StoryState::Current), "a read-only folder is named: " + read_only);
+#endif
+
+    // An import keeps the files it replaces, one generation.
+    write(story_dir(home) / "text.json", "edited");
+    check(thrown([&] { repair_story("a reason", game, home, table); }).empty(), "a damaged story is imported");
+    check(read(story_dir(home) / "text.json") == good_text && read(replaced_dir(home) / "text.json") == "edited" &&
+              fs::exists(replaced_dir(home) / "import.json"), "the replaced files are kept");
+    write(story_dir(home) / "text.json", "again");
+    write(replaced_dir(home) / "older.json", "{}");
+    check(thrown([&] { repair_story("a reason", game, home, table); }).empty(), "and again");
+    check(read(replaced_dir(home) / "text.json") == "again" && !fs::exists(replaced_dir(home) / "older.json"), "one generation");
+    // A start after an import that stopped half-way doesn't lose what that one kept.
+    write(story_dir(home) / "text.json", "half");
+    fs::remove(story_dir(home) / "import.json");
+    check(thrown([&] { check(ensure_story(game, home, table), "a stopped import is missing"); }).empty(), "imported after a stop");
+    check(read(replaced_dir(home) / "text.json") == "again" && read(story_dir(home) / "text.json") == good_text,
+          "what the stopped import kept is still there");
+
+    // A rename that fails half-way leaves no import.json, so the mixed files are not used.
+    fs::remove(story_dir(home) / "events.json");
+    fs::create_directories(story_dir(home) / "events.json" / "x");  // a file can't be renamed over it
+    check(thrown([&] { repair_story("a reason", game, home, table); }).find("can't write") != std::string::npos &&
+              !fs::exists(story_dir(home) / "import.json"), "a half-finished import leaves no import.json");
+    fs::remove_all(story_dir(home) / "events.json");
+    check(thrown([&] { check(ensure_story(game, home, table), "then it is missing"); }).empty() &&
+              story_state(home, table) == StoryState::Current, "and the next start imports it");
+
+    // Texts: one missing or holding a NUL can't be used; a shorter one can.
+    StoryText texts = load_story_text(home);
+    check(thrown([&] { check_texts(texts, table); }).empty(), "the texts are there");
+    texts["test.second"] = "short";
+    texts["test.extra"] = "extra";
+    check(thrown([&] { check_texts(texts, table); }).empty(), "a text changed by hand stays");
+    texts["test.second"] = std::string("a\0b", 3);
+    check(thrown([&] { check_texts(texts, table); }).find("holds a NUL") != std::string::npos, "break: a NUL");
+    texts.erase("test.second");
+    check(thrown([&] { check_texts(texts, table); }).find("test.second") != std::string::npos, "break: a text missing");
+
     // No exe at all.
     fs::remove(game / "mw_main.exe");
+    const std::string no_copy = thrown([&] { repair_story("a reason", game, home, table); });
+    check(no_copy.find("MW_MAIN.EXE is missing") != std::string::npos && no_copy.find("good copy") != std::string::npos &&
+              story_state(home, table) == StoryState::Current, "a copy without its program is blamed: " + no_copy);
     check(thrown([&] { import_story(game, home, table); }).find("MW_MAIN.EXE is missing") != std::string::npos,
           "a missing exe is named");
 

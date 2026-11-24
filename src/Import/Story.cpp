@@ -3,11 +3,14 @@
 #include "Events.h"
 #include "Records.h"
 
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
 #include <iterator>
 #include <set>
+#include <system_error>
+#include <utility>
 #include <vector>
 
 #include "../Support/Hmac.h"
@@ -44,30 +47,63 @@ constexpr const char* kRecordFiles[] = {"pilots.json", "planets.json", "missions
 
 std::vector<std::uint8_t> read_file(const fs::path& path) {
     std::ifstream in(path, std::ios::binary);
-    if (!in) throw ImportError("can't read " + path.string());
+    if (!in) throw ImportError("can't read " + utf8_path(path));
     std::vector<std::uint8_t> bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-    if (in.bad()) throw ImportError("can't read " + path.string());
+    if (in.bad()) throw ImportError("can't read " + utf8_path(path));
     return bytes;
 }
 
-// The temporary file is renamed over the old one, so a reader never sees half a file.
-void write_file(const fs::path& path, const std::string& contents) {
-    fs::create_directories(path.parent_path());
-    const fs::path temp = path.string() + ".part";
-    {
-        std::ofstream out(temp, std::ios::binary);
-        out << contents;
-        out.close();
-        if (!out) throw ImportError("can't write " + temp.string());
+using Files = std::vector<std::pair<fs::path, std::string>>;
+
+fs::path part_of(fs::path path) { return path += ".part"; }
+
+// Writes `files`, the last (import.json) saying the rest are whole. Every one
+// is written beside its place first, so a folder that can't be written to, or
+// a full disk, changes nothing. Then the files there are kept aside, once for
+// each finished import, and the new ones renamed over them: import.json is
+// gone until its own rename, so a stop there leaves a folder that counts as
+// missing. Throws WriteError.
+void replace_files(const fs::path& write_dir, const Files& files) {
+    const fs::path& manifest = files.back().first;
+    fs::path at;
+    try {
+        fs::create_directories(at = story_dir(write_dir));
+        for (const auto& [path, contents] : files) {
+            at = part_of(path);
+            errno = 0;
+            std::ofstream out(at, std::ios::binary);
+            out << contents;
+            out.close();
+            if (!out) throw std::system_error(errno ? errno : EIO, std::generic_category());
+        }
+        at = replaced_dir(write_dir);
+        if (fs::exists(manifest) || !fs::exists(at)) {
+            bool any = false;
+            for (const auto& [path, contents] : files) {
+                if (!fs::is_regular_file(path)) continue;
+                if (!any) {
+                    fs::remove_all(at);
+                    fs::create_directories(at);
+                }
+                any = true;
+                fs::copy_file(path, at / path.filename(), fs::copy_options::overwrite_existing);
+            }
+        }
+        fs::remove(at = manifest);
+        for (const auto& [path, contents] : files) fs::rename(part_of(path), at = path);
+    } catch (const std::system_error& e) {
+        std::error_code ec;
+        for (const auto& [path, contents] : files) fs::remove(part_of(path), ec);
+        throw WriteError("can't write " + utf8_path(at) + " (" + e.code().message() +
+                         "). Check that the folder can be written to and that the disk isn't full.");
     }
-    fs::rename(temp, path);
 }
 
 // The game folder's own spelling of `name` (DOS names are any case on disk).
 fs::path find_game_file(const fs::path& game_dir, std::string_view name) {
     std::error_code ec;
     for (const auto& entry : fs::directory_iterator(game_dir, ec)) {
-        std::string found = entry.path().filename().string();
+        const std::string found = utf8_path(entry.path().filename());
         if (found.size() != name.size()) continue;
         bool same = true;
         for (std::size_t i = 0; i < found.size() && same; ++i) {
@@ -76,7 +112,7 @@ fs::path find_game_file(const fs::path& game_dir, std::string_view name) {
         }
         if (same) return entry.path();
     }
-    throw ImportError(std::string(name) + " is missing from " + game_dir.string());
+    throw ImportError(std::string(name) + " is missing from " + utf8_path(game_dir));
 }
 
 struct Exe {
@@ -90,18 +126,18 @@ static_assert(kBtechLoadSegment == BTECH_IMAGE_LOAD_SELECTOR, "BTECH's image loa
 Exe load_exe(const fs::path& path, std::string_view name) {
     Exe exe{read_file(path), {}, {}};
     if (exe.file.size() < 0x1C || exe.file[0] != 'M' || exe.file[1] != 'Z')
-        throw ImportError(path.string() + " is not a DOS program");
+        throw ImportError(utf8_path(path) + " is not a DOS program");
     if (name == kBtechExe) {
         std::uint8_t* image = nullptr;
         BtechRevision revision{};
         if (!BtechDecodeImage(exe.file.data(), exe.file.size(), &image, &revision))
-            throw ImportError(path.string() + " is not a BTECH.EXE this game knows (by size and checksum)");
+            throw ImportError(utf8_path(path) + " is not a BTECH.EXE this game knows (by size and checksum)");
         exe.image.assign(image, image + BTECH_IMAGE_BYTES);
         exe.revision = BtechRevisionName(revision);
         std::free(image);
     } else {
         const std::size_t header = std::size_t(exe.file[8] | exe.file[9] << 8) * 16;
-        if (header > exe.file.size()) throw ImportError(path.string() + " is not a DOS program");
+        if (header > exe.file.size()) throw ImportError(utf8_path(path) + " is not a DOS program");
         exe.image.assign(exe.file.begin() + std::ptrdiff_t(header), exe.file.end());
     }
     return exe;
@@ -158,7 +194,13 @@ std::string import_table_hash(std::span<const ImportPiece> table) {
     return sha256_of(all);
 }
 
+std::string utf8_path(const fs::path& path) {
+    const std::u8string text = path.u8string();
+    return {text.begin(), text.end()};
+}
+
 fs::path story_dir(const fs::path& write_dir) { return write_dir / "story"; }
+fs::path replaced_dir(const fs::path& write_dir) { return write_dir / "story.replaced"; }
 
 StoryState story_state(const fs::path& write_dir, std::span<const ImportPiece> table) {
     std::error_code ec;
@@ -226,47 +268,76 @@ void import_story(const fs::path& game_dir, const fs::path& write_dir, std::span
     if (!refused.empty()) {
         std::string list;
         for (const auto& name : refused) list += "\n  " + name;
-        throw ImportError("the game folder " + game_dir.string() + " is not the " + std::string(kRevision) +
+        throw ImportError("the game folder " + utf8_path(game_dir) + " is not the " + std::string(kRevision) +
                           " MechWarrior, or is damaged: " + std::to_string(refused.size()) + " of " +
                           std::to_string(table.size()) + " pieces differ:" + list);
     }
 
-    // The manifest goes last: a folder without one has no finished import.
-    std::error_code ec;
-    fs::remove(manifest_path(write_dir), ec);
-    write_file(text_path(write_dir), "{\n  \"texts\": [\n" + texts + "\n  ]\n}\n");
-    write_file(words_path(write_dir), "{\n  \"words\": [\n" + words + "\n  ]\n}\n");
-    write_file(native_path(write_dir), "{\n  \"native\": [\n" + natives + "\n  ]\n}\n");
-    write_file(story_dir(write_dir) / kRecordFiles[0], pilots_json(pieces));
-    write_file(story_dir(write_dir) / kRecordFiles[1], planets_json(pieces));
-    write_file(story_dir(write_dir) / kRecordFiles[2], missions_json(pieces));
-    write_file(story_dir(write_dir) / kRecordFiles[3], event_text_json(pieces));
-    write_file(story_dir(write_dir) / kRecordFiles[4], events_json(pieces));
     std::string sources, btech_revision;
     for (const auto& [name, exe] : exes) {
         if (!sources.empty()) sources += ", ";
         sources += json_quote(name) + ": " + json_quote(sha256_of(bytes_view(exe.file, 0, exe.file.size())));
         if (name == kBtechExe) btech_revision = exe.revision;
     }
-    write_file(manifest_path(write_dir),
-               "{\n  \"import_version\": " + std::to_string(kImportVersion) + ",\n  \"sources\": {" + sources +
-                   "},\n  \"revision\": " + json_quote(kRevision) +
-                   (btech_revision.empty() ? std::string() : ",\n  \"btech_revision\": " + json_quote(btech_revision)) +
-                   ",\n  \"table_sha256\": " +
-                   json_quote(import_table_hash(table)) + "\n}\n");
+    const fs::path dir = story_dir(write_dir);
+    replace_files(write_dir, {
+        {text_path(write_dir), "{\n  \"texts\": [\n" + texts + "\n  ]\n}\n"},
+        {words_path(write_dir), "{\n  \"words\": [\n" + words + "\n  ]\n}\n"},
+        {native_path(write_dir), "{\n  \"native\": [\n" + natives + "\n  ]\n}\n"},
+        {dir / kRecordFiles[0], pilots_json(pieces)},
+        {dir / kRecordFiles[1], planets_json(pieces)},
+        {dir / kRecordFiles[2], missions_json(pieces)},
+        {dir / kRecordFiles[3], event_text_json(pieces)},
+        {dir / kRecordFiles[4], events_json(pieces)},
+        {manifest_path(write_dir),
+         "{\n  \"import_version\": " + std::to_string(kImportVersion) + ",\n  \"sources\": {" + sources +
+             "},\n  \"revision\": " + json_quote(kRevision) +
+             (btech_revision.empty() ? std::string() : ",\n  \"btech_revision\": " + json_quote(btech_revision)) +
+             ",\n  \"table_sha256\": " + json_quote(import_table_hash(table)) + "\n}\n"},
+    });
 }
+
+namespace {
+
+// Imports because of `problem` ("The story file in ... is missing"); a failure
+// is blamed on the player's copy only if it is the copy's.
+void import_because(const std::string& problem, const fs::path& game_dir, const fs::path& write_dir,
+                    std::span<const ImportPiece> table) {
+    try {
+        import_story(game_dir, write_dir, table);
+    } catch (const WriteError& e) {
+        throw WriteError(problem + ", and it couldn't be written again: " + e.what());
+    } catch (const std::exception& e) {
+        throw ImportError(problem + ", and importing it from your copy of the game in " + utf8_path(game_dir) +
+                          " failed: " + e.what() + "\nSet the game up again with a good copy.");
+    }
+}
+
+}  // namespace
 
 bool ensure_story(const fs::path& game_dir, const fs::path& write_dir, std::span<const ImportPiece> table) {
     const auto state = story_state(write_dir, table);
     if (state == StoryState::Current) return false;
-    try {
-        import_story(game_dir, write_dir, table);
-    } catch (const std::exception& e) {
-        throw ImportError(std::string("the story file in ") + story_dir(write_dir).string() + " is " +
-                          (state == StoryState::Missing ? "missing" : "from an older version") +
-                          ", and importing it from your copy of the game failed: " + e.what());
-    }
+    import_because("the story file in " + utf8_path(story_dir(write_dir)) + " is " +
+                       (state == StoryState::Missing ? "missing" : "from an older version"),
+                   game_dir, write_dir, table);
     return true;
+}
+
+void repair_story(const std::string& why, const fs::path& game_dir, const fs::path& write_dir,
+                  std::span<const ImportPiece> table) {
+    import_because("the story file in " + utf8_path(story_dir(write_dir)) + " is damaged (" + why + ")", game_dir,
+                   write_dir, table);
+}
+
+void check_texts(const StoryText& texts, std::span<const ImportPiece> table) {
+    for (const auto& piece : table) {
+        if (piece.kind != ImportPiece::Kind::String) continue;
+        const auto it = texts.find(piece.id);
+        if (it == texts.end()) throw ImportError("text.json has no text " + json_quote(piece.id));
+        if (it->second.find('\0') != std::string::npos)
+            throw ImportError("text.json's text " + json_quote(piece.id) + " holds a NUL");
+    }
 }
 
 Words load_words(const fs::path& write_dir, std::span<const ImportPiece> table) {
@@ -300,7 +371,7 @@ Words load_words(const fs::path& write_dir, std::span<const ImportPiece> table) 
             if (is_word(p.kind) && !out.count(p.id)) throw ImportError("the word " + json_quote(p.id) + " is missing");
         return out;
     } catch (const std::exception& e) {
-        throw ImportError(path.string() + ": " + e.what());
+        throw ImportError(utf8_path(path) + ": " + e.what());
     }
 }
 
@@ -337,7 +408,7 @@ Native load_native(const fs::path& write_dir, std::span<const ImportPiece> table
             if (is_native(p.kind) && !out.count(p.id)) throw ImportError("the span " + json_quote(p.id) + " is missing");
         return out;
     } catch (const std::exception& e) {
-        throw ImportError(path.string() + ": " + e.what());
+        throw ImportError(utf8_path(path) + ": " + e.what());
     }
 }
 
@@ -349,7 +420,7 @@ std::string load_btech_revision(const fs::path& write_dir) {
         const auto* revision = manifest.find("btech_revision");
         return revision ? revision->string() : std::string();
     } catch (const std::exception& e) {
-        throw ImportError(path.string() + ": " + e.what());
+        throw ImportError(utf8_path(path) + ": " + e.what());
     }
 }
 
@@ -370,7 +441,7 @@ StoryText load_story_text(const fs::path& write_dir) {
         }
         return out;
     } catch (const std::exception& e) {
-        throw ImportError(path.string() + ": " + e.what());
+        throw ImportError(utf8_path(path) + ": " + e.what());
     }
 }
 
