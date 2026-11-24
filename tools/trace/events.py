@@ -21,21 +21,19 @@ on its own, each keeping the snap lines as marks:
 - game: sound requests, key reads and combat polls ("sound", "key", "cpoll").
 
 The goldens are the speaker's, the default device. What the game asks for
-doesn't depend on the device, but the devices' own waits (AdLib's calibrated
-bus delays, the MPU's handshakes) pass time differently, so on another device
-a key, or a snap, can arrive some sequencer ticks earlier or later. The sound
-scripts also run on AdLib and MT-32 (MT-32 without ROMs, silent) and must give:
+doesn't depend on the device, but the music's timer passes time differently,
+so with music=soundfont a key, or a snap, can arrive some sequencer ticks
+earlier or later. The sound scripts also run with music=soundfont (slice S3)
+and must give:
+- their own golden (events/<revision>/<script>.soundfont.jsonl.gz, from S8;
+  recorded while the MT-32 path was there, whose log it matched exactly):
+  every stream exactly, ticks included;
 - the speaker run's notes, ticks and snap marks left out, cut into pieces where
   the music can be cut by a key: at each song start and each all-notes-off sweep
   (a stop). The same number of pieces, and within each piece one run's notes a
   prefix of the other's within DEVICE_NOTE_SLACK (a key, or the last snap, may
   cut a piece a note or so earlier or later);
 - its tone and game streams exactly.
-They also run with music=soundfont (slice S3), which sets the game up as for
-an MT-32 and plays its sequencer's output through the soundfont: that run must
-give the MT-32 run's log exactly, every stream, ticks included. It also has
-its own golden (events/<revision>/<script>.soundfont.jsonl.gz, from S8, which
-removes the MT-32 path): every stream exactly, ticks included.
 
 The speaker runs also write the start-world log (MECHWARRIOR_START_LOG, H4b;
 event_log.h): the campaign's 18.2 Hz count, the random words and the world
@@ -60,7 +58,7 @@ EVENTS = os.path.join(HERE, "events")
 FEED_SCRIPTS = os.path.join(EVENTS, "scripts")  # song: and sound: (record.py --feed-calls)
 SKIP = 77
 STREAMS = {"note": ("note", "song"), "tone": ("tone",), "game": ("sound", "key", "cpoll")}
-DEVICE_RUNS = ("adlib", "mt32", "soundfont")  # beside the speaker, for the sound scripts
+DEVICE_RUNS = ("soundfont",)  # beside the speaker, for the sound scripts
 DEVICE_NOTE_SLACK = 32  # notes a song may be cut earlier or later on another device
 
 
@@ -98,7 +96,6 @@ def run(port, game, work, script, device):
     start = os.path.join(base, "start.log")
     if os.path.exists(start):
         os.remove(start)  # the log is appended to
-    # The sound-port log too: with it set and no ROM paths, MT-32 runs silent (SDLBackend_Audio.cpp).
     env = dict(os.environ, MECHWARRIOR_TIMING_CONFIG=ini, MECHWARRIOR_EVENT_LOG=log,
                MECHWARRIOR_AUDIO_LOG=os.path.join(base, "sound.log"), MECHWARRIOR_DEBUG_VIRTUAL_CLOCK="1",
                MECHWARRIOR_START_LOG=start)
@@ -196,7 +193,7 @@ def main():
     ap.add_argument("--game", default=os.environ.get("MW1O_GAME"), help="MW1 game folder (a copy; it is only read)")
     ap.add_argument("--work", required=True, help="logs, saves and frames (outside the repo)")
     ap.add_argument("--only", nargs="*", help="script names (audio-music, campaign_contract, ...)")
-    ap.add_argument("--no-devices", action="store_true", help="skip the AdLib and MT-32 runs of the sound scripts")
+    ap.add_argument("--no-devices", action="store_true", help="skip the soundfont runs of the sound scripts")
     ap.add_argument("--opt-in", action="store_true", help="skip unless MW1O_EVENTS=1 (ctest)")
     a = ap.parse_args()
     if a.opt_in and os.environ.get("MW1O_EVENTS") != "1":
@@ -230,9 +227,6 @@ def main():
                 runs[device] = run(port, game, work, script, device)[0]
                 if not same_on_device(name, device, ours, runs[device], print):
                     failed.append(f"{name}.{device}")
-            if not all(compare(f"{name}: soundfont {k} against MT-32's", stream(runs["mt32"], kinds),
-                               stream(runs["soundfont"], kinds), print) for k, kinds in STREAMS.items()):
-                failed.append(f"{name}.soundfont")
             sf_path = os.path.join(folder, name + ".soundfont.jsonl.gz")
             if a.mode == "record":
                 os.makedirs(folder, exist_ok=True)

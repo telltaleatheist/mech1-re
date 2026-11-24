@@ -5,16 +5,15 @@ are headless with SDL's dummy audio driver, and the sound comes from the
 port's PCM dump.
 
     listening.py --port BUILD/mechwarrior --game DIR --work DIR --out DIR
-                 [--mt32-control ROM --mt32-pcm ROM] [--seconds N]
+                 [--seconds N]
 
 The feed script listening/songs.keys (events/scripts/songs.keys with each song
 given three minutes) asks the game's own routines for each song in turn
 (record.py --feed-calls), once per device:
 - soundfont: music=soundfont, what the rebuild plays (src/Audio/Music);
-- adlib and speaker: the port's AdLib and speaker paths, whose bytes match the
-  original's (docs/phase5/AUDIO_PLAN.md, level 3), as the reference;
-- mt32, only given the player's Roland ROMs: the reference the instrument
-  table is chosen against.
+- speaker: the port's speaker path, whose notes match the original's
+  (docs/phase5/AUDIO_PLAN.md, level 3), as the reference. The AdLib and MT-32
+  paths left in S8, after the listening (S4).
 Each run's song marks (<dump>.songs, written beside MECHWARRIOR_AUDIO_PCM)
 cut it into songs, named by data/music/instruments.json's heads. Each song is
 the feed's own start of it, up to the next song or N seconds, with trailing
@@ -38,7 +37,7 @@ JUDGE = {
 }
 
 
-def run(port, game, work, device, roms):
+def run(port, game, work, device):
     """One run of songs.keys on a device: its PCM (floats), channel count and song marks."""
     base = os.path.join(work, device)
     os.makedirs(base, exist_ok=True)
@@ -46,8 +45,6 @@ def run(port, game, work, device, roms):
     with open(ini, "w") as f:
         f.write("combat_tick_ms=60\ncombat_speed=1\n")
         f.write("music=soundfont\n" if device == "soundfont" else f"sound_system={device}\n")
-        if device == "mt32":
-            f.write(f"mt32_control_rom={roms[0]}\nmt32_pcm_rom={roms[1]}\n")
     pcm = os.path.join(base, "sound.pcm")
     # The feed's song: tokens need the event log on (they are its test aids).
     env = dict(os.environ, MECHWARRIOR_TIMING_CONFIG=ini, MECHWARRIOR_EVENT_LOG=os.path.join(base, "events.log"),
@@ -108,22 +105,16 @@ def main():
     ap.add_argument("--game", required=True, help="MW1 game folder (only read)")
     ap.add_argument("--work", required=True, help="the runs' saves and dumps (outside the repo)")
     ap.add_argument("--out", required=True, help="the WAV files and LISTENING.md")
-    ap.add_argument("--mt32-control", help="the player's MT-32 CONTROL ROM, for an MT-32 reference")
-    ap.add_argument("--mt32-pcm", help="the player's MT-32 PCM ROM")
     ap.add_argument("--seconds", type=int, default=150, help="the longest a song is cut (default 150)")
     a = ap.parse_args()
     with open(TABLE, encoding="utf-8") as f:
         heads = {s["name"]: s["head"] for s in json.load(f)["songs"]}
-    devices = ["soundfont", "adlib", "speaker"]
-    roms = None
-    if a.mt32_control and a.mt32_pcm:
-        roms = (os.path.abspath(a.mt32_control), os.path.abspath(a.mt32_pcm))
-        devices.insert(1, "mt32")
+    devices = ["soundfont", "speaker"]
     port, game, work, out = (os.path.abspath(p) for p in (a.port, a.game, a.work, a.out))
     os.makedirs(out, exist_ok=True)
     files = {}  # (song, device) -> (file, seconds, peak)
     for device in devices:
-        samples, channels, marks = run(port, game, work, device, roms)
+        samples, channels, marks = run(port, game, work, device)
         for n, song in enumerate(ORDER, 1):
             piece = cut(samples, channels, marks, heads[song], a.seconds)
             if not piece:
@@ -137,10 +128,6 @@ def main():
              "Each song as the rebuild plays it (`soundfont`), with the original's own notes played through "
              + " and ".join(references) + " beside it. Note timing isn't on this sheet: the event log checks it "
              "exactly. Judge the sound: does each instrument fit, is the balance right, do the drums fit.", ""]
-    if not roms:
-        lines += ["No MT-32 reference: there are no Roland ROMs on this machine. With your own MT-32 or ROMs, "
-                  "play the original's songs beside these; the table's programs are the nearest General MIDI "
-                  "instrument to each MT-32 preset the songs pick.", ""]
     lines += ["| Song | Rebuild | Beside it | Judge | Notes |", "| --- | --- | --- | --- | --- |"]
     for song in ORDER:
         name, secs, _ = files[song, "soundfont"]
