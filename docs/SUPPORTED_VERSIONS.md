@@ -31,10 +31,16 @@ exe in either revision below. Nothing else differs in what it imports:
 - MW.EXE, MW_EGA.EXE and MW_TANDY.EXE are the same in both releases. The
   importer reads MW_EGA.EXE too (one 2-byte span); MW.EXE and MW_TANDY.EXE
   it doesn't need. After the import, play opens no exe.
-- PHAPCK.TBL (the Phoenix Hawk's model bank) differs between the releases
-  (18,235 of its 24,673 bytes, from 0x166D). Nothing imports it: the game
-  reads it from the player's folder when it shows the 'Mech, so each player
-  sees their own release's model. The traces use the 1990 one.
+- PHAPCK.TBL (the Phoenix Hawk's model bank) is damaged in the 1989 copy we
+  have, the one the tests use. It has the 1990 one's length and differs from it
+  in 18,235 of its 24,673 bytes: one byte at 0x166D, in one bit; and, from
+  0x1800 to 0x5FFF, where it holds MARPCK.TBL's bytes at the same offsets.
+  The rest is the same. How it came to be isn't known, nor whether another 1989
+  copy has it: this is about that copy, not the release. A battle with a Phoenix
+  Hawk stops with it: the bank doesn't unpack to the length its header gives,
+  and the program says "phapck.tbl unpacks to less than its header says" and
+  what to do (before B4e, only "Rejected condition: total!=allocation.byteCount").
+  Nothing imports the file; the traces use the 1990 one.
 
 The tests take the further revisions as `MW1O_BTECH_REFERENCE` (the 1989
 BTECH.EXE) and `MW1O_MAIN_1989` (the 1989 MW_MAIN.EXE), besides the game folder
