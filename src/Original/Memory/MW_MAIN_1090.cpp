@@ -505,7 +505,6 @@ bool MwImportCampaignInitialData(void)
     campaignStartup.graphicsOverlaySelector=0; /*002E*/
     memset(&campaignStartup.launcherExitCode,0,sizeof(campaignStartup.launcherExitCode)); /*0006*/
     memset(&campaignStartup.keyboardInterruptState,0,sizeof(campaignStartup.keyboardInterruptState)); /*02AB*/
-    campaignStartup.musicFileHandle=0; /*0E39*/
     memset(campaignStartup.campaignTextInputBuffer,0,sizeof(campaignStartup.campaignTextInputBuffer)); /*03A5*/
     campaignInput.textInputCursorX=0; /*03CE*/
     campaignInput.textInputCursorY=0; /*03D0*/

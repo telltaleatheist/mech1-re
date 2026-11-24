@@ -10,6 +10,7 @@
 #include "mechwarrior/video_mode.h"
 #include "mechwarrior/campaign_input.h"
 #include "mechwarrior/event_log.h"
+#include "mechwarrior/game_files.h"
 #include "Canvas.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -564,19 +565,18 @@ bool MwLoadVictoryMusic(void)
 {
     return MwOpenAndLoadMusicFile("VICTORY.MUS");
 }
+/* One file into the music buffer. A read asks for FFFF bytes; the music files
+ * are short. A failed close is ignored. */
+static bool LoadMusicFileAt(const char *filename,uint16_t bufferOffset)
+{
+    mw1o::files::GameFile file=mw1o::files::open_game_file(filename);
+    if (!file || !file.read(MwResolveNativeSegment(campaignStartup.campaignMusicBufferSelector)+bufferOffset,UINT16_MAX)) return true;
+    (void)file.close();
+    return false;
+}
 bool MwOpenAndLoadMusicFile(const char *filename)
 {
-    uint16_t handleOrError;
-    if (MwDosOpenResourceReadWrite(filename,&handleOrError)) return true;
-    return MwReadMusicStreamIntoBuffer(handleOrError);
-}
-bool MwReadMusicStreamIntoBuffer(uint16_t fileHandle)
-{
-    campaignStartup.musicFileHandle=fileHandle;
-    uint16_t bytesReadOrError;
-    if (MwDosReadFile(MwResolveNativeSegment(campaignStartup.campaignMusicBufferSelector),UINT16_MAX,fileHandle,&bytesReadOrError)) return true;
-    (void)MwDosCloseFile(campaignStartup.musicFileHandle);
-    return false;
+    return LoadMusicFileAt(filename,0);
 }
 /* MW_MAIN081B:15EA..160F. Ten strings, fixed X and thirteen-pixel row step.
  * Native renderer returns DI on each NUL; the following INC skips it. */
@@ -643,20 +643,7 @@ uint16_t MwDrawTimedPictureAndTextTransition(uint16_t delayTicks,
  * allocations: DEATH/LAUNCH can overlap bytes loaded by an earlier read. */
 bool MwLoadBarDeathAndLaunchMusic(void)
 {
-    uint16_t handleOrError,bytesReadOrError;
-    if (MwDosOpenResourceReadWrite("MECHBAR.MUS",&handleOrError)) return true;
-    campaignStartup.musicFileHandle=handleOrError;
-    if (MwDosReadFile(MwResolveNativeSegment(campaignStartup.campaignMusicBufferSelector),UINT16_MAX,handleOrError,&bytesReadOrError)) return true;
-    (void)MwDosCloseFile(campaignStartup.musicFileHandle);
-    if (MwDosOpenResourceReadWrite("DEATH.MUS",&handleOrError)) return true;
-    campaignStartup.musicFileHandle=handleOrError;
-    if (MwDosReadFile(MwResolveNativeSegment(campaignStartup.campaignMusicBufferSelector)+0x2328,UINT16_MAX,handleOrError,&bytesReadOrError)) return true;
-    (void)MwDosCloseFile(campaignStartup.musicFileHandle);
-    if (MwDosOpenResourceReadWrite("LAUNCH.MUS",&handleOrError)) return true;
-    campaignStartup.musicFileHandle=handleOrError;
-    if (MwDosReadFile(MwResolveNativeSegment(campaignStartup.campaignMusicBufferSelector)+0x2AF8,UINT16_MAX,handleOrError,&bytesReadOrError)) return true;
-    (void)MwDosCloseFile(campaignStartup.musicFileHandle);
-    return false;
+    return LoadMusicFileAt("MECHBAR.MUS",0) || LoadMusicFileAt("DEATH.MUS",0x2328) || LoadMusicFileAt("LAUNCH.MUS",0x2AF8);
 }
 
 /* MW_MAIN081B:166D..1908, with the shared company entry181A. From166D the

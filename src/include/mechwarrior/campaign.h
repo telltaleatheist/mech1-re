@@ -31,9 +31,6 @@ extern const char cockpitPictureFilename[], primaryPictureFilename[];
 extern const char secondaryPictureFilename[], tPictureFilename[];
 extern const char alternatePictureFilename[], fPictureFilename[];
 
-bool MwDosOpenResourceReadWrite(const char *filename, uint16_t *handleOrError);
-bool MwDosReadFile(uint8_t *buffer, uint16_t byteCount, uint16_t fileHandle, uint16_t *bytesReadOrError);
-bool MwDosCloseFile(uint16_t fileHandle);
 uint16_t MwLoadIndexedPicture(uint16_t pictureIndex);
 void MwIndexedPictureCloseHook(void);
 bool MwLoadGeneralPictureBank(void);

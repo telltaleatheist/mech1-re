@@ -209,7 +209,6 @@ add_library(mechwarrior_original STATIC
     src/Original/Runtime/MW_MAIN_0800.cpp
     src/Original/Memory/MW_EGA_0800_STATE.cpp
     src/Original/Video/MW_EGA_0800.cpp
-    src/SDL/SDLBackend_Files.cpp
     src/Support/GameFiles.cpp
     src/Support/NativeAddress.cpp
     src/Support/PortDiagnostics.cpp

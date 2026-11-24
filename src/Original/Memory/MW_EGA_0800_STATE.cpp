@@ -1,5 +1,6 @@
 #include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/ega_campaign.h"
+#include "mechwarrior/original_data.h"
 #include "mechwarrior/story.h"
 #include <stddef.h>
 #include <stdlib.h>
@@ -159,6 +160,13 @@ void EgaLoadStartState(void)
 bool EgaLoadStartStoryBytes(void)
 {
     return MwStoryCopyBytes("ega.row_200_offset", egaPaletteCodeBytes, EGA_WORD_BYTES);
+}
+/* Play never opens MW_EGA.EXE: the overlay's owners start as the exe holds
+ * them, from code (slice 6e). */
+bool MwHostLoadEgaInitialData(void)
+{
+    EgaLoadStartState();
+    return EgaLoadStartStoryBytes();
 }
 /* The overlay's machine-code spans and the font names' unread tails, which
  * the start state leaves zero (start_exe_test skips them; the row-200 word
