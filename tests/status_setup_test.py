@@ -82,6 +82,7 @@ def stamps(a, work, base):
     check(code == 2 and text is None, "break: --setup records nothing")
     code, text = start("usage", a.stamped, ["a", "b", "c", "d"], False)
     check(code == 2 and text is None, "break: a start that is refused its arguments records nothing")
+    check(start("option", a.stamped, ["--no-such-option"], False)[1] is None, "break: an unknown option records nothing")
     if not a.tag:
         check(start("untagged", a.program, [absent], False) == (2, None), "break: a build that is no release records nothing")
 
