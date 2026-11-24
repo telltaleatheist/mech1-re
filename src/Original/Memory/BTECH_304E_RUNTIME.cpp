@@ -10,7 +10,7 @@ CombatNearHeapState combatNearHeap={
     .nearHeapGrowthAlignment=BTECH_NEAR_GROWTH_ALIGNMENT
 };
 
-bool BtechImportRuntimeInitialData(const uint8_t *,size_t)
+bool BtechImportRuntimeInitialData(void)
 {
     const BtechStartRowData runtimeMessagesRow("runtime.messages");
     const BtechStartRowData runtimePrefixRow("runtime.prefix");
