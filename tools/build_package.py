@@ -357,13 +357,35 @@ def windows_installer(root, stage, output, label, sdl):
     print(f"Installer {setup}")
 
 
+def appimage_tools():
+    """The AppImage's tools and runtime with the SHA-256 tools/deps/get_appimage_tools.sh pins for each: what ships
+    must not move under a package (unnamed, appimagetool would download the latest runtime)."""
+    script = (Path(__file__).resolve().parent / "deps/get_appimage_tools.sh").read_text(encoding="utf-8")
+    pins = dict(re.findall(r"^get (\S+) https://\S+ ([0-9a-f]{64})$", script, re.M))
+    if set(pins) != {"linuxdeploy-x86_64.AppImage", "appimagetool-x86_64.AppImage", "runtime-x86_64"}:
+        raise RuntimeError(f"tools/deps/get_appimage_tools.sh pins {sorted(pins)}, not the three tools")
+    return pins
+
+
+def check_appimage_tools(tools):
+    """Every file of appimage_tools() is in `tools` with its pinned hash."""
+    for name, wanted in appimage_tools().items():
+        file = tools / name
+        if not file.is_file():
+            raise RuntimeError(f"Missing AppImage tool: {file} (wanted sha256 {wanted})")
+        found = hashlib.sha256(file.read_bytes()).hexdigest()
+        if found != wanted:
+            raise RuntimeError(f"AppImage tool {file} hashes {found}, wanted {wanted}")
+
+
 def appimage(root, stage, output, label, tools, game, sdl):
     """MW1-Rebuild-<label>-x86_64.AppImage: usr/bin/mw1r with data/ and MechWarrior.ini beside it
-    (SDL_GetBasePath), the notices in usr/share/doc, the libraries by linuxdeploy. Needs `tools` holding
-    linuxdeploy-x86_64.AppImage and appimagetool-x86_64.AppImage."""
+    (SDL_GetBasePath), the notices in usr/share/doc (the runtime's in licenses/appimage-runtime), the libraries by linuxdeploy. Needs `tools` holding
+    appimage_tools()' files, each with its pinned hash."""
     if not tools:
-        raise RuntimeError("--appimage-tools DIR (linuxdeploy and appimagetool) is needed for the AppImage")
+        raise RuntimeError("--appimage-tools DIR (linuxdeploy, appimagetool and the runtime) is needed for the AppImage")
     tools = Path(tools).resolve()
+    check_appimage_tools(tools)
     appdir = output / "AppDir"
     if appdir.exists():
         shutil.rmtree(appdir)
@@ -376,6 +398,7 @@ def appimage(root, stage, output, label, tools, game, sdl):
     for name in ("LICENSE", "README.txt"):
         shutil.copy2(stage / name, doc / name)
     shutil.copytree(stage / "licenses", doc / "licenses")
+    shutil.copytree(root / "tools/package/appimage-runtime", doc / "licenses/appimage-runtime")
     env = dict(os.environ, APPIMAGE_EXTRACT_AND_RUN="1", ARCH="x86_64",
                LD_LIBRARY_PATH=str(stage.resolve()) + os.pathsep + os.environ.get("LD_LIBRARY_PATH", ""))
     run(str(tools / "linuxdeploy-x86_64.AppImage"), "--appdir", str(appdir), "-e", str(bin_dir / PROGRAM),
@@ -383,7 +406,7 @@ def appimage(root, stage, output, label, tools, game, sdl):
     smoke(bin_dir / PROGRAM, game)
     check_paths(root, appdir, root, sdl)
     image = output / f"{STEM}-{label}-x86_64.AppImage"
-    run(str(tools / "appimagetool-x86_64.AppImage"), str(appdir), str(image), env=env)
+    run(str(tools / "appimagetool-x86_64.AppImage"), "--runtime-file", str(tools / "runtime-x86_64"), str(appdir), str(image), env=env)
     result = subprocess.run([str(image.resolve()), "--help"], capture_output=True, text=True, timeout=60, env=env)
     if result.returncode != 0 or f"Usage: {PROGRAM}" not in result.stdout:
         raise RuntimeError(f"The AppImage did not start: {result.returncode}\n{result.stderr}")

@@ -126,9 +126,12 @@ platform's files are named `MW1-Rebuild-<label>-...`:
   Applications and the read-me. Unsigned by a developer identity: the first
   start needs right-click, Open.
 - **Linux**: `--appimage-tools DIR` names the folder with
-  `linuxdeploy-x86_64.AppImage` and `appimagetool-x86_64.AppImage`. The
+  `linuxdeploy-x86_64.AppImage`, `appimagetool-x86_64.AppImage` and
+  `runtime-x86_64`, which `tools/deps/get_appimage_tools.sh DIR` fetches; each
+  is refused unless it has the hash pinned there. The
   AppImage holds `usr/bin/mechwarrior` with `data/` and `MechWarrior.ini`
-  beside it, and the notices in `usr/share/doc/mechwarrior`.
+  beside it, and the notices in `usr/share/doc/mechwarrior`, the AppImage runtime's
+  (`tools/package/appimage-runtime`) among them.
 
 Every installer's contents pass `tools/package/check_paths.py`: no local path
 or user name in any file. Each file gets a `.sha256` beside it; for a release,

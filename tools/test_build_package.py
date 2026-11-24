@@ -114,6 +114,22 @@ class PackageTests(unittest.TestCase):
                     build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
                 self.assertFalse(list((root / "dist").glob("*.tar.gz")))
 
+    def test_appimage_tools_are_pinned(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tools = Path(directory)
+            for name in build_package.appimage_tools():
+                (tools / name).write_bytes(name.encode())
+            pins = {name: hashlib.sha256(name.encode()).hexdigest() for name in build_package.appimage_tools()}
+            with patch.object(build_package, "appimage_tools", return_value=pins):
+                build_package.check_appimage_tools(tools)
+                (tools / "runtime-x86_64").write_bytes(b"another runtime")
+                found = hashlib.sha256(b"another runtime").hexdigest()
+                with self.assertRaisesRegex(RuntimeError, f"runtime-x86_64 hashes {found}, wanted {pins['runtime-x86_64']}"):
+                    build_package.check_appimage_tools(tools)
+                (tools / "runtime-x86_64").unlink()
+                with self.assertRaisesRegex(RuntimeError, "Missing AppImage tool: .*runtime-x86_64"):
+                    build_package.check_appimage_tools(tools)
+
     def test_program_version_from_the_label(self):
         self.assertEqual(build_package.program_version("mw1r-v1.0.0"), "1.0.0")
         self.assertEqual(build_package.program_version("1.0.0-test.436522e"), "1.0.0-test.436522e")

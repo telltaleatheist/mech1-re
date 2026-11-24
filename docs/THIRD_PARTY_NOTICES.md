@@ -29,3 +29,9 @@ face is Saira Condensed Bold (SIL Open Font License 1.1, "Saira" a reserved
 name), unchanged from github.com/google/fonts `ofl/sairacondensed` at
 `06bfe0d62a98375cb09c942fa18e68bd32cff057`; it ships with its licence in
 `data/setup`.
+
+The Linux AppImage starts with the type-2 AppImage runtime (release 20251108,
+pinned), a separate program with libfuse (LGPL 2.1) and other libraries linked
+in statically. Its notice and licence texts (`tools/package/appimage-runtime`)
+are in the AppImage's `licenses/appimage-runtime`; the other packages don't
+hold it.
