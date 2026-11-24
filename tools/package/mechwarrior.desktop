@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=MechWarrior 1 Rebuild
+Comment=MechWarrior (1989), rebuilt; needs your own copy of the game
+Exec=mw1r
+Icon=mechwarrior
+Categories=Game;ActionGame;
+Terminal=false

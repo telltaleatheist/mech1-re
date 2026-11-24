@@ -262,11 +262,9 @@ def check_paths(root, folder, *extra):
         *[str(Path(p).resolve()) for p in extra])
 
 
-def package(root, build, sdl, output, label, game=None, installer=False):
+def package(root, build, sdl, output, label, game=None, installer=False, tools=None):
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", label):
         raise ValueError("Invalid package label")
-    if installer and platform_name() == "linux-x86_64":
-        raise ValueError("Linux has no installer; its package is the .tar.gz")
     if platform_name() == "mac":
         return package_mac(root, build, sdl, output, label, game)
     windows = platform_name() == "win64"
@@ -324,7 +322,10 @@ def package(root, build, sdl, output, label, game=None, installer=False):
     write_digest(archive)
     print(f"Packaged and startup-checked {archive}")
     if installer:
-        windows_installer(root, stage, output, label, sdl)
+        if windows:
+            windows_installer(root, stage, output, label, sdl)
+        else:
+            appimage(root, stage, output, label, tools, game, sdl)
     return archive
 
 
@@ -356,6 +357,63 @@ def windows_installer(root, stage, output, label, sdl):
         raise RuntimeError(f"Inno Setup made no {setup.name}")
     write_digest(setup)
     print(f"Installer {setup}")
+
+
+def appimage_tools():
+    """The AppImage's tools and runtime with the SHA-256 tools/deps/get_appimage_tools.sh pins for each: what ships
+    must not move under a package (unnamed, appimagetool would download the latest runtime)."""
+    script = (Path(__file__).resolve().parent / "deps/get_appimage_tools.sh").read_text(encoding="utf-8")
+    pins = dict(re.findall(r"^get (\S+) https://\S+ ([0-9a-f]{64})$", script, re.M))
+    if set(pins) != {"linuxdeploy-x86_64.AppImage", "appimagetool-x86_64.AppImage", "runtime-x86_64"}:
+        raise RuntimeError(f"tools/deps/get_appimage_tools.sh pins {sorted(pins)}, not the three tools")
+    return pins
+
+
+def check_appimage_tools(tools):
+    """Every file of appimage_tools() is in `tools` with its pinned hash."""
+    for name, wanted in appimage_tools().items():
+        file = tools / name
+        if not file.is_file():
+            raise RuntimeError(f"Missing AppImage tool: {file} (wanted sha256 {wanted})")
+        found = hashlib.sha256(file.read_bytes()).hexdigest()
+        if found != wanted:
+            raise RuntimeError(f"AppImage tool {file} hashes {found}, wanted {wanted}")
+
+
+def appimage(root, stage, output, label, tools, game, sdl):
+    """MW1-Rebuild-<label>-x86_64.AppImage: usr/bin/mw1r with data/ and MechWarrior.ini beside it
+    (SDL_GetBasePath), the notices in usr/share/doc (the runtime's in licenses/appimage-runtime), the libraries by linuxdeploy. Needs `tools` holding
+    appimage_tools()' files, each with its pinned hash."""
+    if not tools:
+        raise RuntimeError("--appimage-tools DIR (linuxdeploy, appimagetool and the runtime) is needed for the AppImage")
+    tools = Path(tools).resolve()
+    check_appimage_tools(tools)
+    appdir = output / "AppDir"
+    if appdir.exists():
+        shutil.rmtree(appdir)
+    bin_dir, doc = appdir / "usr/bin", appdir / f"usr/share/doc/{PROGRAM}"
+    bin_dir.mkdir(parents=True)
+    doc.mkdir(parents=True)
+    shutil.copy2(stage / PROGRAM, bin_dir / PROGRAM)
+    shutil.copy2(stage / "MechWarrior.ini", bin_dir / "MechWarrior.ini")
+    shutil.copytree(stage / "data", bin_dir / "data")
+    for name in ("LICENSE", "README.txt"):
+        shutil.copy2(stage / name, doc / name)
+    shutil.copytree(stage / "licenses", doc / "licenses")
+    shutil.copytree(root / "tools/package/appimage-runtime", doc / "licenses/appimage-runtime")
+    env = dict(os.environ, APPIMAGE_EXTRACT_AND_RUN="1", ARCH="x86_64",
+               LD_LIBRARY_PATH=str(stage.resolve()) + os.pathsep + os.environ.get("LD_LIBRARY_PATH", ""))
+    run(str(tools / "linuxdeploy-x86_64.AppImage"), "--appdir", str(appdir), "-e", str(bin_dir / PROGRAM),
+        "-d", str(root / "tools/package/mechwarrior.desktop"), "-i", str(root / "tools/package/mechwarrior.png"), env=env)
+    smoke(bin_dir / PROGRAM, game)
+    check_paths(root, appdir, root, sdl)
+    image = output / f"{STEM}-{label}-x86_64.AppImage"
+    run(str(tools / "appimagetool-x86_64.AppImage"), "--runtime-file", str(tools / "runtime-x86_64"), str(appdir), str(image), env=env)
+    result = subprocess.run([str(image.resolve()), "--help"], capture_output=True, text=True, timeout=60, env=env)
+    if result.returncode != 0 or f"Usage: {PROGRAM}" not in result.stdout:
+        raise RuntimeError(f"The AppImage did not start: {result.returncode}\n{result.stderr}")
+    write_digest(image)
+    print(f"AppImage {image}")
 
 
 def package_mac(root, build, sdl, output, label, game):
@@ -470,7 +528,8 @@ if __name__ == "__main__":
     parser.add_argument("--label")
     parser.add_argument("--smoke", type=Path, help="an extracted package directory: run the smoke test only")
     parser.add_argument("--installer", action="store_true",
-                        help="also the installer: Setup.exe (Windows, Inno Setup); a Mac always makes its .dmg and Linux its .tar.gz")
+                        help="also the installer: Setup.exe (Windows, Inno Setup) or AppImage (Linux); a Mac always makes its .dmg")
+    parser.add_argument("--appimage-tools", type=Path, help="Linux: the folder with linuxdeploy and appimagetool")
     parser.add_argument("--game", type=Path, default=os.environ.get("MW1O_GAME"),
                         help="an original game folder for the first-run check (default MW1O_GAME; never packaged)")
     options = parser.parse_args()
@@ -485,4 +544,4 @@ if __name__ == "__main__":
             parser.error("--sdl and --label are required to package")
         root = Path(__file__).resolve().parents[1]
         package(root, root / "build-package", options.sdl.resolve(), root / "dist", options.label, options.game,
-                options.installer)
+                options.installer, options.appimage_tools)

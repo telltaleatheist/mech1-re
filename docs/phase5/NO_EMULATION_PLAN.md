@@ -313,11 +313,11 @@ Changes per piece:
 - **Not re-recorded.** The speaker event goldens and the start worlds.
 - **Not removed yet.** `MwStoryCopyAdlibInstruments` and `story/music.json` have no caller left in the game; the importer still writes and reads the file, for S9 or the importer's own slice.
 
-**From S9** (the libraries, the settings, the importer and the Linux package):
+**From S9** (the libraries, the settings, the importer and the AppImage's pins):
 - **What went.** Nuked-OPL3, Munt and the MPU401, Adlib and MT32 host files, the ROM settings and `mwSdlSound`; C left `project()`. `music=speaker|soundfont|off` replaces `sound_system`, which is still read, with a log line; the player's own ini overrides the packaged one. `off` takes the 'R' path with no music loaded, and the effects stay. The default stayed speaker in S9; it is the soundfont since (a project decision; the traces match on both).
 - **The importer** no longer writes `story/music.json`. A folder made with the table this replaced is current, not imported again: `story_state` accepts the old table's hash for the new one only, and a test fails at the next change of the table. An older build does import again on a folder made by this one, and that is accepted; R's notes say so.
 - **Packaging** needs SDL3 only and refuses a package holding a library named mt32emu or nukedopl, so an old build folder can't ship one.
-- **The Linux package is the .tar.gz alone.** The AppImage step was pinned and given its runtime's notices first, then removed: a project decision that nothing LGPL is shipped, and the AppImage's runtime holds libfuse. One commit, so it can be undone.
+- **The AppImage** is built with the tools and runtime the MW1 remake pins, each refused with any other hash. Its runtime's notice was read against the runtime's build recipe at its tag, and its licence texts against each upstream.
 
 **From H5, the rest** (the port bus; no golden moves):
 - **What went.** The host's `MwSdlWriteDevicePort` and `MwSdlReadDevicePort`, combat's `btechHostReadPort` and `btechHostWritePort`, and the `writePort`, `readPort` and `waitForInterrupt` members of `MwMusicHardwareCalls`, which had no caller left.
@@ -457,7 +457,7 @@ These are build and test tools only; none is linked in, and only the installer b
 - **DOSBox-X (GPL-2.0):** the original's reference captures (`tools/capture`); never shipped.
 - **Python:** the tests and packaging scripts.
 - **Inno Setup:** builds Setup.exe. Its licence allows distributing the installers it makes.
-- **The AppImage's tools** were removed in S9 with the AppImage: its runtime holds LGPL code. The Linux package is the .tar.gz.
+- **The AppImage's tools:** linuxdeploy and appimagetool, pinned (`tools/deps/get_appimage_tools.sh`), not shipped. The runtime ships in the AppImage: MIT, with libfuse (LGPL 2.1) and other libraries linked in statically; its notice and licence texts go with it (`tools/package/appimage-runtime`).
 
 ## 5. The path to mw1r-v1.0.0
 
@@ -493,14 +493,14 @@ Every slice below is its own branch with the full gate green: both setups, the t
 | H4c | Interrupts: first, combat's CLI pumps become explicit delivery points at its two key reads, and its waits for a key idle by name (the one re-record, every move attributed); then the interrupt flag removed, vectors as typed owners, the PIC's end-of-interrupt and mask gone (a set of device IRQs), and the BIOS chain an explicit host event at its own cadence | the re-record: traces, game and note streams and start worlds identical, tone moves attributed; then every log identical to it | 2 |
 | H4d | Idle: under the real clock, a host wait sleeps until the next due tick instead of 100 µs steps; the test clock keeps its steps, so no log moves | every log identical; CPU of a held combat pause and of the title's wait, measured before and after (a combat pause: 27% of a core at H4b and H4c's first commit) | 1 |
 | S8 | The campaign's AdLib and MPU backends and combat's 21CA and 2176 removed. 1ADF reports the rebuild's sound (see "From S8") | event logs and traces exact but for the one named re-record; done | 2 |
-| S9 | Nuked-OPL3, Munt and MPU401/Adlib/MT32 removed from the build. ROM settings dropped; `sound_system` replaced by `music`. Notices, AUDIO.md and packaging (no nukedopl or mt32emu library) updated. The AppImage tooling's licence settled | packaging tests; the game's own libraries hold no LGPL; the AppImage, whose runtime does, isn't made (see "From S9") | 2 |
+| S9 | Nuked-OPL3, Munt and MPU401/Adlib/MT32 removed from the build. ROM settings dropped; `sound_system` replaced by `music`. Notices, AUDIO.md and packaging (no nukedopl or mt32emu library) updated. The AppImage tooling's licence confirmed | packaging tests; the game's own libraries hold no LGPL; the AppImage's runtime does (libfuse, LGPL 2.1), with its notice (see "From S9") | 2 |
 | H5 | The port bus retired: `MwSdlWriteDevicePort`, `ReadDevicePort` and the port-word hooks removed with their last callers; the sound-port event log keeps its tones and snaps as the tone log (its name is historical), and its port lines are gone. Its first part (ports 0 and 1) went ahead, after H4d; the rest follows S4, S8 and S9, since its last callers are the MT-32 and AdLib backends S8 removes | everything above exact | 2 |
 | R | The release gate: every gate on Windows, macOS and Linux from fresh builds. Packages from a local tag. The listening list and the visual acceptance list signed off on the packaged builds. The controller path is covered by the SDL virtual-device test (H3b); no physical controller is available | all of the above | 2 |
 
 **For R** (found by earlier slices, to be done or decided there):
 - A refused start in a Windows GUI build: does the player see the reason anywhere but a log? (The missing soundfont's message was only ever printed to stderr.)
 - A package built on each platform with hidapi's notice (`licenses/hidapi-LICENSE-bsd.txt`), and what the Mac and Windows packages link and ship: the MSVC runtime DLLs and Inno Setup's parts among them. Only the Linux package has been measured (S9).
-- The Linux tar.gz holds libSDL3 three times (.so, .so.0, .so.0.2.0).
+- The Linux tar.gz holds libSDL3 three times (.so, .so.0, .so.0.2.0); the AppImage holds .so.0 alone.
 - "The C17 port" in `docs/THIRD_PARTY_NOTICES.md`, and the README's stale passages.
 - In the release notes: an older build imports the story again on a folder made by this one; an old test package's own `MechWarrior.ini` beside the program keeps its `sound_system=speaker`.
 
