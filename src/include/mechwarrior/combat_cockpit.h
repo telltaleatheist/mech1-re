@@ -77,7 +77,8 @@ typedef union BtechSubsystemLampColours {
 struct CombatCockpitState
 {
     char simulationText[11], pausedText[7], retreatQuestionText[15], retreatChoiceText[14];
-    uint16_t savedLineColour, savedFillColour, savedCopySourcePage, savedDrawPage;
+    uint16_t savedLineColour, savedFillColour;
+    CombatPage savedCopySourcePage, savedDrawPage;
     uint16_t savedTextBackground, savedTextForeground, savedPolygonFilled, savedPolygonClip;
     char zoomLabel[7], automaticWeaponsLabel[4], reactorShutdownText[25];
     BtechDecimalFieldAndTargetCache decimalFieldAndTargetCache;

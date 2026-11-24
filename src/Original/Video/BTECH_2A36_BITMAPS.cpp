@@ -49,7 +49,7 @@ void BtechEgaPrepareBitmapList(BtechBitmapList *list,BtechResourceAllocation pix
  * original; their colours on the canvas, G4). Source paragraph carry kept. */
 void BtechEgaUnpackNibblesToScratchPlanes(BtechResourceAllocation source,uint16_t planeBytes)
 {
-    const int scratch=BtechEgaCanvasPage(COMBAT_EGA_BITMAP_SCRATCH_PAGE);
+    const int scratch=BtechEgaCanvasPage(CombatPage::BitmapScratch);
     uint16_t sourceCursor=0,destinationCursor=0,groupsRemaining=planeBytes;
     uint32_t sourceParagraph=0;
     do
@@ -77,7 +77,7 @@ void BtechEgaUnpackNibblesToScratchPlanes(BtechResourceAllocation source,uint16_
  * nothing. The image keeps the planar form (BTECH_2A36_CANVAS.h). */
 void BtechEgaCopyScratchPlanes(uint16_t sourceOffset,uint8_t *destination,uint16_t planeBytes)
 {
-    const int scratch=BtechEgaCanvasPage(COMBAT_EGA_BITMAP_SCRATCH_PAGE);
+    const int scratch=BtechEgaCanvasPage(CombatPage::BitmapScratch);
     for (uint16_t plane=0;plane<COMBAT_EGA_PLANES;++plane)
     {
         uint16_t sourceCursor=sourceOffset;
@@ -90,7 +90,7 @@ void BtechEgaCopyScratchPlanes(uint16_t sourceOffset,uint8_t *destination,uint16
  * a 1 where the pixel is colour 0. The original DEC loop remains. */
 void BtechEgaBuildZeroColourMask(uint16_t sourceOffset,uint8_t *destination,uint16_t planeBytes)
 {
-    const int scratch=BtechEgaCanvasPage(COMBAT_EGA_BITMAP_SCRATCH_PAGE);
+    const int scratch=BtechEgaCanvasPage(CombatPage::BitmapScratch);
     uint16_t sourceCursor=sourceOffset,remaining=planeBytes;
     do
     {

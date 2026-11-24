@@ -1,5 +1,6 @@
 #ifndef MECHWARRIOR_COMBAT_VIDEO_H
 #define MECHWARRIOR_COMBAT_VIDEO_H
+#include "mechwarrior/combat_page.h"
 #include "mechwarrior/combat_sound.h"
 
 /* Pixel indices after the shipped combat EGA palettes are selected. Verified
@@ -20,8 +21,7 @@ enum { COMBAT_EGA_MODE_320X200=0x0D, COMBAT_VIDEO_EGA=2,COMBAT_VIDEO_AUTO=0,COMB
     COMBAT_EGA_COLOURS=16,COMBAT_PALETTE_SLOTS=10,COMBAT_PALETTE_WORDS=32,
     COMBAT_FONT_SLOTS=20,COMBAT_FONT_READ_BYTES=0x50,COMBAT_PALETTE_FILE_BYTES=0x80,
     COMBAT_BITMAP_LISTS=40,COMBAT_BITMAP_WORKSPACE_BYTES=0x3AC4,COMBAT_BITMAP_READ_BYTES=0x7FFF,
-    COMBAT_EGA_BITMAP_SCRATCH_PAGE=0xA600,COMBAT_EGA_PLANES=4,
-    COMBAT_EGA_FRONT_PAGE=0xA000,COMBAT_EGA_BACK_PAGE=0xA200,
+    COMBAT_EGA_PLANES=4,
     COMBAT_EGA_SEQUENCER_PORT=0x3C4,
     COMBAT_EGA_GRAPHICS_PORT=0x3CE,COMBAT_EGA_GRAPHICS_DATA_PORT=0x3CF,COMBAT_EGA_MAP_ALL_PLANES=0x0F02,
     COMBAT_EGA_WRITE_MODE_TWO=0x0205,COMBAT_EGA_BIT_MASK_REGISTER=8,
@@ -71,19 +71,19 @@ uint16_t BtechEgaPixelByteOffset(uint16_t x,uint16_t y,uint8_t *shift);
 uint16_t BtechEgaReadPixel(uint16_t x,uint16_t y);
 void BtechEgaWritePixel(uint16_t x,uint16_t y,uint16_t colour);
 void BtechEgaSetOverscanColour(uint16_t colour);
-void BtechEgaDrawLine(uint16_t firstX,uint16_t firstY,uint16_t secondX,uint16_t secondY,uint16_t page);
+void BtechEgaDrawLine(uint16_t firstX,uint16_t firstY,uint16_t secondX,uint16_t secondY,CombatPage page);
 void BtechCopyScreenRectangle(uint16_t x,uint16_t y,uint16_t width,uint16_t height);
 void BtechEgaCopyScreenRectangle(uint16_t x,uint16_t y,uint16_t width,uint16_t height);
-typedef void (*BtechSolidSpan)(uint16_t pattern,uint16_t x,int16_t count,uint16_t rowOffset,uint16_t page);
-typedef void (*BtechAlternatingSpan)(uint16_t primary,uint16_t x,int16_t count,uint16_t alternate,uint16_t rowOffset,uint16_t page);
+typedef void (*BtechSolidSpan)(uint16_t pattern,uint16_t x,int16_t count,uint16_t rowOffset,CombatPage page);
+typedef void (*BtechAlternatingSpan)(uint16_t primary,uint16_t x,int16_t count,uint16_t alternate,uint16_t rowOffset,CombatPage page);
 /* One native code reference has two proved register interfaces. Exactly one
  * member is active; no unused DX argument or invented drawing adapter. */
 typedef struct BtechShapeSpanCallback {BtechSolidSpan solid;BtechAlternatingSpan alternating;} BtechShapeSpanCallback;
 uint16_t BtechDrawStyledRectangle(uint16_t left,uint16_t top,uint16_t width,uint16_t height);
 enum { COMBAT_ELLIPSE_MAX_RADIUS=0x66,COMBAT_ELLIPSE_ROWS=COMBAT_ELLIPSE_MAX_RADIUS+1 };
 void BtechDrawStyledEllipse(int16_t radius,uint16_t centerX,uint16_t centerY);
-void BtechEgaFillSolidSpan(uint16_t pattern,uint16_t x,int16_t count,uint16_t rowOffset,uint16_t page);
-void BtechEgaFillAlternatingSpan(uint16_t primary,uint16_t x,int16_t count,uint16_t alternate,uint16_t rowOffset,uint16_t page);
+void BtechEgaFillSolidSpan(uint16_t pattern,uint16_t x,int16_t count,uint16_t rowOffset,CombatPage page);
+void BtechEgaFillAlternatingSpan(uint16_t primary,uint16_t x,int16_t count,uint16_t alternate,uint16_t rowOffset,CombatPage page);
 typedef void (*BtechScreenRectangleTransfer)(BtechResourceAllocation buffer,uint16_t x,uint16_t y,uint16_t width,uint16_t height);
 void BtechCaptureScreenRectangle(BtechResourceAllocation buffer,uint16_t x,uint16_t y,uint16_t width,uint16_t height);
 void BtechRestoreScreenRectangle(BtechResourceAllocation buffer,uint16_t x,uint16_t y,uint16_t width,uint16_t height);
@@ -110,8 +110,8 @@ uint16_t BtechDetectVideoAdapter(void);
 uint16_t BtechGetBiosDisplayAdapterBits(void);
 void BtechInitializeEgaVideo(uint16_t paletteByteOffset);
 void BtechDrawNearText(const char *text,int16_t x,int16_t y);
-void BtechEgaDrawGlyph(uint16_t character,uint16_t x,uint16_t y,uint16_t page);
-void BtechGraphicsNoOperation(uint16_t character,uint16_t x,uint16_t y,uint16_t page);
+void BtechEgaDrawGlyph(uint16_t character,uint16_t x,uint16_t y,CombatPage page);
+void BtechGraphicsNoOperation(uint16_t character,uint16_t x,uint16_t y,CombatPage page);
 void BtechShowFatalErrorAndExit(const char *errorText);
 void BtechInitializeVideoAndInput(void);
 /* One native filename-or-stream WORD becomes typed alternatives, never host
@@ -184,9 +184,9 @@ struct CombatVideoState
     BtechAlternatingSpan graphicsFillAlternatingSpan;
     BtechShapeSpanCallback shapeSpanCallback;
     uint8_t ellipseLeftInsets[COMBAT_ELLIPSE_ROWS], ellipseBorderWidths[COMBAT_ELLIPSE_ROWS], ellipseInteriorWidths[COMBAT_ELLIPSE_ROWS];
-    uint16_t ellipsePageSelector;
-    uint16_t backPageSelector, frontPageSelector;
-    uint16_t copySourcePageSelector, drawPageSelector;
+    CombatPage ellipsePageSelector;
+    CombatPage backPageSelector, frontPageSelector;
+    CombatPage copySourcePageSelector, drawPageSelector;
     uint8_t videoColourCount;
     uint8_t pcjrTandyCompatible, combatRendererKind;
     uint8_t textForegroundPattern, textBackgroundPattern, glyphTailMask;
@@ -201,7 +201,7 @@ struct CombatVideoState
     uint8_t *egaFontBuffer;
     uint16_t egaFontChunkCounter;
     uint8_t paletteSlotIds[COMBAT_PALETTE_SLOTS];
-    void (*graphicsDrawGlyph)(uint16_t character,uint16_t x,uint16_t y,uint16_t page);
+    void (*graphicsDrawGlyph)(uint16_t character,uint16_t x,uint16_t y,CombatPage page);
     uint16_t (*graphicsLoadFont)(BtechRuntimeStream *,uint16_t,uint8_t *);
     uint16_t (*graphicsLoadPalette)(BtechRuntimeStream *,uint16_t);
     void (*graphicsSelectPalette)(uint16_t);

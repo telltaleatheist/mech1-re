@@ -9,7 +9,7 @@
 uint16_t BtechDrawStyledRectangle(uint16_t left,uint16_t top,uint16_t width,uint16_t height)
 {
     BtechSetEgaSpriteWriteRegisters();
-    uint16_t page=combatVideo.drawPageSelector;
+    CombatPage page=combatVideo.drawPageSelector;
     if (combatVideo.combatRendererKind!=COMBAT_VIDEO_EGA) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatRendererKind!=COMBAT_VIDEO_EGA");
     combatVideo.spanPrimaryPattern=combatVideo.palettePrimarySlots[combatVideo.drawLineColour/COMBAT_PALETTE_WORDS][combatVideo.drawLineColour%COMBAT_PALETTE_WORDS];
     combatVideo.spanSecondaryPattern=combatVideo.paletteSecondarySlots[combatVideo.drawLineColour/COMBAT_PALETTE_WORDS][combatVideo.drawLineColour%COMBAT_PALETTE_WORDS];

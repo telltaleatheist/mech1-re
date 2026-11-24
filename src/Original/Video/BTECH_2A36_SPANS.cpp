@@ -8,7 +8,7 @@
 
 /*2A36:1E32. The leading and trailing partial bytes and the whole bytes between
  * (REP STOSB in the original). Forward game path; no added clip. */
-void BtechEgaFillSolidSpan(uint16_t pattern,uint16_t x,int16_t count,uint16_t rowOffset,uint16_t page)
+void BtechEgaFillSolidSpan(uint16_t pattern,uint16_t x,int16_t count,uint16_t rowOffset,CombatPage page)
 {
     if (count<=0) return;
     BtechEgaCanvasWriter ega(page);
@@ -44,7 +44,7 @@ void BtechEgaFillSolidSpan(uint16_t pattern,uint16_t x,int16_t count,uint16_t ro
  * reloads the latches only at its first whole byte; by copy (the only function
  * combat draws with), that leaves the same pixels as drawing each byte where
  * its mask has a 1 (G4; BTECH_2A36_CANVAS.h). */
-void BtechEgaFillAlternatingSpan(uint16_t primary,uint16_t x,int16_t count,uint16_t alternate,uint16_t rowOffset,uint16_t page)
+void BtechEgaFillAlternatingSpan(uint16_t primary,uint16_t x,int16_t count,uint16_t alternate,uint16_t rowOffset,CombatPage page)
 {
     combatVideo.spanAlternationState^=1;
     uint16_t pattern=combatVideo.spanAlternationState?alternate:primary;

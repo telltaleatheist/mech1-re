@@ -9,7 +9,7 @@
 /*1BF5:0006. Authored default graphics dispatch is a genuine single RETF,
  * not a null pointer or a success-returning substitute renderer. This C
  * signature adapts the register glyph call only; Reko remains name-only. */
-void BtechGraphicsNoOperation(uint16_t character,uint16_t x,uint16_t y,uint16_t page)
+void BtechGraphicsNoOperation(uint16_t character,uint16_t x,uint16_t y,CombatPage page)
 {
     (void)character;(void)x;(void)y;(void)page;
 }
@@ -120,7 +120,7 @@ uint16_t BtechGetBiosDisplayAdapterBits(void)
  * the compiled glyph path is consequently always forward. */
 void BtechDrawNearText(const char *text,int16_t x,int16_t y)
 {
-    uint16_t page=combatVideo.drawPageSelector;
+    CombatPage page=combatVideo.drawPageSelector;
     combatVideo.textBackgroundPattern=(uint8_t)combatVideo.graphicsColourPatterns[combatVideo.textBackgroundColour];
     combatVideo.textForegroundPattern=(uint8_t)combatVideo.graphicsColourPatterns[combatVideo.textForegroundColour];
     if (combatVideo.screenPolygonNeedsClip)

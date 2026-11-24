@@ -21,8 +21,8 @@ void BtechInitializeEgaVideo(uint16_t paletteByteOffset)
 {
     if (paletteByteOffset) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: paletteByteOffset");
     combatVideo.videoColourCount=COMBAT_EGA_COLOURS;
-    combatVideo.frontPageSelector=COMBAT_EGA_FRONT_PAGE;
-    combatVideo.backPageSelector=COMBAT_EGA_BACK_PAGE;
+    combatVideo.frontPageSelector=CombatPage::First;
+    combatVideo.backPageSelector=CombatPage::Second;
     MwSetVideoMode(COMBAT_EGA_MODE_320X200);
     uint16_t pattern=0;
     for (uint16_t colour=0;colour<COMBAT_EGA_COLOURS;++colour)
@@ -47,13 +47,13 @@ void BtechInitializeEgaVideo(uint16_t paletteByteOffset)
 namespace {
 struct GlyphCanvas
 {
-    uint16_t selector;
+    CombatPage selected;
     bool resolved=false;
     int page=0;
 };
 void GlyphPattern(GlyphCanvas &canvas,uint16_t cursor,uint8_t bits,uint8_t colour)
 {
-    if (!canvas.resolved) {canvas.page=BtechEgaCanvasPage(canvas.selector);canvas.resolved=true;}
+    if (!canvas.resolved) {canvas.page=BtechEgaCanvasPage(canvas.selected);canvas.resolved=true;}
     BtechEgaCanvasDraw(canvas.page,cursor,bits,colour);
 }
 }
@@ -61,7 +61,7 @@ void GlyphPattern(GlyphCanvas &canvas,uint16_t cursor,uint8_t bits,uint8_t colou
 /*2A36:0343, reached through02C2's CLD. BYTE counters, native wrap, character
  * rejection, transparency and the copy function (the only one combat draws with) remain original.
  * Direct DF-set calls, invalid row/font aliases are not converted here. */
-void BtechEgaDrawGlyph(uint16_t character,uint16_t x,uint16_t y,uint16_t page)
+void BtechEgaDrawGlyph(uint16_t character,uint16_t x,uint16_t y,CombatPage page)
 {
     if (y>=COMBAT_SCREEN_HEIGHT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: y>=COMBAT_SCREEN_HEIGHT");
     GlyphCanvas canvas{page};

@@ -8,7 +8,7 @@ void BtechDrawStyledEllipse(int16_t radius, uint16_t centerX, uint16_t centerY)
 {
     // DS=SS=304E; BP becomes the row-table byte index, not a stack object.
     // See SHARED_ELLIPSE_RECOVERY.md for BYTE clipping and callback contracts.
-    uint16_t page=combatVideo.drawPageSelector;
+    CombatPage page=combatVideo.drawPageSelector;
     if (combatVideo.combatRendererKind!=COMBAT_VIDEO_EGA) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatRendererKind!=COMBAT_VIDEO_EGA"); /* Tandy window resolver remains outside EGA scope. */
     combatVideo.ellipsePageSelector=page; // Before even radius rejection.
     if (radius<=0x0001)

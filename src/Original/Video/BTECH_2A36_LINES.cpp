@@ -8,7 +8,7 @@
 
 /*2A36:0608. Native point/horizontal/vertical/diagonal/run paths. No new
  * clipping, raster-state reset or Bresenham replacement. */
-void BtechEgaDrawLine(uint16_t firstX,uint16_t firstY,uint16_t secondX,uint16_t secondY,uint16_t page)
+void BtechEgaDrawLine(uint16_t firstX,uint16_t firstY,uint16_t secondX,uint16_t secondY,CombatPage page)
 {
     BtechEgaCanvasWriter ega(page);
     // Coordinates are native BX/CX/DX/SI; page denotes AMBIENT ES,

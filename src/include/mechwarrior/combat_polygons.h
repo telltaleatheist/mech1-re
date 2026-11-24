@@ -36,7 +36,7 @@ struct CombatPolygonState
     uint8_t egaPolygonLeadingMasks[8], egaPolygonTrailingMasks[8], egaSpanHighColour, egaSpanLowColour;
     uint16_t egaSpanRowsRemaining;
     void (*graphicsFillPolygonSpans)(const BtechPolygonSpan *header);
-    void (*graphicsDrawLine)(uint16_t x0,uint16_t y0,uint16_t x1,uint16_t y1,uint16_t page);
+    void (*graphicsDrawLine)(uint16_t x0,uint16_t y0,uint16_t x1,uint16_t y1,CombatPage page);
 };
 extern CombatPolygonState combatPolygons;
 void BtechDrawClippedLine(int16_t firstX,int16_t firstY,int16_t secondX,int16_t secondY);
