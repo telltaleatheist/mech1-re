@@ -17,11 +17,14 @@ The log is cut after the last snap (what follows is the shutdown, timed by
 the harness) and kept as audio/traces/<script>.<device>.jsonl.gz. A check
 compares every line exactly and names the first difference.
 
-Exit status: 0 all match, 1 a mismatch, 77 skipped (no candidate or game).
+Exit status: 0 all match, 1 a mismatch, 2 an unknown --only name, 77 skipped (no
+candidate or game).
 """
 import argparse, gzip, hashlib, os, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+from selection import check_only  # noqa: E402
 AUDIO = os.path.join(HERE, "audio")
 DEVICES = ("speaker",)
 SKIP = 77
@@ -98,6 +101,8 @@ def main():
     ap.add_argument("--pcm", action="store_true",
                     help="also print each run's PCM hash up to its last snap (synthesis, compared by hand)")
     a = ap.parse_args()
+    stems = [f[:-5] for f in os.listdir(os.path.join(AUDIO, "scripts")) if f.endswith(".keys")]
+    check_only(a.only, stems + [f"{s}.{d}" for s in stems for d in DEVICES])
     if not a.port or not os.path.exists(a.port) or not a.game or not os.path.isdir(a.game):
         print("skipped: no candidate build or game folder")
         return SKIP

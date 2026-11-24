@@ -30,6 +30,8 @@ or no game or port).
 import argparse, json, os, shutil, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+from selection import check_only  # noqa: E402
 SKIP = 77
 GUARD = "play opened the game's program"
 COMBAT_RETURN = "Combat return:"
@@ -70,13 +72,15 @@ def main():
     ap.add_argument("--game", default=os.environ.get("MW1O_GAME"), help="the game folder (default MW1O_GAME)")
     ap.add_argument("--only", nargs="*", help="trace names (default: all)")
     a = ap.parse_args()
+    valid = sorted(f[:-6] for f in os.listdir(os.path.join(HERE, "traces")) if f.endswith(".jsonl"))
+    check_only(a.only, valid)
     if os.environ.get("MW1O_EXE_FREE") != "1":
         print("skipped: set MW1O_EXE_FREE=1 (minutes: two full trace runs)")
         return SKIP
     if not a.game or not os.path.isdir(a.game) or not os.path.exists(a.port):
         print("skipped: set MW1O_GAME and build the port")
         return SKIP
-    names = a.only or sorted(f[:-6] for f in os.listdir(os.path.join(HERE, "traces")) if f.endswith(".jsonl"))
+    names = a.only or valid
 
     work = os.path.abspath(a.work)
     shutil.rmtree(work, ignore_errors=True)

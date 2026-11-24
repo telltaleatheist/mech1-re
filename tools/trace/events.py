@@ -48,12 +48,14 @@ own. A revision with no goldens is skipped.
 ctest runs it with --opt-in: skipped unless MW1O_EVENTS=1, since the runs take
 minutes (as exe_free's MW1O_EXE_FREE). The game folder defaults to MW1O_GAME.
 
-Exit status: 0 all match, 1 a mismatch, 77 skipped (no candidate, game or goldens,
-or not opted in).
+Exit status: 0 all match, 1 a mismatch, 2 an unknown --only name, 77 skipped (no
+candidate, game or goldens, or not opted in).
 """
 import argparse, gzip, hashlib, json, os, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+from selection import check_only  # noqa: E402
 EVENTS = os.path.join(HERE, "events")
 FEED_SCRIPTS = os.path.join(EVENTS, "scripts")  # song: and sound: (record.py --feed-calls)
 SKIP = 77
@@ -196,6 +198,7 @@ def main():
     ap.add_argument("--no-devices", action="store_true", help="skip the soundfont runs of the sound scripts")
     ap.add_argument("--opt-in", action="store_true", help="skip unless MW1O_EVENTS=1 (ctest)")
     a = ap.parse_args()
+    check_only(a.only, [name_of(s) for s in scripts()])
     if a.opt_in and os.environ.get("MW1O_EVENTS") != "1":
         print("skipped: set MW1O_EVENTS=1 to run the event logs")
         return SKIP
