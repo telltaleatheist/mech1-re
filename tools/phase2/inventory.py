@@ -60,6 +60,18 @@ def unfold(text):
         text=re.sub(r'\b'+inst+r'\.','',text)
     return text
 
+STARTROW=re.compile(r'const BtechStartRowData (\w+)\("([\w.]+)"\);')
+def unrow(text):
+    """A memory file as it read before B4f: a start row's reads by id are
+    reads of `data` at the exe's offsets again (the 304E rows')."""
+    at={id_:off for id_,seg,off,_,_ in START_ROWS if seg==0x304E}
+    for var,id_ in set(STARTROW.findall(text)):
+        if id_ not in at: continue
+        def offset(m): return at[id_]+(int(m.group(2),0) if m.group(2) else 0)
+        text=re.sub(r'\b'+var+r'\.(byte|word|dword)\((0x[0-9A-Fa-f]+|\d+(?!\*))?',lambda m:'(data[0x%04X'%offset(m),text)
+        text=re.sub(r'\b'+var+r'\.(copy)\(([^;]*)\);',lambda m:'copy(%s,data+0x%04X);'%(m.group(2),at[id_]+(int(m.group(2).rsplit(',',1)[1],0) if re.search(r',(0x[0-9A-Fa-f]+|\d+)$',m.group(2)) and len(top_level(m.group(2)))==3 else 0)),text)
+    return text
+
 def scan(memory_dir):
     """Every file-scope item in src/Original/Memory, with the first native
     offset its importer reads ('-' when none)."""
@@ -67,7 +79,7 @@ def scan(memory_dir):
     decl=re.compile(r'^'+TYPES+r'(.+);\s*(?:/\*.*)?$')
     rows=[]
     for path in sorted(glob.glob(os.path.join(memory_dir,'*.cpp'))):
-        f=os.path.basename(path);lines=unfold(open(path).read()).split('\n');depth=0;names=[]
+        f=os.path.basename(path);lines=unrow(unfold(open(path).read())).split('\n');depth=0;names=[]
         for l in lines:
             l=l.replace('(int)','')  # a cast in an array bound
             if depth==0 and not l.startswith((' ','#','/','}','{','\t','static_assert','typedef','enum','extern','namespace','using')) and '(' not in l.split('=')[0]:
@@ -86,6 +98,9 @@ def scan(memory_dir):
     return rows
 
 ROOT=os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+START_TEXT=open(os.path.join(ROOT,'src','Original','Memory','BtechStartImage.cpp')).read()
+START_ROWS=[(m.group(1),int(m.group(2),16),int(m.group(3),16),int(m.group(4),16),m.group(5)) for m in
+            re.finditer(r'\{"([\w.]+)",0x([0-9A-F]{4}),0x([0-9A-F]{4}),0x([0-9A-F]+),BTECH_START_(\w+),',START_TEXT)]
 def pieces(path):
     """id -> 'EXE SEG:OFF' from a pieces table."""
     out={}
@@ -278,9 +293,6 @@ SPANS={'MW_MAIN_28BE.cpp':('music.driver','MW_MAIN 28BE')}
 # 6d): the rows that lay out what BTECH's importers read. An item a BTECH
 # importer reads at an offset of 304E is sorted by the row that holds that
 # offset: a story span is extracted, a rule or layout piece ours, the rest code.
-START_TEXT=open(os.path.join(ROOT,'src','Original','Memory','BtechStartImage.cpp')).read()
-START_ROWS=[(m.group(1),int(m.group(2),16),int(m.group(3),16),int(m.group(4),16),m.group(5)) for m in
-            re.finditer(r'\{"([\w.]+)",0x([0-9A-F]{4}),0x([0-9A-F]{4}),0x([0-9A-F]+),BTECH_START_(\w+),',START_TEXT)]
 def start_row(f,off):
     """The start image row of a BTECH 304E item at `off`, or None."""
     if not f.startswith('BTECH_304E') or not off.startswith('0x'): return None

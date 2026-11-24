@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "mechwarrior/combat_cockpit.h"
 #include "mechwarrior/native_address.h"
+#include "mechwarrior/btech_start_image.h"
 #include "mechwarrior/ui_layout.h"
 #include <string.h>
 
@@ -23,9 +24,15 @@ static bool CopyLayoutPiece(uint8_t *view,size_t viewBytes,const char *id,uint16
     const size_t size=MwUiPieceSize(id);
     return size && offset<=viewBytes && size<=viewBytes-offset && MwUiCopyNative(id,view+offset,size);
 }
-bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
+bool BtechImportCockpitInitialData(void)
 {
-    if (!data || bytes<0x7755) return false;
+    const BtechStartRowData fileInspectionBitmapsRow("file.inspection_bitmaps");
+    const BtechStartRowData fileInspectionBitmapOffsetsRow("file.inspection_bitmap_offsets");
+    const BtechStartRowData fileCockpitScreensRow("file.cockpit_screens");
+    const BtechStartRowData fileCockpitScreenOffsetsRow("file.cockpit_screen_offsets");
+    const BtechStartRowData namesMechTemplateDirectoryRow("names.mech_template_directory");
+    const BtechStartRowData namesPilotDirectoryRow("names.pilot_directory");
+    const BtechStartRowData cockpitRadarPreviousTickRow("cockpit.radar_previous_tick");
     /* The layout's pieces, at their native offsets (304E:04D8..2426), and the
      * UI words (story/words.json, cockpit.word.* and briefing.word.*) at
      * theirs (304E:0052..241C), so the reads below keep the exe's addresses. */
@@ -49,12 +56,12 @@ bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
         || !CopyLayoutPiece(ui,sizeof(ui),"cockpit.condition_labels.engine",0x04DE)
         || !CopyLayoutPiece(ui,sizeof(ui),"cockpit.condition_labels.actuator",0x04E6)) return false;
     combatCockpit.inspectionMechTemplate=NULL;combatCockpit.inspectionMechState=NULL; /* Fresh native BSS only. */
-    memcpy(inspectionBitmapNames,data+0x034E,sizeof(inspectionBitmapNames));
+    fileInspectionBitmapsRow.copy(inspectionBitmapNames,sizeof(inspectionBitmapNames));
     for (uint16_t chassis=0;chassis<COMBAT_MECH_TEMPLATES;++chassis)
     {
-        uint16_t offset=MwReadNativeWord(data,0x04A8+chassis*2);
-        if (offset<0x034E || offset>=0x038E || !memchr(data+offset,0,0x038E -offset)) return false;
-        combatCockpit.inspectionDamageBitmapFilenames[chassis]=inspectionBitmapNames+offset-0x034E;
+        uint16_t offset=fileInspectionBitmapOffsetsRow.word(chassis*2);
+        fileInspectionBitmapsRow.text(fileInspectionBitmapsRow.index(offset)); /* Its name ends in the row. */
+        combatCockpit.inspectionDamageBitmapFilenames[chassis]=inspectionBitmapNames+fileInspectionBitmapsRow.index(offset);
         combatCockpit.inspectionDiagramOrigins[chassis]=BtechHudGaugeAnchor{(int16_t)MwReadNativeWord(ui,0x1878+chassis*4),(int16_t)MwReadNativeWord(ui,0x187A+chassis*4)};
         for (uint16_t armor=0;armor<COMBAT_ARMOR_LOCATIONS;++armor)
         {
@@ -97,30 +104,30 @@ bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
     combatCockpit.savedTextBackground=0; /*4F86*/combatCockpit.savedTextForeground=0; /*4F88*/
     combatCockpit.savedPolygonFilled=0; /*4F8A*/combatCockpit.savedPolygonClip=0; /*4F8C*/
     combatCockpit.rememberedSensorTargetSlot=0; /*4EDC*/
-    combatCockpit.radarPreviousTick=MwReadNativeWord(data,0x240E);
+    combatCockpit.radarPreviousTick=cockpitRadarPreviousTickRow.word();
     memcpy(weaponLabelText,words+0x2004,sizeof(weaponLabelText));
     memcpy(weaponRangeAndAmmoText,words+0x2410,sizeof(weaponRangeAndAmmoText));
     for (uint16_t weapon=0;weapon<COMBAT_WEAPON_KINDS;++weapon)
     {
         uint16_t offset=MwReadNativeWord(ui,0x2286+weapon*2);
         if (offset<0x2004 || offset>=0x2040 || !memchr(words+offset,0,0x2040-offset)) return false;
-        combatCockpit.weaponLabels[weapon]=weaponLabelText+offset-0x2004;
+        combatCockpit.weaponLabels[weapon]=weaponLabelText+(offset-0x2004);
     }
     for (uint16_t range=0;range<4;++range)
     {
         uint16_t offset=MwReadNativeWord(ui,0x241C+range*2);
         if (offset<0x2410 || offset>=0x241C || !memchr(words+offset,0,0x241C-offset)) return false;
-        combatCockpit.weaponRangeClassLabels[range]=weaponRangeAndAmmoText+offset-0x2410;
+        combatCockpit.weaponRangeClassLabels[range]=weaponRangeAndAmmoText+(offset-0x2410);
     }
     uint16_t ammoOffset=MwReadNativeWord(ui,0x2424);
     if (ammoOffset<0x2410 || ammoOffset>=0x241C || !memchr(words+ammoOffset,0,0x241C-ammoOffset)) return false;
-    combatCockpit.energyAmmoPlaceholder=weaponRangeAndAmmoText+ammoOffset-0x2410;
+    combatCockpit.energyAmmoPlaceholder=weaponRangeAndAmmoText+(ammoOffset-0x2410);
     memcpy(radarRangeText,words+0x23EA,sizeof(radarRangeText));
     for (uint16_t range=0;range<COMBAT_RADAR_RANGE_LABELS;++range)
     {
         uint16_t offset=MwReadNativeWord(ui,0x2406+range*2);
         if (offset<0x23EA || offset>=0x2406 || !memchr(words+offset,0,0x2406-offset)) return false;
-        combatCockpit.radarRangeLabels[range]=radarRangeText+offset-0x23EA;
+        combatCockpit.radarRangeLabels[range]=radarRangeText+(offset-0x23EA);
     }
     memcpy(combatCockpit.zoomLabel,words+0x0052,sizeof(combatCockpit.zoomLabel));
     memcpy(combatCockpit.automaticWeaponsLabel,words+0x0059,sizeof(combatCockpit.automaticWeaponsLabel));
@@ -152,7 +159,7 @@ bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
         HUD_COLOUR(undamaged,0x5C);HUD_COLOUR(aboveHalfCondition,0x5E);HUD_COLOUR(damaged,0x60);HUD_COLOUR(destroyed,0x62);
 #undef HUD_COLOUR
     }
-    memcpy(cockpitScreenNames,data+0x07F4,sizeof(cockpitScreenNames));
+    fileCockpitScreensRow.copy(cockpitScreenNames,sizeof(cockpitScreenNames));
     /* The names come from the story file (combat.mech_template.N.name,
      * combat.pilot.N.name); the directories stay the exe's, and each name is
      * written at its directory offset in its own record, as the exe holds it. */
@@ -160,9 +167,9 @@ bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
     memset(combatCockpit.pilotDefinitionNames,0,sizeof(combatCockpit.pilotDefinitionNames));
     for (uint16_t name=0;name<COMBAT_MECH_TEMPLATES;++name)
     {
-        uint16_t offset=MwReadNativeWord(data,0x229C+name*2);
+        uint16_t offset=namesMechTemplateDirectoryRow.word(name*2);
         if (offset<0x2045 || offset>=0x20AD) return false;
-        char *at=(char *)combatCockpit.mechTemplateNames+offset-0x2045,id[40];
+        char *at=(char *)combatCockpit.mechTemplateNames+(offset-0x2045),id[40];
         size_t room=sizeof(combatCockpit.mechTemplateNames[0])<(size_t)(0x20AD-offset)?sizeof(combatCockpit.mechTemplateNames[0]):(size_t)(0x20AD-offset);
         snprintf(id,sizeof(id),"combat.mech_template.%u.name",(unsigned)name+1);
         if (!MwStoryCopyText(id,at,room)) return false;
@@ -170,9 +177,9 @@ bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
     }
     for (uint16_t name=0;name<COMBAT_PILOT_NAMES;++name)
     {
-        uint16_t offset=MwReadNativeWord(data,0x22AC+name*2);
+        uint16_t offset=namesPilotDirectoryRow.word(name*2);
         if (offset<0x20AD || offset>=0x2286) return false;
-        char *at=(char *)combatCockpit.pilotDefinitionNames+offset-0x20AD,id[40];
+        char *at=(char *)combatCockpit.pilotDefinitionNames+(offset-0x20AD),id[40];
         size_t room=sizeof(combatCockpit.pilotDefinitionNames[0])<(size_t)(0x2286-offset)?sizeof(combatCockpit.pilotDefinitionNames[0]):(size_t)(0x2286-offset);
         snprintf(id,sizeof(id),"combat.pilot.%u.name",(unsigned)name+1);
         if (!MwStoryCopyText(id,at,room)) return false;
@@ -209,9 +216,9 @@ bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
     }
     for (uint16_t index=0;index<COMBAT_COCKPIT_LAYOUTS;++index)
     {
-        uint16_t offset=MwReadNativeWord(data,0x0814+index*2);
-        if (offset<0x07F4 || offset>=0x0814 || !memchr(data+offset,0,0x0814-offset)) return false;
-        combatCockpit.cockpitScreenFilenames[index]=cockpitScreenNames+offset-0x07F4;
+        uint16_t offset=fileCockpitScreenOffsetsRow.word(index*2);
+        fileCockpitScreensRow.text(fileCockpitScreensRow.index(offset)); /* Its name ends in the row. */
+        combatCockpit.cockpitScreenFilenames[index]=cockpitScreenNames+fileCockpitScreensRow.index(offset);
         offset=0x1D48+index*0x6A;
         BtechCockpitLayout *layout=&combatCockpit.cockpitLayouts[index];
         layout->viewport=BtechScreenRectangle{(int16_t)MwReadNativeWord(ui,offset),(int16_t)MwReadNativeWord(ui,offset+2),(int16_t)MwReadNativeWord(ui,offset+4),(int16_t)MwReadNativeWord(ui,offset+6)};
@@ -233,6 +240,6 @@ bool BtechImportCockpitInitialData(const uint8_t *data,size_t bytes)
     }
     combatCockpit.cachedJumpChargeGaugeLevel=0; /*5338*/
     combatCockpit.cachedHeatGaugeLevel=0; /*533A*/combatCockpit.unidentifiedField25=0; /*533C*/
-    combatCockpit.cockpitFullRedrawPending=data[0x7754];
+    combatCockpit.cockpitFullRedrawPending=0; /*7754*/
     return true;
 }

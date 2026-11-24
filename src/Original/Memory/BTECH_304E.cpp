@@ -2,6 +2,7 @@
 #include "mechwarrior/rules.h"
 #include "mechwarrior/combat_mechs.h"
 #include "mechwarrior/native_address.h"
+#include "mechwarrior/btech_start_image.h"
 #include "mechwarrior/combat_import.h"
 #include "mechwarrior/combat_installation.h"
 #include "mechwarrior/combat_damage.h"
@@ -13,11 +14,14 @@ static_assert(sizeof(BtechTemplateReservations)==0x14,"Native reservation WORD a
 static_assert(offsetof(BtechTemplateReservations,fields.reservedCount)==0x0E,"Native reservation count alias");
 CombatDamageState combatDamage;
 
-bool BtechImportCombatStageInitialData(const uint8_t *data,size_t byteCount)
+bool BtechImportCombatStageInitialData(void)
 {
-    if (!BtechImportMechInitialData(data,byteCount)) return false;
-    combatImport.startupControlMovementAlias=MwReadNativeWord(data,0x0051);
-    combatDamage.playerDamageSuppressed=data[0x0E1A];
+    const BtechStartRowData runtimePrefixRow("runtime.prefix");
+    const BtechStartRowData combatStartContinuationProfileRow("combat.start.continuation_profile");
+    const BtechStartRowData combatPlayerDamageSuppressedRow("combat.player_damage_suppressed");
+    if (!BtechImportMechInitialData()) return false;
+    combatImport.startupControlMovementAlias=runtimePrefixRow.word(0x51);
+    combatDamage.playerDamageSuppressed=combatPlayerDamageSuppressedRow.byte();
     /* The rule tables come from data/rules (src/Rules), laid out as the exe's. */
     if (!MwRulesCopyWords("combat.damage_transfer",combatDamage.damageTransferArmorLocations,COMBAT_BODY_LOCATIONS,0)
         || !MwRulesCopyWords("combat.critical_transfer",combatDamage.criticalTransferBodyLocations,COMBAT_BODY_LOCATIONS,0)
@@ -48,7 +52,7 @@ bool BtechImportCombatStageInitialData(const uint8_t *data,size_t byteCount)
         combatImport.mechTemplateBudgetCostsBytes[i]=(uint32_t)costs[i*2]|((uint32_t)costs[i*2+1]<<16);
     }
     combatImport.combatContinuationStage=0; /*C35A*/
-    combatContinuationProfileIndex=MwReadNativeWord(data,0x0974);
+    combatContinuationProfileIndex=combatStartContinuationProfileRow.word();
     combatImport.combatMissionDefinitionIndex=0; /*C96E*/
     return true;
 }
@@ -58,9 +62,10 @@ CombatMechState combatMechs;
 /* File decoder only. Runtime records need not inherit native unaligned WORDs
  * or DOS near references. Mech/binding/control state is initialized by native
  *206D/2C40, NOT cleared as a side effect of loading authored templates. */
-bool BtechImportMechInitialData(const uint8_t *data,size_t byteCount)
+bool BtechImportMechInitialData(void)
 {
-    if (!data || byteCount<NATIVE_SEGMENT_BYTE_COUNT) return false;
+    const BtechStartRowData combatStartRandomStateRow("combat.start.random_state");
+    const BtechStartRowData combatStartRandomAddendIndexRow("combat.start.random_addend_index");
     /* The rule tables come from data/rules (src/Rules), laid out as the exe's. */
     if (!MwRulesCopyWords("combat.heat_aim_jitter_thresholds",combatMechs.heatAimJitterThresholds,COMBAT_HEAT_THRESHOLDS,0)) return false;
     for (uint16_t kind=0;kind<COMBAT_WEAPON_KINDS;++kind)
@@ -124,9 +129,9 @@ bool BtechImportMechInitialData(const uint8_t *data,size_t byteCount)
             mech->maximumInternalStructure[location]=MwReadNativeWord(bytes,0x00C4+location*2);
     }
     for (uint16_t index=0;index<COMBAT_RANDOM_WORDS;++index)
-        combatMechs.randomStateWords[index]=MwReadNativeWord(data,0x281C+index*2);
+        combatMechs.randomStateWords[index]=combatStartRandomStateRow.word(index*2);
     combatMechs.randomWriteIndex=0; /*285C*/
-    combatMechs.randomAddendIndex=MwReadNativeWord(data,0x285E);
+    combatMechs.randomAddendIndex=combatStartRandomAddendIndexRow.word();
     combatMechs.specialAssaultMode=0; /*C7BE*/
     return true;
 }
@@ -134,7 +139,7 @@ bool BtechImportMechInitialData(const uint8_t *data,size_t byteCount)
 /* EXEC/DFCE data projection only, not206D or a new game procedure. Clear
  * converted owners in the native4EDC..D5DF BSS interval; reload authored
  * scalars separately. Host bindings and campaign owners are untouched. */
-void BtechInitializeFreshMechOwners(const uint8_t *data)
+void BtechInitializeFreshMechOwners(void)
 {
     combatImport.combatContinuationStage=0;
     combatImport.reducedMemoryMode=0;

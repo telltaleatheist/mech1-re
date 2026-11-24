@@ -42,7 +42,7 @@ struct CombatPoseState
     BtechMechTemplate *activeMechTemplate;
 };
 extern CombatPoseState combatPose;
-bool BtechImportPoseInitialData(const uint8_t *data,size_t bytes);
+bool BtechImportPoseInitialData(void);
 void BtechApplyBodyHeadingToMechParts(void);
 void BtechRemoveBodyHeadingFromMechParts(void);
 void BtechClearObjectMotionTail(BtechPooledWorldObject *object);

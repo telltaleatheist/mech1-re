@@ -33,7 +33,7 @@ extern CombatRuntimeState combatRuntime;
  * launcher may implement that by a nonlocal return); it must not return here. */
 extern void (*btechHostWriteStderr)(const char *text,uint16_t bytes);
 extern void (*btechHostTerminateChild)(uint8_t exitCode);
-bool BtechImportRuntimeInitialData(const uint8_t *data,size_t bytes);
+bool BtechImportRuntimeInitialData(void);
 int16_t BtechRuntimeStreamClose(BtechRuntimeStream *stream);
 uint16_t BtechStreamIdentity(const BtechRuntimeStream *stream);
 void BtechCloseRuntimeStreamFiles(void);

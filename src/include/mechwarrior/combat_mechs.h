@@ -143,7 +143,7 @@ struct CombatMechState
 };
 extern CombatMechState combatMechs;
 /* Actual installation IO boundary; no retained304E byte image. */
-bool BtechImportMechInitialData(const uint8_t *data,size_t byteCount);
+bool BtechImportMechInitialData(void);
 void BtechIncreaseTemplateLegIntegrity(void);
 void BtechInitializeMechConditionFromTemplate(BtechMechState *mech,uint16_t templateIndex);
 BtechMechState *BtechClaimFreeMechStateSlot(uint16_t friendlySlots);

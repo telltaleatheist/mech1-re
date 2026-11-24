@@ -19,17 +19,6 @@
 
 void (*btechHostReleaseChildDosAllocations)(void);
 
-/* A saved vector the image carries must be 0000:0000 (H4c): the interrupt's
- * previous owner. Any other bytes name a handler this port has no owner for. */
-static void RequireEmptySavedVector(const uint8_t *segment,uint16_t selector,uint16_t offset)
-{
-    if (!segment[offset] && !segment[offset+1] && !segment[offset+2] && !segment[offset+3]) return;
-    char reason[112];
-    snprintf(reason,sizeof(reason),"The image's saved vector at %04X:%04X holds %02X %02X %02X %02X, not 0000:0000",
-        selector,offset,segment[offset],segment[offset+1],segment[offset+2],segment[offset+3]);
-    MW_PORT_FAILSAFE(reason);
-}
-
 /*04FA overwrites its old near allocation without freeing it. Preserve that
  * lifetime through child disposal, without losing the host allocation owner. */
 typedef struct RetiredShapeRegistry {
@@ -170,45 +159,36 @@ void BtechHostDiscardChildData(void)
 bool BtechHostLoadInitialData(void)
 {
     /* Play never opens BTECH.EXE: the revision is the one the story was
-     * imported from, and the importers read BTECH's start image, built from
-     * code, generated tables, zeros, the story and data/ (btech_start_image.h). */
+     * imported from, and the importers read BTECH's start rows, from code,
+     * generated tables, zeros, the story and data/ (btech_start_image.h). */
     if (!BtechRevisionFromName(MwStoryBtechRevision(),&btechLoadedRevision))
     {
         fprintf(stderr,"MechWarrior: the story file names no known BTECH revision\n");
         return false;
     }
-    uint8_t *image=static_cast<uint8_t *>(malloc(BTECH_IMAGE_BYTES));
-    if (!image || !BtechBuildStartImage(image)) {free(image);return false;}
-    uint8_t *data=static_cast<uint8_t *>(malloc(0x10000));
-    if (!data) {free(image);return false;}
-    memcpy(data,image+BTECH_DATA_IMAGE_OFFSET,BTECH_BSS_START);
-    memset(data+BTECH_BSS_START,0,BTECH_BSS_END-BTECH_BSS_START);
     BtechHostDiscardChildData();
-    BtechInitializeFreshMechOwners(data);BtechInitializeFreshWorldOwners(data);BtechInitializeFreshStartupOwners(data);
+    BtechInitializeFreshMechOwners();BtechInitializeFreshWorldOwners();BtechInitializeFreshStartupOwners();
     BtechInitializeFreshSceneOwners();
     /* Reload writable CS owners as well as DS; handlers can patch their bytes. */
-    const uint8_t *platform=image+(0x1BF5-BTECH_IMAGE_LOAD_SELECTOR)*0x10;
-    const uint8_t *audio=image+(0x1ADF-BTECH_IMAGE_LOAD_SELECTOR)*0x10;
-    /* The saved vectors the image carries (H4c): 0000:0000 in both
-     * revisions, nothing saved yet, so each starts as its interrupt's
-     * previous owner. INT 1Ch's (2BC4) is checked though the hook is gone. */
-    RequireEmptySavedVector(platform,0x1BF5,0x2BC0);RequireEmptySavedVector(platform,0x1BF5,0x2BC4);
-    RequireEmptySavedVector(platform,0x1BF5,0x253C);RequireEmptySavedVector(audio,0x1ADF,0x0E7D);
+    /* The saved vectors (1BF5:2BC0, 253C and 1ADF:0E7D) are 0000:0000 in both
+     * revisions, nothing saved yet, so each starts as its interrupt's previous
+     * owner. Their rows stay in the table, checked against the exes by
+     * start_exe_test. INT 1Ch's (1BF5:2BC4) is gone with its hook. */
     combatHandlers.savedKeyboardOwner=MwKeyboardOwner::System;combatHandlers.savedTimerOwner=MwTimerOwner::Previous;combatSoundIrq.savedSampleIrqOwner=MwTimerOwner::Previous;
-    combatHandlers.keyboardScanMask=platform[0x2D51];combatHandlers.keyboardExtendedScanMask=platform[0x2D5E];
+    combatHandlers.keyboardScanMask=BtechStartRowData("platform.keyboard_scan_mask").byte();
+    combatHandlers.keyboardExtendedScanMask=BtechStartRowData("platform.keyboard_extended_scan_mask").byte();
     /* 0810:CE9A, INT 24's saved vector, is gone with that hook (H4c). It held
      * code bytes in the 1990 revision and zero in the reference: dead either
      * way, as startup saved INT 24 into it before any read. */
-    bool loaded=BtechImportCombatStageInitialData(data,0x10000)
-        && BtechImportWorldInitialData(data,0x10000,image+BTECH_GEOMETRY_IMAGE_OFFSET,BTECH_IMAGE_BYTES-BTECH_GEOMETRY_IMAGE_OFFSET)
-        && BtechImportStartupInitialData(data,0x10000)
-        && BtechImportSoundInitialData(data,0x10000)
-        && BtechImportToneInitialData(data,0x10000,image+BTECH_TONE_IMAGE_OFFSET,BTECH_IMAGE_BYTES-BTECH_TONE_IMAGE_OFFSET)
-        && BtechImportVideoInitialData(data,0x10000)
-        && BtechImportOrderInitialData(data,0x10000)
-        && BtechImportCockpitInitialData(data,0x10000)
-        && BtechImportPoseInitialData(data,0x10000)
-        && BtechImportRenderInitialData(data,0x10000)
-        && BtechImportPolygonInitialData(data,0x10000);
-    free(data);free(image);return loaded;
+    return BtechImportCombatStageInitialData()
+        && BtechImportWorldInitialData()
+        && BtechImportStartupInitialData()
+        && BtechImportSoundInitialData()
+        && BtechImportToneInitialData()
+        && BtechImportVideoInitialData()
+        && BtechImportOrderInitialData()
+        && BtechImportCockpitInitialData()
+        && BtechImportPoseInitialData()
+        && BtechImportRenderInitialData()
+        && BtechImportPolygonInitialData();
 }

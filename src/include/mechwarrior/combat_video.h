@@ -98,7 +98,7 @@ enum class CombatRomByte : uint8_t
     TandySignature /* F000:C000, the same byte as FC00:0000. */
 };
 extern uint8_t (*btechHostReadRomByte)(CombatRomByte byte);
-bool BtechImportVideoInitialData(const uint8_t *data,size_t bytes);
+bool BtechImportVideoInitialData(void);
 uint16_t BtechSelectCombatRenderer(uint8_t adapterOverride,uint8_t allowedMask);
 uint16_t BtechDetectVideoAdapter(void);
 uint16_t BtechGetBiosDisplayAdapterBits(void);

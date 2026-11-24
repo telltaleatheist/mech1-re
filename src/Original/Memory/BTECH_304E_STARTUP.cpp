@@ -1,6 +1,6 @@
 #include "mechwarrior/combat_startup.h"
 #include "mechwarrior/combat_installation.h"
-#include "mechwarrior/native_address.h"
+#include "mechwarrior/btech_start_image.h"
 #include "mechwarrior/combat_input.h"
 #include "mechwarrior/combat_damage.h"
 #include "mechwarrior/combat_cockpit.h"
@@ -10,50 +10,64 @@ CombatDamagePanelState combatDamagePanels;
 
 /* Fresh-child installation IO, not a replacement runtime reset. In particular
  * the saved-adapter FF sentinel must survive errors before video22D8 runs. */
-bool BtechImportStartupInitialData(const uint8_t *data,size_t bytes)
+bool BtechImportStartupInitialData(void)
 {
-    if (!data || bytes<0x10000) return false;
+    const BtechStartRowData combatAiFlagsRow("combat.ai_flags");
+    const BtechStartRowData startupCriticalErrorHandlerRow("startup.critical_error_handler");
+    const BtechStartRowData videoAdapterRow("video.adapter");
+    const BtechStartRowData startupDivideHookRow("startup.divide_hook");
+    const BtechStartRowData startupMouseAndDelayRow("startup.mouse_and_delay");
+    const BtechStartRowData startupPitDivisorRow("startup.pit_divisor");
+    const BtechStartRowData startupSchedulerRow("startup.scheduler");
+    const BtechStartRowData keyboardStateRow("keyboard.state");
+    const BtechStartRowData keyboardCharactersRow("keyboard.characters");
+    const BtechStartRowData keyboardScanTranslationsRow("keyboard.scan_translations");
+    const BtechStartRowData keyboardDirectionAndCompatibilityRow("keyboard.direction_and_compatibility");
     combatInput.terminationFlag=0; /*0050*/
-    combatStartup.aiUpdatesSuppressed=data[0x0EBA];combatStartup.unidentifiedField22=data[0x0EBB];
+    combatStartup.aiUpdatesSuppressed=combatAiFlagsRow.byte();combatStartup.unidentifiedField22=combatAiFlagsRow.byte(1);
     combatInput.combatInputReplayCancelLatched=0; /*08AA*/
-    for (uint16_t group=0;group<2;++group) combatInput.heldDirectionKeyMasks[group]=data[0x4278+group];
-    for (uint16_t mask=0;mask<sizeof(combatInput.heldDirectionMasks);++mask) combatInput.heldDirectionMasks[mask]=data[0x43E3+mask];
-    combatStartup.criticalErrorHandlerInstalled=data[0x2860];
-    combatStartup.keyboardHandlersInstalled=data[0x4274];
-    combatStartup.mouseDriverInstalled=data[0x41E2];
-    combatStartup.divideErrorHookMarkedActive=data[0x4162];
-    combatStartup.videoAdapter=data[0x3FC4];
+    for (uint16_t group=0;group<2;++group) combatInput.heldDirectionKeyMasks[group]=keyboardStateRow.byte(4+group);
+    for (uint16_t mask=0;mask<sizeof(combatInput.heldDirectionMasks);++mask) combatInput.heldDirectionMasks[mask]=keyboardDirectionAndCompatibilityRow.byte(mask);
+    combatStartup.criticalErrorHandlerInstalled=startupCriticalErrorHandlerRow.byte();
+    combatStartup.keyboardHandlersInstalled=keyboardStateRow.byte();
+    combatStartup.mouseDriverInstalled=startupMouseAndDelayRow.byte();
+    combatStartup.divideErrorHookMarkedActive=startupDivideHookRow.byte();
+    combatStartup.videoAdapter=videoAdapterRow.byte();
     combatStartup.savedDivideErrorOwner=MwDivideOwner::System; /*4165: 0000:0000*/
-    combatStartup.pitChannel0DivisorShadow=MwReadNativeWord(data,0x41E7);
+    combatStartup.pitChannel0DivisorShadow=startupPitDivisorRow.word();
     combatStartup.schedulerPeriod=0; /*41E9*/combatStartup.schedulerCountdown=0; /*41EB*/
     combatStartup.schedulerActiveSlots=0; /*41ED*/
     for (uint16_t slot=0;slot<COMBAT_SCHEDULER_SLOTS;++slot)
     {
         /* Fresh EXEC only;2540 deliberately leaves these stale on reinstall. */
-        if (MwReadNativeWord(data,0x41EF+slot*4) || MwReadNativeWord(data,0x41F1+slot*4)) return false;
+        if (startupSchedulerRow.word(slot*4) || startupSchedulerRow.word(2+slot*4)) return false;
         combatStartup.schedulerCallbacks[slot]=NULL;
         combatStartup.schedulerTimings[slot].ticksRemaining=0; /*422F*/
         combatStartup.schedulerTimings[slot].period=0; /*4231*/
     }
-    combatStartup.keyboardCapsLockRequested=data[0x4275];combatStartup.keyboardBiosIntercept=data[0x4403];
+    combatStartup.keyboardCapsLockRequested=keyboardStateRow.byte(1);combatStartup.keyboardBiosIntercept=keyboardDirectionAndCompatibilityRow.byte(0x20);
     combatInput.keyboardLastKey=0; /*4276*/
     /* Not in the image: the BIOS key ring and shift flags, empty and zero at
      * each combat's start as the port's BIOS data was (H2). */
     for (uint16_t slot=0;slot<COMBAT_KEY_QUEUE_SLOTS;++slot) combatInput.combatKeyQueue[slot]=0;
     combatInput.combatKeyQueueHead=combatInput.combatKeyQueueTail=0;combatInput.keyboardShiftFlags=0;
     for (uint16_t scan=0;scan<COMBAT_KEYBOARD_SCAN_CODES;++scan)
-    {combatInput.keyboardUnshiftedCharacters[scan]=data[0x42C2+scan];combatInput.keyboardShiftedCharacters[scan]=data[0x431B+scan];}
+    {combatInput.keyboardUnshiftedCharacters[scan]=keyboardCharactersRow.byte(scan);combatInput.keyboardShiftedCharacters[scan]=keyboardCharactersRow.byte(0x59+scan);}
     for (uint16_t scan=0;scan<COMBAT_KEYBOARD_COMPATIBILITY_CODES;++scan)
-    {combatInput.keyboardCompatibilityScans[scan]=data[0x43ED+scan];combatInput.keyboardCompatibilityReplacements[scan]=data[0x43F8+scan];}
-    for (uint16_t scan=0;scan<sizeof(combatStartup.keyboardScanTranslations);++scan) combatStartup.keyboardScanTranslations[scan]=data[0x4374+scan];
+    {combatInput.keyboardCompatibilityScans[scan]=keyboardDirectionAndCompatibilityRow.byte(0xA+scan);combatInput.keyboardCompatibilityReplacements[scan]=keyboardDirectionAndCompatibilityRow.byte(0x15+scan);}
+    for (uint16_t scan=0;scan<sizeof(combatStartup.keyboardScanTranslations);++scan) combatStartup.keyboardScanTranslations[scan]=keyboardScanTranslationsRow.byte(scan);
     return true;
 }
 
 /* EXEC/DFCE data projection only, not206D or a new game procedure. Clear
  * converted owners in the native4EDC..D5DF BSS interval; reload authored
  * scalars separately. Host bindings and campaign owners are untouched. */
-void BtechInitializeFreshStartupOwners(const uint8_t *data)
+void BtechInitializeFreshStartupOwners(void)
 {
+    const BtechStartRowData combatStartHeadingRadarSelectedRow("combat.start.heading_radar_selected");
+    const BtechStartRowData combatStartViewShiftsRow("combat.start.view_shifts");
+    const BtechStartRowData combatStartMountGroupModeRow("combat.start.mount_group_mode");
+    const BtechStartRowData combatStartFiringIndicatorsPendingRow("combat.start.firing_indicators_pending");
     combatInput.fireCycleStartMount=combatInput.requestedTorsoAngle=combatInput.previousAimButtonState=0;
     for (uint16_t i=0;i<COMBAT_DECIMAL_FIELD_BYTES;++i) decimalFieldText[i]=0;
     for (uint16_t page=0;page<COMBAT_RADAR_CACHE_PAGES;++page)
@@ -84,14 +98,14 @@ void BtechInitializeFreshStartupOwners(const uint8_t *data)
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
     {combatStartup.unitLastDrawParts[slot]=NULL;combatStartup.heatAimJitterTiers[slot]=0;combatMechs.heatSpeedPenalties[slot]=0;combatMechs.heatInhibitFlags[slot]=0;}
     combatStartup.selectedWeaponMount=0; /*0E24*/
-    combatStartup.radarRangeShift=MwReadNativeWord(data,0x0E20);
-    combatStartup.viewScaleShift=MwReadNativeWord(data,0x0E22);
+    combatStartup.radarRangeShift=combatStartViewShiftsRow.word();
+    combatStartup.viewScaleShift=combatStartViewShiftsRow.word(2);
     combatStartup.requestedPlayerForwardStepScale=0; /*0EB4*/
     combatStartup.unidentifiedField21=0; /*0EB2*/
-    combatStartup.mountGroupMode=data[0x0E26];
-    combatStartup.headingRadarSelected=data[0x0E1E];
+    combatStartup.mountGroupMode=combatStartMountGroupModeRow.byte();
+    combatStartup.headingRadarSelected=combatStartHeadingRadarSelectedRow.byte();
     combatStartup.combatDispatchState=0; /*0E1C*/
-    combatStartup.firingIndicatorBank0Pending=data[0x0EAF];
-    combatStartup.firingIndicatorBank1Pending=data[0x0EAE];
+    combatStartup.firingIndicatorBank0Pending=combatStartFiringIndicatorsPendingRow.byte(1);
+    combatStartup.firingIndicatorBank1Pending=combatStartFiringIndicatorsPendingRow.byte();
     combatStartup.selectedHitObject=NULL;
 }

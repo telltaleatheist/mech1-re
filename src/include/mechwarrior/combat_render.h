@@ -119,7 +119,7 @@ struct CombatRenderState
     uint8_t targetSelectionProbeActive;
 };
 extern CombatRenderState combatRender;
-bool BtechImportRenderInitialData(const uint8_t *data,size_t bytes);
+bool BtechImportRenderInitialData(void);
 void BtechRenderObjectListVeneer(BtechCameraContext *camera,BtechWorldObjectPrefix *const *objects,int16_t count);
 void BtechRenderObjectList(BtechCameraContext *camera,BtechWorldObjectPrefix *const *objects,int16_t count);
 void BtechPrepareCameraContext(BtechCameraContext *camera);

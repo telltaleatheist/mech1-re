@@ -130,7 +130,7 @@ struct CombatSoundIrqState
     MwTimerOwner savedSampleIrqOwner;
 };
 extern CombatSoundIrqState combatSoundIrq;
-bool BtechImportToneInitialData(const uint8_t *data,size_t bytes,const uint8_t *toneData,size_t toneBytes);
+bool BtechImportToneInitialData(void);
 void BtechStopMatchingToneChannels(uint16_t soundEventIndex,uint8_t activityMask);
 uint16_t BtechStopSoundEventAndTimer(uint16_t soundEventIndex);
 /* Ordinary DS304E path. Sample IRQ0DD3's foreign-DS call is not yet converted. */
@@ -200,7 +200,7 @@ struct CombatSoundState
     BtechResourceAllocation soundAllocationOverride;
 };
 extern CombatSoundState combatSound;
-bool BtechImportSoundInitialData(const uint8_t *data,size_t bytes);
+bool BtechImportSoundInitialData(void);
 BtechRuntimeStream *BtechRuntimeStreamFindFreeSlot(void);
 BtechRuntimeStream *BtechRuntimeStreamOpen(const char *filename,const char *mode);
 BtechTaggedStream *BtechFindTaggedStreamRecord(BtechRuntimeStream *stream);

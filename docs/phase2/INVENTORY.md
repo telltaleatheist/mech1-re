@@ -4,13 +4,13 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 
 | Group | Items |
 |---|---|
-| Extracted: the original's creative content (the story file, first run) | 83 |
+| Extracted: the original's creative content (the story file, first run) | 85 |
 | Ours: UI words and system messages (story/words.json, imported) | 142 |
 | Ours: screen layout, panels and menus (data/ui/*.json) | 127 |
-| Ours: rules and constants (data/rules/*.json) | 102 |
+| Ours: rules and constants (data/rules/*.json) | 105 |
 | Ours: the new campaign's starting state (data/rules/new_campaign.json) | 103 |
 | Dropped | 6 |
-| Code: runtime state and renderer tables (no file) | 890 |
+| Code: runtime state and renderer tables (no file) | 885 |
 
 ## Extracted: the original's creative content (the story file, first run)
 
@@ -22,6 +22,8 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 | BTECH_304E_COCKPIT.cpp | `missionTitleText` | BTECH 304E:09F0 | story combat.mission.1.title |
 | BTECH_304E_COCKPIT.cpp | `pilotDefinitionNameDirectory` | BTECH 304E:20AD | story combat.pilot.1.name |
 | BTECH_304E_COCKPIT.cpp | `pilotDefinitionNames` | BTECH 304E:20AD | story combat.pilot.1.name |
+| BTECH_304E_RUNTIME.cpp | `runtimePrefix` | BTECH 304E:0000 | story, runtime.prefix (native span) |
+| BTECH_304E_WORLD.cpp | `nullNearSegment` | BTECH 304E:0000 | story, runtime.prefix (native span) |
 | MW_EGA_0800_STATE.cpp | `egaPaletteCodeBytes` | MW_EGA 0800:0233 | story ega.row_200_offset |
 | MW_MAIN_1090.cpp | `afterActionGeneralFailure` | MW_MAIN 1090:159B | story after_action.failure.general |
 | MW_MAIN_1090.cpp | `afterActionGeneralSuccess` | MW_MAIN 1090:1742 | story after_action.success.general |
@@ -414,6 +416,7 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 | BTECH_304E_POSE.cpp | `animationPrefixSequenceCounts` | BTECH 304E:24B4 | rule assets.animation_prefix_counts |
 | BTECH_304E_POSE.cpp | `chassisAnimationAvailability` | BTECH 304E:24C6 | rule mechs.animations (start image) |
 | BTECH_304E_POSE.cpp | `playerPoseFrameCounts` | BTECH 304E:265E | rule assets.player_pose_frame_counts |
+| BTECH_304E_POSE.cpp | `playerPoseKeyframes` | BTECH 304E:250E | rule animation.pose_keyframes (start image) |
 | BTECH_304E_STARTUP.cpp | `aiUpdatesSuppressed` | BTECH 304E:0EBA | rule combat.ai_flags (start image) |
 | BTECH_304E_STARTUP.cpp | `firingIndicatorBank0Pending` | BTECH 304E:0EAF | rule combat.start.firing_indicators_pending (start image) |
 | BTECH_304E_STARTUP.cpp | `firingIndicatorBank1Pending` | BTECH 304E:0EAE | rule combat.start.firing_indicators_pending (start image) |
@@ -431,6 +434,7 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 | BTECH_304E_WORLD.cpp | `bodyDamageEffectResourceDeltas` | BTECH 304E:2342 | rule assets.body_damage_effect_steps |
 | BTECH_304E_WORLD.cpp | `bodyLocationReferenceIndices` | BTECH 304E:0EBC | rule combat.body_reference_point |
 | BTECH_304E_WORLD.cpp | `defaultEffectResourceDeltas` | BTECH 304E:0E96 | rule assets.default_effect_steps |
+| BTECH_304E_WORLD.cpp | `fallenBodyReferenceBanks` | BTECH 304E:0FC8 | rule mechs.fallen_reference_points (start image) |
 | BTECH_304E_WORLD.cpp | `hitLocationRows` | BTECH 304E:26BC | rule combat.hit_locations |
 | BTECH_304E_WORLD.cpp | `machineGunEffectResourceDeltas` | BTECH 304E:0EA4 | rule assets.machine_gun_effect_steps |
 | BTECH_304E_WORLD.cpp | `missileClusterRowByWeapon` | BTECH 304E:234A | rule weapons.missile_cluster_rows |
@@ -438,6 +442,7 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 | BTECH_304E_WORLD.cpp | `muzzleLateralOffsetsByBodyLocation` | BTECH 304E:2302 | rule mechs.muzzle_lateral_offsets (start image) |
 | BTECH_304E_WORLD.cpp | `opposingSideFirstUnitSlots` | BTECH 304E:2434 | rule combat.opposing_side_first_unit_slots |
 | BTECH_304E_WORLD.cpp | `projectileProfileIndicesByWeapon` | BTECH 304E:232E | rule weapons.projectile_profiles |
+| BTECH_304E_WORLD.cpp | `projectileProfiles` | BTECH 304E:0E6E | rule weapons.projectiles (start image) |
 | BTECH_304E_WORLD.cpp | `rangeHitModifiers` | BTECH 304E:2714 | rule combat.range_hit_modifiers |
 | MW_MAIN_1090.cpp | `ammunitionBasePrices` | MW_MAIN 1090:2EF8 | rule market.ammunition_prices |
 | MW_MAIN_1090.cpp | `ammunitionTransactionPrices` | MW_MAIN 1090:2F10 | rule market.start.ammunition_transaction_prices |
@@ -607,7 +612,7 @@ Generated from `src/Original/Memory` by `tools/phase2/inventory.py` (every file-
 
 ## Code: runtime state and renderer tables (no file)
 
-Not listed one by one: BTECH_1ADF_STATE.cpp 2, BTECH_1BF5_STATE.cpp 4, BTECH_22B6_DATA.cpp 15, BTECH_2FEB.cpp 24, BTECH_304E.cpp 31, BTECH_304E_COCKPIT.cpp 36, BTECH_304E_ORDERS.cpp 24, BTECH_304E_POLYGONS.cpp 24, BTECH_304E_POSE.cpp 12, BTECH_304E_RENDER.cpp 61, BTECH_304E_RUNTIME.cpp 10, BTECH_304E_SCENE.cpp 8, BTECH_304E_SOUND.cpp 35, BTECH_304E_STARTUP.cpp 55, BTECH_304E_VIDEO.cpp 85, BTECH_304E_WORLD.cpp 107, BtechStartImage.cpp 4, MW_0806_STATE.cpp 1, MW_EGA_0800_STATE.cpp 72, MW_MAIN_0F41_STATE.cpp 5, MW_MAIN_1090.cpp 246, MW_MAIN_1090_OPTIONS.cpp 9, MW_MAIN_1AA5.cpp 1, MW_MAIN_28BE.cpp 14, NativeStart.cpp 5.
+Not listed one by one: BTECH_1ADF_STATE.cpp 2, BTECH_1BF5_STATE.cpp 4, BTECH_22B6_DATA.cpp 15, BTECH_2FEB.cpp 24, BTECH_304E.cpp 31, BTECH_304E_COCKPIT.cpp 36, BTECH_304E_ORDERS.cpp 24, BTECH_304E_POLYGONS.cpp 24, BTECH_304E_POSE.cpp 11, BTECH_304E_RENDER.cpp 61, BTECH_304E_RUNTIME.cpp 9, BTECH_304E_SCENE.cpp 8, BTECH_304E_SOUND.cpp 35, BTECH_304E_STARTUP.cpp 55, BTECH_304E_VIDEO.cpp 85, BTECH_304E_WORLD.cpp 104, BtechStartImage.cpp 4, MW_0806_STATE.cpp 1, MW_EGA_0800_STATE.cpp 72, MW_MAIN_0F41_STATE.cpp 5, MW_MAIN_1090.cpp 246, MW_MAIN_1090_OPTIONS.cpp 9, MW_MAIN_1AA5.cpp 1, MW_MAIN_28BE.cpp 14, NativeStart.cpp 5.
 
 Still read from the exe (slice 6 moves them): none.
 

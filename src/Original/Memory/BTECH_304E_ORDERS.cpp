@@ -1,6 +1,7 @@
 #include "mechwarrior/combat_orders.h"
 #include "mechwarrior/story.h"
 #include "mechwarrior/native_address.h"
+#include "mechwarrior/btech_start_image.h"
 #include "mechwarrior/ui_layout.h"
 #include <string.h>
 
@@ -15,8 +16,11 @@ static bool CopyLayoutPiece(uint8_t *view,size_t viewBytes,const char *id,uint16
     const size_t size=MwUiPieceSize(id);
     return size && offset<=viewBytes && size<=viewBytes-offset && MwUiCopyNative(id,view+offset,size);
 }
-bool BtechImportOrderInitialData(const uint8_t *data,size_t bytes)
+bool BtechImportOrderInitialData(void)
 {
+    const BtechStartRowData ordersMapScaleShiftsRow("orders.map_scale_shifts");
+    const BtechStartRowData ordersMapMarkerMasksRow("orders.map_marker_masks");
+    const BtechStartRowData combatWorldBoundaryCornersRow("combat.world_boundary_corners");
     /* The layout's pieces, at their native offsets (304E:008C..032E), and the
      * order panel's words (story/words.json, orders.word.*) at theirs
      * (304E:010C..02B6), so the reads below keep the exe's addresses. */
@@ -35,7 +39,6 @@ bool BtechImportOrderInitialData(const uint8_t *data,size_t bytes)
         || !CopyLayoutPiece(ui,sizeof(ui),"orders.word_refs.tactical",0x02DA)
         || !CopyLayoutPiece(ui,sizeof(ui),"orders.word_refs.damage",0x02EC)
         || !CopyLayoutPiece(ui,sizeof(ui),"orders.word_refs.weapons",0x02FA)) return false;
-    if (!data || bytes<0x4F5A || MwReadNativeWord(data,0x4F2E) || MwReadNativeWord(data,0x4F30)) return false;
     memcpy(orderPanelText,words+ORDER_PANEL_TEXT_START,sizeof(orderPanelText));
     /* Authored string directories are decoded once at executable IO. Runtime
      * panels use the references below, never native-address accessors. */
@@ -48,17 +51,17 @@ bool BtechImportOrderInitialData(const uint8_t *data,size_t bytes)
         {
             uint16_t offset=MwReadNativeWord(ui,bases[directory]+entry*2);
             if (offset<ORDER_PANEL_TEXT_START || offset>=ORDER_PANEL_TEXT_END || !memchr(words+offset,0,ORDER_PANEL_TEXT_END-offset)) return false;
-            destinations[directory][entry]=orderPanelText+offset-ORDER_PANEL_TEXT_START;
+            destinations[directory][entry]=orderPanelText+(offset-ORDER_PANEL_TEXT_START);
         }
     }
-    combatOrders.orderWeaponHeading=orderPanelText+0x026C-ORDER_PANEL_TEXT_START;
-    combatOrders.orderOfText=orderPanelText+0x027A-ORDER_PANEL_TEXT_START;
-    combatOrders.orderColon=orderPanelText+0x027D-ORDER_PANEL_TEXT_START;
-    combatOrders.orderSelectionHeading=orderPanelText+0x027F-ORDER_PANEL_TEXT_START;
-    combatOrders.orderLocationText=orderPanelText+0x028D-ORDER_PANEL_TEXT_START;
-    combatOrders.orderBaseText=orderPanelText+0x029A-ORDER_PANEL_TEXT_START;
-    combatOrders.orderDamageText=orderPanelText+0x02A7-ORDER_PANEL_TEXT_START;
-    combatOrders.orderWeaponsText=orderPanelText+0x02AE -ORDER_PANEL_TEXT_START;
+    combatOrders.orderWeaponHeading=orderPanelText+(0x026C-ORDER_PANEL_TEXT_START);
+    combatOrders.orderOfText=orderPanelText+(0x027A-ORDER_PANEL_TEXT_START);
+    combatOrders.orderColon=orderPanelText+(0x027D-ORDER_PANEL_TEXT_START);
+    combatOrders.orderSelectionHeading=orderPanelText+(0x027F-ORDER_PANEL_TEXT_START);
+    combatOrders.orderLocationText=orderPanelText+(0x028D-ORDER_PANEL_TEXT_START);
+    combatOrders.orderBaseText=orderPanelText+(0x029A-ORDER_PANEL_TEXT_START);
+    combatOrders.orderDamageText=orderPanelText+(0x02A7-ORDER_PANEL_TEXT_START);
+    combatOrders.orderWeaponsText=orderPanelText+(0x02AE -ORDER_PANEL_TEXT_START);
     for (uint16_t code=0;code<ORDER_DISPLAY_CODES;++code) combatOrders.orderDisplayIndices[code]=MwReadNativeWord(ui,0x02C4+code*2);
     for (uint16_t scheme=0;scheme<2;++scheme)
         for (uint16_t condition=0;condition<4;++condition)
@@ -80,27 +83,24 @@ bool BtechImportOrderInitialData(const uint8_t *data,size_t bytes)
         combatOrders.orderNavigationPanelDeltas[direction]=(int16_t)MwReadNativeWord(ui,0x009A+direction*2);
         combatOrders.orderNavigationRowDeltas[direction]=(int16_t)MwReadNativeWord(ui,0x00B0+direction*2);
     }
-    for (uint16_t scale=0;scale<ORDER_MAP_SCALE_COUNT;++scale) combatOrders.orderMapScaleShifts[scale]=data[0x0088+scale];
+    for (uint16_t scale=0;scale<ORDER_MAP_SCALE_COUNT;++scale) combatOrders.orderMapScaleShifts[scale]=ordersMapScaleShiftsRow.byte(scale);
     for (uint16_t style=0;style<ORDER_MAP_MARKER_STYLES;++style)
         for (uint16_t x=0;x<ORDER_MAP_MARKER_WIDTH;++x)
-            for (uint16_t y=0;y<ORDER_MAP_MARKER_WIDTH;++y) combatOrders.orderMapMarkerMasks[style][x][y]=data[0x00E8+style*9+x*3+y];
+            for (uint16_t y=0;y<ORDER_MAP_MARKER_WIDTH;++y) combatOrders.orderMapMarkerMasks[style][x][y]=ordersMapMarkerMasksRow.byte(style*9+x*3+y);
     for (uint16_t corner=0;corner<2;++corner)
     {
         uint32_t *position[]={&combatOrders.combatWorldBoundaryCorners[corner].positionA,&combatOrders.combatWorldBoundaryCorners[corner].positionB,&combatOrders.combatWorldBoundaryCorners[corner].positionC};
-        for (uint16_t axis=0;axis<3;++axis) *position[axis]=MwReadNativeWord(data,0x0336+corner*12+axis*4)|((uint32_t)MwReadNativeWord(data,0x0338+corner*12+axis*4)<<16);
+        for (uint16_t axis=0;axis<3;++axis) *position[axis]=combatWorldBoundaryCornersRow.word(corner*12+axis*4)|((uint32_t)combatWorldBoundaryCornersRow.word(2+corner*12+axis*4)<<16);
     }
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
     {combatOrders.unitOrderMapScreenX[slot]=0; /*4F08*/combatOrders.unitOrderMapScreenY[slot]=0; /*4F18*/}
     for (uint16_t panel=0;panel<3;++panel) combatOrders.lanceOrderPanelTextX[panel]=MwReadNativeWord(ui,0x008C+panel*2); /* orders.json "start" */
-    combatOrders.orderScreenFullRedrawPending=data[0x4EEC];
+    combatOrders.orderScreenFullRedrawPending=0; /*4EEC*/
     combatOrders.previousOrderHighlightPanel=0; /*4EEE*/
     combatOrders.previousOrderHighlightRow=0; /*4EF4*/
     combatOrders.orderMapPositionMask=0; /* 4EF0, past BTECH's file data: written before it's read, zero where the exe reloaded it. */
     for (uint16_t panel=0;panel<ORDER_WINGMATE_PANELS;++panel)
-    {
-        if (MwReadNativeWord(data,0x4EFC+panel*2)) return false; /* Fresh EXEC has no live near control references. */
-        combatOrders.lanceOrderControls[panel]=NULL;
-    }
+        combatOrders.lanceOrderControls[panel]=NULL; /*4EFC: fresh EXEC has no live near control references.*/
     combatOrders.orderMapScaleIndex=0; /*4EF6*/
     combatOrders.selectedLanceOrderPanel=0; /*4EF8*/combatOrders.selectedOrderPanelRow=0; /*4EFA*/
     combatOrders.orderPanelMode=0; /*4F02*/combatOrders.orderActionSelection=0; /*4F04*/
