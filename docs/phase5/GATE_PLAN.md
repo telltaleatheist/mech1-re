@@ -33,16 +33,15 @@ than four jobs, one suite at a time. Opt-ins are set together with the rest: `MW
 | 3 | On the 1989 copy, only the tests that use the game's files (list below), both opt-ins on | Mac | 14 of 14, none skipped (exe_free compares its two runs with each other, so 1989's two known traces don't fail it) | estimate 7 min, nearly all of it events and exe_free |
 | 4 | Full ctest as step 2, 1990; then step 3's list, 1989 | Linux | 37 of 37, then 14 of 14 (at c4f217c events alone took 349 s, the whole 375 s) | estimate 8 min each |
 | 5 | Full ctest, 1990 game | Windows | 35 of 37, skipped: exe_free and events. With both opt-ins on: 37 of 37, if Windows passes them; the first time. Every opt-in failure on Windows: stop and tell the lead | 55 s measured; opt-ins estimate 15 min |
-| 6 | Traces, `check.py` | Mac, Linux, Windows | 1990: 8 of 8. 1989: 6 of 8, the failures combat_cockpit and combat_retreat (its tick is one ahead; see "For R" in the plan). Any other name is new | Mac estimate 2 min per revision |
-| 7 | Events, `events.py check`, both revisions, with frames compared with the last set's | Mac | 12 of 12 and 12 of 12 start worlds; frames identical | estimate 5 min per revision |
-| 8 | `audio.py` | Mac | 2 of 2 | estimate 1 min |
-| 9 | Sanitizer build (address, and bounds for combat) on the 8 traces and the sound logs | Mac | 0 reports | estimate 4 min each |
-| 10 | Packages from the local tag, the build's stamp and the release-label checks on | all three | zip and Setup.exe; dmg, both architectures; tar.gz and AppImage; smoke test and first run each; `sums.py` over all | Windows about 1 min, Linux 1 min, Mac about 2 min |
-| 11 | `combat_cockpit` on the Intel half of the Mac package, under Rosetta | Mac | the trace matches | 10 s measured |
-| 12 | The kit's non-ASCII name case, its home away from the program's folder, with and without the manifest | Windows | no abort (an open question until dev 1's bump) | 5 min |
-| 13 | The setup's file check on both copies, 1990 and 1989 (and on the served setup, if that is in by then) | Mac, Linux, Windows | each copy accepted as its revision; its own failures named as its branch says | set by the file check's branch |
+| 6 | Traces, `check.py` | Mac, Linux, Windows | 1990: 8 of 8. 1989: 6 of 8, the failures combat_cockpit and combat_retreat (its tick is one ahead; see "For R" in the plan). Any other name is new. On the Mac, the runs' frames, both revisions, compared with the frames kept from 4632030: identical | Mac estimate 2 min per revision |
+| 7 | `audio.py` | Mac | 2 of 2 | estimate 1 min |
+| 8 | Sanitizer build (address, and bounds for combat) on the 8 traces and the sound logs | Mac | 0 reports | estimate 4 min each |
+| 9 | Packages from the local tag, the build's stamp and the release-label checks on | all three | zip and Setup.exe; dmg, both architectures; tar.gz and AppImage; smoke test and first run each; `sums.py` over all | Windows about 1 min, Linux 1 min, Mac about 2 min |
+| 10 | `combat_cockpit` on the Intel half of the Mac package, under Rosetta | Mac | the trace matches | 10 s measured |
+| 11 | The kit's non-ASCII name case, its home away from the program's folder, with and without the manifest | Windows | no abort (an open question until dev 1's bump) | 5 min |
+| 12 | The setup's file check on both copies, 1990 and 1989 (and on the served setup, if that is in by then) | Mac, Linux, Windows | each copy accepted as its revision; its own failures named as its branch says | set by the file check's branch |
 
-Steps 6 (1990 and 1989), 7, 8 and 9's address half took about 15 minutes together at 4632030 on the Mac, builds included.
+Steps 6 (both revisions), 7 and 8's address half, and the events of both revisions that steps 2 and 3 now run, took about 15 minutes together at 4632030 on the Mac, builds included.
 
 Step 3's list (with `MW1O_GAME` the 1989 copy and both BTECH revisions given) is `btech_revisions`, `combat_records`, `words_exe`, `rules_exe`, `ui_exe`, `start_exe`, `import_exe`,
 `text_audit`, `setup`, `status_setup`, `read_only_install`, `feed_calls`, `events` and `exe_free`:
