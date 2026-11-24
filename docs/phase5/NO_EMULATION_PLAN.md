@@ -538,16 +538,19 @@ Every slice below is its own branch with the full gate green: both setups, the t
 | H5 | The port bus retired: `MwSdlWriteDevicePort`, `ReadDevicePort` and the port-word hooks removed with their last callers; the sound-port event log keeps its tones and snaps as the tone log (its name is historical), and its port lines are gone. Its first part (ports 0 and 1) went ahead, after H4d; the rest follows S4, S8 and S9, since its last callers are the MT-32 and AdLib backends S8 removes | everything above exact | 2 |
 | R | The release gate: every gate on Windows, macOS and Linux from fresh builds. Packages from a local tag. The listening list and the visual acceptance list signed off on the packaged builds. The controller path is covered by the SDL virtual-device test (H3b); no physical controller is available | all of the above | 2 |
 
+**From R's Windows preparation:**
+- **A refused start and a failsafe are seen.** On Windows each is a message box as well as stderr or the log (`SDLNotice`): why it couldn't start, or why it had to stop, and where the log is. Not in a hidden or scripted run, not for `--setup`, `--status` or `--help`, and not in a window station nobody sees (a service, ssh). Started with a game folder, a program with no console and no redirection now writes the log too. Elsewhere stderr is all, as before.
+- **The reason** is the problem noted (`problem.h`: the rules', the layout's, the story's, `MwSdlFail`'s, a failsafe's), else SDL's. The setup's own failure (`say_error`) doesn't note its reason yet; the box then says the log has it.
+- **An access violation** is not shown: only an abort is.
+- **UTF-8 paths.** The program's manifest makes UTF-8 its code page (Windows 10 1903 and later), so every path it is given or opens may hold any character. `status_setup` starts it from such a folder, with such a player's folder. Without the manifest, a folder named in other characters where the setup looks made even `--status` abort.
+- **ega_canvas_writer and combat_records** link under MSVC (no duplicate symbol) and pass. `Problem.cpp` is apart from `PortDiagnostics.cpp` to keep it so.
+
 **For R** (found by earlier slices, to be done or decided there):
-- A refused start in a Windows GUI build: does the player see the reason anywhere but a log? (The missing soundfont's message was only ever printed to stderr.)
-- A port failsafe's message: started with no arguments, the program writes its log, with the message, to mechwarrior.log beside the saves. Started with a game folder, a Windows GUI build has no stderr, so it is lost. There is no message box (B4e).
 - The setup on a finished install (`mw1r --setup`): FIND THE GAME offers the copy in use first, even a damaged one, and INSTALL on it copies nothing. It should verify the game's files (today only BTECH.EXE and MW_MAIN.EXE are looked at) and offer "choose another" plainly.
-- ega_canvas_writer_test and combat_records_test define their own MwAbortWithReason and rely on the linker not taking the library's object. MSVC may report a duplicate symbol: link and run both on Windows before trusting them there.
 - A package built on each platform with hidapi's notice (`licenses/hidapi-LICENSE-bsd.txt`), and what the Mac and Windows packages link and ship: the MSVC runtime DLLs and Inno Setup's parts among them. Only the Linux package has been measured (S9).
 - The Linux tar.gz holds libSDL3 three times (.so, .so.0, .so.0.2.0); the AppImage holds .so.0 alone.
 - "The C17 port" in `docs/THIRD_PARTY_NOTICES.md`, and the README's stale passages.
 - Packaging with a release's label should refuse a tree that isn't at that tag, or has uncommitted changes.
-- On Windows: the program's path and the player's folder in the launcher's record, with a path that isn't plain ASCII (the UTF-8 manifest, and the kit's `self_path`).
 - The kit's recognise rules on a real copy of MechWarrior 2, MechWarrior 3 and Pirate's Moon, `DATA1.HDR` included.
 - The AppImage may ship, with libfuse and its notice in its runtime (the project owner's word, 2026-11-24); the licence wording for it is R's.
 - In the release notes: an older build imports the story again on a folder made by this one; an old test package's own `MechWarrior.ini` beside the program keeps its `sound_system=speaker`.
