@@ -268,7 +268,7 @@ std::string recognise(const std::string& path) try {
   if (f.kind == rekit::Found::kNothing) return "";
   const std::string plays = std::string(" This program plays ") + kTitle + ", the 1989 game whose program is BTECH.EXE.";
   if (f.game == "btech")
-    return "BTECH.EXE was found there, but it is a revision this program doesn't know. It knows the 1989 release's and the 1990-01-22 one's.";
+    return "BTECH.EXE was found there, but it is a revision this program doesn't know. It knows two: the 1989 release and the one of 1990-01-22.";
   if (f.game == "mw2") return "That is MechWarrior 2, another game." + plays;
   if (f.game == "mw3") return "That is MechWarrior 3, another game." + plays;
   if (f.game == "pm") return "That is MechWarrior 3: Pirate's Moon, another game." + plays;
