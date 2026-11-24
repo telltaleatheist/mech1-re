@@ -400,6 +400,14 @@ Names such as planetSelector, houseSelector, scenarioSelectors and the trace sch
 - **Also.** 14 unused EGA register constants and the end of the graphics dispatch table are gone from combat_video.h. ega_canvas_writer_test covers B4c's two refusals (a drawing on no page, a captured or restored word at cursor FFFF).
 - **Kept as it was.** DOS's memory list itself (first fit, one paragraph a block): how much memory is free decides what the game loads, so its sizes stay.
 
+**From B4g** (combat's sound data; no golden re-recorded):
+- **The views.** `BtechSoundBytes` is a bank's borrowed bytes and their count, for the events, the tone channels and the MIDI stream. A read past the end is refused, and an offset is still a word that wraps. The view had a base too, always 0 here.
+- **The tone fallback.** A bank with no ITM reads its modulation from 0000: of the DOS machine. `BtechToneFallback` says which of the two a channel reads, and DOS memory has one source, `btechHostReadToneDosByte`: INT 0's owner live at each read, as before. A selector other than 0 is refused when the channel starts.
+- **The allocations** are freed by their bytes, not a selector, so the two selector hooks and the host's control block segments are gone. DOS's memory list and its sizes stay. Two differences, neither reachable, as nothing calls the unloads: a second release of a chain no longer frees a node's old selector again, and freeing a node whose append failed is refused, where DOS ignored it.
+- **`midiStreamPresent`** (was `midiStreamSelectorPresent`) is whether the track has bytes, which is when its selector was not 0.
+- **native_address.h** keeps `MwReadNativeWord` and two constants. `MwCampaignBuffer` is in campaign_buffer.h. The files that read words include native_address.h themselves.
+- **Also.** `ReleaseChildResources` clears its pointers before it frees the buffers again (B4b had freed first). The music tick runs on the main thread, so neither order could show. A start with an unknown option writes no launcher record.
+
 ## 3. How we check "play identical"
 
 ### Sound
