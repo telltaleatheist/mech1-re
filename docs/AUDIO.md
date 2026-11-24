@@ -5,18 +5,20 @@ music does not change the combat tick length or the timer.
 
 ```ini
 combat_tick_ms=60
-music=speaker
+music=soundfont
 ```
 
-- `speaker` (the default) plays the campaign's songs as tones on one voice, as
-  the original's PC speaker had them.
-- `soundfont` plays them from a soundfont (below).
+- `soundfont` (the default) plays the campaign's songs from a soundfont (below).
+- `speaker` plays them as tones on one voice, as the original's PC speaker had
+  them.
 - `off` plays no music. The effects stay.
 
 The player's own `MechWarrior.ini`, in the save directory, overrides the one
 beside the program when it names the music. An INI with the old `sound_system`
 still works: `speaker` is read as `music=speaker`, `adlib` and `mt32` as
-`music=soundfont`, and the log says so in one line. `music` wins over it in the
+`music=soundfont`, and the log says so in one line. With neither key in either
+file the music is the soundfont; an old INI with `sound_system=speaker` keeps
+the speaker. `music` wins over it in the
 same file. The MT-32 ROM settings are ignored, with a line in the log. The AdLib
 and MT-32 paths are gone (docs/phase5/NO_EMULATION_PLAN.md, S8 and S9).
 

@@ -11,7 +11,7 @@ installation:
 The launcher uses `build-visual-studio/Release`, keeps private saves separately
 and reports the capture/log directory under ignored `local` for the run. SDL3.dll must remain next
 to the executable. Do not set SDL dummy drivers for interactive play.
-The campaign's music is chosen in the existing `MechWarrior.ini`: see [sound configuration](AUDIO.md). The default remains speaker.
+The campaign's music is chosen in the existing `MechWarrior.ini`: see [sound configuration](AUDIO.md). The default is the soundfont.
 
 For the default installation location, put your original game files directly
 inside `assets/original-game`, then omit `-GameDirectory`. That entire folder
