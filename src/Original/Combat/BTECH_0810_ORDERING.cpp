@@ -53,9 +53,9 @@ int16_t BtechFilterNearbyWorldObjects(BtechCameraContext *camera,BtechWorldObjec
     uint32_t differences[3];
     if (!combatStartup.combatTickCounter)
     {
-        differences[0]=position->positionA-nearbyFilterCameraPosition.positionA;
-        differences[1]=position->positionB-nearbyFilterCameraPosition.positionB;
-        differences[2]=position->positionC-nearbyFilterCameraPosition.positionC;
+        differences[0]=position->positionA-combatScene.nearbyFilterCameraPosition.positionA;
+        differences[1]=position->positionB-combatScene.nearbyFilterCameraPosition.positionB;
+        differences[2]=position->positionC-combatScene.nearbyFilterCameraPosition.positionC;
         uint8_t reuse=1;
         for (uint16_t axis=0;axis<3;++axis)
         {
@@ -67,17 +67,17 @@ int16_t BtechFilterNearbyWorldObjects(BtechCameraContext *camera,BtechWorldObjec
         }
         if (reuse) return previousCount;
     }
-    nearbyFilterCameraPosition.positionA=position->positionA;
-    nearbyFilterCameraPosition.positionB=position->positionB;
-    nearbyFilterCameraPosition.positionC=position->positionC;
+    combatScene.nearbyFilterCameraPosition.positionA=position->positionA;
+    combatScene.nearbyFilterCameraPosition.positionB=position->positionB;
+    combatScene.nearbyFilterCameraPosition.positionC=position->positionC;
     int16_t count=0;
     for (int16_t index=0;index<sourceCount;++index)
     {
         if (index>=COMBAT_WORLD_OBJECTS || !source[index]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: index>=COMBAT_WORLD_OBJECTS || !source[index]");
         BtechWorldObjectPrefix *object=source[index];
-        differences[0]=nearbyFilterCameraPosition.positionA-object->position.positionA;
-        differences[1]=nearbyFilterCameraPosition.positionB-object->position.positionB;
-        differences[2]=nearbyFilterCameraPosition.positionC-object->position.positionC;
+        differences[0]=combatScene.nearbyFilterCameraPosition.positionA-object->position.positionA;
+        differences[1]=combatScene.nearbyFilterCameraPosition.positionB-object->position.positionB;
+        differences[2]=combatScene.nearbyFilterCameraPosition.positionC-object->position.positionC;
         uint8_t nearby=1;
         for (uint16_t axis=0;axis<3;++axis)
         {
@@ -90,7 +90,7 @@ int16_t BtechFilterNearbyWorldObjects(BtechCameraContext *camera,BtechWorldObjec
         if (nearby) destination[count++]=object;
         else object->renderFlags&=(uint8_t)~WORLD_OBJECT_PROJECTED;
     }
-    surfacePriorityPrefixCount=BtechSortWorldObjectsBySurfacePriority(destination,count,objectSortOrSelectionScratch.priorityBytes);
+    combatScene.surfacePriorityPrefixCount=BtechSortWorldObjectsBySurfacePriority(destination,count,combatScene.objectSortOrSelectionScratch.priorityBytes);
     return count;
 }
 
@@ -100,14 +100,14 @@ void BtechChooseDistanceBucketShift(uint32_t maximum)
     uint16_t shifts=0;
     do {++shifts;maximum=(maximum>>1)|(maximum&UINT32_C(0x80000000));}
     while (((int16_t)(maximum>>16)>0 || (!(maximum>>16) && (uint16_t)maximum>WORLD_DISTANCE_BUCKET_TARGET)) && shifts<9);
-    distanceBucketShift=shifts;
+    combatScene.distanceBucketShift=shifts;
 }
 
 /*0810:B3EE. LOW BYTE shift count, native overflow bucket and signed shift. */
 uint16_t BtechGetDistanceBucket(uint32_t distance)
 {
     if ((int16_t)(distance>>16)>0 || (!(distance>>16) && (uint16_t)distance>=WORLD_DISTANCE_OVERFLOW_THRESHOLD)) return WORLD_DISTANCE_BUCKET_OVERFLOW;
-    uint8_t shifts=distanceBucketShift;
+    uint8_t shifts=combatScene.distanceBucketShift;
     while (shifts--) distance=(distance>>1)|(distance&UINT32_C(0x80000000));
     return (uint16_t)distance;
 }
@@ -118,29 +118,29 @@ void BtechBucketSortWorldObjectsByDistance(BtechWorldObjectPrefix **objects,int1
 {
     if (count<2) return;
     BtechChooseDistanceBucketShift(maximum);
-    for (uint16_t bucket=0;bucket<WORLD_DISTANCE_BUCKETS;++bucket) distanceBucketCounts[bucket]=0;
+    for (uint16_t bucket=0;bucket<WORLD_DISTANCE_BUCKETS;++bucket) combatScene.distanceBucketCounts[bucket]=0;
     for (int16_t index=0;index<count;++index)
     {
         if (index>=COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: index>=COMBAT_WORLD_OBJECTS");
         uint16_t bucket=BtechGetDistanceBucket(distances[index]);
         if (bucket>=WORLD_DISTANCE_BUCKETS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: bucket>=WORLD_DISTANCE_BUCKETS");
-        ++distanceBucketCounts[bucket];
+        ++combatScene.distanceBucketCounts[bucket];
     }
     uint16_t total=0;
     for (uint16_t bucket=0;bucket<WORLD_DISTANCE_BUCKETS;++bucket)
-    {total+=distanceBucketCounts[bucket];distanceBucketEnds[bucket]=total;}
+    {total+=combatScene.distanceBucketCounts[bucket];combatScene.distanceBucketEnds[bucket]=total;}
     for (int16_t index=0;index<count;++index)
     {
         uint16_t bucket=BtechGetDistanceBucket(distances[index]);
         if (bucket>=WORLD_DISTANCE_BUCKETS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: bucket>=WORLD_DISTANCE_BUCKETS");
-        uint16_t destination=--distanceBucketEnds[bucket];
+        uint16_t destination=--combatScene.distanceBucketEnds[bucket];
         if (destination>=COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: destination>=COMBAT_WORLD_OBJECTS");
-        distanceSortDistances[destination]=distances[index];distanceSortObjects[destination]=objects[index];
+        combatScene.distanceSortDistances[destination]=distances[index];combatScene.distanceSortObjects[destination]=objects[index];
     }
     uint16_t start=0;
     for (uint16_t bucket=0;bucket<WORLD_DISTANCE_BUCKETS;++bucket)
     {
-        uint16_t bucketCount=distanceBucketCounts[bucket];uint8_t swapped=1;
+        uint16_t bucketCount=combatScene.distanceBucketCounts[bucket];uint8_t swapped=1;
         for (int16_t comparisons=bucketCount-1;(int16_t)bucketCount>1 && comparisons>0 && swapped;--comparisons)
         {
             swapped=0;
@@ -148,19 +148,19 @@ void BtechBucketSortWorldObjectsByDistance(BtechWorldObjectPrefix **objects,int1
             {
                 uint16_t at=start+index;
                 if (at+1>=COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: at+1>=COMBAT_WORLD_OBJECTS");
-                if ((int32_t)distanceSortDistances[at+1]<(int32_t)distanceSortDistances[at])
+                if ((int32_t)combatScene.distanceSortDistances[at+1]<(int32_t)combatScene.distanceSortDistances[at])
                 {
-                    uint32_t savedDistance=distanceSortDistances[at];
-                    distanceSortDistances[at]=distanceSortDistances[at+1];distanceSortDistances[at+1]=savedDistance;
-                    BtechWorldObjectPrefix *savedObject=distanceSortObjects[at];
-                    distanceSortObjects[at]=distanceSortObjects[at+1];distanceSortObjects[at+1]=savedObject;swapped=1;
+                    uint32_t savedDistance=combatScene.distanceSortDistances[at];
+                    combatScene.distanceSortDistances[at]=combatScene.distanceSortDistances[at+1];combatScene.distanceSortDistances[at+1]=savedDistance;
+                    BtechWorldObjectPrefix *savedObject=combatScene.distanceSortObjects[at];
+                    combatScene.distanceSortObjects[at]=combatScene.distanceSortObjects[at+1];combatScene.distanceSortObjects[at+1]=savedObject;swapped=1;
                 }
             }
         }
         start+=bucketCount;
     }
     for (int16_t index=0;index<count;++index)
-    {objects[index]=distanceSortObjects[count-index-1];distances[index]=distanceSortDistances[count-index-1];}
+    {objects[index]=combatScene.distanceSortObjects[count-index-1];distances[index]=combatScene.distanceSortDistances[count-index-1];}
 }
 
 /*0810:B96D. Wrapped planar max+3/8 min, including the positive8000 quirk. */
@@ -229,17 +229,17 @@ uint16_t BtechOrderObjectsAroundSurfacePlanes(BtechCameraContext *camera,BtechWo
 void BtechSortFarWorldObjectsForView(BtechCameraContext *camera,BtechWorldObjectPrefix **objects,int16_t count,BtechObjectSortScratch *scratch)
 {
     uint32_t maximum=0;uint16_t distanceIndex=0;
-    for (int16_t index=surfacePriorityPrefixCount;index<count;++index)
+    for (int16_t index=combatScene.surfacePriorityPrefixCount;index<count;++index)
     {
         if (index<0 || index>=COMBAT_WORLD_OBJECTS || !camera || !camera->viewObject || !objects[index]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: index<0 || index>=COMBAT_WORLD_OBJECTS || !camera || !camera->viewObject || !objects[index]");
         uint32_t distance=BtechApproximatePlanarDistance(&camera->viewObject->position,&objects[index]->position);
         scratch->distances[distanceIndex++]=distance;
         if ((int32_t)distance>(int32_t)maximum) maximum=distance;
     }
-    if (surfacePriorityPrefixCount>COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: surfacePriorityPrefixCount>COMBAT_WORLD_OBJECTS");
-    BtechWorldObjectPrefix **tail=objects+surfacePriorityPrefixCount;
-    int16_t tailCount=count-surfacePriorityPrefixCount;
+    if (combatScene.surfacePriorityPrefixCount>COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: surfacePriorityPrefixCount>COMBAT_WORLD_OBJECTS");
+    BtechWorldObjectPrefix **tail=objects+combatScene.surfacePriorityPrefixCount;
+    int16_t tailCount=count-combatScene.surfacePriorityPrefixCount;
     BtechBucketSortWorldObjectsByDistance(tail,tailCount,scratch->distances,maximum);
-    (void)BtechOrderObjectsAroundSurfacePlanes(camera,objects+surfacePriorityPrefixCount,
-        (int16_t)(count-surfacePriorityPrefixCount),scratch);
+    (void)BtechOrderObjectsAroundSurfacePlanes(camera,objects+combatScene.surfacePriorityPrefixCount,
+        (int16_t)(count-combatScene.surfacePriorityPrefixCount),scratch);
 }

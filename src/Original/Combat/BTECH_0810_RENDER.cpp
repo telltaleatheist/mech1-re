@@ -103,7 +103,7 @@ void BtechRestoreSelectionPixels(BtechWorldObjectPrefix *const *objects)
         uint16_t ordinal=selectionObjectListIndices[index];
         if (ordinal>=COMBAT_WORLD_OBJECTS || !objects[ordinal]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: ordinal>=COMBAT_WORLD_OBJECTS || !objects[ordinal]");
         BtechHeapWorldObject *object=(BtechHeapWorldObject *)objects[ordinal];
-        BtechWriteSelectionPixels(object->projectedScreenA,object->projectedScreenB,&objectSortOrSelectionScratch.distances[ordinal]);
+        BtechWriteSelectionPixels(object->projectedScreenA,object->projectedScreenB,&combatScene.objectSortOrSelectionScratch.distances[ordinal]);
     }
     if (targetSelectionProbeActive)
     {
@@ -145,7 +145,7 @@ void BtechUpdateObjectSelectionPixels(BtechHeapWorldObject *object,uint16_t ordi
             }
             else
             {
-                objectSortOrSelectionScratch.distances[selectedOrdinal]=selectionCapturedPixels;
+                combatScene.objectSortOrSelectionScratch.distances[selectedOrdinal]=selectionCapturedPixels;
                 BtechWriteSelectionPixels(selected->projectedScreenA,selected->projectedScreenB,&selectionMarkerPixels);
             }
         }
@@ -157,7 +157,7 @@ void BtechUpdateObjectSelectionPixels(BtechHeapWorldObject *object,uint16_t ordi
         uint16_t count=selectionCount++;
         if (count>=SELECTION_LIST_PREFIX || ordinal>=COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: count>=SELECTION_LIST_PREFIX || ordinal>=COMBAT_WORLD_OBJECTS");
         selectionObjectListIndices[count]=ordinal;
-        objectSortOrSelectionScratch.distances[ordinal]=BtechCaptureSelectionPixels(object->projectedScreenA,object->projectedScreenB);
+        combatScene.objectSortOrSelectionScratch.distances[ordinal]=BtechCaptureSelectionPixels(object->projectedScreenA,object->projectedScreenB);
         BtechWriteSelectionPixels(object->projectedScreenA,object->projectedScreenB,&selectionMarkerPixels);
     }
     else object->prefix.flags&=(uint8_t)~WORLD_OBJECT_TARGET_PROBE_VISIBLE;

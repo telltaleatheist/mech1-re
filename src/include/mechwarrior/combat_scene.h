@@ -13,12 +13,17 @@ typedef union BtechObjectSortScratch {
         union {uint8_t attachedIndices[WORLD_ORDER_INDEX_BANK_BYTES];BtechWorldObjectPrefix *objects[COMBAT_WORLD_OBJECTS];} tail;
     } surfaceOrder;
 } BtechObjectSortScratch;
-extern BtechObjectSortScratch objectSortOrSelectionScratch;
-extern BtechWorldObjectPrefix *distanceSortObjects[COMBAT_WORLD_OBJECTS];
-extern uint32_t distanceSortDistances[COMBAT_WORLD_OBJECTS];
-extern uint16_t distanceBucketShift,surfacePriorityPrefixCount;
-extern uint16_t distanceBucketEnds[WORLD_DISTANCE_BUCKETS],distanceBucketCounts[WORLD_DISTANCE_BUCKETS];
-extern BtechPosition3D nearbyFilterCameraPosition;
+/* Combat state owned by combat_scene.h (plan, slice B3c). */
+struct CombatSceneState
+{
+    BtechObjectSortScratch objectSortOrSelectionScratch;
+    BtechWorldObjectPrefix *distanceSortObjects[COMBAT_WORLD_OBJECTS];
+    uint32_t distanceSortDistances[COMBAT_WORLD_OBJECTS];
+    uint16_t distanceBucketShift, surfacePriorityPrefixCount;
+    uint16_t distanceBucketEnds[WORLD_DISTANCE_BUCKETS], distanceBucketCounts[WORLD_DISTANCE_BUCKETS];
+    BtechPosition3D nearbyFilterCameraPosition;
+};
+extern CombatSceneState combatScene;
 void BtechInitializeFreshSceneOwners(void);
 int16_t BtechFilterNearbyWorldObjects(BtechCameraContext *camera,BtechWorldObjectPrefix *const *source,int16_t sourceCount,BtechWorldObjectPrefix **destination,int16_t previousCount);
 int16_t BtechSortWorldObjectsBySurfacePriority(BtechWorldObjectPrefix **objects,int16_t count,uint8_t *priorities);

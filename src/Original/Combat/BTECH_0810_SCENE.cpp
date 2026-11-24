@@ -34,7 +34,7 @@ void BtechRenderCockpitSceneAndHud(void)
     cockpitWorldObjectCount=(uint16_t)BtechFilterNearbyWorldObjects(playerPoseCameraContext,worldObjects,
         (int16_t)worldObjectCount,cockpitWorldObjects,(int16_t)cockpitWorldObjectCount);
     BtechSortFarWorldObjectsForView(playerPoseCameraContext,cockpitWorldObjects,
-        (int16_t)cockpitWorldObjectCount,&objectSortOrSelectionScratch);
+        (int16_t)cockpitWorldObjectCount,&combatScene.objectSortOrSelectionScratch);
     BtechOrderMechRenderParts(playerPoseCameraContext,cockpitWorldObjects,(int16_t)cockpitWorldObjectCount);
     if (!playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState");
     uint32_t aimCosine=(int16_t)BtechLookupCosine(playerMechState->aimPitch);
