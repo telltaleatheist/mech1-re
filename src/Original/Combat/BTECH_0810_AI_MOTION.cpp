@@ -30,7 +30,7 @@ void BtechSetActiveUnitGroundOrJumpMotion(uint16_t desiredHeading,uint16_t movem
     if (movementDirection!=MOTION_DIRECTION_STOP)
     {
         if (!combatPose.activeMechState || !combatPose.activeMechTemplate || combatImport.activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeMechState || !activeMechTemplate || activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS");
-        int16_t heatLimitedForwardStep=combatPose.activeMechTemplate->maximumSpeedScale-heatSpeedPenalties[combatImport.activeUnitControl->unitSlot];
+        int16_t heatLimitedForwardStep=combatPose.activeMechTemplate->maximumSpeedScale-combatMechs.heatSpeedPenalties[combatImport.activeUnitControl->unitSlot];
         int16_t limitingLegActuatorCondition=combatPose.activeMechState->actuatorCondition[COMBAT_ACTUATOR_LEFT_LEG];
         if (limitingLegActuatorCondition>(int16_t)combatPose.activeMechState->actuatorCondition[COMBAT_ACTUATOR_RIGHT_LEG]) limitingLegActuatorCondition=(int16_t)combatPose.activeMechState->actuatorCondition[COMBAT_ACTUATOR_RIGHT_LEG];
         uint16_t actuatorSpeedProductLow=(uint16_t)((int32_t)heatLimitedForwardStep*limitingLegActuatorCondition),speedProductSignMask=(int16_t)actuatorSpeedProductLow<0?UINT16_MAX:0;

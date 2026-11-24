@@ -17,8 +17,8 @@ void BtechScoreAndSelectTacticalTarget(void)
     int16_t maximumDistanceLow=0,maximumValueDifference=0,bestScore=0;
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
     {
-        BtechUnitControlState *candidate=&unitControls[slot];
-        eligible[slot]=unitBindings[slot].mech && candidate->sideIndex!=active->sideIndex
+        BtechUnitControlState *candidate=&combatMechs.unitControls[slot];
+        eligible[slot]=combatMechs.unitBindings[slot].mech && candidate->sideIndex!=active->sideIndex
             && candidate->positionKnowledgeCode!=COMBAT_POSITION_UNKNOWN && candidate->conditionScoreOrExitCode>COMBAT_CONDITION_SCORE_MINIMUM;
         if (!eligible[slot]) continue;
         anyEligible=1;
@@ -36,7 +36,7 @@ void BtechScoreAndSelectTacticalTarget(void)
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
     {
         if (!eligible[slot]) continue;
-        BtechUnitControlState *candidate=&unitControls[slot];
+        BtechUnitControlState *candidate=&combatMechs.unitControls[slot];
         int16_t candidateValue=candidate->targetSelectionCount?0:candidate->conditionScoreOrExitCode;
         int16_t difference=(int16_t)(active->conditionScoreOrExitCode-candidateValue),score=0;
         if (difference>TACTICAL_TARGET_VALUE_FLOOR)
@@ -54,7 +54,7 @@ void BtechScoreAndSelectTacticalTarget(void)
         }
         if (score>bestScore) {bestScore=score;active->targetUnitSlot=slot;}
     }
-    if (bestScore>0) ++unitControls[active->targetUnitSlot].targetSelectionCount;
+    if (bestScore>0) ++combatMechs.unitControls[active->targetUnitSlot].targetSelectionCount;
     else active->tacticalState=TACTICAL_AVOIDING;
 }
 
@@ -70,8 +70,8 @@ void BtechUpdateSideCompletionFlags(void)
     if (combatStartup.sideCompletionFlags[1] || combatStartup.sideCompletionFlags[0]) return;
     combatStartup.sideCompletionFlags[1]=1;combatStartup.sideCompletionFlags[0]=1;
     for (uint16_t survivingUnitSlot=0;survivingUnitSlot<COMBAT_MECH_SLOTS;++survivingUnitSlot)
-        if (unitBindings[survivingUnitSlot].mech && unitControls[survivingUnitSlot].conditionScoreOrExitCode>COMBAT_CONDITION_SCORE_MINIMUM)
-            combatStartup.sideCompletionFlags[unitControls[survivingUnitSlot].sideIndex<1]=0;
+        if (combatMechs.unitBindings[survivingUnitSlot].mech && combatMechs.unitControls[survivingUnitSlot].conditionScoreOrExitCode>COMBAT_CONDITION_SCORE_MINIMUM)
+            combatStartup.sideCompletionFlags[combatMechs.unitControls[survivingUnitSlot].sideIndex<1]=0;
 }
 
 /*17FB:27F2. Withdrawal success sets THIS side but returns not-eliminated.
@@ -84,8 +84,8 @@ uint8_t BtechTestSideEliminationOrExitObjective(uint16_t sideIndex)
     uint8_t allowedExitBoundaryMask=scenarioSelectors.sideBoundaryMasks[sideIndex];
     for (uint16_t unitSlot=0;unitSlot<COMBAT_MECH_SLOTS;++unitSlot)
     {
-        BtechUnitControlState *evaluatedUnitControl=&unitControls[unitSlot];
-        if (!unitBindings[unitSlot].mech || evaluatedUnitControl->sideIndex!=sideIndex || evaluatedUnitControl->conditionScoreOrExitCode==COMBAT_MECH_DISABLED_VALUE) continue;
+        BtechUnitControlState *evaluatedUnitControl=&combatMechs.unitControls[unitSlot];
+        if (!combatMechs.unitBindings[unitSlot].mech || evaluatedUnitControl->sideIndex!=sideIndex || evaluatedUnitControl->conditionScoreOrExitCode==COMBAT_MECH_DISABLED_VALUE) continue;
         int16_t exitBoundaryIndex=0-(uint16_t)(evaluatedUnitControl->conditionScoreOrExitCode+COMBAT_EXIT_CODE_OFFSET);
         if (exitBoundaryIndex<0) noMechsStillInBattle=0;
         else

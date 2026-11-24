@@ -24,15 +24,15 @@ void BtechExportCombatResultsAndTransition(uint16_t resultCode)
     campaignResultExchange.result=(uint8_t)resultCode;
     uint16_t disabledEnemies=0;
     for (uint16_t slot=COMBAT_LANCE_SLOTS;slot<COMBAT_MECH_SLOTS;++slot)
-        if (unitBindings[slot].mech && (uint16_t)unitControls[slot].conditionScoreOrExitCode==COMBAT_DISABLED_UNIT_VALUE)
+        if (combatMechs.unitBindings[slot].mech && (uint16_t)combatMechs.unitControls[slot].conditionScoreOrExitCode==COMBAT_DISABLED_UNIT_VALUE)
             ++disabledEnemies;
     campaignResultExchange.disabledEnemyCount.low=(uint8_t)disabledEnemies;
     for (uint16_t slot=0;slot<COMBAT_LANCE_SLOTS;++slot)
     {
-        const BtechMechState *mech=unitBindings[slot].mech;
+        const BtechMechState *mech=combatMechs.unitBindings[slot].mech;
         if (!mech) continue;
         if (mech->templateIndex>=COMBAT_MECH_TEMPLATES || combatImport.combatToOwnedMechSlots[slot]>=CAMPAIGN_OWNED_UNIT_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mech->templateIndex>=COMBAT_MECH_TEMPLATES || combatToOwnedMechSlots[slot]>=CAMPAIGN_OWNED_UNIT_SLOTS");
-        const BtechMechTemplate *chassis=&mechTemplates[mech->templateIndex];
+        const BtechMechTemplate *chassis=&combatMechs.mechTemplates[mech->templateIndex];
         CampaignUnitDamage *damage=&campaignResultExchange.ownedDamage[combatImport.combatToOwnedMechSlots[slot]];
         damage->engineHits=(uint8_t)mech->engineHits;
         if (damage->gyroDamageTier>=4) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: damage->gyroDamageTier>=4");
@@ -91,8 +91,8 @@ void BtechExportCombatResultsAndTransition(uint16_t resultCode)
     }
     for (uint16_t slot=COMBAT_LANCE_SLOTS;slot<COMBAT_MECH_SLOTS && (int16_t)combatImport.salvageEntryCount<CAMPAIGN_ROSTER_SLOTS;++slot)
     {
-        const BtechMechState *mech=unitBindings[slot].mech;
-        if (mech && (uint16_t)unitControls[slot].conditionScoreOrExitCode==COMBAT_DISABLED_UNIT_VALUE
+        const BtechMechState *mech=combatMechs.unitBindings[slot].mech;
+        if (mech && (uint16_t)combatMechs.unitControls[slot].conditionScoreOrExitCode==COMBAT_DISABLED_UNIT_VALUE
             && resultCode==COMBAT_RESULT_SUCCESS && combatImport.sideObjectiveRules[0]!=OBJECTIVE_WITHDRAW)
         {
             uint8_t condition=BtechCalculateSalvageConditionPercent(mech);
@@ -107,7 +107,7 @@ void BtechExportCombatResultsAndTransition(uint16_t resultCode)
         campaignResultExchange.pilotStatus[rosterSlot]=0;
     for (uint16_t slot=0;slot<COMBAT_LANCE_SLOTS;++slot)
     {
-        const BtechMechState *mech=unitBindings[slot].mech;
+        const BtechMechState *mech=combatMechs.unitBindings[slot].mech;
         if (mech && (mech->lifeSupportHits==COMBAT_LIFE_SUPPORT_HIT_LIMIT || mech->cockpitDisabled
             || (mech->engineHits==COMBAT_ENGINE_HIT_LIMIT && slot)))
         {
@@ -116,7 +116,7 @@ void BtechExportCombatResultsAndTransition(uint16_t resultCode)
         }
     }
     if ((int16_t)combatImport.combatContinuationStage>=0 && (int16_t)combatImport.combatContinuationStage<COMBAT_FINAL_CONTINUATION_STAGE
-        && resultCode==COMBAT_RESULT_SUCCESS && (!specialAssaultMode || (int16_t)combatImport.combatContinuationStage<1))
+        && resultCode==COMBAT_RESULT_SUCCESS && (!combatMechs.specialAssaultMode || (int16_t)combatImport.combatContinuationStage<1))
     {
         if (combatImport.hudColourSchemeIndex && (combatStartup.combatDispatchState==PLAYER_SCREEN_TARGET_INSPECTION || combatStartup.combatDispatchState==PLAYER_SCREEN_INSPECTION))
         {
@@ -152,7 +152,7 @@ void BtechExportCombatResultsAndTransition(uint16_t resultCode)
         BtechApplyLandscapeCameraColours();
         BtechInitializeOrderPanelState();
         BtechResetMechInspectionState();
-        combatImport.activeUnitControl=&unitControls[0];
+        combatImport.activeUnitControl=&combatMechs.unitControls[0];
         BtechSynchronizeMechRenderParts();
         BtechShowCombatStageBriefing();
         BtechRefreshCockpitViewportAndGauges();

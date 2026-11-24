@@ -62,7 +62,7 @@ void BtechProgramMain(uint16_t argumentCount,const char *const *arguments)
         }
         BtechUnregisterTransientWorldObjects();
         BtechDampJumpMotion();
-        int16_t playerConditionOrExitCode=unitControls[0].conditionScoreOrExitCode;
+        int16_t playerConditionOrExitCode=combatMechs.unitControls[0].conditionScoreOrExitCode;
         if (playerConditionOrExitCode<COMBAT_CONDITION_SCORE_MINIMUM)
         {
             uint16_t missionResult=COMBAT_RESULT_UNRESOLVED;

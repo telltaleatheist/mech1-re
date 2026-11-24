@@ -44,7 +44,7 @@ void BtechUpdateBodyDestructionEffects(void)
         BtechBodyDestructionEmitter *emitter=&bodyDestructionEmitters[slot];
         if (!emitter->ticksRemaining) continue;
         if (emitter->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: emitter->unitSlot>=COMBAT_MECH_SLOTS");
-        uint16_t mode=unitControls[emitter->unitSlot].movementMode;
+        uint16_t mode=combatMechs.unitControls[emitter->unitSlot].movementMode;
         if (mode!=MOVEMENT_MODE_GROUNDED && mode!=BODY_EMITTER_ACCEPTED_MODE2 && mode!=BODY_EMITTER_ACCEPTED_MODE7)
         {emitter->ticksRemaining=0;continue;}
         --emitter->ticksRemaining;
@@ -125,12 +125,12 @@ void BtechSpawnSequencedWorldEffect(const BtechPosition3D *position,uint16_t seq
     BtechEffectSequenceState *effect=&combatEffects.effectSequences[slot];
     effect->worldObject=BtechAllocatePooledWorldObject(0,position);
     BtechWorldObjectPrefix *object=&effect->worldObject->object.prefix;
-    if (!unitBindings[0].positionedLeftLeg || !unitBindings[0].torso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[0].positionedLeftLeg || !unitBindings[0].torso");
-    const BtechWorldObjectPrefix *player=&unitBindings[0].positionedLeftLeg->object.prefix;
+    if (!combatMechs.unitBindings[0].positionedLeftLeg || !combatMechs.unitBindings[0].torso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[0].positionedLeftLeg || !unitBindings[0].torso");
+    const BtechWorldObjectPrefix *player=&combatMechs.unitBindings[0].positionedLeftLeg->object.prefix;
     object->orientationA=player->orientationA;
     object->orientationB=player->orientationB;
     object->orientationC=player->orientationC;
-    object->orientationC+=unitBindings[0].torso->object.prefix.orientationC;
+    object->orientationC+=combatMechs.unitBindings[0].torso->object.prefix.orientationC;
     effect->sequenceIndex=sequenceIndex;
     object->renderFlags=0;
     effect->frameIndex=0;

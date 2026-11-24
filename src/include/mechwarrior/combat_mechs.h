@@ -113,10 +113,6 @@ typedef struct BtechUnitControlState
     uint16_t movementMode,animationFrame;
 } BtechUnitControlState;
 
-extern BtechMechTemplate mechTemplates[COMBAT_MECH_TEMPLATES];
-extern BtechWeaponDefinition weaponDefinitions[COMBAT_WEAPON_KINDS];
-extern uint16_t templateMaximumCombatScores[COMBAT_MECH_TEMPLATES];
-extern uint8_t unitVisibility[COMBAT_MECH_SLOTS][COMBAT_MECH_SLOTS];
 enum { COMBAT_POSITION_UNKNOWN=0,COMBAT_POSITION_REMEMBERED=1,COMBAT_POSITION_VISIBLE=2,
     COMBAT_BOUNDARY_POSITIVE_B=0,COMBAT_BOUNDARY_NEGATIVE_B=1,COMBAT_BOUNDARY_NEGATIVE_A=2,
     COMBAT_BOUNDARY_POSITIVE_A=3,COMBAT_BOUNDARY_INSIDE=4,
@@ -127,16 +123,25 @@ void BtechBuildTemplateMaximumCombatScores(void);
 uint8_t BtechClassifyUnitWorldBoundary(uint16_t unitSlot);
 void BtechRefreshLastVisibleUnitPositions(void);
 void BtechRecalculateUnitConditionScoresAndExitCodes(void);
-extern BtechMechState mechStates[COMBAT_MECH_SLOTS];
-extern BtechUnitBinding unitBindings[COMBAT_MECH_SLOTS];
-extern BtechUnitControlState unitControls[COMBAT_MECH_SLOTS];
-extern uint16_t heatAimJitterThresholds[COMBAT_HEAT_THRESHOLDS];
-extern uint16_t heatSpeedPenalties[COMBAT_MECH_SLOTS],heatInhibitFlags[COMBAT_MECH_SLOTS];
 void BtechAdvanceWeaponReloadTimers(void);
 void BtechUpdateUnitHeatEffects(void);
 void BtechRechargeJumpCharge(void);
-extern uint16_t specialAssaultMode;
-extern uint16_t randomStateWords[COMBAT_RANDOM_WORDS],randomWriteIndex,randomAddendIndex;
+/* Combat state owned by combat_mechs.h (plan, slice B3d). */
+struct CombatMechState
+{
+    BtechMechTemplate mechTemplates[COMBAT_MECH_TEMPLATES];
+    BtechWeaponDefinition weaponDefinitions[COMBAT_WEAPON_KINDS];
+    uint16_t templateMaximumCombatScores[COMBAT_MECH_TEMPLATES];
+    uint8_t unitVisibility[COMBAT_MECH_SLOTS][COMBAT_MECH_SLOTS];
+    BtechMechState mechStates[COMBAT_MECH_SLOTS];
+    BtechUnitBinding unitBindings[COMBAT_MECH_SLOTS];
+    BtechUnitControlState unitControls[COMBAT_MECH_SLOTS];
+    uint16_t heatAimJitterThresholds[COMBAT_HEAT_THRESHOLDS];
+    uint16_t heatSpeedPenalties[COMBAT_MECH_SLOTS], heatInhibitFlags[COMBAT_MECH_SLOTS];
+    uint16_t specialAssaultMode;
+    uint16_t randomStateWords[COMBAT_RANDOM_WORDS], randomWriteIndex, randomAddendIndex;
+};
+extern CombatMechState combatMechs;
 /* Actual installation IO boundary; no retained304E byte image. */
 bool BtechImportMechInitialData(const uint8_t *data,size_t byteCount);
 void BtechIncreaseTemplateLegIntegrity(void);

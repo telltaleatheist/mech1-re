@@ -55,8 +55,8 @@ void BtechDrawCockpitHeadingStrip(uint16_t bodyHeading,int16_t torsoTwist)
     combatVideo.drawFillColour=combatVideo.egaBitmapEnabledPlanes=
         combatVideo.landscapeCameraColourRows[combatImport.hudColourSchemeIndex][combatImport.combatLandscapeIndex].hudReticleColour;
     combatVideo.clipMinimumX=HEADING_STRIP_LEFT;combatVideo.clipMaximumX=HEADING_STRIP_RIGHT;combatVideo.screenPolygonNeedsClip=true;
-    if (!unitBindings[0].mech || unitBindings[0].mech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[0].mech || unitBindings[0].mech->templateIndex>=COMBAT_MECH_TEMPLATES");
-    uint16_t layoutIndex=combatCockpit.mechCockpitLayoutIndices[unitBindings[0].mech->templateIndex];
+    if (!combatMechs.unitBindings[0].mech || combatMechs.unitBindings[0].mech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[0].mech || unitBindings[0].mech->templateIndex>=COMBAT_MECH_TEMPLATES");
+    uint16_t layoutIndex=combatCockpit.mechCockpitLayoutIndices[combatMechs.unitBindings[0].mech->templateIndex];
     if (layoutIndex>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: layoutIndex>=COMBAT_COCKPIT_LAYOUTS");
     int16_t y=combatCockpit.cockpitLayouts[layoutIndex].headingStripY;
     uint16_t headingDegrees=(uint16_t)(0-bodyHeading)/HEADING_UNITS_PER_DEGREE;

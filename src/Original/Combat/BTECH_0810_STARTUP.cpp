@@ -57,7 +57,7 @@ void BtechInitializeCombatRuntime(void)
         if (mount>=COMBAT_WEAPON_MOUNTS || !playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mount>=COMBAT_WEAPON_MOUNTS || !playerMechState");
         combatStartup.playerMountFireFlags[mount]=(int8_t)playerMechState->weapons[mount].operational;
     }
-    combatImport.activeUnitControl=&unitControls[0];
+    combatImport.activeUnitControl=&combatMechs.unitControls[0];
     BtechSynchronizeMechRenderParts();
     BtechShowCombatStageBriefing();
     BtechRefreshCockpitViewportAndGauges();
@@ -137,7 +137,7 @@ void BtechResetCombatState(void)
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot) combatStartup.unitLastDrawParts[slot]=NULL;
     for (uint16_t chassis=0;chassis<COMBAT_MECH_TEMPLATES;++chassis) mechResourceBaseIds[chassis]=0;
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
-    {unitBindings[slot].mech=NULL;unitBindings[slot].positionedLeftLeg=NULL;}
+    {combatMechs.unitBindings[slot].mech=NULL;combatMechs.unitBindings[slot].positionedLeftLeg=NULL;}
     combatImport.specialTargetInteractionBlocked=0;
     otherShapeResourceBase=0;firstMechShapeResourceId=0;
     combatStartup.playerSpecialTargetLandingLatch=0;

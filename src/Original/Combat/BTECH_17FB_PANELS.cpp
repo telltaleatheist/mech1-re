@@ -18,15 +18,15 @@ void BtechDrawUnitOrderPanels(void)
     uint16_t panel=0,friendlyMarker=0;
     for (int16_t unitSlot=1;unitSlot<COMBAT_MECH_SLOTS;++unitSlot)
     {
-        BtechUnitControlState *control=&unitControls[unitSlot];
-        BtechMechState *mech=unitBindings[unitSlot].mech;
+        BtechUnitControlState *control=&combatMechs.unitControls[unitSlot];
+        BtechMechState *mech=combatMechs.unitBindings[unitSlot].mech;
         if (!mech || control->sideIndex) continue;
         if (panel>=ORDER_WINGMATE_PANELS || mech->templateIndex>=COMBAT_MECH_TEMPLATES
             || combatImport.hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || combatImport.combatLandscapeIndex>=COMBAT_LANDSCAPES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: panel>=ORDER_WINGMATE_PANELS || mech->templateIndex>=COMBAT_MECH_TEMPLATES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || combatLandscapeIndex>=COMBAT_LANDSCAPES");
-        const BtechMechTemplate *chassis=&mechTemplates[mech->templateIndex];
+        const BtechMechTemplate *chassis=&combatMechs.mechTemplates[mech->templateIndex];
         uint16_t x=combatOrders.lanceOrderPanelTextX[panel];
         int16_t trackedSlot=control->trackedUnitOrSpecialSlot;
-        if (trackedSlot>0 && trackedSlot<COMBAT_MECH_SLOTS && unitControls[trackedSlot].conditionScoreOrExitCode<COMBAT_CONDITION_SCORE_MINIMUM)
+        if (trackedSlot>0 && trackedSlot<COMBAT_MECH_SLOTS && combatMechs.unitControls[trackedSlot].conditionScoreOrExitCode<COMBAT_CONDITION_SCORE_MINIMUM)
         {
             control->trackedUnitOrSpecialSlot=-1;
             control->commandCode=COMBAT_ORDER_ACT_ON_OWN;
@@ -65,8 +65,8 @@ void BtechDrawUnitOrderPanels(void)
                 if (referenceSlot==ORDER_SPECIAL_TARGET_SLOT) referenceLabel=combatOrders.orderBaseText;
                 else
                 {
-                    if ((uint16_t)referenceSlot>=COMBAT_MECH_SLOTS || !unitBindings[referenceSlot].mech) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)referenceSlot>=COMBAT_MECH_SLOTS || !unitBindings[referenceSlot].mech");
-                    uint16_t referenceChassis=unitBindings[referenceSlot].mech->templateIndex;
+                    if ((uint16_t)referenceSlot>=COMBAT_MECH_SLOTS || !combatMechs.unitBindings[referenceSlot].mech) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)referenceSlot>=COMBAT_MECH_SLOTS || !unitBindings[referenceSlot].mech");
+                    uint16_t referenceChassis=combatMechs.unitBindings[referenceSlot].mech->templateIndex;
                     if (referenceChassis>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: referenceChassis>=COMBAT_MECH_TEMPLATES");
                     referenceLabel=combatCockpit.mechTemplateNameDirectory[referenceChassis];
                     combatVideo.textForegroundColour=(uint8_t)BtechGetMechConditionColour(referenceSlot);
@@ -81,7 +81,7 @@ void BtechDrawUnitOrderPanels(void)
                 uint16_t kind=chassis->weaponMounts[mount].weaponKind;
                 if (kind==COMBAT_WEAPON_NONE) continue;
                 if (kind>=COMBAT_WEAPON_KINDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: kind>=COMBAT_WEAPON_KINDS");
-                uint16_t weight=weaponDefinitions[kind].damageOrMissileCount;
+                uint16_t weight=combatMechs.weaponDefinitions[kind].damageOrMissileCount;
                 if (mech->weapons[mount].operational) operationalWeight+=weight;
                 mountedWeight+=weight;
             }

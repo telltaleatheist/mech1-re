@@ -12,11 +12,11 @@
 /*0810:461E. Accounting belongs to099A; do not debit heat/ammunition twice. */
 void BtechFirePlayerDirectWeapon(uint16_t mountIndex)
 {
-    BtechMechState *playerMech=unitBindings[0].mech;
+    BtechMechState *playerMech=combatMechs.unitBindings[0].mech;
     if (!playerMech || playerMech->templateIndex>=COMBAT_MECH_TEMPLATES || mountIndex>=COMBAT_WEAPON_MOUNTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMech || playerMech->templateIndex>=COMBAT_MECH_TEMPLATES || mountIndex>=COMBAT_WEAPON_MOUNTS");
-    const BtechWeaponMount *weaponMount=&mechTemplates[playerMech->templateIndex].weaponMounts[mountIndex];
+    const BtechWeaponMount *weaponMount=&combatMechs.mechTemplates[playerMech->templateIndex].weaponMounts[mountIndex];
     if ((uint16_t)weaponMount->weaponKind>=COMBAT_WEAPON_KINDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)weaponMount->weaponKind>=COMBAT_WEAPON_KINDS");
-    const BtechWeaponDefinition *weaponDefinition=&weaponDefinitions[weaponMount->weaponKind];
+    const BtechWeaponDefinition *weaponDefinition=&combatMechs.weaponDefinitions[weaponMount->weaponKind];
     int32_t shotDistanceWorld;
     uint8_t spawnImpactEffect=0;
     if (!combatStartup.selectedHitObject)
@@ -47,7 +47,7 @@ void BtechFirePlayerDirectWeapon(uint16_t mountIndex)
         uint16_t rangeBand=0;
         while (rangeBand<WEAPON_RANGE_BOUNDARIES && (int16_t)rangeBoundaries[rangeBand]<targetRangeUnits) ++rangeBand;
         if (rangeBand==WEAPON_RANGE_BEYOND_LONG)
-            shotDistanceWorld=(int16_t)((uint16_t)(weaponDefinitions[weaponMount->weaponKind].longRangeBoundary<<DIRECT_SHOT_RANGE_SHIFT)*DIRECT_SHOT_RANGE_MULTIPLIER);
+            shotDistanceWorld=(int16_t)((uint16_t)(combatMechs.weaponDefinitions[weaponMount->weaponKind].longRangeBoundary<<DIRECT_SHOT_RANGE_SHIFT)*DIRECT_SHOT_RANGE_MULTIPLIER);
         else
         {
             uint16_t targetUnitSlot,targetArmorLocation;
@@ -63,14 +63,14 @@ void BtechFirePlayerDirectWeapon(uint16_t mountIndex)
                 }
                 /* Native reloads selected object AFTER projectile destruction. */
                 if (specialTargetObject && &specialTargetObject->object.prefix==combatStartup.selectedHitObject)
-                    BtechApplySpecialTargetDamage((int16_t)weaponDefinitions[weaponMount->weaponKind].damageOrMissileCount);
+                    BtechApplySpecialTargetDamage((int16_t)combatMechs.weaponDefinitions[weaponMount->weaponKind].damageOrMissileCount);
                 spawnImpactEffect=projectileSlot==COMBAT_PROJECTILE_SLOTS;
             }
             else
             {
-                unitControls[0].lastDirectHitUnitSlot=(int16_t)targetUnitSlot;
+                combatMechs.unitControls[0].lastDirectHitUnitSlot=(int16_t)targetUnitSlot;
                 BtechPlaySoundIfEnabled(DIRECT_HIT_SOUND,DIRECT_HIT_SOUND_PRIORITY);
-                BtechApplyArmorAndInternalDamage(targetUnitSlot,(int16_t)targetArmorLocation,(int16_t)weaponDefinitions[weaponMount->weaponKind].damageOrMissileCount);
+                BtechApplyArmorAndInternalDamage(targetUnitSlot,(int16_t)targetArmorLocation,(int16_t)combatMechs.weaponDefinitions[weaponMount->weaponKind].damageOrMissileCount);
                 spawnImpactEffect=1;
             }
         }
@@ -85,7 +85,7 @@ void BtechMapSelectedRenderPartToArmorLocation(uint16_t *armorLocation,uint16_t 
     if (combatStartup.selectedHitObject)
         for (uint16_t candidateUnitSlot=1;candidateUnitSlot<COMBAT_MECH_SLOTS;++candidateUnitSlot)
         {
-            BtechUnitBinding *targetBinding=&unitBindings[candidateUnitSlot];
+            BtechUnitBinding *targetBinding=&combatMechs.unitBindings[candidateUnitSlot];
             if (!targetBinding->mech) continue;
             BtechWorldObjectPrefix *hitPart=combatStartup.selectedHitObject;
             if (targetBinding->leftArm && &targetBinding->leftArm->object.prefix==hitPart) hitArmorLocation=COMBAT_ARMOR_LEFT_ARM;
@@ -122,7 +122,7 @@ uint8_t BtechIsPlayerWeaponMountReady(uint16_t mountIndex)
     if ((uint16_t)kind>=COMBAT_WEAPON_KINDS) return 0;
     if (!playerMechState->weapons[mountIndex].operational
         || playerMechState->weapons[mountIndex].reloadTicksRemaining) return 0;
-    int16_t family=weaponDefinitions[kind].ammoFamily;
+    int16_t family=combatMechs.weaponDefinitions[kind].ammoFamily;
     if ((uint16_t)family==COMBAT_AMMO_NONE) return 1;
     if ((uint16_t)family>=COMBAT_AMMO_FAMILIES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)family>=COMBAT_AMMO_FAMILIES");
     return playerMechState->ammoSalvosRemaining[family]!=0;
@@ -182,13 +182,13 @@ void BtechRefreshUnitDistanceMatrix(void)
     for (uint16_t row=0;row<COMBAT_MECH_SLOTS;++row)
         for (uint16_t column=0;column<COMBAT_MECH_SLOTS;++column)
         {
-            if (!unitBindings[column].mech || !unitBindings[row].mech || unitControls[row].sideIndex) continue;
+            if (!combatMechs.unitBindings[column].mech || !combatMechs.unitBindings[row].mech || combatMechs.unitControls[row].sideIndex) continue;
             uint32_t distance=UINT32_MAX;
-            if (unitControls[column].sideIndex==1)
+            if (combatMechs.unitControls[column].sideIndex==1)
             {
-                if (!unitBindings[row].positionedLeftLeg || !unitBindings[column].positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[row].positionedLeftLeg || !unitBindings[column].positionedLeftLeg");
-                distance=BtechApproximatePlanarDistance(&unitBindings[row].positionedLeftLeg->object.prefix.position,
-                    &unitBindings[column].positionedLeftLeg->object.prefix.position);
+                if (!combatMechs.unitBindings[row].positionedLeftLeg || !combatMechs.unitBindings[column].positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[row].positionedLeftLeg || !unitBindings[column].positionedLeftLeg");
+                distance=BtechApproximatePlanarDistance(&combatMechs.unitBindings[row].positionedLeftLeg->object.prefix.position,
+                    &combatMechs.unitBindings[column].positionedLeftLeg->object.prefix.position);
             }
             combatBallistics.unitDistances[row][column]=distance;combatBallistics.unitDistances[column][row]=distance;
         }

@@ -53,17 +53,7 @@ bool BtechImportCombatStageInitialData(const uint8_t *data,size_t byteCount)
     return true;
 }
 
-BtechMechTemplate mechTemplates[COMBAT_MECH_TEMPLATES];
-BtechWeaponDefinition weaponDefinitions[COMBAT_WEAPON_KINDS];
-uint16_t templateMaximumCombatScores[COMBAT_MECH_TEMPLATES];
-uint8_t unitVisibility[COMBAT_MECH_SLOTS][COMBAT_MECH_SLOTS];
-BtechMechState mechStates[COMBAT_MECH_SLOTS];
-BtechUnitBinding unitBindings[COMBAT_MECH_SLOTS];
-BtechUnitControlState unitControls[COMBAT_MECH_SLOTS];
-uint16_t heatAimJitterThresholds[COMBAT_HEAT_THRESHOLDS];
-uint16_t heatSpeedPenalties[COMBAT_MECH_SLOTS],heatInhibitFlags[COMBAT_MECH_SLOTS];
-uint16_t specialAssaultMode;
-uint16_t randomStateWords[COMBAT_RANDOM_WORDS],randomWriteIndex,randomAddendIndex;
+CombatMechState combatMechs;
 
 /* File decoder only. Runtime records need not inherit native unaligned WORDs
  * or DOS near references. Mech/binding/control state is initialized by native
@@ -72,12 +62,12 @@ bool BtechImportMechInitialData(const uint8_t *data,size_t byteCount)
 {
     if (!data || byteCount<NATIVE_SEGMENT_BYTE_COUNT) return false;
     /* The rule tables come from data/rules (src/Rules), laid out as the exe's. */
-    if (!MwRulesCopyWords("combat.heat_aim_jitter_thresholds",heatAimJitterThresholds,COMBAT_HEAT_THRESHOLDS,0)) return false;
+    if (!MwRulesCopyWords("combat.heat_aim_jitter_thresholds",combatMechs.heatAimJitterThresholds,COMBAT_HEAT_THRESHOLDS,0)) return false;
     for (uint16_t kind=0;kind<COMBAT_WEAPON_KINDS;++kind)
     {
         uint16_t row[11];
         if (!MwRulesCopyWords("weapons.definitions",row,11,kind*0x16)) return false;
-        BtechWeaponDefinition *weapon=&weaponDefinitions[kind];
+        BtechWeaponDefinition *weapon=&combatMechs.weaponDefinitions[kind];
         weapon->damageOrMissileCount=row[0];
         weapon->ammoFamily=(int16_t)row[1];
         weapon->reloadTicks=row[2];weapon->heatUnits=row[3];
@@ -93,7 +83,7 @@ bool BtechImportMechInitialData(const uint8_t *data,size_t byteCount)
          * laid out as the exe's, read here at the exe's offsets. */
         uint8_t bytes[0xE0];
         if (!MwRulesCopyBytes("mechs.templates",bytes,sizeof(bytes),index*0x00E0)) return false;
-        BtechMechTemplate *mech=&mechTemplates[index];
+        BtechMechTemplate *mech=&combatMechs.mechTemplates[index];
         mech->tonnage=MwReadNativeWord(bytes,0);
         mech->displayScale=MwReadNativeWord(bytes,2);
         mech->firingMovementThreshold=MwReadNativeWord(bytes,4);
@@ -134,10 +124,10 @@ bool BtechImportMechInitialData(const uint8_t *data,size_t byteCount)
             mech->maximumInternalStructure[location]=MwReadNativeWord(bytes,0x00C4+location*2);
     }
     for (uint16_t index=0;index<COMBAT_RANDOM_WORDS;++index)
-        randomStateWords[index]=MwReadNativeWord(data,0x281C+index*2);
-    randomWriteIndex=0; /*285C*/
-    randomAddendIndex=MwReadNativeWord(data,0x285E);
-    specialAssaultMode=0; /*C7BE*/
+        combatMechs.randomStateWords[index]=MwReadNativeWord(data,0x281C+index*2);
+    combatMechs.randomWriteIndex=0; /*285C*/
+    combatMechs.randomAddendIndex=MwReadNativeWord(data,0x285E);
+    combatMechs.specialAssaultMode=0; /*C7BE*/
     return true;
 }
 
@@ -169,12 +159,12 @@ void BtechInitializeFreshMechOwners(const uint8_t *data)
     combatImport.savedArgumentCount=0;
     combatImport.activeUnitControl=NULL;
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
-        mechStates[slot]=BtechMechState{};
+        combatMechs.mechStates[slot]=BtechMechState{};
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
-        unitBindings[slot]=BtechUnitBinding{};
+        combatMechs.unitBindings[slot]=BtechUnitBinding{};
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
-        unitControls[slot]=BtechUnitControlState{};
-    specialAssaultMode=0;
+        combatMechs.unitControls[slot]=BtechUnitControlState{};
+    combatMechs.specialAssaultMode=0;
     combatImport.specialTargetInteractionBlocked=0; /*0EEA*/
     /* Written before it's read (BtechPrepareCampaignCombatStage); zero where the exe reloaded it. */
     for (uint16_t slot=0;slot<sizeof(combatImport.sideObjectiveRules)/sizeof(combatImport.sideObjectiveRules[0]);++slot) combatImport.sideObjectiveRules[slot]=0;

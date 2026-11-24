@@ -32,7 +32,7 @@ void BtechShowCombatStageBriefing(void)
     BtechDrawNearText(combatCockpit.briefingMechLabel,BRIEFING_ROSTER_LABEL_X,BRIEFING_MECH_LABEL_Y);
     for (uint16_t slot=0;slot<COMBAT_FRIENDLY_SLOTS;++slot)
     {
-        BtechMechState *mech=unitBindings[slot].mech;
+        BtechMechState *mech=combatMechs.unitBindings[slot].mech;
         if (mech)
         {
             uint16_t rowY=(slot+1)*BRIEFING_ROSTER_ROW_STEP;
@@ -66,6 +66,6 @@ void BtechShowCombatStageBriefing(void)
     BtechCopyHudRectangleIfReady(0,0,COMBAT_SCREEN_WIDTH,COMBAT_SCREEN_HEIGHT);
     BtechWaitForCombatInputReleaseThenPress();
     for (uint16_t slot=0;slot<COMBAT_LANCE_SLOTS;++slot)
-        if (unitBindings[slot].mech && !unitBindings[slot].head)
-            unitBindings[slot].mech=NULL;
+        if (combatMechs.unitBindings[slot].mech && !combatMechs.unitBindings[slot].head)
+            combatMechs.unitBindings[slot].mech=NULL;
 }

@@ -148,15 +148,15 @@ void BtechRotateSignedWordPair(int16_t *componentA,int16_t *componentB,uint16_t 
 BtechPosition3D *BtechGetUnitBodyReferencePosition(uint16_t unitSlot,int16_t referenceIndex)
 {
     if (unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitSlot>=COMBAT_MECH_SLOTS");
-    BtechUnitBinding *binding=&unitBindings[unitSlot];
+    BtechUnitBinding *binding=&combatMechs.unitBindings[unitSlot];
     if (!binding->positionedLeftLeg || !binding->mech) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !binding->positionedLeftLeg || !binding->mech");
     BtechWorldObjectPrefix *body=&binding->positionedLeftLeg->object.prefix;
     combatBallistics.bodyReferenceWorldPosition=body->position;
     uint16_t chassis=binding->mech->templateIndex;
     if (chassis>=COMBAT_MECH_TEMPLATES || (uint16_t)referenceIndex>=COMBAT_ARMOR_LOCATIONS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: chassis>=COMBAT_MECH_TEMPLATES || (uint16_t)referenceIndex>=COMBAT_ARMOR_LOCATIONS");
-    uint16_t mode=unitControls[unitSlot].movementMode;
+    uint16_t mode=combatMechs.unitControls[unitSlot].movementMode;
     const BtechBodyReferencePoint *reference=mode==MOVEMENT_MODE_FALLEN_POSE || mode==MOVEMENT_MODE_FALLING
-        ?&combatBallistics.fallenBodyReferenceBanks[chassis][referenceIndex]:&mechTemplates[chassis].bodyReferencePoints[referenceIndex];
+        ?&combatBallistics.fallenBodyReferenceBanks[chassis][referenceIndex]:&combatMechs.mechTemplates[chassis].bodyReferencePoints[referenceIndex];
     int16_t componentA=reference->componentA,componentB=reference->componentB;
     uint16_t heading=body->orientationC;
     if (referenceIndex!=COMBAT_BODY_LEFT_LEG && referenceIndex!=COMBAT_BODY_RIGHT_LEG)

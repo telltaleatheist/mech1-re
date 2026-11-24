@@ -53,12 +53,12 @@ void BtechDrawHeadingRadar(void)
     uint16_t heading=player->orientationC+playerUnitBinding->torso->object.prefix.orientationC;
     for (uint16_t slot=1;slot<COMBAT_MECH_SLOTS;++slot)
     {
-        if (unitControls[slot].conditionScoreOrExitCode<=COMBAT_EXIT_CODE_THRESHOLD) continue;
+        if (combatMechs.unitControls[slot].conditionScoreOrExitCode<=COMBAT_EXIT_CODE_THRESHOLD) continue;
         uint16_t paletteIndex;
-        if (!unitControls[slot].sideIndex) paletteIndex=combatImport.hudColourSchemeIndex?Combat_Pal_EGA_Black:Combat_Pal_EGA_LightBlue;
+        if (!combatMechs.unitControls[slot].sideIndex) paletteIndex=combatImport.hudColourSchemeIndex?Combat_Pal_EGA_Black:Combat_Pal_EGA_LightBlue;
         else
         {
-            if (!unitVisibility[0][slot]) continue;
+            if (!combatMechs.unitVisibility[0][slot]) continue;
             paletteIndex=combatImport.hudColourSchemeIndex?Combat_Pal_EGA_Green:Combat_Pal_EGA_LightRed;
         }
         /* An empty slot (no Mech, condition 0, friendly) still passes the
@@ -66,8 +66,8 @@ void BtechDrawHeadingRadar(void)
          * [0+8] and [0+0Ch] are DS:0008/000C, constant null-segment words,
          * so the contact is plotted where they put it, if in range. */
         const BtechPosition3D nullContact=BtechReadNullNearWorldObjectPosition();
-        const BtechPosition3D *contact=unitBindings[slot].torso
-            ?&unitBindings[slot].torso->object.prefix.position:&nullContact;
+        const BtechPosition3D *contact=combatMechs.unitBindings[slot].torso
+            ?&combatMechs.unitBindings[slot].torso->object.prefix.position:&nullContact;
         int16_t relativeX=(int16_t)BtechShiftSignedDwordRight(contact->positionA-player->position.positionA,(uint8_t)combatStartup.radarRangeShift);
         int16_t relativeY=(int16_t)BtechShiftSignedDwordRight(contact->positionB-player->position.positionB,(uint8_t)combatStartup.radarRangeShift);
         BtechRotateSignedWordPair(&relativeX,&relativeY,(uint16_t)(0-heading));

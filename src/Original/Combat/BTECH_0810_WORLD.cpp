@@ -141,10 +141,10 @@ BtechCameraContext *BtechCreateHiddenCameraContext(BtechPooledWorldObject *objec
  * separate owners; they are not combined into a new player context. */
 void BtechInitializePlayerCameras(void)
 {
-    playerUnitBinding=&unitBindings[0];
+    playerUnitBinding=&combatMechs.unitBindings[0];
     playerMechState=playerUnitBinding->mech;
     if (!playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
-    playerMechTemplate=&mechTemplates[playerMechState->templateIndex];
+    playerMechTemplate=&combatMechs.mechTemplates[playerMechState->templateIndex];
     playerUnitBinding->torso->object.prefix.renderFlags|=COMBAT_WORLD_OBJECT_HIDDEN;
     playerUnitBinding->rightLeg->object.prefix.renderFlags|=COMBAT_WORLD_OBJECT_HIDDEN;
     playerUnitBinding->positionedLeftLeg->object.prefix.renderFlags|=COMBAT_WORLD_OBJECT_HIDDEN;
@@ -169,7 +169,7 @@ void BtechLoadCombatChassisResourceBanks(void)
     memset(sceneChassisResourcePresent,0,8);
     for (uint16_t slot=1;slot<COMBAT_MECH_SLOTS;++slot)
     {
-        const BtechMechState *mech=unitBindings[slot].mech;
+        const BtechMechState *mech=combatMechs.unitBindings[slot].mech;
         if (!mech) continue;
         uint16_t chassis=mech->templateIndex;
         if (chassis>=10) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: chassis>=10");
@@ -280,7 +280,7 @@ void BtechLoadScenarioAndWorld(uint16_t scenarioIndex)
     BtechLoadTerrainWorldResources();
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
     {
-        BtechUnitBinding *binding=&unitBindings[slot];
+        BtechUnitBinding *binding=&combatMechs.unitBindings[slot];
         if (!binding->mech) continue;
         binding->torso=BtechAllocatePooledWorldObject(UINT16_MAX,NULL);
         binding->rightLeg=BtechAllocatePooledWorldObject(UINT16_MAX,NULL);
@@ -332,9 +332,9 @@ void BtechLoadScenarioAndWorld(uint16_t scenarioIndex)
     }
     BtechCloseStreamFile(stream);
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
-        if (unitBindings[slot].mech)
+        if (combatMechs.unitBindings[slot].mech)
         {
-            BtechWorldObjectPrefix *object=&unitBindings[slot].positionedLeftLeg->object.prefix;
+            BtechWorldObjectPrefix *object=&combatMechs.unitBindings[slot].positionedLeftLeg->object.prefix;
             object->position.positionA=unitFormationPositions[slot].positionA;
             object->position.positionB=unitFormationPositions[slot].positionB;
             object->position.positionC=COMBAT_INITIAL_ALTITUDE;
@@ -347,9 +347,9 @@ void BtechLoadScenarioAndWorld(uint16_t scenarioIndex)
         opposing->positionB-friendly->positionB);
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
     {
-        if (!unitBindings[slot].mech) continue;
+        if (!combatMechs.unitBindings[slot].mech) continue;
         uint16_t side=slot<COMBAT_LANCE_SLOTS?0:1;
-        BtechWorldObjectPrefix *object=&unitBindings[slot].positionedLeftLeg->object.prefix;
+        BtechWorldObjectPrefix *object=&combatMechs.unitBindings[slot].positionedLeftLeg->object.prefix;
         switch (combatImport.sideObjectiveRules[side])
         {
         case OBJECTIVE_ELIMINATE_OPPOSITION:case OBJECTIVE_OPPOSE_WITHDRAWAL:case OBJECTIVE_DEFEND_SPECIAL_TARGET:
@@ -362,9 +362,9 @@ void BtechLoadScenarioAndWorld(uint16_t scenarioIndex)
             else if (mask&8) object->orientationC=0xC004;
             break;
         case OBJECTIVE_SPECIAL_TARGET:;
-            if (!specialTargetObject || !unitBindings[side*4].positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject || !unitBindings[side*4].positionedLeftLeg");
+            if (!specialTargetObject || !combatMechs.unitBindings[side*4].positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject || !unitBindings[side*4].positionedLeftLeg");
             const BtechPosition3D *target=&specialTargetObject->object.prefix.position;
-            const BtechPosition3D *reference=&unitBindings[side*4].positionedLeftLeg->object.prefix.position;
+            const BtechPosition3D *reference=&combatMechs.unitBindings[side*4].positionedLeftLeg->object.prefix.position;
             object->orientationC=BtechCalculateVectorHeading(target->positionA-reference->positionA,target->positionB-reference->positionB);
             break;
         }

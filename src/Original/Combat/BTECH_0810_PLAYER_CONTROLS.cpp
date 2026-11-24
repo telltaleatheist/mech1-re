@@ -72,11 +72,11 @@ void BtechProcessPlayerControls(void)
         break;
     case COMBAT_KEY_T: combatStartup.headingRadarSelected=combatStartup.headingRadarSelected<1;break;
     case COMBAT_KEY_U:
-        if (unitControls[0].movementMode==MOVEMENT_MODE_FALLEN_POSE
+        if (combatMechs.unitControls[0].movementMode==MOVEMENT_MODE_FALLEN_POSE
             && playerMechState->currentInternalStructure[COMBAT_BODY_LEFT_LEG]
             && playerMechState->currentInternalStructure[COMBAT_BODY_RIGHT_LEG]
             && playerMechState->actuatorCondition[COMBAT_ACTUATOR_LEFT_LEG] && playerMechState->actuatorCondition[COMBAT_ACTUATOR_RIGHT_LEG])
-            unitControls[0].animationRequestFlags=(int16_t)BtechRandomBelowBound(PLAYER_RECOVERY_ROLL_BOUND)<PLAYER_RECOVERY_ROLL_THRESHOLD
+            combatMechs.unitControls[0].animationRequestFlags=(int16_t)BtechRandomBelowBound(PLAYER_RECOVERY_ROLL_BOUND)<PLAYER_RECOVERY_ROLL_THRESHOLD
                 ?ANIMATION_REQUEST_RECOVER:ANIMATION_REQUEST_FAILED_RECOVERY;
         break;
     case COMBAT_KEY_O:
@@ -98,12 +98,12 @@ void BtechProcessPlayerControls(void)
         else
         {
             if (playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
-            if (mechTemplates[playerMechState->templateIndex].jumpJetGroupCount && !heatInhibitFlags[0]
-                && unitControls[0].movementMode!=MOVEMENT_MODE_JUMP && (int16_t)playerMechState->jumpCharge>PLAYER_JUMP_CHARGE_THRESHOLD)
+            if (combatMechs.mechTemplates[playerMechState->templateIndex].jumpJetGroupCount && !combatMechs.heatInhibitFlags[0]
+                && combatMechs.unitControls[0].movementMode!=MOVEMENT_MODE_JUMP && (int16_t)playerMechState->jumpCharge>PLAYER_JUMP_CHARGE_THRESHOLD)
             {
                 motion->object.prefix.orientationB=0;motion->object.prefix.orientationA=0;
                 motion->orientationSteps[2]=0;motion->forwardStepScale=0;
-                unitControls[0].animationRequestFlags|=ANIMATION_REQUEST_BEGIN_JUMP;
+                combatMechs.unitControls[0].animationRequestFlags|=ANIMATION_REQUEST_BEGIN_JUMP;
             }
         }
         break;
@@ -139,13 +139,13 @@ void BtechProcessPlayerControls(void)
     else if ((combatInput.previousFireButtonState && !fireButton) || scanCode==COMBAT_KEY_SPACE || combatInput.fireCycleActive)
     {
         BtechWeaponState *weapon=&playerMechState->weapons[combatStartup.selectedWeaponMount];
-        if (weapon->reloadTicksRemaining || heatInhibitFlags[0] || unitControls[0].conditionScoreOrExitCode<=COMBAT_CONDITION_SCORE_MINIMUM || !weapon->operational)
+        if (weapon->reloadTicksRemaining || combatMechs.heatInhibitFlags[0] || combatMechs.unitControls[0].conditionScoreOrExitCode<=COMBAT_CONDITION_SCORE_MINIMUM || !weapon->operational)
             combatInput.fireCycleActive=0;
         else
         {
             int16_t kind=playerMechTemplate->weaponMounts[combatStartup.selectedWeaponMount].weaponKind;
             if ((uint16_t)kind>=COMBAT_WEAPON_KINDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)kind>=COMBAT_WEAPON_KINDS");
-            BtechWeaponDefinition *definition=&weaponDefinitions[kind];
+            BtechWeaponDefinition *definition=&combatMechs.weaponDefinitions[kind];
             int16_t ammoFamily=definition->ammoFamily;
             if ((uint16_t)ammoFamily!=COMBAT_AMMO_NONE && (uint16_t)ammoFamily>=COMBAT_AMMO_FAMILIES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)ammoFamily!=COMBAT_AMMO_NONE && (uint16_t)ammoFamily>=COMBAT_AMMO_FAMILIES");
             /* Empty ammo leaves the cycling latch alone. All other gates above
@@ -169,7 +169,7 @@ void BtechProcessPlayerControls(void)
                         BtechFirePlayerDirectWeapon(combatStartup.selectedWeaponMount);
                         /* Reload live globals after firing, as0B19 does. */
                         if (playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES || combatStartup.selectedWeaponMount>=COMBAT_WEAPON_MOUNTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES || selectedWeaponMount>=COMBAT_WEAPON_MOUNTS");
-                        uint16_t location=mechTemplates[playerMechState->templateIndex].weaponMounts[combatStartup.selectedWeaponMount].bodyLocation;
+                        uint16_t location=combatMechs.mechTemplates[playerMechState->templateIndex].weaponMounts[combatStartup.selectedWeaponMount].bodyLocation;
                         if (location==COMBAT_BODY_LEFT_ARM || location==COMBAT_BODY_LEFT_TORSO) combatStartup.firingIndicatorBank0Pending=1;
                         else combatStartup.firingIndicatorBank1Pending=1;
                     }
@@ -192,9 +192,9 @@ void BtechProcessPlayerControls(void)
     if (!aimButton && !fireButton)
     {
         int16_t turn=motion->orientationSteps[2],forward=motion->forwardStepScale;
-        if (unitControls[0].movementMode==MOVEMENT_MODE_JUMP)
+        if (combatMechs.unitControls[0].movementMode==MOVEMENT_MODE_JUMP)
         {
-            if (!directions || heatInhibitFlags[0])
+            if (!directions || combatMechs.heatInhibitFlags[0])
             {combatStartup.requestedPlayerForwardStepScale=(uint16_t)forward;goto dampTurn;}
             int16_t charge=(int16_t)playerMechState->jumpCharge,vertical=motion->positionSteps[2];
             int16_t turnSign=directions&COMBAT_DIRECTION_LEFT?1:-1;
@@ -219,7 +219,7 @@ void BtechProcessPlayerControls(void)
             if (vertical<(int16_t)playerMechTemplate->jumpSpeedLimit) motion->positionSteps[2]=vertical;
             goto aiming;
         }
-        if (!directions || unitControls[0].movementMode!=MOVEMENT_MODE_GROUNDED)
+        if (!directions || combatMechs.unitControls[0].movementMode!=MOVEMENT_MODE_GROUNDED)
         {
 dampTurn:
             /* Subtract the signed step without a crossing-zero clamp. */
@@ -228,7 +228,7 @@ dampTurn:
             goto aiming;
         }
         if (playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
-        int16_t limit=mechTemplates[playerMechState->templateIndex].maximumSpeedScale-heatSpeedPenalties[0];
+        int16_t limit=combatMechs.mechTemplates[playerMechState->templateIndex].maximumSpeedScale-combatMechs.heatSpeedPenalties[0];
         int16_t actuator=playerMechState->actuatorCondition[COMBAT_ACTUATOR_LEFT_LEG];
         if (actuator>(int16_t)playerMechState->actuatorCondition[COMBAT_ACTUATOR_RIGHT_LEG]) actuator=(int16_t)playerMechState->actuatorCondition[COMBAT_ACTUATOR_RIGHT_LEG];
         uint16_t product=(uint16_t)((int32_t)limit*actuator),sign=(int16_t)product<0?UINT16_MAX:0;
@@ -293,7 +293,7 @@ aiming:;
     if (scanCode==COMBAT_KEY_KEYPAD_STOP) {motion->orientationSteps[2]=0;combatStartup.requestedPlayerForwardStepScale=0;}
     combatInput.previousAimButtonState=aimButton;
     if (scanCode==COMBAT_KEY_A) combatInput.requestedTorsoAngle=0;
-    if (playerMechState->engineHits==PLAYER_ENGINE_DISABLED_HITS || heatInhibitFlags[0] || playerMechState->gyroHits==COMBAT_GYRO_DESTROYED_HITS)
+    if (playerMechState->engineHits==PLAYER_ENGINE_DISABLED_HITS || combatMechs.heatInhibitFlags[0] || playerMechState->gyroHits==COMBAT_GYRO_DESTROYED_HITS)
     {combatStartup.requestedPlayerForwardStepScale=0;motion->orientationSteps[2]=0;}
     else
     {
@@ -315,5 +315,5 @@ aiming:;
     if (step>PLAYER_THROTTLE_STEP) step=PLAYER_THROTTLE_STEP;
     motion->forwardStepScale=(int16_t)(forward+(forward>target?-step:step));
     if (!playerMechState->currentInternalStructure[COMBAT_BODY_LEFT_LEG] || !playerMechState->currentInternalStructure[COMBAT_BODY_RIGHT_LEG])
-        unitControls[0].animationRequestFlags|=ANIMATION_REQUEST_FALL_POSE;
+        combatMechs.unitControls[0].animationRequestFlags|=ANIMATION_REQUEST_FALL_POSE;
 }

@@ -131,7 +131,7 @@ uint16_t BtechAdvanceUnitAnimationAndMovementMode(void)
     }
     uint16_t slot=combatImport.activeUnitControl->unitSlot;
     if (slot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: slot>=COMBAT_MECH_SLOTS");
-    BtechUnitBinding *binding=&unitBindings[slot];
+    BtechUnitBinding *binding=&combatMechs.unitBindings[slot];
     uint16_t partStride=combatPose.animationPartFrameCounts[combatImport.activeUnitControl->animationSequence];
     uint16_t partOffset=partStride;
     /* Native reads each binding when its call is reached, not a six-part snapshot. */

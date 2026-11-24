@@ -9,7 +9,7 @@
 uint8_t BtechApplyDestroyedBodyLocationEffects(BtechMechState *mech,int16_t bodyLocation)
 {
     if (mech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mech->templateIndex>=COMBAT_MECH_TEMPLATES");
-    BtechMechTemplate *damagedMechTemplate=&mechTemplates[mech->templateIndex];
+    BtechMechTemplate *damagedMechTemplate=&combatMechs.mechTemplates[mech->templateIndex];
     uint8_t stopDamageTransfer=0;
     for (int16_t mountIndex=0;mountIndex<(int16_t)damagedMechTemplate->weaponMountCount;++mountIndex)
     {

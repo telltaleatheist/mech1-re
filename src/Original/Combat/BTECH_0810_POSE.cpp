@@ -12,7 +12,7 @@ void BtechApplyBodyHeadingToMechParts(void)
 {
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
     {
-        BtechUnitBinding *binding=&unitBindings[slot];
+        BtechUnitBinding *binding=&combatMechs.unitBindings[slot];
         if (!binding->mech) continue;
         if (!binding->torso || !binding->positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !binding->torso || !binding->positionedLeftLeg");
         binding->torso->object.prefix.orientationC+=binding->positionedLeftLeg->object.prefix.orientationC;
@@ -31,7 +31,7 @@ void BtechRemoveBodyHeadingFromMechParts(void)
 {
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
     {
-        BtechUnitBinding *binding=&unitBindings[slot];
+        BtechUnitBinding *binding=&combatMechs.unitBindings[slot];
         if (!binding->mech) continue;
         if (!binding->torso || !binding->positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !binding->torso || !binding->positionedLeftLeg");
         binding->torso->object.prefix.orientationC-=binding->positionedLeftLeg->object.prefix.orientationC;
@@ -75,7 +75,7 @@ void BtechUpdatePlayerMechPose(const BtechWorldObjectPrefix *source)
     }
     if (!playerUnitBinding || !playerUnitBinding->positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->positionedLeftLeg");
     uint16_t forwardStep=playerUnitBinding->positionedLeftLeg->forwardStepScale;
-    uint8_t requests=unitControls[0].animationRequestFlags;
+    uint8_t requests=combatMechs.unitControls[0].animationRequestFlags;
     if ((requests&ANIMATION_REQUEST_FALL_POSE) && combatPose.playerPoseSequence!=ANIMATION_SEQUENCE_FALL)
     {
         BtechClearObjectMotionTail(playerUnitBinding->positionedLeftLeg);
@@ -123,7 +123,7 @@ resetFrame:
 drawPose:;
     if (combatPose.playerPoseSequence>=PLAYER_POSE_SEQUENCES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: playerPoseSequence>=PLAYER_POSE_SEQUENCES");
     const BtechPoseKeyframe *sequence;
-    if (unitControls[0].movementMode==MOVEMENT_MODE_JUMP && combatPose.playerPoseSequence==ANIMATION_SEQUENCE_BEGIN_JUMP)
+    if (combatMechs.unitControls[0].movementMode==MOVEMENT_MODE_JUMP && combatPose.playerPoseSequence==ANIMATION_SEQUENCE_BEGIN_JUMP)
     {sequence=combatPose.playerPoseSequences[ANIMATION_SEQUENCE_IDLE];combatPose.playerPoseFrame=0;}
     else sequence=combatPose.playerPoseSequences[combatPose.playerPoseSequence];
     size_t frame=(size_t)(sequence-combatPose.playerPoseKeyframes)+(uint16_t)(combatPose.playerPoseFrame*PLAYER_POSE_KEYFRAME_BYTES)/PLAYER_POSE_KEYFRAME_BYTES;
@@ -181,23 +181,23 @@ drawPose:;
             combatPose.playerPoseSequence=forwardStep?ANIMATION_SEQUENCE_WALK:ANIMATION_SEQUENCE_IDLE;
             combatPose.playerPoseFrame=0;break;
         case ANIMATION_SEQUENCE_BEGIN_JUMP:
-            unitControls[0].movementMode=MOVEMENT_MODE_JUMP;
+            combatMechs.unitControls[0].movementMode=MOVEMENT_MODE_JUMP;
             if (!playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState");
             playerMechState->jumpCharge-=JUMP_LAUNCH_CHARGE_COST;
             playerUnitBinding->positionedLeftLeg->positionSteps[2]=(int16_t)(playerMechTemplate->jumpSpeedLimit*JUMP_LAUNCH_VERTICAL_SPEED_MULTIPLIER);
             combatPose.playerPoseFrame=0;
             BtechPlaySoundIfEnabled(PLAYER_JUMP_EVENT,PLAYER_JUMP_SOUND_DELAY);break;
         case ANIMATION_SEQUENCE_FALL:
-            unitControls[0].movementMode=MOVEMENT_MODE_FALLEN_POSE;
+            combatMechs.unitControls[0].movementMode=MOVEMENT_MODE_FALLEN_POSE;
             --combatPose.playerPoseFrame;break;
         case ANIMATION_SEQUENCE_FAILED_RECOVERY:
             combatPose.playerPoseSequence=ANIMATION_SEQUENCE_FALL;combatPose.playerPoseFrame=PLAYER_FALL_SETTLED_FRAME;break;
         default:
-            unitControls[0].movementMode=MOVEMENT_MODE_GROUNDED;
+            combatMechs.unitControls[0].movementMode=MOVEMENT_MODE_GROUNDED;
             combatPose.playerPoseSequence=ANIMATION_SEQUENCE_IDLE;combatPose.playerPoseFrame=0;break;
         }
     }
-    unitControls[0].animationRequestFlags=0;
+    combatMechs.unitControls[0].animationRequestFlags=0;
 }
 
 /*0810:9058. Original position/orientation/cache chains, DF clear. Typed
@@ -206,7 +206,7 @@ drawPose:;
 void BtechSynchronizeMechRenderParts(void)
 {
     if (!combatImport.activeUnitControl || combatImport.activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl || activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS");
-    BtechUnitBinding *binding=&unitBindings[combatImport.activeUnitControl->unitSlot];
+    BtechUnitBinding *binding=&combatMechs.unitBindings[combatImport.activeUnitControl->unitSlot];
     if (!binding->positionedLeftLeg || !binding->rightLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !binding->positionedLeftLeg || !binding->rightLeg");
     binding->rightLeg->object.prefix.position=binding->positionedLeftLeg->object.prefix.position;
     if (!binding->torso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !binding->torso"); /* Gate each near-zero alias at its first access, after prior stores. */

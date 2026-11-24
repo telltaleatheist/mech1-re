@@ -19,7 +19,7 @@ void BtechPresentHudRectangleIfReady(uint16_t x,uint16_t y,uint16_t width,uint16
 /*0810:05FD. Actual lamps/gauges/radar, sensor flicker and target/weapon HUD. */
 void BtechRefreshCockpitAndSensorTarget(void)
 {
-    BtechPooledWorldObject *movementObject=unitBindings[0].positionedLeftLeg;
+    BtechPooledWorldObject *movementObject=combatMechs.unitBindings[0].positionedLeftLeg;
     if (!combatStartup.combatTickCounter) combatCockpit.rememberedSensorTargetSlot=0;
     combatVideo.drawPageSelector=combatVideo.backPageSelector;combatVideo.screenPolygonNeedsClip=false;combatVideo.drawPolygonFilled=true;
     BtechDrawMechSubsystemLamps(playerMechState);

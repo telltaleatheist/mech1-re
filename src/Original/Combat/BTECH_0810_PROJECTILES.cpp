@@ -90,7 +90,7 @@ int16_t BtechCalculateProjectileImpactDamage(const BtechProjectileState *project
     if (projectile->profileIndex>=COMBAT_PROJECTILE_PROFILES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: projectile->profileIndex>=COMBAT_PROJECTILE_PROFILES");
     uint16_t weaponKind=combatProjectiles.projectileProfiles[projectile->profileIndex].weaponKind;
     if (weaponKind>=COMBAT_WEAPON_KINDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: weaponKind>=COMBAT_WEAPON_KINDS");
-    if (weaponKind==COMBAT_WEAPON_AC5) return (int16_t)weaponDefinitions[weaponKind].damageOrMissileCount;
+    if (weaponKind==COMBAT_WEAPON_AC5) return (int16_t)combatMechs.weaponDefinitions[weaponKind].damageOrMissileCount;
     int16_t clusterRow=combatProjectiles.missileClusterRowByWeapon[weaponKind];
     if ((uint16_t)clusterRow>=COMBAT_MISSILE_CLUSTER_ROWS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)clusterRow>=COMBAT_MISSILE_CLUSTER_ROWS");
     uint16_t firstDie=BtechRandomBelowBound(DICE_1D6);
@@ -131,16 +131,16 @@ BtechProjectileState *BtechAllocateProjectileFromWeaponProfile(int16_t weaponKin
 BtechProjectileState *BtechSpawnUnitWeaponProjectile(uint16_t unitSlot,int16_t weaponKind,const BtechPosition3D *placement)
 {
     if (unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitSlot>=COMBAT_MECH_SLOTS");
-    BtechPooledWorldObject *firingTorsoObject=unitBindings[unitSlot].torso,*firingLegObject=unitBindings[unitSlot].positionedLeftLeg;
+    BtechPooledWorldObject *firingTorsoObject=combatMechs.unitBindings[unitSlot].torso,*firingLegObject=combatMechs.unitBindings[unitSlot].positionedLeftLeg;
     BtechProjectileState *projectile=BtechAllocateProjectileFromWeaponProfile(weaponKind,placement);
     if (projectile)
     {
         projectile->firingUnitSlot=unitSlot;
         BtechWorldObjectPrefix *projectilePose=&projectile->worldObject->object.prefix;
-        BtechMechState *firingMech=unitBindings[unitSlot].mech;
+        BtechMechState *firingMech=combatMechs.unitBindings[unitSlot].mech;
         if (!firingLegObject || !firingTorsoObject || !firingMech) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !firingLegObject || !firingTorsoObject || !firingMech");
         projectilePose->orientationA=firingLegObject->object.prefix.orientationA-firingMech->aimPitch;
-        if (unitControls[unitSlot].movementMode==MOVEMENT_MODE_FALLEN_POSE) projectilePose->orientationA+=COMBAT_PROJECTILE_FALLEN_PITCH_BIAS;
+        if (combatMechs.unitControls[unitSlot].movementMode==MOVEMENT_MODE_FALLEN_POSE) projectilePose->orientationA+=COMBAT_PROJECTILE_FALLEN_PITCH_BIAS;
         projectilePose->orientationB=firingLegObject->object.prefix.orientationB;
         projectilePose->orientationC=firingLegObject->object.prefix.orientationC+firingTorsoObject->object.prefix.orientationC;
         projectile->worldObject->orientationSteps[0]=0;

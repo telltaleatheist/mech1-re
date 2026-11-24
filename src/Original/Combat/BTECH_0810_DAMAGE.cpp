@@ -32,7 +32,7 @@ void BtechRollCriticalLosses(BtechMechState *mech,int16_t bodyLocation)
 uint8_t BtechSelectAndApplyCriticalLoss(BtechMechState *mech,int16_t bodyLocation)
 {
     if (mech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mech->templateIndex>=COMBAT_MECH_TEMPLATES");
-    BtechMechTemplate *damagedMechTemplate=&mechTemplates[mech->templateIndex];
+    BtechMechTemplate *damagedMechTemplate=&combatMechs.mechTemplates[mech->templateIndex];
     int16_t weaponMountCount=damagedMechTemplate->weaponMountCount;
     for (;;)
     {
@@ -105,7 +105,7 @@ uint8_t BtechSelectAndApplyCriticalLoss(BtechMechState *mech,int16_t bodyLocatio
             BtechWeaponMount *weaponMount=&damagedMechTemplate->weaponMounts[mountIndex];
             if (!mech->weapons[mountIndex].operational || weaponMount->bodyLocation!=(uint16_t)bodyLocation) continue;
             if ((uint16_t)weaponMount->weaponKind>=COMBAT_WEAPON_KINDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)weaponMount->weaponKind>=COMBAT_WEAPON_KINDS");
-            remainingEquipmentWeight-=weaponDefinitions[weaponMount->weaponKind].criticalSlots;
+            remainingEquipmentWeight-=combatMechs.weaponDefinitions[weaponMount->weaponKind].criticalSlots;
             if (remainingEquipmentWeight<=0) {mech->weapons[mountIndex].operational=0;return 1;}
         }
         for (uint16_t ammoFamily=0;ammoFamily<COMBAT_AMMO_FAMILIES;++ammoFamily)
@@ -139,7 +139,7 @@ void BtechApplyArmorAndInternalDamage(uint16_t unitSlot,int16_t damageArmorLocat
     else if (unitSlot==COMBAT_SPECIAL_TARGET_SLOT) {BtechApplySpecialTargetDamage(residualDamage);return;}
     if (unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitSlot>=COMBAT_MECH_SLOTS");
     combatDamagePanels.targetDamagePanelDirty[unitSlot]=1;
-    BtechMechState *damagedMech=unitBindings[unitSlot].mech;
+    BtechMechState *damagedMech=combatMechs.unitBindings[unitSlot].mech;
     while (residualDamage)
     {
         if (!damagedMech || (uint16_t)damageArmorLocation>=COMBAT_ARMOR_LOCATIONS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !damagedMech || (uint16_t)damageArmorLocation>=COMBAT_ARMOR_LOCATIONS");
@@ -170,7 +170,7 @@ void BtechApplyArmorAndInternalDamage(uint16_t unitSlot,int16_t damageArmorLocat
 BtechPooledWorldObject *BtechGetUnitRenderPartByArmorLocation(uint16_t unitSlot,int16_t armorLocation)
 {
     if (unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitSlot>=COMBAT_MECH_SLOTS");
-    BtechUnitBinding *binding=&unitBindings[unitSlot];
+    BtechUnitBinding *binding=&combatMechs.unitBindings[unitSlot];
     switch (armorLocation)
     {
     case COMBAT_ARMOR_LEFT_LEG:return binding->positionedLeftLeg;

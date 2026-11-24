@@ -62,14 +62,14 @@ void BtechDrawTerrainRadar(void)
     uint16_t paletteIndex=combatCockpit.hudColourSchemes[combatImport.hudColourSchemeIndex].radarFriendly;
     for (uint16_t slot=1;slot<COMBAT_MECH_SLOTS;++slot)
     {
-        if (!unitBindings[slot].mech || unitControls[slot].conditionScoreOrExitCode<=COMBAT_EXIT_CODE_THRESHOLD) continue;
+        if (!combatMechs.unitBindings[slot].mech || combatMechs.unitControls[slot].conditionScoreOrExitCode<=COMBAT_EXIT_CODE_THRESHOLD) continue;
         if (slot>=COMBAT_FRIENDLY_SLOTS)
         {
-            if (!unitVisibility[0][slot]) continue;
+            if (!combatMechs.unitVisibility[0][slot]) continue;
             paletteIndex=combatCockpit.hudColourSchemes[combatImport.hudColourSchemeIndex].radarOpposing;
         }
-        if (!unitBindings[slot].torso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[slot].torso");
-        BtechDrawRadarPositionMarker(&unitBindings[slot].torso->object.prefix.position,paletteIndex);
+        if (!combatMechs.unitBindings[slot].torso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[slot].torso");
+        BtechDrawRadarPositionMarker(&combatMechs.unitBindings[slot].torso->object.prefix.position,paletteIndex);
     }
     if (combatImport.sideObjectiveRules[0]==OBJECTIVE_SPECIAL_TARGET || combatImport.sideObjectiveRules[0]==OBJECTIVE_DEFEND_SPECIAL_TARGET)
     {

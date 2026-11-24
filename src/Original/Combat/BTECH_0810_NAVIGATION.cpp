@@ -61,7 +61,7 @@ void BtechSteerActiveUnitAroundObstacles(uint16_t desiredHeading,uint8_t moveFor
     {
         if (!combatPose.activeMechTemplate || !combatPose.activeMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeMechTemplate || !activeMechState");
         if (combatImport.activeUnitControl->tacticalState!=NAVIGATION_TACTICAL_CHARGING && combatImport.activeUnitControl->tacticalState!=NAVIGATION_TACTICAL_CHARGING_BASE
-            && combatPose.activeMechTemplate->jumpJetGroupCount && !heatInhibitFlags[0] && combatImport.activeUnitControl->movementMode!=MOVEMENT_MODE_JUMP
+            && combatPose.activeMechTemplate->jumpJetGroupCount && !combatMechs.heatInhibitFlags[0] && combatImport.activeUnitControl->movementMode!=MOVEMENT_MODE_JUMP
             && (int16_t)combatPose.activeMechState->jumpCharge>NAVIGATION_JUMP_CHARGE_MINIMUM)
         {
             BtechPosition3D trackedDestination={(uint32_t)combatImport.activeUnitControl->trackedPosition[0],(uint32_t)combatImport.activeUnitControl->trackedPosition[1],(uint32_t)combatImport.activeUnitControl->trackedPosition[2]};
@@ -98,9 +98,9 @@ uint8_t BtechIsAvoidanceProbeBlocked(uint16_t probeIndex)
     int16_t probeDisplacementX=probeStepX,probeDisplacementY=probeStepY;
     for (uint16_t otherUnitSlot=0;otherUnitSlot<COMBAT_MECH_SLOTS;++otherUnitSlot)
     {
-        if (!unitBindings[otherUnitSlot].mech || combatImport.activeUnitControl->unitSlot==otherUnitSlot) continue;
-        if (!unitBindings[otherUnitSlot].positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[otherUnitSlot].positionedLeftLeg");
-        if (BtechIsPositionInForwardObstacleCorridor(&unitBindings[otherUnitSlot].positionedLeftLeg->object.prefix.position,AVOIDANCE_UNIT_HALF_WIDTH)) return 1;
+        if (!combatMechs.unitBindings[otherUnitSlot].mech || combatImport.activeUnitControl->unitSlot==otherUnitSlot) continue;
+        if (!combatMechs.unitBindings[otherUnitSlot].positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !unitBindings[otherUnitSlot].positionedLeftLeg");
+        if (BtechIsPositionInForwardObstacleCorridor(&combatMechs.unitBindings[otherUnitSlot].positionedLeftLeg->object.prefix.position,AVOIDANCE_UNIT_HALF_WIDTH)) return 1;
     }
     if (combatImport.activeUnitControl->sideIndex>=2) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeUnitControl->sideIndex>=2");
     int16_t sideObjectiveRule=combatImport.sideObjectiveRules[combatImport.activeUnitControl->sideIndex];
@@ -175,9 +175,9 @@ void BtechDampJumpMotion(void)
 {
     for (uint16_t unitSlot=0;unitSlot<COMBAT_MECH_SLOTS;++unitSlot)
     {
-        if (!unitBindings[unitSlot].mech) continue;
-        BtechPooledWorldObject *jumpingMechObject=unitBindings[unitSlot].positionedLeftLeg;
-        if (unitControls[unitSlot].movementMode!=MOVEMENT_MODE_JUMP) continue;
+        if (!combatMechs.unitBindings[unitSlot].mech) continue;
+        BtechPooledWorldObject *jumpingMechObject=combatMechs.unitBindings[unitSlot].positionedLeftLeg;
+        if (combatMechs.unitControls[unitSlot].movementMode!=MOVEMENT_MODE_JUMP) continue;
         if (!jumpingMechObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !jumpingMechObject");
         int16_t yawTurnStep=jumpingMechObject->orientationSteps[2],yawTurnMagnitude=(uint16_t)yawTurnStep==0x8000?INT16_MAX:yawTurnStep<0?-yawTurnStep:yawTurnStep;
         if (yawTurnMagnitude<JUMP_TURN_DAMPING) jumpingMechObject->orientationSteps[2]=0;

@@ -12,7 +12,7 @@ enum { SALVAGE_ENGINE_WEIGHT=30,SALVAGE_SENSOR_WEIGHT=5,SALVAGE_COCKPIT_WEIGHT=3
 uint8_t BtechCalculateSalvageConditionPercent(const BtechMechState *mech)
 {
     if (!mech || mech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mech || mech->templateIndex>=COMBAT_MECH_TEMPLATES");
-    const BtechMechTemplate *chassis=&mechTemplates[mech->templateIndex];
+    const BtechMechTemplate *chassis=&combatMechs.mechTemplates[mech->templateIndex];
     int16_t engine=(int16_t)((COMBAT_ENGINE_HIT_LIMIT-mech->engineHits)*SALVAGE_ENGINE_WEIGHT)/COMBAT_ENGINE_HIT_LIMIT;
     int16_t sensors=(int16_t)((COMBAT_SENSORS_DESTROYED_HITS-mech->sensorHits)*SALVAGE_SENSOR_WEIGHT)/COMBAT_SENSORS_DESTROYED_HITS;
     int16_t gyro=(int16_t)((COMBAT_GYRO_DESTROYED_HITS-mech->gyroHits)*SALVAGE_GYRO_WEIGHT)/COMBAT_GYRO_DESTROYED_HITS;
@@ -50,10 +50,10 @@ void BtechDistributeCampaignReserveAmmo(void)
             distributed=0;
             for (uint16_t slot=0;slot<COMBAT_LANCE_SLOTS && remaining;++slot)
             {
-                BtechMechState *mech=unitBindings[slot].mech;
+                BtechMechState *mech=combatMechs.unitBindings[slot].mech;
                 if (!mech) continue;
                 if (mech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mech->templateIndex>=COMBAT_MECH_TEMPLATES");
-                const BtechMechTemplate *chassis=&mechTemplates[mech->templateIndex];
+                const BtechMechTemplate *chassis=&combatMechs.mechTemplates[mech->templateIndex];
                 if ((int16_t)chassis->initialAmmoSalvos[family]>(int16_t)mech->ammoSalvosRemaining[family])
                 {++mech->ammoSalvosRemaining[family];--remaining;distributed=1;}
             }
@@ -69,10 +69,10 @@ void BtechRecoverFriendlyMechCondition(void)
 {
     for (uint16_t slot=0;slot<COMBAT_LANCE_SLOTS;++slot)
     {
-        BtechMechState *mech=unitBindings[slot].mech;
+        BtechMechState *mech=combatMechs.unitBindings[slot].mech;
         if (!mech) continue;
         if (mech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mech->templateIndex>=COMBAT_MECH_TEMPLATES");
-        const BtechMechTemplate *chassis=&mechTemplates[mech->templateIndex];
+        const BtechMechTemplate *chassis=&combatMechs.mechTemplates[mech->templateIndex];
         mech->destroyedHeatSinks=(uint16_t)((int16_t)(mech->destroyedHeatSinks*STAGE_RECOVERY_NUMERATOR)/STAGE_RECOVERY_DENOMINATOR);
         mech->lifeSupportHits=(uint16_t)((int16_t)(mech->lifeSupportHits*STAGE_RECOVERY_NUMERATOR)/STAGE_RECOVERY_DENOMINATOR);
         mech->gyroHits=(uint16_t)((int16_t)(mech->gyroHits*STAGE_RECOVERY_NUMERATOR)/STAGE_RECOVERY_DENOMINATOR);

@@ -34,8 +34,8 @@ static void TraceDiagnosticFrame(void)
         (unsigned long long)MwSdlAudioUnderrunFrames());
     for (uint16_t slot=1;slot<COMBAT_MECH_SLOTS;++slot)
     {
-        const BtechPooledWorldObject *other=unitBindings[slot].positionedLeftLeg;
-        if (!unitBindings[slot].mech || !other) continue;
+        const BtechPooledWorldObject *other=combatMechs.unitBindings[slot].positionedLeftLeg;
+        if (!combatMechs.unitBindings[slot].mech || !other) continue;
         fprintf(stderr,"AI slot=%u position=%ld,%ld step=%d\n",slot,
             (long)(int32_t)other->object.prefix.position.positionA,
             (long)(int32_t)other->object.prefix.position.positionB,

@@ -62,7 +62,7 @@ void BtechRenderCockpitSceneAndHud(void)
     BtechDrawNearText(combatCockpit.zoomLabel,zoomX,COCKPIT_STATUS_TEXT_Y);
     BtechDrawNearText(BtechFormatSignedDecimalField((int16_t)(combatStartup.viewScaleShift-COCKPIT_ZOOM_SHIFT_BASE),1,' '),zoomX+COCKPIT_ZOOM_VALUE_X_OFFSET,COCKPIT_STATUS_TEXT_Y);
     if (combatStartup.mountGroupMode) BtechDrawNearText(combatCockpit.automaticWeaponsLabel,automaticWeaponsX,COCKPIT_STATUS_TEXT_Y);
-    if (heatInhibitFlags[0] && (combatStartup.combatTickCounter&COCKPIT_WARNING_FLASH_MASK))
+    if (combatMechs.heatInhibitFlags[0] && (combatStartup.combatTickCounter&COCKPIT_WARNING_FLASH_MASK))
     {
         combatVideo.textForegroundColour=COCKPIT_REACTOR_WARNING_COLOUR;
         BtechDrawNearText(combatCockpit.reactorShutdownText,COCKPIT_REACTOR_WARNING_X,COCKPIT_REACTOR_WARNING_Y);

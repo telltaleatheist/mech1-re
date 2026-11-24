@@ -20,10 +20,10 @@ void SupportPilotObserve(PilotObservation *view,bool combatActive)
     const BtechPooledWorldObject *body=playerUnitBinding->positionedLeftLeg;
     if(!body || !playerUnitBinding->torso)return;
     view->cockpit=combatStartup.combatDispatchState==COMBAT_SCREEN_COCKPIT && combatStartup.combatTickCounter!=0;
-    view->alive=unitControls[0].conditionScoreOrExitCode>COMBAT_CONDITION_SCORE_MINIMUM;
+    view->alive=combatMechs.unitControls[0].conditionScoreOrExitCode>COMBAT_CONDITION_SCORE_MINIMUM;
     view->missionComplete=combatStartup.sideCompletionFlags[0] || combatStartup.sideCompletionFlags[1];
-    view->fallen=unitControls[0].movementMode==MOVEMENT_MODE_FALLEN_POSE;
-    view->heatInhibited=heatInhibitFlags[0]!=0;view->heat=playerMechState->heatUnits;
+    view->fallen=combatMechs.unitControls[0].movementMode==MOVEMENT_MODE_FALLEN_POSE;
+    view->heatInhibited=combatMechs.heatInhibitFlags[0]!=0;view->heat=playerMechState->heatUnits;
     view->aws=combatStartup.mountGroupMode!=0;view->salvo=combatInput.fireCycleActive!=0;
     view->position=ReadPosition(&body->object.prefix);
     view->heading=body->object.prefix.orientationC;
@@ -35,16 +35,16 @@ void SupportPilotObserve(PilotObservation *view,bool combatActive)
     view->reticleX=combatRender.screenCentreA;view->reticleY=(int16_t)combatStartup.aimReticleScreenY;
     for(unsigned slot=1;slot<COMBAT_MECH_SLOTS;++slot)
     {
-        const BtechUnitBinding *binding=&unitBindings[slot];
+        const BtechUnitBinding *binding=&combatMechs.unitBindings[slot];
         const BtechPooledWorldObject *drawn=combatStartup.unitLastDrawParts[slot];
         if(!binding->mech || !binding->positionedLeftLeg || !binding->torso)continue;
         PilotTarget *target=&view->targets[slot];
         target->visible=drawn && (drawn->object.prefix.flags&WORLD_OBJECT_TARGET_PROBE_VISIBLE)!=0
             && (drawn->object.prefix.renderFlags&OBJECT_PROJECTED_VISIBLE)!=0;
-        target->known=target->visible || unitVisibility[0][slot]!=0;
+        target->known=target->visible || combatMechs.unitVisibility[0][slot]!=0;
         if(!target->known)continue;
-        target->hostile=unitControls[slot].sideIndex!=unitControls[0].sideIndex;
-        target->alive=unitControls[slot].conditionScoreOrExitCode>COMBAT_CONDITION_SCORE_MINIMUM;
+        target->hostile=combatMechs.unitControls[slot].sideIndex!=combatMechs.unitControls[0].sideIndex;
+        target->alive=combatMechs.unitControls[slot].conditionScoreOrExitCode>COMBAT_CONDITION_SCORE_MINIMUM;
         target->position=ReadPosition(&binding->positionedLeftLeg->object.prefix);
         if(target->visible)
         {
@@ -78,7 +78,7 @@ void SupportPilotObserve(PilotObservation *view,bool combatActive)
     {
         int kind=playerMechTemplate->weaponMounts[mount].weaponKind;
         if(kind<0 || kind>=COMBAT_WEAPON_KINDS)continue;
-        const BtechWeaponDefinition *weapon=&weaponDefinitions[kind];
+        const BtechWeaponDefinition *weapon=&combatMechs.weaponDefinitions[kind];
         const BtechWeaponState *state=&playerMechState->weapons[mount];
         bool ammunition=weapon->ammoFamily==-1 || (weapon->ammoFamily>=0 && weapon->ammoFamily<COMBAT_AMMO_FAMILIES &&
             playerMechState->ammoSalvosRemaining[weapon->ammoFamily]!=0);

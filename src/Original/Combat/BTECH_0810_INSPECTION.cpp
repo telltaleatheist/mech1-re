@@ -23,10 +23,10 @@ enum { INSPECTION_DIVIDER_X=0x9D,INSPECTION_NAME_X=0x2E,INSPECTION_NAME_Y=4,
  * inspection frame BEFORE restoring cockpit resources and viewport. */
 void BtechUpdateMechInspectionScreen(uint16_t unitSlot)
 {
-    if (unitSlot>=COMBAT_MECH_SLOTS || !unitBindings[unitSlot].mech) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitSlot>=COMBAT_MECH_SLOTS || !unitBindings[unitSlot].mech");
-    combatCockpit.inspectionMechState=unitBindings[unitSlot].mech;
+    if (unitSlot>=COMBAT_MECH_SLOTS || !combatMechs.unitBindings[unitSlot].mech) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitSlot>=COMBAT_MECH_SLOTS || !unitBindings[unitSlot].mech");
+    combatCockpit.inspectionMechState=combatMechs.unitBindings[unitSlot].mech;
     if (combatCockpit.inspectionMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: inspectionMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
-    combatCockpit.inspectionMechTemplate=&mechTemplates[combatCockpit.inspectionMechState->templateIndex];
+    combatCockpit.inspectionMechTemplate=&combatMechs.mechTemplates[combatCockpit.inspectionMechState->templateIndex];
     if (combatVideo.inspectionReloadPending)
     {
         combatCockpit.cockpitFullRedrawPending=0;
@@ -82,7 +82,7 @@ void BtechDrawMechInspectionStatus(void)
 {
     const BtechMechState *mech=combatCockpit.inspectionMechState;
     if (!mech || mech->templateIndex>=COMBAT_MECH_TEMPLATES || combatImport.hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mech || mech->templateIndex>=COMBAT_MECH_TEMPLATES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
-    const BtechMechTemplate *chassis=&mechTemplates[mech->templateIndex];
+    const BtechMechTemplate *chassis=&combatMechs.mechTemplates[mech->templateIndex];
     const BtechHudColourScheme *colours=&combatCockpit.hudColourSchemes[combatImport.hudColourSchemeIndex];
     combatVideo.screenPolygonNeedsClip=false;combatVideo.drawFillColour=(uint8_t)colours->inspectionBackground;combatVideo.drawLineColour=Combat_Pal_EGA_Black;
     BtechDrawStyledRectangle(0,0,COMBAT_SCREEN_WIDTH,COMBAT_SCREEN_HEIGHT);

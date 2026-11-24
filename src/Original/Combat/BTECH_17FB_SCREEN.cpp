@@ -83,7 +83,7 @@ void BtechRefreshLanceOrderScreen(void)
             (uint16_t)(viewport->clipMaximumA-viewport->clipMinimumA),(uint16_t)(viewport->clipMaximumB-viewport->clipMinimumB+1));
     }
     for (uint16_t panel=0;panel<ORDER_WINGMATE_PANELS;++panel)
-        combatOrders.lanceOrderControls[panel]=unitBindings[panel+1].mech?&unitControls[panel+1]:NULL;
+        combatOrders.lanceOrderControls[panel]=combatMechs.unitBindings[panel+1].mech?&combatMechs.unitControls[panel+1]:NULL;
     combatVideo.screenPolygonNeedsClip=false;
     BtechDrawLanceMapUnitMarkers();
     if (combatOrders.lanceOrderControls[0])

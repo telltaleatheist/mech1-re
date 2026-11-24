@@ -44,16 +44,16 @@ void BtechUpdateTargetPanelAndReticle(uint16_t targetUnitSlot)
     combatVideo.screenPolygonNeedsClip=true;combatVideo.drawPolygonFilled=false;
     if (combatImport.hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || combatImport.combatLandscapeIndex>=COMBAT_LANDSCAPES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || combatLandscapeIndex>=COMBAT_LANDSCAPES");
     combatVideo.drawFillColour=combatVideo.landscapeCameraColourRows[combatImport.hudColourSchemeIndex][combatImport.combatLandscapeIndex].hudReticleColour;
-    BtechPooledWorldObject *target=targetUnitSlot==COMBAT_SPECIAL_TARGET_SLOT?specialTargetObject:unitBindings[targetUnitSlot].torso;
-    if (!target || !unitBindings[0].torso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !target || !unitBindings[0].torso");
-    uint32_t distance=BtechApproximatePlanarDistance(&unitBindings[0].torso->object.prefix.position,&target->object.prefix.position);
+    BtechPooledWorldObject *target=targetUnitSlot==COMBAT_SPECIAL_TARGET_SLOT?specialTargetObject:combatMechs.unitBindings[targetUnitSlot].torso;
+    if (!target || !combatMechs.unitBindings[0].torso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !target || !unitBindings[0].torso");
+    uint32_t distance=BtechApproximatePlanarDistance(&combatMechs.unitBindings[0].torso->object.prefix.position,&target->object.prefix.position);
     int16_t scale;
     if (targetUnitSlot==COMBAT_SPECIAL_TARGET_SLOT) scale=SPECIAL_TARGET_RETICLE_SCALE;
     else
     {
-        BtechMechState *mech=unitBindings[targetUnitSlot].mech;
+        BtechMechState *mech=combatMechs.unitBindings[targetUnitSlot].mech;
         if (!mech || mech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mech || mech->templateIndex>=COMBAT_MECH_TEMPLATES");
-        scale=(int16_t)mechTemplates[mech->templateIndex].displayScale;
+        scale=(int16_t)combatMechs.mechTemplates[mech->templateIndex].displayScale;
     }
     uint32_t numerator=BtechShiftDwordLeft((uint32_t)scale,(uint8_t)combatStartup.viewScaleShift);
     int16_t ratio=(int16_t)BtechDivideSignedDword(numerator,distance);
@@ -94,9 +94,9 @@ void BtechDrawTargetDamagePanel(uint16_t targetUnitSlot,const BtechScreenRectang
     else
     {
         if (targetUnitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: targetUnitSlot>=COMBAT_MECH_SLOTS");
-        BtechMechState *mech=unitBindings[targetUnitSlot].mech;
+        BtechMechState *mech=combatMechs.unitBindings[targetUnitSlot].mech;
         if (!mech || mech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mech || mech->templateIndex>=COMBAT_MECH_TEMPLATES");
-        const BtechMechTemplate *chassis=&mechTemplates[mech->templateIndex];
+        const BtechMechTemplate *chassis=&combatMechs.mechTemplates[mech->templateIndex];
         combatVideo.drawLineColour=Combat_Pal_EGA_LightGrey;combatVideo.drawFillColour=Combat_Pal_EGA_LightGrey;
         BtechDrawStyledRectangle((uint16_t)(panel->x+TARGET_DAMAGE_INSET_X),(uint16_t)(panel->y+TARGET_PANEL_DRAW_INSET),(uint16_t)(panel->width-TARGET_DAMAGE_WIDTH_TRIM),(uint16_t)(panel->height-TARGET_DAMAGE_HEIGHT_TRIM));
         for (uint16_t armor=0;armor<COMBAT_ARMOR_LOCATIONS;++armor)

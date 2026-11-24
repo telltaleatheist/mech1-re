@@ -37,7 +37,7 @@ void BtechUpdateTacticalNavigation(void)
             else
             {
                 if (trackedTargetSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: trackedTargetSlot>=COMBAT_MECH_SLOTS");
-                for (uint16_t axis=0;axis<3;++axis) control->trackedPosition[axis]=unitControls[trackedTargetSlot].lastVisiblePosition[axis];
+                for (uint16_t axis=0;axis<3;++axis) control->trackedPosition[axis]=combatMechs.unitControls[trackedTargetSlot].lastVisiblePosition[axis];
             }
         }
         if (control->targetUnitSlot>=0)
@@ -49,7 +49,7 @@ void BtechUpdateTacticalNavigation(void)
             {
                 if ((uint16_t)control->targetUnitSlot>=COMBAT_MECH_SLOTS)
                     /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)control->targetUnitSlot>=COMBAT_MECH_SLOTS");
-                targetConditionOrBoundaryCode=unitControls[control->targetUnitSlot].conditionScoreOrExitCode;
+                targetConditionOrBoundaryCode=combatMechs.unitControls[control->targetUnitSlot].conditionScoreOrExitCode;
             }
             if (targetConditionOrBoundaryCode>COMBAT_MECH_DISABLED_VALUE) return;
         }
@@ -85,7 +85,7 @@ void BtechUpdateTacticalNavigation(void)
             else
             {
                 if ((uint16_t)control->trackedUnitOrSpecialSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)control->trackedUnitOrSpecialSlot>=COMBAT_MECH_SLOTS");
-                int32_t *lastSeen=unitControls[control->trackedUnitOrSpecialSlot].lastVisiblePosition;
+                int32_t *lastSeen=combatMechs.unitControls[control->trackedUnitOrSpecialSlot].lastVisiblePosition;
                 waypoint=BtechPosition3D{(uint32_t)lastSeen[0],(uint32_t)lastSeen[1],(uint32_t)lastSeen[2]};
                 BtechNavigateActiveUnitTowardPosition(&waypoint);
             }
@@ -152,8 +152,8 @@ void BtechSelectUnitTacticalState(void)
                 control->tacticalState=TACTICAL_TRACKING;
                 if (control->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: control->unitSlot>=COMBAT_MECH_SLOTS");
                 for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
-                    if (unitControls[slot].sideIndex==control->sideIndex
-                        && (unitControls[slot].targetUnitSlot==control->unitSlot || (int32_t)combatBallistics.unitDistances[slot][control->unitSlot]<control->quarterReadyWeaponRange)) control->tacticalState=TACTICAL_CHARGING;
+                    if (combatMechs.unitControls[slot].sideIndex==control->sideIndex
+                        && (combatMechs.unitControls[slot].targetUnitSlot==control->unitSlot || (int32_t)combatBallistics.unitDistances[slot][control->unitSlot]<control->quarterReadyWeaponRange)) control->tacticalState=TACTICAL_CHARGING;
             }
             break;
         }
@@ -178,30 +178,30 @@ void BtechSelectUnitTacticalState(void)
     }
     uint16_t threatCount=0,strongestThreatHeadingIndex=0,selectedHeading=root->orientationC;
     int16_t combinedThreatValue=0,strongestThreatSlot=-1;
-    int16_t savedPlayerConditionScore=unitControls[0].conditionScoreOrExitCode;
+    int16_t savedPlayerConditionScore=combatMechs.unitControls[0].conditionScoreOrExitCode;
     int16_t halfPlayerConditionScore=((uint16_t)savedPlayerConditionScore>>1)|((uint16_t)savedPlayerConditionScore&0x8000);
-    unitControls[0].conditionScoreOrExitCode=(int16_t)(savedPlayerConditionScore+halfPlayerConditionScore);
+    combatMechs.unitControls[0].conditionScoreOrExitCode=(int16_t)(savedPlayerConditionScore+halfPlayerConditionScore);
     if (control->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: control->unitSlot>=COMBAT_MECH_SLOTS");
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
     {
-        if (!unitBindings[slot].mech) continue;
-        BtechUnitControlState *enemy=&unitControls[slot];
-        if (enemy->sideIndex==control->sideIndex || enemy->conditionScoreOrExitCode<=COMBAT_CONDITION_SCORE_MINIMUM || !unitVisibility[slot][control->unitSlot]) continue;
+        if (!combatMechs.unitBindings[slot].mech) continue;
+        BtechUnitControlState *enemy=&combatMechs.unitControls[slot];
+        if (enemy->sideIndex==control->sideIndex || enemy->conditionScoreOrExitCode<=COMBAT_CONDITION_SCORE_MINIMUM || !combatMechs.unitVisibility[slot][control->unitSlot]) continue;
         int16_t halfEngagementRange=((uint16_t)enemy->readyWeaponRangeMinusMargin>>1)|((uint16_t)enemy->readyWeaponRangeMinusMargin&0x8000);
         int16_t threatEngagementRange=halfEngagementRange+enemy->readyWeaponRangeMinusMargin;
         if (threatEngagementRange<=(int32_t)combatBallistics.unitDistances[slot][control->unitSlot]) continue;
         uint16_t heading=BtechCalculateVectorHeading((uint32_t)enemy->lastVisiblePosition[0]-root->position.positionA,(uint32_t)enemy->lastVisiblePosition[1]-root->position.positionB);
-        BtechPooledWorldObject *enemyRoot=unitBindings[slot].positionedLeftLeg,*enemyTorso=unitBindings[slot].torso;
+        BtechPooledWorldObject *enemyRoot=combatMechs.unitBindings[slot].positionedLeftLeg,*enemyTorso=combatMechs.unitBindings[slot].torso;
         if (!enemyRoot || !enemyTorso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !enemyRoot || !enemyTorso");
         int16_t threatFacingDifference=enemyRoot->object.prefix.orientationC+enemyTorso->object.prefix.orientationC-heading+AVOIDANCE_HALF_TURN;
         if (threatFacingDifference>=TACTICAL_THREAT_FACING_LIMIT) continue; /* Signed one-sided, not abs(angle). */
         combatTactics.tacticalThreatUnitSlots[threatCount]=slot;combatTactics.tacticalThreatHeadings[threatCount]=heading;
         combinedThreatValue=(int16_t)(combinedThreatValue+enemy->conditionScoreOrExitCode);
-        if (strongestThreatSlot<0 || unitControls[strongestThreatSlot].conditionScoreOrExitCode<enemy->conditionScoreOrExitCode)
+        if (strongestThreatSlot<0 || combatMechs.unitControls[strongestThreatSlot].conditionScoreOrExitCode<enemy->conditionScoreOrExitCode)
         {strongestThreatHeadingIndex=threatCount;strongestThreatSlot=slot;}
         ++threatCount;
     }
-    unitControls[0].conditionScoreOrExitCode=savedPlayerConditionScore;
+    combatMechs.unitControls[0].conditionScoreOrExitCode=savedPlayerConditionScore;
     if (threatCount)
     {
         if (control->tacticalState==TACTICAL_CHARGING_BASE)
@@ -215,7 +215,7 @@ void BtechSelectUnitTacticalState(void)
         if (control->tacticalState!=TACTICAL_WANDERING)
         {
             if ((int16_t)(control->conditionScoreOrExitCode*3)<combinedThreatValue) control->tacticalState=TACTICAL_FLEEING;
-            else if (unitControls[strongestThreatSlot].conditionScoreOrExitCode>(int16_t)(control->conditionScoreOrExitCode*2)) control->tacticalState=TACTICAL_AVOIDING;
+            else if (combatMechs.unitControls[strongestThreatSlot].conditionScoreOrExitCode>(int16_t)(control->conditionScoreOrExitCode*2)) control->tacticalState=TACTICAL_AVOIDING;
         }
     }
     else if (control->tacticalState==TACTICAL_CHARGING_BASE)
@@ -231,8 +231,8 @@ void BtechSelectUnitTacticalState(void)
         else BtechScoreAndSelectTacticalTarget();
         if (control->targetUnitSlot>=0)
         {
-            if (control->targetUnitSlot>=COMBAT_MECH_SLOTS || !unitBindings[control->targetUnitSlot].positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: control->targetUnitSlot>=COMBAT_MECH_SLOTS || !unitBindings[control->targetUnitSlot].positionedLeftLeg");
-            BtechPosition3D *position=&unitBindings[control->targetUnitSlot].positionedLeftLeg->object.prefix.position;
+            if (control->targetUnitSlot>=COMBAT_MECH_SLOTS || !combatMechs.unitBindings[control->targetUnitSlot].positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: control->targetUnitSlot>=COMBAT_MECH_SLOTS || !unitBindings[control->targetUnitSlot].positionedLeftLeg");
+            BtechPosition3D *position=&combatMechs.unitBindings[control->targetUnitSlot].positionedLeftLeg->object.prefix.position;
             selectedHeading=BtechCalculateVectorHeading(position->positionA-root->position.positionA,position->positionB-root->position.positionB);
         }
         else selectedHeading=root->orientationC;

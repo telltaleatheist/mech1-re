@@ -334,15 +334,15 @@ static void WriteStatus(const char *path)
     bool first=true;
     if(mwSdlCombatActive) for(unsigned slot=0;slot<COMBAT_MECH_SLOTS;++slot)
     {
-        const BtechUnitBinding *binding=&unitBindings[slot];
+        const BtechUnitBinding *binding=&combatMechs.unitBindings[slot];
         const BtechMechState *mech=binding->mech;
         const BtechPooledWorldObject *body=binding->positionedLeftLeg;
         if(!mech || !body)continue;
         fprintf(file,"%s{\"slot\":%u,\"side\":%u,\"chassis\":%u,\"step\":%d,",first?"":",",slot,
-            unitControls[slot].sideIndex,mech->templateIndex,body->forwardStepScale);first=false;
+            combatMechs.unitControls[slot].sideIndex,mech->templateIndex,body->forwardStepScale);first=false;
         Position(file,&body->object.prefix);
         fprintf(file,",\"movementMode\":%u,\"verticalStep\":%d,\"jumpCharge\":%u",
-            unitControls[slot].movementMode,body->positionSteps[2],mech->jumpCharge);
+            combatMechs.unitControls[slot].movementMode,body->positionSteps[2],mech->jumpCharge);
         if (!slot && playerPoseObject)
         {
             fputs(",\"camera\":{",file);

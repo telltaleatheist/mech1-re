@@ -69,9 +69,9 @@ void BtechInitializeFreshStartupOwners(const uint8_t *data)
     selectedObjectCount=0;
     for (uint16_t object=0;object<COMBAT_SELECTED_WORLD_OBJECTS;++object) selectedWorldObjects[object]=NULL;
     for (uint16_t mount=0;mount<COMBAT_WEAPON_MOUNTS;++mount) combatStartup.playerMountFireFlags[mount]=0;
-    for (uint16_t slot=0;slot<COMBAT_MECH_TEMPLATES;++slot) templateMaximumCombatScores[slot]=0;
+    for (uint16_t slot=0;slot<COMBAT_MECH_TEMPLATES;++slot) combatMechs.templateMaximumCombatScores[slot]=0;
     for (uint16_t observer=0;observer<COMBAT_MECH_SLOTS;++observer)
-        for (uint16_t target=0;target<COMBAT_MECH_SLOTS;++target) unitVisibility[observer][target]=0;
+        for (uint16_t target=0;target<COMBAT_MECH_SLOTS;++target) combatMechs.unitVisibility[observer][target]=0;
     combatStartup.combatTickCounter=0;
     combatStartup.playerTargetSlot=0;
     combatStartup.aimReticleScreenY=0;
@@ -82,7 +82,7 @@ void BtechInitializeFreshStartupOwners(const uint8_t *data)
     for (uint16_t slot=0;slot<2;++slot)
         combatStartup.sideCompletionFlags[slot]=0;
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
-    {combatStartup.unitLastDrawParts[slot]=NULL;combatStartup.heatAimJitterTiers[slot]=0;heatSpeedPenalties[slot]=0;heatInhibitFlags[slot]=0;}
+    {combatStartup.unitLastDrawParts[slot]=NULL;combatStartup.heatAimJitterTiers[slot]=0;combatMechs.heatSpeedPenalties[slot]=0;combatMechs.heatInhibitFlags[slot]=0;}
     combatStartup.selectedWeaponMount=0; /*0E24*/
     combatStartup.radarRangeShift=MwReadNativeWord(data,0x0E20);
     combatStartup.viewScaleShift=MwReadNativeWord(data,0x0E22);

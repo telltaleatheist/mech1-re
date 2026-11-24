@@ -70,9 +70,9 @@ void BtechDrawLanceMapUnitMarkers(void)
     }
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
     {
-        const BtechUnitBinding *binding=&unitBindings[slot];
+        const BtechUnitBinding *binding=&combatMechs.unitBindings[slot];
         if (!binding->mech) continue;
-        const BtechUnitControlState *control=&unitControls[slot];
+        const BtechUnitControlState *control=&combatMechs.unitControls[slot];
         BtechPosition3D remembered;
         const BtechPosition3D *position;
         if (control->sideIndex==1)

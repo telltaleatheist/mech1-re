@@ -94,10 +94,10 @@ void BtechSetConditionTextColours(uint16_t conditionColour)
  * penalties and FFFF disabled test. This is not a Battle Value calculation. */
 uint16_t BtechGetMechConditionColour(int16_t unitSlot)
 {
-    if ((uint16_t)unitSlot>=COMBAT_MECH_SLOTS || !unitBindings[unitSlot].mech) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)unitSlot>=COMBAT_MECH_SLOTS || !unitBindings[unitSlot].mech");
-    const BtechMechState *mech=unitBindings[unitSlot].mech;
+    if ((uint16_t)unitSlot>=COMBAT_MECH_SLOTS || !combatMechs.unitBindings[unitSlot].mech) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)unitSlot>=COMBAT_MECH_SLOTS || !unitBindings[unitSlot].mech");
+    const BtechMechState *mech=combatMechs.unitBindings[unitSlot].mech;
     if (mech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mech->templateIndex>=COMBAT_MECH_TEMPLATES");
-    const BtechMechTemplate *chassis=&mechTemplates[mech->templateIndex];
+    const BtechMechTemplate *chassis=&combatMechs.mechTemplates[mech->templateIndex];
     uint16_t maximum=0,current=0;
     for (uint16_t armor=0;armor<COMBAT_ARMOR_LOCATIONS;++armor)
     {current+=mech->currentArmor[armor];maximum+=chassis->maximumArmor[armor];}
@@ -110,7 +110,7 @@ uint16_t BtechGetMechConditionColour(int16_t unitSlot)
     if (mech->sensorHits==COMBAT_SENSORS_DESTROYED_HITS) --band;
     if (mech->lifeSupportHits==1) --band;
     if (mech->engineHits==COMBAT_ENGINE_HIT_LIMIT || mech->gyroHits==COMBAT_GYRO_DESTROYED_HITS || mech->cockpitDisabled==1) band=0;
-    if (band<0 || (uint16_t)unitControls[unitSlot].conditionScoreOrExitCode==COMBAT_DISABLED_UNIT_VALUE) band=0;
+    if (band<0 || (uint16_t)combatMechs.unitControls[unitSlot].conditionScoreOrExitCode==COMBAT_DISABLED_UNIT_VALUE) band=0;
     if (combatImport.hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || band>=ORDER_CONDITION_BANDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || band>=ORDER_CONDITION_BANDS"); /* Unsupported upper-band adjacent palette alias. */
     return combatCockpit.hudColourSchemes[combatImport.hudColourSchemeIndex].orderConditionColours[band];
 }
@@ -119,7 +119,7 @@ uint16_t BtechGetMechConditionColour(int16_t unitSlot)
  * Erase previous highlight before drawing current and saving panel/row. */
 void BtechUpdateLanceOrderHighlight(void)
 {
-    if (!unitBindings[1].mech) return;
+    if (!combatMechs.unitBindings[1].mech) return;
     combatVideo.drawPolygonFilled=false;combatVideo.drawPageSelector=combatVideo.backPageSelector;
     if ((int16_t)combatOrders.previousOrderHighlightRow>=0)
     {
@@ -184,8 +184,8 @@ void BtechSeedSelectedOrderTracking(void)
             control->trackedUnitOrSpecialSlot=ORDER_SPECIAL_TARGET_SLOT;
         else
             for (uint16_t slot=COMBAT_LANCE_SLOTS;slot<COMBAT_MECH_SLOTS;++slot)
-                if (unitBindings[slot].mech && unitControls[slot].positionKnowledgeCode!=COMBAT_POSITION_UNKNOWN
-                    && unitControls[slot].conditionScoreOrExitCode>COMBAT_MECH_DISABLED_VALUE)
+                if (combatMechs.unitBindings[slot].mech && combatMechs.unitControls[slot].positionKnowledgeCode!=COMBAT_POSITION_UNKNOWN
+                    && combatMechs.unitControls[slot].conditionScoreOrExitCode>COMBAT_MECH_DISABLED_VALUE)
                 {control->trackedUnitOrSpecialSlot=(int16_t)slot;break;}
     }
     control->navigationReferenceSlot=control->trackedUnitOrSpecialSlot;
@@ -326,8 +326,8 @@ navigation:
                 else
                 {
                     if ((uint16_t)candidate>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)candidate>=COMBAT_MECH_SLOTS");
-                    if (unitBindings[candidate].mech && unitControls[candidate].sideIndex==1
-                        && unitControls[candidate].conditionScoreOrExitCode>COMBAT_MECH_DISABLED_VALUE && unitControls[candidate].positionKnowledgeCode!=COMBAT_POSITION_UNKNOWN)
+                    if (combatMechs.unitBindings[candidate].mech && combatMechs.unitControls[candidate].sideIndex==1
+                        && combatMechs.unitControls[candidate].conditionScoreOrExitCode>COMBAT_MECH_DISABLED_VALUE && combatMechs.unitControls[candidate].positionKnowledgeCode!=COMBAT_POSITION_UNKNOWN)
                         target=candidate;
                 }
                 if (target>=0) break;
