@@ -549,7 +549,7 @@ Every slice below is its own branch with the full gate green: both setups, the t
 - Packaging with a release's label should refuse a tree that isn't at that tag, or has uncommitted changes.
 - On Windows: the program's path and the player's folder in the launcher's record, with a path that isn't plain ASCII (the UTF-8 manifest, and the kit's `self_path`).
 - The kit's recognise rules on a real copy of MechWarrior 2, MechWarrior 3 and Pirate's Moon, `DATA1.HDR` included.
-- The project owner's word on the AppImage (its runtime holds libfuse, with its notice).
+- The AppImage may ship, with libfuse and its notice in its runtime (the project owner's word, 2026-11-24); the licence wording for it is R's.
 - In the release notes: an older build imports the story again on a folder made by this one; an old test package's own `MechWarrior.ini` beside the program keeps its `sound_system=speaker`.
 
 **Group A total:** about 51-52 developer days plus the listening sessions. That is roughly 10 weeks, planned for **one developer, in order**.
