@@ -1,6 +1,7 @@
 #ifndef MECHWARRIOR_CAMPAIGN_H
 #define MECHWARRIOR_CAMPAIGN_H
 
+#include "mechwarrior/native_address.h"
 #include "mechwarrior/campaign_text.h"
 #include <stdbool.h>
 #include <stddef.h>
@@ -32,7 +33,7 @@ extern const char cockpitPictureFilename[], primaryPictureFilename[];
 extern const char secondaryPictureFilename[], tPictureFilename[];
 extern const char alternatePictureFilename[], fPictureFilename[];
 
-uint16_t MwLoadIndexedPicture(uint16_t pictureIndex);
+MwCampaignBuffer *MwLoadIndexedPicture(uint16_t pictureIndex);
 void MwIndexedPictureCloseHook(void);
 bool MwLoadGeneralPictureBank(void);
 bool MwLoadCockpitPictureBank(void);
@@ -105,10 +106,11 @@ void MwDrawFormattedNumericGlyphs(uint16_t digitIndex);
 /* Campaign state owned by campaign.h (plan, slice B2). */
 struct CampaignCoreState
 {
-    /* Native allocated-buffer WORDs; backing buffers belong to the allocator. */
-    uint16_t indexedPictureOutputSelector, generalPictureBankSelector;
-    uint16_t cockpitPictureBankSelector, activePictureBankSelector;
-    uint16_t secondaryPictureBankSelector;
+    /* The host's buffers, NULL before startup allocates them and once its child ends
+     * (the original held their selectors). */
+    MwCampaignBuffer *indexedPictureOutput, *generalPictureBank;
+    MwCampaignBuffer *cockpitPictureBank, *activePictureBank;
+    MwCampaignBuffer *secondaryPictureBank;
     uint8_t indexedPictureDirectoryLoaded;
     uint16_t indexedPictureCachedIndex, indexedPictureStoredBytes;
     uint8_t indexedPictureDirectory[INDEXED_PICTURE_DIRECTORY_BYTES];
@@ -145,18 +147,18 @@ struct CampaignCoreState
     /* Shared by kind/component, NOT by owned Mech slot. 3FFD clears all 00DC bytes,
      * including the two trailing slots per row not reached by normal repair work. */
     CampaignRepairAttemptRow repairAttemptFailuresByKind[REPAIR_ATTEMPT_KIND_COUNT];
-    /* Canonical owner: src/Original/Memory/MW_MAIN_1090.c. Selectors remain
-     * native WORD values; offsets wrap as WORDs, not host pointer arithmetic.
-     * This is only the implemented slice of 1090, not its serialized layout. */
-    /* Original 1090:016D. The allocator/loader assigns this selector later. */
-    uint16_t compressedPictureBufferSelector;
+    /* Canonical owner: src/Original/Memory/MW_MAIN_1090.c. Offsets wrap as WORDs,
+     * not host pointer arithmetic. This is only the implemented slice of 1090, not
+     * its serialized layout. */
+    /* Original 1090:016D, the sixth buffer. */
+    MwCampaignBuffer *compressedPictureBuffer;
     uint16_t randomStateWord0;
     uint16_t randomStateWord1;
     /* Original 1090:0F6D..0F76; decoder-private storage. BYTE phases remain BYTEs,
      * not bools: direct helpers treat every nonzero phase alike. One canonical
      * owner, not a second copy of a raw DS image or serialized host structure. */
     uint16_t pictureCompressedByteCount;
-    uint16_t pictureOutputSelector;
+    MwCampaignBuffer *pictureOutput;
     uint8_t pictureReadHighNibbleNext;
     uint16_t pictureReadByteOffset;
     uint8_t pictureWriteLowNibbleNext;
@@ -165,10 +167,10 @@ struct CampaignCoreState
 extern CampaignCoreState campaignCore;
 
 uint16_t MwRandomUpTo(uint16_t maximum);
-/* Original AX=count, BX=output selector. Reads low nibble at source[count]
+/* Original AX=count, BX=output buffer. Reads low nibble at source[count]
  * before rejecting its high nibble. Supply complete live segment windows;
  * do not zero a made-up EOF sentinel. */
-void MwDecodePictureBank(uint16_t compressedByteCount, uint16_t outputSelector);
+void MwDecodePictureBank(uint16_t compressedByteCount, MwCampaignBuffer *output);
 bool MwReadPictureNibble(uint8_t *nibble);
 void MwWritePictureNibble(uint8_t nibble);
 

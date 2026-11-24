@@ -251,7 +251,7 @@ void MwEventQueueCampaignRestart(void)
     if (campaignEvents.eventConditionResult!=1) return;
     campaignEvents.campaignRestartPending=1;
     if (!campaignStartMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStartMusic");
-    campaignStartMusic(campaignStartup.campaignMusicBufferSelector,0x2328);
+    campaignStartMusic(campaignStartup.campaignMusicBuffer,0x2328);
 }
 /* MW_MAIN081B:65B1..662B. Later end month STILL tests submonth, as shipped. */
 void MwEventRestrictToDateWindow(const MwEventCommand *command)

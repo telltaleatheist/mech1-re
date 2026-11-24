@@ -337,6 +337,12 @@ Changes per piece:
 - **A notification's text offset** is checked against its storage before the pointer is formed; the view refused the same offset at the first read.
 - **The inventory tool** reads an `MwText`'s cursor as it read a plain pointer; its output is unchanged.
 
+**From B4b** (the campaign's picture and music buffers; no golden re-recorded):
+- **What changed.** The eight 64 KB buffers were reached by a selector through a 65,536-entry table. They are `MwCampaignBuffer`, a whole window each, owned by the host; the pointers that name them replace the selectors, and the bind and resolve calls and `NativeAddress.cpp` are gone. A `uint16_t` index is always inside a window and wraps as before, in the packed sprite's and the MIDI readers too. The failure indices of the startup's allocations are unchanged.
+- **After a program ends** its buffers are released and every pointer to them cleared, so a use after that (a music tick among them) still fails.
+- **The buffers start zeroed,** in a commit of its own. A shadow of every byte (8 traces, 12 event scripts, 1990) found one read before a write: at a picture's end `MwReadPictureNibble` decodes the low nibble of the byte after its data. With the buffers filled with 00, FF and A5, the traces, the events and the frames (432 files) are the same. The byte decoded is not changed.
+- **Bounds.** A loaded count is a word, so that byte is always in the buffer; the largest compressed file is 7F51h bytes and leaves 80AFh. The nibble it may write lands after the picture, and the largest decoded bank, FB70h bytes, leaves 490h. Both revisions' files have the same sizes.
+
 **From B3c** (combat's video, render, polygons, scene, pose and cockpit state as owner structs; a pure move, no golden re-recorded):
 - **What changed.** 287 globals are now the fields of six structs, one per memory file: `combatVideo` (101 fields, combat_video.h), `combatRender` (63, combat_render.h), `combatPolygons` (26, combat_polygons.h), `combatScene` (8, combat_scene.h), `combatPose` (18, combat_pose.h), `combatCockpit` (71, combat_cockpit.h). Every name is kept, and the macros that name fields point at the instances. No field has an initialiser.
 - **Left outside.** The constants `glyphTailMasks`, `errorCardNotFound` and `errorInspectionShapeMemory`, and the cockpit importer's six private text buffers.

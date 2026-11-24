@@ -143,9 +143,9 @@ void MwMidiAllNotesOff(void)
 
 /* MW_MAIN0F41:02A1..02B7. Real serialized SMF bytes, wrapping ES:SI cursor.
  * Native MOV DH,DL/SHR DX drops bit31; there is no four-byte VLQ limit. */
-uint32_t MwReadMidiVariableLengthQuantity(uint16_t resourceSelector,uint16_t *streamOffset)
+uint32_t MwReadMidiVariableLengthQuantity(MwCampaignBuffer *resource,uint16_t *streamOffset)
 {
-    const uint8_t *stream=MwResolveNativeSegment(resourceSelector);
+    const uint8_t *stream=MwCampaignBufferBytes(resource);
     uint32_t quantity=0;
     uint8_t encoded;
     do
@@ -156,15 +156,15 @@ uint32_t MwReadMidiVariableLengthQuantity(uint16_t resourceSelector,uint16_t *st
     return quantity;
 }
 
-/* MW_MAIN0F41:02B8..0350. Resource selector/offset project one native FAR
+/* MW_MAIN0F41:02B8..0350. Resource buffer/offset project one native FAR
  * pointer. Header length HIGH and track length are skipped, not validated. */
-uint16_t MwStartMidiTrack(uint16_t resourceSelector,uint16_t streamOffset,uint16_t playbackFlags)
+uint16_t MwStartMidiTrack(MwCampaignBuffer *resource,uint16_t streamOffset,uint16_t playbackFlags)
 {
     enum { MIDI_HEADER_FIRST_WORD=0x544D, MIDI_HEADER_SECOND_WORD=0x6468,
         MIDI_TRACK_SECOND_WORD=0x6B72, MIDI_ENCODED_ONE_TRACK=0x0100,
         MIDI_ENCODED_96_PPQN=0x6000 };
     if (!(playbackFlags&MIDI_TRACK_ACTIVE)) return 0;
-    const uint8_t *stream=MwResolveNativeSegment(resourceSelector);
+    const uint8_t *stream=MwCampaignBufferBytes(resource);
     if (MwReadNativeWord(stream,streamOffset)!=MIDI_HEADER_FIRST_WORD) return 0;
     streamOffset+=2;
     if (MwReadNativeWord(stream,streamOffset)!=MIDI_HEADER_SECOND_WORD) return 0;
@@ -190,9 +190,9 @@ uint16_t MwStartMidiTrack(uint16_t resourceSelector,uint16_t streamOffset,uint16
     campaignMusic.midiStateUpdateInProgress=1;
     if (campaignMusic.midiPlaybackFlags&MIDI_TRACK_ACTIVE) MwMidiAllNotesOff();
     campaignMusic.midiPlaybackFlags=0;
-    campaignMusic.midiEventTickBalance=(uint16_t)MwReadMidiVariableLengthQuantity(resourceSelector,&streamOffset);
+    campaignMusic.midiEventTickBalance=(uint16_t)MwReadMidiVariableLengthQuantity(resource,&streamOffset);
     campaignMusic.midiStreamOffset=streamOffset;
-    campaignMusic.midiStreamSegment=resourceSelector;
+    campaignMusic.midiStream=resource;
     campaignMusic.midiPlaybackFlags=playbackFlags;
     campaignMusic.midiBeatRemainder=0;
     campaignMusic.midiBarRemainder=0;
@@ -271,8 +271,8 @@ void MwTickMidiTrack(void)
     campaignMusic.midiEventTickBalance+=tickUnits/tickDenominator;
     if (campaignMusic.midiStateUpdateInProgress==1) goto tickFinished;
     uint16_t streamOffset;streamOffset=campaignMusic.midiStreamOffset;
-    uint16_t resourceSelector;resourceSelector=campaignMusic.midiStreamSegment;
-    const uint8_t *stream;stream=MwResolveNativeSegment(resourceSelector);
+    MwCampaignBuffer *resource;resource=campaignMusic.midiStream;
+    const uint8_t *stream;stream=MwCampaignBufferBytes(resource);
     uint16_t status,handler,payloadLength;
 nextEvent:
     if (campaignMusic.midiEventTickBalance&0x8000) goto saveStream;
@@ -303,7 +303,7 @@ nextEvent:
 forwardSysexStatus:
     MwDispatchMidiByte(status);
 forwardSysexPayload:
-    payloadLength=(uint16_t)MwReadMidiVariableLengthQuantity(resourceSelector,&streamOffset);
+    payloadLength=(uint16_t)MwReadMidiVariableLengthQuantity(resource,&streamOffset);
     do
     {
         uint8_t midiByte=stream[streamOffset++];
@@ -312,7 +312,7 @@ forwardSysexPayload:
     goto readNextDelta;
 metaEvent: ;
     uint8_t metaType;metaType=stream[streamOffset++];
-    payloadLength=(uint16_t)MwReadMidiVariableLengthQuantity(resourceSelector,&streamOffset);
+    payloadLength=(uint16_t)MwReadMidiVariableLengthQuantity(resource,&streamOffset);
     if (metaType==MIDI_META_END_TRACK)
     {
         MwStopMidiTrack();
@@ -354,7 +354,7 @@ forwardStatusAndOneData:
 forwardCurrentByte:
     MwDispatchMidiByte(status);
 readNextDelta: ;
-    uint16_t nextDelta;nextDelta=(uint16_t)MwReadMidiVariableLengthQuantity(resourceSelector,&streamOffset);
+    uint16_t nextDelta;nextDelta=(uint16_t)MwReadMidiVariableLengthQuantity(resource,&streamOffset);
     if (nextDelta)
     {
         campaignMusic.midiEventTickBalance-=nextDelta;

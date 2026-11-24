@@ -21,7 +21,7 @@
 
 MwCampaignPlatformCalls mwCampaignPlatform;
 void (*campaignStopMusic)(void);
-void (*campaignStartMusic)(uint16_t selector,uint16_t offset);
+void (*campaignStartMusic)(MwCampaignBuffer *resource,uint16_t offset);
 
 /* Run the mercenary company's campaign, entering the planet hub on a new game
  * or settling the returned combat result before resuming campaign activity.
@@ -43,32 +43,32 @@ uint8_t MwRunCampaign(const MwCampaignLaunch *launch)
     }
     MwInstallCampaignInterruptHandlers();
     if (!mwCampaignPlatform.allocateParagraphs || !mwCampaignPlatform.loadGraphicsOverlay) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignPlatform.allocateParagraphs || !mwCampaignPlatform.loadGraphicsOverlay");
-    uint16_t errorIndex,selectorOrError;
-    if (mwCampaignPlatform.allocateParagraphs(0x0FFF,&selectorOrError))
+    uint16_t errorIndex;
+    campaignCore.activePictureBank=mwCampaignPlatform.allocateParagraphs(0x0FFF);
+    if (!campaignCore.activePictureBank)
     {errorIndex=4;goto allocationFailed;}
-    campaignCore.activePictureBankSelector=selectorOrError;
-    if (mwCampaignPlatform.allocateParagraphs(0x0909,&selectorOrError))
+    campaignCore.secondaryPictureBank=mwCampaignPlatform.allocateParagraphs(0x0909);
+    if (!campaignCore.secondaryPictureBank)
     {errorIndex=5;goto allocationFailed;}
-    campaignCore.secondaryPictureBankSelector=selectorOrError;
-    if (mwCampaignPlatform.allocateParagraphs(0x084D,&selectorOrError))
+    campaignCore.generalPictureBank=mwCampaignPlatform.allocateParagraphs(0x084D);
+    if (!campaignCore.generalPictureBank)
     {errorIndex=2;goto allocationFailed;}
-    campaignCore.generalPictureBankSelector=selectorOrError;
-    if (mwCampaignPlatform.allocateParagraphs(0x0D6D,&selectorOrError))
+    campaignCore.cockpitPictureBank=mwCampaignPlatform.allocateParagraphs(0x0D6D);
+    if (!campaignCore.cockpitPictureBank)
     {errorIndex=3;goto allocationFailed;}
-    campaignCore.cockpitPictureBankSelector=selectorOrError;
-    if (mwCampaignPlatform.allocateParagraphs(0x0800,&selectorOrError))
+    campaignCore.indexedPictureOutput=mwCampaignPlatform.allocateParagraphs(0x0800);
+    if (!campaignCore.indexedPictureOutput)
     {errorIndex=1;goto allocationFailed;}
-    campaignCore.indexedPictureOutputSelector=selectorOrError;
-    if (mwCampaignPlatform.allocateParagraphs(0x0800,&selectorOrError))
+    campaignCore.compressedPictureBuffer=mwCampaignPlatform.allocateParagraphs(0x0800);
+    if (!campaignCore.compressedPictureBuffer)
     {errorIndex=1;goto allocationFailed;}
-    campaignCore.compressedPictureBufferSelector=selectorOrError;
-    if (mwCampaignPlatform.allocateParagraphs(0x0338,&selectorOrError))
+    campaignStartup.campaignMusicBuffer=mwCampaignPlatform.allocateParagraphs(0x0338);
+    if (!campaignStartup.campaignMusicBuffer)
     {errorIndex=6;goto allocationFailed;}
-    campaignStartup.campaignMusicBufferSelector=selectorOrError;
-    if (mwCampaignPlatform.allocateParagraphs(0x0177,&selectorOrError))
+    campaignStartup.graphicsOverlay=mwCampaignPlatform.allocateParagraphs(0x0177);
+    if (!campaignStartup.graphicsOverlay)
     {errorIndex=0;goto allocationFailed;}
-    campaignStartup.graphicsOverlaySelector=selectorOrError;
-    if (mwCampaignPlatform.loadGraphicsOverlay("MW_EGA.EXE",campaignStartup.graphicsOverlaySelector)) /* Tandy dropped. */
+    if (mwCampaignPlatform.loadGraphicsOverlay("MW_EGA.EXE")) /* Tandy dropped. */
     {errorIndex=1;goto allocationFailed;}
     EgaBuildScanlineOffsets();
     if (EgaLoadFonts()) {errorIndex=5;goto allocationFailed;}
@@ -114,7 +114,7 @@ uint8_t MwRunCampaign(const MwCampaignLaunch *launch)
     MwSetIntroTextPaletteColour(EGA_PALETTE_WHITE);
     if (MwWaitTicksOrInputInterruption(0x0024)) goto initializeCampaign;
     if (!campaignStartMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStartMusic");
-    campaignStartMusic(campaignStartup.campaignMusicBufferSelector,0);
+    campaignStartMusic(campaignStartup.campaignMusicBuffer,0);
     if (MwWaitTicksOrInputInterruption(0x019E)) goto initializeCampaign;
     MwDrawActivePicture(0,0,EGA_DRAW_PAGE,1);
     EgaFlipPages();
@@ -148,7 +148,7 @@ beginDebrief:
         goto darkWingVictory;
     MwDrawAlternatePicturePanelBorder(2,0x008D,0x013A,0x0039);
     {
-        uint16_t picture=MwLoadIndexedPicture(campaignCore.currentPlanetHouseIndex+AFTER_ACTION_HOUSE_PICTURE_BASE);
+        MwCampaignBuffer *picture=MwLoadIndexedPicture(campaignCore.currentPlanetHouseIndex+AFTER_ACTION_HOUSE_PICTURE_BASE);
         (void)EgaDrawPackedSprite(0x0100,0x008E,EGA_DISPLAY_PAGE,0,picture);
     }
     MwDrawAlternatePicturePanelBorder(2,2,0x013B,0x0088);
@@ -167,8 +167,7 @@ beginDebrief:
             } while (--remaining!=0);
             if (statusSum==0) picture=AFTER_ACTION_RETREAT_PICTURE;
         }
-        picture=MwLoadIndexedPicture(picture);
-        (void)EgaDrawPackedSprite(8,7,EGA_DISPLAY_PAGE,0,picture);
+        (void)EgaDrawPackedSprite(8,7,EGA_DISPLAY_PAGE,0,MwLoadIndexedPicture(picture));
     }
     EgaSelectFont(AFTER_ACTION_FONT);
     MwDrawCampaignTextColourOne(AFTER_ACTION_TEXT_X,0x000A,campaignHandoff.afterActionCrewHeading);
@@ -401,7 +400,7 @@ beginDebrief:
             else
             {
                 if (!campaignStartMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStartMusic");
-                campaignStartMusic(campaignStartup.campaignMusicBufferSelector,LAUNCH_MUSIC_OFFSET);
+                campaignStartMusic(campaignStartup.campaignMusicBuffer,LAUNCH_MUSIC_OFFSET);
                 campaignEconomy.houseFavorPoints[house]+=2;
                 outcome=campaignHandoff.afterActionSuccessMessages[house];
             }
@@ -436,7 +435,7 @@ darkWingVictory:
     (void)MwLoadFPictureBank();
     (void)MwLoadVictoryMusic();
     if (!campaignStartMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStartMusic");
-    campaignStartMusic(campaignStartup.campaignMusicBufferSelector,0);
+    campaignStartMusic(campaignStartup.campaignMusicBuffer,0);
     MwDrawActivePicture(0,0x003B,EGA_DRAW_PAGE,9);
     MwDrawActivePicture(0x007C,0x002D,EGA_DRAW_PAGE,1);
     EgaFlipPages();
@@ -526,7 +525,7 @@ void MwRestoreSavedVideoMode(void)
 void MwStartDeathMusic(void)
 {
     if (!campaignStartMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStartMusic");
-    campaignStartMusic(campaignStartup.campaignMusicBufferSelector,DEATH_MUSIC_OFFSET);
+    campaignStartMusic(campaignStartup.campaignMusicBuffer,DEATH_MUSIC_OFFSET);
 }
 /* MW_MAIN081B:0C0A..0C16. BIOS CX:DX ticks mix into BOTH native RNG words. */
 void MwMixBiosTicksIntoRandomState(void)
@@ -570,7 +569,7 @@ bool MwLoadVictoryMusic(void)
 static bool LoadMusicFileAt(const char *filename,uint16_t bufferOffset)
 {
     mw1o::files::GameFile file=mw1o::files::open_game_file(filename);
-    if (!file || !file.read(MwResolveNativeSegment(campaignStartup.campaignMusicBufferSelector)+bufferOffset,UINT16_MAX)) return true;
+    if (!file || !file.read(MwCampaignBufferBytes(campaignStartup.campaignMusicBuffer)+bufferOffset,UINT16_MAX)) return true;
     (void)file.close();
     return false;
 }

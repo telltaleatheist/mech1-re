@@ -323,22 +323,22 @@ bool MwImportCampaignInitialData(void)
     /* The notification texts (hub.word.notification.*) and the pointers to them (hub.json's notification_words). */
     if (!MwUiCopyWords("hub.table.notification_words",campaignUi.notificationTextOffsets,4,0)) return false; /*5ED3*/
     memcpy(campaignUi.notificationTextStorage,mainWords+0x5EDB,sizeof(campaignUi.notificationTextStorage));
-    campaignCore.compressedPictureBufferSelector=0; /*016D*/
+    campaignCore.compressedPictureBuffer=NULL; /*016D*/
     /* 03F5, 03F7: the random generator's words as an EXEC starts them (data/rules/new_campaign.json "start"). */
     uint16_t randomSeed[2];
     if (!ImportRuleWords("new_campaign.start.random_seed",randomSeed,2)) return false;
     campaignCore.randomStateWord0=randomSeed[0];campaignCore.randomStateWord1=randomSeed[1];
     campaignCore.pictureCompressedByteCount=0; /*0F6D*/
-    campaignCore.pictureOutputSelector=0; /*0F6F*/
+    campaignCore.pictureOutput=NULL; /*0F6F*/
     memset(&campaignCore.pictureReadHighNibbleNext,0,sizeof(campaignCore.pictureReadHighNibbleNext)); /*0F71*/
     campaignCore.pictureReadByteOffset=0; /*0F72*/
     memset(&campaignCore.pictureWriteLowNibbleNext,0,sizeof(campaignCore.pictureWriteLowNibbleNext)); /*0F74*/
     campaignCore.pictureWriteByteOffset=0; /*0F75*/
-    campaignCore.indexedPictureOutputSelector=0; /*0161*/
-    campaignCore.generalPictureBankSelector=0; /*0163*/
-    campaignCore.cockpitPictureBankSelector=0; /*0165*/
-    campaignCore.activePictureBankSelector=0; /*0167*/
-    campaignCore.secondaryPictureBankSelector=0; /*0169*/
+    campaignCore.indexedPictureOutput=NULL; /*0161*/
+    campaignCore.generalPictureBank=NULL; /*0163*/
+    campaignCore.cockpitPictureBank=NULL; /*0165*/
+    campaignCore.activePictureBank=NULL; /*0167*/
+    campaignCore.secondaryPictureBank=NULL; /*0169*/
     memset(&campaignCore.indexedPictureDirectoryLoaded,0,sizeof(campaignCore.indexedPictureDirectoryLoaded)); /*0B62*/
     campaignCore.indexedPictureCachedIndex=MW_INDEXED_PICTURE_NO_CACHED_INDEX;
     campaignCore.indexedPictureStoredBytes=0; /*0B65*/
@@ -501,8 +501,8 @@ bool MwImportCampaignInitialData(void)
     campaignMarket.marketSystemRowIndex=0; /*44EF*/
     campaignMarket.purchaseOwnedSlotByteOffset=0; /*481D*/
     if (!MwUiCopyWords("complex.table.animation_frames",(uint16_t *)campaignMarket.mechComplexAnimationFrames,sizeof(campaignMarket.mechComplexAnimationFrames)/sizeof(uint16_t),0)) return false; /*318D*/
-    campaignStartup.campaignMusicBufferSelector=0; /*016F*/
-    campaignStartup.graphicsOverlaySelector=0; /*002E*/
+    campaignStartup.campaignMusicBuffer=NULL; /*016F*/
+    campaignStartup.graphicsOverlay=NULL; /*002E*/
     memset(&campaignStartup.launcherExitCode,0,sizeof(campaignStartup.launcherExitCode)); /*0006*/
     memset(&campaignStartup.keyboardInterruptState,0,sizeof(campaignStartup.keyboardInterruptState)); /*02AB*/
     memset(campaignStartup.campaignTextInputBuffer,0,sizeof(campaignStartup.campaignTextInputBuffer)); /*03A5*/

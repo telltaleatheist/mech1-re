@@ -21,10 +21,10 @@ uint16_t MwRandomUpTo(uint16_t maximum)
 /* Original MW_MAIN 081B:12B8..12FD. Whole-bank and indexed-picture callers
  * share this decoder. No size clamp, output clear or bounded replacement RLE:
  * native cursor wrap and partial work remain. */
-void MwDecodePictureBank(uint16_t compressedByteCount, uint16_t outputSelector)
+void MwDecodePictureBank(uint16_t compressedByteCount, MwCampaignBuffer *output)
 {
     campaignCore.pictureCompressedByteCount = compressedByteCount;
-    campaignCore.pictureOutputSelector = outputSelector;
+    campaignCore.pictureOutput = output;
     campaignCore.pictureReadHighNibbleNext = 0;
     campaignCore.pictureReadByteOffset = 0;
     campaignCore.pictureWriteLowNibbleNext = 0;
@@ -54,10 +54,14 @@ void MwDecodePictureBank(uint16_t compressedByteCount, uint16_t outputSelector)
 }
 
 /* Original MW_MAIN 081B:12FE..1338. Carry result becomes bool; AL is written
- * even at EOF. The byte read precedes the check and the WORD cursor wraps. */
+ * even at EOF. The byte read precedes the check and the WORD cursor wraps: at a
+ * picture's end the low nibble of the byte after its data is decoded too. That byte
+ * is in the buffer whatever is loaded (a count is a WORD, the buffer 10000h bytes;
+ * the largest file, 7F51h bytes, leaves 80AFh): zero after a first load, an earlier
+ * picture's after it. */
 bool MwReadPictureNibble(uint8_t *nibble)
 {
-    uint8_t *compressedData = MwResolveNativeSegment(campaignCore.compressedPictureBufferSelector);
+    uint8_t *compressedData = MwCampaignBufferBytes(campaignCore.compressedPictureBuffer);
     uint8_t packedNibbles = compressedData[campaignCore.pictureReadByteOffset];
     if (campaignCore.pictureReadHighNibbleNext == 0)
     {
@@ -72,10 +76,12 @@ bool MwReadPictureNibble(uint8_t *nibble)
 }
 
 /* Original MW_MAIN 081B:1339..136B. First write replaces the entire byte;
- * second ORs the low nibble. An unfinished byte is high-only, not stale RAM. */
+ * second ORs the low nibble. An unfinished byte is high-only, not stale RAM. The
+ * nibble decoded past the end lands here too, after the picture; the WORD cursor
+ * wraps inside the buffer (the largest bank, FB70h bytes, leaves 490h). */
 void MwWritePictureNibble(uint8_t nibble)
 {
-    uint8_t *outputData = MwResolveNativeSegment(campaignCore.pictureOutputSelector);
+    uint8_t *outputData = MwCampaignBufferBytes(campaignCore.pictureOutput);
     if (campaignCore.pictureWriteLowNibbleNext == 0)
     {
         outputData[campaignCore.pictureWriteByteOffset] = (uint8_t)((nibble << PICTURE_NIBBLE_SHIFT)
