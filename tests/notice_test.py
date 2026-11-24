@@ -71,6 +71,9 @@ def main():
         os.remove(log)
         run("attended", "failsafe", log, nowhere=True)
         check(os.path.exists(log) and "the failsafe's reason" in open(log, encoding="utf-8").read(), "a failsafe's too")
+        new = os.path.join(work, "not there é日", "deeper", "mechwarrior.log")
+        code, err, text = run("attended", "refuse", new, nowhere=True)
+        check(os.path.exists(new) and "The log is " + new in text, "a save directory that isn't there yet is made for the log")
     else:
         check(not os.path.exists(log), "off Windows a log is opened only by a start without a folder")
     return 1 if failures else 0

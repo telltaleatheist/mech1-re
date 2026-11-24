@@ -3,6 +3,8 @@
 #include "mechwarrior/problem.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <filesystem>
+#include <system_error>
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #ifndef NOMINMAX
@@ -105,6 +107,9 @@ static bool OutputGoesNowhere(void)
 void MwSdlOpenLog(const std::string &path,bool always)
 {
     if (!always && !OutputGoesNowhere()) return;
+    /* A first start's save directory isn't there yet. */
+    std::error_code ignored;
+    std::filesystem::create_directories(std::filesystem::path(path).parent_path(),ignored);
     /* freopen closes a stream it can't open: see first that it can. */
     FILE *log=fopen(path.c_str(),"w");
     if (!log) return;
