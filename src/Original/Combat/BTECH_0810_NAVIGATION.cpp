@@ -52,9 +52,9 @@ void BtechSteerActiveUnitAroundObstacles(uint16_t desiredHeading,uint8_t moveFor
     if (!moveForward) desiredHeading+=AVOIDANCE_HALF_TURN;
     uint16_t headingSine=BtechLookupSine(desiredHeading);
     uint16_t scaledHeadingSine=(headingSine>>AVOIDANCE_DIRECTION_SHIFT)|((headingSine&0x8000)?0xF800:0);
-    avoidanceStepX=(int16_t)(0-scaledHeadingSine);
+    combatNavigation.avoidanceStepX=(int16_t)(0-scaledHeadingSine);
     uint16_t headingCosine=BtechLookupCosine(desiredHeading);
-    avoidanceStepY=(int16_t)((headingCosine>>AVOIDANCE_DIRECTION_SHIFT)|((headingCosine&0x8000)?0xF800:0));
+    combatNavigation.avoidanceStepY=(int16_t)((headingCosine>>AVOIDANCE_DIRECTION_SHIFT)|((headingCosine&0x8000)?0xF800:0));
     if (!BtechIsAvoidanceProbeBlocked(AVOIDANCE_PROBE_FORWARD) && activeUnitControl->avoidanceReverseFlag!=1)
         activeUnitControl->avoidanceTurnIndex=AVOIDANCE_TURN_STRAIGHT;
     else
@@ -78,7 +78,7 @@ void BtechSteerActiveUnitAroundObstacles(uint16_t desiredHeading,uint8_t moveFor
     if (!activeUnitControl->avoidanceReverseFlag)
     {
         if (activeUnitControl->avoidanceTurnIndex>=AVOIDANCE_TURNS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeUnitControl->avoidanceTurnIndex>=AVOIDANCE_TURNS");
-        avoidanceHeadingAdjustment=avoidanceHeadingOffsets[activeUnitControl->avoidanceTurnIndex];
+        avoidanceHeadingAdjustment=combatNavigation.avoidanceHeadingOffsets[activeUnitControl->avoidanceTurnIndex];
     }
     desiredHeading+=avoidanceHeadingAdjustment;
     if (!moveForward) desiredHeading+=AVOIDANCE_HALF_TURN;
@@ -90,11 +90,11 @@ void BtechSteerActiveUnitAroundObstacles(uint16_t desiredHeading,uint8_t moveFor
 uint8_t BtechIsAvoidanceProbeBlocked(uint16_t probeIndex)
 {
     if (!combatPose.activeUnitPositionedObject || !activeUnitControl) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject || !activeUnitControl");
-    avoidancePosition=&combatPose.activeUnitPositionedObject->object.prefix.position;
-    avoidanceOrientation=&combatPose.activeUnitPositionedObject->object.prefix;
-    if (probeIndex>=AVOIDANCE_PROBES || !avoidanceProbeComponentsX[probeIndex] || !avoidanceProbeComponentsY[probeIndex]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: probeIndex>=AVOIDANCE_PROBES || !avoidanceProbeComponentsX[probeIndex] || !avoidanceProbeComponentsY[probeIndex]");
-    int16_t probeStepX=(int32_t)*avoidanceProbeComponentsX[probeIndex]*avoidanceProbeSignsX[probeIndex];
-    int16_t probeStepY=(int32_t)*avoidanceProbeComponentsY[probeIndex]*avoidanceProbeSignsY[probeIndex];
+    combatNavigation.avoidancePosition=&combatPose.activeUnitPositionedObject->object.prefix.position;
+    combatNavigation.avoidanceOrientation=&combatPose.activeUnitPositionedObject->object.prefix;
+    if (probeIndex>=AVOIDANCE_PROBES || !combatNavigation.avoidanceProbeComponentsX[probeIndex] || !combatNavigation.avoidanceProbeComponentsY[probeIndex]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: probeIndex>=AVOIDANCE_PROBES || !avoidanceProbeComponentsX[probeIndex] || !avoidanceProbeComponentsY[probeIndex]");
+    int16_t probeStepX=(int32_t)*combatNavigation.avoidanceProbeComponentsX[probeIndex]*combatNavigation.avoidanceProbeSignsX[probeIndex];
+    int16_t probeStepY=(int32_t)*combatNavigation.avoidanceProbeComponentsY[probeIndex]*combatNavigation.avoidanceProbeSignsY[probeIndex];
     int16_t probeDisplacementX=probeStepX,probeDisplacementY=probeStepY;
     for (uint16_t otherUnitSlot=0;otherUnitSlot<COMBAT_MECH_SLOTS;++otherUnitSlot)
     {
@@ -109,8 +109,8 @@ uint8_t BtechIsAvoidanceProbeBlocked(uint16_t probeIndex)
         if (!specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
         if (BtechIsPositionInForwardObstacleCorridor(&specialTargetObject->object.prefix.position,AVOIDANCE_SPECIAL_HALF_WIDTH)) return 1;
     }
-    uint32_t lookaheadX=avoidancePosition->positionA+(uint32_t)(int16_t)((uint16_t)probeDisplacementX<<AVOIDANCE_LOOKAHEAD_SHIFT);
-    uint32_t lookaheadY=avoidancePosition->positionB+(uint32_t)(int16_t)((uint16_t)probeDisplacementY<<AVOIDANCE_LOOKAHEAD_SHIFT);
+    uint32_t lookaheadX=combatNavigation.avoidancePosition->positionA+(uint32_t)(int16_t)((uint16_t)probeDisplacementX<<AVOIDANCE_LOOKAHEAD_SHIFT);
+    uint32_t lookaheadY=combatNavigation.avoidancePosition->positionB+(uint32_t)(int16_t)((uint16_t)probeDisplacementY<<AVOIDANCE_LOOKAHEAD_SHIFT);
     uint32_t absoluteProbeX=lookaheadX,absoluteProbeY=lookaheadY;
     if (absoluteProbeX==0x8000) absoluteProbeX=0x7FFF;else if ((int32_t)absoluteProbeX<0) absoluteProbeX=0-absoluteProbeX;
     if (absoluteProbeY==0x8000) absoluteProbeY=0x7FFF;else if ((int32_t)absoluteProbeY<0) absoluteProbeY=0-absoluteProbeY;
@@ -126,8 +126,8 @@ uint8_t BtechIsAvoidanceProbeBlocked(uint16_t probeIndex)
     }
     for (uint16_t sampleIndex=0;sampleIndex<AVOIDANCE_PROBES;++sampleIndex)
     {
-        uint32_t sampleX=avoidancePosition->positionA+(uint32_t)probeDisplacementX;
-        uint32_t sampleY=avoidancePosition->positionB+(uint32_t)probeDisplacementY;
+        uint32_t sampleX=combatNavigation.avoidancePosition->positionA+(uint32_t)probeDisplacementX;
+        uint32_t sampleY=combatNavigation.avoidancePosition->positionB+(uint32_t)probeDisplacementY;
         absoluteProbeX=sampleX;absoluteProbeY=sampleY;
         if (absoluteProbeX==0x8000) absoluteProbeX=0x7FFF;else if ((int32_t)absoluteProbeX<0) absoluteProbeX=0-absoluteProbeX;
         if (absoluteProbeY==0x8000) absoluteProbeY=0x7FFF;else if ((int32_t)absoluteProbeY<0) absoluteProbeY=0-absoluteProbeY;
@@ -156,12 +156,12 @@ uint8_t BtechIsAvoidanceProbeBlocked(uint16_t probeIndex)
  * are strict. Native D91A multiplies signed LOW WORD of approximate distance. */
 uint16_t BtechIsPositionInForwardObstacleCorridor(const BtechPosition3D *obstaclePosition,int16_t corridorHalfWidth)
 {
-    if (!obstaclePosition || !avoidancePosition || !avoidanceOrientation) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !obstaclePosition || !avoidancePosition || !avoidanceOrientation");
-    uint32_t obstacleDistance=BtechApproximatePlanarDistance(obstaclePosition,avoidancePosition);
+    if (!obstaclePosition || !combatNavigation.avoidancePosition || !combatNavigation.avoidanceOrientation) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !obstaclePosition || !avoidancePosition || !avoidanceOrientation");
+    uint32_t obstacleDistance=BtechApproximatePlanarDistance(obstaclePosition,combatNavigation.avoidancePosition);
     if ((int32_t)obstacleDistance>=AVOIDANCE_CORRIDOR_RANGE) return 0;
-    uint32_t obstacleDeltaY=obstaclePosition->positionB-avoidancePosition->positionB;
-    uint32_t obstacleDeltaX=obstaclePosition->positionA-avoidancePosition->positionA;
-    uint16_t obstacleBearing=BtechCalculateVectorHeading(obstacleDeltaX,obstacleDeltaY)-avoidanceOrientation->orientationC;
+    uint32_t obstacleDeltaY=obstaclePosition->positionB-combatNavigation.avoidancePosition->positionB;
+    uint32_t obstacleDeltaX=obstaclePosition->positionA-combatNavigation.avoidancePosition->positionA;
+    uint16_t obstacleBearing=BtechCalculateVectorHeading(obstacleDeltaX,obstacleDeltaY)-combatNavigation.avoidanceOrientation->orientationC;
     int16_t bearingMagnitude=obstacleBearing==0x8000?INT16_MAX:(int16_t)obstacleBearing<0?-(int16_t)obstacleBearing:(int16_t)obstacleBearing;
     if (bearingMagnitude>=AVOIDANCE_CORRIDOR_ANGLE) return 0;
     uint32_t lateralOffsetProduct=(uint32_t)BtechMultiplySignedWords((int16_t)obstacleDistance,(int16_t)BtechLookupSine(obstacleBearing));

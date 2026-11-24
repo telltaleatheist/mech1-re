@@ -56,12 +56,7 @@ BtechPosition3D bodyReferenceWorldPosition;
 CombatMovementState combatMovement;
 uint16_t aiCandidateTargetSlot,aiCandidateDistance;
 uint16_t hitLocationRows[ATTACK_ARCS][HIT_LOCATION_ROLLS],rangeHitModifiers[WEAPON_RANGE_BANDS];
-int16_t avoidanceStepX,avoidanceStepY;
-const BtechPosition3D *avoidancePosition;
-const BtechWorldObjectPrefix *avoidanceOrientation;
-uint16_t avoidanceHeadingOffsets[AVOIDANCE_TURNS];
-int16_t avoidanceProbeSignsX[AVOIDANCE_PROBES],avoidanceProbeSignsY[AVOIDANCE_PROBES];
-const int16_t *avoidanceProbeComponentsX[AVOIDANCE_PROBES],*avoidanceProbeComponentsY[AVOIDANCE_PROBES];
+CombatNavigationState combatNavigation;
 uint32_t unitDistances[COMBAT_MECH_SLOTS][COMBAT_MECH_SLOTS];
 uint16_t beamHalfWidths[COMBAT_WEAPON_KINDS];
 int16_t muzzleLateralOffsetsByBodyLocation[COMBAT_BODY_LOCATIONS];
@@ -104,15 +99,15 @@ bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t 
     memcpy(combatTactics.boundaryMaskByCode,data+0x0EB6,sizeof(combatTactics.boundaryMaskByCode));
     /* The rule tables come from data/rules (src/Rules), laid out as the exe's. */
     if (!MwRulesCopyWords("combat.opposing_side_first_unit_slots",combatTactics.opposingSideFirstUnitSlots,2,0)
-        || !MwRulesCopyWords("combat.avoidance_heading_offsets",avoidanceHeadingOffsets,AVOIDANCE_TURNS,0)) return false;
+        || !MwRulesCopyWords("combat.avoidance_heading_offsets",combatNavigation.avoidanceHeadingOffsets,AVOIDANCE_TURNS,0)) return false;
     for (uint16_t probe=0;probe<AVOIDANCE_PROBES;++probe)
     {
-        avoidanceProbeSignsX[probe]=(int16_t)MwReadNativeWord(data,0x243E +probe*2);
-        avoidanceProbeSignsY[probe]=(int16_t)MwReadNativeWord(data,0x2446+probe*2);
+        combatNavigation.avoidanceProbeSignsX[probe]=(int16_t)MwReadNativeWord(data,0x243E +probe*2);
+        combatNavigation.avoidanceProbeSignsY[probe]=(int16_t)MwReadNativeWord(data,0x2446+probe*2);
         uint16_t x=MwReadNativeWord(data,0x244E +probe*2),y=MwReadNativeWord(data,0x2456+probe*2);
         if ((x!=0x542A && x!=0x542C) || (y!=0x542A && y!=0x542C)) return false;
-        avoidanceProbeComponentsX[probe]=x==0x542A?&avoidanceStepX:&avoidanceStepY;
-        avoidanceProbeComponentsY[probe]=y==0x542A?&avoidanceStepX:&avoidanceStepY;
+        combatNavigation.avoidanceProbeComponentsX[probe]=x==0x542A?&combatNavigation.avoidanceStepX:&combatNavigation.avoidanceStepY;
+        combatNavigation.avoidanceProbeComponentsY[probe]=y==0x542A?&combatNavigation.avoidanceStepX:&combatNavigation.avoidanceStepY;
     }
     uint16_t clusterRows[COMBAT_WEAPON_KINDS];
     if (!MwRulesCopyWords("weapons.missile_cluster_rows",clusterRows,COMBAT_WEAPON_KINDS,0)) return false;
@@ -209,7 +204,7 @@ void BtechInitializeFreshWorldOwners(const uint8_t *data)
     bodyReferenceWorldPosition=BtechPosition3D{};
     combatMovement.jumpGroundHeight=0;
     aiCandidateTargetSlot=aiCandidateDistance=0;
-    avoidanceStepX=avoidanceStepY=0;avoidancePosition=NULL;avoidanceOrientation=NULL;
+    combatNavigation.avoidanceStepX=combatNavigation.avoidanceStepY=0;combatNavigation.avoidancePosition=NULL;combatNavigation.avoidanceOrientation=NULL;
     combatTactics.activeSideRule=NULL;
     memset(combatTactics.unitDistancesToSpecialTarget,0,sizeof(combatTactics.unitDistancesToSpecialTarget));
     memset(combatTactics.tacticalThreatUnitSlots,0,sizeof(combatTactics.tacticalThreatUnitSlots));
