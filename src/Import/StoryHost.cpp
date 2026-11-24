@@ -1,5 +1,6 @@
 // The game's door to the story file: imported if needed, then held in memory
 // for the importers in Original/Memory, which run again on every EXEC.
+#include "mechwarrior/problem.h"
 #include "mechwarrior/story.h"
 
 #include <cstdio>
@@ -30,7 +31,7 @@ bool rebuild(Build build)
         build();
         return true;
     } catch (const std::exception &e) {
-        std::fprintf(stderr, "MechWarrior: %s\n", e.what());
+        MwReportProblem(e.what());
         return false;
     }
 }
@@ -53,7 +54,7 @@ bool MwHostPrepareStory(const char *gameDirectory, const char *writeDirectory)
         g_btech_revision = mw1o::import::load_btech_revision(writeDirectory);
         return true;
     } catch (const std::exception &e) {
-        std::fprintf(stderr, "MechWarrior: %s\n", e.what());
+        MwReportProblem(e.what());
         return false;
     }
 }

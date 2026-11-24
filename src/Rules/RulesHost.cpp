@@ -1,5 +1,6 @@
 // The game's door to the rules: read once at start, then held as the exe's
 // bytes for the importers in Original/Memory, which run again on every EXEC.
+#include "mechwarrior/problem.h"
 #include "mechwarrior/rules.h"
 
 #include <cstdint>
@@ -19,7 +20,7 @@ bool MwHostPrepareRules(const char *dataDirectory)
         g_rules.hold(mw1o::rules::native_pieces(mw1o::rules::load_rules(dataDirectory)));
         return true;
     } catch (const std::exception &e) {
-        std::fprintf(stderr, "MechWarrior: %s\n", e.what());
+        MwReportProblem(e.what());
         return false;
     }
 }

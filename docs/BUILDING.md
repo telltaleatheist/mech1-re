@@ -2,8 +2,8 @@
 
 The public project needs a C++20 compiler and CMake 3.20 or later. A playable build
 also needs SDL3 3.2 or later, supplied as an installed CMake package or an existing
-source checkout. Dependencies are never downloaded automatically. Windows x64
-is the currently qualified runtime target.
+source checkout. Dependencies are never downloaded automatically. Packages
+are built for Windows x64, macOS and Linux x86_64.
 
 ## Windows
 
@@ -55,8 +55,7 @@ cmake --build build-headless --config Release
 ```
 
 The equivalent Windows command is `./src/Build.ps1 -Headless`.
-Headless compilation does not produce a playable game. Non-Windows gameplay
-has not yet been qualified.
+Headless compilation does not produce a playable game.
 
 Research tests, native comparisons, asset extraction and code-generation tools
 are not included here. The reverse-engineering repository owns those workflows.

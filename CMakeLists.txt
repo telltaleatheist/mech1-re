@@ -208,6 +208,7 @@ add_library(mechwarrior_original STATIC
     src/Original/Video/MW_EGA_0800.cpp
     src/Support/GameFiles.cpp
     src/Support/PortDiagnostics.cpp
+    src/Support/Problem.cpp
     src/Support/MidiAddress.cpp
     src/Support/Sha256.cpp
     src/Support/EventLog.cpp
@@ -397,6 +398,7 @@ if(MECHWARRIOR_BUILD_SDL)
     add_library(mechwarrior_sdl STATIC
         src/SDL/SDLBackend_Main.cpp src/SDL/SDLBackend_Input.cpp src/SDL/SDLBackend_Time.cpp
         src/SDL/SDLBackend_Config.cpp
+        src/SDL/SDLNotice.cpp
         src/SDL/SDLBackend_DebugControl.cpp
         src/SDL/SDLBackend_Pilot.cpp src/Support/SupportPilot.cpp src/Support/SupportPilotObservation.cpp
         src/SDL/SDLBackend_Video.cpp src/SDL/SDLBackend_CombatPlatform.cpp
@@ -440,10 +442,25 @@ if(MECHWARRIOR_BUILD_SDL)
         target_include_directories(music_setting_test PRIVATE src/SDL)
         target_link_libraries(music_setting_test PRIVATE mechwarrior_sdl)
         add_test(NAME music_setting COMMAND music_setting_test)
+        # What the player is told at a refused start or a failsafe (src/SDL/SDLNotice.h).
+        add_executable(notice_probe tests/notice_probe.cpp)
+        target_include_directories(notice_probe PRIVATE src/SDL)
+        target_link_libraries(notice_probe PRIVATE mechwarrior_sdl)
+        find_package(Python3 COMPONENTS Interpreter)
+        if(Python3_FOUND)
+            add_test(NAME notice COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tests/notice_test.py"
+                --probe $<TARGET_FILE:notice_probe> --work "${CMAKE_CURRENT_BINARY_DIR}/notice_work")
+        endif()
     endif()
     if(WIN32)
         # The icon Explorer, the taskbar and the installer's shortcuts show.
         target_sources(mechwarrior PRIVATE tools/package/mechwarrior.rc)
+        # Paths are UTF-8 on Windows too.
+        foreach(program mechwarrior mechwarrior_stamped setup_test notice_probe)
+            if(MSVC AND TARGET ${program})
+                target_sources(${program} PRIVATE tools/package/mechwarrior.manifest)
+            endif()
+        endforeach()
     endif()
     # A package's program opens no console window (tools/build_package.py
     # sets it). It still writes to redirected stdout/stderr, and a start
@@ -539,7 +556,7 @@ if(MECHWARRIOR_BUILD_SDL)
         add_test(NAME tone_voice COMMAND tone_voice_test)
     endif()
     if(MSVC)
-        target_link_libraries(mechwarrior PRIVATE dbghelp)
+        target_link_libraries(mechwarrior_sdl PUBLIC dbghelp)
         # Retain source locations in optimized builds for user crash reports.
         foreach(diagnostic_target mechwarrior_original mechwarrior_sdl mechwarrior)
             target_compile_options(${diagnostic_target} PRIVATE $<$<CONFIG:Release>:/Zi>)
