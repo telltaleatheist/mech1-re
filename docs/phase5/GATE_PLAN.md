@@ -15,10 +15,10 @@ it is attributed.
 | What | Last covered | Since then on main |
 | --- | --- | --- |
 | Traces, events, frames, 1990 and 1989, and audio; ASan on the 8 traces (1990) and audio | 4632030 (B4g), Mac | B4f's combat (checked in its own slice at 92729fb: tests, 1990 traces, events on both revisions, the sanitizer on two traces), r-windows, r-story. Frames, 1989's traces and audio: not since |
-| Mac ctest | a981d92: 7 of 7 of the tests it touched, fresh build, 0 warnings; 0de343e: 18 of 18, exe_free among them | the rest of the 37 not on one commit |
+| Mac ctest | a981d92: 7 of 7 of the tests it touched, fresh build, 0 warnings; 0de343e: 18 of 18, exe_free among them | the rest of the tests not on one commit |
 | Windows ctest | 0de343e: 35 of 37 (exe_free and events skipped); r-log 3cf061f: 6 of 6 of the tests it touched; 7d9c5d9: 8 of 8 targeted and two 1990 traces (company, combat_cockpit); a97a6d5: setup, status_setup, notice | the other tests, and nothing of the opt-ins |
 | Windows traces | a run from before R's preparation; its commit isn't recorded here | treat as uncovered |
-| Linux ctest | c4f217c: 28 of 28 on both revisions, events run, exe_free skipped | 9 tests added since; treat as uncovered |
+| Linux ctest | c4f217c: 28 of 28 on both revisions, events run, exe_free skipped | 10 tests added since; treat as uncovered |
 | Packages, first run | 8122a17, all three platforms (before the story merge; no packaging change since) | the story and the rest of the merge |
 | Message box's text | r-log 3cf061f on the Windows package 8122a17 with the new program: exact command, desktop session, notice file | the box itself was never seen by anyone |
 
@@ -30,10 +30,10 @@ than four jobs, one suite at a time. Opt-ins are set together with the rest: `MW
 | # | Step | Where | Expected | Time |
 | --- | --- | --- | --- | --- |
 | 1 | Fresh release build, warnings read | Mac, Linux, Windows | 0 warnings of ours | Mac and Linux estimate 3 min; Windows 16 s at r-log 3cf061f |
-| 2 | Full ctest, 1990 game, both BTECH revisions given, both opt-ins on | Mac | 37 of 37, none skipped (count re-read; new tests raise it) | estimate 8 min |
+| 2 | Full ctest, 1990 game, both BTECH revisions given, both opt-ins on | Mac | 38 of 38, none skipped (count at a97a6d5; new tests raise it) | estimate 8 min |
 | 3 | On the 1989 copy, only the tests that use the game's files (list below), both opt-ins on | Mac | 14 of 14, none skipped (exe_free compares its two runs with each other, so 1989's two known traces don't fail it) | estimate 7 min, nearly all of it events and exe_free |
-| 4 | Full ctest as step 2, 1990; then step 3's list, 1989 | Linux | 37 of 37, then 14 of 14 (at c4f217c events alone took 349 s, the whole 375 s) | estimate 8 min each |
-| 5 | Full ctest, 1990 game | Windows | 35 of 37, skipped: exe_free and events. With both opt-ins on: 37 of 37, if Windows passes them; the first time. Every opt-in failure on Windows: stop and tell the lead | 55 s measured; opt-ins estimate 15 min |
+| 4 | Full ctest as step 2, 1990; then step 3's list, 1989 | Linux | 38 of 38, then 14 of 14 (at c4f217c events alone took 349 s, the whole 375 s) | estimate 8 min each |
+| 5 | Full ctest, 1990 game | Windows | 36 of 38, skipped: exe_free and events. With both opt-ins on: 38 of 38, if Windows passes them; the first time. Every opt-in failure on Windows: stop and tell the lead | 55 s measured; opt-ins estimate 15 min |
 | 6 | Traces, `check.py` | Mac, Linux, Windows | 1990: 8 of 8. 1989: 6 of 8, the failures combat_cockpit and combat_retreat (its tick is one ahead; see "For R" in the plan). Any other name is new. On the Mac, the runs' frames, both revisions, compared with the frames kept from 4632030 (864 files, byte for byte the same at 17b8c2a): identical | Mac estimate 2 min per revision |
 | 7 | `audio.py` | Mac | 2 of 2 | estimate 1 min |
 | 8 | Sanitizer build (address, and bounds for combat) on the 8 traces and the sound logs | Mac | 0 reports | estimate 4 min each |
