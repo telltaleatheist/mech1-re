@@ -49,10 +49,8 @@ const char *afterActionSuccessMessages[CAMPAIGN_HOUSE_COUNT]={afterActionKuritaS
     afterActionGeneralSuccess,afterActionGeneralSuccess,afterActionLiaoSuccess,afterActionGeneralSuccess};
 const char *settlementDeductionMessages[3]={settlementSupplyDeductionText,
     settlementPerformanceDeductionText,settlementTransportDeductionText};
-uint16_t panelBorderEnabled;
 uint8_t commanderNameBytes[0x000A];
-uint16_t ownedAmmoKindsByGroup[(int)CAMPAIGN_AMMO_GROUPS * CAMPAIGN_OWNED_UNIT_SLOTS];
-uint16_t ownedAmmoQuantitiesByGroup[(int)CAMPAIGN_AMMO_GROUPS * CAMPAIGN_OWNED_UNIT_SLOTS];
+CampaignEconomyState campaignEconomy;
 
 /* Original 1090:016D. The allocator/loader assigns this selector later. */
 uint16_t compressedPictureBufferSelector;
@@ -202,161 +200,25 @@ char travelLandscapeLabels[TRAVEL_LANDSCAPE_LABEL_COUNT][9];
 char travelInsufficientFundsText[0x29];
 uint16_t reserveAmmoQuantitiesByFamily[CAMPAIGN_AMMO_FAMILY_COUNT];
 uint16_t reserveAmmoFreightRates[CAMPAIGN_AMMO_FAMILY_COUNT];
-
-/* Native stock generator policy and scratch; populated from the original image. */
-uint8_t generatedKindRangeMaxima[STOCK_KIND_RANGE_COUNT];
-uint8_t generatedKindRangeStarts[STOCK_KIND_RANGE_COUNT];
-uint16_t generatedDamageMaximumIndex, generatedUnitKind;
-uint16_t generatedAmmoKinds[CAMPAIGN_AMMO_GROUPS];
-uint16_t generatedAmmoQuantities[CAMPAIGN_AMMO_GROUPS];
-uint8_t generateStartingJenner;
-uint8_t unitAmmoGroupCounts[CAMPAIGN_MECH_KIND_COUNT];
-CampaignAmmoProfileEntry *unitAmmoProfiles[CAMPAIGN_MECH_KIND_COUNT];
-CampaignAmmoProfileEntry unitAmmoProfileEntries[AMMO_PROFILE_ENTRY_COUNT];
-uint8_t unitJumpJetGroupCounts[CAMPAIGN_MECH_KIND_COUNT];
-uint16_t dealerUnitPurchaseLimit, unitsSoldSinceMarketRefresh;
-uint16_t marketUnitCount, marketUnitKinds[CAMPAIGN_MARKET_UNIT_SLOTS];
-uint16_t marketAmmoKindsByGroup[(int)CAMPAIGN_AMMO_GROUPS * CAMPAIGN_MARKET_UNIT_SLOTS];
-uint16_t marketAmmoQuantitiesByGroup[(int)CAMPAIGN_AMMO_GROUPS * CAMPAIGN_MARKET_UNIT_SLOTS];
-uint16_t availableRecruitCount, availableRecruitIds[RECRUIT_OFFER_SLOTS];
-uint16_t ownedUnitCount, ownedUnitKinds[CAMPAIGN_OWNED_UNIT_SLOTS];
-uint16_t houseFavorPoints[CAMPAIGN_HOUSE_COUNT], houseGrievancePoints[CAMPAIGN_HOUSE_COUNT];
-uint16_t playerCombatCredit, generatingMissionOfferSlot;
-uint16_t missionForceBudget, missionPaymentBaseThousands;
-uint8_t missionForceWeightByUnitKind[CAMPAIGN_MECH_KIND_COUNT];
-uint16_t housePaymentRollBias[CAMPAIGN_HOUSE_COUNT];
-int16_t housePaymentAdjustmentPercent[CAMPAIGN_HOUSE_COUNT];
-uint16_t houseSalvageBasePercent[CAMPAIGN_HOUSE_COUNT], houseAdvanceBasePercent[CAMPAIGN_HOUSE_COUNT];
-uint8_t houseMissionTypeLimits[(int)CAMPAIGN_HOUSE_COUNT * MISSION_TARGET_COLUMNS];
-uint8_t majorCampaignMissionRollThreshold;
-uint16_t missionDescriptionOffsets[MISSION_OFFER_SLOTS], missionPlanetRecordIndices[MISSION_OFFER_SLOTS];
-uint16_t missionTargetHouseIndices[MISSION_OFFER_SLOTS], missionTypeCodes[MISSION_OFFER_SLOTS];
-uint16_t missionEnemyHeavyCounts[MISSION_OFFER_SLOTS], missionEnemyMediumCounts[MISSION_OFFER_SLOTS];
-uint16_t missionEnemyLightCounts[MISSION_OFFER_SLOTS], missionPaymentThousands[MISSION_OFFER_SLOTS];
-uint16_t missionSalvagePercentages[MISSION_OFFER_SLOTS], missionAdvancePercentages[MISSION_OFFER_SLOTS];
-uint16_t missionPaymentCeilingsThousands[MISSION_OFFER_SLOTS], missionSalvagePercentageCeilings[MISSION_OFFER_SLOTS];
-uint16_t missionAdvancePercentageCeilings[MISSION_OFFER_SLOTS], missionScenarioCodes[MISSION_OFFER_SLOTS];
 uint16_t housePlanetRangeStarts[CAMPAIGN_HOUSE_COUNT], housePlanetRangeCounts[CAMPAIGN_HOUSE_COUNT];
-uint8_t missionDescriptionMaximumIndicesByCategory[MISSION_CATEGORY_COUNT];
-uint16_t missionDescriptionListOffsetsByCategory[MISSION_CATEGORY_COUNT];
-uint16_t missionDescriptionListEntries[MISSION_DESCRIPTION_LIST_WORDS];
-uint8_t missionDescriptionStorage[MISSION_DESCRIPTION_STORAGE_END - MISSION_DESCRIPTION_STORAGE_START];
-uint16_t houseMissionPlanetTableOffsets[CAMPAIGN_HOUSE_COUNT];
-MwHouseMissionPlanetPolicy houseMissionPlanetPolicies[CAMPAIGN_HOUSE_COUNT];
-uint16_t calendarSubmonthUnits, missionOfferCount;
-uint16_t marketRefreshUnits, elapsedBillingMonths;
-uint16_t campaignFundsLow, campaignFundsHigh;
-uint16_t dropShipMissedUpkeepPayments, unpaidPilotWageMarker;
-uint16_t pilotWageAmounts[CAMPAIGN_ROSTER_SLOTS];
-/* 0D49 can clear04BF+pilot42 =04E9, immediately after the identity union.
- * Do not extend that aligned union through04EA and duplicate pay-tier storage. */
-uint8_t pilotDepartureFlagTail;
-uint8_t notificationPending[CAMPAIGN_NOTIFICATION_COUNT];
-
-/* Mech Complex data: one owner per object, no emulated DS or address registry. */
-uint16_t unitInspectionContextCode;
-uint16_t ownedUnitListSelectedRow;
-uint16_t marketUnitListSelectedRow;
-uint16_t mechServiceMenuSelectedRow;
-MwPanelDescriptor ownedUnitListPanel;
-MwOwnedUnitListRow ownedUnitListRows[0x000D];
-uint16_t selectedOwnedUnitSlot;
-uint16_t selectedOwnedUnitByteOffset;
-uint16_t selectedMechAmmoFamilies[0x0003];
-uint16_t selectedMechAmmoQuantities[0x0003];
-uint8_t unitConditionSystemFieldCounts[0x000A];
-uint8_t unitConditionScoreDivisors[0x000B];
-uint8_t mechNonfunctionalTextBytes[0x000E];
-uint8_t unitDisplayTonnages[0x000A];
-uint8_t unitDisplaySpeedsKph[0x000A];
-uint8_t unitDisplayJumpCapacitiesMetres[0x000A];
-uint16_t unitDetailPictureXOffsets[0x000B];
-uint16_t unitDetailPictureYOrigins[0x000B];
-uint8_t repairWorkIncomplete;
-MwPanelDescriptor mechStatusPanel;
-MwPanelDescriptor dropShipStatusPanel;
 /* Private backing arrays; shared access goes through the typed menus below. */
 static MwUiRecord mechServiceUiRecords[0x0005];
 static MwUiRecord dropShipServiceUiRecords[0x0002];
-uint16_t ownedListRowUnitByteOffset;
-uint16_t saleMarketSlotByteOffset;
-uint16_t selectedMechRearmQuoteLow;
-uint16_t selectedMechRearmQuoteHigh;
-uint16_t mechServiceNextAnimationTick;
-uint16_t mechServiceAnimationByteOffset;
-uint16_t repairTitleLeadingSpacesByKind[0x000B];
-uint16_t repairSystemRowIndex;
-uint16_t repairMenuSelectedCategory;
-MwPanelDescriptor componentRepairPanel;
-MwComponentConditionTextRow repairSystemConditionRows[0x000A];
-MwComponentConditionTextRow repairWeaponConditionRows[0x000B];
-MwUiRecord componentRepairUiRecords[REPAIR_UI_RECORD_COUNT];
-uint8_t unitHeatSinkCounts[0x000A];
-uint8_t repairNoJumpJetsTextBytes[0x0005];
-uint8_t repairJumpJetCountTemplateBytes[0x0009];
-uint8_t repairSuccessRollLimitsByMarketTier[0x0004];
-uint16_t mechDiagramUnitKind;
-uint16_t bodyDamageTierFillColours[0x0004];
-MwMechBodyDiagramLayout mechBodyDiagramLayouts[0x0008];
-MwUiRecord ownedUnitListUiRecords[0x000D];
-MwServiceCaption ownedUnitListHeading, mechStatusLabels[6], dropShipStatusLabels[3];
-MwServiceCaption repairTitle, repairFooter;
-MwBodyConditionText repairBodyCondition;
-char shopUnitNames[CAMPAIGN_UNIT_KIND_COUNT][0x0F];
-char unitDisplayNames[CAMPAIGN_UNIT_KIND_COUNT][0x0D];
-char ammoFamilyDisplayNames[CAMPAIGN_AMMO_FAMILY_COUNT][0x0D];
-char campaignDamageTierLabels[4][0x0D];
-char unassignedMechWarriorText[0x0B], ownedListDoneText[0x18];
-char cannotAffordRepairText[0x37], noRepairWorkText[0x1A];
-char repairCompleteText[0x20], repairIncompleteText[0x1E], repairFailedText[0x17];
-char repairWeaponLabelStorage[CAMPAIGN_MECH_KIND_COUNT][CAMPAIGN_WEAPON_SLOTS+1][0x0F];
-char *repairWeaponLabels[CAMPAIGN_MECH_KIND_COUNT][CAMPAIGN_WEAPON_SLOTS+2];
-uint8_t *mechDiagramBodyDamage;
-MwMechDiagramRectangle *mechDiagramRectangle;
-MwMechBodyDiagramLayout *mechBodyDiagramLayoutsByKind[CAMPAIGN_MECH_KIND_COUNT];
 CampaignUiState campaignUi={
     .planetHubMenu={ campaignUi.planetHubRecords, HUB_UI_RECORD_COUNT, &campaignUi.hubFirstNavigationProbe },
     .contractHubMenu={ campaignUi.contractHubRecords, CONTRACT_HUB_UI_RECORD_COUNT, &campaignUi.hubSecondNavigationProbe },
     .remotePlanetHubMenu={ campaignUi.remotePlanetHubRecords, HUB_UI_RECORD_COUNT, &campaignUi.hubThirdNavigationProbe }
 };
-/* FF probes alias362D (record15 X high),3B45 (kind9 failure8), and3B8B
- * (sensor price for kind8 low). Keep typed aliases, not host-endian BYTE casts. */
-MwUiMenu ownedUnitListMenu = { ownedUnitListUiRecords, 0x0D, NULL, &componentRepairUiRecords[15].x, 8 };
-MwUiMenu mechServiceMenu = { mechServiceUiRecords, 5, &repairAttemptFailuresByKind[9].failedByDamageIndex[8] };
-MwUiMenu dropShipServiceMenu = { dropShipServiceUiRecords, 2, NULL, &systemRepairBasePrices[REPAIR_SENSORS].basePriceByMechKind[CAMPAIGN_UNIT_MARAUDER], 0 };
-MwUiMenu componentRepairMenu = { componentRepairUiRecords, REPAIR_UI_RECORD_COUNT, &marketCapacityNavigationProbe };
-
-/* Rearm/dealer objects are ordinary C data, independent of their disk encoding. */
-MwPanelDescriptor rearmConfirmationPanel, saleConfirmationPanel;
-MwPanelDescriptor marketUnitListPanel, marketMechStatusPanel, marketDropShipStatusPanel;
-MwPanelDescriptor marketComponentPanel, mechComplexPanel;
-MwServiceCaption rearmConfirmationLabels[3], saleConfirmationLabels[3];
-MwServiceCaption marketListHeading, marketMechStatusLabels[4], marketDropShipStatusLabels[3];
-MwServiceCaption mechComplexLabels[5], marketComponentTitle;
-MwMarketUnitListRow marketUnitListRows[0x0D];
-MwComponentConditionTextRow marketSystemConditionRows[0x0A], marketWeaponConditionRows[0x0A];
-MwServiceCaption marketComponentDone;
-MwServiceCaption marketWeaponHeading;
-MwServiceCaption positionedText;
-MwBodyConditionText marketBodyCondition;
+CampaignServiceState campaignService={
+    /* FF probes alias362D (record15 X high),3B45 (kind9 failure8), and3B8B
+     * (sensor price for kind8 low). Keep typed aliases, not host-endian BYTE casts. */
+    .ownedUnitListMenu={ campaignService.ownedUnitListUiRecords, 0x0D, NULL, &campaignService.componentRepairUiRecords[15].x, 8 },
+    .mechServiceMenu={ mechServiceUiRecords, 5, &repairAttemptFailuresByKind[9].failedByDamageIndex[8] },
+    .dropShipServiceMenu={ dropShipServiceUiRecords, 2, NULL, &systemRepairBasePrices[REPAIR_SENSORS].basePriceByMechKind[CAMPAIGN_UNIT_MARAUDER], 0 },
+    .componentRepairMenu={ campaignService.componentRepairUiRecords, REPAIR_UI_RECORD_COUNT, &marketCapacityNavigationProbe }
+};
 static MwUiRecord rearmConfirmationRecords[2], saleConfirmationRecords[2], marketUnitListRecords[0x0D];
 static MwUiRecord marketMechRecords[3], marketDropShipRecords[2], marketComponentRecords[1], mechComplexRecords[4];
-/* FF navigation probes alias the canonical caption/diagram/root-table owners;
- * they are read before the dispatcher rejects the FF navigation link. */
-MwUiMenu rearmConfirmationMenu={rearmConfirmationRecords,2,NULL,&mechBodyDiagramLayouts[7].bodyRegions[7].x,8};
-MwUiMenu saleConfirmationMenu={saleConfirmationRecords,2,NULL,&mechBodyDiagramLayouts[6].bodyRegions[1].width,0};
-MwUiMenu marketUnitListMenu={marketUnitListRecords,0x0D,(const uint8_t *)&repairWeaponLabelStorage[CAMPAIGN_UNIT_SHADOW_HAWK][4][2]}; /*380D, DONE label byte. */
-MwUiMenu marketMechMenu={marketMechRecords,3,NULL,&travelSquareRootValues[0x02DA],8}; /*529B, high BYTE. */
-MwUiMenu marketDropShipMenu={marketDropShipRecords,2,NULL,&travelSquareRootValues[0x02EF],8}; /*52C5, high BYTE. */
-MwUiMenu marketComponentMenu={marketComponentRecords,1,(const uint8_t *)&positionedText.text[0x10]}; /*5601, final space. */
-MwUiMenu mechComplexMenu={mechComplexRecords,4,NULL,&repairWeaponConditionRows[1].display.y,0};
-char ammoBayFullText[0x12], noMarketMechsText[0x2E];
-char dealerPurchaseLimitText[0x33], purchaseInsufficientFundsText[0x17], ownedMechCapacityText[0x37];
-char marketListDoneText[DEALER_LIST_NAME_COLUMNS];
-uint16_t selectedMarketUnitSlot, selectedMarketUnitByteOffset;
-uint16_t selectedMarketAmmoFamilies[CAMPAIGN_AMMO_GROUPS], selectedMarketAmmoQuantities[CAMPAIGN_AMMO_GROUPS];
-uint16_t marketSystemRowIndex, purchaseOwnedSlotByteOffset;
-uint16_t mechComplexAnimationFrames[MECH_COMPLEX_ANIMATION_FRAMES];
 
 uint16_t campaignMusicBufferSelector, graphicsOverlaySelector;
 uint16_t launcherMemoryTier;
@@ -646,7 +508,7 @@ bool MwImportCampaignInitialData(void)
     campaignUi.panelWidth=0; /*03EF*/
     campaignUi.panelHeight=0; /*03F1*/
     campaignUi.panelBorderPictureBase=0; /*0444*/
-    panelBorderEnabled=0; /*03F3*/
+    campaignService.panelBorderEnabled=0; /*03F3*/
     campaignUi.textPanelInsetX=0; /*0432*/
     campaignUi.textPanelInsetY=0; /*0434*/
     campaignUi.textPanelOriginX=0; /*0436*/
@@ -763,89 +625,89 @@ bool MwImportCampaignInitialData(void)
     memcpy(travelLandscapeLabels,mainWords+0x5CA6,sizeof(travelLandscapeLabels));
     memcpy(travelInsufficientFundsText,mainWords+0x5B5A,sizeof(travelInsufficientFundsText));
     if (!ImportRuleWords("market.freight_rates",(uint16_t *)reserveAmmoFreightRates,sizeof(reserveAmmoFreightRates)/sizeof(uint16_t))) return false;
-    if (!ImportRuleBytes("market.stock_kind_range_maxima",generatedKindRangeMaxima,sizeof(generatedKindRangeMaxima))) return false;
-    if (!ImportRuleBytes("market.stock_kind_range_starts",generatedKindRangeStarts,sizeof(generatedKindRangeStarts))) return false;
-    generatedDamageMaximumIndex=0; /*3A3D*/
-    generatedUnitKind=0; /*3A3F*/
-    if (!ImportRuleWords("market.start.generated_ammo_kinds",(uint16_t *)generatedAmmoKinds,sizeof(generatedAmmoKinds)/sizeof(uint16_t))) return false;
-    if (!ImportRuleWords("market.start.generated_ammo_quantities",(uint16_t *)generatedAmmoQuantities,sizeof(generatedAmmoQuantities)/sizeof(uint16_t))) return false;
-    if (!ImportRuleBytes("market.start.generate_starting_jenner",&generateStartingJenner,sizeof(generateStartingJenner))) return false;
-    if (!ImportRuleBytes("units.ammo_groups",unitAmmoGroupCounts,sizeof(unitAmmoGroupCounts))) return false;
-    if (!ImportRuleBytes("units.jump_jet_groups",unitJumpJetGroupCounts,sizeof(unitJumpJetGroupCounts))) return false;
-    generatingMissionOfferSlot=0; /*4B77*/
-    missionForceBudget=0; /* Written before it's read; zero where the exe reloaded it. */
-    missionPaymentBaseThousands=0; /* Written before it's read; zero where the exe reloaded it. */
-    if (!ImportRuleBytes("units.force_weights",missionForceWeightByUnitKind,sizeof(missionForceWeightByUnitKind))) return false;
-    if (!ImportRuleWords("houses.payment_roll_bias",(uint16_t *)housePaymentRollBias,sizeof(housePaymentRollBias)/sizeof(uint16_t))) return false;
-    if (!ImportRuleWords("houses.payment_adjustment_percent",(uint16_t *)housePaymentAdjustmentPercent,sizeof(housePaymentAdjustmentPercent)/sizeof(uint16_t))) return false;
-    if (!ImportRuleWords("houses.salvage_base_percent",(uint16_t *)houseSalvageBasePercent,sizeof(houseSalvageBasePercent)/sizeof(uint16_t))) return false;
-    if (!ImportRuleWords("houses.advance_base_percent",(uint16_t *)houseAdvanceBasePercent,sizeof(houseAdvanceBasePercent)/sizeof(uint16_t))) return false;
+    if (!ImportRuleBytes("market.stock_kind_range_maxima",campaignEconomy.generatedKindRangeMaxima,sizeof(campaignEconomy.generatedKindRangeMaxima))) return false;
+    if (!ImportRuleBytes("market.stock_kind_range_starts",campaignEconomy.generatedKindRangeStarts,sizeof(campaignEconomy.generatedKindRangeStarts))) return false;
+    campaignEconomy.generatedDamageMaximumIndex=0; /*3A3D*/
+    campaignEconomy.generatedUnitKind=0; /*3A3F*/
+    if (!ImportRuleWords("market.start.generated_ammo_kinds",(uint16_t *)campaignEconomy.generatedAmmoKinds,sizeof(campaignEconomy.generatedAmmoKinds)/sizeof(uint16_t))) return false;
+    if (!ImportRuleWords("market.start.generated_ammo_quantities",(uint16_t *)campaignEconomy.generatedAmmoQuantities,sizeof(campaignEconomy.generatedAmmoQuantities)/sizeof(uint16_t))) return false;
+    if (!ImportRuleBytes("market.start.generate_starting_jenner",&campaignEconomy.generateStartingJenner,sizeof(campaignEconomy.generateStartingJenner))) return false;
+    if (!ImportRuleBytes("units.ammo_groups",campaignEconomy.unitAmmoGroupCounts,sizeof(campaignEconomy.unitAmmoGroupCounts))) return false;
+    if (!ImportRuleBytes("units.jump_jet_groups",campaignEconomy.unitJumpJetGroupCounts,sizeof(campaignEconomy.unitJumpJetGroupCounts))) return false;
+    campaignEconomy.generatingMissionOfferSlot=0; /*4B77*/
+    campaignEconomy.missionForceBudget=0; /* Written before it's read; zero where the exe reloaded it. */
+    campaignEconomy.missionPaymentBaseThousands=0; /* Written before it's read; zero where the exe reloaded it. */
+    if (!ImportRuleBytes("units.force_weights",campaignEconomy.missionForceWeightByUnitKind,sizeof(campaignEconomy.missionForceWeightByUnitKind))) return false;
+    if (!ImportRuleWords("houses.payment_roll_bias",(uint16_t *)campaignEconomy.housePaymentRollBias,sizeof(campaignEconomy.housePaymentRollBias)/sizeof(uint16_t))) return false;
+    if (!ImportRuleWords("houses.payment_adjustment_percent",(uint16_t *)campaignEconomy.housePaymentAdjustmentPercent,sizeof(campaignEconomy.housePaymentAdjustmentPercent)/sizeof(uint16_t))) return false;
+    if (!ImportRuleWords("houses.salvage_base_percent",(uint16_t *)campaignEconomy.houseSalvageBasePercent,sizeof(campaignEconomy.houseSalvageBasePercent)/sizeof(uint16_t))) return false;
+    if (!ImportRuleWords("houses.advance_base_percent",(uint16_t *)campaignEconomy.houseAdvanceBasePercent,sizeof(campaignEconomy.houseAdvanceBasePercent)/sizeof(uint16_t))) return false;
     if (!ImportRuleWords("houses.planet_range_starts",(uint16_t *)housePlanetRangeStarts,sizeof(housePlanetRangeStarts)/sizeof(uint16_t))) return false;
     if (!ImportRuleWords("houses.planet_range_counts",(uint16_t *)housePlanetRangeCounts,sizeof(housePlanetRangeCounts)/sizeof(uint16_t))) return false;
     /* The mission descriptions from story/missions.json: the category tables
      * (8A16 maximum indices, 8A1B list offsets, 8A25 entries) and the storage
      * (8A69..). Saves keep entry offsets, so the original's text gives the
      * original's offsets. */
-    if (!MwStoryBuildMissions(missionDescriptionStorage,sizeof(missionDescriptionStorage),MISSION_DESCRIPTION_STORAGE_START,
-        missionDescriptionMaximumIndicesByCategory,missionDescriptionListOffsetsByCategory,MISSION_CATEGORY_COUNT,
-        missionDescriptionListEntries,MISSION_DESCRIPTION_LIST_WORDS,MISSION_DESCRIPTION_LIST_START)) return false;
-    if (!ImportRuleWords("houses.mission_planet_policy_offsets",(uint16_t *)houseMissionPlanetTableOffsets,sizeof(houseMissionPlanetTableOffsets)/sizeof(uint16_t))) return false;
-    if (!ImportRuleBytes("houses.mission_planet_policies",houseMissionPlanetPolicies,sizeof(houseMissionPlanetPolicies))) return false;
-    if (!ImportRuleWords("contracts.pilot_wages",(uint16_t *)pilotWageAmounts,sizeof(pilotWageAmounts)/sizeof(uint16_t))) return false;
-    memset(notificationPending,0,sizeof(notificationPending)); /*5EAE*/
-    unitInspectionContextCode=0; /*25BD*/
-    ownedUnitListSelectedRow=0; /*25BF*/
-    marketUnitListSelectedRow=0; /*25C1*/
-    mechServiceMenuSelectedRow=0; /*25C3*/
-    selectedOwnedUnitSlot=0; /*2AD1*/
-    selectedOwnedUnitByteOffset=0; /*2AD3*/
-    memset(selectedMechAmmoFamilies,0,sizeof(selectedMechAmmoFamilies)); /*2AD7*/
-    memset(selectedMechAmmoQuantities,0,sizeof(selectedMechAmmoQuantities)); /*2ADD*/
-    if (!ImportRuleBytes("units.condition_fields",unitConditionSystemFieldCounts,sizeof(unitConditionSystemFieldCounts))) return false;
-    if (!ImportRuleBytes("units.condition_score_divisors",unitConditionScoreDivisors,sizeof(unitConditionScoreDivisors))) return false;
-    memcpy(mechNonfunctionalTextBytes,mainWords+0x2B55,sizeof(mechNonfunctionalTextBytes));
-    if (!ImportRuleBytes("units.display_tonnages",unitDisplayTonnages,sizeof(unitDisplayTonnages))) return false;
-    if (!ImportRuleBytes("units.display_speeds",unitDisplaySpeedsKph,sizeof(unitDisplaySpeedsKph))) return false;
-    if (!ImportRuleBytes("units.display_jumps",unitDisplayJumpCapacitiesMetres,sizeof(unitDisplayJumpCapacitiesMetres))) return false;
-    if (!MwUiCopyWords("complex.table.detail_picture_x_offsets",(uint16_t *)unitDetailPictureXOffsets,sizeof(unitDetailPictureXOffsets)/sizeof(uint16_t),0) /*2B83*/
-        || !MwUiCopyWords("complex.table.detail_picture_y_origins",(uint16_t *)unitDetailPictureYOrigins,sizeof(unitDetailPictureYOrigins)/sizeof(uint16_t),0)) return false; /*2B99*/
-    memset(&repairWorkIncomplete,0,sizeof(repairWorkIncomplete)); /*2BAF*/
-    ownedListRowUnitByteOffset=0; /*3022*/
-    saleMarketSlotByteOffset=0; /*3055*/
-    selectedMechRearmQuoteLow=0; /*310C*/
-    selectedMechRearmQuoteHigh=0; /*310E*/
-    mechServiceNextAnimationTick=0; /*3189*/
-    mechServiceAnimationByteOffset=0; /*318B*/
-    if (!MwUiCopyWords("complex.table.repair_title_leading_spaces",(uint16_t *)repairTitleLeadingSpacesByKind,sizeof(repairTitleLeadingSpacesByKind)/sizeof(uint16_t),0)) return false; /*31F2*/
-    repairSystemRowIndex=0; /*3208*/
-    repairMenuSelectedCategory=0; /*320A*/
-    if (!ImportRuleBytes("units.heat_sinks",unitHeatSinkCounts,sizeof(unitHeatSinkCounts))) return false;
-    memcpy(repairNoJumpJetsTextBytes,mainWords+0x36A0,sizeof(repairNoJumpJetsTextBytes));
-    memcpy(repairJumpJetCountTemplateBytes,mainWords+0x36A5,sizeof(repairJumpJetCountTemplateBytes));
-    if (!ImportRuleBytes("repair.success_roll_limits",repairSuccessRollLimitsByMarketTier,sizeof(repairSuccessRollLimitsByMarketTier))) return false;
-    mechDiagramUnitKind=0; /*3CCC*/
-    if (!MwUiCopyWords("complex.table.body_damage_fill_colours",(uint16_t *)bodyDamageTierFillColours,sizeof(bodyDamageTierFillColours)/sizeof(uint16_t),0)) return false; /*3CD2*/
-    memcpy(unassignedMechWarriorText,mainWords+0x3024,sizeof(unassignedMechWarriorText));
-    memcpy(ownedListDoneText,mainWords+0x302F,sizeof(ownedListDoneText));
-    memcpy(cannotAffordRepairText,mainWords+0x2BB0,sizeof(cannotAffordRepairText));
-    memcpy(noRepairWorkText,mainWords+0x2BE7,sizeof(noRepairWorkText));
-    memcpy(repairCompleteText,mainWords+0x2C01,sizeof(repairCompleteText));
-    memcpy(repairIncompleteText,mainWords+0x2C21,sizeof(repairIncompleteText));
-    memcpy(repairFailedText,mainWords+0x3CB5,sizeof(repairFailedText));
+    if (!MwStoryBuildMissions(campaignEconomy.missionDescriptionStorage,sizeof(campaignEconomy.missionDescriptionStorage),MISSION_DESCRIPTION_STORAGE_START,
+        campaignEconomy.missionDescriptionMaximumIndicesByCategory,campaignEconomy.missionDescriptionListOffsetsByCategory,MISSION_CATEGORY_COUNT,
+        campaignEconomy.missionDescriptionListEntries,MISSION_DESCRIPTION_LIST_WORDS,MISSION_DESCRIPTION_LIST_START)) return false;
+    if (!ImportRuleWords("houses.mission_planet_policy_offsets",(uint16_t *)campaignEconomy.houseMissionPlanetTableOffsets,sizeof(campaignEconomy.houseMissionPlanetTableOffsets)/sizeof(uint16_t))) return false;
+    if (!ImportRuleBytes("houses.mission_planet_policies",campaignEconomy.houseMissionPlanetPolicies,sizeof(campaignEconomy.houseMissionPlanetPolicies))) return false;
+    if (!ImportRuleWords("contracts.pilot_wages",(uint16_t *)campaignEconomy.pilotWageAmounts,sizeof(campaignEconomy.pilotWageAmounts)/sizeof(uint16_t))) return false;
+    memset(campaignEconomy.notificationPending,0,sizeof(campaignEconomy.notificationPending)); /*5EAE*/
+    campaignService.unitInspectionContextCode=0; /*25BD*/
+    campaignService.ownedUnitListSelectedRow=0; /*25BF*/
+    campaignService.marketUnitListSelectedRow=0; /*25C1*/
+    campaignService.mechServiceMenuSelectedRow=0; /*25C3*/
+    campaignService.selectedOwnedUnitSlot=0; /*2AD1*/
+    campaignService.selectedOwnedUnitByteOffset=0; /*2AD3*/
+    memset(campaignService.selectedMechAmmoFamilies,0,sizeof(campaignService.selectedMechAmmoFamilies)); /*2AD7*/
+    memset(campaignService.selectedMechAmmoQuantities,0,sizeof(campaignService.selectedMechAmmoQuantities)); /*2ADD*/
+    if (!ImportRuleBytes("units.condition_fields",campaignService.unitConditionSystemFieldCounts,sizeof(campaignService.unitConditionSystemFieldCounts))) return false;
+    if (!ImportRuleBytes("units.condition_score_divisors",campaignService.unitConditionScoreDivisors,sizeof(campaignService.unitConditionScoreDivisors))) return false;
+    memcpy(campaignService.mechNonfunctionalTextBytes,mainWords+0x2B55,sizeof(campaignService.mechNonfunctionalTextBytes));
+    if (!ImportRuleBytes("units.display_tonnages",campaignService.unitDisplayTonnages,sizeof(campaignService.unitDisplayTonnages))) return false;
+    if (!ImportRuleBytes("units.display_speeds",campaignService.unitDisplaySpeedsKph,sizeof(campaignService.unitDisplaySpeedsKph))) return false;
+    if (!ImportRuleBytes("units.display_jumps",campaignService.unitDisplayJumpCapacitiesMetres,sizeof(campaignService.unitDisplayJumpCapacitiesMetres))) return false;
+    if (!MwUiCopyWords("complex.table.detail_picture_x_offsets",(uint16_t *)campaignService.unitDetailPictureXOffsets,sizeof(campaignService.unitDetailPictureXOffsets)/sizeof(uint16_t),0) /*2B83*/
+        || !MwUiCopyWords("complex.table.detail_picture_y_origins",(uint16_t *)campaignService.unitDetailPictureYOrigins,sizeof(campaignService.unitDetailPictureYOrigins)/sizeof(uint16_t),0)) return false; /*2B99*/
+    memset(&campaignService.repairWorkIncomplete,0,sizeof(campaignService.repairWorkIncomplete)); /*2BAF*/
+    campaignService.ownedListRowUnitByteOffset=0; /*3022*/
+    campaignService.saleMarketSlotByteOffset=0; /*3055*/
+    campaignService.selectedMechRearmQuoteLow=0; /*310C*/
+    campaignService.selectedMechRearmQuoteHigh=0; /*310E*/
+    campaignService.mechServiceNextAnimationTick=0; /*3189*/
+    campaignService.mechServiceAnimationByteOffset=0; /*318B*/
+    if (!MwUiCopyWords("complex.table.repair_title_leading_spaces",(uint16_t *)campaignService.repairTitleLeadingSpacesByKind,sizeof(campaignService.repairTitleLeadingSpacesByKind)/sizeof(uint16_t),0)) return false; /*31F2*/
+    campaignService.repairSystemRowIndex=0; /*3208*/
+    campaignService.repairMenuSelectedCategory=0; /*320A*/
+    if (!ImportRuleBytes("units.heat_sinks",campaignService.unitHeatSinkCounts,sizeof(campaignService.unitHeatSinkCounts))) return false;
+    memcpy(campaignService.repairNoJumpJetsTextBytes,mainWords+0x36A0,sizeof(campaignService.repairNoJumpJetsTextBytes));
+    memcpy(campaignService.repairJumpJetCountTemplateBytes,mainWords+0x36A5,sizeof(campaignService.repairJumpJetCountTemplateBytes));
+    if (!ImportRuleBytes("repair.success_roll_limits",campaignService.repairSuccessRollLimitsByMarketTier,sizeof(campaignService.repairSuccessRollLimitsByMarketTier))) return false;
+    campaignService.mechDiagramUnitKind=0; /*3CCC*/
+    if (!MwUiCopyWords("complex.table.body_damage_fill_colours",(uint16_t *)campaignService.bodyDamageTierFillColours,sizeof(campaignService.bodyDamageTierFillColours)/sizeof(uint16_t),0)) return false; /*3CD2*/
+    memcpy(campaignService.unassignedMechWarriorText,mainWords+0x3024,sizeof(campaignService.unassignedMechWarriorText));
+    memcpy(campaignService.ownedListDoneText,mainWords+0x302F,sizeof(campaignService.ownedListDoneText));
+    memcpy(campaignService.cannotAffordRepairText,mainWords+0x2BB0,sizeof(campaignService.cannotAffordRepairText));
+    memcpy(campaignService.noRepairWorkText,mainWords+0x2BE7,sizeof(campaignService.noRepairWorkText));
+    memcpy(campaignService.repairCompleteText,mainWords+0x2C01,sizeof(campaignService.repairCompleteText));
+    memcpy(campaignService.repairIncompleteText,mainWords+0x2C21,sizeof(campaignService.repairIncompleteText));
+    memcpy(campaignService.repairFailedText,mainWords+0x3CB5,sizeof(campaignService.repairFailedText));
     campaignUi.hubSelectedRecordIndex=0; /*1080*/
-    memcpy(ammoBayFullText,mainWords+0x315B,sizeof(ammoBayFullText));
-    memcpy(noMarketMechsText,mainWords+0x31BB,sizeof(noMarketMechsText));
-    memcpy(dealerPurchaseLimitText,mainWords+0x258A,sizeof(dealerPurchaseLimitText));
-    memcpy(purchaseInsufficientFundsText,mainWords+0x4330,sizeof(purchaseInsufficientFundsText));
-    memcpy(ownedMechCapacityText,mainWords+0x4347,sizeof(ownedMechCapacityText));
-    memcpy(marketListDoneText,mainWords+0x3049,sizeof(marketListDoneText));
-    selectedMarketUnitSlot=0; /*431E*/
-    selectedMarketUnitByteOffset=0; /*4320*/
-    memset(selectedMarketAmmoFamilies,0,sizeof(selectedMarketAmmoFamilies)); /*4324*/
-    memset(selectedMarketAmmoQuantities,0,sizeof(selectedMarketAmmoQuantities)); /*432A*/
-    marketSystemRowIndex=0; /*44EF*/
-    purchaseOwnedSlotByteOffset=0; /*481D*/
-    if (!MwUiCopyWords("complex.table.animation_frames",(uint16_t *)mechComplexAnimationFrames,sizeof(mechComplexAnimationFrames)/sizeof(uint16_t),0)) return false; /*318D*/
+    memcpy(campaignMarket.ammoBayFullText,mainWords+0x315B,sizeof(campaignMarket.ammoBayFullText));
+    memcpy(campaignMarket.noMarketMechsText,mainWords+0x31BB,sizeof(campaignMarket.noMarketMechsText));
+    memcpy(campaignMarket.dealerPurchaseLimitText,mainWords+0x258A,sizeof(campaignMarket.dealerPurchaseLimitText));
+    memcpy(campaignMarket.purchaseInsufficientFundsText,mainWords+0x4330,sizeof(campaignMarket.purchaseInsufficientFundsText));
+    memcpy(campaignMarket.ownedMechCapacityText,mainWords+0x4347,sizeof(campaignMarket.ownedMechCapacityText));
+    memcpy(campaignMarket.marketListDoneText,mainWords+0x3049,sizeof(campaignMarket.marketListDoneText));
+    campaignMarket.selectedMarketUnitSlot=0; /*431E*/
+    campaignMarket.selectedMarketUnitByteOffset=0; /*4320*/
+    memset(campaignMarket.selectedMarketAmmoFamilies,0,sizeof(campaignMarket.selectedMarketAmmoFamilies)); /*4324*/
+    memset(campaignMarket.selectedMarketAmmoQuantities,0,sizeof(campaignMarket.selectedMarketAmmoQuantities)); /*432A*/
+    campaignMarket.marketSystemRowIndex=0; /*44EF*/
+    campaignMarket.purchaseOwnedSlotByteOffset=0; /*481D*/
+    if (!MwUiCopyWords("complex.table.animation_frames",(uint16_t *)campaignMarket.mechComplexAnimationFrames,sizeof(campaignMarket.mechComplexAnimationFrames)/sizeof(uint16_t),0)) return false; /*318D*/
     campaignMusicBufferSelector=0; /*016F*/
     graphicsOverlaySelector=0; /*002E*/
     memset(&launcherExitCode,0,sizeof(launcherExitCode)); /*0006*/
@@ -928,8 +790,8 @@ bool MwImportCampaignInitialData(void)
         || !ImportRuleBytes("units.weapon_repair_price_lists",weaponRepairPriceLists,sizeof(weaponRepairPriceLists))) return false;
     for (uint16_t entry=0;entry<AMMO_PROFILE_ENTRY_COUNT;++entry)
     {
-        unitAmmoProfileEntries[entry].ammoFamily=MwReadNativeWord(ammoProfileEntries,(uint16_t)(entry*4));
-        unitAmmoProfileEntries[entry].quantityMaximum=MwReadNativeWord(ammoProfileEntries,(uint16_t)(entry*4+2));
+        campaignEconomy.unitAmmoProfileEntries[entry].ammoFamily=MwReadNativeWord(ammoProfileEntries,(uint16_t)(entry*4));
+        campaignEconomy.unitAmmoProfileEntries[entry].quantityMaximum=MwReadNativeWord(ammoProfileEntries,(uint16_t)(entry*4+2));
     }
     /* complex.table.body_diagram_by_kind (3CDA): each kind's diagram at its
      * exe address in the body_diagrams table (3CEE), or 0 for none. */
@@ -946,25 +808,25 @@ bool MwImportCampaignInitialData(void)
         if (profile<0x2F3C || profile>=0x2F78 || (profile-0x2F3C)%4
             || prices<0x3C2F || prices>=0x3CAB || (prices-0x3C2F)%2
             || (layout && (layout<diagramBase || layout>=diagramBase+8*0x50 || (layout-diagramBase)%0x50))) return false;
-        unitAmmoProfiles[kind]=&unitAmmoProfileEntries[(profile-0x2F3C)/4];
+        campaignEconomy.unitAmmoProfiles[kind]=&campaignEconomy.unitAmmoProfileEntries[(profile-0x2F3C)/4];
         weaponRepairPricesByKind[kind]=&weaponRepairPrices[(prices-0x3C2F)/2];
-        mechBodyDiagramLayoutsByKind[kind]=layout?&mechBodyDiagramLayouts[(layout-diagramBase)/0x50]:NULL;
+        campaignService.mechBodyDiagramLayoutsByKind[kind]=layout?&campaignService.mechBodyDiagramLayouts[(layout-diagramBase)/0x50]:NULL;
         uint16_t labelOffset=repairWeaponWords[kind],label=0;
         while (mainWords[labelOffset]!=0xFF && label<CAMPAIGN_WEAPON_SLOTS+1)
         {
-            if (!ImportInitialString(mainWords,labelOffset,repairWeaponLabelStorage[kind][label],0x0F)) return false;
-            repairWeaponLabels[kind][label]=repairWeaponLabelStorage[kind][label];
-            labelOffset+=(uint16_t)(strlen(repairWeaponLabels[kind][label])+1);++label;
+            if (!ImportInitialString(mainWords,labelOffset,campaignService.repairWeaponLabelStorage[kind][label],0x0F)) return false;
+            campaignService.repairWeaponLabels[kind][label]=campaignService.repairWeaponLabelStorage[kind][label];
+            labelOffset+=(uint16_t)(strlen(campaignService.repairWeaponLabels[kind][label])+1);++label;
         }
-        repairWeaponLabels[kind][label]=NULL;
+        campaignService.repairWeaponLabels[kind][label]=NULL;
     }
     for (uint16_t i=0;i<CAMPAIGN_UNIT_KIND_COUNT;++i)
     {
         char id[40];
         snprintf(id,sizeof(id),"unit.%s.shop_name",storyUnitKeys[i]);
-        if (!MwStoryCopyText(id,shopUnitNames[i],sizeof(shopUnitNames[i]))) return false;
+        if (!MwStoryCopyText(id,campaignService.shopUnitNames[i],sizeof(campaignService.shopUnitNames[i]))) return false;
         snprintf(id,sizeof(id),"unit.%s.name",storyUnitKeys[i]);
-        if (!MwStoryCopyText(id,unitDisplayNames[i],sizeof(unitDisplayNames[i]))) return false;
+        if (!MwStoryCopyText(id,campaignService.unitDisplayNames[i],sizeof(campaignService.unitDisplayNames[i]))) return false;
     }
     if (!ImportReserveAmmoUiData()) return false;
     /* The ammo family names and damage tier labels (complex.word.*), by complex.json's ammo_family_words (2F78) and damage_tier_words (2B23). */
@@ -972,9 +834,9 @@ bool MwImportCampaignInitialData(void)
     if (!MwUiCopyWords("complex.table.ammo_family_words",ammoFamilyWords,0x06,0)
         || !MwUiCopyWords("complex.table.damage_tier_words",damageTierWords,0x04,0)) return false;
     for (uint16_t i=0;i<0x06;++i)
-        if (!ImportInitialString(mainWords,ammoFamilyWords[i],ammoFamilyDisplayNames[i],sizeof(ammoFamilyDisplayNames[i]))) return false;
+        if (!ImportInitialString(mainWords,ammoFamilyWords[i],campaignService.ammoFamilyDisplayNames[i],sizeof(campaignService.ammoFamilyDisplayNames[i]))) return false;
     for (uint16_t i=0;i<0x04;++i)
-        if (!ImportInitialString(mainWords,damageTierWords[i],campaignDamageTierLabels[i],sizeof(campaignDamageTierLabels[i]))) return false;
+        if (!ImportInitialString(mainWords,damageTierWords[i],campaignService.campaignDamageTierLabels[i],sizeof(campaignService.campaignDamageTierLabels[i]))) return false;
     /* The month names (hub.word.month.*) and the pointers to them (hub.json's month_words, 4A94). */
     memcpy(calendarMonthText,mainWords+0x4AAC,sizeof(calendarMonthText));
     uint16_t monthWords[CAMPAIGN_MONTH_COUNT];
@@ -988,148 +850,148 @@ bool MwImportCampaignInitialData(void)
     /* The eighth planet row's caption (travel.caption.planet_8, 55EC): its head from the layout bytes, its 18-byte text from the words. */
     uint16_t positionedAt[2];
     if (!MwUiCopyWords("travel.caption.planet_8",positionedAt,2,0)
-        || !MwUiCopyBytes("travel.caption.planet_8",&positionedText.display.colour,1,4)) return false;
-    positionedText.display.x=positionedAt[0];positionedText.display.y=positionedAt[1];
-    positionedText.display.text=positionedText.text;
-    if (!MwWordsCopyBlock("travel.caption.planet_8.text",(uint8_t *)positionedText.text,18)) return false;
+        || !MwUiCopyBytes("travel.caption.planet_8",&campaignMarket.positionedText.display.colour,1,4)) return false;
+    campaignMarket.positionedText.display.x=positionedAt[0];campaignMarket.positionedText.display.y=positionedAt[1];
+    campaignMarket.positionedText.display.text=campaignMarket.positionedText.text;
+    if (!MwWordsCopyBlock("travel.caption.planet_8.text",(uint8_t *)campaignMarket.positionedText.text,18)) return false;
     /* data/ui/complex.json: the Mech Complex (panel 25C5, menu 2632), the owned
      * list (266A, 283B), 'Mech and DropShip service (2C3F, 2D53; 2D06, 2D99),
      * sale (3075, 30F0), rearm (3110, 316D) and component repair (3214, 3558).
      * Rows the code fills in keep their fixed-width templates. */
     UiCaptionOwner complexOwners[]={
-        {"complex.caption.complex_title",&mechComplexLabels[0].display,mechComplexLabels[0].text,sizeof(mechComplexLabels[0].text),0,0},
-        {"complex.caption.complex_owned",&mechComplexLabels[1].display,mechComplexLabels[1].text,sizeof(mechComplexLabels[1].text),0,0},
-        {"complex.caption.complex_ammo",&mechComplexLabels[2].display,mechComplexLabels[2].text,sizeof(mechComplexLabels[2].text),0,0},
-        {"complex.caption.complex_market",&mechComplexLabels[3].display,mechComplexLabels[3].text,sizeof(mechComplexLabels[3].text),0,0},
-        {"complex.caption.complex_leave",&mechComplexLabels[4].display,mechComplexLabels[4].text,sizeof(mechComplexLabels[4].text),0,0},
-        {"complex.caption.owned_heading",&ownedUnitListHeading.display,ownedUnitListHeading.text,sizeof(ownedUnitListHeading.text),0,26},
-        {"complex.caption.owned_1",&ownedUnitListRows[0].display,ownedUnitListRows[0].caption.text,sizeof(ownedUnitListRows[0].caption.text),0,25},
-        {"complex.caption.owned_2",&ownedUnitListRows[1].display,ownedUnitListRows[1].caption.text,sizeof(ownedUnitListRows[1].caption.text),0,25},
-        {"complex.caption.owned_3",&ownedUnitListRows[2].display,ownedUnitListRows[2].caption.text,sizeof(ownedUnitListRows[2].caption.text),0,25},
-        {"complex.caption.owned_4",&ownedUnitListRows[3].display,ownedUnitListRows[3].caption.text,sizeof(ownedUnitListRows[3].caption.text),0,25},
-        {"complex.caption.owned_5",&ownedUnitListRows[4].display,ownedUnitListRows[4].caption.text,sizeof(ownedUnitListRows[4].caption.text),0,25},
-        {"complex.caption.owned_6",&ownedUnitListRows[5].display,ownedUnitListRows[5].caption.text,sizeof(ownedUnitListRows[5].caption.text),0,25},
-        {"complex.caption.owned_7",&ownedUnitListRows[6].display,ownedUnitListRows[6].caption.text,sizeof(ownedUnitListRows[6].caption.text),0,25},
-        {"complex.caption.owned_8",&ownedUnitListRows[7].display,ownedUnitListRows[7].caption.text,sizeof(ownedUnitListRows[7].caption.text),0,25},
-        {"complex.caption.owned_9",&ownedUnitListRows[8].display,ownedUnitListRows[8].caption.text,sizeof(ownedUnitListRows[8].caption.text),0,25},
-        {"complex.caption.owned_10",&ownedUnitListRows[9].display,ownedUnitListRows[9].caption.text,sizeof(ownedUnitListRows[9].caption.text),0,25},
-        {"complex.caption.owned_11",&ownedUnitListRows[10].display,ownedUnitListRows[10].caption.text,sizeof(ownedUnitListRows[10].caption.text),0,25},
-        {"complex.caption.owned_12",&ownedUnitListRows[11].display,ownedUnitListRows[11].caption.text,sizeof(ownedUnitListRows[11].caption.text),0,25},
-        {"complex.caption.owned_13",&ownedUnitListRows[12].display,ownedUnitListRows[12].caption.text,sizeof(ownedUnitListRows[12].caption.text),0,25},
-        {"complex.caption.mech_status",&mechStatusLabels[0].display,mechStatusLabels[0].text,sizeof(mechStatusLabels[0].text),0,106},
-        {"complex.caption.service_repair",&mechStatusLabels[1].display,mechStatusLabels[1].text,sizeof(mechStatusLabels[1].text),0,7},
-        {"complex.caption.service_repair_all",&mechStatusLabels[2].display,mechStatusLabels[2].text,sizeof(mechStatusLabels[2].text),0,11},
-        {"complex.caption.service_rearm",&mechStatusLabels[3].display,mechStatusLabels[3].text,sizeof(mechStatusLabels[3].text),0,7},
-        {"complex.caption.service_sell",&mechStatusLabels[4].display,mechStatusLabels[4].text,sizeof(mechStatusLabels[4].text),0,5},
-        {"complex.caption.service_leave",&mechStatusLabels[5].display,mechStatusLabels[5].text,sizeof(mechStatusLabels[5].text),0,5},
-        {"complex.caption.dropship_status",&dropShipStatusLabels[0].display,dropShipStatusLabels[0].text,sizeof(dropShipStatusLabels[0].text),0,30},
-        {"complex.caption.dropship_sell",&dropShipStatusLabels[1].display,dropShipStatusLabels[1].text,sizeof(dropShipStatusLabels[1].text),0,5},
-        {"complex.caption.dropship_leave",&dropShipStatusLabels[2].display,dropShipStatusLabels[2].text,sizeof(dropShipStatusLabels[2].text),0,5},
-        {"complex.caption.sale_prompt",&saleConfirmationLabels[0].display,saleConfirmationLabels[0].text,sizeof(saleConfirmationLabels[0].text),0,0},
-        {"complex.caption.sale_yes",&saleConfirmationLabels[1].display,saleConfirmationLabels[1].text,sizeof(saleConfirmationLabels[1].text),0,0},
-        {"complex.caption.sale_no",&saleConfirmationLabels[2].display,saleConfirmationLabels[2].text,sizeof(saleConfirmationLabels[2].text),0,0},
-        {"complex.caption.rearm_prompt",&rearmConfirmationLabels[0].display,rearmConfirmationLabels[0].text,sizeof(rearmConfirmationLabels[0].text),0,0},
-        {"complex.caption.rearm_yes",&rearmConfirmationLabels[1].display,rearmConfirmationLabels[1].text,sizeof(rearmConfirmationLabels[1].text),0,0},
-        {"complex.caption.rearm_no",&rearmConfirmationLabels[2].display,rearmConfirmationLabels[2].text,sizeof(rearmConfirmationLabels[2].text),0,0},
-        {"complex.caption.repair_title",&repairTitle.display,repairTitle.text,sizeof(repairTitle.text),0,25},
-        {"complex.caption.repair_system_1",&repairSystemConditionRows[0].display,repairSystemConditionRows[0].caption.text,sizeof(repairSystemConditionRows[0].caption.text),0,26},
-        {"complex.caption.repair_system_2",&repairSystemConditionRows[1].display,repairSystemConditionRows[1].caption.text,sizeof(repairSystemConditionRows[1].caption.text),0,26},
-        {"complex.caption.repair_system_3",&repairSystemConditionRows[2].display,repairSystemConditionRows[2].caption.text,sizeof(repairSystemConditionRows[2].caption.text),0,26},
-        {"complex.caption.repair_system_4",&repairSystemConditionRows[3].display,repairSystemConditionRows[3].caption.text,sizeof(repairSystemConditionRows[3].caption.text),0,26},
-        {"complex.caption.repair_system_5",&repairSystemConditionRows[4].display,repairSystemConditionRows[4].caption.text,sizeof(repairSystemConditionRows[4].caption.text),0,26},
-        {"complex.caption.repair_system_6",&repairSystemConditionRows[5].display,repairSystemConditionRows[5].caption.text,sizeof(repairSystemConditionRows[5].caption.text),0,26},
-        {"complex.caption.repair_system_7",&repairSystemConditionRows[6].display,repairSystemConditionRows[6].caption.text,sizeof(repairSystemConditionRows[6].caption.text),0,26},
-        {"complex.caption.repair_system_8",&repairSystemConditionRows[7].display,repairSystemConditionRows[7].caption.text,sizeof(repairSystemConditionRows[7].caption.text),0,26},
-        {"complex.caption.repair_system_9",&repairSystemConditionRows[8].display,repairSystemConditionRows[8].caption.text,sizeof(repairSystemConditionRows[8].caption.text),0,26},
-        {"complex.caption.repair_system_10",&repairSystemConditionRows[9].display,repairSystemConditionRows[9].caption.text,sizeof(repairSystemConditionRows[9].caption.text),0,26},
-        {"complex.caption.repair_body",&repairBodyCondition.display,repairBodyCondition.caption.text,sizeof(repairBodyCondition.caption.text),0,19},
-        {"complex.caption.repair_footer",&repairFooter.display,repairFooter.text,sizeof(repairFooter.text),0,62},
-        {"complex.caption.repair_weapon_1",&repairWeaponConditionRows[0].display,repairWeaponConditionRows[0].caption.text,sizeof(repairWeaponConditionRows[0].caption.text),0,26},
-        {"complex.caption.repair_weapon_2",&repairWeaponConditionRows[1].display,repairWeaponConditionRows[1].caption.text,sizeof(repairWeaponConditionRows[1].caption.text),0,26},
-        {"complex.caption.repair_weapon_3",&repairWeaponConditionRows[2].display,repairWeaponConditionRows[2].caption.text,sizeof(repairWeaponConditionRows[2].caption.text),0,26},
-        {"complex.caption.repair_weapon_4",&repairWeaponConditionRows[3].display,repairWeaponConditionRows[3].caption.text,sizeof(repairWeaponConditionRows[3].caption.text),0,26},
-        {"complex.caption.repair_weapon_5",&repairWeaponConditionRows[4].display,repairWeaponConditionRows[4].caption.text,sizeof(repairWeaponConditionRows[4].caption.text),0,26},
-        {"complex.caption.repair_weapon_6",&repairWeaponConditionRows[5].display,repairWeaponConditionRows[5].caption.text,sizeof(repairWeaponConditionRows[5].caption.text),0,26},
-        {"complex.caption.repair_weapon_7",&repairWeaponConditionRows[6].display,repairWeaponConditionRows[6].caption.text,sizeof(repairWeaponConditionRows[6].caption.text),0,26},
-        {"complex.caption.repair_weapon_8",&repairWeaponConditionRows[7].display,repairWeaponConditionRows[7].caption.text,sizeof(repairWeaponConditionRows[7].caption.text),0,26},
-        {"complex.caption.repair_weapon_9",&repairWeaponConditionRows[8].display,repairWeaponConditionRows[8].caption.text,sizeof(repairWeaponConditionRows[8].caption.text),0,26},
-        {"complex.caption.repair_weapon_10",&repairWeaponConditionRows[9].display,repairWeaponConditionRows[9].caption.text,sizeof(repairWeaponConditionRows[9].caption.text),0,26},
-        {"complex.caption.repair_weapon_11",&repairWeaponConditionRows[10].display,repairWeaponConditionRows[10].caption.text,sizeof(repairWeaponConditionRows[10].caption.text),0,26}};
+        {"complex.caption.complex_title",&campaignMarket.mechComplexLabels[0].display,campaignMarket.mechComplexLabels[0].text,sizeof(campaignMarket.mechComplexLabels[0].text),0,0},
+        {"complex.caption.complex_owned",&campaignMarket.mechComplexLabels[1].display,campaignMarket.mechComplexLabels[1].text,sizeof(campaignMarket.mechComplexLabels[1].text),0,0},
+        {"complex.caption.complex_ammo",&campaignMarket.mechComplexLabels[2].display,campaignMarket.mechComplexLabels[2].text,sizeof(campaignMarket.mechComplexLabels[2].text),0,0},
+        {"complex.caption.complex_market",&campaignMarket.mechComplexLabels[3].display,campaignMarket.mechComplexLabels[3].text,sizeof(campaignMarket.mechComplexLabels[3].text),0,0},
+        {"complex.caption.complex_leave",&campaignMarket.mechComplexLabels[4].display,campaignMarket.mechComplexLabels[4].text,sizeof(campaignMarket.mechComplexLabels[4].text),0,0},
+        {"complex.caption.owned_heading",&campaignService.ownedUnitListHeading.display,campaignService.ownedUnitListHeading.text,sizeof(campaignService.ownedUnitListHeading.text),0,26},
+        {"complex.caption.owned_1",&campaignService.ownedUnitListRows[0].display,campaignService.ownedUnitListRows[0].caption.text,sizeof(campaignService.ownedUnitListRows[0].caption.text),0,25},
+        {"complex.caption.owned_2",&campaignService.ownedUnitListRows[1].display,campaignService.ownedUnitListRows[1].caption.text,sizeof(campaignService.ownedUnitListRows[1].caption.text),0,25},
+        {"complex.caption.owned_3",&campaignService.ownedUnitListRows[2].display,campaignService.ownedUnitListRows[2].caption.text,sizeof(campaignService.ownedUnitListRows[2].caption.text),0,25},
+        {"complex.caption.owned_4",&campaignService.ownedUnitListRows[3].display,campaignService.ownedUnitListRows[3].caption.text,sizeof(campaignService.ownedUnitListRows[3].caption.text),0,25},
+        {"complex.caption.owned_5",&campaignService.ownedUnitListRows[4].display,campaignService.ownedUnitListRows[4].caption.text,sizeof(campaignService.ownedUnitListRows[4].caption.text),0,25},
+        {"complex.caption.owned_6",&campaignService.ownedUnitListRows[5].display,campaignService.ownedUnitListRows[5].caption.text,sizeof(campaignService.ownedUnitListRows[5].caption.text),0,25},
+        {"complex.caption.owned_7",&campaignService.ownedUnitListRows[6].display,campaignService.ownedUnitListRows[6].caption.text,sizeof(campaignService.ownedUnitListRows[6].caption.text),0,25},
+        {"complex.caption.owned_8",&campaignService.ownedUnitListRows[7].display,campaignService.ownedUnitListRows[7].caption.text,sizeof(campaignService.ownedUnitListRows[7].caption.text),0,25},
+        {"complex.caption.owned_9",&campaignService.ownedUnitListRows[8].display,campaignService.ownedUnitListRows[8].caption.text,sizeof(campaignService.ownedUnitListRows[8].caption.text),0,25},
+        {"complex.caption.owned_10",&campaignService.ownedUnitListRows[9].display,campaignService.ownedUnitListRows[9].caption.text,sizeof(campaignService.ownedUnitListRows[9].caption.text),0,25},
+        {"complex.caption.owned_11",&campaignService.ownedUnitListRows[10].display,campaignService.ownedUnitListRows[10].caption.text,sizeof(campaignService.ownedUnitListRows[10].caption.text),0,25},
+        {"complex.caption.owned_12",&campaignService.ownedUnitListRows[11].display,campaignService.ownedUnitListRows[11].caption.text,sizeof(campaignService.ownedUnitListRows[11].caption.text),0,25},
+        {"complex.caption.owned_13",&campaignService.ownedUnitListRows[12].display,campaignService.ownedUnitListRows[12].caption.text,sizeof(campaignService.ownedUnitListRows[12].caption.text),0,25},
+        {"complex.caption.mech_status",&campaignService.mechStatusLabels[0].display,campaignService.mechStatusLabels[0].text,sizeof(campaignService.mechStatusLabels[0].text),0,106},
+        {"complex.caption.service_repair",&campaignService.mechStatusLabels[1].display,campaignService.mechStatusLabels[1].text,sizeof(campaignService.mechStatusLabels[1].text),0,7},
+        {"complex.caption.service_repair_all",&campaignService.mechStatusLabels[2].display,campaignService.mechStatusLabels[2].text,sizeof(campaignService.mechStatusLabels[2].text),0,11},
+        {"complex.caption.service_rearm",&campaignService.mechStatusLabels[3].display,campaignService.mechStatusLabels[3].text,sizeof(campaignService.mechStatusLabels[3].text),0,7},
+        {"complex.caption.service_sell",&campaignService.mechStatusLabels[4].display,campaignService.mechStatusLabels[4].text,sizeof(campaignService.mechStatusLabels[4].text),0,5},
+        {"complex.caption.service_leave",&campaignService.mechStatusLabels[5].display,campaignService.mechStatusLabels[5].text,sizeof(campaignService.mechStatusLabels[5].text),0,5},
+        {"complex.caption.dropship_status",&campaignService.dropShipStatusLabels[0].display,campaignService.dropShipStatusLabels[0].text,sizeof(campaignService.dropShipStatusLabels[0].text),0,30},
+        {"complex.caption.dropship_sell",&campaignService.dropShipStatusLabels[1].display,campaignService.dropShipStatusLabels[1].text,sizeof(campaignService.dropShipStatusLabels[1].text),0,5},
+        {"complex.caption.dropship_leave",&campaignService.dropShipStatusLabels[2].display,campaignService.dropShipStatusLabels[2].text,sizeof(campaignService.dropShipStatusLabels[2].text),0,5},
+        {"complex.caption.sale_prompt",&campaignMarket.saleConfirmationLabels[0].display,campaignMarket.saleConfirmationLabels[0].text,sizeof(campaignMarket.saleConfirmationLabels[0].text),0,0},
+        {"complex.caption.sale_yes",&campaignMarket.saleConfirmationLabels[1].display,campaignMarket.saleConfirmationLabels[1].text,sizeof(campaignMarket.saleConfirmationLabels[1].text),0,0},
+        {"complex.caption.sale_no",&campaignMarket.saleConfirmationLabels[2].display,campaignMarket.saleConfirmationLabels[2].text,sizeof(campaignMarket.saleConfirmationLabels[2].text),0,0},
+        {"complex.caption.rearm_prompt",&campaignMarket.rearmConfirmationLabels[0].display,campaignMarket.rearmConfirmationLabels[0].text,sizeof(campaignMarket.rearmConfirmationLabels[0].text),0,0},
+        {"complex.caption.rearm_yes",&campaignMarket.rearmConfirmationLabels[1].display,campaignMarket.rearmConfirmationLabels[1].text,sizeof(campaignMarket.rearmConfirmationLabels[1].text),0,0},
+        {"complex.caption.rearm_no",&campaignMarket.rearmConfirmationLabels[2].display,campaignMarket.rearmConfirmationLabels[2].text,sizeof(campaignMarket.rearmConfirmationLabels[2].text),0,0},
+        {"complex.caption.repair_title",&campaignService.repairTitle.display,campaignService.repairTitle.text,sizeof(campaignService.repairTitle.text),0,25},
+        {"complex.caption.repair_system_1",&campaignService.repairSystemConditionRows[0].display,campaignService.repairSystemConditionRows[0].caption.text,sizeof(campaignService.repairSystemConditionRows[0].caption.text),0,26},
+        {"complex.caption.repair_system_2",&campaignService.repairSystemConditionRows[1].display,campaignService.repairSystemConditionRows[1].caption.text,sizeof(campaignService.repairSystemConditionRows[1].caption.text),0,26},
+        {"complex.caption.repair_system_3",&campaignService.repairSystemConditionRows[2].display,campaignService.repairSystemConditionRows[2].caption.text,sizeof(campaignService.repairSystemConditionRows[2].caption.text),0,26},
+        {"complex.caption.repair_system_4",&campaignService.repairSystemConditionRows[3].display,campaignService.repairSystemConditionRows[3].caption.text,sizeof(campaignService.repairSystemConditionRows[3].caption.text),0,26},
+        {"complex.caption.repair_system_5",&campaignService.repairSystemConditionRows[4].display,campaignService.repairSystemConditionRows[4].caption.text,sizeof(campaignService.repairSystemConditionRows[4].caption.text),0,26},
+        {"complex.caption.repair_system_6",&campaignService.repairSystemConditionRows[5].display,campaignService.repairSystemConditionRows[5].caption.text,sizeof(campaignService.repairSystemConditionRows[5].caption.text),0,26},
+        {"complex.caption.repair_system_7",&campaignService.repairSystemConditionRows[6].display,campaignService.repairSystemConditionRows[6].caption.text,sizeof(campaignService.repairSystemConditionRows[6].caption.text),0,26},
+        {"complex.caption.repair_system_8",&campaignService.repairSystemConditionRows[7].display,campaignService.repairSystemConditionRows[7].caption.text,sizeof(campaignService.repairSystemConditionRows[7].caption.text),0,26},
+        {"complex.caption.repair_system_9",&campaignService.repairSystemConditionRows[8].display,campaignService.repairSystemConditionRows[8].caption.text,sizeof(campaignService.repairSystemConditionRows[8].caption.text),0,26},
+        {"complex.caption.repair_system_10",&campaignService.repairSystemConditionRows[9].display,campaignService.repairSystemConditionRows[9].caption.text,sizeof(campaignService.repairSystemConditionRows[9].caption.text),0,26},
+        {"complex.caption.repair_body",&campaignService.repairBodyCondition.display,campaignService.repairBodyCondition.caption.text,sizeof(campaignService.repairBodyCondition.caption.text),0,19},
+        {"complex.caption.repair_footer",&campaignService.repairFooter.display,campaignService.repairFooter.text,sizeof(campaignService.repairFooter.text),0,62},
+        {"complex.caption.repair_weapon_1",&campaignService.repairWeaponConditionRows[0].display,campaignService.repairWeaponConditionRows[0].caption.text,sizeof(campaignService.repairWeaponConditionRows[0].caption.text),0,26},
+        {"complex.caption.repair_weapon_2",&campaignService.repairWeaponConditionRows[1].display,campaignService.repairWeaponConditionRows[1].caption.text,sizeof(campaignService.repairWeaponConditionRows[1].caption.text),0,26},
+        {"complex.caption.repair_weapon_3",&campaignService.repairWeaponConditionRows[2].display,campaignService.repairWeaponConditionRows[2].caption.text,sizeof(campaignService.repairWeaponConditionRows[2].caption.text),0,26},
+        {"complex.caption.repair_weapon_4",&campaignService.repairWeaponConditionRows[3].display,campaignService.repairWeaponConditionRows[3].caption.text,sizeof(campaignService.repairWeaponConditionRows[3].caption.text),0,26},
+        {"complex.caption.repair_weapon_5",&campaignService.repairWeaponConditionRows[4].display,campaignService.repairWeaponConditionRows[4].caption.text,sizeof(campaignService.repairWeaponConditionRows[4].caption.text),0,26},
+        {"complex.caption.repair_weapon_6",&campaignService.repairWeaponConditionRows[5].display,campaignService.repairWeaponConditionRows[5].caption.text,sizeof(campaignService.repairWeaponConditionRows[5].caption.text),0,26},
+        {"complex.caption.repair_weapon_7",&campaignService.repairWeaponConditionRows[6].display,campaignService.repairWeaponConditionRows[6].caption.text,sizeof(campaignService.repairWeaponConditionRows[6].caption.text),0,26},
+        {"complex.caption.repair_weapon_8",&campaignService.repairWeaponConditionRows[7].display,campaignService.repairWeaponConditionRows[7].caption.text,sizeof(campaignService.repairWeaponConditionRows[7].caption.text),0,26},
+        {"complex.caption.repair_weapon_9",&campaignService.repairWeaponConditionRows[8].display,campaignService.repairWeaponConditionRows[8].caption.text,sizeof(campaignService.repairWeaponConditionRows[8].caption.text),0,26},
+        {"complex.caption.repair_weapon_10",&campaignService.repairWeaponConditionRows[9].display,campaignService.repairWeaponConditionRows[9].caption.text,sizeof(campaignService.repairWeaponConditionRows[9].caption.text),0,26},
+        {"complex.caption.repair_weapon_11",&campaignService.repairWeaponConditionRows[10].display,campaignService.repairWeaponConditionRows[10].caption.text,sizeof(campaignService.repairWeaponConditionRows[10].caption.text),0,26}};
     const size_t complexCount=sizeof(complexOwners)/sizeof(complexOwners[0]);
     if (!MwImportUiCaptions(complexOwners,complexCount)
-        || !MwImportUiPanel("complex.panel.complex",&mechComplexPanel,5,complexOwners,complexCount)
-        || !MwImportUiListPanel("complex.panel.owned",&ownedUnitListPanel,14,complexOwners,complexCount)
-        || !MwImportUiPanel("complex.panel.mech_status",&mechStatusPanel,6,complexOwners,complexCount)
-        || !MwImportUiPanel("complex.panel.dropship_status",&dropShipStatusPanel,3,complexOwners,complexCount)
-        || !MwImportUiPanel("complex.panel.sale",&saleConfirmationPanel,3,complexOwners,complexCount)
-        || !MwImportUiPanel("complex.panel.rearm",&rearmConfirmationPanel,3,complexOwners,complexCount)
-        || !MwImportUiListPanel("complex.panel.repair",&componentRepairPanel,24,complexOwners,complexCount)
-        || !MwImportUiMenu("complex.menu.complex",&mechComplexMenu,complexOwners,complexCount)
-        || !MwImportUiMenu("complex.menu.owned",&ownedUnitListMenu,complexOwners,complexCount)
-        || !MwImportUiMenu("complex.menu.mech_service",&mechServiceMenu,complexOwners,complexCount)
-        || !MwImportUiMenu("complex.menu.dropship_service",&dropShipServiceMenu,complexOwners,complexCount)
-        || !MwImportUiMenu("complex.menu.sale",&saleConfirmationMenu,complexOwners,complexCount)
-        || !MwImportUiMenu("complex.menu.rearm",&rearmConfirmationMenu,complexOwners,complexCount)
-        || !MwImportUiMenu("complex.menu.repair",&componentRepairMenu,complexOwners,complexCount)) return false;
+        || !MwImportUiPanel("complex.panel.complex",&campaignMarket.mechComplexPanel,5,complexOwners,complexCount)
+        || !MwImportUiListPanel("complex.panel.owned",&campaignService.ownedUnitListPanel,14,complexOwners,complexCount)
+        || !MwImportUiPanel("complex.panel.mech_status",&campaignService.mechStatusPanel,6,complexOwners,complexCount)
+        || !MwImportUiPanel("complex.panel.dropship_status",&campaignService.dropShipStatusPanel,3,complexOwners,complexCount)
+        || !MwImportUiPanel("complex.panel.sale",&campaignMarket.saleConfirmationPanel,3,complexOwners,complexCount)
+        || !MwImportUiPanel("complex.panel.rearm",&campaignMarket.rearmConfirmationPanel,3,complexOwners,complexCount)
+        || !MwImportUiListPanel("complex.panel.repair",&campaignService.componentRepairPanel,24,complexOwners,complexCount)
+        || !MwImportUiMenu("complex.menu.complex",&campaignMarket.mechComplexMenu,complexOwners,complexCount)
+        || !MwImportUiMenu("complex.menu.owned",&campaignService.ownedUnitListMenu,complexOwners,complexCount)
+        || !MwImportUiMenu("complex.menu.mech_service",&campaignService.mechServiceMenu,complexOwners,complexCount)
+        || !MwImportUiMenu("complex.menu.dropship_service",&campaignService.dropShipServiceMenu,complexOwners,complexCount)
+        || !MwImportUiMenu("complex.menu.sale",&campaignMarket.saleConfirmationMenu,complexOwners,complexCount)
+        || !MwImportUiMenu("complex.menu.rearm",&campaignMarket.rearmConfirmationMenu,complexOwners,complexCount)
+        || !MwImportUiMenu("complex.menu.repair",&campaignService.componentRepairMenu,complexOwners,complexCount)) return false;
     /* data/ui/dealer.json: the market list (28F1, 2A1B), the 'Mech and
      * DropShip panels (437E, 44A9; 443E, 44D3) and the component panel (44F1,
      * 480F). Reserve ammunition is ImportReserveAmmoUiData's. */
     UiCaptionOwner dealerOwners[]={
-        {"dealer.caption.market_heading",&marketListHeading.display,marketListHeading.text,sizeof(marketListHeading.text),0,0},
-        {"dealer.caption.market_1",&marketUnitListRows[0].display,marketUnitListRows[0].text,sizeof(marketUnitListRows[0].text),0,13},
-        {"dealer.caption.market_2",&marketUnitListRows[1].display,marketUnitListRows[1].text,sizeof(marketUnitListRows[1].text),0,13},
-        {"dealer.caption.market_3",&marketUnitListRows[2].display,marketUnitListRows[2].text,sizeof(marketUnitListRows[2].text),0,13},
-        {"dealer.caption.market_4",&marketUnitListRows[3].display,marketUnitListRows[3].text,sizeof(marketUnitListRows[3].text),0,13},
-        {"dealer.caption.market_5",&marketUnitListRows[4].display,marketUnitListRows[4].text,sizeof(marketUnitListRows[4].text),0,13},
-        {"dealer.caption.market_6",&marketUnitListRows[5].display,marketUnitListRows[5].text,sizeof(marketUnitListRows[5].text),0,13},
-        {"dealer.caption.market_7",&marketUnitListRows[6].display,marketUnitListRows[6].text,sizeof(marketUnitListRows[6].text),0,13},
-        {"dealer.caption.market_8",&marketUnitListRows[7].display,marketUnitListRows[7].text,sizeof(marketUnitListRows[7].text),0,13},
-        {"dealer.caption.market_9",&marketUnitListRows[8].display,marketUnitListRows[8].text,sizeof(marketUnitListRows[8].text),0,13},
-        {"dealer.caption.market_10",&marketUnitListRows[9].display,marketUnitListRows[9].text,sizeof(marketUnitListRows[9].text),0,13},
-        {"dealer.caption.market_11",&marketUnitListRows[10].display,marketUnitListRows[10].text,sizeof(marketUnitListRows[10].text),0,13},
-        {"dealer.caption.market_12",&marketUnitListRows[11].display,marketUnitListRows[11].text,sizeof(marketUnitListRows[11].text),0,13},
-        {"dealer.caption.market_13",&marketUnitListRows[12].display,marketUnitListRows[12].text,sizeof(marketUnitListRows[12].text),0,13},
-        {"dealer.caption.mech_title",&marketMechStatusLabels[0].display,marketMechStatusLabels[0].text,sizeof(marketMechStatusLabels[0].text),0,0},
-        {"dealer.caption.mech_buy",&marketMechStatusLabels[1].display,marketMechStatusLabels[1].text,sizeof(marketMechStatusLabels[1].text),0,0},
-        {"dealer.caption.mech_inspect",&marketMechStatusLabels[2].display,marketMechStatusLabels[2].text,sizeof(marketMechStatusLabels[2].text),0,0},
-        {"dealer.caption.mech_leave",&marketMechStatusLabels[3].display,marketMechStatusLabels[3].text,sizeof(marketMechStatusLabels[3].text),0,0},
-        {"dealer.caption.dropship_title",&marketDropShipStatusLabels[0].display,marketDropShipStatusLabels[0].text,sizeof(marketDropShipStatusLabels[0].text),0,0},
-        {"dealer.caption.dropship_buy",&marketDropShipStatusLabels[1].display,marketDropShipStatusLabels[1].text,sizeof(marketDropShipStatusLabels[1].text),0,0},
-        {"dealer.caption.dropship_leave",&marketDropShipStatusLabels[2].display,marketDropShipStatusLabels[2].text,sizeof(marketDropShipStatusLabels[2].text),0,0},
-        {"dealer.caption.component_title",&marketComponentTitle.display,marketComponentTitle.text,sizeof(marketComponentTitle.text),0,0},
-        {"dealer.caption.component_system_1",&marketSystemConditionRows[0].display,marketSystemConditionRows[0].caption.text,sizeof(marketSystemConditionRows[0].caption.text),0,26},
-        {"dealer.caption.component_system_2",&marketSystemConditionRows[1].display,marketSystemConditionRows[1].caption.text,sizeof(marketSystemConditionRows[1].caption.text),0,26},
-        {"dealer.caption.component_system_3",&marketSystemConditionRows[2].display,marketSystemConditionRows[2].caption.text,sizeof(marketSystemConditionRows[2].caption.text),0,26},
-        {"dealer.caption.component_system_4",&marketSystemConditionRows[3].display,marketSystemConditionRows[3].caption.text,sizeof(marketSystemConditionRows[3].caption.text),0,26},
-        {"dealer.caption.component_system_5",&marketSystemConditionRows[4].display,marketSystemConditionRows[4].caption.text,sizeof(marketSystemConditionRows[4].caption.text),0,26},
-        {"dealer.caption.component_system_6",&marketSystemConditionRows[5].display,marketSystemConditionRows[5].caption.text,sizeof(marketSystemConditionRows[5].caption.text),0,26},
-        {"dealer.caption.component_system_7",&marketSystemConditionRows[6].display,marketSystemConditionRows[6].caption.text,sizeof(marketSystemConditionRows[6].caption.text),0,26},
-        {"dealer.caption.component_system_8",&marketSystemConditionRows[7].display,marketSystemConditionRows[7].caption.text,sizeof(marketSystemConditionRows[7].caption.text),0,26},
-        {"dealer.caption.component_system_9",&marketSystemConditionRows[8].display,marketSystemConditionRows[8].caption.text,sizeof(marketSystemConditionRows[8].caption.text),0,26},
-        {"dealer.caption.component_system_10",&marketSystemConditionRows[9].display,marketSystemConditionRows[9].caption.text,sizeof(marketSystemConditionRows[9].caption.text),0,26},
-        {"dealer.caption.component_body",&marketBodyCondition.display,marketBodyCondition.caption.text,sizeof(marketBodyCondition.caption.text),0,19},
-        {"dealer.caption.component_weapon_heading",&marketWeaponHeading.display,marketWeaponHeading.text,sizeof(marketWeaponHeading.text),0,0},
-        {"dealer.caption.component_weapon_1",&marketWeaponConditionRows[0].display,marketWeaponConditionRows[0].caption.text,sizeof(marketWeaponConditionRows[0].caption.text),0,26},
-        {"dealer.caption.component_weapon_2",&marketWeaponConditionRows[1].display,marketWeaponConditionRows[1].caption.text,sizeof(marketWeaponConditionRows[1].caption.text),0,26},
-        {"dealer.caption.component_weapon_3",&marketWeaponConditionRows[2].display,marketWeaponConditionRows[2].caption.text,sizeof(marketWeaponConditionRows[2].caption.text),0,26},
-        {"dealer.caption.component_weapon_4",&marketWeaponConditionRows[3].display,marketWeaponConditionRows[3].caption.text,sizeof(marketWeaponConditionRows[3].caption.text),0,26},
-        {"dealer.caption.component_weapon_5",&marketWeaponConditionRows[4].display,marketWeaponConditionRows[4].caption.text,sizeof(marketWeaponConditionRows[4].caption.text),0,26},
-        {"dealer.caption.component_weapon_6",&marketWeaponConditionRows[5].display,marketWeaponConditionRows[5].caption.text,sizeof(marketWeaponConditionRows[5].caption.text),0,26},
-        {"dealer.caption.component_weapon_7",&marketWeaponConditionRows[6].display,marketWeaponConditionRows[6].caption.text,sizeof(marketWeaponConditionRows[6].caption.text),0,26},
-        {"dealer.caption.component_weapon_8",&marketWeaponConditionRows[7].display,marketWeaponConditionRows[7].caption.text,sizeof(marketWeaponConditionRows[7].caption.text),0,26},
-        {"dealer.caption.component_weapon_9",&marketWeaponConditionRows[8].display,marketWeaponConditionRows[8].caption.text,sizeof(marketWeaponConditionRows[8].caption.text),0,26},
-        {"dealer.caption.component_weapon_10",&marketWeaponConditionRows[9].display,marketWeaponConditionRows[9].caption.text,sizeof(marketWeaponConditionRows[9].caption.text),0,26},
-        {"dealer.caption.component_done",&marketComponentDone.display,marketComponentDone.text,sizeof(marketComponentDone.text),0,0}};
+        {"dealer.caption.market_heading",&campaignMarket.marketListHeading.display,campaignMarket.marketListHeading.text,sizeof(campaignMarket.marketListHeading.text),0,0},
+        {"dealer.caption.market_1",&campaignMarket.marketUnitListRows[0].display,campaignMarket.marketUnitListRows[0].text,sizeof(campaignMarket.marketUnitListRows[0].text),0,13},
+        {"dealer.caption.market_2",&campaignMarket.marketUnitListRows[1].display,campaignMarket.marketUnitListRows[1].text,sizeof(campaignMarket.marketUnitListRows[1].text),0,13},
+        {"dealer.caption.market_3",&campaignMarket.marketUnitListRows[2].display,campaignMarket.marketUnitListRows[2].text,sizeof(campaignMarket.marketUnitListRows[2].text),0,13},
+        {"dealer.caption.market_4",&campaignMarket.marketUnitListRows[3].display,campaignMarket.marketUnitListRows[3].text,sizeof(campaignMarket.marketUnitListRows[3].text),0,13},
+        {"dealer.caption.market_5",&campaignMarket.marketUnitListRows[4].display,campaignMarket.marketUnitListRows[4].text,sizeof(campaignMarket.marketUnitListRows[4].text),0,13},
+        {"dealer.caption.market_6",&campaignMarket.marketUnitListRows[5].display,campaignMarket.marketUnitListRows[5].text,sizeof(campaignMarket.marketUnitListRows[5].text),0,13},
+        {"dealer.caption.market_7",&campaignMarket.marketUnitListRows[6].display,campaignMarket.marketUnitListRows[6].text,sizeof(campaignMarket.marketUnitListRows[6].text),0,13},
+        {"dealer.caption.market_8",&campaignMarket.marketUnitListRows[7].display,campaignMarket.marketUnitListRows[7].text,sizeof(campaignMarket.marketUnitListRows[7].text),0,13},
+        {"dealer.caption.market_9",&campaignMarket.marketUnitListRows[8].display,campaignMarket.marketUnitListRows[8].text,sizeof(campaignMarket.marketUnitListRows[8].text),0,13},
+        {"dealer.caption.market_10",&campaignMarket.marketUnitListRows[9].display,campaignMarket.marketUnitListRows[9].text,sizeof(campaignMarket.marketUnitListRows[9].text),0,13},
+        {"dealer.caption.market_11",&campaignMarket.marketUnitListRows[10].display,campaignMarket.marketUnitListRows[10].text,sizeof(campaignMarket.marketUnitListRows[10].text),0,13},
+        {"dealer.caption.market_12",&campaignMarket.marketUnitListRows[11].display,campaignMarket.marketUnitListRows[11].text,sizeof(campaignMarket.marketUnitListRows[11].text),0,13},
+        {"dealer.caption.market_13",&campaignMarket.marketUnitListRows[12].display,campaignMarket.marketUnitListRows[12].text,sizeof(campaignMarket.marketUnitListRows[12].text),0,13},
+        {"dealer.caption.mech_title",&campaignMarket.marketMechStatusLabels[0].display,campaignMarket.marketMechStatusLabels[0].text,sizeof(campaignMarket.marketMechStatusLabels[0].text),0,0},
+        {"dealer.caption.mech_buy",&campaignMarket.marketMechStatusLabels[1].display,campaignMarket.marketMechStatusLabels[1].text,sizeof(campaignMarket.marketMechStatusLabels[1].text),0,0},
+        {"dealer.caption.mech_inspect",&campaignMarket.marketMechStatusLabels[2].display,campaignMarket.marketMechStatusLabels[2].text,sizeof(campaignMarket.marketMechStatusLabels[2].text),0,0},
+        {"dealer.caption.mech_leave",&campaignMarket.marketMechStatusLabels[3].display,campaignMarket.marketMechStatusLabels[3].text,sizeof(campaignMarket.marketMechStatusLabels[3].text),0,0},
+        {"dealer.caption.dropship_title",&campaignMarket.marketDropShipStatusLabels[0].display,campaignMarket.marketDropShipStatusLabels[0].text,sizeof(campaignMarket.marketDropShipStatusLabels[0].text),0,0},
+        {"dealer.caption.dropship_buy",&campaignMarket.marketDropShipStatusLabels[1].display,campaignMarket.marketDropShipStatusLabels[1].text,sizeof(campaignMarket.marketDropShipStatusLabels[1].text),0,0},
+        {"dealer.caption.dropship_leave",&campaignMarket.marketDropShipStatusLabels[2].display,campaignMarket.marketDropShipStatusLabels[2].text,sizeof(campaignMarket.marketDropShipStatusLabels[2].text),0,0},
+        {"dealer.caption.component_title",&campaignMarket.marketComponentTitle.display,campaignMarket.marketComponentTitle.text,sizeof(campaignMarket.marketComponentTitle.text),0,0},
+        {"dealer.caption.component_system_1",&campaignMarket.marketSystemConditionRows[0].display,campaignMarket.marketSystemConditionRows[0].caption.text,sizeof(campaignMarket.marketSystemConditionRows[0].caption.text),0,26},
+        {"dealer.caption.component_system_2",&campaignMarket.marketSystemConditionRows[1].display,campaignMarket.marketSystemConditionRows[1].caption.text,sizeof(campaignMarket.marketSystemConditionRows[1].caption.text),0,26},
+        {"dealer.caption.component_system_3",&campaignMarket.marketSystemConditionRows[2].display,campaignMarket.marketSystemConditionRows[2].caption.text,sizeof(campaignMarket.marketSystemConditionRows[2].caption.text),0,26},
+        {"dealer.caption.component_system_4",&campaignMarket.marketSystemConditionRows[3].display,campaignMarket.marketSystemConditionRows[3].caption.text,sizeof(campaignMarket.marketSystemConditionRows[3].caption.text),0,26},
+        {"dealer.caption.component_system_5",&campaignMarket.marketSystemConditionRows[4].display,campaignMarket.marketSystemConditionRows[4].caption.text,sizeof(campaignMarket.marketSystemConditionRows[4].caption.text),0,26},
+        {"dealer.caption.component_system_6",&campaignMarket.marketSystemConditionRows[5].display,campaignMarket.marketSystemConditionRows[5].caption.text,sizeof(campaignMarket.marketSystemConditionRows[5].caption.text),0,26},
+        {"dealer.caption.component_system_7",&campaignMarket.marketSystemConditionRows[6].display,campaignMarket.marketSystemConditionRows[6].caption.text,sizeof(campaignMarket.marketSystemConditionRows[6].caption.text),0,26},
+        {"dealer.caption.component_system_8",&campaignMarket.marketSystemConditionRows[7].display,campaignMarket.marketSystemConditionRows[7].caption.text,sizeof(campaignMarket.marketSystemConditionRows[7].caption.text),0,26},
+        {"dealer.caption.component_system_9",&campaignMarket.marketSystemConditionRows[8].display,campaignMarket.marketSystemConditionRows[8].caption.text,sizeof(campaignMarket.marketSystemConditionRows[8].caption.text),0,26},
+        {"dealer.caption.component_system_10",&campaignMarket.marketSystemConditionRows[9].display,campaignMarket.marketSystemConditionRows[9].caption.text,sizeof(campaignMarket.marketSystemConditionRows[9].caption.text),0,26},
+        {"dealer.caption.component_body",&campaignMarket.marketBodyCondition.display,campaignMarket.marketBodyCondition.caption.text,sizeof(campaignMarket.marketBodyCondition.caption.text),0,19},
+        {"dealer.caption.component_weapon_heading",&campaignMarket.marketWeaponHeading.display,campaignMarket.marketWeaponHeading.text,sizeof(campaignMarket.marketWeaponHeading.text),0,0},
+        {"dealer.caption.component_weapon_1",&campaignMarket.marketWeaponConditionRows[0].display,campaignMarket.marketWeaponConditionRows[0].caption.text,sizeof(campaignMarket.marketWeaponConditionRows[0].caption.text),0,26},
+        {"dealer.caption.component_weapon_2",&campaignMarket.marketWeaponConditionRows[1].display,campaignMarket.marketWeaponConditionRows[1].caption.text,sizeof(campaignMarket.marketWeaponConditionRows[1].caption.text),0,26},
+        {"dealer.caption.component_weapon_3",&campaignMarket.marketWeaponConditionRows[2].display,campaignMarket.marketWeaponConditionRows[2].caption.text,sizeof(campaignMarket.marketWeaponConditionRows[2].caption.text),0,26},
+        {"dealer.caption.component_weapon_4",&campaignMarket.marketWeaponConditionRows[3].display,campaignMarket.marketWeaponConditionRows[3].caption.text,sizeof(campaignMarket.marketWeaponConditionRows[3].caption.text),0,26},
+        {"dealer.caption.component_weapon_5",&campaignMarket.marketWeaponConditionRows[4].display,campaignMarket.marketWeaponConditionRows[4].caption.text,sizeof(campaignMarket.marketWeaponConditionRows[4].caption.text),0,26},
+        {"dealer.caption.component_weapon_6",&campaignMarket.marketWeaponConditionRows[5].display,campaignMarket.marketWeaponConditionRows[5].caption.text,sizeof(campaignMarket.marketWeaponConditionRows[5].caption.text),0,26},
+        {"dealer.caption.component_weapon_7",&campaignMarket.marketWeaponConditionRows[6].display,campaignMarket.marketWeaponConditionRows[6].caption.text,sizeof(campaignMarket.marketWeaponConditionRows[6].caption.text),0,26},
+        {"dealer.caption.component_weapon_8",&campaignMarket.marketWeaponConditionRows[7].display,campaignMarket.marketWeaponConditionRows[7].caption.text,sizeof(campaignMarket.marketWeaponConditionRows[7].caption.text),0,26},
+        {"dealer.caption.component_weapon_9",&campaignMarket.marketWeaponConditionRows[8].display,campaignMarket.marketWeaponConditionRows[8].caption.text,sizeof(campaignMarket.marketWeaponConditionRows[8].caption.text),0,26},
+        {"dealer.caption.component_weapon_10",&campaignMarket.marketWeaponConditionRows[9].display,campaignMarket.marketWeaponConditionRows[9].caption.text,sizeof(campaignMarket.marketWeaponConditionRows[9].caption.text),0,26},
+        {"dealer.caption.component_done",&campaignMarket.marketComponentDone.display,campaignMarket.marketComponentDone.text,sizeof(campaignMarket.marketComponentDone.text),0,0}};
     const size_t dealerCount=sizeof(dealerOwners)/sizeof(dealerOwners[0]);
     if (!MwImportUiCaptions(dealerOwners,dealerCount)
-        || !MwImportUiListPanel("dealer.panel.market",&marketUnitListPanel,14,dealerOwners,dealerCount)
-        || !MwImportUiPanel("dealer.panel.mech",&marketMechStatusPanel,4,dealerOwners,dealerCount)
-        || !MwImportUiPanel("dealer.panel.dropship",&marketDropShipStatusPanel,3,dealerOwners,dealerCount)
-        || !MwImportUiListPanel("dealer.panel.component",&marketComponentPanel,24,dealerOwners,dealerCount)
-        || !MwImportUiMenu("dealer.menu.market",&marketUnitListMenu,dealerOwners,dealerCount)
-        || !MwImportUiMenu("dealer.menu.mech",&marketMechMenu,dealerOwners,dealerCount)
-        || !MwImportUiMenu("dealer.menu.dropship",&marketDropShipMenu,dealerOwners,dealerCount)
-        || !MwImportUiMenu("dealer.menu.component",&marketComponentMenu,dealerOwners,dealerCount)) return false;
+        || !MwImportUiListPanel("dealer.panel.market",&campaignMarket.marketUnitListPanel,14,dealerOwners,dealerCount)
+        || !MwImportUiPanel("dealer.panel.mech",&campaignMarket.marketMechStatusPanel,4,dealerOwners,dealerCount)
+        || !MwImportUiPanel("dealer.panel.dropship",&campaignMarket.marketDropShipStatusPanel,3,dealerOwners,dealerCount)
+        || !MwImportUiListPanel("dealer.panel.component",&campaignMarket.marketComponentPanel,24,dealerOwners,dealerCount)
+        || !MwImportUiMenu("dealer.menu.market",&campaignMarket.marketUnitListMenu,dealerOwners,dealerCount)
+        || !MwImportUiMenu("dealer.menu.mech",&campaignMarket.marketMechMenu,dealerOwners,dealerCount)
+        || !MwImportUiMenu("dealer.menu.dropship",&campaignMarket.marketDropShipMenu,dealerOwners,dealerCount)
+        || !MwImportUiMenu("dealer.menu.component",&campaignMarket.marketComponentMenu,dealerOwners,dealerCount)) return false;
     if (!MwImportUiMenu("hub.menu.planet",&campaignUi.planetHubMenu,NULL,0)) return false; /*1083*/
     if (!MwImportUiMenu("hub.menu.contract",&campaignUi.contractHubMenu,NULL,0)) return false; /*10D7*/
     if (!MwImportUiMenu("hub.menu.remote_planet",&campaignUi.remotePlanetHubMenu,NULL,0)) return false; /*1101*/
@@ -1139,13 +1001,13 @@ bool MwImportCampaignInitialData(void)
     for (uint16_t chassis=0;chassis<8;++chassis)
         for (uint16_t region=0;region<10;++region)
         {
-            MwMechDiagramRectangle *rectangle=region?&mechBodyDiagramLayouts[chassis].bodyRegions[region-1]:&mechBodyDiagramLayouts[chassis].background;
+            MwMechDiagramRectangle *rectangle=region?&campaignService.mechBodyDiagramLayouts[chassis].bodyRegions[region-1]:&campaignService.mechBodyDiagramLayouts[chassis].background;
             const uint16_t *at=diagrams+(chassis*10+region)*4;
             rectangle->x=at[0];rectangle->y=at[1];rectangle->width=at[2];rectangle->height=at[3];
         }
     /* These initial near values have no live object until their callers set them. */
     repairQuoteDamage=NULL;componentRepairDamage=NULL;
-    mechDiagramBodyDamage=NULL;mechDiagramRectangle=NULL;campaignUi.uiMenu=NULL;
+    campaignService.mechDiagramBodyDamage=NULL;campaignService.mechDiagramRectangle=NULL;campaignUi.uiMenu=NULL;
     return ImportPilotUiData() && ImportTravelUiData() && MwImportCampaignEventData()
         && MwImportCampaignOptionsData()
         && CheckTextBoundTables();
@@ -1340,33 +1202,32 @@ static bool ImportContractData(void)
         && ImportInitialString(mainWords,0x0FF7,assignedMechUnreadyText,sizeof(assignedMechUnreadyText))
         && ImportInitialString(mainWords,0x1031,contractCancelledText,sizeof(contractCancelledText));
 }
-
-/* The after-action and settlement directories (1090:1491, 166A, 1786), whose
- * entries the C references above stand for, are checked at import: the
- * import table's check pieces (src/Import/pieces.txt) refuse an installation
- * whose directories differ. */
-
-/* Native reserve-ammunition shop state and shared caption/menu owners. */
-uint16_t reserveAmmoShopSelectedRow,reserveAmmoPreviewSelection;
-uint8_t reserveAmmoSelling,reserveAmmoMechColours[11];
-char reserveAmmoBuyLabel[5],reserveAmmoSellLabel[5];
-MwServiceCaption reserveAmmoShopHeading,reserveAmmoFamilyLabels[6],reserveAmmoDoneLabel;
-MwReserveAmmoQuantityRow reserveAmmoQuantityRows[6];
-MwPanelDescriptor reserveAmmoShopPanel,reserveAmmoCompatibilityPanels[6];
-MwServiceCaption reserveAmmoCompatibilityHeadings[6];
-uint16_t reserveAmmoCompatibleMechs[6][6];
-MwUiRecord reserveAmmoShopRecords[RESERVE_AMMO_MENU_ROWS];
-/* Native FF-neighbour probe is 1090:505A, the existing travel table WORD. */
-MwUiMenu reserveAmmoShopMenu={reserveAmmoShopRecords,RESERVE_AMMO_MENU_ROWS,NULL,&travelSquareRootValues[0x1BA],0};
+CampaignMarketState campaignMarket={
+    /* Native FF-neighbour probe is 1090:505A, the existing travel table WORD. */
+    .reserveAmmoShopMenu={campaignMarket.reserveAmmoShopRecords,RESERVE_AMMO_MENU_ROWS,NULL,&travelSquareRootValues[0x1BA],0},
+    /* FF navigation probes alias the canonical caption/diagram/root-table owners;
+     * they are read before the dispatcher rejects the FF navigation link. */
+    .rearmConfirmationMenu={rearmConfirmationRecords,2,NULL,&campaignService.mechBodyDiagramLayouts[7].bodyRegions[7].x,8},
+    .saleConfirmationMenu={saleConfirmationRecords,2,NULL,&campaignService.mechBodyDiagramLayouts[6].bodyRegions[1].width,0},
+    /*380D, DONE label byte. */
+    .marketUnitListMenu={marketUnitListRecords,0x0D,(const uint8_t *)&campaignService.repairWeaponLabelStorage[CAMPAIGN_UNIT_SHADOW_HAWK][4][2]},
+    /*529B, high BYTE. */
+    .marketMechMenu={marketMechRecords,3,NULL,&travelSquareRootValues[0x02DA],8},
+    /*52C5, high BYTE. */
+    .marketDropShipMenu={marketDropShipRecords,2,NULL,&travelSquareRootValues[0x02EF],8},
+    /*5601, final space. */
+    .marketComponentMenu={marketComponentRecords,1,(const uint8_t *)&campaignMarket.positionedText.text[0x10]},
+    .mechComplexMenu={mechComplexRecords,4,NULL,&campaignService.repairWeaponConditionRows[1].display.y,0}
+};
 
 static bool ImportReserveAmmoUiData(void)
 {
-    reserveAmmoShopSelectedRow=0; /*4137*/
-    reserveAmmoPreviewSelection=0; /*3F6E*/
-    reserveAmmoSelling=0; /*4139*/
-    memset(reserveAmmoMechColours,0,sizeof(reserveAmmoMechColours)); /* 3F70: Written before it's read; zero where the exe reloaded it. */
-    if (!ImportInitialString(mainWords,0x413A,reserveAmmoBuyLabel,sizeof(reserveAmmoBuyLabel))
-        || !ImportInitialString(mainWords,0x413F,reserveAmmoSellLabel,sizeof(reserveAmmoSellLabel))) return false;
+    campaignMarket.reserveAmmoShopSelectedRow=0; /*4137*/
+    campaignMarket.reserveAmmoPreviewSelection=0; /*3F6E*/
+    campaignMarket.reserveAmmoSelling=0; /*4139*/
+    memset(campaignMarket.reserveAmmoMechColours,0,sizeof(campaignMarket.reserveAmmoMechColours)); /* 3F70: Written before it's read; zero where the exe reloaded it. */
+    if (!ImportInitialString(mainWords,0x413A,campaignMarket.reserveAmmoBuyLabel,sizeof(campaignMarket.reserveAmmoBuyLabel))
+        || !ImportInitialString(mainWords,0x413F,campaignMarket.reserveAmmoSellLabel,sizeof(campaignMarket.reserveAmmoSellLabel))) return false;
     /* data/ui/dealer.json: the shop panel (4144) and menu (4268), and the six
      * compatibility panels the pointer table at 3F7B names, in family order. */
     static const char *const familyIds[CAMPAIGN_AMMO_FAMILY_COUNT]={"dealer.caption.ammo_family_1","dealer.caption.ammo_family_2",
@@ -1379,18 +1240,18 @@ static bool ImportReserveAmmoUiData(void)
         "dealer.panel.compatibility_3","dealer.panel.compatibility_4","dealer.panel.compatibility_5","dealer.panel.compatibility_6"};
     UiCaptionOwner owners[2+3*CAMPAIGN_AMMO_FAMILY_COUNT];
     size_t count=0;
-    owners[count++]={"dealer.caption.ammo_heading",&reserveAmmoShopHeading.display,reserveAmmoShopHeading.text,sizeof(reserveAmmoShopHeading.text),0,0};
+    owners[count++]={"dealer.caption.ammo_heading",&campaignMarket.reserveAmmoShopHeading.display,campaignMarket.reserveAmmoShopHeading.text,sizeof(campaignMarket.reserveAmmoShopHeading.text),0,0};
     for (uint16_t i=0;i<CAMPAIGN_AMMO_FAMILY_COUNT;++i)
-        owners[count++]={familyIds[i],&reserveAmmoFamilyLabels[i].display,reserveAmmoFamilyLabels[i].text,sizeof(reserveAmmoFamilyLabels[i].text),0,0};
+        owners[count++]={familyIds[i],&campaignMarket.reserveAmmoFamilyLabels[i].display,campaignMarket.reserveAmmoFamilyLabels[i].text,sizeof(campaignMarket.reserveAmmoFamilyLabels[i].text),0,0};
     for (uint16_t i=0;i<CAMPAIGN_AMMO_FAMILY_COUNT;++i)
-        owners[count++]={quantityIds[i],&reserveAmmoQuantityRows[i].display,reserveAmmoQuantityRows[i].text,sizeof(reserveAmmoQuantityRows[i].text),0,0};
-    owners[count++]={"dealer.caption.ammo_done",&reserveAmmoDoneLabel.display,reserveAmmoDoneLabel.text,sizeof(reserveAmmoDoneLabel.text),0,0};
+        owners[count++]={quantityIds[i],&campaignMarket.reserveAmmoQuantityRows[i].display,campaignMarket.reserveAmmoQuantityRows[i].text,sizeof(campaignMarket.reserveAmmoQuantityRows[i].text),0,0};
+    owners[count++]={"dealer.caption.ammo_done",&campaignMarket.reserveAmmoDoneLabel.display,campaignMarket.reserveAmmoDoneLabel.text,sizeof(campaignMarket.reserveAmmoDoneLabel.text),0,0};
     for (uint16_t i=0;i<CAMPAIGN_AMMO_FAMILY_COUNT;++i)
-        owners[count++]={compatibilityIds[i],&reserveAmmoCompatibilityHeadings[i].display,reserveAmmoCompatibilityHeadings[i].text,
-            sizeof(reserveAmmoCompatibilityHeadings[i].text),0,0};
+        owners[count++]={compatibilityIds[i],&campaignMarket.reserveAmmoCompatibilityHeadings[i].display,campaignMarket.reserveAmmoCompatibilityHeadings[i].text,
+            sizeof(campaignMarket.reserveAmmoCompatibilityHeadings[i].text),0,0};
     if (!MwImportUiCaptions(owners,count)
-        || !MwImportUiPanel("dealer.panel.ammo",&reserveAmmoShopPanel,14,owners,count)
-        || !MwImportUiMenu("dealer.menu.ammo",&reserveAmmoShopMenu,owners,count)) return false;
+        || !MwImportUiPanel("dealer.panel.ammo",&campaignMarket.reserveAmmoShopPanel,14,owners,count)
+        || !MwImportUiMenu("dealer.menu.ammo",&campaignMarket.reserveAmmoShopMenu,owners,count)) return false;
     /* The mechs each family fits (data/rules/units.json): a pointer per family
      * (3F87) into the lists at 3F9F, each ended by FFFF. */
     enum { AMMO_FAMILY_MECHS_START=0x3F9F, AMMO_FAMILY_MECH_WORDS=18 };
@@ -1404,7 +1265,7 @@ static bool ImportReserveAmmoUiData(void)
         uint16_t panel=0;
         while (panel<CAMPAIGN_AMMO_FAMILY_COUNT && MwUiPieceOffset(compatibilityPanelIds[panel])!=compatibilityPanels[family]) ++panel;
         if (panel==CAMPAIGN_AMMO_FAMILY_COUNT
-            || !MwImportUiPanel(compatibilityPanelIds[panel],&reserveAmmoCompatibilityPanels[family],1,owners,count)) return false;
+            || !MwImportUiPanel(compatibilityPanelIds[panel],&campaignMarket.reserveAmmoCompatibilityPanels[family],1,owners,count)) return false;
         uint16_t kinds=familyMechLists[family],index=0;
         if (kinds<AMMO_FAMILY_MECHS_START || (kinds-AMMO_FAMILY_MECHS_START)%2) return false;
         do
@@ -1412,7 +1273,7 @@ static bool ImportReserveAmmoUiData(void)
             const uint16_t word=(uint16_t)((kinds-AMMO_FAMILY_MECHS_START)/2+index);
             if (index>=6 || word>=AMMO_FAMILY_MECH_WORDS) return false;
             uint16_t kind=familyMechs[word];
-            reserveAmmoCompatibleMechs[family][index++]=kind;
+            campaignMarket.reserveAmmoCompatibleMechs[family][index++]=kind;
             if (kind==UINT16_MAX) break;
             if (kind>=CAMPAIGN_MECH_KIND_COUNT) return false;
         } while (true);
@@ -1438,9 +1299,9 @@ static bool CheckTextBoundTables(void)
         if (contractDateYearXOffsets[month]!=(length-1)*CONTRACT_GLYPH_ADVANCE)
             return fprintf(stderr,"MechWarrior: contract_office.json's date_year_x_offsets doesn't fit month %u's name\n",month+1),false;
     }
-    static_assert(sizeof(repairTitleLeadingSpacesByKind)/sizeof(repairTitleLeadingSpacesByKind[0])==CAMPAIGN_UNIT_KIND_COUNT,"one padding per kind");
+    static_assert(sizeof(campaignService.repairTitleLeadingSpacesByKind)/sizeof(campaignService.repairTitleLeadingSpacesByKind[0])==CAMPAIGN_UNIT_KIND_COUNT,"one padding per kind");
     for (uint16_t kind=0;kind<CAMPAIGN_UNIT_KIND_COUNT;++kind)
-        if (repairTitleLeadingSpacesByKind[kind]!=(sizeof(unitDisplayNames[kind])-strlen(unitDisplayNames[kind]))/2)
+        if (campaignService.repairTitleLeadingSpacesByKind[kind]!=(sizeof(campaignService.unitDisplayNames[kind])-strlen(campaignService.unitDisplayNames[kind]))/2)
             return fprintf(stderr,"MechWarrior: complex.json's repair_title_leading_spaces doesn't fit the %s's name\n",storyUnitKeys[kind]),false;
     return true;
 }

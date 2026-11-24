@@ -24,7 +24,7 @@ uint16_t MwEnterCampaignPlanetHub(uint16_t entryOffset)
     if (entryOffset==CAMPAIGN_CONTINUE_HUB_MENU) goto selectHubMenu;
     if (entryOffset!=CAMPAIGN_CONTINUE_PLANET_HUB) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: entryOffset!=CAMPAIGN_CONTINUE_PLANET_HUB");
     campaignUi.companyMenuSelectedRow=0;
-    unitInspectionContextCode=UINT16_MAX;
+    campaignService.unitInspectionContextCode=UINT16_MAX;
     campaignUi.barMenuSelectedRow=UINT16_MAX;
     campaignUi.optionsMenuSelection=0;
     if (!campaignStopMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStopMusic");

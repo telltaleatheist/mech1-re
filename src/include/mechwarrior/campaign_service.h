@@ -63,7 +63,6 @@ typedef struct MwMechBodyDiagramLayout
 static_assert(sizeof(MwMechDiagramRectangle)==8, "Four native WORD coordinates");
 void MwDrawDescriptorTextPanel(const MwPanelDescriptor *textPanel);
 void MwDrawStoredStandardPanelBorder(void);
-extern uint16_t panelBorderEnabled;
 /* Host continuation transport only: zero means native RET, otherwise JMP to
  * the returned CS081B offset. Each entry documents whether native POPs the IP.
  * These WORDs are not native AX results or new gameplay action enums. */
@@ -110,63 +109,70 @@ enum { MECH_DETAIL_BACKGROUND=Campaign_Pal_EGA_DarkGrey,MECH_DETAIL_TEXT_COLOUR=
     MECH_DETAIL_JUMP_CAPACITY_X=0x0044,MECH_DETAIL_JUMP_CAPACITY_Y=0x0054,
     MECH_DETAIL_AMMO_LABEL_X=0x001A,MECH_DETAIL_AMMO_QUANTITY_X=0x0062,
     MECH_DETAIL_AMMO_FIRST_Y=0x006C,MECH_DETAIL_AMMO_ROW_HEIGHT=8 };
-extern uint16_t unitInspectionContextCode;
-extern uint16_t ownedUnitListSelectedRow;
-extern uint16_t marketUnitListSelectedRow;
-extern uint16_t mechServiceMenuSelectedRow;
-extern MwPanelDescriptor ownedUnitListPanel;
-extern MwOwnedUnitListRow ownedUnitListRows[0x000D];
-extern uint16_t selectedOwnedUnitSlot;
-extern uint16_t selectedOwnedUnitByteOffset;
-extern uint16_t selectedMechAmmoFamilies[0x0003];
-extern uint16_t selectedMechAmmoQuantities[0x0003];
-extern uint8_t unitConditionSystemFieldCounts[0x000A];
-extern uint8_t unitConditionScoreDivisors[0x000B];
-extern uint8_t mechNonfunctionalTextBytes[0x000E];
-extern uint8_t unitDisplayTonnages[0x000A];
-extern uint8_t unitDisplaySpeedsKph[0x000A];
-extern uint8_t unitDisplayJumpCapacitiesMetres[0x000A];
-extern uint16_t unitDetailPictureXOffsets[0x000B];
-extern uint16_t unitDetailPictureYOrigins[0x000B];
-extern uint8_t repairWorkIncomplete;
-extern MwPanelDescriptor mechStatusPanel;
-extern MwPanelDescriptor dropShipStatusPanel;
-extern uint16_t ownedListRowUnitByteOffset;
-extern uint16_t saleMarketSlotByteOffset;
-extern uint16_t selectedMechRearmQuoteLow;
-extern uint16_t selectedMechRearmQuoteHigh;
-extern uint16_t mechServiceNextAnimationTick;
-extern uint16_t mechServiceAnimationByteOffset;
-extern uint16_t repairTitleLeadingSpacesByKind[0x000B];
-extern uint16_t repairSystemRowIndex;
-extern uint16_t repairMenuSelectedCategory;
-extern MwPanelDescriptor componentRepairPanel;
-extern MwComponentConditionTextRow repairSystemConditionRows[0x000A];
-extern MwComponentConditionTextRow repairWeaponConditionRows[0x000B];
-extern MwUiRecord componentRepairUiRecords[REPAIR_UI_RECORD_COUNT];
-extern uint8_t unitHeatSinkCounts[0x000A];
-extern uint8_t repairNoJumpJetsTextBytes[0x0005];
-extern uint8_t repairJumpJetCountTemplateBytes[0x0009];
-extern uint8_t repairSuccessRollLimitsByMarketTier[0x0004];
-extern uint16_t mechDiagramUnitKind;
-extern uint16_t bodyDamageTierFillColours[0x0004];
-extern MwMechBodyDiagramLayout mechBodyDiagramLayouts[0x0008];
-extern MwUiRecord ownedUnitListUiRecords[0x000D];
-extern MwUiMenu ownedUnitListMenu, mechServiceMenu, dropShipServiceMenu, componentRepairMenu;
-extern MwServiceCaption ownedUnitListHeading, mechStatusLabels[6], dropShipStatusLabels[3];
-extern MwServiceCaption repairTitle, repairFooter;
-extern MwBodyConditionText repairBodyCondition;
-extern char shopUnitNames[CAMPAIGN_UNIT_KIND_COUNT][0x0F];
-extern char unitDisplayNames[CAMPAIGN_UNIT_KIND_COUNT][0x0D];
-extern char ammoFamilyDisplayNames[CAMPAIGN_AMMO_FAMILY_COUNT][0x0D];
-extern char campaignDamageTierLabels[4][0x0D];
-#define mechFunctionalTextBytes campaignDamageTierLabels[0]
-extern char unassignedMechWarriorText[0x0B], ownedListDoneText[0x18];
-extern char cannotAffordRepairText[0x37], noRepairWorkText[0x1A];
-extern char repairCompleteText[0x20], repairIncompleteText[0x1E], repairFailedText[0x17];
-extern char repairWeaponLabelStorage[CAMPAIGN_MECH_KIND_COUNT][CAMPAIGN_WEAPON_SLOTS+1][0x0F];
-extern char *repairWeaponLabels[CAMPAIGN_MECH_KIND_COUNT][CAMPAIGN_WEAPON_SLOTS+2];
-extern uint8_t *mechDiagramBodyDamage;
-extern MwMechDiagramRectangle *mechDiagramRectangle;
-extern MwMechBodyDiagramLayout *mechBodyDiagramLayoutsByKind[CAMPAIGN_MECH_KIND_COUNT];
+#define mechFunctionalTextBytes campaignService.campaignDamageTierLabels[0]
+/* Campaign state owned by campaign_service.h (plan, slice B2). */
+struct CampaignServiceState
+{
+    uint16_t panelBorderEnabled;
+    /* Mech Complex data: one owner per object, no emulated DS or address registry. */
+    uint16_t unitInspectionContextCode;
+    uint16_t ownedUnitListSelectedRow;
+    uint16_t marketUnitListSelectedRow;
+    uint16_t mechServiceMenuSelectedRow;
+    MwPanelDescriptor ownedUnitListPanel;
+    MwOwnedUnitListRow ownedUnitListRows[0x000D];
+    uint16_t selectedOwnedUnitSlot;
+    uint16_t selectedOwnedUnitByteOffset;
+    uint16_t selectedMechAmmoFamilies[0x0003];
+    uint16_t selectedMechAmmoQuantities[0x0003];
+    uint8_t unitConditionSystemFieldCounts[0x000A];
+    uint8_t unitConditionScoreDivisors[0x000B];
+    uint8_t mechNonfunctionalTextBytes[0x000E];
+    uint8_t unitDisplayTonnages[0x000A];
+    uint8_t unitDisplaySpeedsKph[0x000A];
+    uint8_t unitDisplayJumpCapacitiesMetres[0x000A];
+    uint16_t unitDetailPictureXOffsets[0x000B];
+    uint16_t unitDetailPictureYOrigins[0x000B];
+    uint8_t repairWorkIncomplete;
+    MwPanelDescriptor mechStatusPanel;
+    MwPanelDescriptor dropShipStatusPanel;
+    uint16_t ownedListRowUnitByteOffset;
+    uint16_t saleMarketSlotByteOffset;
+    uint16_t selectedMechRearmQuoteLow;
+    uint16_t selectedMechRearmQuoteHigh;
+    uint16_t mechServiceNextAnimationTick;
+    uint16_t mechServiceAnimationByteOffset;
+    uint16_t repairTitleLeadingSpacesByKind[0x000B];
+    uint16_t repairSystemRowIndex;
+    uint16_t repairMenuSelectedCategory;
+    MwPanelDescriptor componentRepairPanel;
+    MwComponentConditionTextRow repairSystemConditionRows[0x000A];
+    MwComponentConditionTextRow repairWeaponConditionRows[0x000B];
+    MwUiRecord componentRepairUiRecords[REPAIR_UI_RECORD_COUNT];
+    uint8_t unitHeatSinkCounts[0x000A];
+    uint8_t repairNoJumpJetsTextBytes[0x0005];
+    uint8_t repairJumpJetCountTemplateBytes[0x0009];
+    uint8_t repairSuccessRollLimitsByMarketTier[0x0004];
+    uint16_t mechDiagramUnitKind;
+    uint16_t bodyDamageTierFillColours[0x0004];
+    MwMechBodyDiagramLayout mechBodyDiagramLayouts[0x0008];
+    MwUiRecord ownedUnitListUiRecords[0x000D];
+    MwUiMenu ownedUnitListMenu, mechServiceMenu, dropShipServiceMenu, componentRepairMenu;
+    MwServiceCaption ownedUnitListHeading, mechStatusLabels[6], dropShipStatusLabels[3];
+    MwServiceCaption repairTitle, repairFooter;
+    MwBodyConditionText repairBodyCondition;
+    char shopUnitNames[CAMPAIGN_UNIT_KIND_COUNT][0x0F];
+    char unitDisplayNames[CAMPAIGN_UNIT_KIND_COUNT][0x0D];
+    char ammoFamilyDisplayNames[CAMPAIGN_AMMO_FAMILY_COUNT][0x0D];
+    char campaignDamageTierLabels[4][0x0D];
+    char unassignedMechWarriorText[0x0B], ownedListDoneText[0x18];
+    char cannotAffordRepairText[0x37], noRepairWorkText[0x1A];
+    char repairCompleteText[0x20], repairIncompleteText[0x1E], repairFailedText[0x17];
+    char repairWeaponLabelStorage[CAMPAIGN_MECH_KIND_COUNT][CAMPAIGN_WEAPON_SLOTS+1][0x0F];
+    char *repairWeaponLabels[CAMPAIGN_MECH_KIND_COUNT][CAMPAIGN_WEAPON_SLOTS+2];
+    uint8_t *mechDiagramBodyDamage;
+    MwMechDiagramRectangle *mechDiagramRectangle;
+    MwMechBodyDiagramLayout *mechBodyDiagramLayoutsByKind[CAMPAIGN_MECH_KIND_COUNT];
+};
+extern CampaignServiceState campaignService;
 #endif

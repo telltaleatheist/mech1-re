@@ -352,7 +352,7 @@ void MwShowPendingNotifications(void)
 {
     for (uint16_t slot = 0; slot < CAMPAIGN_NOTIFICATION_COUNT; ++slot)
     {
-        if (notificationPending[slot] == 0) continue;
+        if (campaignEconomy.notificationPending[slot] == 0) continue;
         MwNativeByteView text = { campaignUi.notificationTextStorage, NOTIFICATION_TEXT_START,
             sizeof(campaignUi.notificationTextStorage) };
         MwTextPanelReturn result = MwShowMonospaceTextPanel(campaignUi.notificationTextInsetX[slot],
@@ -361,7 +361,7 @@ void MwShowPendingNotifications(void)
         /* Native mode1 would RET through the saved slot WORD instead of6146.
          * That startup/code continuation is outside this compiled slice. */
         if (result.discardReturnWord) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: result.discardReturnWord");
-        notificationPending[slot] = 0;
+        campaignEconomy.notificationPending[slot] = 0;
     }
 }
 /* MW_MAIN081B:07FE..0811 falls0812; reset preserves incoming AX/SI. */

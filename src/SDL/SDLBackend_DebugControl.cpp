@@ -313,7 +313,7 @@ static void WriteStatus(const char *path)
         combatScenarioCode,combatPlanetSelector,acceptedContractTargetHouseIndex,
         acceptedContractPaymentThousands,combatTransitionResult,campaignUi.selectedUiRecordIndex,
         randomStateWord0,randomStateWord1,
-        ((unsigned long)campaignFundsHigh<<16)|campaignFundsLow,elapsedBillingMonths);
+        ((unsigned long)campaignEconomy.campaignFundsHigh<<16)|campaignEconomy.campaignFundsLow,campaignEconomy.elapsedBillingMonths);
     if (!mwSdlCombatActive && campaignUi.uiMenu)
         for(unsigned i=0;i<campaignUi.uiMenu->recordCount;++i)
         {

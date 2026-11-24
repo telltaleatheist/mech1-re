@@ -196,12 +196,12 @@ beginDebrief:
             if (ownedUnitSlot!=CAMPAIGN_NO_MECH_ASSIGNMENT)
             {
                 if (ownedUnitSlot>=CAMPAIGN_OWNED_UNIT_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: ownedUnitSlot>=CAMPAIGN_OWNED_UNIT_SLOTS");
-                uint16_t unitKind=ownedUnitKinds[ownedUnitSlot];
+                uint16_t unitKind=campaignEconomy.ownedUnitKinds[ownedUnitSlot];
                 if (unitKind>=CAMPAIGN_UNIT_KIND_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitKind>=CAMPAIGN_UNIT_KIND_COUNT");
                 /* Native1E24/1E29 indexes these BY DOUBLED ROSTER SLOT, not
                  * chassis. Preserve that discrepancy instead of a tidy quote. */
                 uint16_t weaponCount=unitWeaponCounts[rosterSlot*2];
-                uint16_t systemCount=unitConditionSystemFieldCounts[rosterSlot*2];
+                uint16_t systemCount=campaignService.unitConditionSystemFieldCounts[rosterSlot*2];
                 const uint8_t *damage=(const uint8_t *)&ownedUnitDamage[(uint8_t)ownedUnitSlot];
                 uint8_t damageSum=0;
                 uint16_t field=0;
@@ -218,13 +218,13 @@ beginDebrief:
                 } while (--weaponCount!=0);
                 for (uint16_t location=0;location<CAMPAIGN_BODY_LOCATION_COUNT;++location)
                     damageSum+=ownedUnitDamage[(uint8_t)ownedUnitSlot].bodyDamageTiers[location];
-                uint16_t divisor=unitConditionScoreDivisors[unitKind];
+                uint16_t divisor=campaignService.unitConditionScoreDivisors[unitKind];
                 uint16_t remainingScore=divisor-damageSum;
                 uint32_t condition=(uint32_t)remainingScore*PERCENT_DIVISOR;
                 if (!divisor || condition/divisor>UINT16_MAX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !divisor || condition/divisor>UINT16_MAX"); /* Native DIV trap, no clamp. */
                 condition/=divisor;
                 MwDrawCampaignTextColourOne(AFTER_ACTION_TEXT_X,
-                    afterActionRosterRowOffset+AFTER_ACTION_FIRST_MECH_Y,unitDisplayNames[unitKind]);
+                    afterActionRosterRowOffset+AFTER_ACTION_FIRST_MECH_Y,campaignService.unitDisplayNames[unitKind]);
                 /* Name glyph LOOP leaves CH00; 1E88 writes only CL01. */
                 MwDrawSignedDecimalField(condition,AFTER_ACTION_PERCENT_X,1,0,
                     AFTER_ACTION_FOREGROUND,AFTER_ACTION_BACKGROUND,afterActionRosterRowOffset+AFTER_ACTION_FIRST_MECH_Y);
@@ -279,9 +279,9 @@ beginDebrief:
             if (paid>UINT16_MAX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: paid>UINT16_MAX");
             salvagePayment=paid*CBILLS_PER_THOUSAND;
         }
-        uint32_t funds=((uint32_t)campaignFundsHigh<<NATIVE_WORD_BITS)|campaignFundsLow;
+        uint32_t funds=((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow;
         funds+=salvagePayment;
-        campaignFundsLow=(uint16_t)funds;campaignFundsHigh=(uint16_t)(funds>>NATIVE_WORD_BITS);
+        campaignEconomy.campaignFundsLow=(uint16_t)funds;campaignEconomy.campaignFundsHigh=(uint16_t)(funds>>NATIVE_WORD_BITS);
         numericGroupingEnabled=1;
         MwDrawSignedDecimalField(salvagePayment,AFTER_ACTION_PAYMENT_X,1,0,
             AFTER_ACTION_FOREGROUND,AFTER_ACTION_BACKGROUND,AFTER_ACTION_SALVAGE_Y);
@@ -292,9 +292,9 @@ beginDebrief:
             if (paymentThousands>UINT16_MAX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: paymentThousands>UINT16_MAX");
             contractPayment=paymentThousands*CBILLS_PER_THOUSAND;
         }
-        funds=((uint32_t)campaignFundsHigh<<NATIVE_WORD_BITS)|campaignFundsLow;
+        funds=((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow;
         funds+=contractPayment;
-        campaignFundsLow=(uint16_t)funds;campaignFundsHigh=(uint16_t)(funds>>NATIVE_WORD_BITS);
+        campaignEconomy.campaignFundsLow=(uint16_t)funds;campaignEconomy.campaignFundsHigh=(uint16_t)(funds>>NATIVE_WORD_BITS);
         numericGroupingEnabled=1;
         MwDrawSignedDecimalField(contractPayment,AFTER_ACTION_PAYMENT_X,1,0,
             AFTER_ACTION_FOREGROUND,AFTER_ACTION_BACKGROUND,AFTER_ACTION_PAYMENT_Y);
@@ -319,15 +319,15 @@ beginDebrief:
             (void)MwRemovePilotAndCompactRoster(LAST_PILOT_CARD_SLOT);
         }
     }
-    playerCombatCredit+=returnedDisabledEnemyCount;
+    campaignEconomy.playerCombatCredit+=returnedDisabledEnemyCount;
     uint16_t reputation;reputation=0;
-    if (playerCombatCredit>=COMMANDER_REPUTATION_SECOND_THRESHOLD)
+    if (campaignEconomy.playerCombatCredit>=COMMANDER_REPUTATION_SECOND_THRESHOLD)
     {
         ++reputation;
-        if (playerCombatCredit>=COMMANDER_REPUTATION_THIRD_THRESHOLD)
+        if (campaignEconomy.playerCombatCredit>=COMMANDER_REPUTATION_THIRD_THRESHOLD)
         {
             ++reputation;
-            if (playerCombatCredit>=COMMANDER_REPUTATION_FOURTH_THRESHOLD) ++reputation;
+            if (campaignEconomy.playerCombatCredit>=COMMANDER_REPUTATION_FOURTH_THRESHOLD) ++reputation;
         }
     }
     rosterPayTiers[0]=reputation;
@@ -383,25 +383,25 @@ beginDebrief:
         else
         {
             if (acceptedContractTargetHouseIndex<CAMPAIGN_HOUSE_COUNT)
-                houseGrievancePoints[acceptedContractTargetHouseIndex]+=2;
+                campaignEconomy.houseGrievancePoints[acceptedContractTargetHouseIndex]+=2;
             uint16_t house=currentPlanetHouseIndex;
             if (house>=CAMPAIGN_HOUSE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: house>=CAMPAIGN_HOUSE_COUNT");
             if (deploymentResolvedWithoutCombat!=0)
             {
                 deploymentResolvedWithoutCombat=0;
-                houseFavorPoints[house]+=2;
+                campaignEconomy.houseFavorPoints[house]+=2;
                 outcome=deploymentUneventfulText;
             }
             else if (combatTransitionResult!=0)
             {
-                if (combatTransitionResult==2) ++houseGrievancePoints[house];
+                if (combatTransitionResult==2) ++campaignEconomy.houseGrievancePoints[house];
                 outcome=afterActionFailureMessages[house];
             }
             else
             {
                 if (!campaignStartMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStartMusic");
                 campaignStartMusic(campaignMusicBufferSelector,LAUNCH_MUSIC_OFFSET);
-                houseFavorPoints[house]+=2;
+                campaignEconomy.houseFavorPoints[house]+=2;
                 outcome=afterActionSuccessMessages[house];
             }
         }
@@ -692,21 +692,21 @@ uint16_t MwStartNewCampaign(uint16_t entryOffset)
     MwRefreshMarketUnitStock();
     MwRefreshAvailablePilotRecruits();
     uint32_t startupCashBonus=(uint32_t)MwRandomUpTo(0x00FF)*0x03E8;
-    uint32_t companyFunds=(((uint32_t)campaignFundsHigh<<NATIVE_WORD_BITS)|campaignFundsLow)+startupCashBonus;
-    campaignFundsHigh=(uint16_t)(companyFunds>>NATIVE_WORD_BITS);
-    campaignFundsLow=(uint16_t)companyFunds;
-    generateStartingJenner=STOCK_FORCE_STARTER_MECH;
+    uint32_t companyFunds=(((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow)+startupCashBonus;
+    campaignEconomy.campaignFundsHigh=(uint16_t)(companyFunds>>NATIVE_WORD_BITS);
+    campaignEconomy.campaignFundsLow=(uint16_t)companyFunds;
+    campaignEconomy.generateStartingJenner=STOCK_FORCE_STARTER_MECH;
     MwGenerateUnitStock(0,0,0,4);
-    ownedUnitCount=1;
-    ownedUnitKinds[0]=generatedUnitKind;
+    campaignEconomy.ownedUnitCount=1;
+    campaignEconomy.ownedUnitKinds[0]=campaignEconomy.generatedUnitKind;
     rosterMechAssignments[0]=0;
     /* Both29-byte records are disjoint ordinary objects with no callbacks or
      * writers between native byte copies. Other company slots are untouched. */
     ownedUnitDamage[0]=generatedMechDamage;
     for (uint16_t group=0;group<CAMPAIGN_AMMO_GROUPS;++group)
     {
-        ownedAmmoKindsByGroup[group*CAMPAIGN_OWNED_UNIT_SLOTS]=generatedAmmoKinds[group];
-        ownedAmmoQuantitiesByGroup[group*CAMPAIGN_OWNED_UNIT_SLOTS]=generatedAmmoQuantities[group];
+        campaignEconomy.ownedAmmoKindsByGroup[group*CAMPAIGN_OWNED_UNIT_SLOTS]=campaignEconomy.generatedAmmoKinds[group];
+        campaignEconomy.ownedAmmoQuantitiesByGroup[group*CAMPAIGN_OWNED_UNIT_SLOTS]=campaignEconomy.generatedAmmoQuantities[group];
     }
     MwRefreshMissionOffers();
     return CAMPAIGN_CONTINUE_PLANET_HUB; /*1905 PUSH AX/1906 JMP; not a native AX result. */

@@ -256,7 +256,7 @@ void MwDrawPlanetTravelQuote(void)
     if (travelDestinationPlanetIndex!=currentPlanetIndex)
     {
         uint16_t distance=MwCalculatePlanetTravelDistance(travelDestinationPlanetIndex);
-        if (ownedUnitCount==0)
+        if (campaignEconomy.ownedUnitCount==0)
         {
             uint16_t passengerBase=pilotRosterCount*PASSENGER_TRAVEL_CBILLS_PER_DISTANCE_UNIT;
             uint32_t quote=(uint32_t)passengerBase*distance;
@@ -269,7 +269,7 @@ void MwDrawPlanetTravelQuote(void)
             travelDropShipSelected=0;
             uint16_t ownedSlot=0;
             while (ownedSlot!=CAMPAIGN_OWNED_UNIT_SLOTS
-                && ownedUnitKinds[ownedSlot]!=CAMPAIGN_UNIT_DROPSHIP) ++ownedSlot;
+                && campaignEconomy.ownedUnitKinds[ownedSlot]!=CAMPAIGN_UNIT_DROPSHIP) ++ownedSlot;
             if (ownedSlot!=CAMPAIGN_OWNED_UNIT_SLOTS)
             {
                 travelDropShipSelected=1;
@@ -279,8 +279,8 @@ void MwDrawPlanetTravelQuote(void)
             }
             else
             {
-                uint32_t base=(uint32_t)ownedUnitCount*HIRED_MECH_TRAVEL_BASE_CBILLS;
-                uint16_t unitDistance=(uint8_t)ownedUnitCount*(uint8_t)travelDistanceUnits;
+                uint32_t base=(uint32_t)campaignEconomy.ownedUnitCount*HIRED_MECH_TRAVEL_BASE_CBILLS;
+                uint16_t unitDistance=(uint8_t)campaignEconomy.ownedUnitCount*(uint8_t)travelDistanceUnits;
                 uint32_t quote=(uint32_t)unitDistance*HIRED_MECH_TRAVEL_CBILLS_PER_DISTANCE_UNIT+base;
                 travelQuoteCbillsLow=(uint16_t)quote;
                 travelQuoteCbillsHigh=(uint16_t)(quote>>NATIVE_WORD_BITS);
@@ -292,7 +292,7 @@ void MwDrawPlanetTravelQuote(void)
     MwDrawSignedDecimalField(((uint32_t)travelQuoteCbillsHigh<<NATIVE_WORD_BITS)|travelQuoteCbillsLow,
         TRAVEL_QUOTE_X,1,0,2,3,TRAVEL_QUOTE_Y);
     ++numericGroupingEnabled;
-    MwDrawSignedDecimalField(((uint32_t)campaignFundsHigh<<NATIVE_WORD_BITS)|campaignFundsLow,
+    MwDrawSignedDecimalField(((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow,
         TRAVEL_QUOTE_X,1,0,2,3,TRAVEL_FUNDS_Y);
 }
 
@@ -470,7 +470,7 @@ uint16_t MwConfirmPlanetTravelContinuation(void)
         campaignUi.uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_SELECT_TRAVEL_MAP_PLANET;
         return 0;
     }
-    uint32_t funds=((uint32_t)campaignFundsHigh<<NATIVE_WORD_BITS)|campaignFundsLow;
+    uint32_t funds=((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow;
     uint32_t quote=((uint32_t)travelQuoteCbillsHigh<<NATIVE_WORD_BITS)|travelQuoteCbillsLow;
     if (funds<quote)
     {
@@ -484,8 +484,8 @@ uint16_t MwConfirmPlanetTravelContinuation(void)
         return 0;
     }
     funds-=quote;
-    campaignFundsLow=(uint16_t)funds;
-    campaignFundsHigh=(uint16_t)(funds>>NATIVE_WORD_BITS);
+    campaignEconomy.campaignFundsLow=(uint16_t)funds;
+    campaignEconomy.campaignFundsHigh=(uint16_t)(funds>>NATIVE_WORD_BITS);
     return CAMPAIGN_CONTINUE_PAID_TRAVEL;
 }
 

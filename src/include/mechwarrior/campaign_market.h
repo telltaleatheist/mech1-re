@@ -7,16 +7,6 @@ enum { RESERVE_AMMO_MENU_ROWS=13,RESERVE_AMMO_DONE_ROW=12,RESERVE_AMMO_MACHINE_G
     RESERVE_AMMO_PRICE_X=0x98,RESERVE_AMMO_QUANTITY_X=0xD7,
     RESERVE_AMMO_PREVIEW_WIDTH=0x6C,RESERVE_AMMO_PREVIEW_HEIGHT=0x3E };
 typedef struct MwReserveAmmoQuantityRow {MwPanelText display;char text[6];} MwReserveAmmoQuantityRow;
-extern uint16_t reserveAmmoShopSelectedRow,reserveAmmoPreviewSelection;
-extern uint8_t reserveAmmoSelling,reserveAmmoMechColours[11];
-extern char reserveAmmoBuyLabel[5],reserveAmmoSellLabel[5];
-extern MwServiceCaption reserveAmmoShopHeading,reserveAmmoFamilyLabels[6],reserveAmmoDoneLabel;
-extern MwReserveAmmoQuantityRow reserveAmmoQuantityRows[6];
-extern MwPanelDescriptor reserveAmmoShopPanel,reserveAmmoCompatibilityPanels[6];
-extern MwServiceCaption reserveAmmoCompatibilityHeadings[6];
-extern uint16_t reserveAmmoCompatibleMechs[6][6];
-extern MwUiRecord reserveAmmoShopRecords[RESERVE_AMMO_MENU_ROWS];
-extern MwUiMenu reserveAmmoShopMenu;
 uint16_t MwOpenReserveAmmunitionShop(void);
 void MwFormatReserveAmmunitionQuantity(uint16_t family,uint16_t quantity);
 void MwDrawReserveAmmunitionPrices(bool selling);
@@ -54,30 +44,50 @@ typedef struct MwMarketUnitListRow
     MwPanelText display;
     char text[DEALER_LIST_NAME_COLUMNS+1];
 } MwMarketUnitListRow;
-
-extern MwPanelDescriptor rearmConfirmationPanel, saleConfirmationPanel;
-extern MwPanelDescriptor marketUnitListPanel, marketMechStatusPanel, marketDropShipStatusPanel;
-extern MwPanelDescriptor marketComponentPanel, mechComplexPanel;
-extern MwServiceCaption rearmConfirmationLabels[3], saleConfirmationLabels[3];
-extern MwServiceCaption marketListHeading, marketMechStatusLabels[4], marketDropShipStatusLabels[3];
-extern MwServiceCaption mechComplexLabels[5], marketComponentTitle;
-extern MwMarketUnitListRow marketUnitListRows[0x0D];
-extern MwComponentConditionTextRow marketSystemConditionRows[0x0A], marketWeaponConditionRows[0x0A];
-extern MwServiceCaption marketComponentDone;
-extern MwServiceCaption marketWeaponHeading;
-extern MwServiceCaption positionedText;
-extern MwBodyConditionText marketBodyCondition;
-extern MwUiMenu rearmConfirmationMenu, saleConfirmationMenu, marketUnitListMenu;
-extern MwUiMenu marketMechMenu, marketDropShipMenu, marketComponentMenu, mechComplexMenu;
-extern char ammoBayFullText[0x12], noMarketMechsText[0x2E];
-extern char dealerPurchaseLimitText[0x33], purchaseInsufficientFundsText[0x17], ownedMechCapacityText[0x37];
 /* The existing repair menu's FF probe is inside this very message. */
-#define marketCapacityNavigationProbe (*(uint8_t *)&ownedMechCapacityText[3])
-extern char marketListDoneText[DEALER_LIST_NAME_COLUMNS];
-extern uint16_t selectedMarketUnitSlot, selectedMarketUnitByteOffset;
-extern uint16_t selectedMarketAmmoFamilies[CAMPAIGN_AMMO_GROUPS], selectedMarketAmmoQuantities[CAMPAIGN_AMMO_GROUPS];
-extern uint16_t marketSystemRowIndex, purchaseOwnedSlotByteOffset;
-extern uint16_t mechComplexAnimationFrames[MECH_COMPLEX_ANIMATION_FRAMES];
+#define marketCapacityNavigationProbe (*(uint8_t *)&campaignMarket.ownedMechCapacityText[3])
+/* Campaign state owned by campaign_market.h (plan, slice B2). */
+struct CampaignMarketState
+{
+    /* The after-action and settlement directories (1090:1491, 166A, 1786), whose
+     * entries the C references above stand for, are checked at import: the
+     * import table's check pieces (src/Import/pieces.txt) refuse an installation
+     * whose directories differ. */
+    /* Native reserve-ammunition shop state and shared caption/menu owners. */
+    uint16_t reserveAmmoShopSelectedRow, reserveAmmoPreviewSelection;
+    uint8_t reserveAmmoSelling, reserveAmmoMechColours[11];
+    char reserveAmmoBuyLabel[5], reserveAmmoSellLabel[5];
+    MwServiceCaption reserveAmmoShopHeading, reserveAmmoFamilyLabels[6], reserveAmmoDoneLabel;
+    MwReserveAmmoQuantityRow reserveAmmoQuantityRows[6];
+    MwPanelDescriptor reserveAmmoShopPanel, reserveAmmoCompatibilityPanels[6];
+    MwServiceCaption reserveAmmoCompatibilityHeadings[6];
+    uint16_t reserveAmmoCompatibleMechs[6][6];
+    MwUiRecord reserveAmmoShopRecords[RESERVE_AMMO_MENU_ROWS];
+    MwUiMenu reserveAmmoShopMenu;
+    /* Rearm/dealer objects are ordinary C data, independent of their disk encoding. */
+    MwPanelDescriptor rearmConfirmationPanel, saleConfirmationPanel;
+    MwPanelDescriptor marketUnitListPanel, marketMechStatusPanel, marketDropShipStatusPanel;
+    MwPanelDescriptor marketComponentPanel, mechComplexPanel;
+    MwServiceCaption rearmConfirmationLabels[3], saleConfirmationLabels[3];
+    MwServiceCaption marketListHeading, marketMechStatusLabels[4], marketDropShipStatusLabels[3];
+    MwServiceCaption mechComplexLabels[5], marketComponentTitle;
+    MwMarketUnitListRow marketUnitListRows[0x0D];
+    MwComponentConditionTextRow marketSystemConditionRows[0x0A], marketWeaponConditionRows[0x0A];
+    MwServiceCaption marketComponentDone;
+    MwServiceCaption marketWeaponHeading;
+    MwServiceCaption positionedText;
+    MwBodyConditionText marketBodyCondition;
+    MwUiMenu rearmConfirmationMenu, saleConfirmationMenu, marketUnitListMenu;
+    MwUiMenu marketMechMenu, marketDropShipMenu, marketComponentMenu, mechComplexMenu;
+    char ammoBayFullText[0x12], noMarketMechsText[0x2E];
+    char dealerPurchaseLimitText[0x33], purchaseInsufficientFundsText[0x17], ownedMechCapacityText[0x37];
+    char marketListDoneText[DEALER_LIST_NAME_COLUMNS];
+    uint16_t selectedMarketUnitSlot, selectedMarketUnitByteOffset;
+    uint16_t selectedMarketAmmoFamilies[CAMPAIGN_AMMO_GROUPS], selectedMarketAmmoQuantities[CAMPAIGN_AMMO_GROUPS];
+    uint16_t marketSystemRowIndex, purchaseOwnedSlotByteOffset;
+    uint16_t mechComplexAnimationFrames[MECH_COMPLEX_ANIMATION_FRAMES];
+};
+extern CampaignMarketState campaignMarket;
 /* First-visit6236 is a native event call with AX4, not a no-argument callback. */
 uint16_t MwQuoteSelectedMechRearm(void);
 uint16_t MwRearmSelectedMech(void);

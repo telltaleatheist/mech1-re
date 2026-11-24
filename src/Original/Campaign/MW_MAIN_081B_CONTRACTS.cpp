@@ -70,11 +70,11 @@ void MwInitializeContractRequestDisplay(uint16_t missionOfferSlot)
 void MwDrawNegotiatingOfferTerms(void)
 {
     if ((negotiatingMissionOfferByteOffset&1) || negotiatingMissionOfferByteOffset/2>=MISSION_OFFER_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (negotiatingMissionOfferByteOffset&1) || negotiatingMissionOfferByteOffset/2>=MISSION_OFFER_SLOTS");
-    MwDrawSignedDecimalField(missionPaymentThousands[negotiatingMissionOfferByteOffset/2],
+    MwDrawSignedDecimalField(campaignEconomy.missionPaymentThousands[negotiatingMissionOfferByteOffset/2],
         CONTRACT_PAYMENT_X,0,CONTRACT_PAYMENT_DIGITS,CONTRACT_TERM_COLOUR,CONTRACT_PAGE_BACKGROUND,CONTRACT_PAYMENT_Y);
-    MwDrawSignedDecimalField(missionSalvagePercentages[negotiatingMissionOfferByteOffset/2],
+    MwDrawSignedDecimalField(campaignEconomy.missionSalvagePercentages[negotiatingMissionOfferByteOffset/2],
         CONTRACT_SALVAGE_X,0,CONTRACT_PERCENT_DIGITS,CONTRACT_TERM_COLOUR,CONTRACT_PAGE_BACKGROUND,CONTRACT_SALVAGE_Y);
-    MwDrawSignedDecimalField(missionAdvancePercentages[negotiatingMissionOfferByteOffset/2],
+    MwDrawSignedDecimalField(campaignEconomy.missionAdvancePercentages[negotiatingMissionOfferByteOffset/2],
         CONTRACT_ADVANCE_X,0,CONTRACT_PERCENT_DIGITS,CONTRACT_TERM_COLOUR,CONTRACT_PAGE_BACKGROUND,CONTRACT_ADVANCE_Y);
 }
 /* MW_MAIN081B:4D1D..4D28 /4D29..4D34. Text is native DS:DI, not SI. */
@@ -104,22 +104,22 @@ uint16_t MwDrawMissionContractBriefingContinuation(uint16_t missionOfferSlot)
     MwDrawContractText(CONTRACT_TEXT_X,CONTRACT_PAYMENT_Y,employer);
     uint16_t offerSlot=negotiatingMissionOfferByteOffset/2;
     if ((negotiatingMissionOfferByteOffset&1) || offerSlot>=MISSION_OFFER_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (negotiatingMissionOfferByteOffset&1) || offerSlot>=MISSION_OFFER_SLOTS");
-    uint16_t description=missionDescriptionOffsets[offerSlot];
+    uint16_t description=campaignEconomy.missionDescriptionOffsets[offerSlot];
     if (description<MISSION_DESCRIPTION_STORAGE_START || (uint32_t)description+2>=MISSION_DESCRIPTION_STORAGE_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: description<MISSION_DESCRIPTION_STORAGE_START || (uint32_t)description+2>=MISSION_DESCRIPTION_STORAGE_END");
-    MwDrawContractText(CONTRACT_TEXT_X,CONTRACT_OBJECTIVE_Y,(const char *)&missionDescriptionStorage[description+sizeof(CampaignMissionDescriptionHeader)-MISSION_DESCRIPTION_STORAGE_START]);
+    MwDrawContractText(CONTRACT_TEXT_X,CONTRACT_OBJECTIVE_Y,(const char *)&campaignEconomy.missionDescriptionStorage[description+sizeof(CampaignMissionDescriptionHeader)-MISSION_DESCRIPTION_STORAGE_START]);
     offerSlot=negotiatingMissionOfferByteOffset/2;
-    uint16_t planetIndex=missionPlanetRecordIndices[offerSlot];
+    uint16_t planetIndex=campaignEconomy.missionPlanetRecordIndices[offerSlot];
     if (planetIndex>=sizeof(planetRecordOffsets)/sizeof(planetRecordOffsets[0])) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetIndex>=sizeof(planetRecordOffsets)/sizeof(planetRecordOffsets[0])");
     uint16_t planetOffset=planetRecordOffsets[planetIndex];
     if (planetOffset<PLANET_RECORDS_START || (uint32_t)planetOffset+sizeof(MwPlanetHeader)>=PLANET_RECORDS_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetOffset<PLANET_RECORDS_START || (uint32_t)planetOffset+sizeof(MwPlanetHeader)>=PLANET_RECORDS_END");
     MwDrawContractText(CONTRACT_TEXT_X,CONTRACT_DESTINATION_Y,(const char *)&planetRecordStorage[planetOffset+sizeof(MwPlanetHeader)-PLANET_RECORDS_START]);
     offerSlot=negotiatingMissionOfferByteOffset/2;
-    uint16_t house=missionTypeCodes[offerSlot]==MISSION_CATEGORY_DEFENCE || missionTargetHouseIndices[offerSlot]>=CAMPAIGN_HOUSE_COUNT
-        ?currentPlanetHouseIndex:missionTargetHouseIndices[offerSlot];
+    uint16_t house=campaignEconomy.missionTypeCodes[offerSlot]==MISSION_CATEGORY_DEFENCE || campaignEconomy.missionTargetHouseIndices[offerSlot]>=CAMPAIGN_HOUSE_COUNT
+        ?currentPlanetHouseIndex:campaignEconomy.missionTargetHouseIndices[offerSlot];
     MwDrawContractText(CONTRACT_TARGET_HOUSE_X,CONTRACT_TARGET_HOUSE_Y,houseContractNames[house]);
-    MwDrawSignedDecimalField(missionEnemyHeavyCounts[negotiatingMissionOfferByteOffset/2],CONTRACT_HEAVY_COUNT_X,1,0,CONTRACT_TEXT_COLOUR,CONTRACT_PAGE_BACKGROUND,CONTRACT_FORCE_COUNTS_Y);
-    MwDrawSignedDecimalField(missionEnemyMediumCounts[negotiatingMissionOfferByteOffset/2],CONTRACT_MEDIUM_COUNT_X,1,0,CONTRACT_TEXT_COLOUR,CONTRACT_PAGE_BACKGROUND,CONTRACT_FORCE_COUNTS_Y);
-    MwDrawSignedDecimalField(missionEnemyLightCounts[negotiatingMissionOfferByteOffset/2],CONTRACT_TEXT_X,1,0,CONTRACT_TEXT_COLOUR,CONTRACT_PAGE_BACKGROUND,CONTRACT_LIGHT_COUNT_Y);
+    MwDrawSignedDecimalField(campaignEconomy.missionEnemyHeavyCounts[negotiatingMissionOfferByteOffset/2],CONTRACT_HEAVY_COUNT_X,1,0,CONTRACT_TEXT_COLOUR,CONTRACT_PAGE_BACKGROUND,CONTRACT_FORCE_COUNTS_Y);
+    MwDrawSignedDecimalField(campaignEconomy.missionEnemyMediumCounts[negotiatingMissionOfferByteOffset/2],CONTRACT_MEDIUM_COUNT_X,1,0,CONTRACT_TEXT_COLOUR,CONTRACT_PAGE_BACKGROUND,CONTRACT_FORCE_COUNTS_Y);
+    MwDrawSignedDecimalField(campaignEconomy.missionEnemyLightCounts[negotiatingMissionOfferByteOffset/2],CONTRACT_TEXT_X,1,0,CONTRACT_TEXT_COLOUR,CONTRACT_PAGE_BACKGROUND,CONTRACT_LIGHT_COUNT_Y);
     MwDrawNegotiatingOfferTerms();
     if (calendarMonthIndex>=CAMPAIGN_MONTH_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: calendarMonthIndex>=CAMPAIGN_MONTH_COUNT");
     uint16_t yearX=contractDateYearXOffsets[calendarMonthIndex];
@@ -133,7 +133,7 @@ uint16_t MwDrawMissionContractBriefingContinuation(uint16_t missionOfferSlot)
 uint16_t MwRequestMissionOfferContinuation(void)
 {
     if (currentPlanetHouseIndex>=CAMPAIGN_HOUSE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: currentPlanetHouseIndex>=CAMPAIGN_HOUSE_COUNT");
-    if (houseGrievancePoints[currentPlanetHouseIndex]>=HOUSE_GRIEVANCE_REFUSAL)
+    if (campaignEconomy.houseGrievancePoints[currentPlanetHouseIndex]>=HOUSE_GRIEVANCE_REFUSAL)
     {
         MwDrawCampaignFramedBackground();
         EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
@@ -141,7 +141,7 @@ uint16_t MwRequestMissionOfferContinuation(void)
         MwWaitForInputAcknowledgment();
         return CAMPAIGN_CONTINUE_CONTRACT_OFFICE_REDRAW;
     }
-    if (missionOfferCount!=0)
+    if (campaignEconomy.missionOfferCount!=0)
     {
         negotiatingMissionOfferSlot=0;
         return CAMPAIGN_CONTINUE_MISSION_BRIEFING;
@@ -156,7 +156,7 @@ uint16_t MwRequestMissionOfferContinuation(void)
 uint16_t MwNextMissionOfferContinuation(void)
 {
     uint16_t nextOffer=negotiatingMissionOfferSlot+1;
-    if (nextOffer>=missionOfferCount) return CAMPAIGN_CONTINUE_CONTRACT_OFFICE_REDRAW;
+    if (nextOffer>=campaignEconomy.missionOfferCount) return CAMPAIGN_CONTINUE_CONTRACT_OFFICE_REDRAW;
     requestedContractPaymentThousands=0;
     requestedContractSalvagePercent=0;
     requestedContractAdvancePercent=0;
@@ -254,7 +254,7 @@ uint16_t MwEditContractPaymentRequestContinuation(void)
     if (requestContractPaymentEnabled!=1)
     {
         if ((negotiatingMissionOfferByteOffset&1) || negotiatingMissionOfferByteOffset/2>=MISSION_OFFER_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (negotiatingMissionOfferByteOffset&1) || negotiatingMissionOfferByteOffset/2>=MISSION_OFFER_SLOTS");
-        requestedContractPaymentThousands=missionPaymentThousands[negotiatingMissionOfferByteOffset/2];
+        requestedContractPaymentThousands=campaignEconomy.missionPaymentThousands[negotiatingMissionOfferByteOffset/2];
         requestContractPaymentEnabled=1;
     }
     return MwEditContractRequestContinuation(CONTRACT_PAYMENT_TERM*sizeof(uint16_t));
@@ -264,7 +264,7 @@ uint16_t MwEditContractSalvageRequestContinuation(void)
     if (requestContractSalvageEnabled!=1)
     {
         if ((negotiatingMissionOfferByteOffset&1) || negotiatingMissionOfferByteOffset/2>=MISSION_OFFER_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (negotiatingMissionOfferByteOffset&1) || negotiatingMissionOfferByteOffset/2>=MISSION_OFFER_SLOTS");
-        requestedContractSalvagePercent=missionSalvagePercentages[negotiatingMissionOfferByteOffset/2];
+        requestedContractSalvagePercent=campaignEconomy.missionSalvagePercentages[negotiatingMissionOfferByteOffset/2];
         requestContractSalvageEnabled=1;
     }
     return MwEditContractRequestContinuation(CONTRACT_SALVAGE_TERM*sizeof(uint16_t));
@@ -274,7 +274,7 @@ uint16_t MwEditContractAdvanceRequestContinuation(void)
     if (requestContractAdvanceEnabled!=1)
     {
         if ((negotiatingMissionOfferByteOffset&1) || negotiatingMissionOfferByteOffset/2>=MISSION_OFFER_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (negotiatingMissionOfferByteOffset&1) || negotiatingMissionOfferByteOffset/2>=MISSION_OFFER_SLOTS");
-        requestedContractAdvancePercent=missionAdvancePercentages[negotiatingMissionOfferByteOffset/2];
+        requestedContractAdvancePercent=campaignEconomy.missionAdvancePercentages[negotiatingMissionOfferByteOffset/2];
         requestContractAdvanceEnabled=1;
     }
     return MwEditContractRequestContinuation(CONTRACT_ADVANCE_TERM*sizeof(uint16_t));
@@ -292,58 +292,58 @@ uint16_t MwNegotiateAndAcceptContractContinuation(void)
     if (offerSlot>=MISSION_OFFER_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: offerSlot>=MISSION_OFFER_SLOTS");
     if (requestContractPaymentEnabled!=0)
     {
-        if (requestedContractPaymentThousands>missionPaymentThousands[offerSlot])
+        if (requestedContractPaymentThousands>campaignEconomy.missionPaymentThousands[offerSlot])
         {
             negotiationRequestsSatisfied=0;
-            uint16_t headroom=missionPaymentCeilingsThousands[offerSlot]-missionPaymentThousands[offerSlot];
+            uint16_t headroom=campaignEconomy.missionPaymentCeilingsThousands[offerSlot]-campaignEconomy.missionPaymentThousands[offerSlot];
             uint16_t concession=MwRandomUpTo(headroom>>1);
-            concession+=missionPaymentThousands[offerSlot]; /* Native re-read after RNG. */
+            concession+=campaignEconomy.missionPaymentThousands[offerSlot]; /* Native re-read after RNG. */
             concession=(uint16_t)(concession/CONTRACT_PAYMENT_STEP*CONTRACT_PAYMENT_STEP);
             if (concession<requestedContractPaymentThousands)
-            {missionPaymentThousands[offerSlot]=concession;goto salvageRequest;}
+            {campaignEconomy.missionPaymentThousands[offerSlot]=concession;goto salvageRequest;}
         }
-        missionPaymentThousands[offerSlot]=requestedContractPaymentThousands;
+        campaignEconomy.missionPaymentThousands[offerSlot]=requestedContractPaymentThousands;
         negotiationRequestsSatisfied=1;
     }
 salvageRequest:
     if (requestContractSalvageEnabled!=0)
     {
-        if (requestedContractSalvagePercent>missionSalvagePercentages[offerSlot])
+        if (requestedContractSalvagePercent>campaignEconomy.missionSalvagePercentages[offerSlot])
         {
-            uint16_t headroom=missionSalvagePercentageCeilings[offerSlot]-missionSalvagePercentages[offerSlot];
+            uint16_t headroom=campaignEconomy.missionSalvagePercentageCeilings[offerSlot]-campaignEconomy.missionSalvagePercentages[offerSlot];
             uint16_t concession=MwRandomUpTo(headroom>>1);
-            concession+=missionSalvagePercentages[offerSlot];
+            concession+=campaignEconomy.missionSalvagePercentages[offerSlot];
             if (concession<requestedContractSalvagePercent)
             {
                 negotiationRequestsSatisfied=0;
-                missionSalvagePercentages[offerSlot]=concession;
+                campaignEconomy.missionSalvagePercentages[offerSlot]=concession;
                 goto advanceRequest;
             }
         }
         if (negotiationRequestsSatisfied!=0)
         {
-            missionSalvagePercentages[offerSlot]=requestedContractSalvagePercent;
+            campaignEconomy.missionSalvagePercentages[offerSlot]=requestedContractSalvagePercent;
             negotiationRequestsSatisfied=1;
         }
     }
 advanceRequest:
     if (requestContractAdvanceEnabled!=0)
     {
-        if (requestedContractAdvancePercent>missionAdvancePercentages[offerSlot])
+        if (requestedContractAdvancePercent>campaignEconomy.missionAdvancePercentages[offerSlot])
         {
-            uint16_t headroom=missionAdvancePercentageCeilings[offerSlot]-missionAdvancePercentages[offerSlot];
+            uint16_t headroom=campaignEconomy.missionAdvancePercentageCeilings[offerSlot]-campaignEconomy.missionAdvancePercentages[offerSlot];
             uint16_t concession=MwRandomUpTo(headroom>>1);
-            concession+=missionAdvancePercentages[offerSlot];
+            concession+=campaignEconomy.missionAdvancePercentages[offerSlot];
             if (concession<requestedContractAdvancePercent)
             {
-                missionAdvancePercentages[offerSlot]=concession;
+                campaignEconomy.missionAdvancePercentages[offerSlot]=concession;
                 negotiationRequestsSatisfied=0;
                 goto negotiationResult;
             }
         }
         if (negotiationRequestsSatisfied!=0)
         {
-            missionAdvancePercentages[offerSlot]=requestedContractAdvancePercent;
+            campaignEconomy.missionAdvancePercentages[offerSlot]=requestedContractAdvancePercent;
             negotiationRequestsSatisfied=1;
         }
     }
@@ -359,7 +359,7 @@ negotiationResult:
     if (currentPlanetHouseIndex!=HOUSE_STEINER && currentPlanetHouseIndex!=HOUSE_DAVION
         && contractNegotiationAttempts>=contractNegotiationAttemptLimit)
     {
-        missionOfferCount=0;
+        campaignEconomy.missionOfferCount=0;
         MwDrawCampaignFramedBackground();
         EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
         MwDrawContractHeading(CONTRACT_TEXT_X,CONTRACT_NARRATIVE_Y,negotiationTerminatedText);
@@ -380,16 +380,16 @@ acceptContract:
     EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);
     MwDrawContractHeading(CONTRACT_ACCEPTED_MESSAGE_X,CONTRACT_ACCEPTED_MESSAGE_Y,contractAcceptedText);
     acceptedContractActive=1;
-    acceptedContractAdvancePercent=missionAdvancePercentages[offerSlot];
-    acceptedContractSalvagePercent=missionSalvagePercentages[offerSlot];
-    acceptedContractPaymentThousands=missionPaymentThousands[offerSlot];
-    missionCategoryOrMemoryTier=(uint8_t)missionTypeCodes[offerSlot];
-    combatEnemyHeavyCount=(uint8_t)missionEnemyHeavyCounts[offerSlot];
-    combatEnemyMediumCount=(uint8_t)missionEnemyMediumCounts[offerSlot];
-    combatEnemyLightCount=(uint8_t)missionEnemyLightCounts[offerSlot];
-    uint16_t scenario=missionScenarioCodes[offerSlot];
+    acceptedContractAdvancePercent=campaignEconomy.missionAdvancePercentages[offerSlot];
+    acceptedContractSalvagePercent=campaignEconomy.missionSalvagePercentages[offerSlot];
+    acceptedContractPaymentThousands=campaignEconomy.missionPaymentThousands[offerSlot];
+    missionCategoryOrMemoryTier=(uint8_t)campaignEconomy.missionTypeCodes[offerSlot];
+    combatEnemyHeavyCount=(uint8_t)campaignEconomy.missionEnemyHeavyCounts[offerSlot];
+    combatEnemyMediumCount=(uint8_t)campaignEconomy.missionEnemyMediumCounts[offerSlot];
+    combatEnemyLightCount=(uint8_t)campaignEconomy.missionEnemyLightCounts[offerSlot];
+    uint16_t scenario=campaignEconomy.missionScenarioCodes[offerSlot];
     combatScenarioCode=(uint8_t)scenario;
-    uint16_t planetIndex=missionPlanetRecordIndices[offerSlot];
+    uint16_t planetIndex=campaignEconomy.missionPlanetRecordIndices[offerSlot];
     combatPlanetSelector=(uint8_t)(planetIndex+1); /* INC BL, not INC BX. */
     planetIndex=(planetIndex&0xFF00)|combatPlanetSelector;
     --planetIndex;
@@ -402,7 +402,7 @@ acceptContract:
     uint16_t landscapeDividend=(scenario&0xFF00)|(uint8_t)(planet->landscapeAndMarketCode-1);
     if (landscapeDividend/PLANET_LANDSCAPE_COUNT>UINT8_MAX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: landscapeDividend/PLANET_LANDSCAPE_COUNT>UINT8_MAX");
     deploymentLandscapeIndex=(uint8_t)(landscapeDividend%PLANET_LANDSCAPE_COUNT);
-    acceptedContractTargetHouseIndex=missionTargetHouseIndices[offerSlot];
+    acceptedContractTargetHouseIndex=campaignEconomy.missionTargetHouseIndices[offerSlot];
     return CAMPAIGN_CONTINUE_CREDIT_CONTRACT_ADVANCE;
 }
 
@@ -414,9 +414,9 @@ uint16_t MwCreditAcceptedContractAdvanceContinuation(void)
     uint32_t advanceCbills=advanceThousands*CBILLS_PER_THOUSAND;
     acceptedContractAdvanceCbillsLow=(uint16_t)advanceCbills;
     acceptedContractAdvanceCbillsHigh=(uint16_t)(advanceCbills>>16);
-    uint32_t funds=((uint32_t)campaignFundsHigh<<16)|campaignFundsLow;
+    uint32_t funds=((uint32_t)campaignEconomy.campaignFundsHigh<<16)|campaignEconomy.campaignFundsLow;
     funds+=advanceCbills;
-    campaignFundsLow=(uint16_t)funds;campaignFundsHigh=(uint16_t)(funds>>16);
+    campaignEconomy.campaignFundsLow=(uint16_t)funds;campaignEconomy.campaignFundsHigh=(uint16_t)(funds>>16);
     remainingContractPaymentThousands=(uint16_t)(acceptedContractPaymentThousands-advanceThousands);
     deploymentRefusalCount=0;
     return CAMPAIGN_CONTINUE_ADJUST_ENEMY_FORCE;
@@ -504,12 +504,12 @@ uint16_t MwCancelContractAfterDeploymentRefusalsContinuation(void)
     acceptedContractActive=0;
     MwRefreshMissionOffers();
     deploymentRefusalCount=0;
-    uint32_t funds=((uint32_t)campaignFundsHigh<<16)|campaignFundsLow;
+    uint32_t funds=((uint32_t)campaignEconomy.campaignFundsHigh<<16)|campaignEconomy.campaignFundsLow;
     uint32_t advance=((uint32_t)acceptedContractAdvanceCbillsHigh<<16)|acceptedContractAdvanceCbillsLow;
     funds=funds<advance?0:funds-advance;
-    campaignFundsLow=(uint16_t)funds;campaignFundsHigh=(uint16_t)(funds>>16);
+    campaignEconomy.campaignFundsLow=(uint16_t)funds;campaignEconomy.campaignFundsHigh=(uint16_t)(funds>>16);
     uint16_t employerHouse=(uint16_t)(currentPlanetHouseIndex<<1)/sizeof(uint16_t);
     if (employerHouse>=CAMPAIGN_HOUSE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: employerHouse>=CAMPAIGN_HOUSE_COUNT");
-    ++houseGrievancePoints[employerHouse];
+    ++campaignEconomy.houseGrievancePoints[employerHouse];
     return CAMPAIGN_CONTINUE_PLANET_HUB;
 }

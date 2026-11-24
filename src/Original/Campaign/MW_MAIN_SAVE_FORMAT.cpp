@@ -38,41 +38,41 @@ void MwEncodeCampaignExchange(uint8_t bytes[CAMPAIGN_SAVE_BYTES])
     bytes[0x002D+1]=(uint8_t)(currentPlanetMapPositionY>>8);
     bytes[0x002F]=(uint8_t)planetMarketPremiumPercent;
     bytes[0x002F+1]=(uint8_t)(planetMarketPremiumPercent>>8);
-    bytes[0x0031]=(uint8_t)calendarSubmonthUnits;
-    bytes[0x0031+1]=(uint8_t)(calendarSubmonthUnits>>8);
+    bytes[0x0031]=(uint8_t)campaignEconomy.calendarSubmonthUnits;
+    bytes[0x0031+1]=(uint8_t)(campaignEconomy.calendarSubmonthUnits>>8);
     bytes[0x0033]=(uint8_t)calendarMonthIndex;
     bytes[0x0033+1]=(uint8_t)(calendarMonthIndex>>8);
     bytes[0x0035]=(uint8_t)calendarYear;
     bytes[0x0035+1]=(uint8_t)(calendarYear>>8);
-    bytes[0x0037]=(uint8_t)marketRefreshUnits;
-    bytes[0x0037+1]=(uint8_t)(marketRefreshUnits>>8);
-    bytes[0x0039]=(uint8_t)elapsedBillingMonths;
-    bytes[0x0039+1]=(uint8_t)(elapsedBillingMonths>>8);
+    bytes[0x0037]=(uint8_t)campaignEconomy.marketRefreshUnits;
+    bytes[0x0037+1]=(uint8_t)(campaignEconomy.marketRefreshUnits>>8);
+    bytes[0x0039]=(uint8_t)campaignEconomy.elapsedBillingMonths;
+    bytes[0x0039+1]=(uint8_t)(campaignEconomy.elapsedBillingMonths>>8);
     memcpy(bytes+0x003B,commanderNameBytes,sizeof(commanderNameBytes));
     memcpy(bytes+0x0045,unidentifiedField19,sizeof(unidentifiedField19));
     bytes[0x0047]=(uint8_t)commanderAgeYears;
     bytes[0x0047+1]=(uint8_t)(commanderAgeYears>>8);
-    bytes[0x0049]=(uint8_t)campaignFundsLow;
-    bytes[0x0049+1]=(uint8_t)(campaignFundsLow>>8);
-    bytes[0x004B]=(uint8_t)campaignFundsHigh;
-    bytes[0x004B+1]=(uint8_t)(campaignFundsHigh>>8);
+    bytes[0x0049]=(uint8_t)campaignEconomy.campaignFundsLow;
+    bytes[0x0049+1]=(uint8_t)(campaignEconomy.campaignFundsLow>>8);
+    bytes[0x004B]=(uint8_t)campaignEconomy.campaignFundsHigh;
+    bytes[0x004B+1]=(uint8_t)(campaignEconomy.campaignFundsHigh>>8);
     for (size_t i=0;i<sizeof(houseNetStandings)/sizeof(houseNetStandings[0]);++i)
     {
         bytes[0x004D+i*2]=(uint8_t)houseNetStandings[i];
         bytes[0x004D+i*2+1]=(uint8_t)(houseNetStandings[i]>>8);
     }
-    for (size_t i=0;i<sizeof(houseFavorPoints)/sizeof(houseFavorPoints[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.houseFavorPoints)/sizeof(campaignEconomy.houseFavorPoints[0]);++i)
     {
-        bytes[0x0057+i*2]=(uint8_t)houseFavorPoints[i];
-        bytes[0x0057+i*2+1]=(uint8_t)(houseFavorPoints[i]>>8);
+        bytes[0x0057+i*2]=(uint8_t)campaignEconomy.houseFavorPoints[i];
+        bytes[0x0057+i*2+1]=(uint8_t)(campaignEconomy.houseFavorPoints[i]>>8);
     }
-    for (size_t i=0;i<sizeof(houseGrievancePoints)/sizeof(houseGrievancePoints[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.houseGrievancePoints)/sizeof(campaignEconomy.houseGrievancePoints[0]);++i)
     {
-        bytes[0x0061+i*2]=(uint8_t)houseGrievancePoints[i];
-        bytes[0x0061+i*2+1]=(uint8_t)(houseGrievancePoints[i]>>8);
+        bytes[0x0061+i*2]=(uint8_t)campaignEconomy.houseGrievancePoints[i];
+        bytes[0x0061+i*2+1]=(uint8_t)(campaignEconomy.houseGrievancePoints[i]>>8);
     }
-    bytes[0x006B]=(uint8_t)playerCombatCredit;
-    bytes[0x006B+1]=(uint8_t)(playerCombatCredit>>8);
+    bytes[0x006B]=(uint8_t)campaignEconomy.playerCombatCredit;
+    bytes[0x006B+1]=(uint8_t)(campaignEconomy.playerCombatCredit>>8);
     bytes[0x006D]=(uint8_t)pilotRosterCount;
     bytes[0x006D+1]=(uint8_t)(pilotRosterCount>>8);
     for (size_t i=0;i<sizeof(rosterPilotIds)/sizeof(rosterPilotIds[0]);++i)
@@ -81,7 +81,7 @@ void MwEncodeCampaignExchange(uint8_t bytes[CAMPAIGN_SAVE_BYTES])
         bytes[0x006F+i*2+1]=(uint8_t)(rosterPilotIds[i]>>8);
     }
     memcpy(bytes+0x0077,pilotIdentityStorage.roster.unavailablePilots1To42,sizeof(pilotIdentityStorage.roster.unavailablePilots1To42));
-    bytes[0x00A1]=pilotDepartureFlagTail;
+    bytes[0x00A1]=campaignEconomy.pilotDepartureFlagTail;
     for (size_t i=0;i<sizeof(rosterPayTiers)/sizeof(rosterPayTiers[0]);++i)
     {
         bytes[0x00A2+i*2]=(uint8_t)rosterPayTiers[i];
@@ -112,124 +112,124 @@ void MwEncodeCampaignExchange(uint8_t bytes[CAMPAIGN_SAVE_BYTES])
         bytes[0x00CA+i*2]=(uint8_t)rosterPortraitIds[i];
         bytes[0x00CA+i*2+1]=(uint8_t)(rosterPortraitIds[i]>>8);
     }
-    bytes[0x00D2]=(uint8_t)dropShipMissedUpkeepPayments;
-    bytes[0x00D2+1]=(uint8_t)(dropShipMissedUpkeepPayments>>8);
-    bytes[0x00D4]=(uint8_t)unpaidPilotWageMarker;
-    bytes[0x00D4+1]=(uint8_t)(unpaidPilotWageMarker>>8);
-    bytes[0x00D6]=(uint8_t)availableRecruitCount;
-    bytes[0x00D6+1]=(uint8_t)(availableRecruitCount>>8);
-    for (size_t i=0;i<sizeof(availableRecruitIds)/sizeof(availableRecruitIds[0]);++i)
+    bytes[0x00D2]=(uint8_t)campaignEconomy.dropShipMissedUpkeepPayments;
+    bytes[0x00D2+1]=(uint8_t)(campaignEconomy.dropShipMissedUpkeepPayments>>8);
+    bytes[0x00D4]=(uint8_t)campaignEconomy.unpaidPilotWageMarker;
+    bytes[0x00D4+1]=(uint8_t)(campaignEconomy.unpaidPilotWageMarker>>8);
+    bytes[0x00D6]=(uint8_t)campaignEconomy.availableRecruitCount;
+    bytes[0x00D6+1]=(uint8_t)(campaignEconomy.availableRecruitCount>>8);
+    for (size_t i=0;i<sizeof(campaignEconomy.availableRecruitIds)/sizeof(campaignEconomy.availableRecruitIds[0]);++i)
     {
-        bytes[0x00D8+i*2]=(uint8_t)availableRecruitIds[i];
-        bytes[0x00D8+i*2+1]=(uint8_t)(availableRecruitIds[i]>>8);
+        bytes[0x00D8+i*2]=(uint8_t)campaignEconomy.availableRecruitIds[i];
+        bytes[0x00D8+i*2+1]=(uint8_t)(campaignEconomy.availableRecruitIds[i]>>8);
     }
-    bytes[0x00E8]=(uint8_t)ownedUnitCount;
-    bytes[0x00E8+1]=(uint8_t)(ownedUnitCount>>8);
-    for (size_t i=0;i<sizeof(ownedUnitKinds)/sizeof(ownedUnitKinds[0]);++i)
+    bytes[0x00E8]=(uint8_t)campaignEconomy.ownedUnitCount;
+    bytes[0x00E8+1]=(uint8_t)(campaignEconomy.ownedUnitCount>>8);
+    for (size_t i=0;i<sizeof(campaignEconomy.ownedUnitKinds)/sizeof(campaignEconomy.ownedUnitKinds[0]);++i)
     {
-        bytes[0x00EA+i*2]=(uint8_t)ownedUnitKinds[i];
-        bytes[0x00EA+i*2+1]=(uint8_t)(ownedUnitKinds[i]>>8);
+        bytes[0x00EA+i*2]=(uint8_t)campaignEconomy.ownedUnitKinds[i];
+        bytes[0x00EA+i*2+1]=(uint8_t)(campaignEconomy.ownedUnitKinds[i]>>8);
     }
     memcpy(bytes+0x0102,ownedUnitDamage,sizeof(ownedUnitDamage));
-    for (size_t i=0;i<sizeof(ownedAmmoQuantitiesByGroup)/sizeof(ownedAmmoQuantitiesByGroup[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.ownedAmmoQuantitiesByGroup)/sizeof(campaignEconomy.ownedAmmoQuantitiesByGroup[0]);++i)
     {
-        bytes[0x025E +i*2]=(uint8_t)ownedAmmoQuantitiesByGroup[i];
-        bytes[0x025E +i*2+1]=(uint8_t)(ownedAmmoQuantitiesByGroup[i]>>8);
+        bytes[0x025E +i*2]=(uint8_t)campaignEconomy.ownedAmmoQuantitiesByGroup[i];
+        bytes[0x025E +i*2+1]=(uint8_t)(campaignEconomy.ownedAmmoQuantitiesByGroup[i]>>8);
     }
-    for (size_t i=0;i<sizeof(marketAmmoQuantitiesByGroup)/sizeof(marketAmmoQuantitiesByGroup[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.marketAmmoQuantitiesByGroup)/sizeof(campaignEconomy.marketAmmoQuantitiesByGroup[0]);++i)
     {
-        bytes[0x02A6+i*2]=(uint8_t)marketAmmoQuantitiesByGroup[i];
-        bytes[0x02A6+i*2+1]=(uint8_t)(marketAmmoQuantitiesByGroup[i]>>8);
+        bytes[0x02A6+i*2]=(uint8_t)campaignEconomy.marketAmmoQuantitiesByGroup[i];
+        bytes[0x02A6+i*2+1]=(uint8_t)(campaignEconomy.marketAmmoQuantitiesByGroup[i]>>8);
     }
     for (size_t i=0;i<sizeof(reserveAmmoQuantitiesByFamily)/sizeof(reserveAmmoQuantitiesByFamily[0]);++i)
     {
         bytes[0x02EE +i*2]=(uint8_t)reserveAmmoQuantitiesByFamily[i];
         bytes[0x02EE +i*2+1]=(uint8_t)(reserveAmmoQuantitiesByFamily[i]>>8);
     }
-    for (size_t i=0;i<sizeof(ownedAmmoKindsByGroup)/sizeof(ownedAmmoKindsByGroup[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.ownedAmmoKindsByGroup)/sizeof(campaignEconomy.ownedAmmoKindsByGroup[0]);++i)
     {
-        bytes[0x02FA+i*2]=(uint8_t)ownedAmmoKindsByGroup[i];
-        bytes[0x02FA+i*2+1]=(uint8_t)(ownedAmmoKindsByGroup[i]>>8);
+        bytes[0x02FA+i*2]=(uint8_t)campaignEconomy.ownedAmmoKindsByGroup[i];
+        bytes[0x02FA+i*2+1]=(uint8_t)(campaignEconomy.ownedAmmoKindsByGroup[i]>>8);
     }
-    for (size_t i=0;i<sizeof(marketAmmoKindsByGroup)/sizeof(marketAmmoKindsByGroup[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.marketAmmoKindsByGroup)/sizeof(campaignEconomy.marketAmmoKindsByGroup[0]);++i)
     {
-        bytes[0x0342+i*2]=(uint8_t)marketAmmoKindsByGroup[i];
-        bytes[0x0342+i*2+1]=(uint8_t)(marketAmmoKindsByGroup[i]>>8);
+        bytes[0x0342+i*2]=(uint8_t)campaignEconomy.marketAmmoKindsByGroup[i];
+        bytes[0x0342+i*2+1]=(uint8_t)(campaignEconomy.marketAmmoKindsByGroup[i]>>8);
     }
-    bytes[0x038A]=(uint8_t)marketUnitCount;
-    bytes[0x038A+1]=(uint8_t)(marketUnitCount>>8);
-    for (size_t i=0;i<sizeof(marketUnitKinds)/sizeof(marketUnitKinds[0]);++i)
+    bytes[0x038A]=(uint8_t)campaignEconomy.marketUnitCount;
+    bytes[0x038A+1]=(uint8_t)(campaignEconomy.marketUnitCount>>8);
+    for (size_t i=0;i<sizeof(campaignEconomy.marketUnitKinds)/sizeof(campaignEconomy.marketUnitKinds[0]);++i)
     {
-        bytes[0x038C+i*2]=(uint8_t)marketUnitKinds[i];
-        bytes[0x038C+i*2+1]=(uint8_t)(marketUnitKinds[i]>>8);
+        bytes[0x038C+i*2]=(uint8_t)campaignEconomy.marketUnitKinds[i];
+        bytes[0x038C+i*2+1]=(uint8_t)(campaignEconomy.marketUnitKinds[i]>>8);
     }
     memcpy(bytes+0x03A4,marketUnitDamage,sizeof(marketUnitDamage));
-    bytes[0x0500]=(uint8_t)missionOfferCount;
-    bytes[0x0500+1]=(uint8_t)(missionOfferCount>>8);
-    for (size_t i=0;i<sizeof(missionDescriptionOffsets)/sizeof(missionDescriptionOffsets[0]);++i)
+    bytes[0x0500]=(uint8_t)campaignEconomy.missionOfferCount;
+    bytes[0x0500+1]=(uint8_t)(campaignEconomy.missionOfferCount>>8);
+    for (size_t i=0;i<sizeof(campaignEconomy.missionDescriptionOffsets)/sizeof(campaignEconomy.missionDescriptionOffsets[0]);++i)
     {
-        bytes[0x0502+i*2]=(uint8_t)missionDescriptionOffsets[i];
-        bytes[0x0502+i*2+1]=(uint8_t)(missionDescriptionOffsets[i]>>8);
+        bytes[0x0502+i*2]=(uint8_t)campaignEconomy.missionDescriptionOffsets[i];
+        bytes[0x0502+i*2+1]=(uint8_t)(campaignEconomy.missionDescriptionOffsets[i]>>8);
     }
-    for (size_t i=0;i<sizeof(missionPlanetRecordIndices)/sizeof(missionPlanetRecordIndices[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionPlanetRecordIndices)/sizeof(campaignEconomy.missionPlanetRecordIndices[0]);++i)
     {
-        bytes[0x050E +i*2]=(uint8_t)missionPlanetRecordIndices[i];
-        bytes[0x050E +i*2+1]=(uint8_t)(missionPlanetRecordIndices[i]>>8);
+        bytes[0x050E +i*2]=(uint8_t)campaignEconomy.missionPlanetRecordIndices[i];
+        bytes[0x050E +i*2+1]=(uint8_t)(campaignEconomy.missionPlanetRecordIndices[i]>>8);
     }
-    for (size_t i=0;i<sizeof(missionTargetHouseIndices)/sizeof(missionTargetHouseIndices[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionTargetHouseIndices)/sizeof(campaignEconomy.missionTargetHouseIndices[0]);++i)
     {
-        bytes[0x051A+i*2]=(uint8_t)missionTargetHouseIndices[i];
-        bytes[0x051A+i*2+1]=(uint8_t)(missionTargetHouseIndices[i]>>8);
+        bytes[0x051A+i*2]=(uint8_t)campaignEconomy.missionTargetHouseIndices[i];
+        bytes[0x051A+i*2+1]=(uint8_t)(campaignEconomy.missionTargetHouseIndices[i]>>8);
     }
-    for (size_t i=0;i<sizeof(missionTypeCodes)/sizeof(missionTypeCodes[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionTypeCodes)/sizeof(campaignEconomy.missionTypeCodes[0]);++i)
     {
-        bytes[0x0526+i*2]=(uint8_t)missionTypeCodes[i];
-        bytes[0x0526+i*2+1]=(uint8_t)(missionTypeCodes[i]>>8);
+        bytes[0x0526+i*2]=(uint8_t)campaignEconomy.missionTypeCodes[i];
+        bytes[0x0526+i*2+1]=(uint8_t)(campaignEconomy.missionTypeCodes[i]>>8);
     }
-    for (size_t i=0;i<sizeof(missionEnemyHeavyCounts)/sizeof(missionEnemyHeavyCounts[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionEnemyHeavyCounts)/sizeof(campaignEconomy.missionEnemyHeavyCounts[0]);++i)
     {
-        bytes[0x0532+i*2]=(uint8_t)missionEnemyHeavyCounts[i];
-        bytes[0x0532+i*2+1]=(uint8_t)(missionEnemyHeavyCounts[i]>>8);
+        bytes[0x0532+i*2]=(uint8_t)campaignEconomy.missionEnemyHeavyCounts[i];
+        bytes[0x0532+i*2+1]=(uint8_t)(campaignEconomy.missionEnemyHeavyCounts[i]>>8);
     }
-    for (size_t i=0;i<sizeof(missionEnemyMediumCounts)/sizeof(missionEnemyMediumCounts[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionEnemyMediumCounts)/sizeof(campaignEconomy.missionEnemyMediumCounts[0]);++i)
     {
-        bytes[0x053E +i*2]=(uint8_t)missionEnemyMediumCounts[i];
-        bytes[0x053E +i*2+1]=(uint8_t)(missionEnemyMediumCounts[i]>>8);
+        bytes[0x053E +i*2]=(uint8_t)campaignEconomy.missionEnemyMediumCounts[i];
+        bytes[0x053E +i*2+1]=(uint8_t)(campaignEconomy.missionEnemyMediumCounts[i]>>8);
     }
-    for (size_t i=0;i<sizeof(missionEnemyLightCounts)/sizeof(missionEnemyLightCounts[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionEnemyLightCounts)/sizeof(campaignEconomy.missionEnemyLightCounts[0]);++i)
     {
-        bytes[0x054A+i*2]=(uint8_t)missionEnemyLightCounts[i];
-        bytes[0x054A+i*2+1]=(uint8_t)(missionEnemyLightCounts[i]>>8);
+        bytes[0x054A+i*2]=(uint8_t)campaignEconomy.missionEnemyLightCounts[i];
+        bytes[0x054A+i*2+1]=(uint8_t)(campaignEconomy.missionEnemyLightCounts[i]>>8);
     }
-    for (size_t i=0;i<sizeof(missionPaymentThousands)/sizeof(missionPaymentThousands[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionPaymentThousands)/sizeof(campaignEconomy.missionPaymentThousands[0]);++i)
     {
-        bytes[0x0556+i*2]=(uint8_t)missionPaymentThousands[i];
-        bytes[0x0556+i*2+1]=(uint8_t)(missionPaymentThousands[i]>>8);
+        bytes[0x0556+i*2]=(uint8_t)campaignEconomy.missionPaymentThousands[i];
+        bytes[0x0556+i*2+1]=(uint8_t)(campaignEconomy.missionPaymentThousands[i]>>8);
     }
-    for (size_t i=0;i<sizeof(missionSalvagePercentages)/sizeof(missionSalvagePercentages[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionSalvagePercentages)/sizeof(campaignEconomy.missionSalvagePercentages[0]);++i)
     {
-        bytes[0x0562+i*2]=(uint8_t)missionSalvagePercentages[i];
-        bytes[0x0562+i*2+1]=(uint8_t)(missionSalvagePercentages[i]>>8);
+        bytes[0x0562+i*2]=(uint8_t)campaignEconomy.missionSalvagePercentages[i];
+        bytes[0x0562+i*2+1]=(uint8_t)(campaignEconomy.missionSalvagePercentages[i]>>8);
     }
-    for (size_t i=0;i<sizeof(missionAdvancePercentages)/sizeof(missionAdvancePercentages[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionAdvancePercentages)/sizeof(campaignEconomy.missionAdvancePercentages[0]);++i)
     {
-        bytes[0x056E +i*2]=(uint8_t)missionAdvancePercentages[i];
-        bytes[0x056E +i*2+1]=(uint8_t)(missionAdvancePercentages[i]>>8);
+        bytes[0x056E +i*2]=(uint8_t)campaignEconomy.missionAdvancePercentages[i];
+        bytes[0x056E +i*2+1]=(uint8_t)(campaignEconomy.missionAdvancePercentages[i]>>8);
     }
-    for (size_t i=0;i<sizeof(missionPaymentCeilingsThousands)/sizeof(missionPaymentCeilingsThousands[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionPaymentCeilingsThousands)/sizeof(campaignEconomy.missionPaymentCeilingsThousands[0]);++i)
     {
-        bytes[0x057A+i*2]=(uint8_t)missionPaymentCeilingsThousands[i];
-        bytes[0x057A+i*2+1]=(uint8_t)(missionPaymentCeilingsThousands[i]>>8);
+        bytes[0x057A+i*2]=(uint8_t)campaignEconomy.missionPaymentCeilingsThousands[i];
+        bytes[0x057A+i*2+1]=(uint8_t)(campaignEconomy.missionPaymentCeilingsThousands[i]>>8);
     }
-    for (size_t i=0;i<sizeof(missionSalvagePercentageCeilings)/sizeof(missionSalvagePercentageCeilings[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionSalvagePercentageCeilings)/sizeof(campaignEconomy.missionSalvagePercentageCeilings[0]);++i)
     {
-        bytes[0x0586+i*2]=(uint8_t)missionSalvagePercentageCeilings[i];
-        bytes[0x0586+i*2+1]=(uint8_t)(missionSalvagePercentageCeilings[i]>>8);
+        bytes[0x0586+i*2]=(uint8_t)campaignEconomy.missionSalvagePercentageCeilings[i];
+        bytes[0x0586+i*2+1]=(uint8_t)(campaignEconomy.missionSalvagePercentageCeilings[i]>>8);
     }
-    for (size_t i=0;i<sizeof(missionAdvancePercentageCeilings)/sizeof(missionAdvancePercentageCeilings[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionAdvancePercentageCeilings)/sizeof(campaignEconomy.missionAdvancePercentageCeilings[0]);++i)
     {
-        bytes[0x0592+i*2]=(uint8_t)missionAdvancePercentageCeilings[i];
-        bytes[0x0592+i*2+1]=(uint8_t)(missionAdvancePercentageCeilings[i]>>8);
+        bytes[0x0592+i*2]=(uint8_t)campaignEconomy.missionAdvancePercentageCeilings[i];
+        bytes[0x0592+i*2+1]=(uint8_t)(campaignEconomy.missionAdvancePercentageCeilings[i]>>8);
     }
     bytes[0x059E]=(uint8_t)contractNegotiationAttemptLimit;
     bytes[0x059E +1]=(uint8_t)(contractNegotiationAttemptLimit>>8);
@@ -254,12 +254,12 @@ void MwEncodeCampaignExchange(uint8_t bytes[CAMPAIGN_SAVE_BYTES])
     bytes[0x05B6+1]=(uint8_t)(acceptedContractAdvancePercent>>8);
     bytes[0x05B8]=(uint8_t)remainingContractPaymentThousands;
     bytes[0x05B8+1]=(uint8_t)(remainingContractPaymentThousands>>8);
-    memcpy(bytes+0x05BA,houseMissionTypeLimits,sizeof(houseMissionTypeLimits));
+    memcpy(bytes+0x05BA,campaignEconomy.houseMissionTypeLimits,sizeof(campaignEconomy.houseMissionTypeLimits));
     bytes[0x05E2]=audioOptionLabelIndex;
-    for (size_t i=0;i<sizeof(missionScenarioCodes)/sizeof(missionScenarioCodes[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionScenarioCodes)/sizeof(campaignEconomy.missionScenarioCodes[0]);++i)
     {
-        bytes[0x05E3+i*2]=(uint8_t)missionScenarioCodes[i];
-        bytes[0x05E3+i*2+1]=(uint8_t)(missionScenarioCodes[i]>>8);
+        bytes[0x05E3+i*2]=(uint8_t)campaignEconomy.missionScenarioCodes[i];
+        bytes[0x05E3+i*2+1]=(uint8_t)(campaignEconomy.missionScenarioCodes[i]>>8);
     }
     memcpy(bytes+0x05EF,pilotGunneryTiers,sizeof(pilotGunneryTiers));
     memcpy(bytes+0x061A,pilotPilotingTiers,sizeof(pilotPilotingTiers));
@@ -272,14 +272,14 @@ void MwEncodeCampaignExchange(uint8_t bytes[CAMPAIGN_SAVE_BYTES])
         bytes[0x06FE +i*2]=(uint8_t)campaignEventPlanetSelectors[i];
         bytes[0x06FE +i*2+1]=(uint8_t)(campaignEventPlanetSelectors[i]>>8);
     }
-    bytes[0x070A]=majorCampaignMissionRollThreshold;
+    bytes[0x070A]=campaignEconomy.majorCampaignMissionRollThreshold;
     bytes[0x070B]=(uint8_t)acceptedContractTargetHouseIndex;
     bytes[0x070B+1]=(uint8_t)(acceptedContractTargetHouseIndex>>8);
     bytes[0x070D]=campaignTerrainDetailLevel;
-    bytes[0x070E]=(uint8_t)dealerUnitPurchaseLimit;
-    bytes[0x070E +1]=(uint8_t)(dealerUnitPurchaseLimit>>8);
-    bytes[0x0710]=(uint8_t)unitsSoldSinceMarketRefresh;
-    bytes[0x0710+1]=(uint8_t)(unitsSoldSinceMarketRefresh>>8);
+    bytes[0x070E]=(uint8_t)campaignEconomy.dealerUnitPurchaseLimit;
+    bytes[0x070E +1]=(uint8_t)(campaignEconomy.dealerUnitPurchaseLimit>>8);
+    bytes[0x0710]=(uint8_t)campaignEconomy.unitsSoldSinceMarketRefresh;
+    bytes[0x0710+1]=(uint8_t)(campaignEconomy.unitsSoldSinceMarketRefresh>>8);
     bytes[0x0712]=(uint8_t)playerSkillProgress;
     bytes[0x0712+1]=(uint8_t)(playerSkillProgress>>8);
     bytes[0x0714]=darkWingBaseVictoryRecorded;
@@ -312,36 +312,36 @@ void MwDecodeCampaignExchange(const uint8_t bytes[CAMPAIGN_SAVE_BYTES])
     currentPlanetMapPositionX=(uint16_t)(bytes[0x002B]|((uint16_t)bytes[0x002B+1]<<8));
     currentPlanetMapPositionY=(uint16_t)(bytes[0x002D]|((uint16_t)bytes[0x002D+1]<<8));
     planetMarketPremiumPercent=(uint16_t)(bytes[0x002F]|((uint16_t)bytes[0x002F+1]<<8));
-    calendarSubmonthUnits=(uint16_t)(bytes[0x0031]|((uint16_t)bytes[0x0031+1]<<8));
+    campaignEconomy.calendarSubmonthUnits=(uint16_t)(bytes[0x0031]|((uint16_t)bytes[0x0031+1]<<8));
     calendarMonthIndex=(uint16_t)(bytes[0x0033]|((uint16_t)bytes[0x0033+1]<<8));
     calendarYear=(uint16_t)(bytes[0x0035]|((uint16_t)bytes[0x0035+1]<<8));
-    marketRefreshUnits=(uint16_t)(bytes[0x0037]|((uint16_t)bytes[0x0037+1]<<8));
-    elapsedBillingMonths=(uint16_t)(bytes[0x0039]|((uint16_t)bytes[0x0039+1]<<8));
+    campaignEconomy.marketRefreshUnits=(uint16_t)(bytes[0x0037]|((uint16_t)bytes[0x0037+1]<<8));
+    campaignEconomy.elapsedBillingMonths=(uint16_t)(bytes[0x0039]|((uint16_t)bytes[0x0039+1]<<8));
     memcpy(commanderNameBytes,bytes+0x003B,sizeof(commanderNameBytes));
     memcpy(unidentifiedField19,bytes+0x0045,sizeof(unidentifiedField19));
     commanderAgeYears=(uint16_t)(bytes[0x0047]|((uint16_t)bytes[0x0047+1]<<8));
-    campaignFundsLow=(uint16_t)(bytes[0x0049]|((uint16_t)bytes[0x0049+1]<<8));
-    campaignFundsHigh=(uint16_t)(bytes[0x004B]|((uint16_t)bytes[0x004B+1]<<8));
+    campaignEconomy.campaignFundsLow=(uint16_t)(bytes[0x0049]|((uint16_t)bytes[0x0049+1]<<8));
+    campaignEconomy.campaignFundsHigh=(uint16_t)(bytes[0x004B]|((uint16_t)bytes[0x004B+1]<<8));
     for (size_t i=0;i<sizeof(houseNetStandings)/sizeof(houseNetStandings[0]);++i)
     {
         houseNetStandings[i]=(uint16_t)(bytes[0x004D+i*2]|((uint16_t)bytes[0x004D+i*2+1]<<8));
     }
-    for (size_t i=0;i<sizeof(houseFavorPoints)/sizeof(houseFavorPoints[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.houseFavorPoints)/sizeof(campaignEconomy.houseFavorPoints[0]);++i)
     {
-        houseFavorPoints[i]=(uint16_t)(bytes[0x0057+i*2]|((uint16_t)bytes[0x0057+i*2+1]<<8));
+        campaignEconomy.houseFavorPoints[i]=(uint16_t)(bytes[0x0057+i*2]|((uint16_t)bytes[0x0057+i*2+1]<<8));
     }
-    for (size_t i=0;i<sizeof(houseGrievancePoints)/sizeof(houseGrievancePoints[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.houseGrievancePoints)/sizeof(campaignEconomy.houseGrievancePoints[0]);++i)
     {
-        houseGrievancePoints[i]=(uint16_t)(bytes[0x0061+i*2]|((uint16_t)bytes[0x0061+i*2+1]<<8));
+        campaignEconomy.houseGrievancePoints[i]=(uint16_t)(bytes[0x0061+i*2]|((uint16_t)bytes[0x0061+i*2+1]<<8));
     }
-    playerCombatCredit=(uint16_t)(bytes[0x006B]|((uint16_t)bytes[0x006B+1]<<8));
+    campaignEconomy.playerCombatCredit=(uint16_t)(bytes[0x006B]|((uint16_t)bytes[0x006B+1]<<8));
     pilotRosterCount=(uint16_t)(bytes[0x006D]|((uint16_t)bytes[0x006D+1]<<8));
     for (size_t i=0;i<sizeof(rosterPilotIds)/sizeof(rosterPilotIds[0]);++i)
     {
         rosterPilotIds[i]=(uint16_t)(bytes[0x006F+i*2]|((uint16_t)bytes[0x006F+i*2+1]<<8));
     }
     memcpy(pilotIdentityStorage.roster.unavailablePilots1To42,bytes+0x0077,sizeof(pilotIdentityStorage.roster.unavailablePilots1To42));
-    pilotDepartureFlagTail=bytes[0x00A1];
+    campaignEconomy.pilotDepartureFlagTail=bytes[0x00A1];
     for (size_t i=0;i<sizeof(rosterPayTiers)/sizeof(rosterPayTiers[0]);++i)
     {
         rosterPayTiers[i]=(uint16_t)(bytes[0x00A2+i*2]|((uint16_t)bytes[0x00A2+i*2+1]<<8));
@@ -366,97 +366,97 @@ void MwDecodeCampaignExchange(const uint8_t bytes[CAMPAIGN_SAVE_BYTES])
     {
         rosterPortraitIds[i]=(uint16_t)(bytes[0x00CA+i*2]|((uint16_t)bytes[0x00CA+i*2+1]<<8));
     }
-    dropShipMissedUpkeepPayments=(uint16_t)(bytes[0x00D2]|((uint16_t)bytes[0x00D2+1]<<8));
-    unpaidPilotWageMarker=(uint16_t)(bytes[0x00D4]|((uint16_t)bytes[0x00D4+1]<<8));
-    availableRecruitCount=(uint16_t)(bytes[0x00D6]|((uint16_t)bytes[0x00D6+1]<<8));
-    for (size_t i=0;i<sizeof(availableRecruitIds)/sizeof(availableRecruitIds[0]);++i)
+    campaignEconomy.dropShipMissedUpkeepPayments=(uint16_t)(bytes[0x00D2]|((uint16_t)bytes[0x00D2+1]<<8));
+    campaignEconomy.unpaidPilotWageMarker=(uint16_t)(bytes[0x00D4]|((uint16_t)bytes[0x00D4+1]<<8));
+    campaignEconomy.availableRecruitCount=(uint16_t)(bytes[0x00D6]|((uint16_t)bytes[0x00D6+1]<<8));
+    for (size_t i=0;i<sizeof(campaignEconomy.availableRecruitIds)/sizeof(campaignEconomy.availableRecruitIds[0]);++i)
     {
-        availableRecruitIds[i]=(uint16_t)(bytes[0x00D8+i*2]|((uint16_t)bytes[0x00D8+i*2+1]<<8));
+        campaignEconomy.availableRecruitIds[i]=(uint16_t)(bytes[0x00D8+i*2]|((uint16_t)bytes[0x00D8+i*2+1]<<8));
     }
-    ownedUnitCount=(uint16_t)(bytes[0x00E8]|((uint16_t)bytes[0x00E8+1]<<8));
-    for (size_t i=0;i<sizeof(ownedUnitKinds)/sizeof(ownedUnitKinds[0]);++i)
+    campaignEconomy.ownedUnitCount=(uint16_t)(bytes[0x00E8]|((uint16_t)bytes[0x00E8+1]<<8));
+    for (size_t i=0;i<sizeof(campaignEconomy.ownedUnitKinds)/sizeof(campaignEconomy.ownedUnitKinds[0]);++i)
     {
-        ownedUnitKinds[i]=(uint16_t)(bytes[0x00EA+i*2]|((uint16_t)bytes[0x00EA+i*2+1]<<8));
+        campaignEconomy.ownedUnitKinds[i]=(uint16_t)(bytes[0x00EA+i*2]|((uint16_t)bytes[0x00EA+i*2+1]<<8));
     }
     memcpy(ownedUnitDamage,bytes+0x0102,sizeof(ownedUnitDamage));
-    for (size_t i=0;i<sizeof(ownedAmmoQuantitiesByGroup)/sizeof(ownedAmmoQuantitiesByGroup[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.ownedAmmoQuantitiesByGroup)/sizeof(campaignEconomy.ownedAmmoQuantitiesByGroup[0]);++i)
     {
-        ownedAmmoQuantitiesByGroup[i]=(uint16_t)(bytes[0x025E +i*2]|((uint16_t)bytes[0x025E +i*2+1]<<8));
+        campaignEconomy.ownedAmmoQuantitiesByGroup[i]=(uint16_t)(bytes[0x025E +i*2]|((uint16_t)bytes[0x025E +i*2+1]<<8));
     }
-    for (size_t i=0;i<sizeof(marketAmmoQuantitiesByGroup)/sizeof(marketAmmoQuantitiesByGroup[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.marketAmmoQuantitiesByGroup)/sizeof(campaignEconomy.marketAmmoQuantitiesByGroup[0]);++i)
     {
-        marketAmmoQuantitiesByGroup[i]=(uint16_t)(bytes[0x02A6+i*2]|((uint16_t)bytes[0x02A6+i*2+1]<<8));
+        campaignEconomy.marketAmmoQuantitiesByGroup[i]=(uint16_t)(bytes[0x02A6+i*2]|((uint16_t)bytes[0x02A6+i*2+1]<<8));
     }
     for (size_t i=0;i<sizeof(reserveAmmoQuantitiesByFamily)/sizeof(reserveAmmoQuantitiesByFamily[0]);++i)
     {
         reserveAmmoQuantitiesByFamily[i]=(uint16_t)(bytes[0x02EE +i*2]|((uint16_t)bytes[0x02EE +i*2+1]<<8));
     }
-    for (size_t i=0;i<sizeof(ownedAmmoKindsByGroup)/sizeof(ownedAmmoKindsByGroup[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.ownedAmmoKindsByGroup)/sizeof(campaignEconomy.ownedAmmoKindsByGroup[0]);++i)
     {
-        ownedAmmoKindsByGroup[i]=(uint16_t)(bytes[0x02FA+i*2]|((uint16_t)bytes[0x02FA+i*2+1]<<8));
+        campaignEconomy.ownedAmmoKindsByGroup[i]=(uint16_t)(bytes[0x02FA+i*2]|((uint16_t)bytes[0x02FA+i*2+1]<<8));
     }
-    for (size_t i=0;i<sizeof(marketAmmoKindsByGroup)/sizeof(marketAmmoKindsByGroup[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.marketAmmoKindsByGroup)/sizeof(campaignEconomy.marketAmmoKindsByGroup[0]);++i)
     {
-        marketAmmoKindsByGroup[i]=(uint16_t)(bytes[0x0342+i*2]|((uint16_t)bytes[0x0342+i*2+1]<<8));
+        campaignEconomy.marketAmmoKindsByGroup[i]=(uint16_t)(bytes[0x0342+i*2]|((uint16_t)bytes[0x0342+i*2+1]<<8));
     }
-    marketUnitCount=(uint16_t)(bytes[0x038A]|((uint16_t)bytes[0x038A+1]<<8));
-    for (size_t i=0;i<sizeof(marketUnitKinds)/sizeof(marketUnitKinds[0]);++i)
+    campaignEconomy.marketUnitCount=(uint16_t)(bytes[0x038A]|((uint16_t)bytes[0x038A+1]<<8));
+    for (size_t i=0;i<sizeof(campaignEconomy.marketUnitKinds)/sizeof(campaignEconomy.marketUnitKinds[0]);++i)
     {
-        marketUnitKinds[i]=(uint16_t)(bytes[0x038C+i*2]|((uint16_t)bytes[0x038C+i*2+1]<<8));
+        campaignEconomy.marketUnitKinds[i]=(uint16_t)(bytes[0x038C+i*2]|((uint16_t)bytes[0x038C+i*2+1]<<8));
     }
     memcpy(marketUnitDamage,bytes+0x03A4,sizeof(marketUnitDamage));
-    missionOfferCount=(uint16_t)(bytes[0x0500]|((uint16_t)bytes[0x0500+1]<<8));
-    for (size_t i=0;i<sizeof(missionDescriptionOffsets)/sizeof(missionDescriptionOffsets[0]);++i)
+    campaignEconomy.missionOfferCount=(uint16_t)(bytes[0x0500]|((uint16_t)bytes[0x0500+1]<<8));
+    for (size_t i=0;i<sizeof(campaignEconomy.missionDescriptionOffsets)/sizeof(campaignEconomy.missionDescriptionOffsets[0]);++i)
     {
-        missionDescriptionOffsets[i]=(uint16_t)(bytes[0x0502+i*2]|((uint16_t)bytes[0x0502+i*2+1]<<8));
+        campaignEconomy.missionDescriptionOffsets[i]=(uint16_t)(bytes[0x0502+i*2]|((uint16_t)bytes[0x0502+i*2+1]<<8));
     }
-    for (size_t i=0;i<sizeof(missionPlanetRecordIndices)/sizeof(missionPlanetRecordIndices[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionPlanetRecordIndices)/sizeof(campaignEconomy.missionPlanetRecordIndices[0]);++i)
     {
-        missionPlanetRecordIndices[i]=(uint16_t)(bytes[0x050E +i*2]|((uint16_t)bytes[0x050E +i*2+1]<<8));
+        campaignEconomy.missionPlanetRecordIndices[i]=(uint16_t)(bytes[0x050E +i*2]|((uint16_t)bytes[0x050E +i*2+1]<<8));
     }
-    for (size_t i=0;i<sizeof(missionTargetHouseIndices)/sizeof(missionTargetHouseIndices[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionTargetHouseIndices)/sizeof(campaignEconomy.missionTargetHouseIndices[0]);++i)
     {
-        missionTargetHouseIndices[i]=(uint16_t)(bytes[0x051A+i*2]|((uint16_t)bytes[0x051A+i*2+1]<<8));
+        campaignEconomy.missionTargetHouseIndices[i]=(uint16_t)(bytes[0x051A+i*2]|((uint16_t)bytes[0x051A+i*2+1]<<8));
     }
-    for (size_t i=0;i<sizeof(missionTypeCodes)/sizeof(missionTypeCodes[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionTypeCodes)/sizeof(campaignEconomy.missionTypeCodes[0]);++i)
     {
-        missionTypeCodes[i]=(uint16_t)(bytes[0x0526+i*2]|((uint16_t)bytes[0x0526+i*2+1]<<8));
+        campaignEconomy.missionTypeCodes[i]=(uint16_t)(bytes[0x0526+i*2]|((uint16_t)bytes[0x0526+i*2+1]<<8));
     }
-    for (size_t i=0;i<sizeof(missionEnemyHeavyCounts)/sizeof(missionEnemyHeavyCounts[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionEnemyHeavyCounts)/sizeof(campaignEconomy.missionEnemyHeavyCounts[0]);++i)
     {
-        missionEnemyHeavyCounts[i]=(uint16_t)(bytes[0x0532+i*2]|((uint16_t)bytes[0x0532+i*2+1]<<8));
+        campaignEconomy.missionEnemyHeavyCounts[i]=(uint16_t)(bytes[0x0532+i*2]|((uint16_t)bytes[0x0532+i*2+1]<<8));
     }
-    for (size_t i=0;i<sizeof(missionEnemyMediumCounts)/sizeof(missionEnemyMediumCounts[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionEnemyMediumCounts)/sizeof(campaignEconomy.missionEnemyMediumCounts[0]);++i)
     {
-        missionEnemyMediumCounts[i]=(uint16_t)(bytes[0x053E +i*2]|((uint16_t)bytes[0x053E +i*2+1]<<8));
+        campaignEconomy.missionEnemyMediumCounts[i]=(uint16_t)(bytes[0x053E +i*2]|((uint16_t)bytes[0x053E +i*2+1]<<8));
     }
-    for (size_t i=0;i<sizeof(missionEnemyLightCounts)/sizeof(missionEnemyLightCounts[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionEnemyLightCounts)/sizeof(campaignEconomy.missionEnemyLightCounts[0]);++i)
     {
-        missionEnemyLightCounts[i]=(uint16_t)(bytes[0x054A+i*2]|((uint16_t)bytes[0x054A+i*2+1]<<8));
+        campaignEconomy.missionEnemyLightCounts[i]=(uint16_t)(bytes[0x054A+i*2]|((uint16_t)bytes[0x054A+i*2+1]<<8));
     }
-    for (size_t i=0;i<sizeof(missionPaymentThousands)/sizeof(missionPaymentThousands[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionPaymentThousands)/sizeof(campaignEconomy.missionPaymentThousands[0]);++i)
     {
-        missionPaymentThousands[i]=(uint16_t)(bytes[0x0556+i*2]|((uint16_t)bytes[0x0556+i*2+1]<<8));
+        campaignEconomy.missionPaymentThousands[i]=(uint16_t)(bytes[0x0556+i*2]|((uint16_t)bytes[0x0556+i*2+1]<<8));
     }
-    for (size_t i=0;i<sizeof(missionSalvagePercentages)/sizeof(missionSalvagePercentages[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionSalvagePercentages)/sizeof(campaignEconomy.missionSalvagePercentages[0]);++i)
     {
-        missionSalvagePercentages[i]=(uint16_t)(bytes[0x0562+i*2]|((uint16_t)bytes[0x0562+i*2+1]<<8));
+        campaignEconomy.missionSalvagePercentages[i]=(uint16_t)(bytes[0x0562+i*2]|((uint16_t)bytes[0x0562+i*2+1]<<8));
     }
-    for (size_t i=0;i<sizeof(missionAdvancePercentages)/sizeof(missionAdvancePercentages[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionAdvancePercentages)/sizeof(campaignEconomy.missionAdvancePercentages[0]);++i)
     {
-        missionAdvancePercentages[i]=(uint16_t)(bytes[0x056E +i*2]|((uint16_t)bytes[0x056E +i*2+1]<<8));
+        campaignEconomy.missionAdvancePercentages[i]=(uint16_t)(bytes[0x056E +i*2]|((uint16_t)bytes[0x056E +i*2+1]<<8));
     }
-    for (size_t i=0;i<sizeof(missionPaymentCeilingsThousands)/sizeof(missionPaymentCeilingsThousands[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionPaymentCeilingsThousands)/sizeof(campaignEconomy.missionPaymentCeilingsThousands[0]);++i)
     {
-        missionPaymentCeilingsThousands[i]=(uint16_t)(bytes[0x057A+i*2]|((uint16_t)bytes[0x057A+i*2+1]<<8));
+        campaignEconomy.missionPaymentCeilingsThousands[i]=(uint16_t)(bytes[0x057A+i*2]|((uint16_t)bytes[0x057A+i*2+1]<<8));
     }
-    for (size_t i=0;i<sizeof(missionSalvagePercentageCeilings)/sizeof(missionSalvagePercentageCeilings[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionSalvagePercentageCeilings)/sizeof(campaignEconomy.missionSalvagePercentageCeilings[0]);++i)
     {
-        missionSalvagePercentageCeilings[i]=(uint16_t)(bytes[0x0586+i*2]|((uint16_t)bytes[0x0586+i*2+1]<<8));
+        campaignEconomy.missionSalvagePercentageCeilings[i]=(uint16_t)(bytes[0x0586+i*2]|((uint16_t)bytes[0x0586+i*2+1]<<8));
     }
-    for (size_t i=0;i<sizeof(missionAdvancePercentageCeilings)/sizeof(missionAdvancePercentageCeilings[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionAdvancePercentageCeilings)/sizeof(campaignEconomy.missionAdvancePercentageCeilings[0]);++i)
     {
-        missionAdvancePercentageCeilings[i]=(uint16_t)(bytes[0x0592+i*2]|((uint16_t)bytes[0x0592+i*2+1]<<8));
+        campaignEconomy.missionAdvancePercentageCeilings[i]=(uint16_t)(bytes[0x0592+i*2]|((uint16_t)bytes[0x0592+i*2+1]<<8));
     }
     contractNegotiationAttemptLimit=(uint16_t)(bytes[0x059E]|((uint16_t)bytes[0x059E +1]<<8));
     requestedContractPaymentThousands=(uint16_t)(bytes[0x05A0]|((uint16_t)bytes[0x05A0+1]<<8));
@@ -470,11 +470,11 @@ void MwDecodeCampaignExchange(const uint8_t bytes[CAMPAIGN_SAVE_BYTES])
     acceptedContractSalvagePercent=(uint16_t)(bytes[0x05B4]|((uint16_t)bytes[0x05B4+1]<<8));
     acceptedContractAdvancePercent=(uint16_t)(bytes[0x05B6]|((uint16_t)bytes[0x05B6+1]<<8));
     remainingContractPaymentThousands=(uint16_t)(bytes[0x05B8]|((uint16_t)bytes[0x05B8+1]<<8));
-    memcpy(houseMissionTypeLimits,bytes+0x05BA,sizeof(houseMissionTypeLimits));
+    memcpy(campaignEconomy.houseMissionTypeLimits,bytes+0x05BA,sizeof(campaignEconomy.houseMissionTypeLimits));
     audioOptionLabelIndex=bytes[0x05E2];
-    for (size_t i=0;i<sizeof(missionScenarioCodes)/sizeof(missionScenarioCodes[0]);++i)
+    for (size_t i=0;i<sizeof(campaignEconomy.missionScenarioCodes)/sizeof(campaignEconomy.missionScenarioCodes[0]);++i)
     {
-        missionScenarioCodes[i]=(uint16_t)(bytes[0x05E3+i*2]|((uint16_t)bytes[0x05E3+i*2+1]<<8));
+        campaignEconomy.missionScenarioCodes[i]=(uint16_t)(bytes[0x05E3+i*2]|((uint16_t)bytes[0x05E3+i*2+1]<<8));
     }
     memcpy(pilotGunneryTiers,bytes+0x05EF,sizeof(pilotGunneryTiers));
     memcpy(pilotPilotingTiers,bytes+0x061A,sizeof(pilotPilotingTiers));
@@ -485,11 +485,11 @@ void MwDecodeCampaignExchange(const uint8_t bytes[CAMPAIGN_SAVE_BYTES])
     {
         campaignEventPlanetSelectors[i]=(uint16_t)(bytes[0x06FE +i*2]|((uint16_t)bytes[0x06FE +i*2+1]<<8));
     }
-    majorCampaignMissionRollThreshold=bytes[0x070A];
+    campaignEconomy.majorCampaignMissionRollThreshold=bytes[0x070A];
     acceptedContractTargetHouseIndex=(uint16_t)(bytes[0x070B]|((uint16_t)bytes[0x070B+1]<<8));
     campaignTerrainDetailLevel=bytes[0x070D];
-    dealerUnitPurchaseLimit=(uint16_t)(bytes[0x070E]|((uint16_t)bytes[0x070E +1]<<8));
-    unitsSoldSinceMarketRefresh=(uint16_t)(bytes[0x0710]|((uint16_t)bytes[0x0710+1]<<8));
+    campaignEconomy.dealerUnitPurchaseLimit=(uint16_t)(bytes[0x070E]|((uint16_t)bytes[0x070E +1]<<8));
+    campaignEconomy.unitsSoldSinceMarketRefresh=(uint16_t)(bytes[0x0710]|((uint16_t)bytes[0x0710+1]<<8));
     playerSkillProgress=(uint16_t)(bytes[0x0712]|((uint16_t)bytes[0x0712+1]<<8));
     darkWingBaseVictoryRecorded=bytes[0x0714];
     launcherMemoryTier=(uint16_t)(bytes[0x0715]|((uint16_t)bytes[0x0715+1]<<8));

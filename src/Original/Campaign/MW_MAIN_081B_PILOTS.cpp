@@ -68,10 +68,10 @@ uint16_t MwOrderDrinkContinuation(uint16_t entryOffset)
  * The exhausted cursor is not an invitation to recruit from Mech inventory. */
 bool MwFindNextRecruitCandidate(void)
 {
-    if (availableRecruitCount==0) return false;
+    if (campaignEconomy.availableRecruitCount==0) return false;
     while (recruitOfferSlot<RECRUIT_OFFER_SLOTS)
     {
-        uint16_t pilotId=availableRecruitIds[recruitOfferSlot];
+        uint16_t pilotId=campaignEconomy.availableRecruitIds[recruitOfferSlot];
         if (pilotId!=0) {selectedRecruitPilotId=pilotId;return true;}
         ++recruitOfferSlot;
     }
@@ -102,7 +102,7 @@ uint16_t MwOpenRecruitInterviewContinuation(void)
     MwDrawRecruitStatText((const char *)pilot->nameBytes,RECRUIT_NAME_Y);
     MwDrawRecruitStatText(pilotSkillLabels[pilotGunneryTiers[selectedRecruitPilotId]],RECRUIT_GUNNERY_Y);
     MwDrawRecruitStatText(pilotSkillLabels[pilotPilotingTiers[selectedRecruitPilotId]],RECRUIT_PILOTING_Y);
-    uint16_t wage=pilotWageAmounts[pilotGunneryTiers[selectedRecruitPilotId]];
+    uint16_t wage=campaignEconomy.pilotWageAmounts[pilotGunneryTiers[selectedRecruitPilotId]];
     ++numericGroupingEnabled;
     MwDrawSignedDecimalField(wage,RECRUIT_STATS_X,1,0,PILOT_CARD_TEXT_COLOUR,PILOT_CARD_BACKGROUND,RECRUIT_WAGE_Y);
     /* Native POP/PUSH DI retains this definition, not a later selection. */
@@ -148,8 +148,8 @@ uint16_t MwHireSelectedRecruitContinuation(void)
         rosterMechAssignments[rosterSlot]=PILOT_ASSIGNMENT_NONE;
         ++pilotRosterCount; /* No0451/0502 clear, wage debit or time call. */
     }
-    availableRecruitIds[recruitOfferSlot]=0;
-    --availableRecruitCount;
+    campaignEconomy.availableRecruitIds[recruitOfferSlot]=0;
+    --campaignEconomy.availableRecruitCount;
     return CAMPAIGN_CONTINUE_BAR_REFRESH;
 }
 
@@ -157,8 +157,8 @@ uint16_t MwHireSelectedRecruitContinuation(void)
 uint16_t MwRejectSelectedRecruitContinuation(void)
 {
     if (recruitOfferSlot>=RECRUIT_OFFER_SLOTS) return CAMPAIGN_CONTINUE_BAR_REFRESH;
-    availableRecruitIds[recruitOfferSlot]=0;
-    --availableRecruitCount; /* Native WORD wrap, no added zero-count guard. */
+    campaignEconomy.availableRecruitIds[recruitOfferSlot]=0;
+    --campaignEconomy.availableRecruitCount; /* Native WORD wrap, no added zero-count guard. */
     return CAMPAIGN_CONTINUE_BAR_REFRESH;
 }
 
@@ -184,7 +184,7 @@ void MwDrawCommanderProfile(void)
 {
     EgaSelectFont(0);
     for (uint16_t house=0;house<CAMPAIGN_HOUSE_COUNT;++house)
-        houseNetStandings[house]=(uint16_t)(houseFavorPoints[house]-houseGrievancePoints[house]);
+        houseNetStandings[house]=(uint16_t)(campaignEconomy.houseFavorPoints[house]-campaignEconomy.houseGrievancePoints[house]);
     commanderProfilePanel.width=rosterPayTiers[COMMANDER_ROSTER_SLOT]==COMMANDER_REPUTATION_WORTH_WATCHING?COMPANY_PROFILE_WATCHING_WIDTH:COMPANY_PROFILE_WIDTH;
     commanderProfilePanel.x=COMPANY_PROFILE_X; /* Native252A discards the centering calculation. */
     MwDrawDescriptorTextPanel(&commanderProfilePanel);
@@ -199,7 +199,7 @@ void MwDrawCommanderProfile(void)
     if (calendarMonthIndex>=COMMANDER_AGE_MONTH_THRESHOLD) ++commanderAgeYears;
     MwDrawSignedDecimalField(commanderAgeYears,(uint16_t)(commanderProfilePanel.x+COMPANY_AGE_X),1,0,PILOT_CARD_TEXT_COLOUR,PILOT_CARD_BACKGROUND,COMPANY_AGE_Y);
     ++numericGroupingEnabled;
-    MwDrawSignedDecimalField(((uint32_t)campaignFundsHigh<<NATIVE_WORD_BITS)|campaignFundsLow,
+    MwDrawSignedDecimalField(((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow,
         (uint16_t)(commanderProfilePanel.x+COMPANY_WEALTH_X),1,0,PILOT_CARD_TEXT_COLOUR,PILOT_CARD_BACKGROUND,COMPANY_WEALTH_Y);
     for (uint16_t house=0;house<CAMPAIGN_HOUSE_COUNT;++house)
     {
@@ -273,17 +273,17 @@ void MwDrawPilotRosterCard(uint16_t pilotRosterSlot)
     MwDrawPilotCardText(pilotSkillLabels[pilotCardPilotingTier],PILOT_CARD_PILOTING_Y);
     if (pilotCardRosterSlot!=0)
     {
-        uint16_t wage=pilotWageAmounts[pilotCardQuotedWageTier];
+        uint16_t wage=campaignEconomy.pilotWageAmounts[pilotCardQuotedWageTier];
         ++numericGroupingEnabled;
         MwDrawSignedDecimalField(wage,pilotCardTextX,1,0,Campaign_Pal_EGA_LightGrey,Campaign_Pal_EGA_DarkGrey,PILOT_CARD_WAGE_Y);
     }
     uint16_t assignedSlot=pilotCardOwnedUnitSlot;
-    uint16_t assignedMechKind=assignedSlot==PILOT_ASSIGNMENT_NONE?PILOT_ASSIGNMENT_NONE:ownedUnitKinds[assignedSlot];
+    uint16_t assignedMechKind=assignedSlot==PILOT_ASSIGNMENT_NONE?PILOT_ASSIGNMENT_NONE:campaignEconomy.ownedUnitKinds[assignedSlot];
     MwDrawPilotCardText(MwSetPilotAssignmentCaption(assignedMechKind),PILOT_CARD_ASSIGNMENT_Y);
     assignedSlot=pilotCardOwnedUnitSlot;
     if ((int16_t)assignedSlot>=0)
     {
-        uint16_t mechPictureId=MwLoadIndexedPicture((uint16_t)(ownedUnitKinds[assignedSlot]+PILOT_MECH_PICTURE_BASE));
+        uint16_t mechPictureId=MwLoadIndexedPicture((uint16_t)(campaignEconomy.ownedUnitKinds[assignedSlot]+PILOT_MECH_PICTURE_BASE));
         EgaDrawPackedSprite((uint16_t)(pilotCardTextX-PILOT_CARD_TEXT_INSET),PILOT_CARD_MECH_Y,EGA_DISPLAY_PAGE,0,mechPictureId);
     }
 }
@@ -360,7 +360,7 @@ uint16_t MwPollPilotMechAssignmentContinuation(void)
                 --candidateOwnedUnitSlot;
                 if (candidateOwnedUnitSlot==PILOT_ASSIGNMENT_NONE || candidateOwnedUnitSlot==PILOT_ASSIGNMENT_DISMISS) break;
                 if (candidateOwnedUnitSlot>=CAMPAIGN_OWNED_UNIT_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: candidateOwnedUnitSlot>=CAMPAIGN_OWNED_UNIT_SLOTS");
-                if (ownedUnitKinds[candidateOwnedUnitSlot]!=CAMPAIGN_VACANT_UNIT_KIND && ownedUnitKinds[candidateOwnedUnitSlot]!=CAMPAIGN_UNIT_DROPSHIP) break;
+                if (campaignEconomy.ownedUnitKinds[candidateOwnedUnitSlot]!=CAMPAIGN_VACANT_UNIT_KIND && campaignEconomy.ownedUnitKinds[candidateOwnedUnitSlot]!=CAMPAIGN_UNIT_DROPSHIP) break;
             }
         }
         else if (key==CAMPAIGN_KEY_DOWN)
@@ -372,11 +372,11 @@ uint16_t MwPollPilotMechAssignmentContinuation(void)
                 /* Native dismiss->unassigned navigation filters the company
                  * unit count as a kind. Preserve this existing menu quirk. */
                 uint16_t candidateMechKind;
-                if (candidateOwnedUnitSlot==PILOT_ASSIGNMENT_NONE) candidateMechKind=ownedUnitCount;
+                if (candidateOwnedUnitSlot==PILOT_ASSIGNMENT_NONE) candidateMechKind=campaignEconomy.ownedUnitCount;
                 else
                 {
                     if (candidateOwnedUnitSlot>=CAMPAIGN_OWNED_UNIT_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: candidateOwnedUnitSlot>=CAMPAIGN_OWNED_UNIT_SLOTS");
-                    candidateMechKind=ownedUnitKinds[candidateOwnedUnitSlot];
+                    candidateMechKind=campaignEconomy.ownedUnitKinds[candidateOwnedUnitSlot];
                 }
                 if (candidateMechKind!=CAMPAIGN_VACANT_UNIT_KIND && candidateMechKind!=CAMPAIGN_UNIT_DROPSHIP) break;
             }
@@ -422,7 +422,7 @@ void MwDrawPilotAssignmentCandidate(uint16_t pilotRosterSlot,uint16_t ownedUnitS
     uint16_t assignmentCaptionIndex;
     if (ownedUnitSlot==PILOT_ASSIGNMENT_NONE) assignmentCaptionIndex=ASSIGNMENT_NONE_CAPTION;
     else if (ownedUnitSlot==PILOT_ASSIGNMENT_DISMISS) assignmentCaptionIndex=ASSIGNMENT_DISMISS_CAPTION;
-    else assignmentCaptionIndex=ownedUnitKinds[ownedUnitSlot]+ASSIGNMENT_MECH_CAPTION_BASE;
+    else assignmentCaptionIndex=campaignEconomy.ownedUnitKinds[ownedUnitSlot]+ASSIGNMENT_MECH_CAPTION_BASE;
     if (assignmentCaptionIndex>=PILOT_ASSIGNMENT_CAPTION_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: assignmentCaptionIndex>=PILOT_ASSIGNMENT_CAPTION_COUNT");
     MwNativeByteView text={(const uint8_t *)pilotAssignmentCaptions[assignmentCaptionIndex],0,sizeof(pilotAssignmentCaptions[assignmentCaptionIndex])};
     EgaDrawTransparentText(x,PILOT_CARD_ASSIGNMENT_Y,foreground,&text,0);
@@ -459,7 +459,7 @@ void MwDrawAssignmentMechPreview(uint16_t ownedUnitSlot)
     if ((int16_t)ownedUnitSlot>=0)
     {
         if (ownedUnitSlot>=CAMPAIGN_OWNED_UNIT_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: ownedUnitSlot>=CAMPAIGN_OWNED_UNIT_SLOTS");
-        uint16_t mechPictureId=MwLoadIndexedPicture((uint16_t)(ownedUnitKinds[ownedUnitSlot]+PILOT_MECH_PICTURE_BASE));
+        uint16_t mechPictureId=MwLoadIndexedPicture((uint16_t)(campaignEconomy.ownedUnitKinds[ownedUnitSlot]+PILOT_MECH_PICTURE_BASE));
         EgaDrawPackedSprite(pilotCardColumnOrigins[assignmentSelectedPilotSlot],PILOT_CARD_MECH_Y,EGA_DISPLAY_PAGE,0,mechPictureId);
         return;
     }
@@ -480,7 +480,7 @@ uint16_t MwConfirmPilotMechAssignmentContinuation(void)
     if (candidateOwnedUnitSlot==PILOT_ASSIGNMENT_DISMISS) return MwDismissSelectedPilotContinuation(assignmentSelectedPilotSlot);
     rosterMechAssignments[assignmentSelectedPilotSlot]=candidateOwnedUnitSlot;
     pilotCardRosterSlot=assignmentSelectedPilotSlot;
-    uint16_t assignedMechKind=candidateOwnedUnitSlot==PILOT_ASSIGNMENT_NONE?PILOT_ASSIGNMENT_NONE:ownedUnitKinds[candidateOwnedUnitSlot];
+    uint16_t assignedMechKind=candidateOwnedUnitSlot==PILOT_ASSIGNMENT_NONE?PILOT_ASSIGNMENT_NONE:campaignEconomy.ownedUnitKinds[candidateOwnedUnitSlot];
     MwSetPilotAssignmentCaption(assignedMechKind);
     return 0;
 }
@@ -497,7 +497,7 @@ void MwTransferPreviousMechToConflictingPilot(void)
         PILOT_CARD_ASSIGNMENT_Y,ASSIGNMENT_TEXT_WIDTH,ASSIGNMENT_TEXT_HEIGHT,PILOT_CARD_BACKGROUND);
     MwDrawPilotAssignmentCandidate(conflictingPilotSlot,previousOwnedSlot,PILOT_CARD_TEXT_COLOUR);
     pilotCardRosterSlot=assignmentConflictingPilotSlot;
-    uint16_t previousMechKind=previousOwnedSlot==PILOT_ASSIGNMENT_NONE?PILOT_ASSIGNMENT_NONE:ownedUnitKinds[previousOwnedSlot];
+    uint16_t previousMechKind=previousOwnedSlot==PILOT_ASSIGNMENT_NONE?PILOT_ASSIGNMENT_NONE:campaignEconomy.ownedUnitKinds[previousOwnedSlot];
     MwSetPilotAssignmentCaption(previousMechKind);
     uint16_t savedSelectedPilot=assignmentSelectedPilotSlot;
     assignmentSelectedPilotSlot=assignmentConflictingPilotSlot;

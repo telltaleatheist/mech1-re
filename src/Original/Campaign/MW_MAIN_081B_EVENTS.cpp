@@ -175,14 +175,14 @@ void MwEventTestScheduledDate(const MwEventCommand *command)
     year+=EVENT_DATE_YEAR_BASE;
     eventScheduledYearScratch=year;
     bool arrived=year<calendarYear || (year==calendarYear
-        && (month<calendarMonthIndex || (month==calendarMonthIndex && submonth<=calendarSubmonthUnits)));
+        && (month<calendarMonthIndex || (month==calendarMonthIndex && submonth<=campaignEconomy.calendarSubmonthUnits)));
     if (arrived && campaignEventClass==EVENT_CLASS_REPEATABLE)
     {
         month=eventScheduledMonthScratch+6;
         if (month>=CAMPAIGN_MONTH_COUNT) {++eventScheduledYearScratch;month-=CAMPAIGN_MONTH_COUNT;}
         submonth=eventExpirySubmonthScratch;year=eventScheduledYearScratch;
         arrived=year>calendarYear || (year==calendarYear
-            && (month>calendarMonthIndex || (month==calendarMonthIndex && submonth>=calendarSubmonthUnits)));
+            && (month>calendarMonthIndex || (month==calendarMonthIndex && submonth>=campaignEconomy.calendarSubmonthUnits)));
     }
     MwCombineEventCondition(arrived);
 }
@@ -235,7 +235,7 @@ void MwEventTestControllingHouseStanding(const MwEventCommand *command)
     if (house==currentPlanetHouseIndex)
     {
         if (house>=CAMPAIGN_HOUSE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: house>=CAMPAIGN_HOUSE_COUNT");
-        int16_t standing=houseFavorPoints[house]-houseGrievancePoints[house];
+        int16_t standing=campaignEconomy.houseFavorPoints[house]-campaignEconomy.houseGrievancePoints[house];
         matches=standing<threshold;
     }
     MwCombineEventCondition(matches);
@@ -262,14 +262,14 @@ void MwEventRestrictToDateWindow(const MwEventCommand *command)
         uint16_t submonth=(uint8_t)((uint8_t)(command->operand.dateWindow.start.submonthCode-1)<<1);
         uint16_t year=EVENT_DATE_YEAR_BASE+command->operand.dateWindow.start.yearOffset;
         bool reached=year<calendarYear || (year==calendarYear
-            && (month<calendarMonthIndex || (month==calendarMonthIndex && submonth<=calendarSubmonthUnits)));
+            && (month<calendarMonthIndex || (month==calendarMonthIndex && submonth<=campaignEconomy.calendarSubmonthUnits)));
         if (reached)
         {
             month=(uint8_t)(command->operand.dateWindow.end.monthCode-1);
             submonth=(uint8_t)((uint8_t)(command->operand.dateWindow.end.submonthCode-1)<<1);
             year=EVENT_DATE_YEAR_BASE+command->operand.dateWindow.end.yearOffset;
             if (year>calendarYear || (year==calendarYear
-                && month>=calendarMonthIndex && submonth>=calendarSubmonthUnits))
+                && month>=calendarMonthIndex && submonth>=campaignEconomy.calendarSubmonthUnits))
             {eventConditionResult=1;eventOperandCursor=command->next;return;}
         }
     }
@@ -281,11 +281,11 @@ void MwEventAdjustFunds(const MwEventCommand *command)
 {
     if (eventConditionResult==1)
     {
-        uint16_t oldLow=campaignFundsLow;
-        campaignFundsLow+=(uint16_t)command->operand.cashDelta;
-        campaignFundsHigh+=(uint16_t)(command->operand.cashDelta>>NATIVE_WORD_BITS)+(campaignFundsLow<oldLow);
-        if (campaignFundsHigh&NATIVE_WORD_HIGH_BIT)
-        {campaignFundsLow=0;campaignFundsHigh=0;}
+        uint16_t oldLow=campaignEconomy.campaignFundsLow;
+        campaignEconomy.campaignFundsLow+=(uint16_t)command->operand.cashDelta;
+        campaignEconomy.campaignFundsHigh+=(uint16_t)(command->operand.cashDelta>>NATIVE_WORD_BITS)+(campaignEconomy.campaignFundsLow<oldLow);
+        if (campaignEconomy.campaignFundsHigh&NATIVE_WORD_HIGH_BIT)
+        {campaignEconomy.campaignFundsLow=0;campaignEconomy.campaignFundsHigh=0;}
     }
     eventOperandCursor=command->next;
 }
