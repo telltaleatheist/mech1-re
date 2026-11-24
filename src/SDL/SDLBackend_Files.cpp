@@ -169,7 +169,9 @@ static bool HostWriteFile(const uint8_t *buffer,uint16_t byteCount,uint16_t file
     {*bytesWrittenOrError=DOS_ERROR_INVALID_HANDLE;return true;}
     clearerr(fileStreams[fileHandle]);
     size_t written=fwrite(buffer,1,byteCount,fileStreams[fileHandle]);
-    if (ferror(fileStreams[fileHandle])) {*bytesWrittenOrError=HostGetDosFileError();return true;}
+    /* DOS wrote straight through: without the flush a full disk showed only
+     * at the close, whose result the original ignores. */
+    if (fflush(fileStreams[fileHandle])!=0 || ferror(fileStreams[fileHandle])) {*bytesWrittenOrError=HostGetDosFileError();return true;}
     *bytesWrittenOrError=(uint16_t)written;return false;
 }
 static const char *HostGetDtaFilename(void) {return dtaFilename;}

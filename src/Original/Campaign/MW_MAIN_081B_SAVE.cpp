@@ -29,6 +29,22 @@ bool MwDosWriteFile(const uint8_t *buffer,uint16_t byteCount,uint16_t fileHandle
     return mwDosFiles.write(buffer,byteCount,fileHandle,bytesWrittenOrError);
 }
 
+/* The file half of 081B:6D52..6E6D. The create truncates an existing save
+ * before the write, as the original's does, and a write that stops short
+ * leaves what it wrote: the original neither restores nor deletes it. */
+CampaignSaveWrite MwWriteCampaignSaveFile(const char *filename)
+{
+    uint16_t handleOrError;
+    if (MwDosCreateSaveFile(filename,&handleOrError)) return CampaignSaveWrite::NotCreated;
+    campaignOptions.saveFileHandle=handleOrError;
+    uint8_t bytes[CAMPAIGN_SAVE_BYTES];MwEncodeCampaignExchange(bytes);
+    uint16_t bytesWrittenOrError;
+    (void)MwDosWriteFile(bytes,CAMPAIGN_SAVE_BYTES,handleOrError,&bytesWrittenOrError);
+    (void)MwDosCloseFile(campaignOptions.saveFileHandle);
+    /* Native ignores write CF and close result; it tests the count alone. */
+    return bytesWrittenOrError==CAMPAIGN_SAVE_BYTES?CampaignSaveWrite::Written:CampaignSaveWrite::DiskFull;
+}
+
 /* MW_MAIN081B:6D52..6E6D; invalid embedded/leading spaces return6D53.
  * Typed serialization occurs only at the actual1066 binary IO boundary. */
 uint16_t MwSaveCampaignCallback(void)
@@ -54,21 +70,19 @@ readName:
     }
     memcpy(campaignStartup.campaignTextInputBuffer+nameLength,".GAM",sizeof(".GAM"));
     /* The original asked for a save disk on drives A and B ; dropped. */
-    uint16_t handleOrError;
-    if (MwDosCreateSaveFile((const char *)campaignStartup.campaignTextInputBuffer+leadingSpaces,&handleOrError))
+    switch (MwWriteCampaignSaveFile((const char *)campaignStartup.campaignTextInputBuffer+leadingSpaces))
+    {
+    case CampaignSaveWrite::Written: break;
+    case CampaignSaveWrite::NotCreated:
     {
         MwNativeByteView text={campaignOptions.saveDiskErrorText,SAVE_ERROR_TEXT_OFFSET,sizeof(campaignOptions.saveDiskErrorText)};
         return MwShowOptionsMessageAndReturnContinuation(&text,text.nativeBase);
     }
-    campaignOptions.saveFileHandle=handleOrError;
-    uint8_t bytes[CAMPAIGN_SAVE_BYTES];MwEncodeCampaignExchange(bytes);
-    uint16_t bytesWrittenOrError;
-    (void)MwDosWriteFile(bytes,CAMPAIGN_SAVE_BYTES,handleOrError,&bytesWrittenOrError);
-    (void)MwDosCloseFile(campaignOptions.saveFileHandle);
-    if (bytesWrittenOrError!=CAMPAIGN_SAVE_BYTES) /* Native ignores write CF and close result. */
+    case CampaignSaveWrite::DiskFull:
     {
         MwNativeByteView text={campaignOptions.saveDiskFullText,SAVE_FULL_TEXT_OFFSET,sizeof(campaignOptions.saveDiskFullText)};
         return MwShowOptionsMessageAndReturnContinuation(&text,text.nativeBase);
+    }
     }
     return CAMPAIGN_CONTINUE_OPTIONS;
 }

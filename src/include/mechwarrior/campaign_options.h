@@ -55,6 +55,8 @@ uint16_t MwQuitFromOptionsContinuation(void);
 uint16_t MwRestartFromOptionsContinuation(void);
 bool MwDosCreateSaveFile(const char *filename,uint16_t *handleOrError);
 bool MwDosWriteFile(const uint8_t *buffer,uint16_t byteCount,uint16_t fileHandle,uint16_t *bytesWrittenOrError);
+enum class CampaignSaveWrite { Written, NotCreated, DiskFull };
+CampaignSaveWrite MwWriteCampaignSaveFile(const char *filename);
 uint16_t MwSaveCampaignCallback(void);
 uint16_t MwShowOptionsMessageAndReturnContinuation(const MwNativeByteView *text,uint16_t textOffset);
 uint16_t MwShowLoadCampaignCallback(void);
