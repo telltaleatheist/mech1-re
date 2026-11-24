@@ -17,7 +17,10 @@ tools/reference/check.py.
 
 --story and --label-game pass to record.py (a folder without the exes:
 tools/trace/exe_free.py); --strict ignores known/, for a comparison with a
-recording of the same build rather than the goldens.
+recording of the same build rather than the goldens. --real-clock runs a port
+build on the host's clock instead of record.py's test clock: a check that
+real time still gives the goldens, not a gate (a slow build can snap an
+animation a frame further on).
 
 Exit status: 0 all match, 1 a mismatch, 77 skipped (no candidate or game).
 """
@@ -103,6 +106,7 @@ def run_candidate(a, name, out):
                "--work", os.path.join(work, "run")]
         cmd += ["--story", a.story] if a.story else []
         cmd += ["--label-game", a.label_game] if a.label_game else []
+        cmd += ["--real-clock"] if a.real_clock else []
     else:
         cmd = [a.rebuild, "--game-dir", a.game, "--save-dir", os.path.join(work, "saves"),
                "--keys", script, "--trace", out]
@@ -124,6 +128,8 @@ def main():
     ap.add_argument("--story", help="with --port: a story folder each run plays from (record.py)")
     ap.add_argument("--label-game", help="with --port: the folder whose MW_MAIN.EXE keys the labels")
     ap.add_argument("--strict", action="store_true", help="ignore known/ differences")
+    ap.add_argument("--real-clock", action="store_true",
+                    help="with --port: the host's clock, not the test clock (a check, not a gate)")
     a = ap.parse_args()
 
     names = a.only or sorted(f[:-6] for f in os.listdir(a.golden) if f.endswith(".jsonl"))
