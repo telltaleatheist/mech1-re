@@ -82,3 +82,5 @@ CLAUDE.local.md
 !tools/capture/*.asm
 # The Windows archive libraries (tools/windows/build_deps_archive.cmd).
 /deps/
+# SDL's source, where CI and the builds put it.
+/dependencies/

@@ -22,6 +22,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.commit || github.sha }}
+          fetch-depth: 0 # the tags: a release's label is packaged only from its tag
           persist-credentials: false
       - uses: actions/checkout@v4
         with:

@@ -558,14 +558,16 @@ Every slice below is its own branch with the full gate green: both setups, the t
 - **UTF-8 paths.** The program's manifest makes UTF-8 its code page (Windows 10 1903 and later), so every path it is given or opens may hold any character. `status_setup` starts it from such a folder, with such a player's folder. Without the manifest, a folder named in other characters where the setup looks made even `--status` abort.
 - **ega_canvas_writer, combat_records and start_rows** link under MSVC (no duplicate symbol) and pass. `Problem.cpp` is apart from `PortDiagnostics.cpp` to keep it so.
 
+**From R's packages:**
+- A release label is packaged only from its tag, with nothing uncommitted. The three platforms refuse it otherwise.
+- One libSDL3 in the tar.gz, under the name the program loads (`libSDL3.so.0`). The build holds it twice (SDL's own folder and beside the program), so libraries are told apart by their bytes.
+- Every package is checked for its notices as it is finished, hidapi's among them.
+- Measured: what the Mac, Windows and Linux packages load and hold. Windows ships the whole redistributable folder of the MSVC runtime, and the installer Inno Setup's loader and uninstaller; neither has a notice in the package. Nothing is changed on that.
+
 **For R** (found by earlier slices, to be done or decided there):
 - The setup on a finished install (`mw1r --setup`): FIND THE GAME offers the copy in use first, even a damaged one, and INSTALL on it copies nothing. It should verify the game's files (today only BTECH.EXE and MW_MAIN.EXE are looked at) and offer "choose another" plainly.
 - A damaged story folder stops every start, naming the file but no remedy; only deleting it helps. The start should import again by itself when a story file can't be read or has the wrong length, or name the folder to delete. That needs the player's copy of the game, so the case where no copy is found must be said plainly. The start with no arguments isn't run by any test (B4f).
 - The failure in combat's load names "BTECH.EXE", a file that play never opens (`MwFailGameFileRead`). It did not go with the built image (B4f).
-- A package built on each platform with hidapi's notice (`licenses/hidapi-LICENSE-bsd.txt`), and what the Mac and Windows packages link and ship: the MSVC runtime DLLs and Inno Setup's parts among them. Only the Linux package has been measured (S9).
-- The Linux tar.gz holds libSDL3 three times (.so, .so.0, .so.0.2.0); the AppImage holds .so.0 alone.
-- "The C17 port" in `docs/THIRD_PARTY_NOTICES.md`, and the README's stale passages.
-- Packaging with a release's label should refuse a tree that isn't at that tag, or has uncommitted changes.
 - The setup's recognise rules for MechWarrior 2's `DATABASE.MW2` and `MECH2` folder are untested on real data: no such copy is on the machines. The rest were checked on real copies of MechWarrior 3, Pirate's Moon (installed, disc and download, `DATA1.HDR` included) and MechWarrior 2's `MW2.PRJ`.
 - The AppImage may ship, with libfuse and its notice in its runtime (the project owner's word, 2026-11-24); the licence wording for it is R's.
 - In the release notes: an older build imports the story again on a folder made by this one; an old test package's own `MechWarrior.ini` beside the program keeps its `sound_system=speaker`.

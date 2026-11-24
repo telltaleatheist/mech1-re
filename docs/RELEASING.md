@@ -98,7 +98,9 @@ A release is tagged `mw1r-vX.Y.Z`, only when the project decides to; the
 label below is that tag (or any other name for a test build: a name with
 `-test` in it, so it is never taken for a release). The label is the program's
 version too (`MECHWARRIOR_VERSION`, the `version` `--status` reports), a
-release tag's number alone (`mw1r-v1.0.0` reports `1.0.0`). Each
+release tag's number alone (`mw1r-v1.0.0` reports `1.0.0`). Packaging with a
+release's label is refused unless the tree is a git checkout at that tag with
+nothing changed, added or missing (ignored files don't count). Each
 platform's files are named `MW1-Rebuild-<label>-...`:
 
 | Platform | Made on | Files |

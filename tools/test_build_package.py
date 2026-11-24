@@ -34,9 +34,12 @@ class PackageTests(unittest.TestCase):
         exe = root / "build/mechwarrior"
         exe.write_text('#!/bin/sh\n[ "$1" = --help ] && { echo "Usage: mw1r [<game folder>]"; exit 0; }\nexit 2\n')
         exe.chmod(0o755)
-        for name in ["libSDL3.so.0"]:
-            (root / "build" / name).write_bytes(b"fixture library")
-        (root / "build/libSDL3.so").symlink_to("libSDL3.so.0")
+        # SDL's build has the library with its links; the build copies the library itself beside the program.
+        (root / "build/sdl3").mkdir()
+        (root / "build/sdl3/libSDL3.so.0.2.0").write_bytes(b"fixture library")
+        (root / "build/sdl3/libSDL3.so.0").symlink_to("libSDL3.so.0.2.0")
+        (root / "build/sdl3/libSDL3.so").symlink_to("libSDL3.so.0")
+        (root / "build/libSDL3.so.0.2.0").write_bytes(b"fixture library")
 
     def test_extracted_archive_starts_and_libraries_are_portable(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -45,8 +48,9 @@ class PackageTests(unittest.TestCase):
             with patch.object(build_package, "run"), patch.object(build_package, "platform_name", return_value="linux-x86_64"):
                 build_package.package(root, root / "build", root / "sdl", root / "dist", "v0.1.0-test")
             extracted = root / "dist/smoke/MW1-Rebuild-v0.1.0-test-linux-x86_64"
-            self.assertFalse((extracted / "libSDL3.so").is_symlink())
-            self.assertEqual((extracted / "libSDL3.so").read_bytes(), b"fixture library")
+            self.assertEqual([f.name for f in extracted.glob("libSDL3*")], ["libSDL3.so.0"])
+            self.assertFalse((extracted / "libSDL3.so.0").is_symlink())
+            self.assertEqual((extracted / "libSDL3.so.0").read_bytes(), b"fixture library")
             self.assertTrue(os.access(extracted / "mw1r", os.X_OK) and not (extracted / "mechwarrior").exists())
             self.assertEqual(subprocess.run([str(extracted / "mw1r"), "--help"], capture_output=True).returncode, 0)
             self.assertFalse([f for f in extracted.rglob("*") if any(n in f.name.lower() for n in build_package.REMOVED_LIBRARIES)])
@@ -68,7 +72,7 @@ class PackageTests(unittest.TestCase):
                 root = Path(directory)
                 self.fixture(root)
                 if broken == "missing":
-                    for lib in (root / "build").glob("libSDL3.so*"):
+                    for lib in (root / "build").rglob("libSDL3.so*"):
                         lib.unlink()
                 else:
                     (root / "build" / broken).parent.mkdir(exist_ok=True)
@@ -97,9 +101,77 @@ class PackageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self.fixture(root)
-            with patch.object(build_package, "run"), patch.object(build_package, "platform_name", return_value="linux-x86_64"), self.assertRaisesRegex(RuntimeError, "version stamp"):
+            with patch.object(build_package, "run"), patch.object(build_package, "check_release_tree"), patch.object(build_package, "platform_name", return_value="linux-x86_64"), self.assertRaisesRegex(RuntimeError, "version stamp"):
                 build_package.package(root, root / "build", root / "sdl", root / "dist", "mw1r-v1.2.3")
             self.assertFalse(list((root / "dist").glob("*.tar.gz")))
+
+    def test_a_release_is_packaged_only_from_its_tag(self):
+        def git(tree, *args):
+            subprocess.run(["git", "-C", str(tree), "-c", "user.name=t", "-c", "user.email=t@example.invalid", "-c", "commit.gpgsign=false",
+                            "-c", "tag.gpgsign=false", *args], check=True, capture_output=True)
+
+        tag = "mw1r-v1.2.3"
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "tree"
+            root.mkdir()
+            refused = lambda why: self.assertRaisesRegex(RuntimeError, why)
+            with refused("git tree"):
+                build_package.check_release_tree(root, tag)  # no git tree at all
+            git(root, "init", "-q")
+            (root / ".gitignore").write_text("/dist/\n")
+            (root / "a.txt").write_text("one")
+            git(root, "add", "-A")
+            git(root, "commit", "-qm", "one")
+            with refused("git tree"):
+                build_package.check_release_tree(root, tag)  # no such tag
+            git(root, "tag", tag)
+            build_package.check_release_tree(root, tag)
+            (root / "dist").mkdir()
+            (root / "dist/x").write_text("ignored")
+            build_package.check_release_tree(root, tag)
+            with refused("not the top"):
+                build_package.check_release_tree(root / "dist", tag)
+            (root / "a.txt").write_text("two")
+            with refused("with changes"):
+                build_package.check_release_tree(root, tag)
+            build_package.check_release_tree(root, tag + "-test")  # any other label takes the tree as it is
+            git(root, "checkout", "-q", "a.txt")
+            (root / "new.txt").write_text("untracked")
+            with refused("with changes"):
+                build_package.check_release_tree(root, tag)
+            git(root, "add", "-A")
+            with refused("with changes"):
+                build_package.check_release_tree(root, tag)
+            git(root, "commit", "-qm", "two")
+            with refused("but the tree is at"):
+                build_package.check_release_tree(root, tag)
+            git(root, "tag", "-a", "mw1r-v1.2.4", "-m", "annotated")
+            build_package.check_release_tree(root, "mw1r-v1.2.4")
+
+    def test_a_release_label_is_checked_before_the_build(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            for platform in ("linux-x86_64", "mac", "win64"):
+                with patch.object(build_package, "configure_and_build") as built, patch.object(build_package, "platform_name", return_value=platform), self.assertRaisesRegex(RuntimeError, "git tree"):
+                    build_package.package(root, root / "build", root / "sdl", root / "dist", "mw1r-v1.2.3")
+                built.assert_not_called()
+
+    def test_a_notice_missing_from_the_package_is_refused(self):
+        with tempfile.TemporaryDirectory() as directory:
+            licenses = Path(directory)
+            names = [*build_package.NOTICES, *build_package.ARCHIVE_LICENCES.values(), *build_package.SOUNDFONT_LICENCES]
+            for name in names:
+                (licenses / name).write_text("text")
+            build_package.check_notices(licenses)
+            for name in names:
+                (licenses / name).write_text("")
+                with self.assertRaisesRegex(RuntimeError, name.replace(".", r"\.")):
+                    build_package.check_notices(licenses)
+                (licenses / name).unlink()
+                with self.assertRaisesRegex(RuntimeError, name.replace(".", r"\.")):
+                    build_package.check_notices(licenses)
+                (licenses / name).write_text("text")
 
     def test_missing_kit_or_hidapi_licence_blocks_packaging(self):
         for licence in ("extern/re-setup-kit/third_party/stb/LICENSE", "sdl/src/hidapi/LICENSE-bsd.txt"):
