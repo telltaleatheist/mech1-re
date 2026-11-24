@@ -1,9 +1,8 @@
 // src/Import/Records: the typed story files on made-up records (no game
 // files). Pieces -> pilots/planets/missions.json -> load -> rebuilt storage
-// laid out as the exe lays it out, the event script and the music; the strict
+// laid out as the exe lays it out, the event script; the strict
 // reader and the rebuild refuse what doesn't fit.
 #include "../src/Import/Events.h"
-#include "../src/Import/Music.h"
 #include "../src/Import/Records.h"
 
 #include <algorithm>
@@ -328,47 +327,6 @@ void the_event_script() {
     refused([&] { load_events(dir / "bad"); }, "from -128 to 127", "a signed byte out of range");
 }
 
-// Eight made-up instruments: instrument i's parameter f is i * 16 + f, with a
-// high byte in the last to show bytes aren't read as signed.
-void the_music() {
-    const fs::path dir = kDir / "music";
-    std::string rows;
-    for (int i = 0; i < 8; ++i) {
-        for (int f = 0; f < 13; ++f) rows += char(i == 7 && f == 12 ? 0xF0 : i * 16 + f);
-        rows += '\0';
-    }
-    PieceMap p;
-    p["music.adlib_instruments"] = {0x2BA0, rows};
-    write(story_dir(dir) / "music.json", music_json(p));
-    const auto m = load_music(dir);
-    bool exact = m.size() == 8;
-    for (std::size_t i = 0; exact && i < 8; ++i)
-        for (std::size_t f = 0; f < 13; ++f)
-            exact = exact && m[i][f] == static_cast<std::uint8_t>(rows[i * 14 + f]);
-    check(exact, "the instruments keep every parameter in order, as stored");
-
-    write(story_dir(kDir / "nomusic") / "music.json", music_json({}));
-    check(load_music(kDir / "nomusic").empty(), "a table without the instruments writes an empty list");
-
-    PieceMap broken = p;
-    broken["music.adlib_instruments"].bytes[3 * 14 + 13] = 1;
-    refused([&] { music_json(broken); }, "instrument 4's unread last byte", "a nonzero unread byte");
-    broken = p;
-    broken["music.adlib_instruments"].offset = 0x2BA2;
-    refused([&] { music_json(broken); }, "not BTECH 304E:2BA0", "the piece at another offset");
-    broken = p;
-    broken["music.adlib_instruments"].bytes.pop_back();
-    refused([&] { music_json(broken); }, "not BTECH 304E:2BA0", "the piece a byte short");
-
-    const auto file = story_dir(dir / "bad") / "music.json";
-    std::string json = music_json(p);
-    write(file, json.replace(json.find("\"attack\": 3,"), 12, "\"attack\": 256,"));
-    refused([&] { load_music(dir / "bad"); }, "attack is not a whole number", "a parameter past 255");
-    json = music_json(p);
-    write(file, json.replace(json.find("\"decay\""), 7, "\"delay\""));
-    refused([&] { load_music(dir / "bad"); }, "no \"decay\"", "a missing parameter");
-}
-
 }  // namespace
 
 int main() {
@@ -379,7 +337,6 @@ int main() {
         what_doesnt_fit_is_refused();
         the_event_text_bank();
         the_event_script();
-        the_music();
     } catch (const std::exception& e) {
         check(false, std::string("unexpected: ") + e.what());
     }

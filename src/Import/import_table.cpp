@@ -1102,7 +1102,6 @@ constexpr ImportPiece kTable[] = {
     {ImportPiece::Kind::String, "event.caption.26", "MW_MAIN.EXE", 0x1090, 0x5E04, 6, "0b49966064478e67"},
     {ImportPiece::Kind::String, "event.caption.27", "MW_MAIN.EXE", 0x1090, 0x5E0B, 7, "9b7c4b15b4f038b3"},
     {ImportPiece::Kind::String, "event.caption.28", "MW_MAIN.EXE", 0x1090, 0x5E13, 9, "17d9b987075f4a9a"},
-    {ImportPiece::Kind::Bytes, "music.adlib_instruments", "BTECH.EXE", 0x304E, 0x2BA0, 112, "dcdb07efd0119354"},
     {ImportPiece::Kind::Bytes, "check.event_conditions", "MW_MAIN.EXE", 0x1090, 0x5E78, 20, "bb2795581c4a323a"},
     {ImportPiece::Kind::Bytes, "check.event_actions", "MW_MAIN.EXE", 0x1090, 0x5E8C, 20, "6e1eb0c3fb8e6ab8"},
     {ImportPiece::Kind::Bytes, "check.after_action_failures", "MW_MAIN.EXE", 0x1090, 0x1491, 10, "37bb7ccd7e9a2acd"},

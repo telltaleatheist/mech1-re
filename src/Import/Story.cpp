@@ -1,7 +1,6 @@
 #include "Story.h"
 
 #include "Events.h"
-#include "Music.h"
 #include "Records.h"
 
 #include <cstdio>
@@ -41,7 +40,7 @@ std::string hex_of(std::string_view bytes) {
 }
 // The typed records (Records.h), beside the text.
 constexpr const char* kRecordFiles[] = {"pilots.json", "planets.json", "missions.json", "event_text.json",
-                                        "events.json", "music.json"};
+                                        "events.json"};
 
 std::vector<std::uint8_t> read_file(const fs::path& path) {
     std::ifstream in(path, std::ios::binary);
@@ -174,7 +173,10 @@ StoryState story_state(const fs::path& write_dir, std::span<const ImportPiece> t
         const auto* version = manifest.find("import_version");
         if (!version || version->number() != kImportVersion) return StoryState::Outdated;
         const auto* hash = manifest.find("table_sha256");
-        if (!hash || hash->string() != import_table_hash(table)) return StoryState::Outdated;
+        if (!hash) return StoryState::Outdated;
+        const std::string now = import_table_hash(table);
+        if (hash->string() != now && !(now == kMusicRetired.table && hash->string() == kMusicRetired.accepted))
+            return StoryState::Outdated;
     } catch (const std::exception&) {
         return StoryState::Outdated;
     }
@@ -240,7 +242,6 @@ void import_story(const fs::path& game_dir, const fs::path& write_dir, std::span
     write_file(story_dir(write_dir) / kRecordFiles[2], missions_json(pieces));
     write_file(story_dir(write_dir) / kRecordFiles[3], event_text_json(pieces));
     write_file(story_dir(write_dir) / kRecordFiles[4], events_json(pieces));
-    write_file(story_dir(write_dir) / kRecordFiles[5], music_json(pieces));
     std::string sources, btech_revision;
     for (const auto& [name, exe] : exes) {
         if (!sources.empty()) sources += ", ";

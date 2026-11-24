@@ -217,7 +217,6 @@ add_library(mechwarrior_original STATIC
     src/Import/Story.cpp
     src/Import/Records.cpp
     src/Import/Events.cpp
-    src/Import/Music.cpp
     src/Import/StoryHost.cpp
     src/Rules/rule_table.cpp
     src/Rules/new_campaign_fields.cpp
@@ -242,28 +241,28 @@ if(MECHWARRIOR_BUILD_TESTS)
     add_executable(canvas_test tests/canvas_test.cpp)
     target_link_libraries(canvas_test PRIVATE mechwarrior_video)
     add_test(NAME canvas COMMAND canvas_test)
-    add_executable(story_test tests/story_test.cpp src/Import/Story.cpp src/Import/Records.cpp src/Import/Events.cpp src/Import/Music.cpp src/Support/Json.cpp src/Support/Sha256.cpp src/Support/Hmac.cpp
+    add_executable(story_test tests/story_test.cpp src/Import/Story.cpp src/Import/import_table.cpp src/Import/Records.cpp src/Import/Events.cpp src/Support/Json.cpp src/Support/Sha256.cpp src/Support/Hmac.cpp
         src/Support/BtechImage.cpp)
     target_include_directories(story_test PRIVATE src/include)
     add_test(NAME story COMMAND story_test)
-    add_executable(records_test tests/records_test.cpp src/Import/Records.cpp src/Import/Events.cpp src/Import/Music.cpp src/Import/Story.cpp src/Support/Json.cpp
+    add_executable(records_test tests/records_test.cpp src/Import/Records.cpp src/Import/Events.cpp src/Import/Story.cpp src/Support/Json.cpp
         src/Support/Sha256.cpp src/Support/Hmac.cpp src/Support/BtechImage.cpp)
     target_include_directories(records_test PRIVATE src/include)
     add_test(NAME records COMMAND records_test)
     # Needs the player's files (MW1O_GAME, MW1O_BTECH_REFERENCE, MW1O_BTECH_1990); skipped without them.
-    add_executable(btech_revisions_test tests/btech_revisions_test.cpp src/Import/Story.cpp src/Import/Records.cpp src/Import/Events.cpp src/Import/Music.cpp
+    add_executable(btech_revisions_test tests/btech_revisions_test.cpp src/Import/Story.cpp src/Import/Records.cpp src/Import/Events.cpp
         src/Import/import_table.cpp src/Support/Json.cpp src/Support/Sha256.cpp src/Support/Hmac.cpp src/Support/BtechImage.cpp)
     target_include_directories(btech_revisions_test PRIVATE src/include)
     add_test(NAME btech_revisions COMMAND btech_revisions_test)
     set_tests_properties(btech_revisions PROPERTIES SKIP_RETURN_CODE 77)
     # The UI words (story/words.json) against the player's exes, in memory (MW1O_GAME,
     # optionally MW1O_BTECH_REFERENCE and MW1O_MAIN_1989); and the words' doors and refusals on made-up files.
-    add_executable(words_exe_test tests/words_exe_test.cpp src/Import/Story.cpp src/Import/Records.cpp src/Import/Events.cpp src/Import/Music.cpp
+    add_executable(words_exe_test tests/words_exe_test.cpp src/Import/Story.cpp src/Import/Records.cpp src/Import/Events.cpp
         src/Import/import_table.cpp src/Ui/ui_table.cpp src/Support/Json.cpp src/Support/Sha256.cpp src/Support/Hmac.cpp src/Support/BtechImage.cpp)
     target_include_directories(words_exe_test PRIVATE src/include)
     add_test(NAME words_exe COMMAND words_exe_test)
     set_tests_properties(words_exe PROPERTIES SKIP_RETURN_CODE 77)
-    add_executable(words_test tests/words_test.cpp src/Import/Story.cpp src/Import/Records.cpp src/Import/Events.cpp src/Import/Music.cpp
+    add_executable(words_test tests/words_test.cpp src/Import/Story.cpp src/Import/Records.cpp src/Import/Events.cpp
         src/Support/Json.cpp src/Support/Sha256.cpp src/Support/Hmac.cpp src/Support/BtechImage.cpp)
     target_include_directories(words_test PRIVATE src/include)
     add_test(NAME words COMMAND words_test)

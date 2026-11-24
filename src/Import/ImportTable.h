@@ -92,6 +92,18 @@ constexpr KeyRegion key_region(std::string_view exe) {
 // Version 4: import.json records BTECH's revision ("btech_revision").
 inline constexpr int kImportVersion = 4;
 
+// The one table change that leaves an older data folder current: the AdLib
+// instruments' piece left (S9), and nothing reads what it wrote (music.json).
+// A folder with the table that had it (`accepted`) is current for the table
+// without it (`table`), and no exe is opened. Only for that table: at the next
+// change of the pieces the folder is imported again, as any is.
+struct RetiredTable {
+    std::string_view table, accepted;
+};
+inline constexpr RetiredTable kMusicRetired = {
+    "06f9d08a933d7dd7222aba54e05333dffb6b3b87657f19bb9ab35ce63aaf92a5",
+    "02088d21a6f9000e9f2657cc7f7258cf997cbc57615d83f145481069fd88fc49"};
+
 // The revision the table's hashes come from.
 inline constexpr std::string_view kRevision = "1990-01-22";
 

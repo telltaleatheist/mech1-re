@@ -194,7 +194,7 @@ def word_source(name,lines,f):
             via=word_source(m.group(1),lines,f)
             if via: return via
     return ''
-BUILDER=re.compile(r'\b(MwStoryBuild\w+|MwStoryCopyAdlibInstruments|MwStoryCopyPlanetPools)\(')
+BUILDER=re.compile(r'\b(MwStoryBuild\w+|MwStoryCopyPlanetPools)\(')
 def door_source(name,lines):
     """'story <id>', 'rule <id>' or '' for the door that fills `name`."""
     if name in VIA: return VIA[name]
