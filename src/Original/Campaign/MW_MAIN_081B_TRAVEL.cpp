@@ -193,25 +193,25 @@ void MwDrawTravelDestinationDetails(void)
     const uint8_t *name=record+sizeof(MwPlanetHeader);
     const uint8_t *nameEnd=static_cast<const uint8_t *>(memchr(name,0,bytesRemaining));
     if (!nameEnd) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !nameEnd");
-    MwNativeByteView nameView={name,0,(uint32_t)(nameEnd-name+1)};
-    EgaDrawTransparentText(TRAVEL_DESTINATION_TEXT_X,TRAVEL_HEADER_TEXT_Y,Campaign_Pal_EGA_White,&nameView,0);
+    MwText nameText={name,nameEnd+1};
+    EgaDrawTransparentText(TRAVEL_DESTINATION_TEXT_X,TRAVEL_HEADER_TEXT_Y,Campaign_Pal_EGA_White,nameText);
     uint16_t pictureSelector=MwLoadIndexedPicture((uint16_t)(TRAVEL_HOUSE_PICTURE_BASE+planet->houseIndex));
     EgaDrawPackedSprite(TRAVEL_HOUSE_PICTURE_X,TRAVEL_HOUSE_PICTURE_Y,EGA_DISPLAY_PAGE,0,pictureSelector);
     uint8_t classification=planet->landscapeAndMarketCode-1;
     const char *landscape=campaignTravel.travelLandscapeLabels[classification%TRAVEL_LANDSCAPE_LABEL_COUNT];
-    MwNativeByteView landscapeView={(const uint8_t *)landscape,0,(uint32_t)strlen(landscape)+1};
-    EgaDrawTransparentText(TRAVEL_LANDSCAPE_TEXT_X,TRAVEL_HEADER_TEXT_Y,Campaign_Pal_EGA_White,&landscapeView,0);
+    MwText landscapeView=MwTerminatedText(landscape);
+    EgaDrawTransparentText(TRAVEL_LANDSCAPE_TEXT_X,TRAVEL_HEADER_TEXT_Y,Campaign_Pal_EGA_White,landscapeView);
     uint16_t population=MwReadNativeWord(planet->populationMillions,0);
     campaignCore.numericGroupingEnabled++;
     MwDrawSignedDecimalField(population,TRAVEL_POPULATION_TEXT_X,0,TRAVEL_POPULATION_DIGITS,Campaign_Pal_EGA_White,Campaign_Pal_EGA_LightGrey,TRAVEL_HEADER_TEXT_Y);
-    MwNativeByteView suffix={(const uint8_t *)campaignTravel.travelPopulationSuffix,0,sizeof(campaignTravel.travelPopulationSuffix)};
-    EgaDrawTransparentText(TRAVEL_POPULATION_SUFFIX_X,TRAVEL_HEADER_TEXT_Y,Campaign_Pal_EGA_White,&suffix,0);
+    MwText suffix=MwArrayText(campaignTravel.travelPopulationSuffix);
+    EgaDrawTransparentText(TRAVEL_POPULATION_SUFFIX_X,TRAVEL_HEADER_TEXT_Y,Campaign_Pal_EGA_White,suffix);
     const uint8_t *description=nameEnd+1;
     size_t descriptionCapacity=bytesRemaining-(size_t)(description-name);
     const uint8_t *descriptionEnd=static_cast<const uint8_t *>(memchr(description,0,descriptionCapacity));
     if (!descriptionEnd) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !descriptionEnd");
-    MwNativeByteView descriptionView={description,0,(uint32_t)(descriptionEnd-description+1)};
-    EgaDrawTransparentText(TRAVEL_DESTINATION_TEXT_X,TRAVEL_DESCRIPTION_TEXT_Y,Campaign_Pal_EGA_White,&descriptionView,0);
+    MwText descriptionText={description,descriptionEnd+1};
+    EgaDrawTransparentText(TRAVEL_DESTINATION_TEXT_X,TRAVEL_DESCRIPTION_TEXT_Y,Campaign_Pal_EGA_White,descriptionText);
 }
 
 /* MW_MAIN 081B:569F..56C2, then the fallthrough56C3..56E6. The genuine5816
@@ -475,9 +475,8 @@ uint16_t MwConfirmPlanetTravelContinuation(void)
     if (funds<quote)
     {
         MwRestoreTravelMarkerRegion();
-        MwNativeByteView message={(const uint8_t *)campaignTravel.travelInsufficientFundsText,0,
-            sizeof(campaignTravel.travelInsufficientFundsText)};
-        MwTextPanelReturn result=MwShowMonospaceTextPanel(0x0010,0x0010,0x0019,6,&message,0);
+        MwText message=MwArrayText(campaignTravel.travelInsufficientFundsText);
+        MwTextPanelReturn result=MwShowMonospaceTextPanel(0x0010,0x0010,0x0019,6,message);
         if (result.discardReturnWord) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: result.discardReturnWord");
         MwDrawTravelMarker();
         campaignUi.uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_SELECT_TRAVEL_MAP_PLANET;

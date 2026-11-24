@@ -275,19 +275,19 @@ void MwDrawAlternatePicturePanelBorder(uint16_t x, uint16_t y, uint16_t width, u
 }
 
 /* MW_MAIN081B:0EE7/0F27..0F42. PUSH DS:DI is the saved text source;
- * the C view borrows those bytes without allocating a padded segment copy. */
+ * the C text borrows those bytes. */
 MwTextPanelReturn MwShowMonospaceTextPanel(uint16_t insetX, uint16_t insetY,
-    uint16_t columns, uint16_t rows, const MwNativeByteView *text, uint16_t textOffset)
+    uint16_t columns, uint16_t rows, MwText text)
 {
     campaignUi.textPanelFont = TEXT_PANEL_MONOSPACE_FONT;
     campaignUi.textPanelInsetX = insetX; campaignUi.textPanelInsetY = insetY;
     campaignUi.textPanelWidthPixels = (uint16_t)(columns << 3);
     campaignUi.textPanelHeightPixels = (uint16_t)(rows << 3);
-    return MwCenterAndShowTextPanel(text,textOffset);
+    return MwCenterAndShowTextPanel(text);
 }
 /* MW_MAIN081B:0EF1..0F25. ES:DI text, not DS:DI. */
 MwTextPanelReturn MwShowCompactTextPanel(uint16_t insetX, uint16_t insetY,
-    uint16_t columns, uint16_t rows, const MwNativeByteView *text, uint16_t textOffset)
+    uint16_t columns, uint16_t rows, MwText text)
 {
     campaignUi.textPanelFont = TEXT_PANEL_COMPACT_FONT;
     campaignUi.textPanelInsetX = insetX; campaignUi.textPanelInsetY = insetY;
@@ -296,11 +296,11 @@ MwTextPanelReturn MwShowCompactTextPanel(uint16_t insetX, uint16_t insetY,
     campaignUi.textPanelHeightPixels = rows;
     campaignUi.textPanelHeightPixels += (uint16_t)(rows << 1);
     campaignUi.textPanelHeightPixels += (uint16_t)(rows << 2);
-    return MwCenterAndShowTextPanel(text,textOffset);
+    return MwCenterAndShowTextPanel(text);
 }
 /* MW_MAIN081B:0F43..1031 shared continuation.0F55/0F5C are interior labels,
  * not callable helpers. The C boundary projects the common fallthrough only. */
-MwTextPanelReturn MwCenterAndShowTextPanel(const MwNativeByteView *text, uint16_t textOffset)
+MwTextPanelReturn MwCenterAndShowTextPanel(MwText text)
 {
     campaignUi.textPanelOriginX = (uint16_t)(EGA_COLUMNS - campaignUi.textPanelWidthPixels) >> 1;
     uint16_t y = campaignUi.textPanelYOverride;
@@ -317,14 +317,15 @@ MwTextPanelReturn MwCenterAndShowTextPanel(const MwNativeByteView *text, uint16_
     EgaSelectFont(campaignUi.textPanelFont);
     uint16_t textX = campaignUi.textPanelOriginX + campaignUi.textPanelInsetX;
     uint16_t textY = campaignUi.textPanelOriginY + campaignUi.textPanelInsetY;
+    const uint8_t *textEnd;
     if (campaignUi.textPanelFont == TEXT_PANEL_COMPACT_FONT)
-        textOffset = EgaDrawTextWithLineSpacing(textX,textY,TEXT_PANEL_FOREGROUND,text,textOffset);
-    else textOffset = EgaDrawTransparentText(textX,textY,TEXT_PANEL_FOREGROUND,text,textOffset);
+        textEnd = EgaDrawTextWithLineSpacing(textX,textY,TEXT_PANEL_FOREGROUND,text);
+    else textEnd = EgaDrawTransparentText(textX,textY,TEXT_PANEL_FOREGROUND,text);
     EgaSelectFont(campaignUi.textPanelPreviousFont);
     if (campaignUi.textPanelContinuationMode == TEXT_PANEL_MODE_DISCARD_RETURN)
     {
         campaignUi.textPanelContinuationMode = 0;
-        MwTextPanelReturn result = { textOffset,
+        MwTextPanelReturn result = { textEnd,
             (uint16_t)(campaignUi.textPanelOriginX + campaignUi.textPanelInsetX),
             (uint16_t)(campaignUi.textPanelOriginY + campaignUi.textPanelInsetY),true };
         return result; /* Native POP DI / POP AX / RET skips the saved return word. */
@@ -335,7 +336,7 @@ MwTextPanelReturn MwCenterAndShowTextPanel(const MwNativeByteView *text, uint16_
         EgaCopyDrawPageToDisplay(campaignUi.textPanelOriginX,campaignUi.textPanelOriginY,
             (uint16_t)(campaignUi.textPanelWidthPixels + TEXT_PANEL_CAPTURE_MARGIN),campaignUi.textPanelHeightPixels);
     }
-    MwTextPanelReturn result = { textOffset, textX, textY, false };
+    MwTextPanelReturn result = { textEnd, textX, textY, false };
     return result;
 }
 
@@ -353,11 +354,13 @@ void MwShowPendingNotifications(void)
     for (uint16_t slot = 0; slot < CAMPAIGN_NOTIFICATION_COUNT; ++slot)
     {
         if (campaignEconomy.notificationPending[slot] == 0) continue;
-        MwNativeByteView text = { campaignUi.notificationTextStorage, NOTIFICATION_TEXT_START,
-            sizeof(campaignUi.notificationTextStorage) };
+        uint16_t textStart = campaignUi.notificationTextOffsets[slot] - NOTIFICATION_TEXT_START;
+        if (textStart >= sizeof(campaignUi.notificationTextStorage)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: textStart >= sizeof(notificationTextStorage)");
+        MwText text = MwArrayText(campaignUi.notificationTextStorage);
+        text.cursor += textStart;
         MwTextPanelReturn result = MwShowMonospaceTextPanel(campaignUi.notificationTextInsetX[slot],
             campaignUi.notificationTextInsetY[slot],campaignUi.notificationColumns[slot],campaignUi.notificationRows[slot],
-            &text,campaignUi.notificationTextOffsets[slot]);
+            text);
         /* Native mode1 would RET through the saved slot WORD instead of6146.
          * That startup/code continuation is outside this compiled slice. */
         if (result.discardReturnWord) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: result.discardReturnWord");
@@ -403,8 +406,8 @@ void MwCaptureAndDrawUiRecord(uint16_t x, uint16_t y, uint16_t pictureIndex, con
     {
         if (record->text != NULL)
         {
-            MwNativeByteView text = { (const uint8_t *)record->text, 0, (uint32_t)strlen(record->text)+1 };
-            EgaDrawTransparentText(x,y,UI_SELECTED_TEXT_COLOUR,&text,0);
+            MwText text=MwTerminatedText(record->text);
+            EgaDrawTransparentText(x,y,UI_SELECTED_TEXT_COLOUR,text);
         }
     }
     else
@@ -419,8 +422,8 @@ void MwPresentUiRecord(uint16_t x, uint16_t y, const MwUiRecord *record)
     if (record->textRecord != 0)
     {
         if (!record->text || !record->textColour) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !record->text || !record->textColour");
-        MwNativeByteView text = { (const uint8_t *)record->text, 0, (uint32_t)strlen(record->text)+1 };
-        EgaDrawTransparentText(x,y,*record->textColour,&text,0);
+        MwText text=MwTerminatedText(record->text);
+        EgaDrawTransparentText(x,y,*record->textColour,text);
     }
     else EgaCopyDrawPageToDisplay(x,y,UI_HIGHLIGHT_WIDTH,UI_HIGHLIGHT_HEIGHT);
 }

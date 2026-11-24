@@ -17,7 +17,7 @@ extern MwLauncherSystemCalls mwLauncherSystem;
 /* Campaign state owned by launcher.h (plan, slice B2). */
 struct LauncherResidentState
 {
-    uint8_t launcherIdentity[11];
+    uint8_t launcherIdentity[LAUNCHER_IDENTITY_BYTES];
     char launcherCampaignFilename[12], launcherCombatFilename[10];
 };
 extern LauncherResidentState launcherResident;

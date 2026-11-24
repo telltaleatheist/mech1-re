@@ -56,7 +56,7 @@ enum class CampaignSaveWrite { Written, NotCreated, DiskFull };
 CampaignSaveWrite MwWriteCampaignSaveFile(const char *filename);
 bool MwReadCampaignSaveFile(const char *filename);
 uint16_t MwSaveCampaignCallback(void);
-uint16_t MwShowOptionsMessageAndReturnContinuation(const MwNativeByteView *text,uint16_t textOffset);
+uint16_t MwShowOptionsMessageAndReturnContinuation(MwText text);
 uint16_t MwShowLoadCampaignCallback(void);
 bool MwEnumerateCampaignSaves(void);
 uint16_t MwLoadSelectedCampaignCallback(void);

@@ -637,7 +637,8 @@ bool MwImportCampaignInitialData(void)
     {
         uint16_t text=monthWords[month];
         if (text<0x4AAC || text>=0x4B1A || !memchr(mainWords+text,0,0x4B1A-text)) return false;
-        campaignCore.calendarMonthNames[month]=calendarMonthText+text-0x4AAC;
+        campaignCore.calendarMonthNames[month].cursor=calendarMonthText+(text-0x4AAC);
+        campaignCore.calendarMonthNames[month].end=calendarMonthText+sizeof(calendarMonthText);
     }
     /* The eighth planet row's caption (travel.caption.planet_8, 55EC): its head from the layout bytes, its 18-byte text from the words. */
     uint16_t positionedAt[2];
@@ -1069,7 +1070,7 @@ static bool CheckTextBoundTables(void)
     enum { CONTRACT_GLYPH_ADVANCE = 8 };
     for (uint16_t month=0;month<CAMPAIGN_MONTH_COUNT;++month)
     {
-        const size_t length=strlen((const char *)campaignCore.calendarMonthNames[month]);
+        const size_t length=strlen((const char *)campaignCore.calendarMonthNames[month].cursor);
         if (!length || campaignCore.calendarMonthNameWidths[month]!=(length-1)*CAMPAIGN_GLYPH_ADVANCE)
             return fprintf(stderr,"MechWarrior: hub.json's calendar_month_name_widths doesn't fit month %u's name\n",month+1),false;
         if (campaignContracts.contractDateYearXOffsets[month]!=(length-1)*CONTRACT_GLYPH_ADVANCE)

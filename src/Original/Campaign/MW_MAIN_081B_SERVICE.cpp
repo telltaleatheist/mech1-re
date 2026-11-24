@@ -50,8 +50,8 @@ uint16_t MwRepairSelectedMechComponentCallback(void)
                 if (category>REPAIR_BODY) --damageIndex;
                 campaignCore.repairAttemptFailuresByKind[(uint8_t)campaignMechanics.selectedOwnedUnitKind].failedByDamageIndex[damageIndex]=1;
             }
-            MwNativeByteView text={(const uint8_t *)campaignService.repairFailedText,0,sizeof(campaignService.repairFailedText)};
-            MwShowMonospaceTextPanel(REPAIR_MESSAGE_X,REPAIR_MESSAGE_Y,REPAIR_FAILURE_COLUMNS,REPAIR_MESSAGE_ROWS,&text,0);
+            MwText text=MwArrayText(campaignService.repairFailedText);
+            MwShowMonospaceTextPanel(REPAIR_MESSAGE_X,REPAIR_MESSAGE_Y,REPAIR_FAILURE_COLUMNS,REPAIR_MESSAGE_ROWS,text);
             return 0;
         }
     }
@@ -84,15 +84,15 @@ uint16_t MwRepairAllSelectedMechComponentsCallback(void)
     uint32_t quote=((uint32_t)campaignMechanics.unitRepairQuoteHigh<<NATIVE_WORD_BITS)|campaignMechanics.unitRepairQuoteLow;
     if (quote==0)
     {
-        MwNativeByteView text={(const uint8_t *)campaignService.noRepairWorkText,0,sizeof(campaignService.noRepairWorkText)};
-        MwShowMonospaceTextPanel(REPAIR_MESSAGE_X,REPAIR_MESSAGE_Y,REPAIR_NO_WORK_COLUMNS,REPAIR_MESSAGE_ROWS,&text,0);
+        MwText text=MwArrayText(campaignService.noRepairWorkText);
+        MwShowMonospaceTextPanel(REPAIR_MESSAGE_X,REPAIR_MESSAGE_Y,REPAIR_NO_WORK_COLUMNS,REPAIR_MESSAGE_ROWS,text);
         return 0;
     }
     uint32_t funds=((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow;
     if (funds<quote)
     {
-        MwNativeByteView text={(const uint8_t *)campaignService.cannotAffordRepairText,0,sizeof(campaignService.cannotAffordRepairText)};
-        MwShowMonospaceTextPanel(REPAIR_MESSAGE_X,REPAIR_MESSAGE_Y,REPAIR_CANNOT_AFFORD_COLUMNS,REPAIR_CANNOT_AFFORD_ROWS,&text,0);
+        MwText text=MwArrayText(campaignService.cannotAffordRepairText);
+        MwShowMonospaceTextPanel(REPAIR_MESSAGE_X,REPAIR_MESSAGE_Y,REPAIR_CANNOT_AFFORD_COLUMNS,REPAIR_CANNOT_AFFORD_ROWS,text);
         return 0;
     }
     funds-=quote;campaignEconomy.campaignFundsLow=(uint16_t)funds;campaignEconomy.campaignFundsHigh=(uint16_t)(funds>>NATIVE_WORD_BITS);
@@ -133,8 +133,8 @@ uint16_t MwRepairAllSelectedMechComponentsCallback(void)
     funds+=refund;campaignEconomy.campaignFundsLow=(uint16_t)funds;campaignEconomy.campaignFundsHigh=(uint16_t)(funds>>NATIVE_WORD_BITS);
     MwRefreshSelectedMechDetailPicture();
     const char *message=campaignService.repairWorkIncomplete==0?campaignService.repairCompleteText:campaignService.repairIncompleteText;
-    MwNativeByteView text={(const uint8_t *)message,0,(uint32_t)strlen(message)+1};
-    MwTextPanelReturn shown=MwShowMonospaceTextPanel(REPAIR_MESSAGE_X,REPAIR_MESSAGE_Y,REPAIR_RESULT_COLUMNS,REPAIR_MESSAGE_ROWS,&text,0);
+    MwText text=MwTerminatedText(message);
+    MwTextPanelReturn shown=MwShowMonospaceTextPanel(REPAIR_MESSAGE_X,REPAIR_MESSAGE_Y,REPAIR_RESULT_COLUMNS,REPAIR_MESSAGE_ROWS,text);
     return shown.discardReturnWord?0:CAMPAIGN_CONTINUE_RETURN_TO_OWNED_MECH; /* Native100C can skip38F8's JMP3091. */
 }
 
@@ -298,8 +298,8 @@ uint16_t MwDrawSelectedMechDetailContinuation(uint16_t entryOffset)
     MwDrawPicturePanelBorder(0,0,EGA_COLUMNS,EGA_ROWS);
     campaignMechanics.selectedOwnedUnitKind=campaignEconomy.ownedUnitKinds[campaignService.selectedOwnedUnitByteOffset/2];
     const char *mechName;mechName=campaignService.unitDisplayNames[campaignMechanics.selectedOwnedUnitKind];
-    MwNativeByteView name;name=MwNativeByteView{(const uint8_t *)mechName,0,(uint32_t)strlen(mechName)+1};
-    EgaDrawTransparentText(MECH_DETAIL_NAME_X,MECH_DETAIL_NAME_Y,MECH_DETAIL_TEXT_COLOUR,&name,0);
+    MwText name;name=MwTerminatedText(mechName);
+    EgaDrawTransparentText(MECH_DETAIL_NAME_X,MECH_DETAIL_NAME_Y,MECH_DETAIL_TEXT_COLOUR,name);
     uint16_t kind;kind=campaignMechanics.selectedOwnedUnitKind;
     CampaignUnitDamage *damage;damage=&campaignMechanics.ownedUnitDamage[(uint8_t)campaignService.selectedOwnedUnitSlot];
     /*30D9..313A's damage sum is discarded by MOV AX at313D, not a condition score. */
@@ -308,8 +308,8 @@ uint16_t MwDrawSelectedMechDetailContinuation(uint16_t entryOffset)
         && damage->lifeSupportDamageTier<=MECH_FUNCTIONAL_MAXIMUM_TIER
         && damage->actuatorDamageTiers[2]<=MECH_FUNCTIONAL_MAXIMUM_TIER
         && damage->actuatorDamageTiers[3]<=MECH_FUNCTIONAL_MAXIMUM_TIER) conditionText=mechFunctionalTextBytes;
-    MwNativeByteView condition;condition=MwNativeByteView{(const uint8_t *)conditionText,0,(uint32_t)strlen(conditionText)+1};
-    EgaDrawTransparentText(MECH_DETAIL_CONDITION_X,MECH_DETAIL_CONDITION_Y,MECH_DETAIL_TEXT_COLOUR,&condition,0);
+    MwText condition;condition=MwTerminatedText(conditionText);
+    EgaDrawTransparentText(MECH_DETAIL_CONDITION_X,MECH_DETAIL_CONDITION_Y,MECH_DETAIL_TEXT_COLOUR,condition);
     if (campaignMechanics.selectedOwnedUnitKind==CAMPAIGN_UNIT_DROPSHIP)
     { MwSelectUiRecordTable(0,&campaignService.dropShipServiceMenu);return CAMPAIGN_CONTINUE_UI; } /* JMP32AE skips3291's font select. */
     damage=&campaignMechanics.ownedUnitDamage[(uint8_t)campaignService.selectedOwnedUnitSlot];
@@ -341,8 +341,8 @@ uint16_t MwDrawSelectedMechDetailContinuation(uint16_t entryOffset)
         uint16_t quantity=campaignService.selectedMechAmmoQuantities[group];
         const char *ammoName=campaignService.ammoFamilyDisplayNames[family];
         uint16_t y=MECH_DETAIL_AMMO_FIRST_Y+(uint16_t)(group*MECH_DETAIL_AMMO_ROW_HEIGHT);
-        MwNativeByteView text={(const uint8_t *)ammoName,0,(uint32_t)strlen(ammoName)+1};
-        EgaDrawTransparentText(MECH_DETAIL_AMMO_LABEL_X,y,MECH_DETAIL_TEXT_COLOUR,&text,0);
+        MwText text=MwTerminatedText(ammoName);
+        EgaDrawTransparentText(MECH_DETAIL_AMMO_LABEL_X,y,MECH_DETAIL_TEXT_COLOUR,text);
         MwDrawSignedDecimalField(quantity,MECH_DETAIL_AMMO_QUANTITY_X,1,0,MECH_DETAIL_TEXT_COLOUR,MECH_DETAIL_BACKGROUND,y);
         ++group;
         kind=campaignMechanics.selectedOwnedUnitKind;
@@ -521,8 +521,8 @@ void MwDrawDescriptorTextPanel(const MwPanelDescriptor *textPanel)
         const MwPanelText *caption=textPanel->lines[line];
         x=textPanel->x+caption->x;
         y=textPanel->y+caption->y;
-        MwNativeByteView text={(const uint8_t *)caption->text,0,(uint32_t)strlen(caption->text)+1};
-        EgaDrawTransparentText(x,y,caption->colour,&text,0);
+        MwText text=MwTerminatedText(caption->text);
+        EgaDrawTransparentText(x,y,caption->colour,text);
         ++line;
     } while (line!=textPanel->lineCount);
 }

@@ -4,15 +4,15 @@
 #include "mechwarrior/native_address.h"
 #include "mechwarrior/campaign_exchange.h"
 
+enum { LAUNCHER_IDENTITY_BYTES=11 };
 enum { CAMPAIGN_PHASE_NEW=1, CAMPAIGN_PHASE_COMBAT_RETURN=2,
     CAMPAIGN_EXIT_QUIT=0, CAMPAIGN_EXIT_COMBAT=1 };
 /* Host projection of the launcher's PSP/FCB contract, not a serialized struct
- * or additional source arguments. The resident view includes the identity
- * bytes beyond the exchange buffer which0002 genuinely tests. */
+ * or additional source arguments. The identity is the launcher's eleven bytes
+ * beyond the exchange buffer, which 0002 tests at 0, 4 and 10. */
 typedef struct MwCampaignLaunch
 {
-    MwNativeByteView resident;
-    uint16_t transferOffset;
+    const uint8_t (&identity)[LAUNCHER_IDENTITY_BYTES];
     uint8_t phase, graphicsCode, memoryTier;
 } MwCampaignLaunch;
 

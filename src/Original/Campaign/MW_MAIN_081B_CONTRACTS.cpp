@@ -80,13 +80,13 @@ void MwDrawNegotiatingOfferTerms(void)
 /* MW_MAIN081B:4D1D..4D28 /4D29..4D34. Text is native DS:DI, not SI. */
 void MwDrawContractHeading(uint16_t x,uint16_t y,const char *text)
 {
-    MwNativeByteView view={(const uint8_t *)text,0,(uint32_t)strlen(text)+1};
-    EgaDrawTransparentText(x,y,CONTRACT_HEADING_COLOUR,&view,0);
+    MwText view=MwTerminatedText(text);
+    EgaDrawTransparentText(x,y,CONTRACT_HEADING_COLOUR,view);
 }
 void MwDrawContractText(uint16_t x,uint16_t y,const char *text)
 {
-    MwNativeByteView view={(const uint8_t *)text,0,(uint32_t)strlen(text)+1};
-    EgaDrawTransparentText(x,y,CONTRACT_TEXT_COLOUR,&view,0);
+    MwText view=MwTerminatedText(text);
+    EgaDrawTransparentText(x,y,CONTRACT_TEXT_COLOUR,view);
 }
 
 /* MW_MAIN081B:4B55..4C86. Callback POP then shared briefing rendering.
@@ -123,7 +123,7 @@ uint16_t MwDrawMissionContractBriefingContinuation(uint16_t missionOfferSlot)
     MwDrawNegotiatingOfferTerms();
     if (campaignCore.calendarMonthIndex>=CAMPAIGN_MONTH_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: calendarMonthIndex>=CAMPAIGN_MONTH_COUNT");
     uint16_t yearX=campaignContracts.contractDateYearXOffsets[campaignCore.calendarMonthIndex];
-    MwDrawContractText(CONTRACT_MONTH_X,CONTRACT_DATE_Y,(const char *)campaignCore.calendarMonthNames[campaignCore.calendarMonthIndex]);
+    MwDrawContractText(CONTRACT_MONTH_X,CONTRACT_DATE_Y,(const char *)campaignCore.calendarMonthNames[campaignCore.calendarMonthIndex].cursor);
     MwDrawSignedDecimalField(campaignCore.calendarYear,(uint16_t)(yearX+CONTRACT_YEAR_BASE_X),1,0,CONTRACT_TEXT_COLOUR,CONTRACT_PAGE_BACKGROUND,CONTRACT_DATE_Y);
     MwSelectUiRecordTable(1,&campaignContracts.contractActionsMenu);
     return CAMPAIGN_CONTINUE_UI;
@@ -463,8 +463,8 @@ uint16_t MwCheckAssignedMechDeploymentReadiness(void)
             ++campaignContracts.deploymentRefusalCount;
             if (campaignContracts.deploymentRefusalCount==CONTRACT_REFUSALS_BEFORE_CANCELLATION) return CAMPAIGN_CONTINUE_CANCEL_CONTRACT;
         }
-        MwNativeByteView message={(const uint8_t *)campaignContracts.commanderNeedsMechText,0,sizeof(campaignContracts.commanderNeedsMechText)};
-        if (MwShowMonospaceTextPanel(0x10,0x10,0x24,6,&message,0).discardReturnWord) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: MwShowMonospaceTextPanel(0x10,0x10,0x24,6,&message,0).discardReturnWord");
+        MwText message=MwArrayText(campaignContracts.commanderNeedsMechText);
+        if (MwShowMonospaceTextPanel(0x10,0x10,0x24,6,message).discardReturnWord) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: MwShowMonospaceTextPanel(0x10,0x10,0x24,6,message).discardReturnWord");
         return 0;
     }
     uint16_t rosterSlot=0;
@@ -487,8 +487,8 @@ uint16_t MwCheckAssignedMechDeploymentReadiness(void)
                     ++campaignContracts.deploymentRefusalCount;
                     if (campaignContracts.deploymentRefusalCount==CONTRACT_REFUSALS_BEFORE_CANCELLATION) return CAMPAIGN_CONTINUE_CANCEL_CONTRACT;
                 }
-                MwNativeByteView message={(const uint8_t *)campaignContracts.assignedMechUnreadyText,0,sizeof(campaignContracts.assignedMechUnreadyText)};
-                if (MwShowMonospaceTextPanel(0x10,0x10,0x21,6,&message,0).discardReturnWord) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: MwShowMonospaceTextPanel(0x10,0x10,0x21,6,&message,0).discardReturnWord");
+                MwText message=MwArrayText(campaignContracts.assignedMechUnreadyText);
+                if (MwShowMonospaceTextPanel(0x10,0x10,0x21,6,message).discardReturnWord) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: MwShowMonospaceTextPanel(0x10,0x10,0x21,6,message).discardReturnWord");
                 return 0;
             }
         }
@@ -499,8 +499,8 @@ uint16_t MwCheckAssignedMechDeploymentReadiness(void)
 /* MW_MAIN081B:1B87..1BD1. Refresh precedes live funds/advance/House reads. */
 uint16_t MwCancelContractAfterDeploymentRefusalsContinuation(void)
 {
-    MwNativeByteView message={(const uint8_t *)campaignContracts.contractCancelledText,0,sizeof(campaignContracts.contractCancelledText)};
-    if (MwShowMonospaceTextPanel(0x10,0x10,0x26,7,&message,0).discardReturnWord) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: MwShowMonospaceTextPanel(0x10,0x10,0x26,7,&message,0).discardReturnWord");
+    MwText message=MwArrayText(campaignContracts.contractCancelledText);
+    if (MwShowMonospaceTextPanel(0x10,0x10,0x26,7,message).discardReturnWord) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: MwShowMonospaceTextPanel(0x10,0x10,0x26,7,message).discardReturnWord");
     campaignMission.acceptedContractActive=0;
     MwRefreshMissionOffers();
     campaignContracts.deploymentRefusalCount=0;

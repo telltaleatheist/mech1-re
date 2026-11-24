@@ -9,8 +9,8 @@
  * source text is already NUL-terminated by the native data/input boundary. */
 void MwDrawCampaignTextColourOne(uint16_t x,uint16_t y,const char *text)
 {
-    MwNativeByteView view={(const uint8_t *)text,0,(uint32_t)strlen(text)+1};
-    (void)EgaDrawTransparentText(x,y,AFTER_ACTION_FOREGROUND,&view,0);
+    MwText view=MwTerminatedText(text);
+    (void)EgaDrawTransparentText(x,y,AFTER_ACTION_FOREGROUND,view);
 }
 
 /* MW_MAIN 081B:1A97..1ACD. Native name width uses BYTE(length)*6; unsigned
@@ -29,8 +29,9 @@ void MwDrawPlanetNameCentered(uint16_t panelX, uint16_t y, uint16_t color, uint1
     }
     uint16_t nameWidth = (uint8_t)nameLength * CAMPAIGN_GLYPH_ADVANCE;
     uint16_t textX = panelX + ((uint16_t)(PLANET_NAME_PANEL_WIDTH - nameWidth) >> 1);
-    MwNativeByteView text = { campaignCore.planetRecordStorage, 0, sizeof(campaignCore.planetRecordStorage) };
-    EgaDrawTransparentText(textX, y, (uint8_t)color, &text, nameOffset);
+    MwText text=MwArrayText(campaignCore.planetRecordStorage);
+    text.cursor += nameOffset;
+    EgaDrawTransparentText(textX, y, (uint8_t)color, text);
 }
 /* MW_MAIN 081B:1A36..1A96. Month-name width then 30-pixel year field; ordinal08
  * followed by the real signed numeric formatter, not printf() text. */
@@ -42,10 +43,9 @@ void MwDrawCampaignCalendar(uint16_t panelX, uint8_t yearDigits, uint8_t backgro
     if (campaignCore.calendarMonthIndex >= CAMPAIGN_MONTH_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: calendarMonthIndex >= CAMPAIGN_MONTH_COUNT");
     uint16_t monthWidth = campaignCore.calendarMonthNameWidths[campaignCore.calendarMonthIndex];
     campaignCore.calendarTextX += (uint16_t)(PLANET_NAME_PANEL_WIDTH - (uint16_t)(monthWidth + CALENDAR_YEAR_FIELD_WIDTH)) >> 1;
-    const uint8_t *monthName = campaignCore.calendarMonthNames[campaignCore.calendarMonthIndex];
-    if (monthName == NULL) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: monthName == NULL");
-    MwNativeByteView text = { monthName, 0, NATIVE_SEGMENT_BYTE_COUNT };
-    EgaDrawTransparentText(campaignCore.calendarTextX, campaignCore.calendarTextY, campaignCore.calendarForeground, &text, 0);
+    MwText text = campaignCore.calendarMonthNames[campaignCore.calendarMonthIndex];
+    if (text.cursor == NULL) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: text.cursor == NULL");
+    EgaDrawTransparentText(campaignCore.calendarTextX, campaignCore.calendarTextY, campaignCore.calendarForeground, text);
     MwDrawSignedDecimalField(campaignCore.calendarYear,
         (uint16_t)(monthWidth + campaignCore.calendarTextX + CALENDAR_YEAR_GAP), 1, yearDigits, campaignCore.calendarForeground,
         campaignCore.calendarBackground, campaignCore.calendarTextY);

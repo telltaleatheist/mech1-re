@@ -141,8 +141,8 @@ void MwDrawNewsBoundaryMessage(void)
 {
     EgaCopyDisplayToDrawPage(0,NEWS_ARTICLE_TOP,EGA_COLUMNS,NEWS_ARTICLE_HEIGHT);
     EgaFillDisplayPageRectangle(NEWS_TEXT_X,NEWS_ARTICLE_TOP,NEWS_TEXT_WIDTH,NEWS_ARTICLE_HEIGHT,NEWS_BACKGROUND_COLOUR);
-    MwNativeByteView text={(const uint8_t *)campaignOptions.newsBoundaryText,0x2564,sizeof(campaignOptions.newsBoundaryText)};
-    EgaDrawTransparentText(NEWS_MESSAGE_X,NEWS_MESSAGE_Y,NEWS_MESSAGE_COLOUR,&text,0x2564);
+    MwText text=MwArrayText(campaignOptions.newsBoundaryText);
+    EgaDrawTransparentText(NEWS_MESSAGE_X,NEWS_MESSAGE_Y,NEWS_MESSAGE_COLOUR,text);
 }
 /* MW_MAIN081B:2D02..2D15. Restore, do not regenerate/re-evaluate the article. */
 void MwRestoreNewsArticleRegion(void)
