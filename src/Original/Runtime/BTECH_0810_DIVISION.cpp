@@ -2,25 +2,14 @@
 #include "mechwarrior/combat_render.h"
 #include <stdlib.h>
 
-/*0810:D923/F064/F1DA and22B6:65DD/665E. Original normalization,
- * truncation and correction, NOT a host64/32 replacement quotient.
- * CPU divide faults currently terminate this unsupported host path. */
-BtechDwordDivisionResult *BtechDivideSignedDwordWithRemainder(uint32_t numerator, uint32_t denominator)
+/*0810:D923/F064/F1DA (and 22B6:65DD/665E's use): the 1989 runtime's signed long divide with remainder, by value (B5: the
+ * shared result record 4BA0 and the word-by-word register transport are gone; nothing else read the record). Its
+ * normalization, truncation and single correction for a divisor over 16 bits are kept: its rounding is game maths. A
+ * zero divisor, or a quotient past a word on that path, is the original's divide fault. */
+runtime_1989::LongDivision runtime_1989::signed_long_divide(uint32_t numerator,uint32_t denominator)
 {
-    // MW-DS: incoming DS=304E; FAR BP+06/+08 numerator, BP+0A/+0C denominator.
-    // BP saved, BX/CX clobbered while copying four WORD arguments to NEAR F064.
-    // F064 normalizes only these copied arguments; original FAR arguments survive
-    // unless they alias the shared result record (not a disjoint-storage promise).
-    return BtechDivideSignedDwordStoreQuotientRemainder((uint16_t)numerator,
-        (uint16_t)(numerator>>0x0010),(uint16_t)denominator,
-        (uint16_t)(denominator>>0x0010));
-    // Native AX=4BA0, DX=DS: the typed owner replaces only this address transport.
-}
-
-BtechDwordDivisionResult *BtechDivideSignedDwordStoreQuotientRemainder(uint16_t numeratorLow, uint16_t numeratorHigh, uint16_t denominatorLow, uint16_t denominatorHigh)
-{
-    // MW-DS: incoming DS=304E. NEAR BP+04/+06 numerator, BP+08/+0A denominator.
-    // Native locals normalize by WORD operations; shared result stores remain ordered.
+    uint16_t numeratorLow=(uint16_t)numerator,numeratorHigh=(uint16_t)(numerator>>16);
+    uint16_t denominatorLow=(uint16_t)denominator,denominatorHigh=(uint16_t)(denominator>>16);
     uint16_t resultSignBits=0x0000; // bit0 remainder negative, bit1 quotient negative.
     if ((int16_t)numeratorHigh<0x0000)
     {
@@ -36,8 +25,8 @@ BtechDwordDivisionResult *BtechDivideSignedDwordStoreQuotientRemainder(uint16_t 
         denominatorLow=(uint16_t)(0x0000-denominatorLow);
         denominatorHigh=(uint16_t)(denominatorHigh-(denominatorLow!=0x0000));
     } // Minimum signed DWORD stays 80000000 under WORD negation.
-    uint32_t numerator=((uint32_t)numeratorHigh<<0x0010)|numeratorLow;
-    uint32_t denominator=((uint32_t)denominatorHigh<<0x0010)|denominatorLow;
+    numerator=((uint32_t)numeratorHigh<<0x0010)|numeratorLow;
+    denominator=((uint32_t)denominatorHigh<<0x0010)|denominatorLow;
     uint16_t quotientLow,quotientHigh;
     uint32_t remainder;
     if (denominatorHigh==0x0000)
@@ -77,12 +66,7 @@ BtechDwordDivisionResult *BtechDivideSignedDwordStoreQuotientRemainder(uint16_t 
     if ((resultSignBits&0x0001)!=0x0000) remainder=(uint32_t)(0x00000000-remainder);
     uint32_t quotient=((uint32_t)quotientHigh<<0x0010)|quotientLow;
     if ((resultSignBits&0x0002)!=0x0000) quotient=(uint32_t)(0x00000000-quotient);
-    // F122..F12D: four ordered WORD stores, not an atomic aggregate assignment.
-    signedDivisionResult.remainderHigh=(uint16_t)(remainder>>0x0010);
-    signedDivisionResult.remainderLow=(uint16_t)remainder;
-    signedDivisionResult.quotientHigh=(uint16_t)(quotient>>0x0010);
-    signedDivisionResult.quotientLow=(uint16_t)quotient;
-    return &signedDivisionResult; // AX result offset, DX original DS; NEAR RET, caller cleans four WORDs.
+    return LongDivision{(int32_t)quotient,(int32_t)remainder};
 }
 
 uint32_t BtechMultiplyDwordLow(uint16_t leftLow, uint16_t leftHigh, uint16_t rightLow, uint16_t rightHigh)

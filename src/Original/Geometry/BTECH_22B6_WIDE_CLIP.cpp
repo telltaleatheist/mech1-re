@@ -37,7 +37,7 @@ void BtechIntersectDwordNearEdgeWithWordProducts(uint16_t outsideVertex,uint16_t
         int64_t quotient=(int64_t)(int32_t)product/denominator;
         while (quotient<INT16_MIN || quotient>INT16_MAX)
         {
-            product=BtechDivideErrorInterrupt(product);
+            product=runtime_1989::horizon_divide_fallback(product);
             quotient=(int64_t)(int32_t)product/denominator;
         }
         uint32_t displacement=(int16_t)quotient;
@@ -169,7 +169,7 @@ uint16_t BtechIntersectScreenEdgeWordProductA(uint16_t base,uint16_t next,uint16
     int64_t quotient=(int64_t)(int32_t)product/denominator;
     while (quotient<INT16_MIN || quotient>INT16_MAX)
     {
-        product=BtechDivideErrorInterrupt(product);
+        product=runtime_1989::horizon_divide_fallback(product);
         quotient=(int64_t)(int32_t)product/denominator;
     }
     uint32_t displacement=(int16_t)quotient;
@@ -193,7 +193,7 @@ uint16_t BtechIntersectScreenEdgeWordProductB(uint16_t base,uint16_t next,uint16
     int64_t quotient=(int64_t)(int32_t)product/denominator;
     while (quotient<INT16_MIN || quotient>INT16_MAX)
     {
-        product=BtechDivideErrorInterrupt(product);
+        product=runtime_1989::horizon_divide_fallback(product);
         quotient=(int64_t)(int32_t)product/denominator;
     }
     uint32_t displacement=(int16_t)quotient;

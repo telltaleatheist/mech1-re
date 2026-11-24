@@ -25,30 +25,12 @@ struct CombatNearHeapState
 };
 extern CombatNearHeapState combatNearHeap;
 
-/* CDBC/CE5D projections. Native lengths drive heap placement; host sizes and
- * owner kinds describe widened C records, never additional game arguments. */
+/* The near heap (BTECH_0810_HEAP.cpp, B5): native lengths decide placement and exhaustion, as 0810's allocator; host
+ * sizes and owner kinds describe the widened C records, never additional game arguments. */
 void *BtechAllocateNearBytes(uint16_t nativeBytes,size_t hostBytes,BtechNearOwner owner);
 void *BtechAllocateZeroedNearElements(uint16_t count,uint16_t stride,size_t hostBytes,BtechNearOwner owner);
 void BtechReleaseNearHeapBlock(void *record);
 void BtechReleaseNearBlockAndProbeAllocation(void *record);
-uint16_t BtechNearAllocationOffset(const void *record);
-bool BtechNearAllocationIsCurrent(const void *record);
-void *BtechNearAllocationOwner(const void *record,BtechNearOwner *owner,uint16_t *displacement);
-size_t BtechNearAllocationBytes(const void *record);
-bool BtechNearAllocationBytesDefined(const void *record);
-/* Representation bridge for the observed stale sound link and E96E byte write.
- * These are not game-field accessors or a generic segment-memory API. */
-void BtechHostReadNearSoundLink(void *owner,BtechNearOwner kind,uint16_t displacement,uint16_t words[3]);
-void BtechHostWriteNearSoundNext(void *owner,BtechNearOwner kind,uint16_t displacement,uint16_t next);
-void BtechHostMarkNearOwnerReleased(void *owner,BtechNearOwner kind,uint16_t displacement);
-void *BtechNearObjectAtOffset(uint16_t offset,BtechNearOwner owner);
 /* Process/image lifetime, not a game cleanup call. */
 void BtechHostDiscardNearHeap(void);
-
-/* Allocator-only header words; no game-data or segment-memory access API. */
-uint16_t BtechAllocateNearHeapBlock(uint16_t bytes);
-void BtechReleaseNearHeapOffset(uint16_t offset);
-uint16_t BtechNearHeapHeader(uint16_t offset);
-void BtechSetNearHeapHeader(uint16_t offset,uint16_t value);
-void BtechInitializeNearHeap(uint16_t first,uint16_t search,uint16_t end,uint16_t programBreak,uint16_t growthAlignment);
 #endif

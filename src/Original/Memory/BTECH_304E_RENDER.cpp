@@ -15,7 +15,6 @@ int16_t screenCentreA,screenCentreB;
 const uint8_t *activeColourShadeClasses,*activePaletteRemap;
 BtechOrientationBasis *activeRenderBasis;
 uint16_t dotProductScratchHigh,dotProductScratchMiddle,dotProductScratchLow;
-BtechDwordDivisionResult signedDivisionResult;
 uint16_t selectionCount;
 uint16_t selectionPointScreenX,selectionPointScreenY;
 uint16_t selectionObjectListIndices[SELECTION_LIST_PREFIX];
@@ -71,7 +70,6 @@ bool BtechImportRenderInitialData(const uint8_t *data,size_t bytes)
     objectNeedsScreenClip=data[0x798C];useViewBasisDirectly=data[0xC94A];
     screenCentreA=0; /*CB16*/screenCentreB=0; /*CB18*/
     dotProductScratchHigh=0; /*2E0E*/dotProductScratchMiddle=0; /*2E10*/dotProductScratchLow=0; /*2E12*/
-    signedDivisionResult=BtechDwordDivisionResult{}; /*4BA0*/
     selectionCount=0; /*6F58*/targetSelectionProbeActive=0; /*281A*/
     selectionPointScreenX=0; /*6F54*/selectionPointScreenY=0; /*6F56*/
     selectionMarkerPixels=MwReadNativeWord(data,0x2816)|((uint32_t)MwReadNativeWord(data,0x2818)<<16);
