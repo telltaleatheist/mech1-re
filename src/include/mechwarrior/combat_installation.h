@@ -30,9 +30,9 @@ bool BtechDecodeImage(const uint8_t *packed,size_t packedBytes,uint8_t **image,B
  * set, not read (docs/phase2/PLAN.md 8, slice 6a). */
 bool BtechHostLoadInitialData(void);
 /* Host EXEC/CRT data projections, NOT additional native game procedures. */
-void BtechInitializeFreshMechOwners(const uint8_t *data);
+void BtechInitializeFreshMechOwners(void);
 void BtechInitializeFreshWorldOwners(void);
-void BtechInitializeFreshStartupOwners(const uint8_t *data);
+void BtechInitializeFreshStartupOwners(void);
 void BtechHostDiscardChildData(void);
 struct BtechResourceBank;
 struct BtechSurfaceBank;

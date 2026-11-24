@@ -1,6 +1,6 @@
 #include "mechwarrior/combat_runtime.h"
 #include "mechwarrior/combat_heap.h"
-#include "mechwarrior/native_address.h"
+#include "mechwarrior/btech_start_image.h"
 #include "mechwarrior/port_diagnostics.h"
 #include <stdio.h>
 #include <string.h>
@@ -10,35 +10,41 @@ CombatNearHeapState combatNearHeap={
     .nearHeapGrowthAlignment=BTECH_NEAR_GROWTH_ALIGNMENT
 };
 
-bool BtechImportRuntimeInitialData(const uint8_t *data,size_t bytes)
+bool BtechImportRuntimeInitialData(const uint8_t *,size_t)
 {
-    if (!data || bytes<0x4EDC) return false;
+    const BtechStartRowData runtimeMessagesRow("runtime.messages");
+    const BtechStartRowData runtimePrefixRow("runtime.prefix");
+    const BtechStartRowData runtimeExtraVectorRow("runtime.extra_vector");
+    const BtechStartRowData runtimeSignedDivisionRow("runtime.signed_division");
+    const BtechStartRowData runtimeExitCallbacksRow("runtime.exit_callbacks");
+    const BtechStartRowData runtimeExitFlushRow("runtime.exit_flush");
     BtechHostDiscardNearHeap();
-    uint16_t callback=MwReadNativeWord(data,0x4DFA);
+    uint16_t callback=runtimeExitFlushRow.word();
     if (callback!=0 && callback!=0xFE80) return false;
-    if (MwReadNativeWord(data,0x4BA8) || MwReadNativeWord(data,0x4DF0)) return false;
+    if (runtimeSignedDivisionRow.word() || runtimeExitCallbacksRow.word()) return false;
     combatRuntime.runtimeExitCallbacks[0]=callback?BtechFlushAllRuntimeStreams:NULL;
     /* FE80's returned flush count is unobserved by E1CD. */
     combatRuntime.runtimeDiagnosticCallback=NULL;combatRuntime.runtimeDeviceCleanup=NULL;
-    for (uint16_t word=0;word<4;++word) combatRuntime.runtimePrefix.ambientFallbackWords[word]=MwReadNativeWord(data,word*2);
-    memcpy(combatRuntime.runtimePrefix.copyrightBytes,data+8,sizeof(combatRuntime.runtimePrefix.copyrightBytes));
+    for (uint16_t word=0;word<4;++word) combatRuntime.runtimePrefix.ambientFallbackWords[word]=runtimePrefixRow.word(word*2);
+    runtimePrefixRow.copy(combatRuntime.runtimePrefix.copyrightBytes,sizeof(combatRuntime.runtimePrefix.copyrightBytes),8);
     combatRuntime.runtimeSavedDivideOwner=MwDivideOwner::System; /*4B4D: 0000:0000*/
     /* 4B8A/4B8B: the CRT's extra hooked vector, inactive (0) in both
      * revisions, so its restore at exit is gone (H4c). An image with it
      * active names a vector this port has no owner for. */
-    if (data[0x4B8A])
+    if (runtimeExtraVectorRow.byte())
     {
-        char reason[96];snprintf(reason,sizeof(reason),"The image's extra CRT vector at 304E:4B8A is active: bytes %02X %02X",data[0x4B8A],data[0x4B8B]);
+        char reason[96];snprintf(reason,sizeof(reason),"The image's extra CRT vector at 304E:4B8A is active: bytes %02X %02X",runtimeExtraVectorRow.byte(),runtimeExtraVectorRow.byte(1));
         MW_PORT_FAILSAFE(reason);
     }
-    uint16_t cursor=0x4E0A;
+    size_t cursor=0;
     for (uint16_t message=0;message<COMBAT_RUNTIME_MESSAGES;++message)
     {
         BtechRuntimeMessage *entry=&combatRuntime.runtimeMessages[message];
-        entry->code=MwReadNativeWord(data,cursor);cursor+=2;
-        const uint8_t *end=static_cast<const uint8_t *>(memchr(data+cursor,0,bytes-cursor));
-        if (!end || (size_t)(end-data-cursor)>=sizeof(entry->text)) return false;
-        memcpy(entry->text,data+cursor,(size_t)(end-data-cursor)+1);cursor=(uint16_t)(end-data+1);
+        entry->code=runtimeMessagesRow.word(cursor);cursor+=2;
+        const char *text=runtimeMessagesRow.text(cursor);
+        size_t textBytes=strlen(text)+1;
+        if (textBytes>sizeof(entry->text)) return false;
+        memcpy(entry->text,text,textBytes);cursor+=textBytes;
         if (entry->code==UINT16_MAX) return message==COMBAT_RUNTIME_MESSAGES-1;
     }
     return false;
