@@ -193,6 +193,7 @@ add_library(mechwarrior_original STATIC
     src/Original/Memory/BTECH_1BF5_STATE.cpp
     src/Original/Memory/BTECH_22B6_DATA.cpp
     src/Support/CombatPlatform.cpp
+    src/Support/CombatRecord.cpp
     src/Support/VideoMode.cpp
     src/Support/CombatInstallation.cpp
     src/Support/BtechImage.cpp
