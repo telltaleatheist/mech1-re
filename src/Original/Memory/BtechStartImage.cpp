@@ -8,10 +8,12 @@
  * compare the pieces. Names, numbers and file names only: no MW1 text. */
 #include "mechwarrior/btech_start_image.h"
 #include "mechwarrior/combat_installation.h"
+#include "mechwarrior/port_diagnostics.h"
 #include "mechwarrior/rules.h"
 #include "mechwarrior/story.h"
 #include "mechwarrior/ui_layout.h"
 #include <math.h>
+#include <stdio.h>
 #include <string.h>
 
 #define W(v) (uint8_t)((v)&0xFF),(uint8_t)(((v)>>8)&0xFF)
@@ -567,4 +569,78 @@ bool BtechBuildStartImage(uint8_t *image)
         }
     }
     return true;
+}
+
+[[noreturn]] static void StartDataFault(const char *id,const char *what)
+{
+    static char reason[300];
+    snprintf(reason,sizeof(reason),"Combat's start data: the row \"%s\" %s. This is a fault of the program",id,what);
+    MwAbortWithReason("port failsafe",reason,__FILE__,__LINE__,__func__);
+}
+static const BtechStartRow &FindStartRow(const char *id)
+{
+    for (size_t index=0;index<btechStartRowCount;++index)
+        if (!strcmp(btechStartRows[index].id,id)) return btechStartRows[index];
+    StartDataFault(id,"does not exist");
+}
+void BtechStartRowData::fault(const char *what) const {StartDataFault(row_.id,what);}
+
+BtechStartRowData::BtechStartRowData(const char *id):BtechStartRowData(FindStartRow(id)) {}
+BtechStartRowData::BtechStartRowData(const BtechStartRow &row):row_(row),bytes_(row.size)
+{
+    const char *source=NULL;
+    size_t pieceBytes=row.size;
+    bool read=true;
+    switch (row.source)
+    {
+    case BTECH_START_CODE: memcpy(bytes_.data(),row.bytes,row.size);break;
+    case BTECH_START_ZERO: break;
+    case BTECH_START_GENERATED: row.generate(bytes_.data());break;
+    case BTECH_START_STORY: source="story span";read=MwStoryCopyBytes(row.id,bytes_.data(),row.size);break;
+    case BTECH_START_RULES:
+        source="rule piece";pieceBytes=MwRulesPieceSize(row.id);
+        read=pieceBytes==row.size && MwRulesCopyNative(row.id,bytes_.data(),row.size);
+        break;
+    case BTECH_START_UI:
+        source="layout piece";pieceBytes=MwUiPieceSize(row.id);
+        read=pieceBytes==row.size && MwUiCopyNative(row.id,bytes_.data(),row.size);
+        break;
+    }
+    if (read) return;
+    char what[120];
+    if (row.source==BTECH_START_STORY) snprintf(what,sizeof(what),"has no %s of %u bytes",source,(unsigned)row.size);
+    else if (!pieceBytes) snprintf(what,sizeof(what),"has no %s",source);
+    else if (pieceBytes==row.size) snprintf(what,sizeof(what),"has its %s not loaded",source);
+    else snprintf(what,sizeof(what),"has a %s of %zu bytes, not %u",source,pieceBytes,(unsigned)row.size);
+    fault(what);
+}
+
+const uint8_t *BtechStartRowData::bytes(size_t at,size_t count) const
+{
+    if (at>bytes_.size() || count>bytes_.size()-at)
+    {
+        char what[120];
+        snprintf(what,sizeof(what),"is %zu bytes, read at %zu (%zu bytes)",bytes_.size(),at,count);
+        fault(what);
+    }
+    return bytes_.data()+at;
+}
+void BtechStartRowData::copy(void *to,size_t count,size_t at) const {memcpy(to,bytes(at,count),count);}
+bool BtechStartRowData::holds(uint16_t nearOffset) const
+{return nearOffset>=row_.offset && nearOffset-row_.offset<(int)bytes_.size();}
+size_t BtechStartRowData::index(uint16_t nearOffset) const
+{
+    if (!holds(nearOffset))
+    {
+        char what[120];
+        snprintf(what,sizeof(what),"(%04X:%04X) does not hold %04X",row_.segment,row_.offset,nearOffset);
+        fault(what);
+    }
+    return nearOffset-row_.offset;
+}
+const char *BtechStartRowData::text(size_t at) const
+{
+    const uint8_t *from=bytes(at,1);
+    if (!memchr(from,0,bytes_.size()-at)) fault("holds a text without its end");
+    return (const char *)from;
 }

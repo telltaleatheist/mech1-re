@@ -313,6 +313,10 @@ if(MECHWARRIOR_BUILD_TESTS)
         add_test(NAME save_roundtrip COMMAND Python3::Interpreter -I "${CMAKE_CURRENT_SOURCE_DIR}/tests/save_roundtrip.py"
             --program $<TARGET_FILE:save_roundtrip_test> --data "${CMAKE_CURRENT_SOURCE_DIR}/data" --work "${CMAKE_CURRENT_BINARY_DIR}/save_roundtrip_work")
     endif()
+    # Combat's start rows (B4f): each by its id, and every stop of their reader by its message.
+    add_executable(start_rows_test tests/start_rows_test.cpp)
+    target_link_libraries(start_rows_test PRIVATE mechwarrior_original)
+    add_test(NAME start_rows COMMAND start_rows_test "${CMAKE_CURRENT_SOURCE_DIR}/data")
     # Combat's file records (B4e): a file that ends early is refused by name; the game's banks cut, when it is there.
     add_executable(combat_records_test tests/combat_records_test.cpp)
     target_link_libraries(combat_records_test PRIVATE mechwarrior_original)
