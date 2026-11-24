@@ -62,7 +62,7 @@ void BtechDrawThreeByThreeMarker(int16_t x,int16_t y,uint16_t colour,uint16_t st
 void BtechDrawLanceMapUnitMarkers(void)
 {
     int16_t x,y;
-    if (sideObjectiveRules[0]==OBJECTIVE_SPECIAL_TARGET || sideObjectiveRules[1]==OBJECTIVE_SPECIAL_TARGET)
+    if (combatImport.sideObjectiveRules[0]==OBJECTIVE_SPECIAL_TARGET || combatImport.sideObjectiveRules[1]==OBJECTIVE_SPECIAL_TARGET)
     {
         if (!specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
         if (BtechProjectPositionToOrderMap(&specialTargetObject->object.prefix.position,&x,&y))
@@ -89,8 +89,8 @@ void BtechDrawLanceMapUnitMarkers(void)
         }
         if (!BtechProjectPositionToOrderMap(position,&combatOrders.unitOrderMapScreenX[slot],&combatOrders.unitOrderMapScreenY[slot])) continue;
         uint16_t style=control->sideIndex==0?slot:0,paletteEntry=control->sideIndex==0?slot:4;
-        if (combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || paletteEntry>=5) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || paletteEntry>=5");
-        uint16_t colour=combatVideo.landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex].unitMarkerColours[paletteEntry];
+        if (combatImport.combatLandscapeIndex>=COMBAT_LANDSCAPES || combatImport.hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || paletteEntry>=5) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || paletteEntry>=5");
+        uint16_t colour=combatVideo.landscapeCameraColourRows[combatImport.hudColourSchemeIndex][combatImport.combatLandscapeIndex].unitMarkerColours[paletteEntry];
         BtechDrawThreeByThreeMarker(combatOrders.unitOrderMapScreenX[slot],combatOrders.unitOrderMapScreenY[slot],colour,style);
     }
 }
@@ -101,7 +101,7 @@ void BtechDrawLanceMapRetreatBoundaries(void)
 {
     uint8_t retreatMask=0;
     for (uint16_t side=0;side<2;++side)
-        if (sideObjectiveRules[side]==OBJECTIVE_WITHDRAW) retreatMask=scenarioSelectors.sideBoundaryMasks[side];
+        if (combatImport.sideObjectiveRules[side]==OBJECTIVE_WITHDRAW) retreatMask=scenarioSelectors.sideBoundaryMasks[side];
     int16_t left,right,top,bottom;
     uint8_t firstVisible=BtechProjectPositionToOrderMap(&combatOrders.combatWorldBoundaryCorners[0],&left,&top);
     uint8_t secondVisible=BtechProjectPositionToOrderMap(&combatOrders.combatWorldBoundaryCorners[1],&right,&bottom);
@@ -109,8 +109,8 @@ void BtechDrawLanceMapRetreatBoundaries(void)
     combatVideo.clipMinimumY=top;combatVideo.clipMaximumY=bottom;combatVideo.clipMinimumX=left;combatVideo.clipMaximumX=right;
     combatVideo.screenPolygonNeedsClip=true;
     int16_t phase=(combatStartup.combatTickCounter&7)-4;
-    if (combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
-    const BtechLandscapeCameraColourRow *colours=&combatVideo.landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex];
+    if (combatImport.combatLandscapeIndex>=COMBAT_LANDSCAPES || combatImport.hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
+    const BtechLandscapeCameraColourRow *colours=&combatVideo.landscapeCameraColourRows[combatImport.hudColourSchemeIndex][combatImport.combatLandscapeIndex];
     combatVideo.drawFillColour=(uint8_t)((retreatMask&1)?colours->mapRetreatBoundaryColour:colours->mapBoundaryColour);
     for (int16_t x=left+phase;x<right;x=(int16_t)(x+8))
         BtechDrawClippedLine(x,top,(int16_t)(x+4),top);

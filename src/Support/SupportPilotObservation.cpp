@@ -67,7 +67,7 @@ void SupportPilotObserve(PilotObservation *view,bool combatActive)
     {
         PilotTarget *target=&view->targets[COMBAT_MECH_SLOTS];
         target->known=target->visible=true;target->alive=specialTargetDamageRemaining!=0;
-        target->hostile=sideObjectiveRules[0]==OBJECTIVE_SPECIAL_TARGET;
+        target->hostile=combatImport.sideObjectiveRules[0]==OBJECTIVE_SPECIAL_TARGET;
         target->position=ReadPosition(&specialTargetObject->object.prefix);
         target->screenX=objectiveVisibilityObject->object.projectedScreenA;
         target->screenY=objectiveVisibilityObject->object.projectedScreenB;

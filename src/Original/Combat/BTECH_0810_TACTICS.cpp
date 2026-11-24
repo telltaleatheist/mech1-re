@@ -20,7 +20,7 @@ void BtechSelectActiveUnitContext(uint16_t unitSlot)
     combatPose.activeMechTemplate=&mechTemplates[combatPose.activeMechState->templateIndex];
     combatPose.activeUnitPositionedObject=binding->positionedLeftLeg;
     combatPose.activeUnitTorsoObject=binding->torso;
-    activeUnitControl=&unitControls[unitSlot];
+    combatImport.activeUnitControl=&unitControls[unitSlot];
 }
 
 /*0810:7A80. Reload is deliberately ignored. WORD sums wrap before SAR;
@@ -57,9 +57,9 @@ uint16_t BtechShouldDisengageForWeaponsOrStructure(void)
  * Signed thresholds are sign-extended WORDs; equality is not nearby. */
 uint8_t BtechHasNearbyVisibleThreat(void)
 {
-    if (!activeUnitControl || activeUnitControl->sideIndex>=2) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl || activeUnitControl->sideIndex>=2");
-    BtechUnitControlState *control=activeUnitControl;
-    if (sideObjectiveRules[control->sideIndex]==OBJECTIVE_SPECIAL_TARGET && specialTargetDamageRemaining)
+    if (!combatImport.activeUnitControl || combatImport.activeUnitControl->sideIndex>=2) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl || activeUnitControl->sideIndex>=2");
+    BtechUnitControlState *control=combatImport.activeUnitControl;
+    if (combatImport.sideObjectiveRules[control->sideIndex]==OBJECTIVE_SPECIAL_TARGET && specialTargetDamageRemaining)
     {
         if (!combatPose.activeUnitPositionedObject || !specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject || !specialTargetObject");
         int32_t distance=(int32_t)BtechApproximatePlanarDistance(&combatPose.activeUnitPositionedObject->object.prefix.position,&specialTargetObject->object.prefix.position);
@@ -82,14 +82,14 @@ uint8_t BtechHasNearbyVisibleThreat(void)
 void BtechRefreshTargetAndNavigate(void)
 {
     BtechScoreAndSelectTacticalTarget();
-    if (activeUnitControl->targetUnitSlot>=0)
+    if (combatImport.activeUnitControl->targetUnitSlot>=0)
     {
-        uint16_t targetUnitSlot=activeUnitControl->targetUnitSlot;
+        uint16_t targetUnitSlot=combatImport.activeUnitControl->targetUnitSlot;
         if (targetUnitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: targetUnitSlot>=COMBAT_MECH_SLOTS"); /* Native special/adjacent-control alias. */
         const int32_t *lastSeen=unitControls[targetUnitSlot].lastVisiblePosition;
         BtechPosition3D destination={(uint32_t)lastSeen[0],(uint32_t)lastSeen[1],(uint32_t)lastSeen[2]};
         BtechNavigateActiveUnitTowardPosition(&destination);
-        activeUnitControl->navigationReferenceSlot=activeUnitControl->targetUnitSlot;
+        combatImport.activeUnitControl->navigationReferenceSlot=combatImport.activeUnitControl->targetUnitSlot;
     }
     else
     {

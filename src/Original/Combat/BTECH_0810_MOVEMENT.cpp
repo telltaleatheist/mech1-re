@@ -28,7 +28,7 @@ uint8_t BtechTestPositionInsideSpecialTarget(const BtechPosition3D *contactPosit
  * reference scale, not its object's current forward motion, for damage. */
 uint16_t BtechResolveUnitContactWithSpecialTarget(uint16_t unitSlot)
 {
-    if ((int16_t)sideObjectiveRules[0]<=OBJECTIVE_OPPOSE_WITHDRAWAL) return 0;
+    if ((int16_t)combatImport.sideObjectiveRules[0]<=OBJECTIVE_OPPOSE_WITHDRAWAL) return 0;
     if (unitSlot>=COMBAT_MECH_SLOTS || !unitBindings[unitSlot].positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitSlot>=COMBAT_MECH_SLOTS || !unitBindings[unitSlot].positionedLeftLeg");
     const BtechPosition3D *contactPosition=&unitBindings[unitSlot].positionedLeftLeg->object.prefix.position;
     if (!BtechTestPositionInsideSpecialTarget(contactPosition,unitSlot<1)) return 0;
@@ -37,7 +37,7 @@ uint16_t BtechResolveUnitContactWithSpecialTarget(uint16_t unitSlot)
     const BtechMechTemplate *contactingMechTemplate=&mechTemplates[contactingMech->templateIndex];
     uint16_t contactingSideIndex=unitControls[unitSlot].sideIndex;
     if (contactingSideIndex>=2) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: contactingSideIndex>=2");
-    if (sideObjectiveRules[contactingSideIndex]==OBJECTIVE_SPECIAL_TARGET && specialTargetInteractionBlocked)
+    if (combatImport.sideObjectiveRules[contactingSideIndex]==OBJECTIVE_SPECIAL_TARGET && combatImport.specialTargetInteractionBlocked)
         combatStartup.sideCompletionFlags[contactingSideIndex]=1;
     else
     {
@@ -58,16 +58,16 @@ uint8_t BtechTestUnitMovementObstruction(uint16_t unitSlot)
     BtechPooledWorldObject *movingMechObject=unitBindings[unitSlot].positionedLeftLeg;
     if (unitSlot)
     {
-        if (!activeUnitControl) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl");
-        if (activeUnitControl->tacticalState!=COMBAT_TACTICAL_RETREATING)
+        if (!combatImport.activeUnitControl) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl");
+        if (combatImport.activeUnitControl->tacticalState!=COMBAT_TACTICAL_RETREATING)
         {
-            uint8_t checkWorldBoundary=activeUnitControl->commandCode==COMBAT_ORDER_ATTACK_ENEMY;
-            if (!checkWorldBoundary && activeUnitControl->trackedPosition[2]>-1)
+            uint8_t checkWorldBoundary=combatImport.activeUnitControl->commandCode==COMBAT_ORDER_ATTACK_ENEMY;
+            if (!checkWorldBoundary && combatImport.activeUnitControl->trackedPosition[2]>-1)
             {
                 checkWorldBoundary=1;
                 for (uint16_t axis=0;axis<2;++axis)
                 {
-                    uint32_t absoluteTrackedCoordinate=activeUnitControl->trackedPosition[axis];
+                    uint32_t absoluteTrackedCoordinate=combatImport.activeUnitControl->trackedPosition[axis];
                     if (absoluteTrackedCoordinate==0x8000) absoluteTrackedCoordinate=0x7FFF;else if ((int32_t)absoluteTrackedCoordinate<0) absoluteTrackedCoordinate=0-absoluteTrackedCoordinate;
                     uint16_t axisBoundaryLimit=axis?COMBAT_BOUNDARY_LIMIT_B:COMBAT_BOUNDARY_LIMIT_A;
                     if ((int16_t)(absoluteTrackedCoordinate>>16)>0 || (!(absoluteTrackedCoordinate>>16) && (uint16_t)absoluteTrackedCoordinate>=axisBoundaryLimit)) {checkWorldBoundary=0;break;}
@@ -96,8 +96,8 @@ uint8_t BtechTestUnitMovementObstruction(uint16_t unitSlot)
             if (!combatPose.activeUnitPositionedObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject"); /* Native null near-owner access is not fabricated. */
             if (combatPose.activeUnitPositionedObject->forwardStepScale>UNIT_CONTACT_DAMAGE_SPEED_MINIMUM)
             {
-                if (!activeUnitControl) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl");
-                if (unitControls[otherSlot].sideIndex!=activeUnitControl->sideIndex)
+                if (!combatImport.activeUnitControl) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl");
+                if (unitControls[otherSlot].sideIndex!=combatImport.activeUnitControl->sideIndex)
                     BtechApplyUnitCollisionDamage(unitSlot,otherSlot);
             }
             return 1;
@@ -261,6 +261,6 @@ void BtechUpdatePlayerMechMotion(void)
             {playerMechPose->orientationB=0;playerMechPose->orientationA=0;playerMechObject->orientationSteps[1]=0;playerMechObject->orientationSteps[0]=0;}
         }
     }
-    activeUnitControl=&unitControls[0];
+    combatImport.activeUnitControl=&unitControls[0];
     BtechSynchronizeMechRenderParts();
 }

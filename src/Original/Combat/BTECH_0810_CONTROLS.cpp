@@ -98,7 +98,7 @@ uint8_t BtechTestPlayerTargetRenderVisibility(int16_t targetSlot)
  * first probe. Visibility is called again on exit, even after success. */
 uint16_t BtechCyclePlayerVisibleTarget(uint16_t currentTargetSlot)
 {
-    uint16_t targetLimit=(int16_t)sideObjectiveRules[0]>OBJECTIVE_OPPOSE_WITHDRAWAL?COMBAT_MECH_SLOTS+1:COMBAT_MECH_SLOTS;
+    uint16_t targetLimit=(int16_t)combatImport.sideObjectiveRules[0]>OBJECTIVE_OPPOSE_WITHDRAWAL?COMBAT_MECH_SLOTS+1:COMBAT_MECH_SLOTS;
     uint16_t startingSlot=currentTargetSlot?currentTargetSlot:COMBAT_LANCE_SLOTS;
     uint16_t candidate=startingSlot;
     do

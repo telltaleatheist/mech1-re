@@ -111,8 +111,8 @@ uint16_t BtechGetMechConditionColour(int16_t unitSlot)
     if (mech->lifeSupportHits==1) --band;
     if (mech->engineHits==COMBAT_ENGINE_HIT_LIMIT || mech->gyroHits==COMBAT_GYRO_DESTROYED_HITS || mech->cockpitDisabled==1) band=0;
     if (band<0 || (uint16_t)unitControls[unitSlot].conditionScoreOrExitCode==COMBAT_DISABLED_UNIT_VALUE) band=0;
-    if (hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || band>=ORDER_CONDITION_BANDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || band>=ORDER_CONDITION_BANDS"); /* Unsupported upper-band adjacent palette alias. */
-    return combatCockpit.hudColourSchemes[hudColourSchemeIndex].orderConditionColours[band];
+    if (combatImport.hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || band>=ORDER_CONDITION_BANDS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || band>=ORDER_CONDITION_BANDS"); /* Unsupported upper-band adjacent palette alias. */
+    return combatCockpit.hudColourSchemes[combatImport.hudColourSchemeIndex].orderConditionColours[band];
 }
 
 /*17FB:157E. Native first-wingmate gate, even if another wingmate exists.
@@ -131,8 +131,8 @@ void BtechUpdateLanceOrderHighlight(void)
         if (!combatOrders.orderScreenFullRedrawPending)
             BtechCopyHudRectangleIfReady(previousX,previousY,ORDER_PANEL_WIDTH,ORDER_HIGHLIGHT_HEIGHT);
     }
-    if (hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
-    const BtechHudColourScheme *colours=&combatCockpit.hudColourSchemes[hudColourSchemeIndex];
+    if (combatImport.hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
+    const BtechHudColourScheme *colours=&combatCockpit.hudColourSchemes[combatImport.hudColourSchemeIndex];
     combatVideo.drawFillColour=(uint8_t)(combatOrders.selectedOrderPanelRow==ORDER_REFERENCE_ROW && (combatOrders.orderPanelMode==ORDER_PANEL_TARGET || combatOrders.orderPanelMode==ORDER_PANEL_DESTINATION)
         ?colours->orderReferenceHighlight:colours->orderHighlight);
     uint16_t selectedY=combatOrders.selectedOrderPanelRow? (uint16_t)(ORDER_HIGHLIGHT_ROW_BASE_Y+(uint16_t)(combatOrders.selectedOrderPanelRow*ORDER_PANEL_ROW_STEP)):ORDER_HIGHLIGHT_FIRST_ROW_Y;
@@ -180,7 +180,7 @@ void BtechSeedSelectedOrderTracking(void)
     if (control->trackedUnitOrSpecialSlot==-1)
     {
         if (control->targetUnitSlot!=-1) control->trackedUnitOrSpecialSlot=control->targetUnitSlot;
-        else if (sideObjectiveRules[0]==OBJECTIVE_SPECIAL_TARGET && (int16_t)specialTargetDamageRemaining>0)
+        else if (combatImport.sideObjectiveRules[0]==OBJECTIVE_SPECIAL_TARGET && (int16_t)specialTargetDamageRemaining>0)
             control->trackedUnitOrSpecialSlot=ORDER_SPECIAL_TARGET_SLOT;
         else
             for (uint16_t slot=COMBAT_LANCE_SLOTS;slot<COMBAT_MECH_SLOTS;++slot)
@@ -206,7 +206,7 @@ void BtechEditSelectedUnitOrders(void)
         BtechRefreshCockpitViewportAndGaugesFar();combatCockpit.cockpitFullRedrawPending=1;
         break;
     case COMBAT_KEY_P:BtechShowSimulationPausedDialogFar();break;
-    case COMBAT_KEY_S:combatSoundEnabled=combatSoundEnabled==0;break;
+    case COMBAT_KEY_S:combatImport.combatSoundEnabled=combatImport.combatSoundEnabled==0;break;
     case COMBAT_KEY_D:combatStartup.combatDispatchState=PLAYER_SCREEN_INSPECTION;combatOrders.orderScreenFullRedrawPending=1;break;
     case COMBAT_KEY_Z:
         --combatOrders.orderMapScaleIndex;
@@ -236,7 +236,7 @@ void BtechEditSelectedUnitOrders(void)
             if (control->conditionScoreOrExitCode<=COMBAT_CONDITION_SCORE_MINIMUM) goto navigation;
             if (control->commandCode==COMBAT_ORDER_ACT_ON_OWN)
             {
-                switch (sideObjectiveRules[0])
+                switch (combatImport.sideObjectiveRules[0])
                 {
                 case OBJECTIVE_ELIMINATE_OPPOSITION:
                 case OBJECTIVE_OPPOSE_WITHDRAWAL:
@@ -296,7 +296,7 @@ navigation:
             int16_t panel=(int16_t)combatOrders.selectedLanceOrderPanel,row=(int16_t)combatOrders.selectedOrderPanelRow;
             if (!selectionClass) panel=(int16_t)(panel+combatOrders.orderNavigationPanelDeltas[direction]);
             row=(int16_t)(row+combatOrders.orderNavigationRowDeltas[direction]);
-            int16_t lastPanel=reducedMemoryMode?1:ORDER_WINGMATE_PANELS-1;
+            int16_t lastPanel=combatImport.reducedMemoryMode?1:ORDER_WINGMATE_PANELS-1;
             if (panel<0 || panel>lastPanel) panel=(int16_t)combatOrders.selectedLanceOrderPanel;
             if (row<combatOrders.orderSelectionFirstRows[selectionClass]) row=combatOrders.orderSelectionLastRows[selectionClass];
             else if (row>combatOrders.orderSelectionLastRows[selectionClass]) row=combatOrders.orderSelectionFirstRows[selectionClass];
@@ -322,7 +322,7 @@ navigation:
                 candidate=(int16_t)(candidate+(step<0?-1:step>0?1:0)+ORDER_TARGET_CANDIDATES);
                 candidate%=ORDER_TARGET_CANDIDATES;
                 if (candidate==ORDER_SPECIAL_TARGET_SLOT)
-                {if (sideObjectiveRules[0]==OBJECTIVE_SPECIAL_TARGET) target=ORDER_SPECIAL_TARGET_SLOT;}
+                {if (combatImport.sideObjectiveRules[0]==OBJECTIVE_SPECIAL_TARGET) target=ORDER_SPECIAL_TARGET_SLOT;}
                 else
                 {
                     if ((uint16_t)candidate>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint16_t)candidate>=COMBAT_MECH_SLOTS");
@@ -375,7 +375,7 @@ void BtechInitializeOrderPanelState(void)
         combatOrders.orderPanelCaptureBuffer.byteCount=((uint32_t)captureBytes+0x0F)&~0x0Fu;
         if (!combatOrders.orderPanelCaptureBuffer.bytes) BtechShowFatalErrorAndExit("the order map's capture buffer doesn't fit in memory");
     }
-    if (reducedMemoryMode) combatOrders.lanceOrderPanelTextX[1]=combatOrders.lanceOrderPanelTextX[2];
+    if (combatImport.reducedMemoryMode) combatOrders.lanceOrderPanelTextX[1]=combatOrders.lanceOrderPanelTextX[2];
     combatOrders.orderMapScaleIndex=ORDER_MAP_FULL_SCALE;combatOrders.previousOrderMapScaleIndex=ORDER_MAP_FULL_SCALE;
     combatOrders.orderScreenFullRedrawPending=1;
     combatOrders.previousOrderHighlightPanel=ORDER_NO_HIGHLIGHT;combatOrders.previousOrderHighlightRow=ORDER_NO_HIGHLIGHT;

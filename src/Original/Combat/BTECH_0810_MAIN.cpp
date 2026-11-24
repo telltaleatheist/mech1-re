@@ -26,7 +26,7 @@ void BtechProgramMain(uint16_t argumentCount,const char *const *arguments)
 {
     uint8_t outcomeCountdownActive=0;
     uint16_t outcomeCountdownStartTick; /* Assigned before every first active-countdown use. */
-    savedArgumentCount=argumentCount;savedArguments=arguments;
+    combatImport.savedArgumentCount=argumentCount;combatImport.savedArguments=arguments;
     BtechInitializeCombatRuntime();
     for (;;)
     {
@@ -70,7 +70,7 @@ void BtechProgramMain(uint16_t argumentCount,const char *const *arguments)
             {
                 uint16_t exitBoundaryIndex=-((int32_t)playerConditionOrExitCode+COMBAT_EXIT_CODE_OFFSET);
                 missionResult=COMBAT_RESULT_RETREAT;
-                if (sideObjectiveRules[0]==OBJECTIVE_WITHDRAW)
+                if (combatImport.sideObjectiveRules[0]==OBJECTIVE_WITHDRAW)
                 {
                     /* Use the same four-edge decoding as the withdrawal
                      * objective check. Other game state is not an exit mask. */

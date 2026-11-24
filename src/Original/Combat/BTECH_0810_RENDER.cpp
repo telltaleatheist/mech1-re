@@ -175,7 +175,7 @@ void BtechBeginSelectionPixelProbe(uint16_t x,uint16_t y)
  * not fabricated DOS RAM. Every mode-zero consumer reads only the low byte. */
 uint32_t BtechCaptureSelectionPixels(int16_t x,int16_t y)
 {
-    if (!hudColourSchemeIndex) return (uint8_t)BtechReadClippedPixel(x,y);
+    if (!combatImport.hudColourSchemeIndex) return (uint8_t)BtechReadClippedPixel(x,y);
     uint32_t pixels=0;
     for (uint16_t column=0;column<2;++column)
         for (uint16_t row=0;row<2;++row)
@@ -186,7 +186,7 @@ uint32_t BtechCaptureSelectionPixels(int16_t x,int16_t y)
 /*0810:C33D. Pointer identity selects colour0D only in single-pixel mode. */
 void BtechWriteSelectionPixels(int16_t x,int16_t y,const uint32_t *pixels)
 {
-    if (hudColourSchemeIndex)
+    if (combatImport.hudColourSchemeIndex)
     {
         for (uint16_t column=0;column<2;++column)
             for (uint16_t row=0;row<2;++row)
@@ -198,5 +198,5 @@ void BtechWriteSelectionPixels(int16_t x,int16_t y,const uint32_t *pixels)
 /*0810:C3B9. Multi-pixel marker is the authored00010203 column-major pattern. */
 uint16_t BtechTestSelectionMarkerPixels(const uint32_t *pixels)
 {
-    return hudColourSchemeIndex?*pixels==UINT32_C(0x03020100):(uint8_t)*pixels==SELECTION_MARKER_COLOUR;
+    return combatImport.hudColourSchemeIndex?*pixels==UINT32_C(0x03020100):(uint8_t)*pixels==SELECTION_MARKER_COLOUR;
 }

@@ -22,7 +22,7 @@ void BtechDrawUnitOrderPanels(void)
         BtechMechState *mech=unitBindings[unitSlot].mech;
         if (!mech || control->sideIndex) continue;
         if (panel>=ORDER_WINGMATE_PANELS || mech->templateIndex>=COMBAT_MECH_TEMPLATES
-            || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || combatLandscapeIndex>=COMBAT_LANDSCAPES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: panel>=ORDER_WINGMATE_PANELS || mech->templateIndex>=COMBAT_MECH_TEMPLATES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || combatLandscapeIndex>=COMBAT_LANDSCAPES");
+            || combatImport.hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || combatImport.combatLandscapeIndex>=COMBAT_LANDSCAPES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: panel>=ORDER_WINGMATE_PANELS || mech->templateIndex>=COMBAT_MECH_TEMPLATES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || combatLandscapeIndex>=COMBAT_LANDSCAPES");
         const BtechMechTemplate *chassis=&mechTemplates[mech->templateIndex];
         uint16_t x=combatOrders.lanceOrderPanelTextX[panel];
         int16_t trackedSlot=control->trackedUnitOrSpecialSlot;
@@ -32,15 +32,15 @@ void BtechDrawUnitOrderPanels(void)
             control->commandCode=COMBAT_ORDER_ACT_ON_OWN;
         } /* Navigation reference deliberately survives this reset. */
         ++friendlyMarker;
-        const BtechHudColourScheme *colours=&combatCockpit.hudColourSchemes[hudColourSchemeIndex];
-        uint16_t markerColour=hudColourSchemeIndex?ORDER_PANEL_TEXT_COLOUR:
-            combatVideo.landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex].unitMarkerColours[friendlyMarker];
+        const BtechHudColourScheme *colours=&combatCockpit.hudColourSchemes[combatImport.hudColourSchemeIndex];
+        uint16_t markerColour=combatImport.hudColourSchemeIndex?ORDER_PANEL_TEXT_COLOUR:
+            combatVideo.landscapeCameraColourRows[combatImport.hudColourSchemeIndex][combatImport.combatLandscapeIndex].unitMarkerColours[friendlyMarker];
         combatVideo.textForegroundColour=(uint8_t)markerColour;
         if (panel!=combatOrders.selectedLanceOrderPanel || combatOrders.orderPanelMode==ORDER_PANEL_SUMMARY
             || combatOrders.orderPanelMode==ORDER_PANEL_TARGET || combatOrders.orderPanelMode==ORDER_PANEL_DESTINATION)
         {
-            if (unitSlot>=COMBAT_FRIENDLY_SLOTS || deployedPilotIds[unitSlot]>=COMBAT_PILOT_NAMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitSlot>=COMBAT_FRIENDLY_SLOTS || deployedPilotIds[unitSlot]>=COMBAT_PILOT_NAMES"); /* Native slot4+ pilot-directory neighbour alias. */
-            BtechDrawNearText(combatCockpit.pilotDefinitionNameDirectory[deployedPilotIds[unitSlot]],x,ORDER_PANEL_NAME_Y);
+            if (unitSlot>=COMBAT_FRIENDLY_SLOTS || combatImport.deployedPilotIds[unitSlot]>=COMBAT_PILOT_NAMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitSlot>=COMBAT_FRIENDLY_SLOTS || deployedPilotIds[unitSlot]>=COMBAT_PILOT_NAMES"); /* Native slot4+ pilot-directory neighbour alias. */
+            BtechDrawNearText(combatCockpit.pilotDefinitionNameDirectory[combatImport.deployedPilotIds[unitSlot]],x,ORDER_PANEL_NAME_Y);
             BtechDrawThreeByThreeMarker((uint16_t)(x+ORDER_PANEL_MARKER_X),ORDER_PANEL_MARKER_Y,markerColour,friendlyMarker);
             BtechDrawNearText(combatCockpit.mechTemplateNameDirectory[mech->templateIndex],x,ORDER_PANEL_CHASSIS_Y);
             if (control->tacticalState>=ORDER_TACTICAL_LABELS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: control->tacticalState>=ORDER_TACTICAL_LABELS");
@@ -145,16 +145,16 @@ void BtechDrawUnitOrderPanels(void)
             BtechSetConditionTextColours(colours->orderConditionColours[structureCondition]);
             BtechDrawNearText(combatOrders.orderDamageLabels[2],x,(int)ORDER_PANEL_DETAIL_FIRST_Y+ORDER_PANEL_ROW_STEP);
             if (mech->engineHits>=ORDER_SYSTEM_CONDITION_LEVELS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mech->engineHits>=ORDER_SYSTEM_CONDITION_LEVELS");
-            BtechSetConditionTextColours(combatOrders.orderEngineConditionColours[hudColourSchemeIndex][mech->engineHits]);
+            BtechSetConditionTextColours(combatOrders.orderEngineConditionColours[combatImport.hudColourSchemeIndex][mech->engineHits]);
             BtechDrawNearText(combatOrders.orderDamageLabels[3],x,ORDER_PANEL_COMMAND_Y);
             if (mech->gyroHits>=ORDER_SYSTEM_CONDITION_LEVELS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mech->gyroHits>=ORDER_SYSTEM_CONDITION_LEVELS");
-            BtechSetConditionTextColours(combatOrders.orderSystemConditionColours[hudColourSchemeIndex][mech->gyroHits]);
+            BtechSetConditionTextColours(combatOrders.orderSystemConditionColours[combatImport.hudColourSchemeIndex][mech->gyroHits]);
             BtechDrawNearText(combatOrders.orderDamageLabels[4],x,ORDER_PANEL_REFERENCE_Y);
             if (mech->sensorHits>=ORDER_SYSTEM_CONDITION_LEVELS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mech->sensorHits>=ORDER_SYSTEM_CONDITION_LEVELS");
-            BtechSetConditionTextColours(combatOrders.orderSystemConditionColours[hudColourSchemeIndex][mech->sensorHits]);
+            BtechSetConditionTextColours(combatOrders.orderSystemConditionColours[combatImport.hudColourSchemeIndex][mech->sensorHits]);
             BtechDrawNearText(combatOrders.orderDamageLabels[5],x,ORDER_PANEL_DAMAGE_Y);
             if (mech->lifeSupportHits>=ORDER_SYSTEM_CONDITION_LEVELS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mech->lifeSupportHits>=ORDER_SYSTEM_CONDITION_LEVELS");
-            BtechSetConditionTextColours(combatOrders.orderSystemConditionColours[hudColourSchemeIndex][mech->lifeSupportHits]);
+            BtechSetConditionTextColours(combatOrders.orderSystemConditionColours[combatImport.hudColourSchemeIndex][mech->lifeSupportHits]);
             BtechDrawNearText(combatOrders.orderDamageLabels[6],x,ORDER_PANEL_WEAPONS_Y);
         }
         if (!combatOrders.orderScreenFullRedrawPending)

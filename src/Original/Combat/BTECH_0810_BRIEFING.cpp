@@ -24,10 +24,10 @@ void BtechShowCombatStageBriefing(void)
     BtechLoadScreenImage("status.scr",NULL);
     combatVideo.textTransparentBackground=true;
     combatVideo.screenPolygonNeedsClip=false;
-    combatVideo.textForegroundColour=hudColourSchemeIndex?(int)Combat_Pal_EGA_Black:COMBAT_BRIEFING_TEXT_COLOUR;
+    combatVideo.textForegroundColour=combatImport.hudColourSchemeIndex?(int)Combat_Pal_EGA_Black:COMBAT_BRIEFING_TEXT_COLOUR;
     BtechDrawNearText(combatCockpit.briefingMissionLabel,BRIEFING_MISSION_LABEL_X,BRIEFING_MISSION_LABEL_Y);
-    if (combatMissionDefinitionIndex>=COMBAT_BRIEFING_MISSIONS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatMissionDefinitionIndex>=COMBAT_BRIEFING_MISSIONS"); /* Adjacent directory alias not mapped. */
-    BtechDrawNearText(combatCockpit.combatMissionTitles[combatMissionDefinitionIndex],BRIEFING_MISSION_TITLE_X,BRIEFING_MISSION_TITLE_Y);
+    if (combatImport.combatMissionDefinitionIndex>=COMBAT_BRIEFING_MISSIONS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatMissionDefinitionIndex>=COMBAT_BRIEFING_MISSIONS"); /* Adjacent directory alias not mapped. */
+    BtechDrawNearText(combatCockpit.combatMissionTitles[combatImport.combatMissionDefinitionIndex],BRIEFING_MISSION_TITLE_X,BRIEFING_MISSION_TITLE_Y);
     BtechDrawNearText(combatCockpit.briefingCrewLabel,BRIEFING_ROSTER_LABEL_X,BRIEFING_CREW_LABEL_Y);
     BtechDrawNearText(combatCockpit.briefingMechLabel,BRIEFING_ROSTER_LABEL_X,BRIEFING_MECH_LABEL_Y);
     for (uint16_t slot=0;slot<COMBAT_FRIENDLY_SLOTS;++slot)
@@ -36,8 +36,8 @@ void BtechShowCombatStageBriefing(void)
         if (mech)
         {
             uint16_t rowY=(slot+1)*BRIEFING_ROSTER_ROW_STEP;
-            if (deployedPilotIds[slot]>=COMBAT_PILOT_NAMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: deployedPilotIds[slot]>=COMBAT_PILOT_NAMES");
-            BtechDrawNearText(combatCockpit.pilotDefinitionNames[deployedPilotIds[slot]],BRIEFING_ROSTER_TEXT_X,rowY+BRIEFING_CREW_LABEL_Y);
+            if (combatImport.deployedPilotIds[slot]>=COMBAT_PILOT_NAMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: deployedPilotIds[slot]>=COMBAT_PILOT_NAMES");
+            BtechDrawNearText(combatCockpit.pilotDefinitionNames[combatImport.deployedPilotIds[slot]],BRIEFING_ROSTER_TEXT_X,rowY+BRIEFING_CREW_LABEL_Y);
             BtechDrawNearText(":OK",BRIEFING_STATUS_COLON_X,rowY+BRIEFING_CREW_LABEL_Y);
             if (mech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mech->templateIndex>=COMBAT_MECH_TEMPLATES");
             BtechDrawNearText(combatCockpit.mechTemplateNames[mech->templateIndex],BRIEFING_ROSTER_TEXT_X,rowY+BRIEFING_MECH_LABEL_Y);

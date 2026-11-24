@@ -85,8 +85,8 @@ void BtechProcessPlayerControls(void)
         break;
     case COMBAT_KEY_H:
     {
-        if (combatLandscapeIndex>=COMBAT_LANDSCAPES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatLandscapeIndex>=COMBAT_LANDSCAPES");
-        BtechLandscapeCameraColourRow *colours=&combatVideo.landscapeCameraColourRows[0][combatLandscapeIndex];
+        if (combatImport.combatLandscapeIndex>=COMBAT_LANDSCAPES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatLandscapeIndex>=COMBAT_LANDSCAPES");
+        BtechLandscapeCameraColourRow *colours=&combatVideo.landscapeCameraColourRows[0][combatImport.combatLandscapeIndex];
         /* Native WORD increment/mask clears the adjacent0017 byte, too. */
         colours->hudReticleColour=(uint8_t)((colours->hudReticleColour+1)&PLAYER_HUD_COLOUR_MASK);
         colours->unidentifiedField11=0;
@@ -124,7 +124,7 @@ void BtechProcessPlayerControls(void)
         if ((int16_t)playerMechState->sensorHits<COMBAT_SENSORS_DESTROYED_HITS)
             combatStartup.playerTargetSlot=BtechCyclePlayerVisibleTarget(combatStartup.playerTargetSlot);
         break;
-    case COMBAT_KEY_S: combatSoundEnabled=combatSoundEnabled<1;break;
+    case COMBAT_KEY_S: combatImport.combatSoundEnabled=combatImport.combatSoundEnabled<1;break;
     case COMBAT_KEY_D:
         if (!combatCockpit.cockpitFullRedrawPending) combatStartup.combatDispatchState=PLAYER_SCREEN_INSPECTION;
         break;
@@ -285,7 +285,7 @@ aiming:;
         }
         else if (directions&COMBAT_DIRECTION_UP)
         {
-            int16_t minimum=(activeCockpitLayoutIndex<1?PLAYER_FIRST_COCKPIT_AIM_MARGIN:0)-PLAYER_AIM_LIMIT;
+            int16_t minimum=(combatImport.activeCockpitLayoutIndex<1?PLAYER_FIRST_COCKPIT_AIM_MARGIN:0)-PLAYER_AIM_LIMIT;
             int16_t requested=aimPitch-PLAYER_AIM_STEP;
             combatInput.requestedAimPitch=(uint16_t)(requested<minimum?minimum:requested);
         }

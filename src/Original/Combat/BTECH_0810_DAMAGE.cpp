@@ -146,7 +146,7 @@ void BtechApplyArmorAndInternalDamage(uint16_t unitSlot,int16_t damageArmorLocat
         uint16_t *armorPoints=&damagedMech->currentArmor[damageArmorLocation];
         if ((int16_t)*armorPoints>residualDamage) {*armorPoints-=(uint16_t)residualDamage;residualDamage=0;continue;}
         residualDamage=(int16_t)((uint16_t)residualDamage-*armorPoints);*armorPoints=0;
-        uint16_t internalBodyLocation=armorToBodyLocations[damageArmorLocation];
+        uint16_t internalBodyLocation=combatImport.armorToBodyLocations[damageArmorLocation];
         if (internalBodyLocation>=COMBAT_BODY_LOCATIONS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: internalBodyLocation>=COMBAT_BODY_LOCATIONS");
         if (!damagedMech->currentInternalStructure[internalBodyLocation])
         {
@@ -199,7 +199,7 @@ void BtechQueueBodyDestructionEmitter(uint16_t unitSlot,int16_t armorLocation)
  * destruction effects use the original local position, not target mutations. */
 void BtechApplySpecialTargetDamage(int16_t damage)
 {
-    if (!specialTargetDamageRemaining || specialTargetInteractionBlocked) return;
+    if (!specialTargetDamageRemaining || combatImport.specialTargetInteractionBlocked) return;
     combatDamagePanels.specialTargetDamagePanelDirty=1;
     if (damage<(int16_t)specialTargetDamageRemaining) {specialTargetDamageRemaining-=(uint16_t)damage;return;}
     specialTargetDamageRemaining=0;

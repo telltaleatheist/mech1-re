@@ -203,7 +203,7 @@ void BtechLoadCombatChassisResourceBanks(void)
  * native stack residue and is explicitly unsupported, not zero-filled. */
 void BtechLoadTerrainWorldResources(void)
 {
-    if (combatTerrainDetailLevel==TERRAIN_DETAIL_LOW) return;
+    if (combatImport.combatTerrainDetailLevel==TERRAIN_DETAIL_LOW) return;
     uint8_t resourceBytes[2],positionBytes[12];
     uint8_t haveResource=0,havePosition=0;
     for (uint16_t tile=0;tile<TERRAIN_TILE_COUNT;++tile)
@@ -211,7 +211,7 @@ void BtechLoadTerrainWorldResources(void)
         uint8_t variant=scenarioSelectors.terrainSelectors[tile];
         if (variant>=16) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: variant>=16");
         strcpy(terrainWorldFilename,"TILE");strcat(terrainWorldFilename,terrainVariantFilenameSuffixes[variant]);
-        if (combatTerrainDetailLevel==TERRAIN_DETAIL_MEDIUM) strcat(terrainWorldFilename,"B");
+        if (combatImport.combatTerrainDetailLevel==TERRAIN_DETAIL_MEDIUM) strcat(terrainWorldFilename,"B");
         strcpy(terrainGridFilename,terrainWorldFilename);
         strcat(terrainWorldFilename,".WLD");strcat(terrainGridFilename,".GRD");
         FILE *stream=BtechOpenStreamWithRetry(terrainWorldFilename,"rb");
@@ -294,11 +294,11 @@ void BtechLoadScenarioAndWorld(uint16_t scenarioIndex)
     int16_t specialTerrain=-1;
     for (uint16_t side=0;side<2;++side)
     {
-        if (sideObjectiveRules[0]>=5) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: sideObjectiveRules[0]>=5");
-        uint8_t terrainSlot=scenarioSelectors.formationSelectors[side][sideObjectiveRules[0]];
+        if (combatImport.sideObjectiveRules[0]>=5) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: sideObjectiveRules[0]>=5");
+        uint8_t terrainSlot=scenarioSelectors.formationSelectors[side][combatImport.sideObjectiveRules[0]];
         if (terrainSlot>=4) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: terrainSlot>=4");
         uint16_t variant=scenarioSelectors.terrainSelectors[terrainSlot];
-        offset=(uint16_t)((sideObjectiveRules[side]<<5)+variant*0xA0+0x03C0);
+        offset=(uint16_t)((combatImport.sideObjectiveRules[side]<<5)+variant*0xA0+0x03C0);
         fseek(stream,offset<0x8000?offset:(long)offset-0x10000,SEEK_SET);
         uint8_t formationBytes[0x20];
         for (uint16_t unit=0;unit<4;++unit)
@@ -314,7 +314,7 @@ void BtechLoadScenarioAndWorld(uint16_t scenarioIndex)
             position->positionA=(uint32_t)MwReadNativeWord(formationBytes,unit*8)|((uint32_t)MwReadNativeWord(formationBytes,unit*8+2)<<16);
             position->positionB=(uint32_t)MwReadNativeWord(formationBytes,unit*8+4)|((uint32_t)MwReadNativeWord(formationBytes,unit*8+6)<<16);
         }
-        if (sideObjectiveRules[side]==OBJECTIVE_DEFEND_SPECIAL_TARGET) specialTerrain=(int16_t)variant;
+        if (combatImport.sideObjectiveRules[side]==OBJECTIVE_DEFEND_SPECIAL_TARGET) specialTerrain=(int16_t)variant;
     }
     if (specialTerrain>=0)
     {
@@ -350,7 +350,7 @@ void BtechLoadScenarioAndWorld(uint16_t scenarioIndex)
         if (!unitBindings[slot].mech) continue;
         uint16_t side=slot<COMBAT_LANCE_SLOTS?0:1;
         BtechWorldObjectPrefix *object=&unitBindings[slot].positionedLeftLeg->object.prefix;
-        switch (sideObjectiveRules[side])
+        switch (combatImport.sideObjectiveRules[side])
         {
         case OBJECTIVE_ELIMINATE_OPPOSITION:case OBJECTIVE_OPPOSE_WITHDRAWAL:case OBJECTIVE_DEFEND_SPECIAL_TARGET:
             object->orientationC=heading+(side?0x7FF8:0);break;

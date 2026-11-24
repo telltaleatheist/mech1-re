@@ -23,8 +23,8 @@ void BtechRenderCockpitSceneAndHud(void)
         if (combatVideo.playerCameraFillASuppressed) playerPoseCameraContext->fillPaletteA=0;
         else
         {
-            if (combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
-            playerPoseCameraContext->fillPaletteA=combatVideo.landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex].playerFillPaletteA;
+            if (combatImport.combatLandscapeIndex>=COMBAT_LANDSCAPES || combatImport.hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
+            playerPoseCameraContext->fillPaletteA=combatVideo.landscapeCameraColourRows[combatImport.hudColourSchemeIndex][combatImport.combatLandscapeIndex].playerFillPaletteA;
         }
     }
     BtechApplyBodyHeadingToMechParts();
@@ -54,7 +54,7 @@ void BtechRenderCockpitSceneAndHud(void)
     BtechDrawPendingFiringIndicator();
     BtechDrawCockpitBitmapPlacements();
     combatVideo.textTransparentBackground=true;
-    combatVideo.textForegroundColour=combatVideo.landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex].hudReticleColour;
+    combatVideo.textForegroundColour=combatVideo.landscapeCameraColourRows[combatImport.hudColourSchemeIndex][combatImport.combatLandscapeIndex].hudReticleColour;
     uint16_t zoomX=COCKPIT_RIGHT_LABEL_X,automaticWeaponsX=COCKPIT_LEFT_LABEL_X;
     if (playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
     if (combatCockpit.mechCockpitLayoutIndices[playerMechState->templateIndex]==2)

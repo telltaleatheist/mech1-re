@@ -8,8 +8,8 @@
 /*0810:2678. Asymmetric native bounds: Y includes y+height, X subtracts1. */
 void BtechSetCockpitCameraViewport(BtechCameraContext *camera)
 {
-    if (activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS || !camera) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS || !camera");
-    const BtechCockpitLayout *layout=&combatCockpit.cockpitLayouts[activeCockpitLayoutIndex];
+    if (combatImport.activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS || !camera) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS || !camera");
+    const BtechCockpitLayout *layout=&combatCockpit.cockpitLayouts[combatImport.activeCockpitLayoutIndex];
     camera->clipMinimumB=layout->viewport.y;
     camera->clipMaximumB=(int16_t)((uint16_t)layout->viewport.y+(uint16_t)layout->viewport.height);
     camera->clipMinimumA=layout->viewport.x;
@@ -30,11 +30,11 @@ void BtechRefreshCockpitViewportAndGauges(void)
 {
     uint8_t savedClipping=combatVideo.screenPolygonNeedsClip;
     if (!playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState || playerMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
-    activeCockpitLayoutIndex=combatCockpit.mechCockpitLayoutIndices[playerMechState->templateIndex];
+    combatImport.activeCockpitLayoutIndex=combatCockpit.mechCockpitLayoutIndices[playerMechState->templateIndex];
     combatVideo.screenPolygonNeedsClip=false;
     combatVideo.drawPageSelector=combatVideo.backPageSelector;
-    if (activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS");
-    BtechLoadScreenImage(combatCockpit.cockpitScreenFilenames[activeCockpitLayoutIndex],NULL);
+    if (combatImport.activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeCockpitLayoutIndex>=COMBAT_COCKPIT_LAYOUTS");
+    BtechLoadScreenImage(combatCockpit.cockpitScreenFilenames[combatImport.activeCockpitLayoutIndex],NULL);
     combatVideo.screenPolygonNeedsClip=savedClipping;
     BtechResetHudGaugeCaches();
     BtechSetCockpitCameraViewport(playerPoseCameraContext);
@@ -58,13 +58,13 @@ void BtechResetMechInspectionState(void)
  * and finally palette selection. Map fillA and neighbouring fields survive. */
 void BtechApplyLandscapeCameraColours(void)
 {
-    if (combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES
+    if (combatImport.combatLandscapeIndex>=COMBAT_LANDSCAPES || combatImport.hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES
         || !playerPoseCameraContext || !orderMapCameraContext) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || !playerPoseCameraContext || !orderMapCameraContext"); /* Unrecovered unrelated-owner aliases. */
     playerPoseCameraContext->fillPaletteA=combatVideo.playerCameraFillASuppressed?0:
-        combatVideo.landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex].playerFillPaletteA;
+        combatVideo.landscapeCameraColourRows[combatImport.hudColourSchemeIndex][combatImport.combatLandscapeIndex].playerFillPaletteA;
     playerPoseCameraContext->fillPaletteB=orderMapCameraContext->fillPaletteB=
-        combatVideo.landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex].sharedFillPaletteB;
-    BtechSelectPaletteSlot(combatVideo.landscapePaletteSlots[combatLandscapeIndex]);
+        combatVideo.landscapeCameraColourRows[combatImport.hudColourSchemeIndex][combatImport.combatLandscapeIndex].sharedFillPaletteB;
+    BtechSelectPaletteSlot(combatVideo.landscapePaletteSlots[combatImport.combatLandscapeIndex]);
 }
 
 /*0810:2372. Native five-bank loading order. EGA always uses HUD_NUMS;
@@ -75,7 +75,7 @@ void BtechLoadCockpitHudResources(void)
     combatVideo.smallMechPictures=BtechLoadBitmapList("sm_mechs.bmp",NULL);
     combatVideo.strutPictures=BtechLoadBitmapList("struts.bmp",NULL);
     combatVideo.cockpitPictures=BtechLoadBitmapList("cockpit.bmp",NULL);
-    const char *filename=combatVideo.combatRendererKind!=COMBAT_VIDEO_EGA && combatLandscapeIndex==0?"hud_cyan.bmp":"hud_nums.bmp";
+    const char *filename=combatVideo.combatRendererKind!=COMBAT_VIDEO_EGA && combatImport.combatLandscapeIndex==0?"hud_cyan.bmp":"hud_nums.bmp";
     combatVideo.hudGlyphPictures=BtechLoadBitmapList(filename,NULL);
 }
 

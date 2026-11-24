@@ -14,11 +14,11 @@
 void BtechInitializeCombatRuntime(void)
 {
     BtechInstallDosCriticalErrorHandler();
-    combatContinuationStage=UINT16_MAX;
+    combatImport.combatContinuationStage=UINT16_MAX;
     BtechResetCombatState();
     BtechInitializeVideoAndInput();
-    hudColourSchemeIndex=combatVideo.combatRendererKind==1;
-    if (hudColourSchemeIndex || combatVideo.combatRendererKind==3) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex || combatRendererKind==3"); /* Non-EGA scratch ownership not converted. */
+    combatImport.hudColourSchemeIndex=combatVideo.combatRendererKind==1;
+    if (combatImport.hudColourSchemeIndex || combatVideo.combatRendererKind==3) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex || combatRendererKind==3"); /* Non-EGA scratch ownership not converted. */
     desertPaletteSlot=BtechLoadPaletteSlot("desert.pal",NULL);
     arcticPaletteSlot=BtechLoadPaletteSlot("arctic.pal",NULL);
     tropicalPaletteSlot=BtechLoadPaletteSlot("tropic.pal",NULL);
@@ -57,7 +57,7 @@ void BtechInitializeCombatRuntime(void)
         if (mount>=COMBAT_WEAPON_MOUNTS || !playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mount>=COMBAT_WEAPON_MOUNTS || !playerMechState");
         combatStartup.playerMountFireFlags[mount]=(int8_t)playerMechState->weapons[mount].operational;
     }
-    activeUnitControl=&unitControls[0];
+    combatImport.activeUnitControl=&unitControls[0];
     BtechSynchronizeMechRenderParts();
     BtechShowCombatStageBriefing();
     BtechRefreshCockpitViewportAndGauges();
@@ -68,9 +68,9 @@ void BtechInitializeCombatRuntime(void)
 void BtechInitializeVideoAndInput(void)
 {
     uint16_t adapterOverride=COMBAT_VIDEO_AUTO;
-    if ((int16_t)savedArgumentCount>1)
+    if ((int16_t)combatImport.savedArgumentCount>1)
     {
-        uint8_t option=savedArguments[1][0];
+        uint8_t option=combatImport.savedArguments[1][0];
         /*EAA0 lowercases ASCII upper-case in the shipped character table. */
         if (option>='A' && option<='Z') option+='a'-'A';
         switch (option)
@@ -138,7 +138,7 @@ void BtechResetCombatState(void)
     for (uint16_t chassis=0;chassis<COMBAT_MECH_TEMPLATES;++chassis) mechResourceBaseIds[chassis]=0;
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
     {unitBindings[slot].mech=NULL;unitBindings[slot].positionedLeftLeg=NULL;}
-    specialTargetInteractionBlocked=0;
+    combatImport.specialTargetInteractionBlocked=0;
     otherShapeResourceBase=0;firstMechShapeResourceId=0;
     combatStartup.playerSpecialTargetLandingLatch=0;
 }

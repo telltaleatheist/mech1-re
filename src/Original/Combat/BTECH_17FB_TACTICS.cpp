@@ -11,8 +11,8 @@
  * reads the TRANSPOSED distance matrix. Failed selection leaves target stale. */
 void BtechScoreAndSelectTacticalTarget(void)
 {
-    if (!activeUnitControl || activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl || activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS");
-    BtechUnitControlState *active=activeUnitControl;
+    if (!combatImport.activeUnitControl || combatImport.activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl || activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS");
+    BtechUnitControlState *active=combatImport.activeUnitControl;
     uint8_t eligible[COMBAT_MECH_SLOTS],anyEligible=0;
     int16_t maximumDistanceLow=0,maximumValueDifference=0,bestScore=0;
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
@@ -66,7 +66,7 @@ void BtechUpdateSideCompletionFlags(void)
     /* Side 0 tests side 1, and vice versa; the callee can also set its own latch. */
     for (uint16_t benefitingSideIndex=0;benefitingSideIndex<2;++benefitingSideIndex)
         if (BtechTestSideEliminationOrExitObjective(benefitingSideIndex<1)
-            || (sideObjectiveRules[benefitingSideIndex]==OBJECTIVE_SPECIAL_TARGET && !specialTargetDamageRemaining)) combatStartup.sideCompletionFlags[benefitingSideIndex]=1;
+            || (combatImport.sideObjectiveRules[benefitingSideIndex]==OBJECTIVE_SPECIAL_TARGET && !specialTargetDamageRemaining)) combatStartup.sideCompletionFlags[benefitingSideIndex]=1;
     if (combatStartup.sideCompletionFlags[1] || combatStartup.sideCompletionFlags[0]) return;
     combatStartup.sideCompletionFlags[1]=1;combatStartup.sideCompletionFlags[0]=1;
     for (uint16_t survivingUnitSlot=0;survivingUnitSlot<COMBAT_MECH_SLOTS;++survivingUnitSlot)
@@ -80,7 +80,7 @@ uint8_t BtechTestSideEliminationOrExitObjective(uint16_t sideIndex)
 {
     if (sideIndex>=2) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: sideIndex>=2");
     uint8_t noMechsStillInBattle=1;
-    uint16_t sideObjectiveRule=sideObjectiveRules[sideIndex];
+    uint16_t sideObjectiveRule=combatImport.sideObjectiveRules[sideIndex];
     uint8_t allowedExitBoundaryMask=scenarioSelectors.sideBoundaryMasks[sideIndex];
     for (uint16_t unitSlot=0;unitSlot<COMBAT_MECH_SLOTS;++unitSlot)
     {

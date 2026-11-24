@@ -19,22 +19,22 @@ void BtechUpdateAiMechUnits(void)
     BtechRecalculateUnitConditionScoresAndExitCodes();
     BtechUpdateUnitWeaponRangeThresholds();
     BtechUpdateSideCompletionFlags();
-    activeUnitControl=&unitControls[1];
-    for (uint16_t slot=1;slot<COMBAT_MECH_SLOTS;++slot,++activeUnitControl)
+    combatImport.activeUnitControl=&unitControls[1];
+    for (uint16_t slot=1;slot<COMBAT_MECH_SLOTS;++slot,++combatImport.activeUnitControl)
     {
         combatPose.activeMechState=unitBindings[slot].mech;
         if (!combatPose.activeMechState) continue;
-        if (activeUnitControl->sideIndex>=2) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeUnitControl->sideIndex>=2");
-        combatTactics.activeSideRule=&sideObjectiveRules[activeUnitControl->sideIndex];
+        if (combatImport.activeUnitControl->sideIndex>=2) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeUnitControl->sideIndex>=2");
+        combatTactics.activeSideRule=&combatImport.sideObjectiveRules[combatImport.activeUnitControl->sideIndex];
         combatPose.activeUnitPositionedObject=unitBindings[slot].positionedLeftLeg;
         if (combatPose.activeMechState->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeMechState->templateIndex>=COMBAT_MECH_TEMPLATES");
         combatPose.activeMechTemplate=&mechTemplates[combatPose.activeMechState->templateIndex];
         combatPose.activeUnitTorsoObject=unitBindings[slot].torso;
-        if (activeUnitControl->conditionScoreOrExitCode<COMBAT_MECH_DISABLED_VALUE) continue;
+        if (combatImport.activeUnitControl->conditionScoreOrExitCode<COMBAT_MECH_DISABLED_VALUE) continue;
         if (!combatPose.activeUnitPositionedObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject");
-        if (activeUnitControl->movementMode==MOVEMENT_MODE_JUMP)
+        if (combatImport.activeUnitControl->movementMode==MOVEMENT_MODE_JUMP)
         {
-            if (activeUnitControl->conditionScoreOrExitCode!=COMBAT_MECH_DISABLED_VALUE
+            if (combatImport.activeUnitControl->conditionScoreOrExitCode!=COMBAT_MECH_DISABLED_VALUE
                 && combatPose.activeMechState->currentInternalStructure[COMBAT_BODY_RIGHT_LEG]
                 && combatPose.activeMechState->currentInternalStructure[COMBAT_BODY_LEFT_LEG]) goto tacticalUpdate;
             BtechSetActiveUnitGroundOrJumpMotion(combatPose.activeUnitPositionedObject->object.prefix.orientationC,MOTION_DIRECTION_STOP);
@@ -43,13 +43,13 @@ void BtechUpdateAiMechUnits(void)
         }
         if (!combatPose.activeMechState->currentInternalStructure[COMBAT_BODY_LEFT_LEG] || !combatPose.activeMechState->currentInternalStructure[COMBAT_BODY_RIGHT_LEG])
         {
-            activeUnitControl->animationRequestFlags=ANIMATION_REQUEST_FALL_POSE;
-            activeUnitControl->biasedHeadingSnapshot=combatPose.activeUnitPositionedObject->object.prefix.orientationC+AVOIDANCE_HALF_TURN;
+            combatImport.activeUnitControl->animationRequestFlags=ANIMATION_REQUEST_FALL_POSE;
+            combatImport.activeUnitControl->biasedHeadingSnapshot=combatPose.activeUnitPositionedObject->object.prefix.orientationC+AVOIDANCE_HALF_TURN;
         }
 tacticalUpdate:
-        if (activeUnitControl->conditionScoreOrExitCode!=COMBAT_MECH_DISABLED_VALUE)
+        if (combatImport.activeUnitControl->conditionScoreOrExitCode!=COMBAT_MECH_DISABLED_VALUE)
         {
-            uint16_t mode=activeUnitControl->movementMode;
+            uint16_t mode=combatImport.activeUnitControl->movementMode;
             if (mode!=MOVEMENT_MODE_FALLEN_POSE && mode!=MOVEMENT_MODE_FALLING && mode!=MOVEMENT_MODE_RECOVERING)
             {
                 BtechUpdateTacticalNavigation();
@@ -66,9 +66,9 @@ tacticalUpdate:
                     && combatPose.activeMechState->actuatorCondition[AI_LEFT_LEG_ACTUATOR] && combatPose.activeMechState->actuatorCondition[AI_RIGHT_LEG_ACTUATOR]
                     && !((uint8_t)combatStartup.combatTickCounter&AI_RECOVERY_TICK_MASK))
                 {
-                    if (activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS");
-                    int16_t roll=(int16_t)BtechRandomBelowBound(pilotingRecoveryBounds[activeUnitControl->unitSlot]);
-                    activeUnitControl->animationRequestFlags=roll<AI_RECOVERY_ROLL_LIMIT?ANIMATION_REQUEST_RECOVER:ANIMATION_REQUEST_FAILED_RECOVERY;
+                    if (combatImport.activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS");
+                    int16_t roll=(int16_t)BtechRandomBelowBound(combatImport.pilotingRecoveryBounds[combatImport.activeUnitControl->unitSlot]);
+                    combatImport.activeUnitControl->animationRequestFlags=roll<AI_RECOVERY_ROLL_LIMIT?ANIMATION_REQUEST_RECOVER:ANIMATION_REQUEST_FAILED_RECOVERY;
                 }
             }
         }
@@ -85,7 +85,7 @@ animate:
  * are consumed even when reassignment fails. Formation waypoints use terrain height. */
 void BtechCoordinateSpecialObjectiveUnits(void)
 {
-    if ((int16_t)sideObjectiveRules[0]<=OBJECTIVE_OPPOSE_WITHDRAWAL) return;
+    if ((int16_t)combatImport.sideObjectiveRules[0]<=OBJECTIVE_OPPOSE_WITHDRAWAL) return;
     if (!specialTargetObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !specialTargetObject");
     BtechPosition3D *objective=&specialTargetObject->object.prefix.position;
     for (uint16_t slot=0;slot<COMBAT_MECH_SLOTS;++slot)
@@ -96,7 +96,7 @@ void BtechCoordinateSpecialObjectiveUnits(void)
     }
     for (uint16_t side=0;side<2;++side)
     {
-        if (sideObjectiveRules[side]!=OBJECTIVE_DEFEND_SPECIAL_TARGET) continue;
+        if (combatImport.sideObjectiveRules[side]!=OBJECTIVE_DEFEND_SPECIAL_TARGET) continue;
         bool noTargetsRemaining=false;
         for (uint16_t pass=0;pass<COMBAT_LANCE_SLOTS && !noTargetsRemaining;++pass)
         {
@@ -146,7 +146,7 @@ void BtechCoordinateSpecialObjectiveUnits(void)
         if (!combatPose.activeMechState || unitControls[slot].tacticalState!=TACTICAL_DEFENDING) continue;
         BtechSelectActiveUnitContext(slot);
         BtechPosition3D destination={0};
-        if (activeUnitControl->commandCode==COMBAT_ORDER_ACT_ON_OWN)
+        if (combatImport.activeUnitControl->commandCode==COMBAT_ORDER_ACT_ON_OWN)
         {
             destination.positionA=unitFormationPositions[slot].positionA;
             destination.positionB=unitFormationPositions[slot].positionB;
@@ -154,7 +154,7 @@ void BtechCoordinateSpecialObjectiveUnits(void)
         }
         else
         {
-            const int32_t *order=activeUnitControl->orderDestinationPosition;
+            const int32_t *order=combatImport.activeUnitControl->orderDestinationPosition;
             destination=BtechPosition3D{(uint32_t)order[0],(uint32_t)order[1],(uint32_t)order[2]};
         }
         BtechNavigateActiveUnitTowardPosition(&destination);

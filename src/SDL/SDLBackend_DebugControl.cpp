@@ -330,7 +330,7 @@ static void WriteStatus(const char *path)
     JsonString(file,feedError);
     fprintf(file,"},\"tick\":%u,\"screen\":%u,\"target\":%u,\"aimY\":%u,\"requestedStep\":%d,\"objectiveRules\":[%u,%u],\"units\":[",
         combatStartup.combatTickCounter,combatStartup.combatDispatchState,combatStartup.playerTargetSlot,combatStartup.aimReticleScreenY,
-        (int16_t)combatStartup.requestedPlayerForwardStepScale,sideObjectiveRules[0],sideObjectiveRules[1]);
+        (int16_t)combatStartup.requestedPlayerForwardStepScale,combatImport.sideObjectiveRules[0],combatImport.sideObjectiveRules[1]);
     bool first=true;
     if(mwSdlCombatActive) for(unsigned slot=0;slot<COMBAT_MECH_SLOTS;++slot)
     {

@@ -25,7 +25,7 @@ void BtechRefreshLanceOrderScreen(void)
         combatCockpit.cockpitFullRedrawPending=0;
         combatVideo.screenPolygonNeedsClip=false;
         BtechLoadScreenImage("map.scr",NULL);
-        if (reducedMemoryMode)
+        if (combatImport.reducedMemoryMode)
         {
             combatVideo.drawLineColour=ORDER_PANEL_BACKGROUND;combatVideo.drawFillColour=ORDER_PANEL_BACKGROUND;
             combatVideo.drawPolygonFilled=true;
@@ -99,8 +99,8 @@ void BtechRefreshLanceOrderScreen(void)
             int16_t trackedX,trackedY;
             if (BtechProjectPositionToOrderMap(&trackedPosition,&trackedX,&trackedY))
             {
-                if (hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || combatLandscapeIndex>=COMBAT_LANDSCAPES || unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || combatLandscapeIndex>=COMBAT_LANDSCAPES || unitSlot>=COMBAT_MECH_SLOTS");
-                combatVideo.drawFillColour=(uint8_t)combatVideo.landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex].orderTrackingLineColour;
+                if (combatImport.hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || combatImport.combatLandscapeIndex>=COMBAT_LANDSCAPES || unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || combatLandscapeIndex>=COMBAT_LANDSCAPES || unitSlot>=COMBAT_MECH_SLOTS");
+                combatVideo.drawFillColour=(uint8_t)combatVideo.landscapeCameraColourRows[combatImport.hudColourSchemeIndex][combatImport.combatLandscapeIndex].orderTrackingLineColour;
                 BtechDrawClippedLine(combatOrders.unitOrderMapScreenX[unitSlot],combatOrders.unitOrderMapScreenY[unitSlot],trackedX,trackedY);
                 if ((combatOrders.orderPanelMode==ORDER_PANEL_DESTINATION || combatOrders.orderPanelMode==ORDER_PANEL_TARGET) && (combatStartup.combatTickCounter&ORDER_DESTINATION_BLINK_MASK))
                 {

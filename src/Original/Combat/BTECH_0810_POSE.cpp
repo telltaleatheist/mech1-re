@@ -205,8 +205,8 @@ drawPose:;
  * remain live; arbitrary partial-object and binding-overwrite aliases do not. */
 void BtechSynchronizeMechRenderParts(void)
 {
-    if (!activeUnitControl || activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl || activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS");
-    BtechUnitBinding *binding=&unitBindings[activeUnitControl->unitSlot];
+    if (!combatImport.activeUnitControl || combatImport.activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl || activeUnitControl->unitSlot>=COMBAT_MECH_SLOTS");
+    BtechUnitBinding *binding=&unitBindings[combatImport.activeUnitControl->unitSlot];
     if (!binding->positionedLeftLeg || !binding->rightLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !binding->positionedLeftLeg || !binding->rightLeg");
     binding->rightLeg->object.prefix.position=binding->positionedLeftLeg->object.prefix.position;
     if (!binding->torso) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !binding->torso"); /* Gate each near-zero alias at its first access, after prior stores. */

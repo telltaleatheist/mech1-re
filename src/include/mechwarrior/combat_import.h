@@ -31,23 +31,14 @@ typedef struct BtechCampaignImport
 } BtechCampaignImport;
 void BtechDecodeCampaignImport(const uint8_t bytes[CAMPAIGN_EXCHANGE_BYTES],BtechCampaignImport *company);
 
-extern uint16_t combatContinuationStage;
-extern uint16_t salvageEntryCount;
-extern uint16_t campaignUnitKindByCombatTemplate[COMBAT_MECH_TEMPLATES];
-extern uint16_t actuatorIntegrityTierByCondition[5],systemDamageTierByHits[3],weaponIntegrityTierByOperational[2];
 enum { COMBAT_RESULT_SUCCESS=0,COMBAT_RESULT_FAILURE=1,COMBAT_RESULT_RETREAT=2,
     COMBAT_DISABLED_UNIT_VALUE=0xFFFF,COMBAT_FINAL_CONTINUATION_STAGE=2 };
 typedef union BtechMissionRules {
     struct {uint16_t rules[36],continuationProfileIndex;} fields;
     uint16_t words[37];
 } BtechMissionRules;
-extern BtechMissionRules missionRules;
-#define combatMissionSideZeroRules missionRules.words
-#define combatContinuationProfileIndex missionRules.fields.continuationProfileIndex
-extern uint16_t reducedMemoryMode,combatTerrainDetailLevel,combatMissionDefinitionIndex,combatSoundEnabled;
-extern uint16_t playbackCombatInputRequested,combatScenarioIndex;
-extern uint16_t gunneryTargetNumbers[8],pilotingRecoveryBounds[8],activeCockpitLayoutIndex;
-extern uint16_t combatToPilotRosterSlots[4],combatToOwnedMechSlots[4],deployedPilotIds[4];
+#define combatMissionSideZeroRules combatImport.missionRules.words
+#define combatContinuationProfileIndex combatImport.missionRules.fields.continuationProfileIndex
 /* The unchecked sixth/seventh/eighth reservation writes really alias these
  * following WORDs. One canonical owner, not a larger independent ID array. */
 typedef union BtechTemplateReservations
@@ -57,26 +48,40 @@ typedef union BtechTemplateReservations
     } fields;
     uint16_t words[10];
 } BtechTemplateReservations;
-extern BtechTemplateReservations mechTemplateReservations;
-#define reservedMechTemplateIds mechTemplateReservations.words
-#define recordCombatInputRequested mechTemplateReservations.fields.recordRequested
-#define enemyMechPreparationCount mechTemplateReservations.fields.enemyCount
-#define reservedMechTemplateCount mechTemplateReservations.fields.reservedCount
-#define mechTemplateBudgetBytesLow mechTemplateReservations.fields.budgetLow
-#define mechTemplateBudgetBytesHigh mechTemplateReservations.fields.budgetHigh
-extern uint32_t mechTemplateBudgetCostsBytes[8];
-extern uint16_t hudColourSchemeIndex,specialTargetInteractionBlocked,sideObjectiveRules[2],combatLandscapeIndex;
-extern BtechCombatStageProfile combatContinuationProfiles[9];
-extern uint16_t opposingObjectiveRules[5];
-extern uint16_t combatTemplateByCampaignUnitKind[10],weaponDisabledByDamageTier[4],systemHitsByDamageTier[4],actuatorLossByDamageTier[4];
-extern uint16_t armorToBodyLocations[9],campaignBodyTierByArmorLocation[9];
-extern uint16_t mechFallbackStartTemplates[8];
-extern int16_t mechFallbackTemplateSteps[8];
-extern uint8_t combatDefaultCommanderNameBytes[10];
-extern uint16_t savedArgumentCount;
-extern const char *const *savedArguments;
-extern BtechUnitControlState *activeUnitControl;
-extern uint16_t startupControlMovementAlias;
+#define reservedMechTemplateIds combatImport.mechTemplateReservations.words
+#define recordCombatInputRequested combatImport.mechTemplateReservations.fields.recordRequested
+#define enemyMechPreparationCount combatImport.mechTemplateReservations.fields.enemyCount
+#define reservedMechTemplateCount combatImport.mechTemplateReservations.fields.reservedCount
+#define mechTemplateBudgetBytesLow combatImport.mechTemplateReservations.fields.budgetLow
+#define mechTemplateBudgetBytesHigh combatImport.mechTemplateReservations.fields.budgetHigh
+/* Combat state owned by combat_import.h (plan, slice B3d). */
+struct CombatImportState
+{
+    uint16_t combatContinuationStage;
+    uint16_t salvageEntryCount;
+    uint16_t campaignUnitKindByCombatTemplate[COMBAT_MECH_TEMPLATES];
+    uint16_t actuatorIntegrityTierByCondition[5], systemDamageTierByHits[3], weaponIntegrityTierByOperational[2];
+    BtechMissionRules missionRules;
+    uint16_t reducedMemoryMode, combatTerrainDetailLevel, combatMissionDefinitionIndex, combatSoundEnabled;
+    uint16_t playbackCombatInputRequested, combatScenarioIndex;
+    uint16_t gunneryTargetNumbers[8], pilotingRecoveryBounds[8], activeCockpitLayoutIndex;
+    uint16_t combatToPilotRosterSlots[4], combatToOwnedMechSlots[4], deployedPilotIds[4];
+    BtechTemplateReservations mechTemplateReservations;
+    uint32_t mechTemplateBudgetCostsBytes[8];
+    uint16_t hudColourSchemeIndex, specialTargetInteractionBlocked, sideObjectiveRules[2], combatLandscapeIndex;
+    BtechCombatStageProfile combatContinuationProfiles[9];
+    uint16_t opposingObjectiveRules[5];
+    uint16_t combatTemplateByCampaignUnitKind[10], weaponDisabledByDamageTier[4], systemHitsByDamageTier[4], actuatorLossByDamageTier[4];
+    uint16_t armorToBodyLocations[9], campaignBodyTierByArmorLocation[9];
+    uint16_t mechFallbackStartTemplates[8];
+    int16_t mechFallbackTemplateSteps[8];
+    uint8_t combatDefaultCommanderNameBytes[10];
+    uint16_t savedArgumentCount;
+    const char *const *savedArguments;
+    BtechUnitControlState *activeUnitControl;
+    uint16_t startupControlMovementAlias;
+};
+extern CombatImportState combatImport;
 
 bool BtechImportCombatStageInitialData(const uint8_t *data,size_t byteCount);
 /* Native has no source arguments. This WORD is explicitly host transport for

@@ -59,7 +59,7 @@ void BtechUpdateUnitHeatEffects(void)
         heatedMech->heatUnits+=heatedMech->engineHits*COMBAT_ENGINE_HIT_HEAT;
         if (heatedMech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: heatedMech->templateIndex>=COMBAT_MECH_TEMPLATES");
         uint16_t effectiveCoolingSinkCount=mechTemplates[heatedMech->templateIndex].heatSinkCount-heatedMech->destroyedHeatSinks;
-        if (heatedMech->doubleCoolingFlag || combatLandscapeIndex==COMBAT_ARCTIC_LANDSCAPE) effectiveCoolingSinkCount*=DOUBLE_COOLING_MULTIPLIER;
+        if (heatedMech->doubleCoolingFlag || combatImport.combatLandscapeIndex==COMBAT_ARCTIC_LANDSCAPE) effectiveCoolingSinkCount*=DOUBLE_COOLING_MULTIPLIER;
         int16_t coolingNumeratorLow=effectiveCoolingSinkCount*HEAT_SINK_COOLING_NUMERATOR;
         heatedMech->heatUnits-=coolingNumeratorLow/HEAT_SINK_COOLING_DENOMINATOR;
         if ((int16_t)heatedMech->heatUnits<=0) heatedMech->heatUnits=0;

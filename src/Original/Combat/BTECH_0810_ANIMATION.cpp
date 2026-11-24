@@ -17,12 +17,12 @@ void BtechBindAnimationResourceAndScale(BtechPooledWorldObject *object,uint16_t 
  * player's camera pose uses the separate A081 tables and transition rules. */
 uint16_t BtechAdvanceUnitAnimationAndMovementMode(void)
 {
-    if (!activeUnitControl) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl");
-    uint8_t requests=activeUnitControl->animationRequestFlags;
+    if (!combatImport.activeUnitControl) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl");
+    uint8_t requests=combatImport.activeUnitControl->animationRequestFlags;
     uint16_t requestedSequence=ANIMATION_SEQUENCE_NO_REQUEST;
     if (requests&ANIMATION_REQUEST_FALL_POSE) requestedSequence=ANIMATION_SEQUENCE_FALL;
     else if (requests&ANIMATION_REQUEST_LANDING) requestedSequence=ANIMATION_SEQUENCE_LANDING;
-    else if (activeUnitControl->movementMode!=MOVEMENT_MODE_JUMP)
+    else if (combatImport.activeUnitControl->movementMode!=MOVEMENT_MODE_JUMP)
     {
         if (requests&ANIMATION_REQUEST_FAILED_RECOVERY) requestedSequence=ANIMATION_SEQUENCE_FAILED_RECOVERY;
         if (requests&ANIMATION_REQUEST_RECOVER) requestedSequence=ANIMATION_SEQUENCE_RECOVER;
@@ -31,8 +31,8 @@ uint16_t BtechAdvanceUnitAnimationAndMovementMode(void)
         else if (requests&ANIMATION_REQUEST_FIRING_PAUSE) requestedSequence=ANIMATION_SEQUENCE_FIRING_PAUSE;
         else if (requests&ANIMATION_REQUEST_WALK) requestedSequence=ANIMATION_SEQUENCE_WALK;
     }
-    uint16_t sequence=activeUnitControl->animationSequence;
-    uint16_t frame=activeUnitControl->animationFrame;
+    uint16_t sequence=combatImport.activeUnitControl->animationSequence;
+    uint16_t frame=combatImport.activeUnitControl->animationFrame;
     if (sequence>=UNIT_ANIMATION_SEQUENCES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: sequence>=UNIT_ANIMATION_SEQUENCES"); /* Native escapes authored table. */
     uint8_t sequenceBoundary=(sequence==ANIMATION_SEQUENCE_WALK && (frame==UNIT_WALK_FIRST_TRANSITION_FRAME || frame==UNIT_WALK_SECOND_TRANSITION_FRAME))
         || frame==(uint16_t)(combatPose.animationLogicalFrameCounts[sequence]-1);
@@ -68,11 +68,11 @@ uint16_t BtechAdvanceUnitAnimationAndMovementMode(void)
         if (sequence==ANIMATION_SEQUENCE_IDLE) selectedSequence=ANIMATION_SEQUENCE_LANDING;
         break;
     case ANIMATION_SEQUENCE_FAILED_RECOVERY:
-        if (activeUnitControl->movementMode==MOVEMENT_MODE_FALLEN_POSE)
+        if (combatImport.activeUnitControl->movementMode==MOVEMENT_MODE_FALLEN_POSE)
             selectedSequence=ANIMATION_SEQUENCE_FAILED_RECOVERY;
         break;
     case ANIMATION_SEQUENCE_FIRING_PAUSE:
-        if (sequence==ANIMATION_SEQUENCE_IDLE && activeUnitControl->movementMode!=MOVEMENT_MODE_JUMP)
+        if (sequence==ANIMATION_SEQUENCE_IDLE && combatImport.activeUnitControl->movementMode!=MOVEMENT_MODE_JUMP)
         {
             selectedSequence=ANIMATION_SEQUENCE_FIRING_PAUSE;
             BtechClearObjectMotionTail(combatPose.activeUnitPositionedObject);
@@ -83,38 +83,38 @@ uint16_t BtechAdvanceUnitAnimationAndMovementMode(void)
     if (selectedSequence>=0)
     {
         if (!combatPose.activeUnitPositionedObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject");
-        activeUnitControl->animationFrame=selectedSequence==ANIMATION_SEQUENCE_WALK
+        combatImport.activeUnitControl->animationFrame=selectedSequence==ANIMATION_SEQUENCE_WALK
             && combatPose.activeUnitPositionedObject->forwardStepScale<0
             ? (uint16_t)(combatPose.animationLogicalFrameCounts[ANIMATION_SEQUENCE_WALK]-1):0;
-        activeUnitControl->animationSequence=(uint16_t)selectedSequence;
+        combatImport.activeUnitControl->animationSequence=(uint16_t)selectedSequence;
     }
-    else if (activeUnitControl->animationSequence==ANIMATION_SEQUENCE_WALK
+    else if (combatImport.activeUnitControl->animationSequence==ANIMATION_SEQUENCE_WALK
         && combatPose.activeUnitPositionedObject && combatPose.activeUnitPositionedObject->forwardStepScale<0)
     {
-        --activeUnitControl->animationFrame;
-        if ((int16_t)activeUnitControl->animationFrame<0)
+        --combatImport.activeUnitControl->animationFrame;
+        if ((int16_t)combatImport.activeUnitControl->animationFrame<0)
         {
-            activeUnitControl->animationSequence=ANIMATION_SEQUENCE_IDLE;
-            activeUnitControl->animationFrame=0;
+            combatImport.activeUnitControl->animationSequence=ANIMATION_SEQUENCE_IDLE;
+            combatImport.activeUnitControl->animationFrame=0;
         }
     }
     else
     {
-        ++activeUnitControl->animationFrame;
-        sequence=activeUnitControl->animationSequence;
+        ++combatImport.activeUnitControl->animationFrame;
+        sequence=combatImport.activeUnitControl->animationSequence;
         if (sequence==ANIMATION_SEQUENCE_FALL)
         {
             uint16_t lastFrame=combatPose.animationLogicalFrameCounts[ANIMATION_SEQUENCE_FALL]-1;
-            if (activeUnitControl->animationFrame>lastFrame) activeUnitControl->animationFrame=lastFrame;
+            if (combatImport.activeUnitControl->animationFrame>lastFrame) combatImport.activeUnitControl->animationFrame=lastFrame;
         }
-        else if (activeUnitControl->animationFrame==combatPose.animationLogicalFrameCounts[sequence])
+        else if (combatImport.activeUnitControl->animationFrame==combatPose.animationLogicalFrameCounts[sequence])
         {
-            activeUnitControl->animationSequence=ANIMATION_SEQUENCE_IDLE;
-            activeUnitControl->animationFrame=0;
+            combatImport.activeUnitControl->animationSequence=ANIMATION_SEQUENCE_IDLE;
+            combatImport.activeUnitControl->animationFrame=0;
         }
     }
-    sequence=activeUnitControl->animationSequence;
-    frame=activeUnitControl->animationFrame;
+    sequence=combatImport.activeUnitControl->animationSequence;
+    frame=combatImport.activeUnitControl->animationFrame;
     if (!combatPose.activeMechState || sequence>=UNIT_ANIMATION_SEQUENCES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeMechState || sequence>=UNIT_ANIMATION_SEQUENCES");
     uint16_t chassis=combatPose.activeMechState->templateIndex;
     const uint8_t *frameMap=combatPose.animationFrameMaps[sequence];
@@ -129,10 +129,10 @@ uint16_t BtechAdvanceUnitAnimationAndMovementMode(void)
         if (combatPose.chassisAnimationAvailability[chassis][preceding])
             resourceBase+=(uint16_t)(combatPose.animationPartFrameCounts[preceding]*UNIT_ANIMATED_BODY_PARTS);
     }
-    uint16_t slot=activeUnitControl->unitSlot;
+    uint16_t slot=combatImport.activeUnitControl->unitSlot;
     if (slot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: slot>=COMBAT_MECH_SLOTS");
     BtechUnitBinding *binding=&unitBindings[slot];
-    uint16_t partStride=combatPose.animationPartFrameCounts[activeUnitControl->animationSequence];
+    uint16_t partStride=combatPose.animationPartFrameCounts[combatImport.activeUnitControl->animationSequence];
     uint16_t partOffset=partStride;
     /* Native reads each binding when its call is reached, not a six-part snapshot. */
     BtechBindAnimationResourceAndScale(binding->leftArm,resourceBase);
@@ -145,26 +145,26 @@ uint16_t BtechAdvanceUnitAnimationAndMovementMode(void)
     BtechBindAnimationResourceAndScale(binding->torso,(uint16_t)(resourceBase+partOffset));
     partOffset+=partStride;
     BtechBindAnimationResourceAndScale(binding->head,(uint16_t)(resourceBase+partOffset));
-    sequence=activeUnitControl->animationSequence;
-    frame=activeUnitControl->animationFrame;
+    sequence=combatImport.activeUnitControl->animationSequence;
+    frame=combatImport.activeUnitControl->animationFrame;
     if (sequence==ANIMATION_SEQUENCE_FALL)
-        activeUnitControl->movementMode=frame==UNIT_FALL_SETTLED_FRAME?MOVEMENT_MODE_FALLEN_POSE:MOVEMENT_MODE_FALLING;
+        combatImport.activeUnitControl->movementMode=frame==UNIT_FALL_SETTLED_FRAME?MOVEMENT_MODE_FALLEN_POSE:MOVEMENT_MODE_FALLING;
     else if (sequence==ANIMATION_SEQUENCE_FAILED_RECOVERY && frame==UNIT_FALL_SETTLED_FRAME)
-        activeUnitControl->animationSequence=ANIMATION_SEQUENCE_FALL; /* Keep movement mode. */
+        combatImport.activeUnitControl->animationSequence=ANIMATION_SEQUENCE_FALL; /* Keep movement mode. */
     else if (sequence==ANIMATION_SEQUENCE_RECOVER)
-        activeUnitControl->movementMode=frame==UNIT_RECOVER_STANDING_FRAME?MOVEMENT_MODE_GROUNDED:MOVEMENT_MODE_RECOVERING;
+        combatImport.activeUnitControl->movementMode=frame==UNIT_RECOVER_STANDING_FRAME?MOVEMENT_MODE_GROUNDED:MOVEMENT_MODE_RECOVERING;
     else if (sequence==ANIMATION_SEQUENCE_BEGIN_JUMP && frame==UNIT_JUMP_LAUNCH_FRAME)
     {
-        activeUnitControl->movementMode=MOVEMENT_MODE_JUMP;
+        combatImport.activeUnitControl->movementMode=MOVEMENT_MODE_JUMP;
         combatPose.activeMechState->jumpCharge-=JUMP_LAUNCH_CHARGE_COST;
         if (!combatPose.activeUnitPositionedObject || !combatPose.activeMechTemplate) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject || !activeMechTemplate");
         combatPose.activeUnitPositionedObject->positionSteps[2]=(int16_t)(combatPose.activeMechTemplate->jumpSpeedLimit*JUMP_LAUNCH_VERTICAL_SPEED_MULTIPLIER);
         combatPose.activeUnitPositionedObject->forwardStepScale=(int16_t)combatPose.activeMechTemplate->jumpSpeedLimit;
     }
     else if (sequence==ANIMATION_SEQUENCE_LANDING)
-        activeUnitControl->movementMode=frame==UNIT_LANDING_STANDING_FRAME?MOVEMENT_MODE_GROUNDED:MOVEMENT_MODE_LANDING;
-    else if (sequence==ANIMATION_SEQUENCE_IDLE && activeUnitControl->movementMode!=MOVEMENT_MODE_JUMP)
-        activeUnitControl->movementMode=MOVEMENT_MODE_GROUNDED;
-    activeUnitControl->animationRequestFlags=0;
+        combatImport.activeUnitControl->movementMode=frame==UNIT_LANDING_STANDING_FRAME?MOVEMENT_MODE_GROUNDED:MOVEMENT_MODE_LANDING;
+    else if (sequence==ANIMATION_SEQUENCE_IDLE && combatImport.activeUnitControl->movementMode!=MOVEMENT_MODE_JUMP)
+        combatImport.activeUnitControl->movementMode=MOVEMENT_MODE_GROUNDED;
+    combatImport.activeUnitControl->animationRequestFlags=0;
     return animationLookupIndex;
 }
