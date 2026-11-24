@@ -5,9 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-MwHostSoundSystem mwSdlSoundSystem=MW_SOUND_SPEAKER;
-bool mwSdlMusicSoundfont;
-char mwSdlMt32ControlRom[4096],mwSdlMt32PcmRom[4096],mwSdlGameFolder[4096];
+MwHostMusic mwSdlMusic=MW_MUSIC_SPEAKER;
+char mwSdlGameFolder[4096];
 enum { HOST_MIN_COMBAT_TICK_MS=20,HOST_MAX_COMBAT_TICK_MS=500 };
 static char userConfigurationPath[4096];
 
@@ -19,17 +18,17 @@ static bool ParseWhole(const char *value,unsigned long minimum,unsigned long max
     *result=number;return true;
 }
 /* Parse into temporary configuration: an invalid trailing key must not change
- * the combat tick or partially select an audio device. ROM paths are
- * resolved relative to this INI, not the game's working/save directory. */
+ * the combat tick or the music. Each file decides the music it names, so the
+ * player's ini, read last, overrides the packaged one. */
 bool MwSdlLoadTimingConfiguration(const char *path,bool optional)
 {
     FILE *file=fopen(path,"r");
     if (!file) return optional && errno==ENOENT;
-    char line[8192],controlRom[4096],pcmRom[4096],gameFolder[4096];
-    strcpy(controlRom,mwSdlMt32ControlRom);strcpy(pcmRom,mwSdlMt32PcmRom);strcpy(gameFolder,mwSdlGameFolder);
+    char line[8192],gameFolder[4096];
+    strcpy(gameFolder,mwSdlGameFolder);
     uint32_t tickMs=mwSdlCombatTickMs;uint8_t speed=mwSdlCombatSpeed;
-    MwHostSoundSystem soundSystem=mwSdlSoundSystem;
-    bool musicSoundfont=mwSdlMusicSoundfont;
+    MwHostMusic music=mwSdlMusic,oldMusic=mwSdlMusic;
+    bool musicNamed=false,oldNamed=false;
     bool valid=true;
     while (fgets(line,sizeof(line),file))
     {
@@ -63,50 +62,33 @@ bool MwSdlLoadTimingConfiguration(const char *path,bool optional)
         }
         else if (!strcmp(key,"cpu_cycles_per_ms")) /* The old cycle model's key: ignored. */
             fprintf(stderr,"%s: cpu_cycles_per_ms is no longer used; combat_tick_ms sets the combat speed.\n",path);
-        else if (!strcmp(key,"sound_system"))
-        {
-            if (!strcmp(value,"speaker")) soundSystem=MW_SOUND_SPEAKER;
-            else if (!strcmp(value,"mt32") || !strcmp(value,"adlib"))
-            {
-                /* The AdLib and MT-32 paths are gone (S8): an existing ini keeps
-                 * working, with the rebuild's music. S9 replaces the key. */
-                fprintf(stderr,"%s: sound_system=%s now plays the rebuild's music (music=soundfont).\n",path,value);
-                musicSoundfont=true;
-            }
-            else {valid=false;break;}
-        }
         else if (!strcmp(key,"music"))
         {
-            if (!strcmp(value,"soundfont")) musicSoundfont=true;
+            if (!strcmp(value,"soundfont")) music=MW_MUSIC_SOUNDFONT;
+            else if (!strcmp(value,"speaker")) music=MW_MUSIC_SPEAKER;
+            else if (!strcmp(value,"off")) music=MW_MUSIC_OFF;
             else {valid=false;break;}
+            musicNamed=true;
         }
-        else if (!strcmp(key,"mt32_control_rom") || !strcmp(key,"mt32_pcm_rom"))
+        else if (!strcmp(key,"sound_system")) /* The old key (S9): an existing ini keeps working. */
         {
-            char *destination=!strcmp(key,"mt32_control_rom")?controlRom:pcmRom;
-            if (value[0]=='"' && end>value+1 && end[-1]=='"') {*--end=0;++value;}
-            if (!*value || value[0]=='/' || value[0]=='\\' || (strlen(value)>1 && value[1]==':'))
-            {
-                if (strlen(value)>=4096) {valid=false;break;}
-                strcpy(destination,value);
-            }
-            else
-            {
-                const char *slash=strrchr(path,'/'),*backslash=strrchr(path,'\\');
-                if (backslash && (!slash || backslash>slash)) slash=backslash;
-                size_t prefix=slash?(size_t)(slash-path)+1:0;
-                if (prefix+strlen(value)>=4096) {valid=false;break;}
-                memcpy(destination,path,prefix);strcpy(destination+prefix,value);
-            }
+            if (!strcmp(value,"speaker")) oldMusic=MW_MUSIC_SPEAKER;
+            else if (!strcmp(value,"mt32") || !strcmp(value,"adlib")) oldMusic=MW_MUSIC_SOUNDFONT;
+            else {valid=false;break;}
+            oldNamed=true;
+            fprintf(stderr,"%s: sound_system=%s is replaced by music=%s.\n",path,value,oldMusic==MW_MUSIC_SPEAKER?"speaker":"soundfont");
         }
+        else if (!strcmp(key,"mt32_control_rom") || !strcmp(key,"mt32_pcm_rom")) /* The MT-32 left (S9): ignored. */
+            fprintf(stderr,"%s: %s is no longer used.\n",path,key);
         else {valid=false;break;}
     }
     if (ferror(file)) valid=false;
     if (fclose(file)) valid=false;
-    if (musicSoundfont) soundSystem=MW_SOUND_MT32; /* music=soundfont decides, whatever sound_system says. */
+    if (!musicNamed && oldNamed) music=oldMusic; /* music= decides, whatever the old key says. */
     if (valid)
     {
-        mwSdlCombatTickMs=tickMs;mwSdlCombatSpeed=speed;mwSdlSoundSystem=soundSystem;mwSdlMusicSoundfont=musicSoundfont;
-        strcpy(mwSdlMt32ControlRom,controlRom);strcpy(mwSdlMt32PcmRom,pcmRom);strcpy(mwSdlGameFolder,gameFolder);
+        mwSdlCombatTickMs=tickMs;mwSdlCombatSpeed=speed;mwSdlMusic=music;
+        strcpy(mwSdlGameFolder,gameFolder);
     }
     return valid;
 }

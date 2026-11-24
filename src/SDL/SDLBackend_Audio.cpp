@@ -1,5 +1,4 @@
 #include "SDLBackend.h"
-#include "mechwarrior/audio_devices.h"
 #include "mechwarrior/music_out.h"
 #include "AudioClock.h"
 #include "Mixer.h"
@@ -11,7 +10,7 @@
 #include <string>
 
 /* The output layer: the SDL3 device, the bounded PCM queue and its stream
- * callback. Synthesis (the tone voice, the selected card, mixing on PIT
+ * callback. Synthesis (the tone voice, the music, mixing on PIT
  * time) is mw1o::audio::Mixer in src/Audio, which hands this file blocks.
  * MIDI scheduling, allocation, instruments and rotation remain Original code;
  * the host never plays an SMF itself. */
@@ -34,11 +33,8 @@ static mw1o::audio::Music music;
 static FILE *songMarks;
 static_assert(HOST_PIT_CLOCK_HZ==mw1o::audio::PIT_CLOCK_HZ && HOST_AUDIO_SAMPLE_RATE==mw1o::audio::OUTPUT_SAMPLE_RATE,
     "The host timeline and the mixer share one clock and one output rate");
-/* Logging without ROMs (MECHWARRIOR_AUDIO_LOG, both ROM paths empty): the
- * MPU and its byte stream run as usual and the synthesizer is silent. */
-static bool silentMt32;
 /* MECHWARRIOR_AUDIO_PCM=FILE: every rendered frame as raw 32-bit floats at
- * 48 kHz (one channel for the speaker, two with a card), for comparing
+ * 48 kHz (one channel for the tone voice, two with the music), for comparing
  * synthesis offline (tools/trace/audio.py --pcm). */
 static FILE *pcmDump;
 void (*mwSdlAudioObserver)(const float *samples,uint32_t count);
@@ -122,19 +118,8 @@ static void SDLCALL FeedAudio(void *unused,SDL_AudioStream *stream,int additiona
 bool MwSdlInitializeAudio(void)
 {
     if (audioStream || audioQueueMutex) return SDL_SetError("Audio is already initialized");
-    if (mwSdlSoundSystem==MW_SOUND_ADLIB) MwAdlibReset(HOST_AUDIO_SAMPLE_RATE);
-    silentMt32=mwSdlSoundSystem==MW_SOUND_MT32 && getenv("MECHWARRIOR_AUDIO_LOG")
-        && !*mwSdlMt32ControlRom && !*mwSdlMt32PcmRom;
-    if (mwSdlMusicSoundfont) {if (!LoadMusic()) return false;} /* No MT-32 synthesizer: the MPU's output goes nowhere. */
-    else if (mwSdlSoundSystem==MW_SOUND_MT32 && !silentMt32)
-    {
-        char error[1024];
-        if (!MwMt32Open(mwSdlMt32ControlRom,mwSdlMt32PcmRom,HOST_AUDIO_SAMPLE_RATE,error,sizeof(error)))
-            return SDL_SetError("%s",error);
-    }
-    mixer.reset(mwSdlMusicSoundfont?mw1o::audio::Mixer::Card::Soundfont
-        :mwSdlSoundSystem==MW_SOUND_SPEAKER?mw1o::audio::Mixer::Card::None
-        :mwSdlSoundSystem==MW_SOUND_MT32?mw1o::audio::Mixer::Card::Mt32:mw1o::audio::Mixer::Card::Adlib,silentMt32,&music);
+    if (mwSdlMusic==MW_MUSIC_SOUNDFONT && !LoadMusic()) return false;
+    mixer.reset(mwSdlMusic==MW_MUSIC_SOUNDFONT?&music:nullptr);
     outputChannels=mixer.channels();
     SDL_AudioSpec format={SDL_AUDIO_F32,(int)outputChannels,HOST_AUDIO_SAMPLE_RATE};
     audioQueueMutex=SDL_CreateMutex();
@@ -229,7 +214,6 @@ void MwSdlShutdownAudio(void)
     if (audioStream) SDL_DestroyAudioStream(audioStream);
     audioStream=NULL;
     SDL_DestroyMutex(audioQueueMutex);audioQueueMutex=NULL;
-    MwMt32Close();
     mwMusicOut=MwMusicOutCalls{};
     if (pcmDump) fclose(pcmDump);
     pcmDump=NULL;

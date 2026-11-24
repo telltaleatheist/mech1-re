@@ -1,14 +1,10 @@
 cmake_minimum_required(VERSION 3.20)
-# mw1-original: the game is C++20 (mw3-re's standard); C stays enabled for Nuked-OPL3's opl3.c until our own
-# synth replaces it.
-project(MechWarrior C CXX)
+# mw1-original: the game is C++20 (mw3-re's standard).
+project(MechWarrior CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_C_STANDARD 17)
-set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # A package build (tools/build_package.py) keeps the build machine's folders
@@ -338,8 +334,6 @@ endif()
 
 option(MECHWARRIOR_BUILD_SDL "Build the playable SDL3 game" ON)
 if(MECHWARRIOR_BUILD_SDL)
-    add_subdirectory(src/MT32)
-    add_subdirectory(src/Adlib)
     add_subdirectory(src/Audio)
     set(MECHWARRIOR_SDL_SOURCE_DIR "" CACHE PATH "Optional existing SDL3 source tree; never downloaded")
     if(MECHWARRIOR_SDL_SOURCE_DIR)
@@ -379,12 +373,12 @@ if(MECHWARRIOR_BUILD_SDL)
     target_link_libraries(mechwarrior_setup PUBLIC rekit mechwarrior_original)
     add_library(mechwarrior_sdl STATIC
         src/SDL/SDLBackend_Main.cpp src/SDL/SDLBackend_Input.cpp src/SDL/SDLBackend_Time.cpp
-        src/SDL/SDLBackend_Config.cpp src/MT32/MPU401.cpp
+        src/SDL/SDLBackend_Config.cpp
         src/SDL/SDLBackend_DebugControl.cpp
         src/SDL/SDLBackend_Pilot.cpp src/Support/SupportPilot.cpp src/Support/SupportPilotObservation.cpp
         src/SDL/SDLBackend_Video.cpp src/SDL/SDLBackend_CombatPlatform.cpp
         src/SDL/SDLBackend_CombatProcess.cpp src/SDL/SDLBackend_Audio.cpp)
-    target_link_libraries(mechwarrior_sdl PUBLIC mechwarrior_original SDL3::SDL3 mechwarrior_audio mechwarrior_mt32 mechwarrior_adlib
+    target_link_libraries(mechwarrior_sdl PUBLIC mechwarrior_original SDL3::SDL3 mechwarrior_audio
                           mechwarrior_setup)  # the player's folder's names and order (src/Setup/Setup.h)
     if(NOT MSVC)
         target_link_libraries(mechwarrior_sdl PUBLIC m)
@@ -408,6 +402,11 @@ if(MECHWARRIOR_BUILD_SDL)
         target_include_directories(sdl_joystick_test PRIVATE src/SDL)
         add_test(NAME sdl_joystick COMMAND sdl_joystick_test)
         set_tests_properties(sdl_joystick PROPERTIES SKIP_RETURN_CODE 77)
+        # The music setting and its old keys (src/SDL/SDLBackend_Config.cpp).
+        add_executable(music_setting_test tests/music_setting_test.cpp)
+        target_include_directories(music_setting_test PRIVATE src/SDL)
+        target_link_libraries(music_setting_test PRIVATE mechwarrior_sdl)
+        add_test(NAME music_setting COMMAND music_setting_test)
     endif()
     if(WIN32)
         # The icon Explorer, the taskbar and the installer's shortcuts show.
@@ -453,14 +452,6 @@ if(MECHWARRIOR_BUILD_SDL)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different "${MECHWARRIOR_SOUNDFONT}" "$<TARGET_FILE_DIR:mechwarrior>/data/music")
     add_dependencies(mechwarrior_data mechwarrior_soundfont)
     add_dependencies(mechwarrior mechwarrior_data)
-    add_custom_command(TARGET mechwarrior POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$<TARGET_FILE:mt32emu>" "$<TARGET_FILE_DIR:mechwarrior>"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${munt_SOURCE_DIR}/mt32emu/COPYING.LESSER.txt" "$<TARGET_FILE_DIR:mechwarrior>/libmt32emu-LICENSE.txt")
-    add_custom_command(TARGET mechwarrior POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "$<TARGET_FILE:nukedopl>" "$<TARGET_FILE_DIR:mechwarrior>"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${nukedopl_SOURCE_DIR}/LICENSE" "$<TARGET_FILE_DIR:mechwarrior>/Nuked-OPL3-LICENSE.txt")
     if(TARGET SDL3::SDL3-shared)
         add_custom_command(TARGET mechwarrior POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different

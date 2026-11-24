@@ -7,16 +7,11 @@
 #include "mechwarrior/launcher.h"
 #include <SDL3/SDL.h>
 enum { HOST_PIT_CLOCK_HZ=1193182,HOST_AUDIO_SAMPLE_RATE=48000 };
-typedef enum MwHostSoundSystem {MW_SOUND_SPEAKER,MW_SOUND_MT32,MW_SOUND_ADLIB} MwHostSoundSystem;
-extern MwHostSoundSystem mwSdlSoundSystem;
-/* music=soundfont (docs/phase5/NO_EMULATION_PLAN.md, S3): the game is set up
- * as for an MT-32, and its sequencer's output plays through the soundfont
- * (src/Audio/Music) instead of a synthesizer behind the MPU. */
-extern bool mwSdlMusicSoundfont;
-extern char mwSdlMt32ControlRom[4096],mwSdlMt32PcmRom[4096];
-void MwMpuReset(void);
-void MwMpuWritePort(uint16_t port,uint8_t value);
-uint8_t MwMpuReadPort(uint16_t port);
+/* music= (docs/phase5/NO_EMULATION_PLAN.md): the rebuild's songs from the
+ * soundfont (src/Audio/Music), the speaker's on the tone voice, or none. The
+ * effects play on the tone voice whichever it is. */
+typedef enum MwHostMusic {MW_MUSIC_SPEAKER,MW_MUSIC_SOUNDFONT,MW_MUSIC_OFF} MwHostMusic;
+extern MwHostMusic mwSdlMusic;
 /* Captured DOS machine profile, shared by physical aliases and first-fit MCBs. */
 enum { HOST_DOS_COMBAT_CODE_SELECTOR=0x0956 };
 [[noreturn]] void MwSdlFail(const char *operation);
@@ -99,8 +94,6 @@ void MwSdlWriteDevicePort(uint16_t port,uint8_t value);
 uint8_t MwSdlReadDevicePort(uint16_t port);
 void MwSdlRunDue(void);
 void MwSdlWaitIdle(void);
-double MwMpuNextEventTime(void);
-void MwMpuAdvance(double time);
 MwMusicTimerHandler MwSdlReadTimerHandler(void);
 void MwSdlWriteTimerHandler(MwMusicTimerHandler handler);
 void MwSdlEnableDeviceIrqs(MwDeviceIrq irqs);

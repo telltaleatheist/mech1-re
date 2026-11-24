@@ -169,8 +169,9 @@ bool MwSdlInitialize(const char *gameDirectory,const char *captureDirectory)
 int MwSdlRunCampaign(void)
 {
     if (!initialized) MwSdlFail("Host not initialized");
-    /* MW.EXE's audio letters: R (MT-32), A (AdLib), S (speaker). */
-    return MwLauncherMain((uint8_t)(mwSdlSoundSystem==MW_SOUND_MT32?'R':mwSdlSoundSystem==MW_SOUND_ADLIB?'A':'S'));
+    /* MW.EXE's audio letters: S (speaker), and R for the rebuild's music, whose
+     * notes go nowhere with music=off. */
+    return MwLauncherMain((uint8_t)(mwSdlMusic==MW_MUSIC_SPEAKER?'S':'R'));
 }
 void MwSdlPump(void)
 {MwSdlPollEvents();MwSdlPumpTimer();MwSdlPresentVideo(false);}
