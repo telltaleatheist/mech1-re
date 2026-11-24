@@ -23,7 +23,7 @@ static void CanvasPixelPosition(uint16_t offset,uint8_t shift,int *x,int *y)
  * there is nothing to set. */
 void BtechEgaWritePixel(uint16_t x,uint16_t y,uint16_t colour)
 {
-    uint16_t page=drawPageSelector;uint8_t shift;
+    uint16_t page=combatVideo.drawPageSelector;uint8_t shift;
     uint16_t offset=BtechEgaPixelByteOffset(x,y,&shift);
     int canvasX,canvasY;CanvasPixelPosition(offset,shift,&canvasX,&canvasY);
     mw1o::video::GameCanvas().pixel(BtechEgaCanvasPage(page),canvasX,canvasY,(uint8_t)colour);
@@ -33,7 +33,7 @@ void BtechEgaWritePixel(uint16_t x,uint16_t y,uint16_t colour)
  * one plane at a time. */
 uint16_t BtechEgaReadPixel(uint16_t x,uint16_t y)
 {
-    uint16_t page=drawPageSelector;uint8_t shift;
+    uint16_t page=combatVideo.drawPageSelector;uint8_t shift;
     uint16_t offset=BtechEgaPixelByteOffset(x,y,&shift);
     int canvasX,canvasY;CanvasPixelPosition(offset,shift,&canvasX,&canvasY);
     return mw1o::video::GameCanvas().pixelAt(BtechEgaCanvasPage(page),canvasX,canvasY);
@@ -44,6 +44,6 @@ uint16_t BtechEgaReadPixel(uint16_t x,uint16_t y)
 void BtechEgaSetOverscanColour(uint16_t colour)
 {
     uint8_t hardwareColour=(uint8_t)colour&0x0F;
-    if (combatRendererKind==COMBAT_VIDEO_EGA && hardwareColour>=8) hardwareColour+=8;
+    if (combatVideo.combatRendererKind==COMBAT_VIDEO_EGA && hardwareColour>=8) hardwareColour+=8;
     mw1o::video::GameCanvas().setPaletteEntry(mw1o::video::Canvas::BORDER,mw1o::video::PaletteCodeColour(hardwareColour));
 }

@@ -58,12 +58,12 @@ void BtechInitializeFreshStartupOwners(const uint8_t *data)
     for (uint16_t i=0;i<COMBAT_DECIMAL_FIELD_BYTES;++i) decimalFieldText[i]=0;
     for (uint16_t page=0;page<COMBAT_RADAR_CACHE_PAGES;++page)
     {
-        radarMarkerCounts[page]=0;
+        combatCockpit.radarMarkerCounts[page]=0;
         for (uint16_t marker=0;marker<COMBAT_RADAR_MARKERS;++marker)
-            radarMarkerX[marker][page]=radarMarkerY[marker][page]=radarMarkerBackground[marker][page]=0;
+            combatCockpit.radarMarkerX[marker][page]=combatCockpit.radarMarkerY[marker][page]=combatCockpit.radarMarkerBackground[marker][page]=0;
     }
-    radarPlayerObject=NULL;radarRectangle=NULL;
-    radarCentreX=radarCentreY=radarCachePage=radarMapOriginX=radarMapOriginY=0;
+    combatCockpit.radarPlayerObject=NULL;combatCockpit.radarRectangle=NULL;
+    combatCockpit.radarCentreX=combatCockpit.radarCentreY=combatCockpit.radarCachePage=combatCockpit.radarMapOriginX=combatCockpit.radarMapOriginY=0;
     combatInput.previousFireButtonState=combatInput.fireCycleActive=combatInput.requestedAimPitch=combatInput.unidentifiedField24=0;
     combatInput.combatInputScanCode=combatInput.combatInputDirectionMask=combatInput.combatInputButton1State=combatInput.combatInputButton0State=0;
     selectedObjectCount=0;

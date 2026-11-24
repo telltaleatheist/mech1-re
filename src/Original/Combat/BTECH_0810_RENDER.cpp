@@ -24,40 +24,40 @@ void BtechRenderObjectList(BtechCameraContext *camera,BtechWorldObjectPrefix *co
     for (int16_t ordinal=0;ordinal<count;++ordinal)
     {
         BtechHeapWorldObject *object=(BtechHeapWorldObject *)objects[ordinal];
-        if (&object->prefix==activeCameraContext->viewObject) continue;
-        cameraRelativePosition.positionA=object->prefix.position.positionA-cameraReferencePosition.positionA;
-        cameraRelativePosition.positionB=object->prefix.position.positionB-cameraReferencePosition.positionB;
-        cameraRelativePosition.positionC=object->prefix.position.positionC-cameraReferencePosition.positionC;
-        BtechTransformViewVector(&cameraRelativePosition,&viewTransformBasis,&transformedViewPosition);
-        cameraDepthScratch=transformedViewPosition.positionB;
-        resourceScaledExtent=object->prefix.resourceScaledValue;
-        projectionRatio.ratio.numerator=resourceScaledExtent;
-        projectionRatio.ratio.denominator=transformedViewPosition.positionB-resourceScaledExtent;
-        uint32_t nearDepth=(int16_t)nearClipDepth;
-        if ((int32_t)nearDepth>(int32_t)projectionRatio.ratio.denominator)
-            projectionRatio.ratio.denominator=nearDepth;
-        BtechProjectValueDepthRatio(&projectionRatio,&projectionVectorScratch.positionA);
-        if ((int32_t)projectionVectorScratch.positionA>OBJECT_MAXIMUM_PROJECTION_SCALE)
-            projectionVectorScratch.positionA=OBJECT_MAXIMUM_PROJECTION_SCALE;
-        objectProjectionScale=(uint16_t)projectionVectorScratch.positionA;
+        if (&object->prefix==combatRender.activeCameraContext->viewObject) continue;
+        combatRender.cameraRelativePosition.positionA=object->prefix.position.positionA-combatRender.cameraReferencePosition.positionA;
+        combatRender.cameraRelativePosition.positionB=object->prefix.position.positionB-combatRender.cameraReferencePosition.positionB;
+        combatRender.cameraRelativePosition.positionC=object->prefix.position.positionC-combatRender.cameraReferencePosition.positionC;
+        BtechTransformViewVector(&combatRender.cameraRelativePosition,&combatRender.viewTransformBasis,&combatRender.transformedViewPosition);
+        combatRender.cameraDepthScratch=combatRender.transformedViewPosition.positionB;
+        combatRender.resourceScaledExtent=object->prefix.resourceScaledValue;
+        combatRender.projectionRatio.ratio.numerator=combatRender.resourceScaledExtent;
+        combatRender.projectionRatio.ratio.denominator=combatRender.transformedViewPosition.positionB-combatRender.resourceScaledExtent;
+        uint32_t nearDepth=(int16_t)combatRender.nearClipDepth;
+        if ((int32_t)nearDepth>(int32_t)combatRender.projectionRatio.ratio.denominator)
+            combatRender.projectionRatio.ratio.denominator=nearDepth;
+        BtechProjectValueDepthRatio(&combatRender.projectionRatio,&combatRender.projectionVectorScratch.positionA);
+        if ((int32_t)combatRender.projectionVectorScratch.positionA>OBJECT_MAXIMUM_PROJECTION_SCALE)
+            combatRender.projectionVectorScratch.positionA=OBJECT_MAXIMUM_PROJECTION_SCALE;
+        combatRender.objectProjectionScale=(uint16_t)combatRender.projectionVectorScratch.positionA;
         if (object->prefix.renderFlags&OBJECT_CAPTURE_PROJECTION)
         {
-            object->transformedPosition[0]=transformedViewPosition.positionA;
-            object->transformedPosition[1]=transformedViewPosition.positionB;
-            object->transformedPosition[2]=transformedViewPosition.positionC;
+            object->transformedPosition[0]=combatRender.transformedViewPosition.positionA;
+            object->transformedPosition[1]=combatRender.transformedViewPosition.positionB;
+            object->transformedPosition[2]=combatRender.transformedViewPosition.positionC;
             object->prefix.renderFlags&=(uint8_t)~OBJECT_PROJECTED_VISIBLE;
-            if ((int16_t)nearClipDepth<=(int32_t)transformedViewPosition.positionB)
+            if ((int16_t)combatRender.nearClipDepth<=(int32_t)combatRender.transformedViewPosition.positionB)
             {
-                BtechProjectViewPosition(&transformedViewPosition,&projectionVectorScratch);
-                BtechOffsetProjectedScreenPair(&projectionVectorScratch);
-                if (clipMinimumX<=(int32_t)projectionVectorScratch.positionA
-                    && clipMaximumX>=(int32_t)projectionVectorScratch.positionA
-                    && clipMinimumY<=(int32_t)projectionVectorScratch.positionB
-                    && clipMaximumY>=(int32_t)projectionVectorScratch.positionB)
+                BtechProjectViewPosition(&combatRender.transformedViewPosition,&combatRender.projectionVectorScratch);
+                BtechOffsetProjectedScreenPair(&combatRender.projectionVectorScratch);
+                if (combatVideo.clipMinimumX<=(int32_t)combatRender.projectionVectorScratch.positionA
+                    && combatVideo.clipMaximumX>=(int32_t)combatRender.projectionVectorScratch.positionA
+                    && combatVideo.clipMinimumY<=(int32_t)combatRender.projectionVectorScratch.positionB
+                    && combatVideo.clipMaximumY>=(int32_t)combatRender.projectionVectorScratch.positionB)
                 {
-                    object->projectionValue=objectProjectionScale;
-                    object->projectedScreenA=(int16_t)projectionVectorScratch.positionA;
-                    object->projectedScreenB=(int16_t)projectionVectorScratch.positionB;
+                    object->projectionValue=combatRender.objectProjectionScale;
+                    object->projectedScreenA=(int16_t)combatRender.projectionVectorScratch.positionA;
+                    object->projectedScreenB=(int16_t)combatRender.projectionVectorScratch.positionB;
                     object->prefix.renderFlags|=OBJECT_PROJECTED_VISIBLE;
                 }
             }
@@ -85,11 +85,11 @@ void BtechRenderObjectList(BtechCameraContext *camera,BtechWorldObjectPrefix *co
  * The saved pixels alias the same CDD6 owner used by world ordering. */
 void BtechPrepareSelectionPixels(BtechWorldObjectPrefix *const *objects,int16_t count)
 {
-    selectionCount=0;
-    if (targetSelectionProbeActive)
+    combatRender.selectionCount=0;
+    if (combatRender.targetSelectionProbeActive)
     {
-        selectionPointBackground=BtechCaptureSelectionPixels((int16_t)selectionPointScreenX,(int16_t)selectionPointScreenY);
-        BtechWriteSelectionPixels((int16_t)selectionPointScreenX,(int16_t)selectionPointScreenY,&selectionMarkerPixels);
+        combatRender.selectionPointBackground=BtechCaptureSelectionPixels((int16_t)combatRender.selectionPointScreenX,(int16_t)combatRender.selectionPointScreenY);
+        BtechWriteSelectionPixels((int16_t)combatRender.selectionPointScreenX,(int16_t)combatRender.selectionPointScreenY,&combatRender.selectionMarkerPixels);
     }
     for (int16_t ordinal=0;ordinal<count;++ordinal)
         if (objects[ordinal]->renderFlags&OBJECT_CAPTURE_PROJECTION) objects[ordinal]->flags|=WORLD_OBJECT_TARGET_PROBE_VISIBLE;
@@ -97,18 +97,18 @@ void BtechPrepareSelectionPixels(BtechWorldObjectPrefix *const *objects,int16_t 
 
 void BtechRestoreSelectionPixels(BtechWorldObjectPrefix *const *objects)
 {
-    for (int16_t index=0;index<(int16_t)selectionCount;++index)
+    for (int16_t index=0;index<(int16_t)combatRender.selectionCount;++index)
     {
         if (index>=SELECTION_LIST_PREFIX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: index>=SELECTION_LIST_PREFIX");
-        uint16_t ordinal=selectionObjectListIndices[index];
+        uint16_t ordinal=combatRender.selectionObjectListIndices[index];
         if (ordinal>=COMBAT_WORLD_OBJECTS || !objects[ordinal]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: ordinal>=COMBAT_WORLD_OBJECTS || !objects[ordinal]");
         BtechHeapWorldObject *object=(BtechHeapWorldObject *)objects[ordinal];
-        BtechWriteSelectionPixels(object->projectedScreenA,object->projectedScreenB,&objectSortOrSelectionScratch.distances[ordinal]);
+        BtechWriteSelectionPixels(object->projectedScreenA,object->projectedScreenB,&combatScene.objectSortOrSelectionScratch.distances[ordinal]);
     }
-    if (targetSelectionProbeActive)
+    if (combatRender.targetSelectionProbeActive)
     {
-        BtechWriteSelectionPixels((int16_t)selectionPointScreenX,(int16_t)selectionPointScreenY,&selectionPointBackground);
-        targetSelectionProbeActive=0;
+        BtechWriteSelectionPixels((int16_t)combatRender.selectionPointScreenX,(int16_t)combatRender.selectionPointScreenY,&combatRender.selectionPointBackground);
+        combatRender.targetSelectionProbeActive=0;
     }
 }
 
@@ -117,36 +117,36 @@ void BtechUpdateObjectSelectionPixels(BtechHeapWorldObject *object,uint16_t ordi
     int16_t resourceDelta=object->prefix.resourceId-otherShapeResourceBase;
     uint8_t retainCoveredEntry=(resourceDelta>=2 && resourceDelta<=7)
         || (resourceDelta>=10 && resourceDelta<=13) || (resourceDelta>=15 && resourceDelta<=22);
-    if (targetSelectionProbeActive)
+    if (combatRender.targetSelectionProbeActive)
     {
-        selectionCapturedPixels=BtechCaptureSelectionPixels((int16_t)selectionPointScreenX,(int16_t)selectionPointScreenY);
-        if (!BtechTestSelectionMarkerPixels(&selectionCapturedPixels))
+        combatRender.selectionCapturedPixels=BtechCaptureSelectionPixels((int16_t)combatRender.selectionPointScreenX,(int16_t)combatRender.selectionPointScreenY);
+        if (!BtechTestSelectionMarkerPixels(&combatRender.selectionCapturedPixels))
         {
             if (!retainCoveredEntry) combatStartup.selectedHitObject=&object->prefix;
-            selectionPointBackground=selectionCapturedPixels;
-            BtechWriteSelectionPixels((int16_t)selectionPointScreenX,(int16_t)selectionPointScreenY,&selectionMarkerPixels);
+            combatRender.selectionPointBackground=combatRender.selectionCapturedPixels;
+            BtechWriteSelectionPixels((int16_t)combatRender.selectionPointScreenX,(int16_t)combatRender.selectionPointScreenY,&combatRender.selectionMarkerPixels);
         }
     }
-    for (int16_t index=0;index<(int16_t)selectionCount;++index)
+    for (int16_t index=0;index<(int16_t)combatRender.selectionCount;++index)
     {
         if (index>=SELECTION_LIST_PREFIX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: index>=SELECTION_LIST_PREFIX");
-        uint16_t selectedOrdinal=selectionObjectListIndices[index];
+        uint16_t selectedOrdinal=combatRender.selectionObjectListIndices[index];
         if (selectedOrdinal>=COMBAT_WORLD_OBJECTS || !cockpitWorldObjects[selectedOrdinal]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedOrdinal>=COMBAT_WORLD_OBJECTS || !cockpitWorldObjects[selectedOrdinal]");
         BtechHeapWorldObject *selected=(BtechHeapWorldObject *)cockpitWorldObjects[selectedOrdinal];
-        selectionCapturedPixels=BtechCaptureSelectionPixels(selected->projectedScreenA,selected->projectedScreenB);
-        if (!BtechTestSelectionMarkerPixels(&selectionCapturedPixels))
+        combatRender.selectionCapturedPixels=BtechCaptureSelectionPixels(selected->projectedScreenA,selected->projectedScreenB);
+        if (!BtechTestSelectionMarkerPixels(&combatRender.selectionCapturedPixels))
         {
             if (!retainCoveredEntry)
             {
-                if (selectionCount>SELECTION_LIST_PREFIX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectionCount>SELECTION_LIST_PREFIX");
-                selectionObjectListIndices[index]=selectionObjectListIndices[selectionCount-1];
-                --index;--selectionCount;
+                if (combatRender.selectionCount>SELECTION_LIST_PREFIX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectionCount>SELECTION_LIST_PREFIX");
+                combatRender.selectionObjectListIndices[index]=combatRender.selectionObjectListIndices[combatRender.selectionCount-1];
+                --index;--combatRender.selectionCount;
                 selected->prefix.flags&=(uint8_t)~WORLD_OBJECT_TARGET_PROBE_VISIBLE;
             }
             else
             {
-                objectSortOrSelectionScratch.distances[selectedOrdinal]=selectionCapturedPixels;
-                BtechWriteSelectionPixels(selected->projectedScreenA,selected->projectedScreenB,&selectionMarkerPixels);
+                combatScene.objectSortOrSelectionScratch.distances[selectedOrdinal]=combatRender.selectionCapturedPixels;
+                BtechWriteSelectionPixels(selected->projectedScreenA,selected->projectedScreenB,&combatRender.selectionMarkerPixels);
             }
         }
     }
@@ -154,11 +154,11 @@ void BtechUpdateObjectSelectionPixels(BtechHeapWorldObject *object,uint16_t ordi
     if ((object->prefix.renderFlags&(OBJECT_CAPTURE_PROJECTION|OBJECT_PROJECTED_VISIBLE))
         ==(OBJECT_CAPTURE_PROJECTION|OBJECT_PROJECTED_VISIBLE))
     {
-        uint16_t count=selectionCount++;
+        uint16_t count=combatRender.selectionCount++;
         if (count>=SELECTION_LIST_PREFIX || ordinal>=COMBAT_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: count>=SELECTION_LIST_PREFIX || ordinal>=COMBAT_WORLD_OBJECTS");
-        selectionObjectListIndices[count]=ordinal;
-        objectSortOrSelectionScratch.distances[ordinal]=BtechCaptureSelectionPixels(object->projectedScreenA,object->projectedScreenB);
-        BtechWriteSelectionPixels(object->projectedScreenA,object->projectedScreenB,&selectionMarkerPixels);
+        combatRender.selectionObjectListIndices[count]=ordinal;
+        combatScene.objectSortOrSelectionScratch.distances[ordinal]=BtechCaptureSelectionPixels(object->projectedScreenA,object->projectedScreenB);
+        BtechWriteSelectionPixels(object->projectedScreenA,object->projectedScreenB,&combatRender.selectionMarkerPixels);
     }
     else object->prefix.flags&=(uint8_t)~WORLD_OBJECT_TARGET_PROBE_VISIBLE;
 }
@@ -166,8 +166,8 @@ void BtechUpdateObjectSelectionPixels(BtechHeapWorldObject *object,uint16_t ordi
 /*0810:C03C. Probe position and latch; no alternative hit-test algorithm. */
 void BtechBeginSelectionPixelProbe(uint16_t x,uint16_t y)
 {
-    selectionPointScreenX=x;selectionPointScreenY=y;
-    combatStartup.selectedHitObject=NULL;targetSelectionProbeActive=1;
+    combatRender.selectionPointScreenX=x;combatRender.selectionPointScreenY=y;
+    combatStartup.selectedHitObject=NULL;combatRender.targetSelectionProbeActive=1;
 }
 
 /*0810:C2CE. Single-pixel mode observes only AL. The other three returned
@@ -192,7 +192,7 @@ void BtechWriteSelectionPixels(int16_t x,int16_t y,const uint32_t *pixels)
             for (uint16_t row=0;row<2;++row)
                 BtechWriteClippedPixel((int16_t)(x+column),(int16_t)(y+row),(uint8_t)(*pixels>>((column*2+row)*8)));
     }
-    else BtechWriteClippedPixel(x,y,pixels==&selectionMarkerPixels?SELECTION_MARKER_COLOUR:(uint8_t)*pixels);
+    else BtechWriteClippedPixel(x,y,pixels==&combatRender.selectionMarkerPixels?SELECTION_MARKER_COLOUR:(uint8_t)*pixels);
 }
 
 /*0810:C3B9. Multi-pixel marker is the authored00010203 column-major pattern. */

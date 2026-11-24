@@ -17,15 +17,15 @@ void BtechInitializeCombatRuntime(void)
     combatContinuationStage=UINT16_MAX;
     BtechResetCombatState();
     BtechInitializeVideoAndInput();
-    hudColourSchemeIndex=combatRendererKind==1;
-    if (hudColourSchemeIndex || combatRendererKind==3) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex || combatRendererKind==3"); /* Non-EGA scratch ownership not converted. */
+    hudColourSchemeIndex=combatVideo.combatRendererKind==1;
+    if (hudColourSchemeIndex || combatVideo.combatRendererKind==3) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: hudColourSchemeIndex || combatRendererKind==3"); /* Non-EGA scratch ownership not converted. */
     desertPaletteSlot=BtechLoadPaletteSlot("desert.pal",NULL);
     arcticPaletteSlot=BtechLoadPaletteSlot("arctic.pal",NULL);
     tropicalPaletteSlot=BtechLoadPaletteSlot("tropic.pal",NULL);
-    damagePaletteSlot=BtechLoadPaletteSlot("dmgpal.pal",NULL);
+    combatVideo.damagePaletteSlot=BtechLoadPaletteSlot("dmgpal.pal",NULL);
     BtechSelectFontSlot((int16_t)BtechLoadFontSlot("6x6b.fnt",NULL));
     BtechSelectPaletteSlot((int16_t)arcticPaletteSlot);
-    promptBitmaps=BtechLoadBitmapList("prompt.bmp",NULL);
+    combatVideo.promptBitmaps=BtechLoadBitmapList("prompt.bmp",NULL);
     BtechSelectAndInstallAudioBackends(0);
     BtechRegisterTimerCallback(BtechSelectTandyOrFallbackAudioCallback(),1);
     uint16_t inheritedSoundStreamIdentity;
@@ -46,7 +46,7 @@ void BtechInitializeCombatRuntime(void)
             selectedWorldObjects[selectedObjectCount++]=worldObjects[object];
         }
     }
-    playerCameraFillASuppressed=BtechRandomBelowBound(3)<1;
+    combatVideo.playerCameraFillASuppressed=BtechRandomBelowBound(3)<1;
     BtechApplyLandscapeCameraColours();
     BtechLoadCockpitHudResources();
     BtechInitializeOrderPanelState();
@@ -84,7 +84,7 @@ void BtechInitializeVideoAndInput(void)
     if (!BtechSelectCombatRenderer((uint8_t)adapterOverride,COMBAT_VIDEO_ALLOWED))
         BtechShowFatalErrorAndExit(errorCardNotFound);
     /* The native failure call falls through here if it unexpectedly returns. */
-    drawPolygonFilled=true;textTransparentBackground=false;egaBitmapEnabledPlanes=COMBAT_EGA_PLANE_MASK_ALL;
+    combatVideo.drawPolygonFilled=true;combatVideo.textTransparentBackground=false;combatVideo.egaBitmapEnabledPlanes=COMBAT_EGA_PLANE_MASK_ALL;
     BtechInstallKeyboardAndTickHandlers();
     BtechInstallDivideErrorHandler();
     BtechInstallTimerScheduler(COMBAT_SCHEDULER_PERIOD);
@@ -95,7 +95,7 @@ void BtechInitializeVideoAndInput(void)
  *02C2 draws to the existing draw page; no invented flip/present is inserted. */
 void BtechShowFatalErrorAndExit(const char *errorText)
 {
-    textForegroundColour=Combat_Pal_EGA_White;textBackgroundColour=Combat_Pal_EGA_Black;screenPolygonNeedsClip=false;
+    combatVideo.textForegroundColour=Combat_Pal_EGA_White;combatVideo.textBackgroundColour=Combat_Pal_EGA_Black;combatVideo.screenPolygonNeedsClip=false;
     BtechDrawNearText(errorText,COMBAT_FATAL_TEXT_X,COMBAT_FATAL_TEXT_Y);
     BtechRestoreTextVideoMode();
     BtechShutdownPlatformHandlers();

@@ -20,16 +20,16 @@ enum { BRIEFING_MISSION_LABEL_X=0x14,BRIEFING_MISSION_LABEL_Y=0x96,
  * wait, then remove only friendly bindings with a Mech but no head object. */
 void BtechShowCombatStageBriefing(void)
 {
-    drawPageSelector=backPageSelector;
+    combatVideo.drawPageSelector=combatVideo.backPageSelector;
     BtechLoadScreenImage("status.scr",NULL);
-    textTransparentBackground=true;
-    screenPolygonNeedsClip=false;
-    textForegroundColour=hudColourSchemeIndex?(int)Combat_Pal_EGA_Black:COMBAT_BRIEFING_TEXT_COLOUR;
-    BtechDrawNearText(briefingMissionLabel,BRIEFING_MISSION_LABEL_X,BRIEFING_MISSION_LABEL_Y);
+    combatVideo.textTransparentBackground=true;
+    combatVideo.screenPolygonNeedsClip=false;
+    combatVideo.textForegroundColour=hudColourSchemeIndex?(int)Combat_Pal_EGA_Black:COMBAT_BRIEFING_TEXT_COLOUR;
+    BtechDrawNearText(combatCockpit.briefingMissionLabel,BRIEFING_MISSION_LABEL_X,BRIEFING_MISSION_LABEL_Y);
     if (combatMissionDefinitionIndex>=COMBAT_BRIEFING_MISSIONS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatMissionDefinitionIndex>=COMBAT_BRIEFING_MISSIONS"); /* Adjacent directory alias not mapped. */
-    BtechDrawNearText(combatMissionTitles[combatMissionDefinitionIndex],BRIEFING_MISSION_TITLE_X,BRIEFING_MISSION_TITLE_Y);
-    BtechDrawNearText(briefingCrewLabel,BRIEFING_ROSTER_LABEL_X,BRIEFING_CREW_LABEL_Y);
-    BtechDrawNearText(briefingMechLabel,BRIEFING_ROSTER_LABEL_X,BRIEFING_MECH_LABEL_Y);
+    BtechDrawNearText(combatCockpit.combatMissionTitles[combatMissionDefinitionIndex],BRIEFING_MISSION_TITLE_X,BRIEFING_MISSION_TITLE_Y);
+    BtechDrawNearText(combatCockpit.briefingCrewLabel,BRIEFING_ROSTER_LABEL_X,BRIEFING_CREW_LABEL_Y);
+    BtechDrawNearText(combatCockpit.briefingMechLabel,BRIEFING_ROSTER_LABEL_X,BRIEFING_MECH_LABEL_Y);
     for (uint16_t slot=0;slot<COMBAT_FRIENDLY_SLOTS;++slot)
     {
         BtechMechState *mech=unitBindings[slot].mech;
@@ -37,16 +37,16 @@ void BtechShowCombatStageBriefing(void)
         {
             uint16_t rowY=(slot+1)*BRIEFING_ROSTER_ROW_STEP;
             if (deployedPilotIds[slot]>=COMBAT_PILOT_NAMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: deployedPilotIds[slot]>=COMBAT_PILOT_NAMES");
-            BtechDrawNearText(pilotDefinitionNames[deployedPilotIds[slot]],BRIEFING_ROSTER_TEXT_X,rowY+BRIEFING_CREW_LABEL_Y);
+            BtechDrawNearText(combatCockpit.pilotDefinitionNames[deployedPilotIds[slot]],BRIEFING_ROSTER_TEXT_X,rowY+BRIEFING_CREW_LABEL_Y);
             BtechDrawNearText(":OK",BRIEFING_STATUS_COLON_X,rowY+BRIEFING_CREW_LABEL_Y);
             if (mech->templateIndex>=COMBAT_MECH_TEMPLATES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: mech->templateIndex>=COMBAT_MECH_TEMPLATES");
-            BtechDrawNearText(mechTemplateNames[mech->templateIndex],BRIEFING_ROSTER_TEXT_X,rowY+BRIEFING_MECH_LABEL_Y);
+            BtechDrawNearText(combatCockpit.mechTemplateNames[mech->templateIndex],BRIEFING_ROSTER_TEXT_X,rowY+BRIEFING_MECH_LABEL_Y);
             BtechDrawNearText(":",BRIEFING_STATUS_COLON_X,rowY+BRIEFING_MECH_LABEL_Y);
             const char *condition=BtechIsMechOperational(mech)?"OK":"JUNK";
             BtechDrawNearText(condition,BRIEFING_MECH_STATUS_X,rowY+BRIEFING_MECH_LABEL_Y);
         }
     }
-    textTransparentBackground=false;
+    combatVideo.textTransparentBackground=false;
     if (!orderMapCameraObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !orderMapCameraObject");
     orderMapCameraObject->object.prefix.position.positionC=COMBAT_BRIEFING_MAP_ALTITUDE;
     if (!orderMapCameraContext) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !orderMapCameraContext");
@@ -61,7 +61,7 @@ void BtechShowCombatStageBriefing(void)
     orderMapCameraContext->clipMaximumB=BRIEFING_RESTORED_MAP_BOTTOM;
     orderMapCameraContext->clipMinimumA=BRIEFING_RESTORED_MAP_LEFT;
     orderMapCameraContext->clipMaximumA=BRIEFING_RESTORED_MAP_RIGHT;
-    screenPolygonNeedsClip=false;
+    combatVideo.screenPolygonNeedsClip=false;
     BtechSetOverscanColour(Combat_Pal_EGA_LightGrey);
     BtechCopyHudRectangleIfReady(0,0,COMBAT_SCREEN_WIDTH,COMBAT_SCREEN_HEIGHT);
     BtechWaitForCombatInputReleaseThenPress();

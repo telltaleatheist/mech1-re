@@ -11,8 +11,8 @@ void BtechEgaCopyScreenRectangle(uint16_t x,uint16_t y,uint16_t width,uint16_t h
     uint16_t end=(uint16_t)(x+width+7)&0xFFF8,first=x&0xFFF8;
     uint16_t bytes=(uint16_t)(end-first)>>3,row=(uint16_t)(y*2)>>1;
     if (row>=COMBAT_SCREEN_HEIGHT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: row>=COMBAT_SCREEN_HEIGHT");
-    uint16_t cursor=graphicsRowOffsets[row]+(first>>3);
-    const int destinationPage=BtechEgaCanvasPage(drawPageSelector),sourcePage=BtechEgaCanvasPage(copySourcePageSelector);
+    uint16_t cursor=combatVideo.graphicsRowOffsets[row]+(first>>3);
+    const int destinationPage=BtechEgaCanvasPage(combatVideo.drawPageSelector),sourcePage=BtechEgaCanvasPage(combatVideo.copySourcePageSelector);
     do
     {
         uint16_t nextRow=cursor+COMBAT_SCREEN_ROW_BYTES;
@@ -36,12 +36,12 @@ void BtechEgaNoOperation(void)
 void BtechEgaUploadPackedScreenRegion(BtechResourceAllocation source,uint16_t left,uint16_t top,uint16_t width,uint16_t height)
 {
     if (top>=COMBAT_SCREEN_HEIGHT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: top>=COMBAT_SCREEN_HEIGHT"); /* Native row-table adjacent-owner alias not represented. */
-    uint16_t destination=graphicsRowOffsets[top]+(left>>3);
-    const int page=BtechEgaCanvasPage(drawPageSelector);
-    egaScreenUploadRowsRemaining=height;
-    egaScreenUploadColumns=width>>3;
-    uint16_t columnsRemaining=egaScreenUploadColumns;
-    egaScreenUploadRowSkip=COMBAT_SCREEN_ROW_BYTES-columnsRemaining;
+    uint16_t destination=combatVideo.graphicsRowOffsets[top]+(left>>3);
+    const int page=BtechEgaCanvasPage(combatVideo.drawPageSelector);
+    combatVideo.egaScreenUploadRowsRemaining=height;
+    combatVideo.egaScreenUploadColumns=width>>3;
+    uint16_t columnsRemaining=combatVideo.egaScreenUploadColumns;
+    combatVideo.egaScreenUploadRowSkip=COMBAT_SCREEN_ROW_BYTES-columnsRemaining;
     uint32_t sourceCursor=0; /* Host extent check gates normalized-segment wrap, rather than guessing a paragraph alias. */
     for (;;)
     {
@@ -62,9 +62,9 @@ void BtechEgaUploadPackedScreenRegion(BtechResourceAllocation source,uint16_t le
         destination++;
         uint16_t columnsBeforeDecrement=columnsRemaining--;
         if ((int16_t)columnsBeforeDecrement>1) continue;
-        if ((int16_t)egaScreenUploadRowsRemaining<=1) break;
-        egaScreenUploadRowsRemaining--;
-        columnsRemaining=egaScreenUploadColumns;
-        destination+=egaScreenUploadRowSkip;
+        if ((int16_t)combatVideo.egaScreenUploadRowsRemaining<=1) break;
+        combatVideo.egaScreenUploadRowsRemaining--;
+        columnsRemaining=combatVideo.egaScreenUploadColumns;
+        destination+=combatVideo.egaScreenUploadRowSkip;
     }
 }

@@ -159,7 +159,7 @@ void BtechPrepareCampaignCombatStage(uint16_t inheritedSoundStreamIdentity)
         (void)BtechPrepareEnemyMech(COMBAT_TEMPLATE_BATTLEMASTER);
         (void)BtechPrepareEnemyMech(COMBAT_TEMPLATE_WARHAMMER);
         for (uint16_t slot=4;slot<8;++slot) {gunneryTargetNumbers[slot]=0;pilotingRecoveryBounds[slot]=0;}
-        distanceSortObjects[0]=NULL;activeCockpitLayoutIndex=0; /* Fifth native pair aliases these owners. */
+        combatScene.distanceSortObjects[0]=NULL;activeCockpitLayoutIndex=0; /* Fifth native pair aliases these owners. */
     }
     else
     {

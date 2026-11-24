@@ -35,25 +35,25 @@ uint16_t BtechAdvanceUnitAnimationAndMovementMode(void)
     uint16_t frame=activeUnitControl->animationFrame;
     if (sequence>=UNIT_ANIMATION_SEQUENCES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: sequence>=UNIT_ANIMATION_SEQUENCES"); /* Native escapes authored table. */
     uint8_t sequenceBoundary=(sequence==ANIMATION_SEQUENCE_WALK && (frame==UNIT_WALK_FIRST_TRANSITION_FRAME || frame==UNIT_WALK_SECOND_TRANSITION_FRAME))
-        || frame==(uint16_t)(animationLogicalFrameCounts[sequence]-1);
+        || frame==(uint16_t)(combatPose.animationLogicalFrameCounts[sequence]-1);
     int16_t selectedSequence=-1;
     switch (requestedSequence)
     {
     case ANIMATION_SEQUENCE_WALK:
-        if (!activeUnitPositionedObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject");
+        if (!combatPose.activeUnitPositionedObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject");
         if (sequence==ANIMATION_SEQUENCE_IDLE || (sequence==ANIMATION_SEQUENCE_WALK
-            && ((frame==(uint16_t)(animationLogicalFrameCounts[ANIMATION_SEQUENCE_WALK]-1)
-                && activeUnitPositionedObject->forwardStepScale>0)
-                || (activeUnitPositionedObject->forwardStepScale<0 && !frame))))
+            && ((frame==(uint16_t)(combatPose.animationLogicalFrameCounts[ANIMATION_SEQUENCE_WALK]-1)
+                && combatPose.activeUnitPositionedObject->forwardStepScale>0)
+                || (combatPose.activeUnitPositionedObject->forwardStepScale<0 && !frame))))
             selectedSequence=ANIMATION_SEQUENCE_WALK;
         break;
     case ANIMATION_SEQUENCE_BEGIN_JUMP:
         if (sequence==ANIMATION_SEQUENCE_IDLE)
         {
             selectedSequence=ANIMATION_SEQUENCE_BEGIN_JUMP;
-            BtechClearObjectMotionTail(activeUnitPositionedObject);
-            if (!activeUnitTorsoObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitTorsoObject");
-            activeUnitTorsoObject->object.prefix.orientationC=0;
+            BtechClearObjectMotionTail(combatPose.activeUnitPositionedObject);
+            if (!combatPose.activeUnitTorsoObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitTorsoObject");
+            combatPose.activeUnitTorsoObject->object.prefix.orientationC=0;
         }
         else if (sequenceBoundary) selectedSequence=ANIMATION_SEQUENCE_IDLE;
         break;
@@ -75,21 +75,21 @@ uint16_t BtechAdvanceUnitAnimationAndMovementMode(void)
         if (sequence==ANIMATION_SEQUENCE_IDLE && activeUnitControl->movementMode!=MOVEMENT_MODE_JUMP)
         {
             selectedSequence=ANIMATION_SEQUENCE_FIRING_PAUSE;
-            BtechClearObjectMotionTail(activeUnitPositionedObject);
+            BtechClearObjectMotionTail(combatPose.activeUnitPositionedObject);
         }
         else if (sequence==ANIMATION_SEQUENCE_WALK && frame==UNIT_WALK_SECOND_TRANSITION_FRAME) selectedSequence=ANIMATION_SEQUENCE_IDLE;
         break;
     }
     if (selectedSequence>=0)
     {
-        if (!activeUnitPositionedObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject");
+        if (!combatPose.activeUnitPositionedObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject");
         activeUnitControl->animationFrame=selectedSequence==ANIMATION_SEQUENCE_WALK
-            && activeUnitPositionedObject->forwardStepScale<0
-            ? (uint16_t)(animationLogicalFrameCounts[ANIMATION_SEQUENCE_WALK]-1):0;
+            && combatPose.activeUnitPositionedObject->forwardStepScale<0
+            ? (uint16_t)(combatPose.animationLogicalFrameCounts[ANIMATION_SEQUENCE_WALK]-1):0;
         activeUnitControl->animationSequence=(uint16_t)selectedSequence;
     }
     else if (activeUnitControl->animationSequence==ANIMATION_SEQUENCE_WALK
-        && activeUnitPositionedObject && activeUnitPositionedObject->forwardStepScale<0)
+        && combatPose.activeUnitPositionedObject && combatPose.activeUnitPositionedObject->forwardStepScale<0)
     {
         --activeUnitControl->animationFrame;
         if ((int16_t)activeUnitControl->animationFrame<0)
@@ -104,10 +104,10 @@ uint16_t BtechAdvanceUnitAnimationAndMovementMode(void)
         sequence=activeUnitControl->animationSequence;
         if (sequence==ANIMATION_SEQUENCE_FALL)
         {
-            uint16_t lastFrame=animationLogicalFrameCounts[ANIMATION_SEQUENCE_FALL]-1;
+            uint16_t lastFrame=combatPose.animationLogicalFrameCounts[ANIMATION_SEQUENCE_FALL]-1;
             if (activeUnitControl->animationFrame>lastFrame) activeUnitControl->animationFrame=lastFrame;
         }
-        else if (activeUnitControl->animationFrame==animationLogicalFrameCounts[sequence])
+        else if (activeUnitControl->animationFrame==combatPose.animationLogicalFrameCounts[sequence])
         {
             activeUnitControl->animationSequence=ANIMATION_SEQUENCE_IDLE;
             activeUnitControl->animationFrame=0;
@@ -115,24 +115,24 @@ uint16_t BtechAdvanceUnitAnimationAndMovementMode(void)
     }
     sequence=activeUnitControl->animationSequence;
     frame=activeUnitControl->animationFrame;
-    if (!activeMechState || sequence>=UNIT_ANIMATION_SEQUENCES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeMechState || sequence>=UNIT_ANIMATION_SEQUENCES");
-    uint16_t chassis=activeMechState->templateIndex;
-    const uint8_t *frameMap=animationFrameMaps[sequence];
+    if (!combatPose.activeMechState || sequence>=UNIT_ANIMATION_SEQUENCES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeMechState || sequence>=UNIT_ANIMATION_SEQUENCES");
+    uint16_t chassis=combatPose.activeMechState->templateIndex;
+    const uint8_t *frameMap=combatPose.animationFrameMaps[sequence];
     if (chassis>=COMBAT_MECH_TEMPLATES || !frameMap
-        || frame>=(size_t)(animationFrameMapStorage+UNIT_ANIMATION_MAP_BYTES-frameMap)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: chassis>=COMBAT_MECH_TEMPLATES || !frameMap || frame>=(size_t)(animationFrameMapStorage+UNIT_ANIMATION_MAP_BYTES-frameMap)");
+        || frame>=(size_t)(combatPose.animationFrameMapStorage+UNIT_ANIMATION_MAP_BYTES-frameMap)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: chassis>=COMBAT_MECH_TEMPLATES || !frameMap || frame>=(size_t)(animationFrameMapStorage+UNIT_ANIMATION_MAP_BYTES-frameMap)");
     uint16_t resourceBase=frameMap[frame]+mechResourceBaseIds[chassis];
     uint16_t animationLookupIndex=frame; /*9EAC SI, saved by each0714 below. */
-    for (int16_t preceding=0;preceding<(int16_t)animationPrefixSequenceCounts[sequence];++preceding)
+    for (int16_t preceding=0;preceding<(int16_t)combatPose.animationPrefixSequenceCounts[sequence];++preceding)
     {
         if (preceding>=UNIT_ANIMATION_SEQUENCES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: preceding>=UNIT_ANIMATION_SEQUENCES");
         animationLookupIndex=(uint16_t)(chassis*UNIT_ANIMATION_SEQUENCES); /*9ED5, even unavailable sequences. */
-        if (chassisAnimationAvailability[chassis][preceding])
-            resourceBase+=(uint16_t)(animationPartFrameCounts[preceding]*UNIT_ANIMATED_BODY_PARTS);
+        if (combatPose.chassisAnimationAvailability[chassis][preceding])
+            resourceBase+=(uint16_t)(combatPose.animationPartFrameCounts[preceding]*UNIT_ANIMATED_BODY_PARTS);
     }
     uint16_t slot=activeUnitControl->unitSlot;
     if (slot>=COMBAT_MECH_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: slot>=COMBAT_MECH_SLOTS");
     BtechUnitBinding *binding=&unitBindings[slot];
-    uint16_t partStride=animationPartFrameCounts[activeUnitControl->animationSequence];
+    uint16_t partStride=combatPose.animationPartFrameCounts[activeUnitControl->animationSequence];
     uint16_t partOffset=partStride;
     /* Native reads each binding when its call is reached, not a six-part snapshot. */
     BtechBindAnimationResourceAndScale(binding->leftArm,resourceBase);
@@ -156,10 +156,10 @@ uint16_t BtechAdvanceUnitAnimationAndMovementMode(void)
     else if (sequence==ANIMATION_SEQUENCE_BEGIN_JUMP && frame==UNIT_JUMP_LAUNCH_FRAME)
     {
         activeUnitControl->movementMode=MOVEMENT_MODE_JUMP;
-        activeMechState->jumpCharge-=JUMP_LAUNCH_CHARGE_COST;
-        if (!activeUnitPositionedObject || !activeMechTemplate) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject || !activeMechTemplate");
-        activeUnitPositionedObject->positionSteps[2]=(int16_t)(activeMechTemplate->jumpSpeedLimit*JUMP_LAUNCH_VERTICAL_SPEED_MULTIPLIER);
-        activeUnitPositionedObject->forwardStepScale=(int16_t)activeMechTemplate->jumpSpeedLimit;
+        combatPose.activeMechState->jumpCharge-=JUMP_LAUNCH_CHARGE_COST;
+        if (!combatPose.activeUnitPositionedObject || !combatPose.activeMechTemplate) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject || !activeMechTemplate");
+        combatPose.activeUnitPositionedObject->positionSteps[2]=(int16_t)(combatPose.activeMechTemplate->jumpSpeedLimit*JUMP_LAUNCH_VERTICAL_SPEED_MULTIPLIER);
+        combatPose.activeUnitPositionedObject->forwardStepScale=(int16_t)combatPose.activeMechTemplate->jumpSpeedLimit;
     }
     else if (sequence==ANIMATION_SEQUENCE_LANDING)
         activeUnitControl->movementMode=frame==UNIT_LANDING_STANDING_FRAME?MOVEMENT_MODE_GROUNDED:MOVEMENT_MODE_LANDING;

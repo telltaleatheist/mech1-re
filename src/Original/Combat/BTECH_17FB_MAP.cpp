@@ -9,12 +9,12 @@
 /*17FB:0D3C. A pending full cockpit redraw suppresses this partial copy. */
 void BtechCopyHudRectangleIfReady(uint16_t x,uint16_t y,uint16_t width,uint16_t height)
 {
-    if (!cockpitFullRedrawPending)
+    if (!combatCockpit.cockpitFullRedrawPending)
     {
-        copySourcePageSelector=backPageSelector;
-        drawPageSelector=frontPageSelector;
+        combatVideo.copySourcePageSelector=combatVideo.backPageSelector;
+        combatVideo.drawPageSelector=combatVideo.frontPageSelector;
         BtechCopyScreenRectangle(x,y,width,height);
-        drawPageSelector=backPageSelector;
+        combatVideo.drawPageSelector=combatVideo.backPageSelector;
     }
 }
 
@@ -90,7 +90,7 @@ void BtechDrawLanceMapUnitMarkers(void)
         if (!BtechProjectPositionToOrderMap(position,&unitOrderMapScreenX[slot],&unitOrderMapScreenY[slot])) continue;
         uint16_t style=control->sideIndex==0?slot:0,paletteEntry=control->sideIndex==0?slot:4;
         if (combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || paletteEntry>=5) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES || paletteEntry>=5");
-        uint16_t colour=landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex].unitMarkerColours[paletteEntry];
+        uint16_t colour=combatVideo.landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex].unitMarkerColours[paletteEntry];
         BtechDrawThreeByThreeMarker(unitOrderMapScreenX[slot],unitOrderMapScreenY[slot],colour,style);
     }
 }
@@ -106,21 +106,21 @@ void BtechDrawLanceMapRetreatBoundaries(void)
     uint8_t firstVisible=BtechProjectPositionToOrderMap(&combatWorldBoundaryCorners[0],&left,&top);
     uint8_t secondVisible=BtechProjectPositionToOrderMap(&combatWorldBoundaryCorners[1],&right,&bottom);
     if (!firstVisible || !secondVisible) return;
-    clipMinimumY=top;clipMaximumY=bottom;clipMinimumX=left;clipMaximumX=right;
-    screenPolygonNeedsClip=true;
+    combatVideo.clipMinimumY=top;combatVideo.clipMaximumY=bottom;combatVideo.clipMinimumX=left;combatVideo.clipMaximumX=right;
+    combatVideo.screenPolygonNeedsClip=true;
     int16_t phase=(combatStartup.combatTickCounter&7)-4;
     if (combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatLandscapeIndex>=COMBAT_LANDSCAPES || hudColourSchemeIndex>=COMBAT_HUD_COLOUR_SCHEMES");
-    const BtechLandscapeCameraColourRow *colours=&landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex];
-    drawFillColour=(uint8_t)((retreatMask&1)?colours->mapRetreatBoundaryColour:colours->mapBoundaryColour);
+    const BtechLandscapeCameraColourRow *colours=&combatVideo.landscapeCameraColourRows[hudColourSchemeIndex][combatLandscapeIndex];
+    combatVideo.drawFillColour=(uint8_t)((retreatMask&1)?colours->mapRetreatBoundaryColour:colours->mapBoundaryColour);
     for (int16_t x=left+phase;x<right;x=(int16_t)(x+8))
         BtechDrawClippedLine(x,top,(int16_t)(x+4),top);
-    drawFillColour=(uint8_t)((retreatMask&2)?colours->mapRetreatBoundaryColour:colours->mapBoundaryColour);
+    combatVideo.drawFillColour=(uint8_t)((retreatMask&2)?colours->mapRetreatBoundaryColour:colours->mapBoundaryColour);
     for (int16_t x=right-phase;x>left;x=(int16_t)(x-8))
         BtechDrawClippedLine(x,bottom,(int16_t)(x-4),bottom);
-    drawFillColour=(uint8_t)((retreatMask&8)?colours->mapRetreatBoundaryColour:colours->mapBoundaryColour);
+    combatVideo.drawFillColour=(uint8_t)((retreatMask&8)?colours->mapRetreatBoundaryColour:colours->mapBoundaryColour);
     for (int16_t y=top+phase-5;y<bottom;y=(int16_t)(y+8))
         BtechDrawClippedLine(right,y,right,(int16_t)(y+4));
-    drawFillColour=(uint8_t)((retreatMask&4)?colours->mapRetreatBoundaryColour:colours->mapBoundaryColour);
+    combatVideo.drawFillColour=(uint8_t)((retreatMask&4)?colours->mapRetreatBoundaryColour:colours->mapBoundaryColour);
     for (int16_t y=bottom-phase+5;y>top;y=(int16_t)(y-8))
         BtechDrawClippedLine(left,y,left,(int16_t)(y-4));
 }

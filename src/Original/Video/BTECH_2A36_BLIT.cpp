@@ -13,63 +13,63 @@ void BtechEgaDrawBitmap(const BtechBitmap *bitmap,uint16_t x,uint16_t y)
 {
     if (!bitmap) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !bitmap");
     const BtechBitmap image=*bitmap;
-    uint16_t page=drawPageSelector,rows=image.heightPixels;
+    uint16_t page=combatVideo.drawPageSelector,rows=image.heightPixels;
     uint16_t rowStart,sourceSkip=0;
     uint8_t rowBytes;
-    if (!screenPolygonNeedsClip)
+    if (!combatVideo.screenPolygonNeedsClip)
     {
         if (y>=COMBAT_SCREEN_HEIGHT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: y>=COMBAT_SCREEN_HEIGHT");
-        rowStart=(uint16_t)(graphicsRowOffsets[y]+(x>>3));
-        egaBitmapShiftPhase=x&7;
+        rowStart=(uint16_t)(combatVideo.graphicsRowOffsets[y]+(x>>3));
+        combatVideo.egaBitmapShiftPhase=x&7;
         rowBytes=(uint8_t)(image.widthPixels>>3);
-        egaBitmapPlaneStride=(uint16_t)(rowBytes*(uint8_t)rows);
-        egaBitmapSourceRowSkip=0;egaBitmapClipSides=0;
-        egaBitmapDestinationRowSkip=(uint8_t)(COMBAT_SCREEN_ROW_BYTES-rowBytes);
+        combatVideo.egaBitmapPlaneStride=(uint16_t)(rowBytes*(uint8_t)rows);
+        combatVideo.egaBitmapSourceRowSkip=0;combatVideo.egaBitmapClipSides=0;
+        combatVideo.egaBitmapDestinationRowSkip=(uint8_t)(COMBAT_SCREEN_ROW_BYTES-rowBytes);
     }
     else
     {
         uint16_t packedWidth=image.widthPixels>>3;
-        egaBitmapPlaneStride=(uint16_t)((uint8_t)packedWidth*(uint8_t)rows);
+        combatVideo.egaBitmapPlaneStride=(uint16_t)((uint8_t)packedWidth*(uint8_t)rows);
         uint16_t rowY=y;
-        if ((int16_t)rowY<clipMinimumY)
+        if ((int16_t)rowY<combatVideo.clipMinimumY)
         {
-            uint16_t skippedRows=clipMinimumY-rowY;
+            uint16_t skippedRows=combatVideo.clipMinimumY-rowY;
             if ((int16_t)rows<=(int16_t)skippedRows) return;
             rows-=skippedRows;sourceSkip=(uint16_t)((uint8_t)skippedRows*(uint8_t)packedWidth);
-            rowY=(uint16_t)clipMinimumY;
+            rowY=(uint16_t)combatVideo.clipMinimumY;
         }
-        if ((uint16_t)(rowY+rows)>(uint16_t)clipMaximumY)
+        if ((uint16_t)(rowY+rows)>(uint16_t)combatVideo.clipMaximumY)
         {
-            rows=(uint16_t)(clipMaximumY-rowY+1);
+            rows=(uint16_t)(combatVideo.clipMaximumY-rowY+1);
             if (!rows || rows>0x8000) return; /* INC/JLE admits8000. */
         }
         if (rowY>=COMBAT_SCREEN_HEIGHT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: rowY>=COMBAT_SCREEN_HEIGHT");
-        rowStart=graphicsRowOffsets[rowY];
+        rowStart=combatVideo.graphicsRowOffsets[rowY];
         uint16_t clippedWidth=(uint16_t)(packedWidth<<3),leftX=x;
-        uint16_t minimumX=(uint16_t)clipMinimumX&0xFFF8;
+        uint16_t minimumX=(uint16_t)combatVideo.clipMinimumX&0xFFF8;
         if ((int16_t)leftX<(int16_t)minimumX)
         {
             uint16_t skippedPixels=minimumX-leftX;
             if ((int16_t)clippedWidth<=(int16_t)skippedPixels) return;
-            clippedWidth-=skippedPixels;egaBitmapShiftPhase=clippedWidth&7;
+            clippedWidth-=skippedPixels;combatVideo.egaBitmapShiftPhase=clippedWidth&7;
             sourceSkip+=(uint16_t)((uint16_t)((clippedWidth&7)+skippedPixels)>>3);
-            leftX=(uint16_t)clipMinimumX&0xFFF8;egaBitmapClipSides=1;
+            leftX=(uint16_t)combatVideo.clipMinimumX&0xFFF8;combatVideo.egaBitmapClipSides=1;
         }
-        else {egaBitmapShiftPhase=leftX&7;egaBitmapClipSides=0;}
+        else {combatVideo.egaBitmapShiftPhase=leftX&7;combatVideo.egaBitmapClipSides=0;}
         rowStart+=(leftX>>3);
-        egaBitmapRoundedEndX=(uint16_t)(clipMaximumX+1)&0xFFF8;
-        if ((uint16_t)(leftX+clippedWidth)>=egaBitmapRoundedEndX)
+        combatVideo.egaBitmapRoundedEndX=(uint16_t)(combatVideo.clipMaximumX+1)&0xFFF8;
+        if ((uint16_t)(leftX+clippedWidth)>=combatVideo.egaBitmapRoundedEndX)
         {
-            if ((int16_t)egaBitmapRoundedEndX<=(int16_t)leftX) return;
-            clippedWidth=(uint16_t)(egaBitmapRoundedEndX-leftX);egaBitmapClipSides|=2;
+            if ((int16_t)combatVideo.egaBitmapRoundedEndX<=(int16_t)leftX) return;
+            clippedWidth=(uint16_t)(combatVideo.egaBitmapRoundedEndX-leftX);combatVideo.egaBitmapClipSides|=2;
         }
         rowBytes=(uint8_t)(clippedWidth>>3);
-        if (egaBitmapClipSides==3 && (x&7)) --rowBytes;
+        if (combatVideo.egaBitmapClipSides==3 && (x&7)) --rowBytes;
         uint16_t originalRowBytes=image.widthPixels>>3;
-        egaBitmapSourceRowSkip=(originalRowBytes&0xFF00)|(uint8_t)((uint8_t)originalRowBytes-rowBytes);
-        egaBitmapDestinationRowSkip=(uint8_t)(COMBAT_SCREEN_ROW_BYTES-rowBytes);
+        combatVideo.egaBitmapSourceRowSkip=(originalRowBytes&0xFF00)|(uint8_t)((uint8_t)originalRowBytes-rowBytes);
+        combatVideo.egaBitmapDestinationRowSkip=(uint8_t)(COMBAT_SCREEN_ROW_BYTES-rowBytes);
     }
-    uint8_t phase=egaBitmapShiftPhase;
+    uint8_t phase=combatVideo.egaBitmapShiftPhase;
     uint16_t maskCursor=sourceSkip,destination=rowStart;
     uint8_t rowsRemaining=rows;
     BtechEgaCanvasWriter ega(page);
@@ -88,7 +88,7 @@ void BtechEgaDrawBitmap(const BtechBitmap *bitmap,uint16_t x,uint16_t y)
         else
         {
             uint8_t previous=0xFF;
-            if (egaBitmapClipSides&1)
+            if (combatVideo.egaBitmapClipSides&1)
             {
                 uint16_t prior=maskCursor-1;if (prior>=image.maskStorageBytes) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: prior>=image.maskStorageBytes");
                 previous=image.preserveMask[prior];
@@ -102,21 +102,21 @@ void BtechEgaDrawBitmap(const BtechBitmap *bitmap,uint16_t x,uint16_t y)
                 ega.setMask((uint8_t)~preserve);ega.write(destination++,0);
             }
             uint8_t current=0xFF;
-            if (egaBitmapClipSides&2)
+            if (combatVideo.egaBitmapClipSides&2)
             {if (maskCursor>=image.maskStorageBytes) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: maskCursor>=image.maskStorageBytes");current=image.preserveMask[maskCursor];}
             uint8_t preserve=(previous<<(8-phase))|(current>>phase);
             ega.setMask((uint8_t)~preserve);ega.write(destination,0);
         }
         if (!--rowsRemaining) break;
-        maskCursor+=egaBitmapSourceRowSkip;destination+=egaBitmapDestinationRowSkip;
+        maskCursor+=combatVideo.egaBitmapSourceRowSkip;destination+=combatVideo.egaBitmapDestinationRowSkip;
     } while (1);
     const int canvasPage=BtechEgaCanvasPage(page);
-    uint8_t clipSides=egaBitmapClipSides;
+    uint8_t clipSides=combatVideo.egaBitmapClipSides;
     uint16_t planeStart=sourceSkip;
     for (uint16_t plane=0;plane<COMBAT_EGA_PLANES;++plane)
     {
-        if (plane) planeStart+=egaBitmapPlaneStride;
-        if (!(egaBitmapEnabledPlanes&(1<<plane))) continue;
+        if (plane) planeStart+=combatVideo.egaBitmapPlaneStride;
+        if (!(combatVideo.egaBitmapEnabledPlanes&(1<<plane))) continue;
         uint16_t cursor=planeStart;destination=rowStart;rowsRemaining=(uint8_t)rows;
         do
         {
@@ -141,7 +141,7 @@ void BtechEgaDrawBitmap(const BtechBitmap *bitmap,uint16_t x,uint16_t y)
                 BtechEgaCanvasAddColourBits(canvasPage,destination,plane,(uint8_t)((previous<<(8-phase))|(pixels>>phase)));
             }
             if (!--rowsRemaining) break;
-            cursor+=egaBitmapSourceRowSkip;destination+=egaBitmapDestinationRowSkip;
+            cursor+=combatVideo.egaBitmapSourceRowSkip;destination+=combatVideo.egaBitmapDestinationRowSkip;
         } while (1);
     }
 }

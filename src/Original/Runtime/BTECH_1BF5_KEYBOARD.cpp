@@ -14,7 +14,7 @@ static uint8_t NextKeySlot(uint8_t slot) { return (uint8_t)((slot+1)%COMBAT_KEY_
 void BtechHandleKeyEvent(MwKeyEvent event)
 {
     uint8_t scan=MwKeyEventScanByte(event);
-    if (pcjrTandyCompatible==1)
+    if (combatVideo.pcjrTandyCompatible==1)
     {
         if (combatStartup.keyboardBiosIntercept==1)
         {

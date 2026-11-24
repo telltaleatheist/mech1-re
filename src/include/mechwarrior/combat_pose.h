@@ -23,20 +23,25 @@ typedef struct BtechPoseKeyframe {
     int16_t displacementA,displacementB,displacementC;
     uint16_t orientationStepA;
 } BtechPoseKeyframe;
-extern BtechPoseKeyframe playerPoseKeyframes[PLAYER_POSE_KEYFRAMES];
-extern const BtechPoseKeyframe *playerPoseSequences[PLAYER_POSE_SEQUENCES];
-extern uint16_t playerPoseFrameCounts[PLAYER_POSE_SEQUENCES];
-extern uint16_t playerPoseDistanceAccumulator,playerPosePerturbationTicks;
-extern uint16_t playerPoseSequence,playerPoseFrame,unidentifiedField26;
-extern uint8_t animationFrameMapStorage[UNIT_ANIMATION_MAP_BYTES];
-extern const uint8_t *animationFrameMaps[UNIT_ANIMATION_SEQUENCES];
-extern uint8_t animationLogicalFrameCounts[UNIT_ANIMATION_SEQUENCES];
-extern uint8_t animationPartFrameCounts[UNIT_ANIMATION_SEQUENCES];
-extern uint16_t animationPrefixSequenceCounts[UNIT_ANIMATION_SEQUENCES];
-extern uint8_t chassisAnimationAvailability[COMBAT_MECH_TEMPLATES][UNIT_ANIMATION_SEQUENCES];
-extern BtechPooledWorldObject *activeUnitPositionedObject,*activeUnitTorsoObject;
-extern BtechMechState *activeMechState;
-extern BtechMechTemplate *activeMechTemplate;
+/* Combat state owned by combat_pose.h (plan, slice B3c). */
+struct CombatPoseState
+{
+    BtechPoseKeyframe playerPoseKeyframes[PLAYER_POSE_KEYFRAMES];
+    const BtechPoseKeyframe *playerPoseSequences[PLAYER_POSE_SEQUENCES];
+    uint16_t playerPoseFrameCounts[PLAYER_POSE_SEQUENCES];
+    uint16_t playerPoseDistanceAccumulator, playerPosePerturbationTicks;
+    uint16_t playerPoseSequence, playerPoseFrame, unidentifiedField26;
+    uint8_t animationFrameMapStorage[UNIT_ANIMATION_MAP_BYTES];
+    const uint8_t *animationFrameMaps[UNIT_ANIMATION_SEQUENCES];
+    uint8_t animationLogicalFrameCounts[UNIT_ANIMATION_SEQUENCES];
+    uint8_t animationPartFrameCounts[UNIT_ANIMATION_SEQUENCES];
+    uint16_t animationPrefixSequenceCounts[UNIT_ANIMATION_SEQUENCES];
+    uint8_t chassisAnimationAvailability[COMBAT_MECH_TEMPLATES][UNIT_ANIMATION_SEQUENCES];
+    BtechPooledWorldObject *activeUnitPositionedObject, *activeUnitTorsoObject;
+    BtechMechState *activeMechState;
+    BtechMechTemplate *activeMechTemplate;
+};
+extern CombatPoseState combatPose;
 bool BtechImportPoseInitialData(const uint8_t *data,size_t bytes);
 void BtechApplyBodyHeadingToMechParts(void);
 void BtechRemoveBodyHeadingFromMechParts(void);

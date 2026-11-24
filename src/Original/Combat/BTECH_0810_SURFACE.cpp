@@ -57,10 +57,10 @@ uint16_t BtechEvaluateSurfacePatchHeight(const BtechSurfacePatch *patch,uint16_t
 uint16_t BtechTestSurfacePatches(BtechSurfaceQueryResult *result,const BtechPosition3D *position,
     const BtechSurfaceDefinition *surface,BtechWorldObjectPrefix *object,uint16_t cachedPatchFirst)
 {
-    uint32_t relativeA=BtechShiftSignedDwordRight(position->positionA-object->position.positionA,(uint8_t)resourceScaleShift);
+    uint32_t relativeA=BtechShiftSignedDwordRight(position->positionA-object->position.positionA,(uint8_t)combatRender.resourceScaleShift);
     uint16_t queryA=relativeA;
     uint32_t magnitudeA=(int32_t)relativeA<0?0-relativeA:relativeA;
-    uint32_t relativeB=BtechShiftSignedDwordRight(position->positionB-object->position.positionB,(uint8_t)resourceScaleShift);
+    uint32_t relativeB=BtechShiftSignedDwordRight(position->positionB-object->position.positionB,(uint8_t)combatRender.resourceScaleShift);
     uint16_t queryB=relativeB;
     uint32_t magnitudeB=(int32_t)relativeB<0?0-relativeB:relativeB;
     if ((int32_t)(int16_t)surface->extentA<(int32_t)magnitudeA
@@ -99,7 +99,7 @@ uint16_t BtechTestSurfacePatches(BtechSurfaceQueryResult *result,const BtechPosi
         if (!patch) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !patch");
         uint16_t height=BtechEvaluateSurfacePatchHeight(patch,queryA,queryB);
         result->surfacePositionC=(int16_t)height;
-        result->surfacePositionC=BtechShiftDwordLeft(result->surfacePositionC,(uint8_t)resourceScaleShift);
+        result->surfacePositionC=BtechShiftDwordLeft(result->surfacePositionC,(uint8_t)combatRender.resourceScaleShift);
         result->surfacePositionC+=object->position.positionC;
     }
     return 1;
@@ -116,7 +116,7 @@ uint16_t BtechQueryWorldSurface(BtechSurfaceQueryResult *result,const BtechPosit
     {
         BtechWorldObjectPrefix *object=result->worldObject;
         if (!object) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !object");
-        resourceScaleShift=BtechGetResourceScaleShift(object->resourceId);
+        combatRender.resourceScaleShift=BtechGetResourceScaleShift(object->resourceId);
         if (BtechTestSurfacePatches(result,position,surface,object,1)) return 1;
     }
     result->surface=NULL;result->worldObject=NULL; /* Patch/height tail stays stale. */
@@ -131,7 +131,7 @@ uint16_t BtechQueryWorldSurface(BtechSurfaceQueryResult *result,const BtechPosit
             || !surfaceResourceBank.surfaces[resource]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: resource>=surfaceResourceBank.resourceCount || !surfaceResourceBank.surfaces || !surfaceResourceBank.surfaces[resource]");
         surface=surfaceResourceBank.surfaces[resource];
         if (!surface->patchCount || (found && surface->priorityClass>bestPriority)) continue;
-        resourceScaleShift=BtechGetResourceScaleShift(object->resourceId);
+        combatRender.resourceScaleShift=BtechGetResourceScaleShift(object->resourceId);
         if (BtechTestSurfacePatches(result,position,surface,object,0))
         {
             found=1;bestPriority=surface->priorityClass;

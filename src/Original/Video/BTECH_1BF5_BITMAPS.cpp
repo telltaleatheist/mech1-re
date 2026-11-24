@@ -42,8 +42,8 @@ BtechBitmapList *BtechLoadBitmapList(const char *filename,BtechRuntimeStream *st
         if (BtechReadStreamElements(height,2,1,stream->file)!=1) goto cleanup;
         list->images[image].heightPixels=height[0]|((uint16_t)height[1]<<8);
     }
-    if (!graphicsBitmapStorageSize) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsBitmapStorageSize");
-    primary.byteCount=graphicsBitmapStorageSize(list,&auxiliaryBytes);
+    if (!combatVideo.graphicsBitmapStorageSize) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsBitmapStorageSize");
+    primary.byteCount=combatVideo.graphicsBitmapStorageSize(list,&auxiliaryBytes);
     primary.bytes=BtechAllocateDosMemoryBlock(primary.byteCount).bytes;
     if (!primary.bytes) goto cleanup;
     if (auxiliaryBytes) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: auxiliaryBytes"); // EGA1EB0 writes zero; other backend allocation/preparation is not converted.
@@ -77,11 +77,11 @@ BtechBitmapList *BtechLoadBitmapList(const char *filename,BtechRuntimeStream *st
         cursor+=COMBAT_BITMAP_READ_BYTES;
     } while (1);
     uint32_t decodedBytes;decodedBytes=BtechGetArchiveDecodedLength((uint16_t)archiveCodeOrError);
-    if (!graphicsPrepareBitmapList) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsPrepareBitmapList");
-    graphicsPrepareBitmapList(list,primary,decodedBytes);
+    if (!combatVideo.graphicsPrepareBitmapList) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !graphicsPrepareBitmapList");
+    combatVideo.graphicsPrepareBitmapList(list,primary,decodedBytes);
     BtechFlushAndCloseCompressedArchive((uint16_t)archiveCodeOrError);
     loaded=1;
-    if (graphicsColourMode) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: graphicsColourMode"); // Native optional VGA path includes real leak/double-free quirks, not a stub.
+    if (combatVideo.graphicsColourMode) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: graphicsColourMode"); // Native optional VGA path includes real leak/double-free quirks, not a stub.
     BtechRegisterBitmapList(list,(uint16_t)count,(uint16_t)slot);
 cleanup:
     if (scratch)
@@ -123,7 +123,7 @@ void BtechFreeRegisteredBitmapList(BtechBitmapList *list)
 int16_t BtechFindFreeBitmapRegistrySlot(void)
 {
     for (int16_t slot=COMBAT_BITMAP_LISTS-1;slot>=0;--slot)
-        if (!bitmapRegistryCounts[slot]) return slot;
+        if (!combatVideo.bitmapRegistryCounts[slot]) return slot;
     return -1;
 }
 
@@ -132,8 +132,8 @@ void BtechUnregisterBitmapList(BtechBitmapList *list)
 {
     if (!list) return;
     for (int16_t slot=COMBAT_BITMAP_LISTS-1;slot>=0;--slot)
-        if (bitmapRegistryLists[slot]==list)
-        {bitmapRegistryLists[slot]=NULL;bitmapRegistryCounts[slot]=0;return;}
+        if (combatVideo.bitmapRegistryLists[slot]==list)
+        {combatVideo.bitmapRegistryLists[slot]=NULL;combatVideo.bitmapRegistryCounts[slot]=0;return;}
 }
 
 /*1BF5:141C. Count store precedes pointer store. */
@@ -141,8 +141,8 @@ void BtechRegisterBitmapList(BtechBitmapList *list,uint16_t count,uint16_t slot)
 {
     if (!list) return;
     if (slot>=COMBAT_BITMAP_LISTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: slot>=COMBAT_BITMAP_LISTS"); // Native wrapped adjacent-owner writes are outside typed registry scope.
-    bitmapRegistryCounts[slot]=count;
-    bitmapRegistryLists[slot]=list;
+    combatVideo.bitmapRegistryCounts[slot]=count;
+    combatVideo.bitmapRegistryLists[slot]=list;
 }
 
 /*1BF5:1440. Highest match wins, even when its count is zero. */
@@ -150,7 +150,7 @@ uint16_t BtechGetRegisteredBitmapCount(const BtechBitmapList *list)
 {
     if (list)
         for (int16_t slot=COMBAT_BITMAP_LISTS-1;slot>=0;--slot)
-            if (bitmapRegistryLists[slot]==list) return bitmapRegistryCounts[slot];
+            if (combatVideo.bitmapRegistryLists[slot]==list) return combatVideo.bitmapRegistryCounts[slot];
     return 0;
 }
 
@@ -159,6 +159,6 @@ uint16_t BtechIsBitmapListRegistered(const BtechBitmapList *list)
 {
     if (list)
         for (int16_t slot=COMBAT_BITMAP_LISTS-1;slot>=0;--slot)
-            if (bitmapRegistryLists[slot]==list) return 1;
+            if (combatVideo.bitmapRegistryLists[slot]==list) return 1;
     return 0;
 }

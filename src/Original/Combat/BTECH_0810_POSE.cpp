@@ -69,66 +69,66 @@ void BtechUpdatePlayerMechPose(const BtechWorldObjectPrefix *source)
 {
     if (!combatStartup.combatTickCounter)
     {
-        playerPoseSequence=ANIMATION_SEQUENCE_IDLE;
-        playerPoseDistanceAccumulator=0;unidentifiedField26=0;playerPoseFrame=0;
-        playerPosePerturbationTicks=PLAYER_POSE_PERTURBATION_TICKS;
+        combatPose.playerPoseSequence=ANIMATION_SEQUENCE_IDLE;
+        combatPose.playerPoseDistanceAccumulator=0;combatPose.unidentifiedField26=0;combatPose.playerPoseFrame=0;
+        combatPose.playerPosePerturbationTicks=PLAYER_POSE_PERTURBATION_TICKS;
     }
     if (!playerUnitBinding || !playerUnitBinding->positionedLeftLeg) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerUnitBinding || !playerUnitBinding->positionedLeftLeg");
     uint16_t forwardStep=playerUnitBinding->positionedLeftLeg->forwardStepScale;
     uint8_t requests=unitControls[0].animationRequestFlags;
-    if ((requests&ANIMATION_REQUEST_FALL_POSE) && playerPoseSequence!=ANIMATION_SEQUENCE_FALL)
+    if ((requests&ANIMATION_REQUEST_FALL_POSE) && combatPose.playerPoseSequence!=ANIMATION_SEQUENCE_FALL)
     {
         BtechClearObjectMotionTail(playerUnitBinding->positionedLeftLeg);
-        playerPoseSequence=ANIMATION_SEQUENCE_FALL;goto resetFrame;
+        combatPose.playerPoseSequence=ANIMATION_SEQUENCE_FALL;goto resetFrame;
     }
     if (requests&ANIMATION_REQUEST_RECOVER)
     {
-        if (playerPoseSequence==ANIMATION_SEQUENCE_FALL
-            && (uint16_t)(playerPoseFrameCounts[ANIMATION_SEQUENCE_FALL]-1)==playerPoseFrame)
-        {playerPoseSequence=ANIMATION_SEQUENCE_RECOVER;goto resetFrame;}
+        if (combatPose.playerPoseSequence==ANIMATION_SEQUENCE_FALL
+            && (uint16_t)(combatPose.playerPoseFrameCounts[ANIMATION_SEQUENCE_FALL]-1)==combatPose.playerPoseFrame)
+        {combatPose.playerPoseSequence=ANIMATION_SEQUENCE_RECOVER;goto resetFrame;}
         goto drawPose;
     }
     if (requests&ANIMATION_REQUEST_FAILED_RECOVERY)
     {
-        if (playerPoseSequence==ANIMATION_SEQUENCE_FALL
-            && (uint16_t)(playerPoseFrameCounts[ANIMATION_SEQUENCE_FALL]-1)==playerPoseFrame)
-        {playerPoseSequence=ANIMATION_SEQUENCE_FAILED_RECOVERY;goto resetFrame;}
+        if (combatPose.playerPoseSequence==ANIMATION_SEQUENCE_FALL
+            && (uint16_t)(combatPose.playerPoseFrameCounts[ANIMATION_SEQUENCE_FALL]-1)==combatPose.playerPoseFrame)
+        {combatPose.playerPoseSequence=ANIMATION_SEQUENCE_FAILED_RECOVERY;goto resetFrame;}
     }
     else if (requests&ANIMATION_REQUEST_LANDING)
     {
-        if (playerPoseSequence==ANIMATION_SEQUENCE_BEGIN_JUMP)
+        if (combatPose.playerPoseSequence==ANIMATION_SEQUENCE_BEGIN_JUMP)
         {
             BtechClearObjectMotionTail(playerUnitBinding->positionedLeftLeg);
-            playerPoseSequence=ANIMATION_SEQUENCE_LANDING;goto resetFrame;
+            combatPose.playerPoseSequence=ANIMATION_SEQUENCE_LANDING;goto resetFrame;
         }
     }
     else if (requests&ANIMATION_REQUEST_BEGIN_JUMP)
     {
-        if (playerPoseSequence==ANIMATION_SEQUENCE_IDLE || playerPoseSequence==ANIMATION_SEQUENCE_WALK)
+        if (combatPose.playerPoseSequence==ANIMATION_SEQUENCE_IDLE || combatPose.playerPoseSequence==ANIMATION_SEQUENCE_WALK)
         {
             BtechClearObjectMotionTail(playerUnitBinding->positionedLeftLeg);
-            playerPoseSequence=ANIMATION_SEQUENCE_BEGIN_JUMP;goto resetFrame;
+            combatPose.playerPoseSequence=ANIMATION_SEQUENCE_BEGIN_JUMP;goto resetFrame;
         }
     }
     else if (forwardStep)
     {
-        if (playerPoseSequence==ANIMATION_SEQUENCE_IDLE)
-        {playerPoseFrame=0;playerPoseSequence=ANIMATION_SEQUENCE_WALK;}
+        if (combatPose.playerPoseSequence==ANIMATION_SEQUENCE_IDLE)
+        {combatPose.playerPoseFrame=0;combatPose.playerPoseSequence=ANIMATION_SEQUENCE_WALK;}
     }
-    else if (playerPoseSequence==ANIMATION_SEQUENCE_WALK)
-    {playerPoseSequence=ANIMATION_SEQUENCE_IDLE;goto resetFrame;}
+    else if (combatPose.playerPoseSequence==ANIMATION_SEQUENCE_WALK)
+    {combatPose.playerPoseSequence=ANIMATION_SEQUENCE_IDLE;goto resetFrame;}
     goto drawPose;
 resetFrame:
-    playerPoseFrame=0;
+    combatPose.playerPoseFrame=0;
 drawPose:;
-    if (playerPoseSequence>=PLAYER_POSE_SEQUENCES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: playerPoseSequence>=PLAYER_POSE_SEQUENCES");
+    if (combatPose.playerPoseSequence>=PLAYER_POSE_SEQUENCES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: playerPoseSequence>=PLAYER_POSE_SEQUENCES");
     const BtechPoseKeyframe *sequence;
-    if (unitControls[0].movementMode==MOVEMENT_MODE_JUMP && playerPoseSequence==ANIMATION_SEQUENCE_BEGIN_JUMP)
-    {sequence=playerPoseSequences[ANIMATION_SEQUENCE_IDLE];playerPoseFrame=0;}
-    else sequence=playerPoseSequences[playerPoseSequence];
-    size_t frame=(size_t)(sequence-playerPoseKeyframes)+(uint16_t)(playerPoseFrame*PLAYER_POSE_KEYFRAME_BYTES)/PLAYER_POSE_KEYFRAME_BYTES;
+    if (unitControls[0].movementMode==MOVEMENT_MODE_JUMP && combatPose.playerPoseSequence==ANIMATION_SEQUENCE_BEGIN_JUMP)
+    {sequence=combatPose.playerPoseSequences[ANIMATION_SEQUENCE_IDLE];combatPose.playerPoseFrame=0;}
+    else sequence=combatPose.playerPoseSequences[combatPose.playerPoseSequence];
+    size_t frame=(size_t)(sequence-combatPose.playerPoseKeyframes)+(uint16_t)(combatPose.playerPoseFrame*PLAYER_POSE_KEYFRAME_BYTES)/PLAYER_POSE_KEYFRAME_BYTES;
     if (frame>=PLAYER_POSE_KEYFRAMES || !source || !playerMechTemplate || !playerPoseObject) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: frame>=PLAYER_POSE_KEYFRAMES || !source || !playerMechTemplate || !playerPoseObject");
-    const BtechPoseKeyframe *keyframe=&playerPoseKeyframes[frame];
+    const BtechPoseKeyframe *keyframe=&combatPose.playerPoseKeyframes[frame];
     uint16_t displacement[3]={(uint16_t)keyframe->displacementA,(uint16_t)keyframe->displacementB,(uint16_t)keyframe->displacementC};
     uint16_t height=playerMechTemplate->displayScale;
     height=(height>>1)|(height&0x8000);
@@ -145,8 +145,8 @@ drawPose:;
     playerPoseObject->object.prefix.position.positionB=source->position.positionB+(uint32_t)(int16_t)rotated[1];
     playerPoseObject->object.prefix.position.positionC=source->position.positionC+(uint32_t)(int16_t)rotated[2];
     playerPoseObject->object.prefix.orientationA+=keyframe->orientationStepA;
-    if (combatStartup.playerImpactThisTick) playerPosePerturbationTicks=0;
-    if ((int16_t)playerPosePerturbationTicks<PLAYER_POSE_PERTURBATION_TICKS)
+    if (combatStartup.playerImpactThisTick) combatPose.playerPosePerturbationTicks=0;
+    if ((int16_t)combatPose.playerPosePerturbationTicks<PLAYER_POSE_PERTURBATION_TICKS)
     {
         uint16_t perturbation=BtechRandomSignedSpread(PLAYER_POSE_PERTURBATION_RADIUS);
         playerPoseObject->object.prefix.orientationA+=perturbation;
@@ -154,47 +154,47 @@ drawPose:;
         playerPoseObject->object.prefix.orientationB+=perturbation;
         perturbation=BtechRandomSignedSpread(PLAYER_POSE_PERTURBATION_RADIUS);
         playerPoseObject->object.prefix.orientationC+=perturbation;
-        ++playerPosePerturbationTicks;
+        ++combatPose.playerPosePerturbationTicks;
     }
-    if (playerPoseSequence==ANIMATION_SEQUENCE_WALK)
+    if (combatPose.playerPoseSequence==ANIMATION_SEQUENCE_WALK)
     {
         uint16_t magnitude=playerUnitBinding->positionedLeftLeg->forwardStepScale;
         if (magnitude==0x8000) magnitude=0x7FFF;
         else if ((int16_t)magnitude<0) magnitude=0-magnitude;
-        playerPoseDistanceAccumulator+=magnitude;
+        combatPose.playerPoseDistanceAccumulator+=magnitude;
         uint16_t threshold=playerMechTemplate->maximumSpeedScale;
-        if ((int16_t)playerPoseDistanceAccumulator>(int16_t)threshold)
+        if ((int16_t)combatPose.playerPoseDistanceAccumulator>(int16_t)threshold)
         {
-            playerPoseDistanceAccumulator-=threshold;
-            ++playerPoseFrame;
-            if ((playerPoseFrame&3)==3 && combatStartup.combatDispatchState==COMBAT_SCREEN_COCKPIT)
+            combatPose.playerPoseDistanceAccumulator-=threshold;
+            ++combatPose.playerPoseFrame;
+            if ((combatPose.playerPoseFrame&3)==3 && combatStartup.combatDispatchState==COMBAT_SCREEN_COCKPIT)
                 BtechPlaySoundIfEnabled(PLAYER_FOOTSTEP_EVENT,1);
         }
     }
-    else ++playerPoseFrame;
-    if (playerPoseSequence>=PLAYER_POSE_SEQUENCES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: playerPoseSequence>=PLAYER_POSE_SEQUENCES");
-    if ((int16_t)playerPoseFrameCounts[playerPoseSequence]<=(int16_t)playerPoseFrame)
+    else ++combatPose.playerPoseFrame;
+    if (combatPose.playerPoseSequence>=PLAYER_POSE_SEQUENCES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: playerPoseSequence>=PLAYER_POSE_SEQUENCES");
+    if ((int16_t)combatPose.playerPoseFrameCounts[combatPose.playerPoseSequence]<=(int16_t)combatPose.playerPoseFrame)
     {
-        switch (playerPoseSequence)
+        switch (combatPose.playerPoseSequence)
         {
         case ANIMATION_SEQUENCE_WALK:
-            playerPoseSequence=forwardStep?ANIMATION_SEQUENCE_WALK:ANIMATION_SEQUENCE_IDLE;
-            playerPoseFrame=0;break;
+            combatPose.playerPoseSequence=forwardStep?ANIMATION_SEQUENCE_WALK:ANIMATION_SEQUENCE_IDLE;
+            combatPose.playerPoseFrame=0;break;
         case ANIMATION_SEQUENCE_BEGIN_JUMP:
             unitControls[0].movementMode=MOVEMENT_MODE_JUMP;
             if (!playerMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !playerMechState");
             playerMechState->jumpCharge-=JUMP_LAUNCH_CHARGE_COST;
             playerUnitBinding->positionedLeftLeg->positionSteps[2]=(int16_t)(playerMechTemplate->jumpSpeedLimit*JUMP_LAUNCH_VERTICAL_SPEED_MULTIPLIER);
-            playerPoseFrame=0;
+            combatPose.playerPoseFrame=0;
             BtechPlaySoundIfEnabled(PLAYER_JUMP_EVENT,PLAYER_JUMP_SOUND_DELAY);break;
         case ANIMATION_SEQUENCE_FALL:
             unitControls[0].movementMode=MOVEMENT_MODE_FALLEN_POSE;
-            --playerPoseFrame;break;
+            --combatPose.playerPoseFrame;break;
         case ANIMATION_SEQUENCE_FAILED_RECOVERY:
-            playerPoseSequence=ANIMATION_SEQUENCE_FALL;playerPoseFrame=PLAYER_FALL_SETTLED_FRAME;break;
+            combatPose.playerPoseSequence=ANIMATION_SEQUENCE_FALL;combatPose.playerPoseFrame=PLAYER_FALL_SETTLED_FRAME;break;
         default:
             unitControls[0].movementMode=MOVEMENT_MODE_GROUNDED;
-            playerPoseSequence=ANIMATION_SEQUENCE_IDLE;playerPoseFrame=0;break;
+            combatPose.playerPoseSequence=ANIMATION_SEQUENCE_IDLE;combatPose.playerPoseFrame=0;break;
         }
     }
     unitControls[0].animationRequestFlags=0;

@@ -23,23 +23,23 @@ uint8_t BtechArePlanarPositionsWithinArrivalBounds(const BtechPosition3D *destin
  * owners are supported; arbitrary half-WORD/partial object overlaps are not. */
 void BtechNavigateActiveUnitTowardPosition(const BtechPosition3D *destinationPosition)
 {
-    if (!activeUnitControl || !activeUnitPositionedObject || !destinationPosition) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl || !activeUnitPositionedObject || !destinationPosition");
+    if (!activeUnitControl || !combatPose.activeUnitPositionedObject || !destinationPosition) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitControl || !activeUnitPositionedObject || !destinationPosition");
     activeUnitControl->trackedPosition[0]=(int32_t)destinationPosition->positionA;
     activeUnitControl->trackedPosition[1]=(int32_t)destinationPosition->positionB;
     activeUnitControl->trackedPosition[2]=(int32_t)destinationPosition->positionC;
-    if (BtechArePlanarPositionsWithinArrivalBounds(destinationPosition,&activeUnitPositionedObject->object.prefix.position))
-    {BtechSetActiveUnitGroundOrJumpMotion(activeUnitPositionedObject->object.prefix.orientationC,MOTION_DIRECTION_STOP);return;}
-    if (!activeMechTemplate || !activeMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeMechTemplate || !activeMechState");
-    if (activeMechTemplate->jumpJetGroupCount!=activeMechState->destroyedJumpJetGroups
-        && activeUnitControl->conditionScoreOrExitCode>COMBAT_CONDITION_SCORE_MINIMUM && (int16_t)activeMechState->gyroHits<COMBAT_GYRO_DESTROYED_HITS
-        && activeUnitControl->movementMode!=MOVEMENT_MODE_JUMP && (int16_t)activeMechState->jumpCharge>NAVIGATION_JUMP_CHARGE_MINIMUM)
+    if (BtechArePlanarPositionsWithinArrivalBounds(destinationPosition,&combatPose.activeUnitPositionedObject->object.prefix.position))
+    {BtechSetActiveUnitGroundOrJumpMotion(combatPose.activeUnitPositionedObject->object.prefix.orientationC,MOTION_DIRECTION_STOP);return;}
+    if (!combatPose.activeMechTemplate || !combatPose.activeMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeMechTemplate || !activeMechState");
+    if (combatPose.activeMechTemplate->jumpJetGroupCount!=combatPose.activeMechState->destroyedJumpJetGroups
+        && activeUnitControl->conditionScoreOrExitCode>COMBAT_CONDITION_SCORE_MINIMUM && (int16_t)combatPose.activeMechState->gyroHits<COMBAT_GYRO_DESTROYED_HITS
+        && activeUnitControl->movementMode!=MOVEMENT_MODE_JUMP && (int16_t)combatPose.activeMechState->jumpCharge>NAVIGATION_JUMP_CHARGE_MINIMUM)
     {
-        uint32_t distanceToDestination=BtechApproximatePlanarDistance(destinationPosition,&activeUnitPositionedObject->object.prefix.position);
+        uint32_t distanceToDestination=BtechApproximatePlanarDistance(destinationPosition,&combatPose.activeUnitPositionedObject->object.prefix.position);
         if ((int32_t)distanceToDestination>NAVIGATION_JUMP_DISTANCE_MINIMUM && !BtechRandomBelowBound(NAVIGATION_JUMP_RANDOM_BOUND))
             activeUnitControl->animationRequestFlags=ANIMATION_REQUEST_BEGIN_JUMP;
     }
-    uint32_t destinationDeltaY=destinationPosition->positionB-activeUnitPositionedObject->object.prefix.position.positionB;
-    uint32_t destinationDeltaX=destinationPosition->positionA-activeUnitPositionedObject->object.prefix.position.positionA;
+    uint32_t destinationDeltaY=destinationPosition->positionB-combatPose.activeUnitPositionedObject->object.prefix.position.positionB;
+    uint32_t destinationDeltaX=destinationPosition->positionA-combatPose.activeUnitPositionedObject->object.prefix.position.positionA;
     uint16_t destinationHeading=BtechCalculateVectorHeading(destinationDeltaX,destinationDeltaY);
     if (activeUnitControl->movementMode!=MOVEMENT_MODE_JUMP) BtechSteerActiveUnitAroundObstacles(destinationHeading,1);
     else BtechSetActiveUnitGroundOrJumpMotion(destinationHeading,MOTION_DIRECTION_FORWARD);
@@ -59,13 +59,13 @@ void BtechSteerActiveUnitAroundObstacles(uint16_t desiredHeading,uint8_t moveFor
         activeUnitControl->avoidanceTurnIndex=AVOIDANCE_TURN_STRAIGHT;
     else
     {
-        if (!activeMechTemplate || !activeMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeMechTemplate || !activeMechState");
+        if (!combatPose.activeMechTemplate || !combatPose.activeMechState) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeMechTemplate || !activeMechState");
         if (activeUnitControl->tacticalState!=NAVIGATION_TACTICAL_CHARGING && activeUnitControl->tacticalState!=NAVIGATION_TACTICAL_CHARGING_BASE
-            && activeMechTemplate->jumpJetGroupCount && !heatInhibitFlags[0] && activeUnitControl->movementMode!=MOVEMENT_MODE_JUMP
-            && (int16_t)activeMechState->jumpCharge>NAVIGATION_JUMP_CHARGE_MINIMUM)
+            && combatPose.activeMechTemplate->jumpJetGroupCount && !heatInhibitFlags[0] && activeUnitControl->movementMode!=MOVEMENT_MODE_JUMP
+            && (int16_t)combatPose.activeMechState->jumpCharge>NAVIGATION_JUMP_CHARGE_MINIMUM)
         {
             BtechPosition3D trackedDestination={(uint32_t)activeUnitControl->trackedPosition[0],(uint32_t)activeUnitControl->trackedPosition[1],(uint32_t)activeUnitControl->trackedPosition[2]};
-            if ((int32_t)BtechApproximatePlanarDistance(&trackedDestination,&activeUnitPositionedObject->object.prefix.position)>AVOIDANCE_JUMP_DISTANCE_MINIMUM)
+            if ((int32_t)BtechApproximatePlanarDistance(&trackedDestination,&combatPose.activeUnitPositionedObject->object.prefix.position)>AVOIDANCE_JUMP_DISTANCE_MINIMUM)
                 activeUnitControl->animationRequestFlags=ANIMATION_REQUEST_BEGIN_JUMP;
         }
         activeUnitControl->avoidanceReverseFlag=0;
@@ -89,9 +89,9 @@ void BtechSteerActiveUnitAroundObstacles(uint16_t desiredHeading,uint8_t moveFor
  * unit/special corridors. WORD displacements wrap before CWD and row indexing. */
 uint8_t BtechIsAvoidanceProbeBlocked(uint16_t probeIndex)
 {
-    if (!activeUnitPositionedObject || !activeUnitControl) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject || !activeUnitControl");
-    avoidancePosition=&activeUnitPositionedObject->object.prefix.position;
-    avoidanceOrientation=&activeUnitPositionedObject->object.prefix;
+    if (!combatPose.activeUnitPositionedObject || !activeUnitControl) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !activeUnitPositionedObject || !activeUnitControl");
+    avoidancePosition=&combatPose.activeUnitPositionedObject->object.prefix.position;
+    avoidanceOrientation=&combatPose.activeUnitPositionedObject->object.prefix;
     if (probeIndex>=AVOIDANCE_PROBES || !avoidanceProbeComponentsX[probeIndex] || !avoidanceProbeComponentsY[probeIndex]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: probeIndex>=AVOIDANCE_PROBES || !avoidanceProbeComponentsX[probeIndex] || !avoidanceProbeComponentsY[probeIndex]");
     int16_t probeStepX=(int32_t)*avoidanceProbeComponentsX[probeIndex]*avoidanceProbeSignsX[probeIndex];
     int16_t probeStepY=(int32_t)*avoidanceProbeComponentsY[probeIndex]*avoidanceProbeSignsY[probeIndex];

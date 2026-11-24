@@ -26,9 +26,9 @@ uint64_t BtechDotSignedVectorByWordCoefficients(const BtechPosition3D *vector,co
         {
             coefficient=coefficients[component];
             if (!coefficient) break;
-            dotProductScratchHigh=(uint16_t)(total>>32);
-            dotProductScratchMiddle=(uint16_t)(total>>16);
-            dotProductScratchLow=(uint16_t)total;
+            combatRender.dotProductScratchHigh=(uint16_t)(total>>32);
+            combatRender.dotProductScratchMiddle=(uint16_t)(total>>16);
+            combatRender.dotProductScratchLow=(uint16_t)total;
         }
         uint32_t value=*components[component];
         if (component!=2) coefficient=coefficients[component];
@@ -36,12 +36,12 @@ uint64_t BtechDotSignedVectorByWordCoefficients(const BtechPosition3D *vector,co
         if (!component)
         {
             total=product;
-            dotProductScratchHigh=(uint16_t)(total>>32);
-            dotProductScratchMiddle=(uint16_t)(total>>16);
-            dotProductScratchLow=(uint16_t)total;
+            combatRender.dotProductScratchHigh=(uint16_t)(total>>32);
+            combatRender.dotProductScratchMiddle=(uint16_t)(total>>16);
+            combatRender.dotProductScratchLow=(uint16_t)total;
         }
-        else total=(product+((uint64_t)dotProductScratchHigh<<32)
-            +((uint64_t)dotProductScratchMiddle<<16)+dotProductScratchLow)&UINT64_C(0xFFFFFFFFFFFF);
+        else total=(product+((uint64_t)combatRender.dotProductScratchHigh<<32)
+            +((uint64_t)combatRender.dotProductScratchMiddle<<16)+combatRender.dotProductScratchLow)&UINT64_C(0xFFFFFFFFFFFF);
     }
     return total;
 }
@@ -58,10 +58,10 @@ void BtechTransformViewVector(const BtechPosition3D *input,const BtechOrientatio
         if (component>=transformedComponents) *destination[component]=*source[component];
         else
         {
-            viewVectorCoefficients[0]=basis->coefficients[component];
-            viewVectorCoefficients[1]=basis->coefficients[component+3];
-            viewVectorCoefficients[2]=basis->coefficients[component+6];
-            uint64_t product=BtechDotSignedVectorByWordCoefficients(input,viewVectorCoefficients);
+            combatRender.viewVectorCoefficients[0]=basis->coefficients[component];
+            combatRender.viewVectorCoefficients[1]=basis->coefficients[component+3];
+            combatRender.viewVectorCoefficients[2]=basis->coefficients[component+6];
+            uint64_t product=BtechDotSignedVectorByWordCoefficients(input,combatRender.viewVectorCoefficients);
             *destination[component]=(uint32_t)(product>>14);
         }
     }
@@ -79,7 +79,7 @@ uint16_t BtechProjectViewPosition(const BtechPosition3D *input,BtechPosition3D *
         uint32_t value=*source[component];
         uint16_t low=(uint16_t)value,middle=(uint16_t)(value>>16),high=(int16_t)middle<0?UINT16_MAX:0;
         uint32_t denominator=input->positionB;
-        uint16_t shifts=combatProjectionShift;
+        uint16_t shifts=combatRender.combatProjectionShift;
         if ((uint8_t)shifts>=8 && (uint8_t)shifts<0x80)
         {
             high=(high&0xFF00)|(middle>>8);middle=(uint16_t)((middle<<8)|(low>>8));low=(uint16_t)(low<<8);
@@ -100,7 +100,7 @@ void BtechProjectValueDepthRatio(const BtechProjectionRatio *input,uint32_t *out
     uint32_t value=input->ratio.numerator;
     uint16_t low=(uint16_t)value,middle=(uint16_t)(value>>16),high=(int16_t)middle<0?UINT16_MAX:0;
     uint32_t denominator=input->ratio.denominator;
-    uint16_t shifts=combatProjectionShift;
+    uint16_t shifts=combatRender.combatProjectionShift;
     if ((uint8_t)shifts>=8 && (uint8_t)shifts<0x80)
     {
         high=(high&0xFF00)|(middle>>8);middle=(uint16_t)((middle<<8)|(low>>8));low=(uint16_t)(low<<8);
@@ -117,9 +117,9 @@ divideNumerator:
  * flags are not independent C objects; exact input/output aliases remain live. */
 void BtechOffsetProjectedScreenPair(BtechPosition3D *screen)
 {
-    uint8_t mirrored=mirrorProjectionA;
-    uint32_t centre=(uint32_t)screenCentreA;
+    uint8_t mirrored=combatRender.mirrorProjectionA;
+    uint32_t centre=(uint32_t)combatRender.screenCentreA;
     screen->positionA=mirrored?centre-screen->positionA:centre+screen->positionA;
-    centre=(uint32_t)screenCentreB;
+    centre=(uint32_t)combatRender.screenCentreB;
     screen->positionB=centre-screen->positionB;
 }

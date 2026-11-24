@@ -60,7 +60,7 @@ void BtechProcessPlayerControls(void)
         }
         break;
     case COMBAT_KEY_E:
-        if (!cockpitFullRedrawPending && (combatStartup.playerTargetSlot&PLAYER_MECH_TARGET_INDEX_MASK) && !playerMechState->sensorHits)
+        if (!combatCockpit.cockpitFullRedrawPending && (combatStartup.playerTargetSlot&PLAYER_MECH_TARGET_INDEX_MASK) && !playerMechState->sensorHits)
             combatStartup.combatDispatchState=PLAYER_SCREEN_TARGET_INSPECTION;
         break;
     case COMBAT_KEY_R:
@@ -86,7 +86,7 @@ void BtechProcessPlayerControls(void)
     case COMBAT_KEY_H:
     {
         if (combatLandscapeIndex>=COMBAT_LANDSCAPES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatLandscapeIndex>=COMBAT_LANDSCAPES");
-        BtechLandscapeCameraColourRow *colours=&landscapeCameraColourRows[0][combatLandscapeIndex];
+        BtechLandscapeCameraColourRow *colours=&combatVideo.landscapeCameraColourRows[0][combatLandscapeIndex];
         /* Native WORD increment/mask clears the adjacent0017 byte, too. */
         colours->hudReticleColour=(uint8_t)((colours->hudReticleColour+1)&PLAYER_HUD_COLOUR_MASK);
         colours->unidentifiedField11=0;
@@ -114,7 +114,7 @@ void BtechProcessPlayerControls(void)
         playerPoseCameraContext->projectionShift=(uint8_t)combatStartup.viewScaleShift;
         break;
     case COMBAT_KEY_C:
-        if (!cockpitFullRedrawPending) combatStartup.combatDispatchState=PLAYER_SCREEN_ORDERS;
+        if (!combatCockpit.cockpitFullRedrawPending) combatStartup.combatDispatchState=PLAYER_SCREEN_ORDERS;
         break;
     case COMBAT_KEY_KEYPAD_MINUS:
         combatStartup.selectedWeaponMount=BtechFindPreviousReadyPlayerWeaponMount(combatStartup.selectedWeaponMount,1);break;
@@ -126,7 +126,7 @@ void BtechProcessPlayerControls(void)
         break;
     case COMBAT_KEY_S: combatSoundEnabled=combatSoundEnabled<1;break;
     case COMBAT_KEY_D:
-        if (!cockpitFullRedrawPending) combatStartup.combatDispatchState=PLAYER_SCREEN_INSPECTION;
+        if (!combatCockpit.cockpitFullRedrawPending) combatStartup.combatDispatchState=PLAYER_SCREEN_INSPECTION;
         break;
     default:
         if (scanCode>=COMBAT_KEY_1 && scanCode<=COMBAT_KEY_0 && BtechIsPlayerWeaponMountReady(scanCode-COMBAT_KEY_1)) combatStartup.selectedWeaponMount=scanCode-COMBAT_KEY_1;

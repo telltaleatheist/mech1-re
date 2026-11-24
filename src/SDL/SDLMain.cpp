@@ -27,8 +27,8 @@ static void TraceDiagnosticFrame(void)
         (unsigned long long)now,combatStartup.combatTickCounter,
         (long)(int32_t)body->object.prefix.position.positionA,
         (long)(int32_t)body->object.prefix.position.positionB,
-        body->forwardStepScale,playerPoseSequence,playerPoseFrame,
-        playerPoseDistanceAccumulator,combatSoundEnabled,
+        body->forwardStepScale,combatPose.playerPoseSequence,combatPose.playerPoseFrame,
+        combatPose.playerPoseDistanceAccumulator,combatSoundEnabled,
         MwSdlTimerLagMilliseconds(),MwSdlQueuedAudioMilliseconds(),
         (double)MwSdlCombatTickNanoseconds()/1e6,(unsigned)mwSdlCombatSpeed,(unsigned long long)MwSdlLateAudioFrames(),
         (unsigned long long)MwSdlAudioUnderrunFrames());

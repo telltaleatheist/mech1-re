@@ -12,18 +12,7 @@ enum { CAMERA_NO_BACKGROUND=0x08,CAMERA_PROJECTION_MODE_10=0x10,CAMERA_MIRROR_HO
     OBJECT_CALLBACK_BEFORE_RENDER=0x02,OBJECT_SKIP_ORIENTATION=0x20,OBJECT_HIDDEN=0x80,
     OBJECT_MAXIMUM_PROJECTION_SCALE=0x100,RENDER_ENTRY_PREFIX_CAPACITY=48,
     RESOURCE_SHARED_GEOMETRY=0x80 };
-extern const BtechShapeResource *activeRenderHeader;
-extern const BtechRenderEntry *activeRenderEntry,*orderedRenderEntries[RENDER_ENTRY_PREFIX_CAPACITY];
-extern const BtechRenderPrimitive *activePrimitiveRecord;
-extern const BtechRenderVariant *activeVariant;
-extern const uint16_t (*activeEntryGeometry)[3],(*renderGeometry)[3];
-extern uint32_t renderEntryOrderingKeys[RENDER_ENTRY_PREFIX_CAPACITY];
-extern uint8_t renderEntryVariants[RENDER_ENTRY_PREFIX_CAPACITY];
-extern uint16_t resourceReferenceVector[3],transformedEntryVector[3];
-extern uint16_t renderTransformedReference[3];
 void BtechDrawReferencePointEllipse(const BtechRenderEllipse *ellipse);
-extern uint16_t projectionScaleMultiplier,renderGeometryVectorCount,resourceScaleShift;
-extern uint8_t widePolygonCoordinates,useWordProductClipping,skipWordPolygonRenderer;
 void BtechPrepareRenderResourceEntries(uint16_t resourceId,const uint8_t *entryVariants);
 void BtechPrepareResourceCoordinatePaths(void);
 uint32_t BtechDotProductSignedWordVectors(const uint16_t first[3],const uint16_t second[3]);
@@ -39,20 +28,19 @@ typedef union BtechGeometryCoordinateCache {
 extern BtechGeometryCoordinateCache geometryViewX,geometryViewDepth,geometryViewZ;
 extern BtechGeometryCoordinateCache geometryProjectedX,geometryProjectedY;
 /*1F7C fractions alias the same three WORDs used by19CE/2227 as rotated values. */
-#define geometryTransformFractions transformedEntryVector
+#define geometryTransformFractions combatRender.transformedEntryVector
 void BtechTransformWordVector(const uint16_t source[3],const BtechOrientationBasis *basis,uint16_t destination[3]);
 void BtechTransformWordVectorToDword(const uint16_t source[3],const BtechOrientationBasis *basis,BtechPosition3D *destination);
 void BtechCacheTransformedGeometryVector(uint8_t vectorIndex);
 void BtechCacheRotatedGeometryVector(uint8_t vectorIndex);
 uint64_t BtechGetWidePolygonFacingDotHighWord(uint8_t normalIndex,uint8_t firstVertexIndex);
 void BtechCachePolygonShadeNormal(uint8_t normalIndex);
-extern uint8_t polygonShadeDeltas[POLYGON_SHADE_CLASSES][POLYGON_SHADE_STEPS],polygonShadeClass;
+extern uint8_t polygonShadeDeltas[POLYGON_SHADE_CLASSES][POLYGON_SHADE_STEPS];
 void BtechSelectPolygonColoursAndShade(const BtechRenderPolygon *polygon);
 enum { GEOMETRY_VERTEX_UNTOUCHED=0,GEOMETRY_VERTEX_TRANSFORMED=1,GEOMETRY_VERTEX_PROJECTED=2,GEOMETRY_VERTEX_BEHIND=3,
     WIDE_POLYGON_VERTICES=20,POLYGON_VERTEX_INDEX_BYTES=22,
     POLYGON_LEFT=0x01,POLYGON_RIGHT=0x02,POLYGON_BOTTOM=0x04,POLYGON_TOP=0x08 };
-extern uint8_t polygonVertexIndices[POLYGON_VERTEX_INDEX_BYTES],polygonHasNearClippedVertex;
-extern uint16_t widePolygonsRemaining;
+extern uint8_t polygonVertexIndices[POLYGON_VERTEX_INDEX_BYTES];
 extern uint32_t wideScreenX[WIDE_POLYGON_VERTICES],wideScreenY[WIDE_POLYGON_VERTICES];
 extern uint32_t widePolygonWorkX[WIDE_POLYGON_VERTICES],widePolygonWorkY[WIDE_POLYGON_VERTICES];
 void BtechDrawPolygonPayload(const BtechRenderPolygonPayload *payload);
@@ -61,8 +49,6 @@ void BtechCacheTransformedPolygonNormal(uint8_t vectorIndex);
 int16_t BtechGetPolygonFacingDotHighWord(uint8_t normalIndex,uint8_t firstVertexIndex);
 void BtechIntersectWordEdgeWithNearPlane(uint16_t outsideVertex,uint16_t insideVertex);
 void BtechClipWordPolygonNearPlane(void);
-extern uint16_t wordPolygonsRemaining;
-extern uint8_t wordPolygonHasNearOutsideVertex;
 void BtechRenderWidePolygonPayload(const BtechRenderPolygonPayload *payload);
 uint64_t BtechMultiplySignedDwordsWide(uint32_t first,uint32_t second);
 void BtechOffsetWidePolygonVerticesToScreen(void);
@@ -81,32 +67,53 @@ typedef union BtechProjectionRatio {
     struct {uint32_t numerator,denominator,third;} ratio;
     BtechPosition3D vector;
 } BtechProjectionRatio;
-extern BtechCameraContext *activeCameraContext;
-extern BtechPosition3D cameraReferencePosition,cameraRelativePosition,transformedViewPosition,projectionVectorScratch;
-extern BtechProjectionRatio projectionRatio;
-extern BtechOrientationBasis viewTransformBasis;
-extern BtechOrientationBasis composedTransformBasis;
-extern uint16_t cameraViewOrientation[3],transformedReferenceVector[3],viewVectorCoefficients[3];
-extern uint16_t combatProjectionShift,nearClipDepth,combatProjectionUnit,objectProjectionScale;
-extern uint32_t resourceScaledExtent;
-/*7756 is a real shared scratch DWORD: horizon writes only its LOW WORD. */
-extern uint32_t cameraDepthScratch;
-extern uint8_t forceObjectScreenClip,projectionMode10,mirrorProjectionA,objectNeedsScreenClip,useViewBasisDirectly;
-extern int16_t screenCentreA,screenCentreB;
-extern const uint8_t *activeColourShadeClasses,*activePaletteRemap;
-extern BtechOrientationBasis *activeRenderBasis;
-extern uint16_t dotProductScratchHigh,dotProductScratchMiddle,dotProductScratchLow;
-extern uint16_t selectionCount;
 enum { SELECTION_LIST_PREFIX=9,SELECTION_MARKER_COLOUR=Combat_Pal_EGA_LightMagenta };
-extern uint16_t selectionPointScreenX,selectionPointScreenY;
-extern uint16_t selectionObjectListIndices[SELECTION_LIST_PREFIX];
-extern uint32_t selectionMarkerPixels,selectionCapturedPixels,selectionPointBackground;
 void BtechBeginSelectionPixelProbe(uint16_t x,uint16_t y);
 uint32_t BtechCaptureSelectionPixels(int16_t x,int16_t y);
 void BtechWriteSelectionPixels(int16_t x,int16_t y,const uint32_t *pixels);
 uint16_t BtechTestSelectionMarkerPixels(const uint32_t *pixels);
-extern int16_t horizonPolygonX[4],horizonPolygonY[4];
-extern uint8_t targetSelectionProbeActive;
+/* Combat state owned by combat_render.h (plan, slice B3c). */
+struct CombatRenderState
+{
+    const BtechShapeResource *activeRenderHeader;
+    const BtechRenderEntry *activeRenderEntry, *orderedRenderEntries[RENDER_ENTRY_PREFIX_CAPACITY];
+    const BtechRenderPrimitive *activePrimitiveRecord;
+    const BtechRenderVariant *activeVariant;
+    const uint16_t (*activeEntryGeometry)[3], (*renderGeometry)[3];
+    uint32_t renderEntryOrderingKeys[RENDER_ENTRY_PREFIX_CAPACITY];
+    uint8_t renderEntryVariants[RENDER_ENTRY_PREFIX_CAPACITY];
+    uint16_t resourceReferenceVector[3], transformedEntryVector[3];
+    uint16_t renderTransformedReference[3];
+    uint16_t projectionScaleMultiplier, renderGeometryVectorCount, resourceScaleShift;
+    uint8_t widePolygonCoordinates, useWordProductClipping, skipWordPolygonRenderer;
+    uint8_t polygonShadeClass;
+    uint8_t polygonHasNearClippedVertex;
+    uint16_t widePolygonsRemaining;
+    uint16_t wordPolygonsRemaining;
+    uint8_t wordPolygonHasNearOutsideVertex;
+    BtechCameraContext *activeCameraContext;
+    BtechPosition3D cameraReferencePosition, cameraRelativePosition, transformedViewPosition, projectionVectorScratch;
+    BtechProjectionRatio projectionRatio;
+    BtechOrientationBasis viewTransformBasis;
+    BtechOrientationBasis composedTransformBasis;
+    uint16_t cameraViewOrientation[3], transformedReferenceVector[3], viewVectorCoefficients[3];
+    uint16_t combatProjectionShift, nearClipDepth, combatProjectionUnit, objectProjectionScale;
+    uint32_t resourceScaledExtent;
+    /*7756 is a real shared scratch DWORD: horizon writes only its LOW WORD. */
+    uint32_t cameraDepthScratch;
+    uint8_t forceObjectScreenClip, projectionMode10, mirrorProjectionA, objectNeedsScreenClip, useViewBasisDirectly;
+    int16_t screenCentreA, screenCentreB;
+    const uint8_t *activeColourShadeClasses, *activePaletteRemap;
+    BtechOrientationBasis *activeRenderBasis;
+    uint16_t dotProductScratchHigh, dotProductScratchMiddle, dotProductScratchLow;
+    uint16_t selectionCount;
+    uint16_t selectionPointScreenX, selectionPointScreenY;
+    uint16_t selectionObjectListIndices[SELECTION_LIST_PREFIX];
+    uint32_t selectionMarkerPixels, selectionCapturedPixels, selectionPointBackground;
+    int16_t horizonPolygonX[4], horizonPolygonY[4];
+    uint8_t targetSelectionProbeActive;
+};
+extern CombatRenderState combatRender;
 bool BtechImportRenderInitialData(const uint8_t *data,size_t bytes);
 void BtechRenderObjectListVeneer(BtechCameraContext *camera,BtechWorldObjectPrefix *const *objects,int16_t count);
 void BtechRenderObjectList(BtechCameraContext *camera,BtechWorldObjectPrefix *const *objects,int16_t count);
