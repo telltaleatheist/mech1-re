@@ -19,11 +19,11 @@ uint32_t BtechDotProductSignedWordVectors(const uint16_t first[3],const uint16_t
 /*22B6:272A. Code-owned BYTE flags, normal forward REP STOSW and odd tail. */
 void BtechClearGeometryVectorCacheFlags(void)
 {
-    if (combatRender.renderGeometryVectorCount>sizeof(vertexNearPlaneState)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: renderGeometryVectorCount>sizeof(vertexNearPlaneState)"); /* Unrelated CS-owner overwrite, not extra cache slots. */
+    if (combatRender.renderGeometryVectorCount>sizeof(combatGeometryTables.vertexNearPlaneState)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: renderGeometryVectorCount>sizeof(vertexNearPlaneState)"); /* Unrelated CS-owner overwrite, not extra cache slots. */
     uint16_t destination=0;
     for (uint16_t words=combatRender.renderGeometryVectorCount>>1;words;--words)
-    {vertexNearPlaneState[destination++]=0;vertexNearPlaneState[destination++]=0;}
-    if (combatRender.renderGeometryVectorCount&1) vertexNearPlaneState[destination]=0;
+    {combatGeometryTables.vertexNearPlaneState[destination++]=0;combatGeometryTables.vertexNearPlaneState[destination++]=0;}
+    if (combatRender.renderGeometryVectorCount&1) combatGeometryTables.vertexNearPlaneState[destination]=0;
 }
 
 /*22B6:19CE. Native entry ordering, per-entry variant bytes and LOD walk.

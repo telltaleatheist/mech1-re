@@ -14,14 +14,14 @@ uint16_t BtechLookupSine(uint16_t angle)
 {
     uint16_t index=(uint16_t)(angle+0xC000)>>4;
     if (index&0x0800) index=(uint16_t)(0x1000-index);
-    return orientationCosines[index];
+    return combatGeometryTables.orientationCosines[index];
 }
 
 uint16_t BtechLookupCosine(uint16_t angle)
 {
     uint16_t index=angle>>4;
     if (index&0x0800) index=(uint16_t)(0x1000-index);
-    return orientationCosines[index];
+    return combatGeometryTables.orientationCosines[index];
 }
 
 /*22B6:0008. Typed camera owners and actual relative/view basis composition.

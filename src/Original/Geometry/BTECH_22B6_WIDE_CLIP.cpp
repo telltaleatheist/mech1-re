@@ -56,16 +56,16 @@ void BtechClipWidePolygonNearPlane(void)
         uint16_t current=polygonVertexIndices[input];
         if (current>=GEOMETRY_CACHE_VERTICES || previous>=GEOMETRY_CACHE_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: current>=GEOMETRY_CACHE_VERTICES || previous>=GEOMETRY_CACHE_VERTICES");
         uint16_t emit[2],emitted=0;
-        if (vertexNearPlaneState[current]!=GEOMETRY_VERTEX_BEHIND)
+        if (combatGeometryTables.vertexNearPlaneState[current]!=GEOMETRY_VERTEX_BEHIND)
         {
-            if (vertexNearPlaneState[previous]==GEOMETRY_VERTEX_BEHIND)
+            if (combatGeometryTables.vertexNearPlaneState[previous]==GEOMETRY_VERTEX_BEHIND)
             {
                 BtechIntersectWideEdgeWithNearPlane(previous,current);
                 emit[emitted++]=previous;
             }
             emit[emitted++]=current;
         }
-        else if (vertexNearPlaneState[previous]!=GEOMETRY_VERTEX_BEHIND)
+        else if (combatGeometryTables.vertexNearPlaneState[previous]!=GEOMETRY_VERTEX_BEHIND)
         {
             BtechIntersectWideEdgeWithNearPlane(current,previous);
             emit[emitted++]=current;
@@ -93,16 +93,16 @@ void BtechClipDwordNearPolygonWithWordProducts(void)
         uint16_t current=polygonVertexIndices[input];
         if (current>=GEOMETRY_CACHE_VERTICES || previous>=GEOMETRY_CACHE_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: current>=GEOMETRY_CACHE_VERTICES || previous>=GEOMETRY_CACHE_VERTICES");
         uint16_t emit[2],emitted=0;
-        if (vertexNearPlaneState[current]!=GEOMETRY_VERTEX_BEHIND)
+        if (combatGeometryTables.vertexNearPlaneState[current]!=GEOMETRY_VERTEX_BEHIND)
         {
-            if (vertexNearPlaneState[previous]==GEOMETRY_VERTEX_BEHIND)
+            if (combatGeometryTables.vertexNearPlaneState[previous]==GEOMETRY_VERTEX_BEHIND)
             {
                 BtechIntersectDwordNearEdgeWithWordProducts(previous,current);
                 emit[emitted++]=previous;
             }
             emit[emitted++]=current;
         }
-        else if (vertexNearPlaneState[previous]!=GEOMETRY_VERTEX_BEHIND)
+        else if (combatGeometryTables.vertexNearPlaneState[previous]!=GEOMETRY_VERTEX_BEHIND)
         {
             BtechIntersectDwordNearEdgeWithWordProducts(current,previous);
             emit[emitted++]=current;

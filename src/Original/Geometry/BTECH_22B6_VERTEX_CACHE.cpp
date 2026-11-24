@@ -54,8 +54,8 @@ void BtechTransformWordVectorToDword(const uint16_t source[3],const BtechOrienta
 void BtechCacheTransformedGeometryVector(uint8_t vectorIndex)
 {
     if (vectorIndex>=GEOMETRY_CACHE_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: vectorIndex>=GEOMETRY_CACHE_VERTICES"); /* FF aliases X-cache bytes in the native code owner. */
-    if (vertexNearPlaneState[vectorIndex]) return;
-    vertexNearPlaneState[vectorIndex]=1;
+    if (combatGeometryTables.vertexNearPlaneState[vectorIndex]) return;
+    combatGeometryTables.vertexNearPlaneState[vectorIndex]=1;
     for (uint16_t axis=0;axis<3;++axis) combatRender.viewVectorCoefficients[axis]=combatRender.renderGeometry[vectorIndex][axis];
     BtechTransformWordVectorToDword(combatRender.viewVectorCoefficients,combatRender.activeRenderBasis,&combatRender.projectionRatio.vector);
     geometryViewX.wide[vectorIndex]=combatRender.projectionRatio.vector.positionA+combatRender.transformedViewPosition.positionA;
@@ -68,8 +68,8 @@ void BtechCacheTransformedGeometryVector(uint8_t vectorIndex)
 void BtechCacheRotatedGeometryVector(uint8_t vectorIndex)
 {
     if (vectorIndex>=GEOMETRY_CACHE_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: vectorIndex>=GEOMETRY_CACHE_VERTICES");
-    if (vertexNearPlaneState[vectorIndex]) return;
-    vertexNearPlaneState[vectorIndex]=1;
+    if (combatGeometryTables.vertexNearPlaneState[vectorIndex]) return;
+    combatGeometryTables.vertexNearPlaneState[vectorIndex]=1;
     for (uint16_t axis=0;axis<3;++axis) combatRender.viewVectorCoefficients[axis]=combatRender.renderGeometry[vectorIndex][axis];
     BtechTransformWordVector(combatRender.viewVectorCoefficients,combatRender.activeRenderBasis,combatRender.transformedEntryVector);
     geometryViewX.words[vectorIndex*2]=combatRender.transformedEntryVector[0];
@@ -114,14 +114,14 @@ void BtechCachePolygonShadeNormal(uint8_t normalIndex)
 {
     if (normalIndex>=GEOMETRY_CACHE_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: normalIndex>=GEOMETRY_CACHE_VERTICES");
     uint16_t wordIndex=normalIndex*(combatRender.widePolygonCoordinates?2:1);
-    if (vertexNearPlaneState[normalIndex])
+    if (combatGeometryTables.vertexNearPlaneState[normalIndex])
     {
         combatRender.viewVectorCoefficients[0]=geometryViewX.words[wordIndex];
         combatRender.viewVectorCoefficients[1]=geometryViewDepth.words[wordIndex];
         combatRender.viewVectorCoefficients[2]=geometryViewZ.words[wordIndex];
         return;
     }
-    vertexNearPlaneState[normalIndex]=1;
+    combatGeometryTables.vertexNearPlaneState[normalIndex]=1;
     for (uint16_t axis=0;axis<3;++axis) combatRender.transformedEntryVector[axis]=combatRender.renderGeometry[normalIndex][axis];
     BtechTransformWordVector(combatRender.transformedEntryVector,combatRender.activeRenderBasis,combatRender.viewVectorCoefficients);
     geometryViewX.words[wordIndex]=combatRender.viewVectorCoefficients[0];

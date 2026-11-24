@@ -1,9 +1,5 @@
 #include "mechwarrior/combat_render.h"
-/*22B6:6073..6472. Authored CS ratio-angle table, NOT304E state. */
-uint16_t headingRatioAngles[0x200];
-uint16_t orientationCosines[0x801];
-uint16_t coefficientAngles[0x402];
-uint8_t vertexNearPlaneState[0xFF];
+CombatGeometryTableState combatGeometryTables;
 BtechGeometryCoordinateCache geometryViewX,geometryViewDepth,geometryViewZ;
 BtechGeometryCoordinateCache geometryProjectedX,geometryProjectedY;
 uint8_t polygonShadeDeltas[POLYGON_SHADE_CLASSES][POLYGON_SHADE_STEPS];

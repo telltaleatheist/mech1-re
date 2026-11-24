@@ -23,10 +23,10 @@ void BtechFillTiltedCameraHorizonRegions(uint16_t fillA,uint16_t fillB,uint16_t 
     {
         uint16_t index=angles[component]>>4;
         if (index&0x0800) index=(uint16_t)(0x1000-index);
-        trigonometry[component]=(int16_t)orientationCosines[index];
+        trigonometry[component]=(int16_t)combatGeometryTables.orientationCosines[index];
         if (component==1)
         {
-            if (!trigonometry[component]) trigonometry[component]=(int16_t)orientationCosines[0x03FF];
+            if (!trigonometry[component]) trigonometry[component]=(int16_t)combatGeometryTables.orientationCosines[0x03FF];
             if (trigonometry[component]<0) trigonometry[component]=(int16_t)(0-(uint16_t)trigonometry[component]);
         }
     }

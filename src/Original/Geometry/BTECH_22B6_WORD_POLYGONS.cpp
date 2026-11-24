@@ -7,8 +7,8 @@
 void BtechCacheTransformedPolygonVertex(uint8_t vectorIndex)
 {
     if (vectorIndex>=GEOMETRY_CACHE_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: vectorIndex>=GEOMETRY_CACHE_VERTICES");
-    if (vertexNearPlaneState[vectorIndex]) return;
-    vertexNearPlaneState[vectorIndex]=GEOMETRY_VERTEX_TRANSFORMED;
+    if (combatGeometryTables.vertexNearPlaneState[vectorIndex]) return;
+    combatGeometryTables.vertexNearPlaneState[vectorIndex]=GEOMETRY_VERTEX_TRANSFORMED;
     for (uint16_t axis=0;axis<3;++axis) combatRender.viewVectorCoefficients[axis]=combatRender.renderGeometry[vectorIndex][axis];
     BtechTransformWordVector(combatRender.viewVectorCoefficients,combatRender.activeRenderBasis,combatRender.transformedEntryVector);
     geometryViewX.words[vectorIndex]=(uint16_t)(combatRender.transformedEntryVector[0]+(uint16_t)combatRender.transformedViewPosition.positionA);
@@ -20,8 +20,8 @@ void BtechCacheTransformedPolygonVertex(uint8_t vectorIndex)
 void BtechCacheTransformedPolygonNormal(uint8_t vectorIndex)
 {
     if (vectorIndex>=GEOMETRY_CACHE_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: vectorIndex>=GEOMETRY_CACHE_VERTICES");
-    if (vertexNearPlaneState[vectorIndex]) return;
-    vertexNearPlaneState[vectorIndex]=GEOMETRY_VERTEX_TRANSFORMED;
+    if (combatGeometryTables.vertexNearPlaneState[vectorIndex]) return;
+    combatGeometryTables.vertexNearPlaneState[vectorIndex]=GEOMETRY_VERTEX_TRANSFORMED;
     for (uint16_t axis=0;axis<3;++axis) combatRender.viewVectorCoefficients[axis]=combatRender.renderGeometry[vectorIndex][axis];
     BtechTransformWordVector(combatRender.viewVectorCoefficients,combatRender.activeRenderBasis,combatRender.transformedEntryVector);
     geometryViewX.words[vectorIndex]=combatRender.transformedEntryVector[0];
@@ -86,13 +86,13 @@ void BtechClipWordPolygonNearPlane(void)
     {
         uint16_t current=polygonVertexIndices[input],emit[2],emitted=0;
         if (previous>=GEOMETRY_CACHE_VERTICES || current>=GEOMETRY_CACHE_VERTICES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: previous>=GEOMETRY_CACHE_VERTICES || current>=GEOMETRY_CACHE_VERTICES");
-        if (vertexNearPlaneState[current]!=GEOMETRY_VERTEX_BEHIND)
+        if (combatGeometryTables.vertexNearPlaneState[current]!=GEOMETRY_VERTEX_BEHIND)
         {
-            if (vertexNearPlaneState[previous]==GEOMETRY_VERTEX_BEHIND)
+            if (combatGeometryTables.vertexNearPlaneState[previous]==GEOMETRY_VERTEX_BEHIND)
             {BtechIntersectWordEdgeWithNearPlane(previous,current);emit[emitted++]=previous;}
             emit[emitted++]=current;
         }
-        else if (vertexNearPlaneState[previous]!=GEOMETRY_VERTEX_BEHIND)
+        else if (combatGeometryTables.vertexNearPlaneState[previous]!=GEOMETRY_VERTEX_BEHIND)
         {BtechIntersectWordEdgeWithNearPlane(current,previous);emit[emitted++]=current;}
         for (uint16_t index=0;index<emitted;++index)
         {
@@ -129,10 +129,10 @@ void BtechDrawPolygonPayload(const BtechRenderPolygonPayload *payload)
         {
             uint8_t vertex=*indices;
             BtechCacheTransformedPolygonVertex(vertex);
-            if (vertexNearPlaneState[vertex]!=GEOMETRY_VERTEX_PROJECTED)
+            if (combatGeometryTables.vertexNearPlaneState[vertex]!=GEOMETRY_VERTEX_PROJECTED)
             {
                 if ((int16_t)geometryViewDepth.words[vertex]<(int16_t)combatRender.nearClipDepth)
-                {vertexNearPlaneState[vertex]=GEOMETRY_VERTEX_BEHIND;combatRender.wordPolygonHasNearOutsideVertex=GEOMETRY_VERTEX_BEHIND;}
+                {combatGeometryTables.vertexNearPlaneState[vertex]=GEOMETRY_VERTEX_BEHIND;combatRender.wordPolygonHasNearOutsideVertex=GEOMETRY_VERTEX_BEHIND;}
                 else
                 {
                     BtechGeometryCoordinateCache *source[]={&geometryViewX,&geometryViewZ};
@@ -155,7 +155,7 @@ divideCoordinate:
                         {numerator=runtime_1989::horizon_divide_fallback(numerator);quotient=(int64_t)(int32_t)numerator/depth;}
                         destination[axis]->words[vertex]=(uint16_t)quotient;
                     }
-                    vertexNearPlaneState[vertex]=GEOMETRY_VERTEX_PROJECTED;
+                    combatGeometryTables.vertexNearPlaneState[vertex]=GEOMETRY_VERTEX_PROJECTED;
                 }
             }
             if (combatPolygons.polygonVertexCount>=POLYGON_VERTEX_INDEX_BYTES) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: polygonVertexCount>=POLYGON_VERTEX_INDEX_BYTES");

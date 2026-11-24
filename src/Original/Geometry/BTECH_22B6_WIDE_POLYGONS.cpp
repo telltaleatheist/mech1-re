@@ -57,17 +57,17 @@ void BtechRenderWidePolygonPayload(const BtechRenderPolygonPayload *payload)
         {
             uint8_t vertex=*indices;
             BtechCacheTransformedGeometryVector(vertex);
-            if (vertexNearPlaneState[vertex]!=GEOMETRY_VERTEX_PROJECTED)
+            if (combatGeometryTables.vertexNearPlaneState[vertex]!=GEOMETRY_VERTEX_PROJECTED)
             {
                 uint32_t depth=geometryViewDepth.wide[vertex];
                 if ((int16_t)(depth>>16)<0 || (!(depth>>16) && (uint16_t)depth<combatRender.nearClipDepth))
                 {
-                    vertexNearPlaneState[vertex]=GEOMETRY_VERTEX_BEHIND;
+                    combatGeometryTables.vertexNearPlaneState[vertex]=GEOMETRY_VERTEX_BEHIND;
                     combatRender.polygonHasNearClippedVertex=GEOMETRY_VERTEX_BEHIND;
                 }
                 else
                 {
-                    vertexNearPlaneState[vertex]=GEOMETRY_VERTEX_PROJECTED;
+                    combatGeometryTables.vertexNearPlaneState[vertex]=GEOMETRY_VERTEX_PROJECTED;
                     BtechGeometryCoordinateCache *source[]={&geometryViewX,&geometryViewZ};
                     BtechGeometryCoordinateCache *destination[]={&geometryProjectedX,&geometryProjectedY};
                     for (uint16_t axis=0;axis<2;++axis)

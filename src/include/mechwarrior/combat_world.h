@@ -23,8 +23,6 @@ typedef struct BtechOrientationBasis {
     uint16_t coefficients[9];
     uint8_t mode,reserved;
 } BtechOrientationBasis;
-extern uint16_t orientationCosines[0x801]; /* Original CS22B6 Q14 table. */
-extern uint16_t coefficientAngles[0x402];
 /* CX transport is observed by native0DB1's planar-product quirk. It is not
  * another source stack argument or AX return in Reko metadata. */
 uint16_t BtechBuildOrientationMatrix(const uint16_t orientation[3],BtechOrientationBasis *basis,uint16_t incomingCx);
@@ -81,8 +79,16 @@ void BtechReleaseCameraContextFar(BtechCameraContext *camera);
 void BtechReleaseCombatChassisResourceBanks(void);
 void BtechReleaseHeapWorldObjectList(void);
 void BtechResetWorldObjectPool(void);
-extern uint16_t headingRatioAngles[0x200]; /* Authored CS22B6, not304E. */
-extern uint8_t vertexNearPlaneState[0xFF];
+/* Combat state owned by combat_world.h (plan, slice B3e). */
+struct CombatGeometryTableState
+{
+    uint16_t orientationCosines[0x801]; /* Original CS22B6 Q14 table. */
+    uint16_t coefficientAngles[0x402];
+    /*22B6:6073..6472. Authored CS ratio-angle table, NOT304E state. */
+    uint16_t headingRatioAngles[0x200]; /* Authored CS22B6, not304E. */
+    uint8_t vertexNearPlaneState[0xFF];
+};
+extern CombatGeometryTableState combatGeometryTables;
 bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t *segment22B6,size_t segmentBytes);
 /* DS:0000, what a null near pointer reads and writes in the original. It is
  * the C runtime's null segment (eight zero bytes, then its copyright bytes,

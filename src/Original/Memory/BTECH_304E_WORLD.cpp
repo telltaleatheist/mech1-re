@@ -122,10 +122,10 @@ bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t 
     }
     memset(combatWorld.sceneChassisResourcePresent,0,sizeof(combatWorld.sceneChassisResourcePresent)); /*06EC*/
     memcpy(combatPlatform.characterClassStorage.bytes,data+0x4C69,sizeof(combatPlatform.characterClassStorage.bytes));
-    for (uint16_t index=0;index<0x200;++index) headingRatioAngles[index]=MwReadNativeWord(segment22B6,0x6073+index*2);
-    for (uint16_t index=0;index<0x801;++index) orientationCosines[index]=MwReadNativeWord(segment22B6,0x486D+index*2);
-    for (uint16_t index=0;index<0x402;++index) coefficientAngles[index]=MwReadNativeWord(segment22B6,0x586F+index*2);
-    memcpy(vertexNearPlaneState,segment22B6+0x312C,sizeof(vertexNearPlaneState));
+    for (uint16_t index=0;index<0x200;++index) combatGeometryTables.headingRatioAngles[index]=MwReadNativeWord(segment22B6,0x6073+index*2);
+    for (uint16_t index=0;index<0x801;++index) combatGeometryTables.orientationCosines[index]=MwReadNativeWord(segment22B6,0x486D+index*2);
+    for (uint16_t index=0;index<0x402;++index) combatGeometryTables.coefficientAngles[index]=MwReadNativeWord(segment22B6,0x586F+index*2);
+    memcpy(combatGeometryTables.vertexNearPlaneState,segment22B6+0x312C,sizeof(combatGeometryTables.vertexNearPlaneState));
     memcpy(polygonShadeDeltas,segment22B6+0x476D,sizeof(polygonShadeDeltas));
     memcpy(polygonVertexIndices,segment22B6+0x4617,sizeof(polygonVertexIndices));
     uint32_t *wideCoordinates[]={wideScreenX,wideScreenY,widePolygonWorkX,widePolygonWorkY};

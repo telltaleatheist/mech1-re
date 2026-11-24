@@ -24,5 +24,5 @@ BtechCameraContext *BtechAllocateCameraContext(BtechWorldObjectPrefix *object)
 uint16_t BtechLookupHeadingRatio(uint16_t ratioIndex)
 {
     if (ratioIndex>=0x200) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: ratioIndex>=0x200");
-    return headingRatioAngles[ratioIndex];
+    return combatGeometryTables.headingRatioAngles[ratioIndex];
 }
