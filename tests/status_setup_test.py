@@ -13,6 +13,7 @@ Prints names and counts only.
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -49,9 +50,47 @@ def find_any_case(folder, name):
     return None
 
 
+# The stamp the launcher reads in the program's file, and the record of where the program is. The start that plays is
+# stopped by a configuration file that isn't there, before SDL is started: no window, no sound.
+def stamps(a, work, base):
+    def stamp(program):
+        return set(re.findall(rb"MW3-PROGRAM-VERSION:([^\0]*)\0", open(program, "rb").read()))
+
+    check(stamp(a.stamped) == {b"mw1r-v0.0.1"}, "the stamped program holds its tag")
+    check(stamp(a.program) == ({a.tag.encode()} if a.tag else set()), "this build's program holds %s" % (a.tag or "no stamp"))
+
+    def start(name, program, args, hidden, **more):
+        user = os.path.join(work, "record-" + name)
+        os.makedirs(user)
+        env = dict(base, MECHWARRIOR_SAVE_DIRECTORY=user, MECHWARRIOR_TIMING_CONFIG=os.path.join(work, "absent.ini"),
+                   SDL_MAC_BACKGROUND_APP="1", **more)
+        if not hidden:
+            env.pop("MW1O_HIDDEN"), env.pop("SDL_VIDEO_DRIVER")
+        p, _ = run(program, args, env)
+        record = os.path.join(user, "rebuild-program.txt")
+        return p.returncode, open(record, encoding="utf-8").read() if os.path.exists(record) else None
+
+    absent = os.path.join(work, "no game here")
+    code, text = start("plays", a.stamped, [absent], False)
+    lines = (text or "").splitlines()
+    check(code == 2 and len(lines) == 4 and lines[0].startswith("# ") and lines[1] == "game=mw1r" and lines[3] == "version=mw1r-v0.0.1"
+          and lines[2].startswith("program=") and os.path.samefile(lines[2][8:], a.stamped), "a release's start records its program")
+    check(start("hidden", a.stamped, [absent], True) == (2, None), "break: a hidden start records nothing")
+    check(start("status", a.stamped, ["--status"], False) == (0, None), "break: --status records nothing")
+    check(start("help", a.stamped, ["--help"], False) == (0, None), "break: --help records nothing")
+    code, text = start("setup", a.stamped, ["--setup"], False)
+    check(code == 2 and text is None, "break: --setup records nothing")
+    code, text = start("usage", a.stamped, ["a", "b", "c", "d"], False)
+    check(code == 2 and text is None, "break: a start that is refused its arguments records nothing")
+    if not a.tag:
+        check(start("untagged", a.program, [absent], False) == (2, None), "break: a build that is no release records nothing")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--program", required=True)
+    ap.add_argument("--stamped", required=True, help="the same program built with the tag mw1r-v0.0.1")
+    ap.add_argument("--tag", default="", help="the release tag --program was built with, if any")
     ap.add_argument("--work", required=True)
     a = ap.parse_args()
     work = os.path.abspath(a.work)
@@ -173,6 +212,8 @@ def main():
         check(os.listdir(os.path.join(games, "something else")) == [], "what was there is left as it was")
     else:
         print("skip the game parts: MW1O_GAME and MW1O_BTECH_1990 not both set")
+
+    stamps(a, work, base)
 
     shutil.rmtree(work, ignore_errors=True)
     print("%s (%d failed)" % ("FAILED" if failures else "passed", failures))

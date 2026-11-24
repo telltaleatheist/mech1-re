@@ -7,10 +7,12 @@
 // an entry climbing out of the archive left out. Prints names and counts only, never the game's bytes.
 //
 //     setup_test <work folder>
+#include "Setup/ProgramRecord.h"
 #include "Setup/Setup.h"
 
 #include <rekit/archive.h>
 
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
@@ -193,6 +195,90 @@ void recognise_picks(const fs::path& work) {
 #endif
 }
 
+std::string own_program;  // argv[0]
+
+// The launcher's record (ProgramRecord.h), one check or more for each rule.
+void program_record(const fs::path& work) {
+  const fs::path base = fs::weakly_canonical(work) / "record";
+  const auto user = [&](const char* name) { return (base / "users" / name).string(); };
+  const auto written = [](const std::string& u) { return fs::exists(fs::path(u) / setup::kProgramRecord); };
+  const std::string program = (base / "place" / "mw1r").string();
+  write(program, "x");
+  setup::ProgramStart plain;
+  plain.tag = "mw1r-v1.2.3", plain.self = program, plain.user = user("plain");
+
+  for (const char* tag : {"mw1r-v1.0.0", "mw1r-v10.20.30"}) check(setup::release_tag(tag), std::string("a release's tag: ") + tag);
+  for (const char* tag : {"", "dev", "1.0.0", "v1.0.0", "mw1-v1.0.0", "mw1r-v1.0", "mw1r-v1.0.0.0", "mw1r-v1.0.0-test", "mw1r-v1.0.0-3-gabcdef",
+                          "mw1r-v1..0", "mw1r-v.1.0", "mw1r-v1.0.0.", "mw1r-v"})
+    check(!setup::release_tag(tag), std::string("break: not a release's tag: \"") + tag + "\"");
+
+  check(setup::record_program(plain) && written(plain.user), "record: a release's start writes it");
+  check(read(fs::path(plain.user) / setup::kProgramRecord) ==
+            "# Where this game is, for the BattleTech launcher (it links a copy installed without it).\ngame=mw1r\nprogram=" +
+                program + "\nversion=mw1r-v1.2.3\n",
+        "record: a comment, then game=, program= and version=");
+
+  // Rewritten only when its contents change.
+  const fs::path record = fs::path(plain.user) / setup::kProgramRecord;
+  const auto old = fs::last_write_time(record) - std::chrono::hours(1);
+  fs::last_write_time(record, old);
+  check(!setup::record_program(plain) && fs::last_write_time(record) == old, "record: the same contents are left alone");
+  setup::ProgramStart newer = plain;
+  newer.tag = "mw1r-v1.2.4";
+  check(setup::record_program(newer) && read(record).find("version=mw1r-v1.2.4\n") != std::string::npos, "record: a newer version rewrites it");
+
+  const auto refused = [&](setup::ProgramStart s, const char* name, const std::string& what) {
+    s.user = user(name);
+    check(!setup::record_program(s) && !written(s.user), "break: " + what);
+  };
+  setup::ProgramStart s = plain;
+  s.tag = "mw1r-v1.2.3-5-gabcdef0";
+  refused(s, "dev", "a build that is no release records nothing");
+  s = plain, s.tag = "";
+  refused(s, "untagged", "an untagged build records nothing");
+  s = plain, s.hidden = true;
+  refused(s, "hidden", "a hidden start records nothing");
+  s = plain, s.self = "";
+  refused(s, "unknown", "a program that can't tell its file records nothing");
+  s = plain, s.self = program + "\nversion=x";
+  refused(s, "newline", "a path that would break the record's lines records nothing");
+  s = plain, s.user = "";
+  check(!setup::record_program(s), "break: no user folder, nothing recorded");
+  s = plain, s.self = "/private/var/folders/x/AppTranslocation/y/d/MW1.app/Contents/MacOS/mw1r";
+  refused(s, "translocated", "a copy under App Translocation records nothing");
+
+  // The launcher's own copy: its mark in a folder above the program.
+  const fs::path installed = base / "installed";
+  write(installed / "game.app" / "Contents" / "MacOS" / "mw1r", "x");
+  s = plain, s.self = (installed / "game.app" / "Contents" / "MacOS" / "mw1r").string();
+  s.user = user("unmarked");
+  check(setup::record_program(s), "record: the same layout without the launcher's mark is recorded");
+  write(installed / setup::kLauncherMark, "game=mw1r\n");
+  check(setup::launchers_own(s.self) && !setup::launchers_own(program), "launchers_own: by the mark in a folder above");
+  refused(s, "launchers", "a copy the launcher installed records nothing");
+
+  // An AppImage: its file, and only from its own mount.
+  const fs::path image = base / "Apps" / "MW1.AppImage", mount = base / "mount";
+  write(image, "x");
+  s = plain, s.appimage = image.string(), s.appdir = mount.string(), s.self = mount.string() + "/usr/bin/mw1r";
+  s.user = user("appimage");
+  check(setup::record_program(s) && read(fs::path(s.user) / setup::kProgramRecord).find("program=" + image.string() + "\n") != std::string::npos,
+        "record: an AppImage names its file, not its mount");
+  s.self = program, s.user = user("inherited");
+  check(setup::record_program(s) && read(fs::path(s.user) / setup::kProgramRecord).find("program=" + program + "\n") != std::string::npos,
+        "record: another AppImage's variables, inherited, change nothing");
+  s.self = mount.string() + "2/mw1r", s.user = user("sibling");
+  check(setup::record_program(s) && read(fs::path(s.user) / setup::kProgramRecord).find("program=" + mount.string() + "2/mw1r\n") != std::string::npos,
+        "record: a folder whose name only starts like the mount is not the mount");
+  s.self = mount.string() + "/usr/bin/mw1r", s.appimage = (base / "gone.AppImage").string();
+  refused(s, "gone", "an AppImage that is gone records nothing");
+  write(base / "Apps" / setup::kLauncherMark, "game=mw1r\n");
+  s.appimage = image.string();
+  refused(s, "launchersimage", "an AppImage in the launcher's folder records nothing");
+
+  check(fs::equivalent(setup::self_path(), fs::path(own_program)), "self_path: this test's own file");
+}
+
 void game_free(const fs::path& work) {
   // The player's folder's name, without making it.
   const std::string pf = setup::pref_folder(setup::kOrganisation, setup::kApplication);
@@ -220,6 +306,7 @@ void game_free(const fs::path& work) {
 
   family_folder(work / "family");
   recognise_picks(work);
+  program_record(work);
 
   // MechWarrior.ini's game_folder.
   write(work / "ini" / "MechWarrior.ini", "; a comment\ncombat_speed=2\n  game_folder = /some/where  \n");
@@ -328,6 +415,7 @@ void with_game(const fs::path& work, const char* game_env, const char* ref_env, 
 int main(int argc, char** argv) {
   if (argc != 2) return std::fprintf(stderr, "usage: setup_test <work folder>\n"), 2;
   const fs::path work = argv[1];
+  own_program = argv[0];
   std::error_code ec;
   fs::remove_all(work, ec);  // the test's own folder (the build dir's setup_work)
   fs::create_directories(work);

@@ -109,6 +109,7 @@ int main(int argc,char **argv)
     bool setupOnly=argc==2 && !strcmp(argv[1],"--setup");
     bool installed=argc==1 || setupOnly;
     if (!help) MwSetupSettleUserFolder();
+    if (!help && !setupOnly && argc<=3) MwSetupRecordProgram();
     if (argc==1)
     {
         /* No console when double-clicked: the log goes beside the saves. */

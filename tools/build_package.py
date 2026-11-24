@@ -152,10 +152,24 @@ def program_version(label):
     return found.group(1) if found else label
 
 
+def release_tag(label):
+    """The tag stamped in the program for the launcher (src/Setup/BuildTag.cpp): the label when it is a release's, else ""."""
+    return label if re.fullmatch(r"mw1r-v\d+\.\d+\.\d+", label, re.ASCII) else ""
+
+
+def check_stamp(binary, label):
+    """The launcher reads a program's version from this string in its file: a release holds its tag, no other build any."""
+    data = binary.read_bytes()
+    stamps = set(re.findall(rb"MW3-PROGRAM-VERSION:([^\0]*)\0", data))
+    wanted = {release_tag(label).encode()} if release_tag(label) else set()
+    if stamps != wanted:
+        raise RuntimeError(f"The program's version stamp is {sorted(stamps)}, wanted {sorted(wanted)}")
+
+
 def configure_and_build(root, build, sdl, label):
     args = ["cmake", "-S", str(root), "-B", str(build),
             "-DMECHWARRIOR_BUILD_SDL=ON", f"-DMECHWARRIOR_SDL_SOURCE_DIR={sdl}", "-DMECHWARRIOR_TRIM_PATHS=ON",
-            f"-DMECHWARRIOR_VERSION={program_version(label)}"]
+            f"-DMECHWARRIOR_VERSION={program_version(label)}", f"-DMECHWARRIOR_RELEASE_TAG={release_tag(label)}"]
     if os.name == "nt":
         args += ["-A", "x64", "-DMECHWARRIOR_WINDOWS_GUI=ON"]
     elif sys.platform == "darwin":
@@ -274,6 +288,7 @@ def package(root, build, sdl, output, label, game=None, installer=False, tools=N
         shutil.rmtree(stage)
     stage.mkdir(parents=True)
     binary = configure_and_build(root, build, sdl, label)
+    check_stamp(binary, label)
     program = PROGRAM + (".exe" if windows else "")
     shutil.copy2(binary, stage / program)
     libraries = list(build.rglob("*.dll" if windows else "*.so*"))
@@ -412,6 +427,15 @@ def appimage(root, stage, output, label, tools, game, sdl):
     result = subprocess.run([str(image.resolve()), "--help"], capture_output=True, text=True, timeout=60, env=env)
     if result.returncode != 0 or f"Usage: {PROGRAM}" not in result.stdout:
         raise RuntimeError(f"The AppImage did not start: {result.returncode}\n{result.stderr}")
+    # As the launcher takes it: unpacked by itself, the program started from the unpacked folder.
+    unpacked = output / "appimage-unpacked"
+    if unpacked.exists():
+        shutil.rmtree(unpacked)
+    unpacked.mkdir()
+    subprocess.run([str(image.resolve()), "--appimage-extract"], cwd=unpacked, stdout=subprocess.DEVNULL, check=True, timeout=600)
+    program = unpacked / "squashfs-root/usr/bin" / PROGRAM
+    check_stamp(program, label)
+    smoke(program, game)
     write_digest(image)
     print(f"AppImage {image}")
 
@@ -421,6 +445,7 @@ def package_mac(root, build, sdl, output, label, game):
     MechWarrior.ini and the notices in Contents/Resources (SDL_GetBasePath), the libraries in
     Contents/Frameworks named @rpath, every binary signed ad hoc. This Mac's architecture."""
     binary = configure_and_build(root, build, sdl, label)
+    check_stamp(binary, label)
     app = output / f"{APP_NAME}.app"
     if app.exists():
         shutil.rmtree(app)

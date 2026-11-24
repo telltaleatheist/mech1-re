@@ -1,5 +1,6 @@
 #include "SDLSetup.h"
 #include "SDLBackend.h"
+#include "Setup/ProgramRecord.h"
 #include "Setup/Setup.h"
 
 #include <rekit/sdl/pickers.h>
@@ -156,6 +157,15 @@ void MwSetupSettleUserFolder(void) {
   else if (s.kind == setup::Settled::kCarried)
     std::fprintf(stderr, "setup: copied %d files once from %s (left as it was)\n", s.files, s.from.c_str());
   if (!s.error.empty() && s.kind != setup::Settled::kMoveFailed) std::fprintf(stderr, "setup: %s\n", s.error.c_str());
+}
+
+void MwSetupRecordProgram(void) {
+  const char *appimage = std::getenv("APPIMAGE"), *appdir = std::getenv("APPDIR");
+  setup::ProgramStart s;
+  s.hidden = unattended(), s.tag = setup::build_tag(), s.self = setup::self_path();
+  s.appimage = appimage ? appimage : "", s.appdir = appdir ? appdir : "";
+  s.user = setup::user_folder();
+  setup::record_program(s);
 }
 
 int MwSetupResolveGame(bool setupOnly, char* folder, size_t size) {
