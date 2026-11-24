@@ -564,9 +564,15 @@ Every slice below is its own branch with the full gate green: both setups, the t
 - Every package is checked for its notices as it is finished, hidapi's among them.
 - Measured: what the Mac, Windows and Linux packages load and hold. Windows ships the whole redistributable folder of the MSVC runtime, and the installer Inno Setup's loader and uninstaller; neither has a notice in the package. Nothing is changed on that.
 
+**From R's story repair:**
+- **A story file that can't be used is imported again at the start**, once, from the player's copy: one that can't be read, isn't its shape, or that the campaign's importers would refuse (they rebuild it into scratch first). A text changed by hand stays, whatever its length, unless it doesn't fit its record.
+- A text outside the records that is too long for its place still stops the start, naming the text, as before. Only a hand edit makes one.
+- **The files an import replaces** are kept in `story.replaced`, one generation. The log names it when a start repaired the folder.
+- **Every file is written beside its place before any is renamed**, so a full disk or a folder that can't be written changes nothing. If a rename fails after that, import.json is gone (as before this): the folder counts as missing, and the next start imports again.
+- A failed import says whose fault it is: the copy of the game (set it up again), or the player's folder (can't be written).
+
 **For R** (found by earlier slices, to be done or decided there):
 - The setup on a finished install (`mw1r --setup`): FIND THE GAME offers the copy in use first, even a damaged one, and INSTALL on it copies nothing. It should verify the game's files (today only BTECH.EXE and MW_MAIN.EXE are looked at) and offer "choose another" plainly.
-- A damaged story folder stops every start, naming the file but no remedy; only deleting it helps. The start should import again by itself when a story file can't be read or has the wrong length, or name the folder to delete. That needs the player's copy of the game, so the case where no copy is found must be said plainly. The start with no arguments isn't run by any test (B4f).
 - The failure in combat's load names "BTECH.EXE", a file that play never opens (`MwFailGameFileRead`). It did not go with the built image (B4f).
 - The setup's recognise rules for MechWarrior 2's `DATABASE.MW2` and `MECH2` folder are untested on real data: no such copy is on the machines. The rest were checked on real copies of MechWarrior 3, Pirate's Moon (installed, disc and download, `DATA1.HDR` included) and MechWarrior 2's `MW2.PRJ`.
 - The AppImage may ship, with libfuse and its notice in its runtime (the project owner's word, 2026-11-24); the licence wording for it is R's.

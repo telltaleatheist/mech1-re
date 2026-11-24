@@ -34,15 +34,26 @@ struct ImportError : std::runtime_error {
     using std::runtime_error::runtime_error;
 };
 
+// The player's folder couldn't be written; their copy of the game is not at fault.
+struct WriteError : ImportError {
+    using ImportError::ImportError;
+};
+
+// `path` for a message, in UTF-8 whatever the system's code page.
+std::string utf8_path(const std::filesystem::path& path);
+
 std::filesystem::path story_dir(const std::filesystem::path& write_dir);
+// Where an import keeps the files it replaced: one generation.
+std::filesystem::path replaced_dir(const std::filesystem::path& write_dir);
 
 enum class StoryState { Current, Missing, Outdated };
 StoryState story_state(const std::filesystem::path& write_dir,
                        std::span<const ImportPiece> table = import_table());
 
 // Reads every piece of `table` from the exes in `game_dir` and writes the
-// story file into `write_dir`. Throws ImportError (a missing exe, or the
-// pieces that don't match, by id) or std::filesystem errors.
+// story file into `write_dir`, keeping what it replaces in replaced_dir.
+// Throws ImportError (a missing exe, or the pieces that don't match, by id) or
+// WriteError; either way the story file is as it was, or counts as missing.
 void import_story(const std::filesystem::path& game_dir, const std::filesystem::path& write_dir,
                   std::span<const ImportPiece> table = import_table());
 
@@ -51,11 +62,19 @@ void import_story(const std::filesystem::path& game_dir, const std::filesystem::
 bool ensure_story(const std::filesystem::path& game_dir, const std::filesystem::path& write_dir,
                   std::span<const ImportPiece> table = import_table());
 
+// Imports a story file that can't be used because of `why`. Throws as
+// ensure_story does.
+void repair_story(const std::string& why, const std::filesystem::path& game_dir,
+                  const std::filesystem::path& write_dir, std::span<const ImportPiece> table = import_table());
+
 using StoryText = std::map<std::string, std::string, std::less<>>;
 
 // story/text.json, id -> text. Throws ImportError (naming the file) if it
 // can't be read, isn't the story file's shape, or names an id twice.
 StoryText load_story_text(const std::filesystem::path& write_dir);
+// Throws ImportError if a text of `table` is missing or holds a NUL. Its
+// length isn't checked: a text changed by hand stays.
+void check_texts(const StoryText& texts, std::span<const ImportPiece> table = import_table());
 
 using Words = std::map<std::string, std::string, std::less<>>;
 
