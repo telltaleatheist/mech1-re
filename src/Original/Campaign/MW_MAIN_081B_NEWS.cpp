@@ -13,8 +13,8 @@ enum { NEWS_COMPANY_ROW=1,NEWS_PREVIOUS_ROW=0,NEWS_NEXT_ROW=1,
 /* MW_MAIN081B:6314..6324. Stored directory references, not new indexes. */
 void MwInitializeNewsArticleCursor(void)
 {
-    if (eventDirectoryIndex>=CAMPAIGN_EVENT_LIST_COUNT || !eventLists[eventDirectoryIndex]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: eventDirectoryIndex>=CAMPAIGN_EVENT_LIST_COUNT || !eventLists[eventDirectoryIndex]");
-    campaignOptions.newsArticleCursor=eventLists[eventDirectoryIndex];
+    if (campaignEvents.eventDirectoryIndex>=CAMPAIGN_EVENT_LIST_COUNT || !campaignEvents.eventLists[campaignEvents.eventDirectoryIndex]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: eventDirectoryIndex>=CAMPAIGN_EVENT_LIST_COUNT || !eventLists[eventDirectoryIndex]");
+    campaignOptions.newsArticleCursor=campaignEvents.eventLists[campaignEvents.eventDirectoryIndex];
     campaignOptions.newsArticleListStart=campaignOptions.newsArticleCursor;
 }
 
@@ -22,20 +22,20 @@ void MwInitializeNewsArticleCursor(void)
  * the next candidate; no class3 seen filter and no reset of dispatch count. */
 bool MwFindNextNewsArticle(uint16_t *articleId)
 {
-    campaignEventClass=EVENT_CLASS_REPEATABLE;
+    campaignEvents.campaignEventClass=EVENT_CLASS_REPEATABLE;
     MwCampaignEvent **cursor=campaignOptions.newsArticleCursor;
     while (*cursor)
     {
         const MwCampaignEvent *event=*++cursor;
         if (!event) return true;
         if (event->classCode!=EVENT_CLASS_REPEATABLE) continue;
-        currentEventId=event->eventId;
+        campaignEvents.currentEventId=event->eventId;
         bool carry;
         uint16_t transfer=MwInterpretCampaignEvent(event,&carry);
         if (transfer) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: transfer"); /* No class3 installation script contains a choice/nonlocal transfer. */
         if (!carry) continue;
         campaignOptions.newsArticleCursor=cursor;
-        *articleId=currentEventId;
+        *articleId=campaignEvents.currentEventId;
         return false;
     }
     return true;
@@ -45,20 +45,20 @@ bool MwFindNextNewsArticle(uint16_t *articleId)
  * Failure leaves current5E6A unchanged, though interpreter side effects remain. */
 bool MwFindPreviousNewsArticle(uint16_t *articleId)
 {
-    campaignEventClass=EVENT_CLASS_REPEATABLE;
+    campaignEvents.campaignEventClass=EVENT_CLASS_REPEATABLE;
     MwCampaignEvent **cursor=campaignOptions.newsArticleCursor;
     while (cursor!=campaignOptions.newsArticleListStart)
     {
         const MwCampaignEvent *event=*--cursor;
         if (!event) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !event"); /* Unrepresented corrupted list reference, not exhaustion. */
         if (event->classCode!=EVENT_CLASS_REPEATABLE) continue;
-        currentEventId=event->eventId;
+        campaignEvents.currentEventId=event->eventId;
         bool carry;
         uint16_t transfer=MwInterpretCampaignEvent(event,&carry);
         if (transfer) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: transfer"); /* Shipped class3 scripts return normally. */
         if (!carry) continue;
         campaignOptions.newsArticleCursor=cursor;
-        *articleId=currentEventId;
+        *articleId=campaignEvents.currentEventId;
         return false;
     }
     return true;

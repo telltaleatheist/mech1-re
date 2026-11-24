@@ -229,7 +229,7 @@ bool MwStoryBuildCampaignEvents(uint16_t *captionOffsets, size_t captionCount)
              "has " + std::to_string(commands) + " commands, the game " + std::to_string(CAMPAIGN_EVENT_COMMAND_COUNT));
 
         for (size_t i = 0; i < e.captions.size(); ++i) {
-            MwEventCaption &caption = eventChoiceCaptions[i];
+            MwEventCaption &caption = campaignEvents.eventChoiceCaptions[i];
             caption.colour = e.captions[i].colour;
             if (!MwStoryCopyText(e.captions[i].text.c_str(), caption.text, sizeof(caption.text)))
                 throw mw1o::import::ImportError("story/events.json: caption " + std::to_string(i + 1) + "'s text");
@@ -237,12 +237,12 @@ bool MwStoryBuildCampaignEvents(uint16_t *captionOffsets, size_t captionCount)
         }
         size_t next = 0;
         for (size_t r = 0; r < e.events.size(); ++r) {
-            MwCampaignEvent &record = campaignEventRecords[r];
+            MwCampaignEvent &record = campaignEvents.campaignEventRecords[r];
             record.eventId = e.events[r].id;
             record.classCode = e.events[r].class_code;
             MwEventCommand **destination = &record.script;
             for (const EventCommand &c : e.events[r].script) {
-                MwEventCommand *command = &campaignEventCommands[next++];
+                MwEventCommand *command = &campaignEvents.campaignEventCommands[next++];
                 std::memset(command, 0, sizeof(*command));
                 command->opcode = c.opcode;
                 *destination = command;
@@ -250,9 +250,9 @@ bool MwStoryBuildCampaignEvents(uint16_t *captionOffsets, size_t captionCount)
                 if (c.opcode == 9) {
                     command->operand.choices.count = static_cast<uint8_t>(c.choices.size());
                     for (size_t i = 0; i < c.choices.size(); ++i) {
-                        command->operand.choices.captions[i] = &eventChoiceCaptions[c.choices[i].caption - 1];
+                        command->operand.choices.captions[i] = &campaignEvents.eventChoiceCaptions[c.choices[i].caption - 1];
                         command->operand.choices.branches[i] =
-                            c.choices[i].branch ? &campaignEventRecords[*c.choices[i].branch - 1] : NULL;
+                            c.choices[i].branch ? &campaignEvents.campaignEventRecords[*c.choices[i].branch - 1] : NULL;
                     }
                 } else if (!c.action) {
                     switch (c.opcode) {
@@ -281,10 +281,10 @@ bool MwStoryBuildCampaignEvents(uint16_t *captionOffsets, size_t captionCount)
             *destination = NULL;
         }
         for (size_t i = 0; i < e.list_entries.size(); ++i)
-            eventListEntries[i] = e.list_entries[i] ? &campaignEventRecords[*e.list_entries[i] - 1] : NULL;
+            campaignEvents.eventListEntries[i] = e.list_entries[i] ? &campaignEvents.campaignEventRecords[*e.list_entries[i] - 1] : NULL;
         for (size_t i = 0; i < e.lists.size(); ++i)
-            eventLists[i] = e.lists[i] ? &eventListEntries[*e.lists[i] - 1] : NULL;
-        fixedCampaignEvent = &campaignEventRecords[e.fixed_event - 1];
+            campaignEvents.eventLists[i] = e.lists[i] ? &campaignEvents.eventListEntries[*e.lists[i] - 1] : NULL;
+        campaignEvents.fixedCampaignEvent = &campaignEvents.campaignEventRecords[e.fixed_event - 1];
     });
 }
 

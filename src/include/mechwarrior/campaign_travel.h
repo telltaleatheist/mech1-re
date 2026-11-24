@@ -41,23 +41,27 @@ enum { HIRED_TRANSPORT_BACKGROUND_PICTURE = 0x0049, DROPSHIP_BACKGROUND_PICTURE 
     HIRED_TRANSPORT_Y = 0x008D, DROPSHIP_X = 0x004B, DROPSHIP_Y = 0x008D,
     TRAVEL_ANIMATION_TERMINATOR = 0xFFFF, TRAVEL_ANIMATION_FRAME_TICKS = 2,
     TRAVEL_ANIMATION_FINAL_TICKS = 0x000A };
-
-extern MwPanelDescriptor travelDestinationHeaderPanel;
-extern MwPanelDescriptor travelCostPanel, travelConfirmPanel, travelBrowsePanel;
-extern MwServiceCaption travelDestinationHeaderLabels[2];
-extern MwServiceCaption travelCostLabel, travelConfirmLabel, travelBrowseLabel;
-extern char travelPopulationSuffix[9];
-extern char travelLandscapeLabels[TRAVEL_LANDSCAPE_LABEL_COUNT][9];
-extern char travelInsufficientFundsText[0x29];
-extern uint16_t travelSelectedHouseRow;
-extern char travelHouseSearchNames[TRAVEL_HOUSE_COUNT][0x10];
-extern MwPanelDescriptor travelHouseBrowserPanel, travelHousePlanetPanel;
-extern MwServiceCaption travelHouseBrowserLabels[TRAVEL_HOUSE_BROWSER_LINE_COUNT];
-extern MwServiceCaption travelHouseSearchCaption;
-extern MwServiceCaption travelHousePlanetRows[TRAVEL_PLANET_ROWS_PER_HOUSE];
-extern MwServiceCaption travelHousePlanetCancelLabel;
-extern MwUiMenu travelHouseBrowserMenu, travelHousePlanetMenu;
-extern MwUiMenu travelMapMenu;
+/* Campaign state owned by campaign_travel.h (plan, slice B2). */
+struct CampaignTravelState
+{
+    MwPanelDescriptor travelDestinationHeaderPanel;
+    MwPanelDescriptor travelCostPanel, travelConfirmPanel, travelBrowsePanel;
+    MwServiceCaption travelDestinationHeaderLabels[2];
+    MwServiceCaption travelCostLabel, travelConfirmLabel, travelBrowseLabel;
+    char travelPopulationSuffix[9];
+    char travelLandscapeLabels[TRAVEL_LANDSCAPE_LABEL_COUNT][9];
+    char travelInsufficientFundsText[0x29];
+    uint16_t travelSelectedHouseRow;
+    char travelHouseSearchNames[TRAVEL_HOUSE_COUNT][0x10];
+    MwPanelDescriptor travelHouseBrowserPanel, travelHousePlanetPanel;
+    MwServiceCaption travelHouseBrowserLabels[TRAVEL_HOUSE_BROWSER_LINE_COUNT];
+    MwServiceCaption travelHouseSearchCaption;
+    MwServiceCaption travelHousePlanetRows[TRAVEL_PLANET_ROWS_PER_HOUSE];
+    MwServiceCaption travelHousePlanetCancelLabel;
+    MwUiMenu travelHouseBrowserMenu, travelHousePlanetMenu;
+    MwUiMenu travelMapMenu;
+};
+extern CampaignTravelState campaignTravel;
 
 void MwCopyTravelDestinationName(void);
 void MwDrawTravelMarker(void);

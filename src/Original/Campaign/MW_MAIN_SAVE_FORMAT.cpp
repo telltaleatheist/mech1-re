@@ -7,21 +7,21 @@
 
 void MwEncodeCampaignExchange(uint8_t bytes[CAMPAIGN_SAVE_BYTES])
 {
-    bytes[0x0000]=unidentifiedField18;
-    bytes[0x0001]=missionCategoryOrMemoryTier;
-    bytes[0x0002]=deploymentLandscapeIndex;
-    bytes[0x0003]=combatEnemyHeavyCount;
-    bytes[0x0004]=combatEnemyMediumCount;
-    bytes[0x0005]=combatEnemyLightCount;
-    bytes[0x0006]=combatPlanetSelector;
-    bytes[0x0007]=combatScenarioCode;
-    bytes[0x0008]=deploymentTerrainDetailLevel;
+    bytes[0x0000]=campaignMission.unidentifiedField18;
+    bytes[0x0001]=campaignMission.missionCategoryOrMemoryTier;
+    bytes[0x0002]=campaignMission.deploymentLandscapeIndex;
+    bytes[0x0003]=campaignMission.combatEnemyHeavyCount;
+    bytes[0x0004]=campaignMission.combatEnemyMediumCount;
+    bytes[0x0005]=campaignMission.combatEnemyLightCount;
+    bytes[0x0006]=campaignMission.combatPlanetSelector;
+    bytes[0x0007]=campaignMission.combatScenarioCode;
+    bytes[0x0008]=campaignMission.deploymentTerrainDetailLevel;
     memcpy(bytes+0x0009,campaignMechanics.rosterStatus,sizeof(campaignMechanics.rosterStatus));
-    memcpy(bytes+0x000D,salvageEntries,sizeof(salvageEntries));
-    bytes[0x001D]=(uint8_t)returnedDisabledEnemyCount;
-    bytes[0x001D+1]=(uint8_t)(returnedDisabledEnemyCount>>8);
-    bytes[0x001F]=combatTransitionResult;
-    bytes[0x0020]=acceptedContractActive;
+    memcpy(bytes+0x000D,campaignMission.salvageEntries,sizeof(campaignMission.salvageEntries));
+    bytes[0x001D]=(uint8_t)campaignMission.returnedDisabledEnemyCount;
+    bytes[0x001D+1]=(uint8_t)(campaignMission.returnedDisabledEnemyCount>>8);
+    bytes[0x001F]=campaignMission.combatTransitionResult;
+    bytes[0x0020]=campaignMission.acceptedContractActive;
     bytes[0x0021]=(uint8_t)currentPlanetIndex;
     bytes[0x0021+1]=(uint8_t)(currentPlanetIndex>>8);
     bytes[0x0023]=(uint8_t)currentPlanetLandscapeIndex;
@@ -48,18 +48,18 @@ void MwEncodeCampaignExchange(uint8_t bytes[CAMPAIGN_SAVE_BYTES])
     bytes[0x0037+1]=(uint8_t)(campaignEconomy.marketRefreshUnits>>8);
     bytes[0x0039]=(uint8_t)campaignEconomy.elapsedBillingMonths;
     bytes[0x0039+1]=(uint8_t)(campaignEconomy.elapsedBillingMonths>>8);
-    memcpy(bytes+0x003B,commanderNameBytes,sizeof(commanderNameBytes));
-    memcpy(bytes+0x0045,unidentifiedField19,sizeof(unidentifiedField19));
-    bytes[0x0047]=(uint8_t)commanderAgeYears;
-    bytes[0x0047+1]=(uint8_t)(commanderAgeYears>>8);
+    memcpy(bytes+0x003B,campaignMission.commanderNameBytes,sizeof(campaignMission.commanderNameBytes));
+    memcpy(bytes+0x0045,campaignMission.unidentifiedField19,sizeof(campaignMission.unidentifiedField19));
+    bytes[0x0047]=(uint8_t)campaignMission.commanderAgeYears;
+    bytes[0x0047+1]=(uint8_t)(campaignMission.commanderAgeYears>>8);
     bytes[0x0049]=(uint8_t)campaignEconomy.campaignFundsLow;
     bytes[0x0049+1]=(uint8_t)(campaignEconomy.campaignFundsLow>>8);
     bytes[0x004B]=(uint8_t)campaignEconomy.campaignFundsHigh;
     bytes[0x004B+1]=(uint8_t)(campaignEconomy.campaignFundsHigh>>8);
-    for (size_t i=0;i<sizeof(houseNetStandings)/sizeof(houseNetStandings[0]);++i)
+    for (size_t i=0;i<sizeof(campaignMission.houseNetStandings)/sizeof(campaignMission.houseNetStandings[0]);++i)
     {
-        bytes[0x004D+i*2]=(uint8_t)houseNetStandings[i];
-        bytes[0x004D+i*2+1]=(uint8_t)(houseNetStandings[i]>>8);
+        bytes[0x004D+i*2]=(uint8_t)campaignMission.houseNetStandings[i];
+        bytes[0x004D+i*2+1]=(uint8_t)(campaignMission.houseNetStandings[i]>>8);
     }
     for (size_t i=0;i<sizeof(campaignEconomy.houseFavorPoints)/sizeof(campaignEconomy.houseFavorPoints[0]);++i)
     {
@@ -233,29 +233,29 @@ void MwEncodeCampaignExchange(uint8_t bytes[CAMPAIGN_SAVE_BYTES])
     }
     bytes[0x059E]=(uint8_t)contractNegotiationAttemptLimit;
     bytes[0x059E +1]=(uint8_t)(contractNegotiationAttemptLimit>>8);
-    bytes[0x05A0]=(uint8_t)requestedContractPaymentThousands;
-    bytes[0x05A0+1]=(uint8_t)(requestedContractPaymentThousands>>8);
-    bytes[0x05A2]=(uint8_t)requestedContractSalvagePercent;
-    bytes[0x05A2+1]=(uint8_t)(requestedContractSalvagePercent>>8);
-    bytes[0x05A4]=(uint8_t)requestedContractAdvancePercent;
-    bytes[0x05A4+1]=(uint8_t)(requestedContractAdvancePercent>>8);
-    bytes[0x05A6]=(uint8_t)requestContractPaymentEnabled;
-    bytes[0x05A6+1]=(uint8_t)(requestContractPaymentEnabled>>8);
-    bytes[0x05A8]=(uint8_t)requestContractSalvageEnabled;
-    bytes[0x05A8+1]=(uint8_t)(requestContractSalvageEnabled>>8);
-    bytes[0x05AA]=(uint8_t)requestContractAdvanceEnabled;
-    bytes[0x05AA+1]=(uint8_t)(requestContractAdvanceEnabled>>8);
-    memcpy(bytes+0x05AC,unidentifiedField20,sizeof(unidentifiedField20));
-    bytes[0x05B2]=(uint8_t)acceptedContractPaymentThousands;
-    bytes[0x05B2+1]=(uint8_t)(acceptedContractPaymentThousands>>8);
-    bytes[0x05B4]=(uint8_t)acceptedContractSalvagePercent;
-    bytes[0x05B4+1]=(uint8_t)(acceptedContractSalvagePercent>>8);
-    bytes[0x05B6]=(uint8_t)acceptedContractAdvancePercent;
-    bytes[0x05B6+1]=(uint8_t)(acceptedContractAdvancePercent>>8);
-    bytes[0x05B8]=(uint8_t)remainingContractPaymentThousands;
-    bytes[0x05B8+1]=(uint8_t)(remainingContractPaymentThousands>>8);
+    bytes[0x05A0]=(uint8_t)campaignMission.requestedContractPaymentThousands;
+    bytes[0x05A0+1]=(uint8_t)(campaignMission.requestedContractPaymentThousands>>8);
+    bytes[0x05A2]=(uint8_t)campaignMission.requestedContractSalvagePercent;
+    bytes[0x05A2+1]=(uint8_t)(campaignMission.requestedContractSalvagePercent>>8);
+    bytes[0x05A4]=(uint8_t)campaignMission.requestedContractAdvancePercent;
+    bytes[0x05A4+1]=(uint8_t)(campaignMission.requestedContractAdvancePercent>>8);
+    bytes[0x05A6]=(uint8_t)campaignMission.requestContractPaymentEnabled;
+    bytes[0x05A6+1]=(uint8_t)(campaignMission.requestContractPaymentEnabled>>8);
+    bytes[0x05A8]=(uint8_t)campaignMission.requestContractSalvageEnabled;
+    bytes[0x05A8+1]=(uint8_t)(campaignMission.requestContractSalvageEnabled>>8);
+    bytes[0x05AA]=(uint8_t)campaignMission.requestContractAdvanceEnabled;
+    bytes[0x05AA+1]=(uint8_t)(campaignMission.requestContractAdvanceEnabled>>8);
+    memcpy(bytes+0x05AC,campaignMission.unidentifiedField20,sizeof(campaignMission.unidentifiedField20));
+    bytes[0x05B2]=(uint8_t)campaignMission.acceptedContractPaymentThousands;
+    bytes[0x05B2+1]=(uint8_t)(campaignMission.acceptedContractPaymentThousands>>8);
+    bytes[0x05B4]=(uint8_t)campaignMission.acceptedContractSalvagePercent;
+    bytes[0x05B4+1]=(uint8_t)(campaignMission.acceptedContractSalvagePercent>>8);
+    bytes[0x05B6]=(uint8_t)campaignMission.acceptedContractAdvancePercent;
+    bytes[0x05B6+1]=(uint8_t)(campaignMission.acceptedContractAdvancePercent>>8);
+    bytes[0x05B8]=(uint8_t)campaignMission.remainingContractPaymentThousands;
+    bytes[0x05B8+1]=(uint8_t)(campaignMission.remainingContractPaymentThousands>>8);
     memcpy(bytes+0x05BA,campaignEconomy.houseMissionTypeLimits,sizeof(campaignEconomy.houseMissionTypeLimits));
-    bytes[0x05E2]=audioOptionLabelIndex;
+    bytes[0x05E2]=campaignMission.audioOptionLabelIndex;
     for (size_t i=0;i<sizeof(campaignEconomy.missionScenarioCodes)/sizeof(campaignEconomy.missionScenarioCodes[0]);++i)
     {
         bytes[0x05E3+i*2]=(uint8_t)campaignEconomy.missionScenarioCodes[i];
@@ -264,25 +264,25 @@ void MwEncodeCampaignExchange(uint8_t bytes[CAMPAIGN_SAVE_BYTES])
     memcpy(bytes+0x05EF,campaignMechanics.pilotGunneryTiers,sizeof(campaignMechanics.pilotGunneryTiers));
     memcpy(bytes+0x061A,campaignMechanics.pilotPilotingTiers,sizeof(campaignMechanics.pilotPilotingTiers));
     memcpy(bytes+0x0645,campaignMechanics.pilotExperienceCounts,sizeof(campaignMechanics.pilotExperienceCounts));
-    bytes[0x0670]=(uint8_t)eventDirectoryIndex;
-    bytes[0x0670+1]=(uint8_t)(eventDirectoryIndex>>8);
-    memcpy(bytes+0x0672,eventSeenFlags,sizeof(eventSeenFlags));
+    bytes[0x0670]=(uint8_t)campaignEvents.eventDirectoryIndex;
+    bytes[0x0670+1]=(uint8_t)(campaignEvents.eventDirectoryIndex>>8);
+    memcpy(bytes+0x0672,campaignEvents.eventSeenFlags,sizeof(campaignEvents.eventSeenFlags));
     for (size_t i=0;i<sizeof(campaignEventPlanetSelectors)/sizeof(campaignEventPlanetSelectors[0]);++i)
     {
         bytes[0x06FE +i*2]=(uint8_t)campaignEventPlanetSelectors[i];
         bytes[0x06FE +i*2+1]=(uint8_t)(campaignEventPlanetSelectors[i]>>8);
     }
     bytes[0x070A]=campaignEconomy.majorCampaignMissionRollThreshold;
-    bytes[0x070B]=(uint8_t)acceptedContractTargetHouseIndex;
-    bytes[0x070B+1]=(uint8_t)(acceptedContractTargetHouseIndex>>8);
-    bytes[0x070D]=campaignTerrainDetailLevel;
+    bytes[0x070B]=(uint8_t)campaignMission.acceptedContractTargetHouseIndex;
+    bytes[0x070B+1]=(uint8_t)(campaignMission.acceptedContractTargetHouseIndex>>8);
+    bytes[0x070D]=campaignMission.campaignTerrainDetailLevel;
     bytes[0x070E]=(uint8_t)campaignEconomy.dealerUnitPurchaseLimit;
     bytes[0x070E +1]=(uint8_t)(campaignEconomy.dealerUnitPurchaseLimit>>8);
     bytes[0x0710]=(uint8_t)campaignEconomy.unitsSoldSinceMarketRefresh;
     bytes[0x0710+1]=(uint8_t)(campaignEconomy.unitsSoldSinceMarketRefresh>>8);
-    bytes[0x0712]=(uint8_t)playerSkillProgress;
-    bytes[0x0712+1]=(uint8_t)(playerSkillProgress>>8);
-    bytes[0x0714]=darkWingBaseVictoryRecorded;
+    bytes[0x0712]=(uint8_t)campaignMission.playerSkillProgress;
+    bytes[0x0712+1]=(uint8_t)(campaignMission.playerSkillProgress>>8);
+    bytes[0x0714]=campaignEvents.darkWingBaseVictoryRecorded;
     bytes[0x0715]=(uint8_t)launcherMemoryTier;
     bytes[0x0715+1]=(uint8_t)(launcherMemoryTier>>8);
     bytes[0x0717]=savedVideoMode;
@@ -290,20 +290,20 @@ void MwEncodeCampaignExchange(uint8_t bytes[CAMPAIGN_SAVE_BYTES])
 
 void MwDecodeCampaignExchange(const uint8_t bytes[CAMPAIGN_SAVE_BYTES])
 {
-    unidentifiedField18=bytes[0x0000];
-    missionCategoryOrMemoryTier=bytes[0x0001];
-    deploymentLandscapeIndex=bytes[0x0002];
-    combatEnemyHeavyCount=bytes[0x0003];
-    combatEnemyMediumCount=bytes[0x0004];
-    combatEnemyLightCount=bytes[0x0005];
-    combatPlanetSelector=bytes[0x0006];
-    combatScenarioCode=bytes[0x0007];
-    deploymentTerrainDetailLevel=bytes[0x0008];
+    campaignMission.unidentifiedField18=bytes[0x0000];
+    campaignMission.missionCategoryOrMemoryTier=bytes[0x0001];
+    campaignMission.deploymentLandscapeIndex=bytes[0x0002];
+    campaignMission.combatEnemyHeavyCount=bytes[0x0003];
+    campaignMission.combatEnemyMediumCount=bytes[0x0004];
+    campaignMission.combatEnemyLightCount=bytes[0x0005];
+    campaignMission.combatPlanetSelector=bytes[0x0006];
+    campaignMission.combatScenarioCode=bytes[0x0007];
+    campaignMission.deploymentTerrainDetailLevel=bytes[0x0008];
     memcpy(campaignMechanics.rosterStatus,bytes+0x0009,sizeof(campaignMechanics.rosterStatus));
-    memcpy(salvageEntries,bytes+0x000D,sizeof(salvageEntries));
-    returnedDisabledEnemyCount=(uint16_t)(bytes[0x001D]|((uint16_t)bytes[0x001D+1]<<8));
-    combatTransitionResult=bytes[0x001F];
-    acceptedContractActive=bytes[0x0020];
+    memcpy(campaignMission.salvageEntries,bytes+0x000D,sizeof(campaignMission.salvageEntries));
+    campaignMission.returnedDisabledEnemyCount=(uint16_t)(bytes[0x001D]|((uint16_t)bytes[0x001D+1]<<8));
+    campaignMission.combatTransitionResult=bytes[0x001F];
+    campaignMission.acceptedContractActive=bytes[0x0020];
     currentPlanetIndex=(uint16_t)(bytes[0x0021]|((uint16_t)bytes[0x0021+1]<<8));
     currentPlanetLandscapeIndex=(uint16_t)(bytes[0x0023]|((uint16_t)bytes[0x0023+1]<<8));
     currentPlanetHouseIndex=(uint16_t)(bytes[0x0025]|((uint16_t)bytes[0x0025+1]<<8));
@@ -317,14 +317,14 @@ void MwDecodeCampaignExchange(const uint8_t bytes[CAMPAIGN_SAVE_BYTES])
     calendarYear=(uint16_t)(bytes[0x0035]|((uint16_t)bytes[0x0035+1]<<8));
     campaignEconomy.marketRefreshUnits=(uint16_t)(bytes[0x0037]|((uint16_t)bytes[0x0037+1]<<8));
     campaignEconomy.elapsedBillingMonths=(uint16_t)(bytes[0x0039]|((uint16_t)bytes[0x0039+1]<<8));
-    memcpy(commanderNameBytes,bytes+0x003B,sizeof(commanderNameBytes));
-    memcpy(unidentifiedField19,bytes+0x0045,sizeof(unidentifiedField19));
-    commanderAgeYears=(uint16_t)(bytes[0x0047]|((uint16_t)bytes[0x0047+1]<<8));
+    memcpy(campaignMission.commanderNameBytes,bytes+0x003B,sizeof(campaignMission.commanderNameBytes));
+    memcpy(campaignMission.unidentifiedField19,bytes+0x0045,sizeof(campaignMission.unidentifiedField19));
+    campaignMission.commanderAgeYears=(uint16_t)(bytes[0x0047]|((uint16_t)bytes[0x0047+1]<<8));
     campaignEconomy.campaignFundsLow=(uint16_t)(bytes[0x0049]|((uint16_t)bytes[0x0049+1]<<8));
     campaignEconomy.campaignFundsHigh=(uint16_t)(bytes[0x004B]|((uint16_t)bytes[0x004B+1]<<8));
-    for (size_t i=0;i<sizeof(houseNetStandings)/sizeof(houseNetStandings[0]);++i)
+    for (size_t i=0;i<sizeof(campaignMission.houseNetStandings)/sizeof(campaignMission.houseNetStandings[0]);++i)
     {
-        houseNetStandings[i]=(uint16_t)(bytes[0x004D+i*2]|((uint16_t)bytes[0x004D+i*2+1]<<8));
+        campaignMission.houseNetStandings[i]=(uint16_t)(bytes[0x004D+i*2]|((uint16_t)bytes[0x004D+i*2+1]<<8));
     }
     for (size_t i=0;i<sizeof(campaignEconomy.houseFavorPoints)/sizeof(campaignEconomy.houseFavorPoints[0]);++i)
     {
@@ -459,19 +459,19 @@ void MwDecodeCampaignExchange(const uint8_t bytes[CAMPAIGN_SAVE_BYTES])
         campaignEconomy.missionAdvancePercentageCeilings[i]=(uint16_t)(bytes[0x0592+i*2]|((uint16_t)bytes[0x0592+i*2+1]<<8));
     }
     contractNegotiationAttemptLimit=(uint16_t)(bytes[0x059E]|((uint16_t)bytes[0x059E +1]<<8));
-    requestedContractPaymentThousands=(uint16_t)(bytes[0x05A0]|((uint16_t)bytes[0x05A0+1]<<8));
-    requestedContractSalvagePercent=(uint16_t)(bytes[0x05A2]|((uint16_t)bytes[0x05A2+1]<<8));
-    requestedContractAdvancePercent=(uint16_t)(bytes[0x05A4]|((uint16_t)bytes[0x05A4+1]<<8));
-    requestContractPaymentEnabled=(uint16_t)(bytes[0x05A6]|((uint16_t)bytes[0x05A6+1]<<8));
-    requestContractSalvageEnabled=(uint16_t)(bytes[0x05A8]|((uint16_t)bytes[0x05A8+1]<<8));
-    requestContractAdvanceEnabled=(uint16_t)(bytes[0x05AA]|((uint16_t)bytes[0x05AA+1]<<8));
-    memcpy(unidentifiedField20,bytes+0x05AC,sizeof(unidentifiedField20));
-    acceptedContractPaymentThousands=(uint16_t)(bytes[0x05B2]|((uint16_t)bytes[0x05B2+1]<<8));
-    acceptedContractSalvagePercent=(uint16_t)(bytes[0x05B4]|((uint16_t)bytes[0x05B4+1]<<8));
-    acceptedContractAdvancePercent=(uint16_t)(bytes[0x05B6]|((uint16_t)bytes[0x05B6+1]<<8));
-    remainingContractPaymentThousands=(uint16_t)(bytes[0x05B8]|((uint16_t)bytes[0x05B8+1]<<8));
+    campaignMission.requestedContractPaymentThousands=(uint16_t)(bytes[0x05A0]|((uint16_t)bytes[0x05A0+1]<<8));
+    campaignMission.requestedContractSalvagePercent=(uint16_t)(bytes[0x05A2]|((uint16_t)bytes[0x05A2+1]<<8));
+    campaignMission.requestedContractAdvancePercent=(uint16_t)(bytes[0x05A4]|((uint16_t)bytes[0x05A4+1]<<8));
+    campaignMission.requestContractPaymentEnabled=(uint16_t)(bytes[0x05A6]|((uint16_t)bytes[0x05A6+1]<<8));
+    campaignMission.requestContractSalvageEnabled=(uint16_t)(bytes[0x05A8]|((uint16_t)bytes[0x05A8+1]<<8));
+    campaignMission.requestContractAdvanceEnabled=(uint16_t)(bytes[0x05AA]|((uint16_t)bytes[0x05AA+1]<<8));
+    memcpy(campaignMission.unidentifiedField20,bytes+0x05AC,sizeof(campaignMission.unidentifiedField20));
+    campaignMission.acceptedContractPaymentThousands=(uint16_t)(bytes[0x05B2]|((uint16_t)bytes[0x05B2+1]<<8));
+    campaignMission.acceptedContractSalvagePercent=(uint16_t)(bytes[0x05B4]|((uint16_t)bytes[0x05B4+1]<<8));
+    campaignMission.acceptedContractAdvancePercent=(uint16_t)(bytes[0x05B6]|((uint16_t)bytes[0x05B6+1]<<8));
+    campaignMission.remainingContractPaymentThousands=(uint16_t)(bytes[0x05B8]|((uint16_t)bytes[0x05B8+1]<<8));
     memcpy(campaignEconomy.houseMissionTypeLimits,bytes+0x05BA,sizeof(campaignEconomy.houseMissionTypeLimits));
-    audioOptionLabelIndex=bytes[0x05E2];
+    campaignMission.audioOptionLabelIndex=bytes[0x05E2];
     for (size_t i=0;i<sizeof(campaignEconomy.missionScenarioCodes)/sizeof(campaignEconomy.missionScenarioCodes[0]);++i)
     {
         campaignEconomy.missionScenarioCodes[i]=(uint16_t)(bytes[0x05E3+i*2]|((uint16_t)bytes[0x05E3+i*2+1]<<8));
@@ -479,19 +479,19 @@ void MwDecodeCampaignExchange(const uint8_t bytes[CAMPAIGN_SAVE_BYTES])
     memcpy(campaignMechanics.pilotGunneryTiers,bytes+0x05EF,sizeof(campaignMechanics.pilotGunneryTiers));
     memcpy(campaignMechanics.pilotPilotingTiers,bytes+0x061A,sizeof(campaignMechanics.pilotPilotingTiers));
     memcpy(campaignMechanics.pilotExperienceCounts,bytes+0x0645,sizeof(campaignMechanics.pilotExperienceCounts));
-    eventDirectoryIndex=(uint16_t)(bytes[0x0670]|((uint16_t)bytes[0x0670+1]<<8));
-    memcpy(eventSeenFlags,bytes+0x0672,sizeof(eventSeenFlags));
+    campaignEvents.eventDirectoryIndex=(uint16_t)(bytes[0x0670]|((uint16_t)bytes[0x0670+1]<<8));
+    memcpy(campaignEvents.eventSeenFlags,bytes+0x0672,sizeof(campaignEvents.eventSeenFlags));
     for (size_t i=0;i<sizeof(campaignEventPlanetSelectors)/sizeof(campaignEventPlanetSelectors[0]);++i)
     {
         campaignEventPlanetSelectors[i]=(uint16_t)(bytes[0x06FE +i*2]|((uint16_t)bytes[0x06FE +i*2+1]<<8));
     }
     campaignEconomy.majorCampaignMissionRollThreshold=bytes[0x070A];
-    acceptedContractTargetHouseIndex=(uint16_t)(bytes[0x070B]|((uint16_t)bytes[0x070B+1]<<8));
-    campaignTerrainDetailLevel=bytes[0x070D];
+    campaignMission.acceptedContractTargetHouseIndex=(uint16_t)(bytes[0x070B]|((uint16_t)bytes[0x070B+1]<<8));
+    campaignMission.campaignTerrainDetailLevel=bytes[0x070D];
     campaignEconomy.dealerUnitPurchaseLimit=(uint16_t)(bytes[0x070E]|((uint16_t)bytes[0x070E +1]<<8));
     campaignEconomy.unitsSoldSinceMarketRefresh=(uint16_t)(bytes[0x0710]|((uint16_t)bytes[0x0710+1]<<8));
-    playerSkillProgress=(uint16_t)(bytes[0x0712]|((uint16_t)bytes[0x0712+1]<<8));
-    darkWingBaseVictoryRecorded=bytes[0x0714];
+    campaignMission.playerSkillProgress=(uint16_t)(bytes[0x0712]|((uint16_t)bytes[0x0712+1]<<8));
+    campaignEvents.darkWingBaseVictoryRecorded=bytes[0x0714];
     launcherMemoryTier=(uint16_t)(bytes[0x0715]|((uint16_t)bytes[0x0715+1]<<8));
     savedVideoMode=bytes[0x0717];
 }

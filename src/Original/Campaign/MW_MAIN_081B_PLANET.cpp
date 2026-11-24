@@ -33,7 +33,7 @@ uint16_t MwEnterCampaignPlanetHub(uint16_t entryOffset)
     MwDrawIndexedPicture(0,0,currentPlanetLandscapeIndex+HUB_LANDSCAPE_PICTURE_BASE);
     MwDrawGeneralPicture(HUB_LEFT_ICON_X,HUB_UPPER_ICON_Y,EGA_DRAW_PAGE,HUB_LEFT_UPPER_PICTURE);
     MwDrawGeneralPicture(HUB_LEFT_ICON_X,HUB_MIDDLE_ICON_Y,EGA_DRAW_PAGE,HUB_MECH_COMPLEX_PICTURE);
-    if (acceptedContractActive==1)
+    if (campaignMission.acceptedContractActive==1)
         MwDrawGeneralPicture(HUB_LEFT_ICON_X,HUB_LOWER_ICON_Y,EGA_DRAW_PAGE,HUB_DEPLOYMENT_PICTURE);
     else
     {
@@ -57,9 +57,9 @@ uint16_t MwEnterCampaignPlanetHub(uint16_t entryOffset)
     if (transfer) return transfer;
     campaignEventDispatchReturnContinuation=0;
 selectHubMenu:
-    planetArrivalEventsPending=0; /* AFTER dispatch/choice return. */
+    campaignEvents.planetArrivalEventsPending=0; /* AFTER dispatch/choice return. */
     MwUiMenu *menu;
-    if (acceptedContractActive) menu=&campaignUi.contractHubMenu;
+    if (campaignMission.acceptedContractActive) menu=&campaignUi.contractHubMenu;
     else if (currentPlanetFacilityDisplayFlag) menu=&campaignUi.planetHubMenu;
     else menu=&campaignUi.remotePlanetHubMenu;
     MwSelectUiRecordTable(campaignUi.hubSelectedRecordIndex,menu);

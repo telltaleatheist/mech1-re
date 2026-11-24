@@ -446,7 +446,7 @@ uint16_t MwOpenOwnedMechList(void)
         else
         {
             uint16_t pilotId=rosterPilotIds[pilotSlot];
-            if (pilotId==0) memcpy(row->caption.columns.mechWarriorName,commanderNameBytes,sizeof(row->caption.columns.mechWarriorName));
+            if (pilotId==0) memcpy(row->caption.columns.mechWarriorName,campaignMission.commanderNameBytes,sizeof(row->caption.columns.mechWarriorName));
             else
             {
                 uint16_t pilotOffset=campaignMechanics.pilotDefinitionOffsets[pilotId]-PILOT_DEFINITIONS_START;

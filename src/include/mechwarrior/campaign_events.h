@@ -64,24 +64,11 @@ struct MwCampaignEvent
     uint8_t eventId,classCode;
     MwEventCommand *script;
 };
-extern MwCampaignEvent campaignEventRecords[CAMPAIGN_EVENT_RECORD_COUNT];
-extern MwEventCommand campaignEventCommands[CAMPAIGN_EVENT_COMMAND_COUNT];
-extern MwCampaignEvent *eventListEntries[CAMPAIGN_EVENT_LIST_ENTRIES];
-extern MwCampaignEvent **eventLists[CAMPAIGN_EVENT_LIST_COUNT];
-extern MwCampaignEvent *fixedCampaignEvent;
-extern MwEventCaption eventChoiceCaptions[CAMPAIGN_EVENT_CAPTION_COUNT];
-extern uint16_t eventDirectoryIndex,campaignEventClass,currentEventId,dispatchedEventCount;
-extern uint8_t eventSeenFlags[CAMPAIGN_EVENT_SEEN_FLAGS];
-extern uint8_t eventConditionResult,eventCombineWithAnd;
-extern uint16_t eventScheduledMonthScratch,eventExpirySubmonthScratch,eventScheduledYearScratch;
-extern uint8_t planetArrivalEventsPending,darkWingBaseVictoryRecorded,campaignRestartPending;
-extern const MwEventCommand *eventOperandCursor;
 bool MwImportCampaignEventData(void);
 
 /* Original class table, with C references instead of native near code offsets.
  * The result transports the live text-panel registers, not a native struct ABI. */
 typedef MwTextPanelReturn (*MwEventClassHandler)(uint16_t textId);
-extern MwEventClassHandler eventClassHandlers[7];
 /* Shared original opcode09 and action08 table targets. Tests can substitute
  * observers; normal bindings execute the actual converted game bodies. */
 extern uint16_t (*campaignEventChoice)(const MwEventCommand *command);
@@ -93,14 +80,37 @@ enum { EVENT_TEXT_DIRECTORY_COUNT=0x77, EVENT_TEXT_STORAGE_START=0x00EE,
 /* This is a writable encoded TEXT resource, like the variable-length planet
  * names. It is not a DS mirror or a second copy of decoded game state. */
 typedef struct MwEventTextPageHeader { uint8_t format,rowCount; } MwEventTextPageHeader;
-extern uint8_t eventTextStorage[EVENT_TEXT_STORAGE_END-EVENT_TEXT_STORAGE_START];
-extern uint8_t *eventTextRecords[EVENT_TEXT_DIRECTORY_COUNT];
+/* Campaign state owned by campaign_events.h (plan, slice B2). */
+struct CampaignEventTextState
+{
+    uint8_t eventTextStorage[EVENT_TEXT_STORAGE_END-EVENT_TEXT_STORAGE_START];
+    uint8_t *eventTextRecords[EVENT_TEXT_DIRECTORY_COUNT];
+};
+extern CampaignEventTextState campaignEventText;
 bool MwImportCampaignEventText(void);
-extern uint8_t eventChoiceCount,eventTextRowCount;
-extern MwCampaignEvent *eventChoiceBranches[3];
-extern uint16_t eventChoiceSavedFontIndex;
-extern MwUiRecord eventTwoChoiceRecords[2],eventThreeChoiceRecords[3];
-extern MwUiMenu eventTwoChoiceMenu,eventThreeChoiceMenu;
+/* Campaign state owned by campaign_events.h (plan, slice B2). */
+struct CampaignEventsState
+{
+    MwCampaignEvent campaignEventRecords[CAMPAIGN_EVENT_RECORD_COUNT];
+    MwEventCommand campaignEventCommands[CAMPAIGN_EVENT_COMMAND_COUNT];
+    MwCampaignEvent *eventListEntries[CAMPAIGN_EVENT_LIST_ENTRIES];
+    MwCampaignEvent **eventLists[CAMPAIGN_EVENT_LIST_COUNT];
+    MwCampaignEvent *fixedCampaignEvent;
+    MwEventCaption eventChoiceCaptions[CAMPAIGN_EVENT_CAPTION_COUNT];
+    uint16_t eventDirectoryIndex, campaignEventClass, currentEventId, dispatchedEventCount;
+    uint8_t eventSeenFlags[CAMPAIGN_EVENT_SEEN_FLAGS];
+    uint8_t eventConditionResult, eventCombineWithAnd;
+    uint16_t eventScheduledMonthScratch, eventExpirySubmonthScratch, eventScheduledYearScratch;
+    uint8_t planetArrivalEventsPending, darkWingBaseVictoryRecorded, campaignRestartPending;
+    const MwEventCommand *eventOperandCursor;
+    MwEventClassHandler eventClassHandlers[7];
+    uint8_t eventChoiceCount, eventTextRowCount;
+    MwCampaignEvent *eventChoiceBranches[3];
+    uint16_t eventChoiceSavedFontIndex;
+    MwUiRecord eventTwoChoiceRecords[2], eventThreeChoiceRecords[3];
+    MwUiMenu eventTwoChoiceMenu, eventThreeChoiceMenu;
+};
+extern CampaignEventsState campaignEvents;
 MwTextPanelReturn MwShowCampaignEventText(uint16_t textId);
 MwTextPanelReturn MwShowClassThreeEventPages(uint16_t textId);
 void MwEventSubstitutePlanetName(const MwEventCommand *command);

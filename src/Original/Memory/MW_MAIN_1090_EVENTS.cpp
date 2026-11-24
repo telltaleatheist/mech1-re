@@ -20,7 +20,7 @@ bool MwImportCampaignEventData(void)
     if (!MwStoryBuildCampaignEvents(captionOffsets,CAMPAIGN_EVENT_CAPTION_COUNT)) return false;
     for (uint16_t menuIndex=0;menuIndex<2;++menuIndex)
     {
-        MwUiMenu *menu=menuIndex?&eventThreeChoiceMenu:&eventTwoChoiceMenu;
+        MwUiMenu *menu=menuIndex?&campaignEvents.eventThreeChoiceMenu:&campaignEvents.eventTwoChoiceMenu;
         /* The records from the layout (data/ui/events.json, src/Ui). */
         const char *id=menuIndex?"events.menu.three_choices":"events.menu.two_choices";
         uint8_t layout[3*CAMPAIGN_UI_RECORD_BYTES];
@@ -38,18 +38,18 @@ bool MwImportCampaignEventData(void)
             for (uint16_t caption=0;caption<CAMPAIGN_EVENT_CAPTION_COUNT;++caption)
                 if (captionOffsets[caption]==captionOffset)
                 {
-                    record->text=eventChoiceCaptions[caption].text;
-                    record->textColour=&eventChoiceCaptions[caption].colour;
+                    record->text=campaignEvents.eventChoiceCaptions[caption].text;
+                    record->textColour=&campaignEvents.eventChoiceCaptions[caption].colour;
                 }
             if (captionOffset && !record->text) return false;
             record->upRecordIndex=layout[at+10];record->downRecordIndex=layout[at+11];
             record->leftRecordIndex=layout[at+12];record->rightRecordIndex=layout[at+13];
         }
     }
-    for (uint16_t i=0;i<3;++i) eventChoiceBranches[i]=NULL;
-    for (uint16_t i=0;i<7;++i) eventClassHandlers[i]=i==3?MwShowClassThreeEventPages:MwShowCampaignEventText;
+    for (uint16_t i=0;i<3;++i) campaignEvents.eventChoiceBranches[i]=NULL;
+    for (uint16_t i=0;i<7;++i) campaignEvents.eventClassHandlers[i]=i==3?MwShowClassThreeEventPages:MwShowCampaignEventText;
     campaignEventChoice=MwEventOpenChoiceContinuation;
     campaignEventPlanetSubstitution=MwEventSubstitutePlanetName;
-    eventOperandCursor=NULL;
+    campaignEvents.eventOperandCursor=NULL;
     return true;
 }

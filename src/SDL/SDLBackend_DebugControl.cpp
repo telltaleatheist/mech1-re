@@ -309,9 +309,9 @@ static void WriteStatus(const char *path)
         (unsigned long long)SDL_GetTicks(),(unsigned long long)activeId,(unsigned long long)completedId,busy?"true":"false");
     JsonString(file,commandError);
     fprintf(file,",\"combat\":%s,\"campaign\":{\"planet\":%u,\"contractActive\":%u,\"missionCategory\":%u,\"scenario\":%u,\"destination\":%u,\"targetHouse\":%u,\"paymentThousands\":%u,\"result\":%u,\"selectedRow\":%u,\"random\":[%u,%u],\"funds\":%lu,\"months\":%u,\"menu\":[",
-        mwSdlCombatActive?"true":"false",currentPlanetIndex,acceptedContractActive,missionCategoryOrMemoryTier,
-        combatScenarioCode,combatPlanetSelector,acceptedContractTargetHouseIndex,
-        acceptedContractPaymentThousands,combatTransitionResult,campaignUi.selectedUiRecordIndex,
+        mwSdlCombatActive?"true":"false",currentPlanetIndex,campaignMission.acceptedContractActive,campaignMission.missionCategoryOrMemoryTier,
+        campaignMission.combatScenarioCode,campaignMission.combatPlanetSelector,campaignMission.acceptedContractTargetHouseIndex,
+        campaignMission.acceptedContractPaymentThousands,campaignMission.combatTransitionResult,campaignUi.selectedUiRecordIndex,
         randomStateWord0,randomStateWord1,
         ((unsigned long)campaignEconomy.campaignFundsHigh<<16)|campaignEconomy.campaignFundsLow,campaignEconomy.elapsedBillingMonths);
     if (!mwSdlCombatActive && campaignUi.uiMenu)

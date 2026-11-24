@@ -28,23 +28,23 @@ publishMenu:
 /* MW_MAIN081B:6FDE..6FF9. The NUL is copied; no clearing of the old tail. */
 void MwUpdateAudioOptionLabel(void)
 {
-    if (audioOptionLabelIndex>=AUDIO_OPTION_LABEL_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: audioOptionLabelIndex>=AUDIO_OPTION_LABEL_COUNT"); /* Unrepresented out-of-table native alias. */
+    if (campaignMission.audioOptionLabelIndex>=AUDIO_OPTION_LABEL_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: audioOptionLabelIndex>=AUDIO_OPTION_LABEL_COUNT"); /* Unrepresented out-of-table native alias. */
     uint16_t character=0;
     do
     {
-        campaignOptions.optionsLabels[OPTION_SOUND].text[OPTIONS_SOUND_LABEL_COLUMN+character]=campaignOptions.audioOptionLabels[audioOptionLabelIndex][character];
-    } while (campaignOptions.audioOptionLabels[audioOptionLabelIndex][character++]!='\0');
+        campaignOptions.optionsLabels[OPTION_SOUND].text[OPTIONS_SOUND_LABEL_COLUMN+character]=campaignOptions.audioOptionLabels[campaignMission.audioOptionLabelIndex][character];
+    } while (campaignOptions.audioOptionLabels[campaignMission.audioOptionLabelIndex][character++]!='\0');
 }
 
 /* MW_MAIN081B:702B..7046. BYTE detail times5, including trailing space/NUL. */
 void MwUpdateTerrainDetailOptionLabel(void)
 {
-    if (campaignTerrainDetailLevel>=TERRAIN_DETAIL_LABEL_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: campaignTerrainDetailLevel>=TERRAIN_DETAIL_LABEL_COUNT"); /* Unrepresented out-of-table native alias. */
+    if (campaignMission.campaignTerrainDetailLevel>=TERRAIN_DETAIL_LABEL_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: campaignTerrainDetailLevel>=TERRAIN_DETAIL_LABEL_COUNT"); /* Unrepresented out-of-table native alias. */
     uint16_t character=0;
     do
     {
-        campaignOptions.optionsLabels[OPTION_DETAIL].text[OPTIONS_DETAIL_LABEL_COLUMN+character]=campaignOptions.terrainDetailLabels[campaignTerrainDetailLevel][character];
-    } while (campaignOptions.terrainDetailLabels[campaignTerrainDetailLevel][character++]!='\0');
+        campaignOptions.optionsLabels[OPTION_DETAIL].text[OPTIONS_DETAIL_LABEL_COLUMN+character]=campaignOptions.terrainDetailLabels[campaignMission.campaignTerrainDetailLevel][character];
+    } while (campaignOptions.terrainDetailLabels[campaignMission.campaignTerrainDetailLevel][character++]!='\0');
 }
 
 /* MW_MAIN081B:6FB9..6FDD. Ordinary callback; the flag toggles without
@@ -52,7 +52,7 @@ void MwUpdateTerrainDetailOptionLabel(void)
 void MwToggleAudioOption(void)
 {
     campaignUi.optionsMenuSelection=OPTION_SOUND;
-    audioOptionLabelIndex^=1;
+    campaignMission.audioOptionLabelIndex^=1;
     MwUpdateAudioOptionLabel();
     MwNativeByteView text={(const uint8_t *)campaignOptions.optionsLabels[OPTION_SOUND].text,0x9D97,sizeof(campaignOptions.optionsLabels[OPTION_SOUND].text)};
     uint16_t y=OPTIONS_SOUND_Y,offset=0x9D97;
@@ -63,8 +63,8 @@ void MwToggleAudioOption(void)
 void MwCycleTerrainDetailOption(void)
 {
     campaignUi.optionsMenuSelection=OPTION_DETAIL;
-    ++campaignTerrainDetailLevel;
-    if ((int8_t)campaignTerrainDetailLevel>=TERRAIN_DETAIL_LABEL_COUNT) campaignTerrainDetailLevel=0;
+    ++campaignMission.campaignTerrainDetailLevel;
+    if ((int8_t)campaignMission.campaignTerrainDetailLevel>=TERRAIN_DETAIL_LABEL_COUNT) campaignMission.campaignTerrainDetailLevel=0;
     MwUpdateTerrainDetailOptionLabel();
     MwNativeByteView text={(const uint8_t *)campaignOptions.optionsLabels[OPTION_DETAIL].text,0x9DAB,sizeof(campaignOptions.optionsLabels[OPTION_DETAIL].text)};
     uint16_t y=OPTIONS_DETAIL_Y,offset=0x9DAB;

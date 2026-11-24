@@ -140,7 +140,7 @@ pollMouse:
             MwRestoreTravelMarkerRegion();MwDrawTravelMarker();
             campaignMechanics.travelDestinationPlanetIndex=(uint16_t)planetIndex;
             MwCopyTravelDestinationName();
-            MwDrawDescriptorTextPanel(&travelDestinationHeaderPanel);
+            MwDrawDescriptorTextPanel(&campaignTravel.travelDestinationHeaderPanel);
             MwDrawTravelDestinationDetails();MwDrawPlanetTravelQuote();
             campaignMechanics.travelMapSelection=0;
             return CAMPAIGN_CONTINUE_TRAVEL_MAP;
@@ -198,13 +198,13 @@ void MwDrawTravelDestinationDetails(void)
     uint16_t pictureSelector=MwLoadIndexedPicture((uint16_t)(TRAVEL_HOUSE_PICTURE_BASE+planet->houseIndex));
     EgaDrawPackedSprite(TRAVEL_HOUSE_PICTURE_X,TRAVEL_HOUSE_PICTURE_Y,EGA_DISPLAY_PAGE,0,pictureSelector);
     uint8_t classification=planet->landscapeAndMarketCode-1;
-    const char *landscape=travelLandscapeLabels[classification%TRAVEL_LANDSCAPE_LABEL_COUNT];
+    const char *landscape=campaignTravel.travelLandscapeLabels[classification%TRAVEL_LANDSCAPE_LABEL_COUNT];
     MwNativeByteView landscapeView={(const uint8_t *)landscape,0,(uint32_t)strlen(landscape)+1};
     EgaDrawTransparentText(TRAVEL_LANDSCAPE_TEXT_X,TRAVEL_HEADER_TEXT_Y,Campaign_Pal_EGA_White,&landscapeView,0);
     uint16_t population=MwReadNativeWord(planet->populationMillions,0);
     numericGroupingEnabled++;
     MwDrawSignedDecimalField(population,TRAVEL_POPULATION_TEXT_X,0,TRAVEL_POPULATION_DIGITS,Campaign_Pal_EGA_White,Campaign_Pal_EGA_LightGrey,TRAVEL_HEADER_TEXT_Y);
-    MwNativeByteView suffix={(const uint8_t *)travelPopulationSuffix,0,sizeof(travelPopulationSuffix)};
+    MwNativeByteView suffix={(const uint8_t *)campaignTravel.travelPopulationSuffix,0,sizeof(campaignTravel.travelPopulationSuffix)};
     EgaDrawTransparentText(TRAVEL_POPULATION_SUFFIX_X,TRAVEL_HEADER_TEXT_Y,Campaign_Pal_EGA_White,&suffix,0);
     const uint8_t *description=nameEnd+1;
     size_t descriptionCapacity=bytesRemaining-(size_t)(description-name);
@@ -220,10 +220,10 @@ uint16_t MwSelectTravelDestinationContinuation(uint16_t planetIndex)
 {
     campaignMechanics.travelDestinationPlanetIndex=planetIndex;
     MwCopyTravelDestinationName();
-    MwDrawDescriptorTextPanel(&travelDestinationHeaderPanel);
-    MwDrawDescriptorTextPanel(&travelCostPanel);
-    MwDrawDescriptorTextPanel(&travelConfirmPanel);
-    MwDrawDescriptorTextPanel(&travelBrowsePanel);
+    MwDrawDescriptorTextPanel(&campaignTravel.travelDestinationHeaderPanel);
+    MwDrawDescriptorTextPanel(&campaignTravel.travelCostPanel);
+    MwDrawDescriptorTextPanel(&campaignTravel.travelConfirmPanel);
+    MwDrawDescriptorTextPanel(&campaignTravel.travelBrowsePanel);
     MwDrawTravelDestinationDetails();
     MwDrawPlanetTravelQuote();
     uint16_t planetOffset=planetRecordOffsets[campaignMechanics.travelDestinationPlanetIndex];
@@ -240,7 +240,7 @@ uint16_t MwSelectTravelDestinationContinuation(uint16_t planetIndex)
 uint16_t MwEnterTravelMapMenuContinuation(void)
 {
     campaignUi.uiSelectionChangedCodeOffset=CAMPAIGN_CALLBACK_SELECT_TRAVEL_MAP_PLANET;
-    uint16_t selectionTransfer=MwSelectUiRecordTable(campaignMechanics.travelMapSelection,&travelMapMenu);
+    uint16_t selectionTransfer=MwSelectUiRecordTable(campaignMechanics.travelMapSelection,&campaignTravel.travelMapMenu);
     return selectionTransfer!=0?selectionTransfer:CAMPAIGN_CONTINUE_UI;
 }
 
@@ -354,7 +354,7 @@ uint16_t MwSearchTravelPlanetContinuation(void)
     EgaFillDisplayPageRectangle(TRAVEL_SEARCH_X+1,TRAVEL_SEARCH_Y,
         TRAVEL_SEARCH_WIDTH,TRAVEL_SEARCH_HEIGHT,3);
     MwDrawTravelDestinationDetails();
-    uint16_t selectionTransfer=MwSelectUiRecordTable(0,&travelMapMenu);
+    uint16_t selectionTransfer=MwSelectUiRecordTable(0,&campaignTravel.travelMapMenu);
     return selectionTransfer!=0?selectionTransfer:CAMPAIGN_CONTINUE_UI;
 }
 
@@ -363,11 +363,11 @@ uint16_t MwSearchTravelPlanetContinuation(void)
 uint16_t MwOpenTravelHouseBrowserContinuation(void)
 {
     MwRestoreTravelMarkerRegion();
-    travelSelectedHouseRow=0;
+    campaignTravel.travelSelectedHouseRow=0;
     EgaCopyDisplayToDrawPage(TRAVEL_HOUSE_BROWSER_X,TRAVEL_HOUSE_BROWSER_Y,
         TRAVEL_HOUSE_BROWSER_WIDTH,TRAVEL_HOUSE_BROWSER_HEIGHT);
-    MwDrawDescriptorTextPanel(&travelHouseBrowserPanel);
-    MwSelectUiRecordTable(travelSelectedHouseRow,&travelHouseBrowserMenu);
+    MwDrawDescriptorTextPanel(&campaignTravel.travelHouseBrowserPanel);
+    MwSelectUiRecordTable(campaignTravel.travelSelectedHouseRow,&campaignTravel.travelHouseBrowserMenu);
     return CAMPAIGN_CONTINUE_UI;
 }
 
@@ -393,37 +393,37 @@ void MwRestoreTravelHouseBrowserRegion(void)
 uint16_t MwOpenSelectedHousePlanetListContinuation(void)
 {
     MwRestoreTravelHouseBrowserRegion();
-    travelSelectedHouseRow=campaignUi.selectedUiRecordIndex;
-    if (travelSelectedHouseRow>=TRAVEL_HOUSE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: travelSelectedHouseRow>=TRAVEL_HOUSE_COUNT");
-    campaignMechanics.travelSelectedHouseByteOffset=(uint16_t)(travelSelectedHouseRow*sizeof(uint16_t));
-    campaignMechanics.travelHousePlanetStart=campaignMechanics.housePlanetRangeStarts[travelSelectedHouseRow];
-    campaignMechanics.travelHousePlanetCount=campaignMechanics.housePlanetRangeCounts[travelSelectedHouseRow];
-    strcpy(travelHouseSearchCaption.text,travelHouseSearchNames[travelSelectedHouseRow]);
+    campaignTravel.travelSelectedHouseRow=campaignUi.selectedUiRecordIndex;
+    if (campaignTravel.travelSelectedHouseRow>=TRAVEL_HOUSE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: travelSelectedHouseRow>=TRAVEL_HOUSE_COUNT");
+    campaignMechanics.travelSelectedHouseByteOffset=(uint16_t)(campaignTravel.travelSelectedHouseRow*sizeof(uint16_t));
+    campaignMechanics.travelHousePlanetStart=campaignMechanics.housePlanetRangeStarts[campaignTravel.travelSelectedHouseRow];
+    campaignMechanics.travelHousePlanetCount=campaignMechanics.housePlanetRangeCounts[campaignTravel.travelSelectedHouseRow];
+    strcpy(campaignTravel.travelHouseSearchCaption.text,campaignTravel.travelHouseSearchNames[campaignTravel.travelSelectedHouseRow]);
     if ((uint32_t)campaignMechanics.travelHousePlanetStart+campaignMechanics.travelHousePlanetCount>TRAVEL_PLANET_DIRECTORY_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: (uint32_t)travelHousePlanetStart+travelHousePlanetCount>TRAVEL_PLANET_DIRECTORY_COUNT");
     for (uint16_t row=0;row<campaignMechanics.travelHousePlanetCount;++row)
     {
         uint16_t planetOffset=campaignMechanics.alphabeticPlanetRecordOffsets[campaignMechanics.travelHousePlanetStart+row];
         if (planetOffset<PLANET_RECORDS_START || (uint32_t)planetOffset+sizeof(MwPlanetHeader)>=PLANET_RECORDS_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetOffset<PLANET_RECORDS_START || (uint32_t)planetOffset+sizeof(MwPlanetHeader)>=PLANET_RECORDS_END");
         const char *name=(const char *)&planetRecordStorage[planetOffset-PLANET_RECORDS_START+sizeof(MwPlanetHeader)];
-        if (strlen(name)>=sizeof(travelHousePlanetRows[row].text)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: strlen(name)>=sizeof(travelHousePlanetRows[row].text)");
-        strcpy(travelHousePlanetRows[row].text,name);
+        if (strlen(name)>=sizeof(campaignTravel.travelHousePlanetRows[row].text)) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: strlen(name)>=sizeof(travelHousePlanetRows[row].text)");
+        strcpy(campaignTravel.travelHousePlanetRows[row].text,name);
     }
     for (uint16_t row=0;row<5;++row)
-        travelHousePlanetMenu.records[10+row].rightRecordIndex=(uint8_t)(0x19+row);
-    travelHousePlanetMenu.records[0x18].downRecordIndex=0x19;
-    if (travelSelectedHouseRow==TRAVEL_HOUSE_LIAO_INDEX)
+        campaignTravel.travelHousePlanetMenu.records[10+row].rightRecordIndex=(uint8_t)(0x19+row);
+    campaignTravel.travelHousePlanetMenu.records[0x18].downRecordIndex=0x19;
+    if (campaignTravel.travelSelectedHouseRow==TRAVEL_HOUSE_LIAO_INDEX)
     {
         for (uint16_t row=0;row<5;++row)
         {
-            travelHousePlanetMenu.records[10+row].rightRecordIndex=0xFF;
-            travelHousePlanetRows[TRAVEL_HOUSE_LIAO_PLANET_COUNT+row].text[0]='\0';
+            campaignTravel.travelHousePlanetMenu.records[10+row].rightRecordIndex=0xFF;
+            campaignTravel.travelHousePlanetRows[TRAVEL_HOUSE_LIAO_PLANET_COUNT+row].text[0]='\0';
         }
-        travelHousePlanetMenu.records[0x18].downRecordIndex=TRAVEL_PLANET_ROWS_PER_HOUSE;
+        campaignTravel.travelHousePlanetMenu.records[0x18].downRecordIndex=TRAVEL_PLANET_ROWS_PER_HOUSE;
     }
     EgaCopyDisplayToDrawPage(TRAVEL_HOUSE_PLANET_X,TRAVEL_HOUSE_PLANET_Y,
         TRAVEL_HOUSE_PLANET_WIDTH,TRAVEL_HOUSE_PLANET_HEIGHT);
-    MwDrawDescriptorTextPanel(&travelHousePlanetPanel);
-    MwSelectUiRecordTable(0,&travelHousePlanetMenu);
+    MwDrawDescriptorTextPanel(&campaignTravel.travelHousePlanetPanel);
+    MwSelectUiRecordTable(0,&campaignTravel.travelHousePlanetMenu);
     return CAMPAIGN_CONTINUE_UI;
 }
 
@@ -434,8 +434,8 @@ uint16_t MwReturnToTravelHouseBrowserContinuation(void)
     MwRestoreTravelHousePlanetListRegion();
     EgaCopyDisplayToDrawPage(TRAVEL_HOUSE_BROWSER_X,TRAVEL_HOUSE_BROWSER_Y,
         TRAVEL_HOUSE_BROWSER_WIDTH,TRAVEL_HOUSE_BROWSER_HEIGHT);
-    MwDrawDescriptorTextPanel(&travelHouseBrowserPanel);
-    MwSelectUiRecordTable(travelSelectedHouseRow,&travelHouseBrowserMenu);
+    MwDrawDescriptorTextPanel(&campaignTravel.travelHouseBrowserPanel);
+    MwSelectUiRecordTable(campaignTravel.travelSelectedHouseRow,&campaignTravel.travelHouseBrowserMenu);
     return CAMPAIGN_CONTINUE_UI;
 }
 
@@ -475,8 +475,8 @@ uint16_t MwConfirmPlanetTravelContinuation(void)
     if (funds<quote)
     {
         MwRestoreTravelMarkerRegion();
-        MwNativeByteView message={(const uint8_t *)travelInsufficientFundsText,0,
-            sizeof(travelInsufficientFundsText)};
+        MwNativeByteView message={(const uint8_t *)campaignTravel.travelInsufficientFundsText,0,
+            sizeof(campaignTravel.travelInsufficientFundsText)};
         MwTextPanelReturn result=MwShowMonospaceTextPanel(0x0010,0x0010,0x0019,6,&message,0);
         if (result.discardReturnWord) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: result.discardReturnWord");
         MwDrawTravelMarker();
@@ -535,7 +535,7 @@ uint16_t MwFinishPlanetArrivalContinuation(void)
         MwPlayOwnedDropShipAnimation();
     else
         MwPlayHiredTransportAnimation();
-    planetArrivalEventsPending=1;
+    campaignEvents.planetArrivalEventsPending=1;
     return CAMPAIGN_CONTINUE_PLANET_HUB;
 }
 

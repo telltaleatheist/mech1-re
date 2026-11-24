@@ -24,27 +24,27 @@ uint16_t MwResolveDeploymentOrExportCombatExchangeContinuation(void)
     MwPlayHiredTransportAnimation();
     /* Native REP STOSB clears0451..0467, NOT the accepted flag0468. */
     memset(campaignMechanics.rosterStatus,0,sizeof(campaignMechanics.rosterStatus));
-    memset(salvageEntries,0,sizeof(salvageEntries));
-    returnedDisabledEnemyCount=0;
-    combatTransitionResult=0;
-    if ((int8_t)combatScenarioCode<=DEPLOYMENT_BYPASS_LAST_SCENARIO
-        && combatScenarioCode!=DEPLOYMENT_NO_BYPASS_SCENARIO)
+    memset(campaignMission.salvageEntries,0,sizeof(campaignMission.salvageEntries));
+    campaignMission.returnedDisabledEnemyCount=0;
+    campaignMission.combatTransitionResult=0;
+    if ((int8_t)campaignMission.combatScenarioCode<=DEPLOYMENT_BYPASS_LAST_SCENARIO
+        && campaignMission.combatScenarioCode!=DEPLOYMENT_NO_BYPASS_SCENARIO)
     {
         if (MwRandomUpTo(PERCENT_DIVISOR)<=DEPLOYMENT_BYPASS_ROLL_LIMIT)
         {
             for (uint16_t slot=0;slot<CAMPAIGN_SALVAGE_SLOTS;++slot)
             {
-                salvageEntries[slot].unitKind=0xFF;
-                salvageEntries[slot].leadingZeroByte=0xFF; /* Native WORD FFFF. */
+                campaignMission.salvageEntries[slot].unitKind=0xFF;
+                campaignMission.salvageEntries[slot].leadingZeroByte=0xFF; /* Native WORD FFFF. */
             }
-            acceptedContractActive=0;
-            deploymentResolvedWithoutCombat=1;
+            campaignMission.acceptedContractActive=0;
+            campaignHandoff.deploymentResolvedWithoutCombat=1;
             return CAMPAIGN_CONTINUE_AFTER_ACTION;
         }
     }
     MwWaitForRequiredResourceFile();
-    missionCategoryOrMemoryTier=(uint8_t)launcherMemoryTier;
-    deploymentTerrainDetailLevel=campaignTerrainDetailLevel;
+    campaignMission.missionCategoryOrMemoryTier=(uint8_t)launcherMemoryTier;
+    campaignMission.deploymentTerrainDetailLevel=campaignMission.campaignTerrainDetailLevel;
     /* Real launcher and child allocations are disjoint. Encode at their
      * transfer boundary; do not fabricate a live1090 image for this copy.
      * Native copies forward0718 bytes to resident0806:0004; no cursor wraps

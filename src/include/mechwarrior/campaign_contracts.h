@@ -40,25 +40,29 @@ enum { CONTRACT_PAGE_BACKGROUND=Campaign_Pal_EGA_Black, CONTRACT_PROMPT_BACKGROU
     CONTRACT_ADVANCE_X=0x9E, CONTRACT_ADVANCE_Y=0x8E, CONTRACT_PERCENT_DIGITS=3,
     CONTRACT_MONTH_X=0x56, CONTRACT_DATE_Y=0xA6, CONTRACT_YEAR_BASE_X=0x5E,
     CONTRACT_ACCEPTED_MESSAGE_X=0x38, CONTRACT_ACCEPTED_MESSAGE_Y=0x61 };
-
-extern MwPanelDescriptor contractOfficePanel,contractActionsPanel;
-extern MwServiceCaption contractOfficeLabels[2],contractActionLabels[3];
-extern MwUiMenu contractOfficeMenu,contractActionsMenu;
-extern uint16_t negotiatingMissionOfferSlot,negotiatingMissionOfferByteOffset;
-extern uint8_t contractRequestEditorInitialized,contractRequestTextColour;
-extern uint16_t contractRequestTermByteOffset,contractNegotiationAttempts;
-extern uint8_t negotiationRequestsSatisfied;
-extern uint16_t contractDateYearXOffsets[CAMPAIGN_MONTH_COUNT];
-extern uint16_t requestedTermX[3],requestedTermY[3],requestedTermDigits[3];
-extern char contractNarrative[0x013C],houseContractNames[CAMPAIGN_HOUSE_COUNT][8];
-extern char submitContractCaption[6],acceptContractCaption[6];
-extern const uint8_t *contractOfficePlanetGroups[CAMPAIGN_HOUSE_COUNT];
-extern uint16_t houseExtraEnemyRollThresholds[CAMPAIGN_HOUSE_COUNT];
-extern char noContractsText[0x2B],negotiationTerminatedText[0x47];
-extern char contractAcceptedText[0x1B],houseContractRefusalText[0x5F];
-extern uint16_t acceptedContractAdvanceCbillsLow,acceptedContractAdvanceCbillsHigh;
-extern uint8_t deploymentRefusalCount,deploymentPenaltySuppressed;
-extern char commanderNeedsMechText[0x37],assignedMechUnreadyText[0x3A],contractCancelledText[0x4F];
+/* Campaign state owned by campaign_contracts.h (plan, slice B2). */
+struct CampaignContractsState
+{
+    MwPanelDescriptor contractOfficePanel, contractActionsPanel;
+    MwServiceCaption contractOfficeLabels[2], contractActionLabels[3];
+    MwUiMenu contractOfficeMenu, contractActionsMenu;
+    uint16_t negotiatingMissionOfferSlot, negotiatingMissionOfferByteOffset;
+    uint8_t contractRequestEditorInitialized, contractRequestTextColour;
+    uint16_t contractRequestTermByteOffset, contractNegotiationAttempts;
+    uint8_t negotiationRequestsSatisfied;
+    uint16_t contractDateYearXOffsets[CAMPAIGN_MONTH_COUNT];
+    uint16_t requestedTermX[3], requestedTermY[3], requestedTermDigits[3];
+    char contractNarrative[0x013C], houseContractNames[CAMPAIGN_HOUSE_COUNT][8];
+    char submitContractCaption[6], acceptContractCaption[6];
+    const uint8_t *contractOfficePlanetGroups[CAMPAIGN_HOUSE_COUNT];
+    uint16_t houseExtraEnemyRollThresholds[CAMPAIGN_HOUSE_COUNT];
+    char noContractsText[0x2B], negotiationTerminatedText[0x47];
+    char contractAcceptedText[0x1B], houseContractRefusalText[0x5F];
+    uint16_t acceptedContractAdvanceCbillsLow, acceptedContractAdvanceCbillsHigh;
+    uint8_t deploymentRefusalCount, deploymentPenaltySuppressed;
+    char commanderNeedsMechText[0x37], assignedMechUnreadyText[0x3A], contractCancelledText[0x4F];
+};
+extern CampaignContractsState campaignContracts;
 
 void MwDrawCampaignFramedBackground(void);
 uint16_t MwEnterContractOfficeContinuation(uint16_t entryOffset);

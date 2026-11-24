@@ -81,7 +81,7 @@ uint8_t MwRunCampaign(const MwCampaignLaunch *launch)
         /*144E captures PSP transport before testing phase. The supported
          * resident protocol is a distinct0806 owner, not a live1090 alias. */
         MwDecodeCampaignExchange(campaignCombatExchange);
-        acceptedContractActive=0;
+        campaignMission.acceptedContractActive=0;
         (void)MwLoadBarDeathAndLaunchMusic();
         (void)MwLoadPrimaryPictureBank();
         EgaInitializeGraphics();
@@ -143,7 +143,7 @@ beginDebrief:
     EgaFlipPages();
     if (!mwCampaignInput.keyboardAvailable || !mwCampaignInput.readKeyboard) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !mwCampaignInput.keyboardAvailable || !mwCampaignInput.readKeyboard");
     while (mwCampaignInput.keyboardAvailable()) (void)mwCampaignInput.readKeyboard();
-    if (combatTransitionResult==0 && combatScenarioCode==COMBAT_SCENARIO_DARK_WING_BASE)
+    if (campaignMission.combatTransitionResult==0 && campaignMission.combatScenarioCode==COMBAT_SCENARIO_DARK_WING_BASE)
         goto darkWingVictory;
     MwDrawAlternatePicturePanelBorder(2,0x008D,0x013A,0x0039);
     {
@@ -154,7 +154,7 @@ beginDebrief:
     EgaDrawLine(Campaign_Pal_EGA_White,7,0x0136,0x009C,7); /* BX/CX=(009C,0007), DX/SI=(0136,0007). */
     {
         uint16_t picture=AFTER_ACTION_SUCCESS_PICTURE;
-        if (combatTransitionResult!=0)
+        if (campaignMission.combatTransitionResult!=0)
         {
             picture=AFTER_ACTION_LOSS_PICTURE;
             uint8_t statusSum=0;
@@ -170,28 +170,28 @@ beginDebrief:
         (void)EgaDrawPackedSprite(8,7,EGA_DISPLAY_PAGE,0,picture);
     }
     EgaSelectFont(AFTER_ACTION_FONT);
-    MwDrawCampaignTextColourOne(AFTER_ACTION_TEXT_X,0x000A,afterActionCrewHeading);
-    MwDrawCampaignTextColourOne(AFTER_ACTION_TEXT_X,0x003C,afterActionMechHeading);
-    MwDrawCampaignTextColourOne(AFTER_ACTION_TEXT_X,0x006E,afterActionSalvageHeading);
-    MwDrawCampaignTextColourOne(AFTER_ACTION_TEXT_X,0x0078,afterActionPaymentHeading);
+    MwDrawCampaignTextColourOne(AFTER_ACTION_TEXT_X,0x000A,campaignHandoff.afterActionCrewHeading);
+    MwDrawCampaignTextColourOne(AFTER_ACTION_TEXT_X,0x003C,campaignHandoff.afterActionMechHeading);
+    MwDrawCampaignTextColourOne(AFTER_ACTION_TEXT_X,0x006E,campaignHandoff.afterActionSalvageHeading);
+    MwDrawCampaignTextColourOne(AFTER_ACTION_TEXT_X,0x0078,campaignHandoff.afterActionPaymentHeading);
     {
         uint16_t rosterSlot=0;
         do
         {
             if (rosterSlot>=CAMPAIGN_ROSTER_SLOTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: rosterSlot>=CAMPAIGN_ROSTER_SLOTS"); /* Unmapped corrupt roster. */
-            const char *pilotName=(const char *)commanderNameBytes;
+            const char *pilotName=(const char *)campaignMission.commanderNameBytes;
             if (rosterSlot!=0)
             {
                 uint16_t pilotId=rosterPilotIds[rosterSlot];
                 if (pilotId>=CAMPAIGN_PILOT_ID_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: pilotId>=CAMPAIGN_PILOT_ID_COUNT");
                 pilotName=(const char *)campaignPilots.pilotDefinitions[pilotId]->nameBytes;
             }
-            afterActionRosterRowOffset=(uint8_t)rosterSlot*AFTER_ACTION_ROW_HEIGHT;
-            uint16_t pilotY=afterActionRosterRowOffset+AFTER_ACTION_FIRST_PILOT_Y;
+            campaignHandoff.afterActionRosterRowOffset=(uint8_t)rosterSlot*AFTER_ACTION_ROW_HEIGHT;
+            uint16_t pilotY=campaignHandoff.afterActionRosterRowOffset+AFTER_ACTION_FIRST_PILOT_Y;
             MwDrawCampaignTextColourOne(AFTER_ACTION_TEXT_X,pilotY,pilotName);
             uint8_t status=campaignMechanics.rosterStatus[rosterSlot];
             if (status>=3) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: status>=3"); /* Unmapped status-text adjacency, not a clamp. */
-            MwDrawCampaignTextColourOne(AFTER_ACTION_STATUS_X,pilotY,afterActionPilotStatusText[status]);
+            MwDrawCampaignTextColourOne(AFTER_ACTION_STATUS_X,pilotY,campaignHandoff.afterActionPilotStatusText[status]);
             uint16_t ownedUnitSlot=campaignMechanics.rosterMechAssignments[rosterSlot];
             if (ownedUnitSlot!=CAMPAIGN_NO_MECH_ASSIGNMENT)
             {
@@ -224,35 +224,35 @@ beginDebrief:
                 if (!divisor || condition/divisor>UINT16_MAX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !divisor || condition/divisor>UINT16_MAX"); /* Native DIV trap, no clamp. */
                 condition/=divisor;
                 MwDrawCampaignTextColourOne(AFTER_ACTION_TEXT_X,
-                    afterActionRosterRowOffset+AFTER_ACTION_FIRST_MECH_Y,campaignService.unitDisplayNames[unitKind]);
+                    campaignHandoff.afterActionRosterRowOffset+AFTER_ACTION_FIRST_MECH_Y,campaignService.unitDisplayNames[unitKind]);
                 /* Name glyph LOOP leaves CH00; 1E88 writes only CL01. */
                 MwDrawSignedDecimalField(condition,AFTER_ACTION_PERCENT_X,1,0,
-                    AFTER_ACTION_FOREGROUND,AFTER_ACTION_BACKGROUND,afterActionRosterRowOffset+AFTER_ACTION_FIRST_MECH_Y);
+                    AFTER_ACTION_FOREGROUND,AFTER_ACTION_BACKGROUND,campaignHandoff.afterActionRosterRowOffset+AFTER_ACTION_FIRST_MECH_Y);
                 MwDrawCampaignTextColourOne(AFTER_ACTION_SUFFIX_X,
-                    afterActionRosterRowOffset+AFTER_ACTION_FIRST_MECH_Y,afterActionPercentSuffix);
+                    campaignHandoff.afterActionRosterRowOffset+AFTER_ACTION_FIRST_MECH_Y,campaignHandoff.afterActionPercentSuffix);
             }
             ++rosterSlot;
         } while (rosterSlot!=pilotRosterCount); /* LIVE count reload/equality. */
     }
     /*1EB6..1FB8. All arithmetic remains in the native entry continuation. */
-    settlementPayoutPercent=PERCENT_DIVISOR;
-    if (combatScenarioCode!=COMBAT_SCENARIO_DARK_WING_BASE)
+    campaignHandoff.settlementPayoutPercent=PERCENT_DIVISOR;
+    if (campaignMission.combatScenarioCode!=COMBAT_SCENARIO_DARK_WING_BASE)
     {
         uint16_t deductionRoll=MwRandomUpTo(PERCENT_DIVISOR);
         uint16_t house=currentPlanetHouseIndex;
         if (house>=CAMPAIGN_HOUSE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: house>=CAMPAIGN_HOUSE_COUNT");
-        if (deductionRoll<=houseDeductionRollThresholds[house])
-            settlementPayoutPercent=houseReducedPayoutPercentages[house];
+        if (deductionRoll<=campaignHandoff.houseDeductionRollThresholds[house])
+            campaignHandoff.settlementPayoutPercent=campaignHandoff.houseReducedPayoutPercentages[house];
     }
     {
         uint32_t salvagePayment=0;
-        if (combatScenarioCode!=COMBAT_SCENARIO_DARK_WING_BASE
-            && combatTransitionResult==0 && acceptedContractSalvagePercent!=0)
+        if (campaignMission.combatScenarioCode!=COMBAT_SCENARIO_DARK_WING_BASE
+            && campaignMission.combatTransitionResult==0 && campaignMission.acceptedContractSalvagePercent!=0)
         {
             uint16_t salvageThousands=0;
             for (uint16_t slot=0;slot<CAMPAIGN_SALVAGE_SLOTS;++slot)
             {
-                const CampaignSalvageEntry *salvage=&salvageEntries[slot];
+                const CampaignSalvageEntry *salvage=&campaignMission.salvageEntries[slot];
                 uint16_t unitKind=salvage->unitKind|((uint16_t)salvage->leadingZeroByte<<8);
                 if (unitKind==UINT16_MAX) continue;
                 uint16_t condition=salvage->conditionPercent|((uint16_t)salvage->trailingZeroByte<<8);
@@ -260,7 +260,7 @@ beginDebrief:
                 if (condition<=SALVAGE_SCRAP_CONDITION_LIMIT)
                 {
                     if (unitKind>=CAMPAIGN_MECH_KIND_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: unitKind>=CAMPAIGN_MECH_KIND_COUNT"); /* Unmapped adjoining pricing words. */
-                    valueThousands=(uint8_t)campaignMechTonnages[unitKind]*SALVAGE_SCRAP_THOUSANDS_PER_TON;
+                    valueThousands=(uint8_t)campaignHandoff.campaignMechTonnages[unitKind]*SALVAGE_SCRAP_THOUSANDS_PER_TON;
                 }
                 else
                 {
@@ -273,9 +273,9 @@ beginDebrief:
                 }
                 salvageThousands+=valueThousands;
             }
-            uint32_t share=(uint32_t)salvageThousands*acceptedContractSalvagePercent/PERCENT_DIVISOR;
+            uint32_t share=(uint32_t)salvageThousands*campaignMission.acceptedContractSalvagePercent/PERCENT_DIVISOR;
             if (share>UINT16_MAX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: share>UINT16_MAX"); /* First native WORD quotient before second MUL. */
-            uint32_t paid=share*settlementPayoutPercent/PERCENT_DIVISOR;
+            uint32_t paid=share*campaignHandoff.settlementPayoutPercent/PERCENT_DIVISOR;
             if (paid>UINT16_MAX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: paid>UINT16_MAX");
             salvagePayment=paid*CBILLS_PER_THOUSAND;
         }
@@ -286,9 +286,9 @@ beginDebrief:
         MwDrawSignedDecimalField(salvagePayment,AFTER_ACTION_PAYMENT_X,1,0,
             AFTER_ACTION_FOREGROUND,AFTER_ACTION_BACKGROUND,AFTER_ACTION_SALVAGE_Y);
         uint32_t contractPayment=0;
-        if (combatTransitionResult==0)
+        if (campaignMission.combatTransitionResult==0)
         {
-            uint32_t paymentThousands=(uint32_t)remainingContractPaymentThousands*settlementPayoutPercent/PERCENT_DIVISOR;
+            uint32_t paymentThousands=(uint32_t)campaignMission.remainingContractPaymentThousands*campaignHandoff.settlementPayoutPercent/PERCENT_DIVISOR;
             if (paymentThousands>UINT16_MAX) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: paymentThousands>UINT16_MAX");
             contractPayment=paymentThousands*CBILLS_PER_THOUSAND;
         }
@@ -319,7 +319,7 @@ beginDebrief:
             (void)MwRemovePilotAndCompactRoster(LAST_PILOT_CARD_SLOT);
         }
     }
-    campaignEconomy.playerCombatCredit+=returnedDisabledEnemyCount;
+    campaignEconomy.playerCombatCredit+=campaignMission.returnedDisabledEnemyCount;
     uint16_t reputation;reputation=0;
     if (campaignEconomy.playerCombatCredit>=COMMANDER_REPUTATION_SECOND_THRESHOLD)
     {
@@ -331,8 +331,8 @@ beginDebrief:
         }
     }
     campaignMechanics.rosterPayTiers[0]=reputation;
-    ++playerSkillProgress;
-    int32_t skillProgress;skillProgress=playerSkillProgress;
+    ++campaignMission.playerSkillProgress;
+    int32_t skillProgress;skillProgress=campaignMission.playerSkillProgress;
     if (skillProgress>=0x8000) skillProgress-=0x10000; /* Native signed JGE. */
     if ((campaignMechanics.rosterGunneryTiers[0]==PILOT_SKILL_POOR && skillProgress>=PILOT_POOR_ADVANCE_COUNT)
         || (campaignMechanics.rosterGunneryTiers[0]==PILOT_SKILL_AVERAGE && skillProgress>=PILOT_AVERAGE_ADVANCE_COUNT)
@@ -340,17 +340,17 @@ beginDebrief:
     {
         ++campaignMechanics.rosterGunneryTiers[0];
         ++campaignMechanics.rosterPilotingTiers[0]; /* Increment independently, NOT assignment to Gunnery. */
-        playerSkillProgress=0;
+        campaignMission.playerSkillProgress=0;
     }
     for (uint16_t rosterSlot=1;rosterSlot!=pilotRosterCount;++rosterSlot)
         MwAdvancePilotSkillFromExperience(rosterSlot);
     {
         uint16_t elapsedUnits;
-        if (combatScenarioCode==COMBAT_SCENARIO_DARK_WING_BASE)
+        if (campaignMission.combatScenarioCode==COMBAT_SCENARIO_DARK_WING_BASE)
             elapsedUnits=SPECIAL_ASSAULT_DEPLOYMENT_UNITS;
         else
         {
-            uint16_t planetIndex=(uint16_t)combatPlanetSelector-1;
+            uint16_t planetIndex=(uint16_t)campaignMission.combatPlanetSelector-1;
             uint16_t distance=MwCalculatePlanetTravelDistance(planetIndex);
             uint16_t travelUnits=(uint16_t)(distance*DEPLOYMENT_TRAVEL_MULTIPLIER)<<1;
             MwAdvanceCampaignTimeAndChargeWages(travelUnits);
@@ -360,14 +360,14 @@ beginDebrief:
             if (recordOffset<PLANET_RECORDS_START || (uint32_t)recordOffset+sizeof(MwPlanetHeader)>PLANET_RECORDS_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: recordOffset<PLANET_RECORDS_START || (uint32_t)recordOffset+sizeof(MwPlanetHeader)>PLANET_RECORDS_END");
             const MwPlanetHeader *planet=(const MwPlanetHeader *)&planetRecordStorage[recordOffset-PLANET_RECORDS_START];
             MwAdvanceCampaignTimeAndChargeWages((uint16_t)(planet->travelTimeWeight<<2));
-            planetIndex=(uint16_t)((uint16_t)combatPlanetSelector-1); /* Re-read after the time call. */
+            planetIndex=(uint16_t)((uint16_t)campaignMission.combatPlanetSelector-1); /* Re-read after the time call. */
             if (planetIndex>=CAMPAIGN_PLANET_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: planetIndex>=CAMPAIGN_PLANET_COUNT");
             recordOffset=planetRecordOffsets[planetIndex];
             if (recordOffset<PLANET_RECORDS_START || (uint32_t)recordOffset+sizeof(MwPlanetHeader)>PLANET_RECORDS_END) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: recordOffset<PLANET_RECORDS_START || (uint32_t)recordOffset+sizeof(MwPlanetHeader)>PLANET_RECORDS_END");
             planet=(const MwPlanetHeader *)&planetRecordStorage[recordOffset-PLANET_RECORDS_START];
             MwAdvanceCampaignTimeAndChargeWages((uint16_t)(planet->travelTimeWeight<<1));
-            if (combatScenarioCode>=DEPLOYMENT_SCENARIO_TIME_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatScenarioCode>=DEPLOYMENT_SCENARIO_TIME_COUNT");
-            elapsedUnits=missionDeploymentUnitsByScenario[combatScenarioCode];
+            if (campaignMission.combatScenarioCode>=DEPLOYMENT_SCENARIO_TIME_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: combatScenarioCode>=DEPLOYMENT_SCENARIO_TIME_COUNT");
+            elapsedUnits=campaignHandoff.missionDeploymentUnitsByScenario[campaignMission.combatScenarioCode];
         }
         MwAdvanceCampaignTimeAndChargeWages(elapsedUnits);
     }
@@ -378,43 +378,43 @@ beginDebrief:
     EgaSelectFont(0);
     {
         const char *outcome;
-        if (combatScenarioCode==COMBAT_SCENARIO_DARK_WING_BASE)
-            outcome=darkWingAttackFailedText;
+        if (campaignMission.combatScenarioCode==COMBAT_SCENARIO_DARK_WING_BASE)
+            outcome=campaignHandoff.darkWingAttackFailedText;
         else
         {
-            if (acceptedContractTargetHouseIndex<CAMPAIGN_HOUSE_COUNT)
-                campaignEconomy.houseGrievancePoints[acceptedContractTargetHouseIndex]+=2;
+            if (campaignMission.acceptedContractTargetHouseIndex<CAMPAIGN_HOUSE_COUNT)
+                campaignEconomy.houseGrievancePoints[campaignMission.acceptedContractTargetHouseIndex]+=2;
             uint16_t house=currentPlanetHouseIndex;
             if (house>=CAMPAIGN_HOUSE_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: house>=CAMPAIGN_HOUSE_COUNT");
-            if (deploymentResolvedWithoutCombat!=0)
+            if (campaignHandoff.deploymentResolvedWithoutCombat!=0)
             {
-                deploymentResolvedWithoutCombat=0;
+                campaignHandoff.deploymentResolvedWithoutCombat=0;
                 campaignEconomy.houseFavorPoints[house]+=2;
-                outcome=deploymentUneventfulText;
+                outcome=campaignHandoff.deploymentUneventfulText;
             }
-            else if (combatTransitionResult!=0)
+            else if (campaignMission.combatTransitionResult!=0)
             {
-                if (combatTransitionResult==2) ++campaignEconomy.houseGrievancePoints[house];
-                outcome=afterActionFailureMessages[house];
+                if (campaignMission.combatTransitionResult==2) ++campaignEconomy.houseGrievancePoints[house];
+                outcome=campaignHandoff.afterActionFailureMessages[house];
             }
             else
             {
                 if (!campaignStartMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStartMusic");
                 campaignStartMusic(campaignMusicBufferSelector,LAUNCH_MUSIC_OFFSET);
                 campaignEconomy.houseFavorPoints[house]+=2;
-                outcome=afterActionSuccessMessages[house];
+                outcome=campaignHandoff.afterActionSuccessMessages[house];
             }
         }
         MwDrawCampaignTextColourOne(AFTER_ACTION_OUTCOME_X,AFTER_ACTION_OUTCOME_Y,outcome);
         MwWaitForInputAcknowledgment();
     }
-    if (combatScenarioCode!=COMBAT_SCENARIO_DARK_WING_BASE
-        && combatTransitionResult==0 && settlementPayoutPercent!=PERCENT_DIVISOR)
+    if (campaignMission.combatScenarioCode!=COMBAT_SCENARIO_DARK_WING_BASE
+        && campaignMission.combatTransitionResult==0 && campaignHandoff.settlementPayoutPercent!=PERCENT_DIVISOR)
     {
         EgaFillDisplayPageRectangle(9,0x0092,0x00F7,0x0030,AFTER_ACTION_BACKGROUND);
-        const char *deduction=settlementNoPaymentText;
-        if (settlementPayoutPercent!=0)
-            deduction=settlementDeductionMessages[MwRandomUpTo(2)];
+        const char *deduction=campaignHandoff.settlementNoPaymentText;
+        if (campaignHandoff.settlementPayoutPercent!=0)
+            deduction=campaignHandoff.settlementDeductionMessages[MwRandomUpTo(2)];
         MwDrawCampaignTextColourOne(AFTER_ACTION_OUTCOME_X,AFTER_ACTION_OUTCOME_Y,deduction);
         MwWaitForInputAcknowledgment();
     }
@@ -425,10 +425,10 @@ postCombatEvents:
     {campaignEventDispatchReturnContinuation=0;continuation=CAMPAIGN_CONTINUE_PLANET_HUB;}
     goto resumeCampaign;
 darkWingVictory:
-    darkWingBaseVictoryRecorded=1;
-    eventSeenFlags[EVENT_DARK_WING_BASE_ATTACK]=1;
-    eventSeenFlags[EVENT_PORT_ARREST]=1;
-    MwDrawCampaignTextColourOne(0x000E,0x008C,darkWingVictoryText);
+    campaignEvents.darkWingBaseVictoryRecorded=1;
+    campaignEvents.eventSeenFlags[EVENT_DARK_WING_BASE_ATTACK]=1;
+    campaignEvents.eventSeenFlags[EVENT_PORT_ARREST]=1;
+    MwDrawCampaignTextColourOne(0x000E,0x008C,campaignHandoff.darkWingVictoryText);
     EgaCopyDisplayToDrawPage(0,0,EGA_COLUMNS,EGA_ROWS);
     MwDrawIndexedPicture(0,0,VICTORY_TRANSITION_PICTURE);
     EgaCopyDrawPageToDisplay(0,0,EGA_COLUMNS,EGA_ROWS);

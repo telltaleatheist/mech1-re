@@ -94,7 +94,7 @@ uint16_t MwCampaignUiEventLoop(void)
                 case CAMPAIGN_CONTINUE_CONTRACT_OFFICE:case CAMPAIGN_CONTINUE_CONTRACT_OFFICE_REDRAW:case CAMPAIGN_CONTINUE_CONTRACT_OFFICE_MENU:codeOffset=MwEnterContractOfficeContinuation(codeOffset);break;
                 case CAMPAIGN_CONTINUE_REQUEST_MISSION_OFFER:codeOffset=MwRequestMissionOfferContinuation();break;
                 case CAMPAIGN_CONTINUE_NEXT_MISSION_OFFER:codeOffset=MwNextMissionOfferContinuation();break;
-                case CAMPAIGN_CONTINUE_MISSION_BRIEFING:codeOffset=MwDrawMissionContractBriefingContinuation(negotiatingMissionOfferSlot);break;
+                case CAMPAIGN_CONTINUE_MISSION_BRIEFING:codeOffset=MwDrawMissionContractBriefingContinuation(campaignContracts.negotiatingMissionOfferSlot);break;
                 case CAMPAIGN_CONTINUE_REQUEST_PAYMENT:codeOffset=MwEditContractPaymentRequestContinuation();break;
                 case CAMPAIGN_CONTINUE_REQUEST_SALVAGE:codeOffset=MwEditContractSalvageRequestContinuation();break;
                 case CAMPAIGN_CONTINUE_REQUEST_ADVANCE:codeOffset=MwEditContractAdvanceRequestContinuation();break;
@@ -120,7 +120,7 @@ uint16_t MwCampaignUiEventLoop(void)
                     if (campaignEventReturnContinuation!=CAMPAIGN_CONTINUE_NEXT_EVENT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: campaignEventReturnContinuation!=CAMPAIGN_CONTINUE_NEXT_EVENT");
                     codeOffset=campaignEventReturnContinuation;break;
                 case CAMPAIGN_CONTINUE_NEXT_EVENT:
-                    codeOffset=MwDispatchCampaignEvents(campaignEventClass,codeOffset);
+                    codeOffset=MwDispatchCampaignEvents(campaignEvents.campaignEventClass,codeOffset);
                     if (!codeOffset)
                     {
                         codeOffset=campaignEventDispatchReturnContinuation;

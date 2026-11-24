@@ -16,7 +16,7 @@ uint16_t MwEnterBarContinuation(uint16_t entryOffset)
     if (entryOffset==CAMPAIGN_CONTINUE_BAR_REFRESH) goto refreshMenu;
     if (entryOffset==CAMPAIGN_CONTINUE_BAR_BACKGROUND) goto drawBackground;
     if (entryOffset!=CAMPAIGN_CONTINUE_BAR) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: entryOffset!=CAMPAIGN_CONTINUE_BAR");
-    if (audioOptionLabelIndex!=AUDIO_LABEL_OFF)
+    if (campaignMission.audioOptionLabelIndex!=AUDIO_LABEL_OFF)
     {
         if (!campaignStartMusic) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !campaignStartMusic");
         campaignStartMusic(campaignMusicBufferSelector,0);
@@ -184,7 +184,7 @@ void MwDrawCommanderProfile(void)
 {
     EgaSelectFont(0);
     for (uint16_t house=0;house<CAMPAIGN_HOUSE_COUNT;++house)
-        houseNetStandings[house]=(uint16_t)(campaignEconomy.houseFavorPoints[house]-campaignEconomy.houseGrievancePoints[house]);
+        campaignMission.houseNetStandings[house]=(uint16_t)(campaignEconomy.houseFavorPoints[house]-campaignEconomy.houseGrievancePoints[house]);
     campaignPilots.commanderProfilePanel.width=campaignMechanics.rosterPayTiers[COMMANDER_ROSTER_SLOT]==COMMANDER_REPUTATION_WORTH_WATCHING?COMPANY_PROFILE_WATCHING_WIDTH:COMPANY_PROFILE_WIDTH;
     campaignPilots.commanderProfilePanel.x=COMPANY_PROFILE_X; /* Native252A discards the centering calculation. */
     MwDrawDescriptorTextPanel(&campaignPilots.commanderProfilePanel);
@@ -195,15 +195,15 @@ void MwDrawCommanderProfile(void)
     if (commanderReputationTier>=COMMANDER_REPUTATION_COUNT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: commanderReputationTier>=COMMANDER_REPUTATION_COUNT");
     MwNativeByteView reputationText={(const uint8_t *)campaignPilots.commanderReputationLabels[commanderReputationTier],0,sizeof(campaignPilots.commanderReputationLabels[commanderReputationTier])};
     EgaDrawTransparentText((uint16_t)(campaignPilots.commanderProfilePanel.x+COMPANY_REPUTATION_X),COMPANY_REPUTATION_Y,PILOT_CARD_TEXT_COLOUR,&reputationText,0);
-    commanderAgeYears=calendarYear-COMMANDER_AGE_YEAR_BIAS;
-    if (calendarMonthIndex>=COMMANDER_AGE_MONTH_THRESHOLD) ++commanderAgeYears;
-    MwDrawSignedDecimalField(commanderAgeYears,(uint16_t)(campaignPilots.commanderProfilePanel.x+COMPANY_AGE_X),1,0,PILOT_CARD_TEXT_COLOUR,PILOT_CARD_BACKGROUND,COMPANY_AGE_Y);
+    campaignMission.commanderAgeYears=calendarYear-COMMANDER_AGE_YEAR_BIAS;
+    if (calendarMonthIndex>=COMMANDER_AGE_MONTH_THRESHOLD) ++campaignMission.commanderAgeYears;
+    MwDrawSignedDecimalField(campaignMission.commanderAgeYears,(uint16_t)(campaignPilots.commanderProfilePanel.x+COMPANY_AGE_X),1,0,PILOT_CARD_TEXT_COLOUR,PILOT_CARD_BACKGROUND,COMPANY_AGE_Y);
     ++numericGroupingEnabled;
     MwDrawSignedDecimalField(((uint32_t)campaignEconomy.campaignFundsHigh<<NATIVE_WORD_BITS)|campaignEconomy.campaignFundsLow,
         (uint16_t)(campaignPilots.commanderProfilePanel.x+COMPANY_WEALTH_X),1,0,PILOT_CARD_TEXT_COLOUR,PILOT_CARD_BACKGROUND,COMPANY_WEALTH_Y);
     for (uint16_t house=0;house<CAMPAIGN_HOUSE_COUNT;++house)
     {
-        int16_t standing=houseNetStandings[house];
+        int16_t standing=campaignMission.houseNetStandings[house];
         if (standing<-COMPANY_HOUSE_STANDING_LIMIT) standing=-COMPANY_HOUSE_STANDING_LIMIT;
         else if (standing>COMPANY_HOUSE_STANDING_LIMIT) standing=COMPANY_HOUSE_STANDING_LIMIT;
         uint16_t attitude=(uint16_t)(((uint16_t)standing&0xFFFE)+COMPANY_HOUSE_STANDING_LIMIT)>>1;
