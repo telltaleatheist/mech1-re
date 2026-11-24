@@ -22,7 +22,7 @@ static MwMusicTimerHandler previousTimerHandler;
  * combat's divide handler is installed. Not designed tone data. */
 enum { DOS_TONE_ZERO_WINDOW_START=0x1F4A,DOS_TONE_ZERO_WINDOW_BYTES=0x1D4,
     DOS_TONE_VECTOR_PREFIX=6,DOS_PRINT_SCREEN_INTERRUPT=5,
-    HOST_REAL_MODE_ADDRESS_MASK=0xFFFFF,HOST_BIOS_MODEL_ADDRESS=0xFFFFE,HOST_BIOS_AT_MODEL=0xFC };
+    HOST_BIOS_AT_MODEL=0xFC };
 static const uint32_t toneFallbackDivideVector[2]={
     UINT32_C(0xF000CA60), /* DOS's own divide handler. */
     UINT32_C(0x1D3B1F4A)}; /* Combat's, 1BF5:1F4A with the image loaded at 0956. */
@@ -80,10 +80,9 @@ static MwKeyboardOwner GetKeyboardOwner(void) {return keyboardOwner;}
 static void SetKeyboardOwner(MwKeyboardOwner owner) {keyboardOwner=owner;}
 static MwDivideOwner GetDivideOwner(void) {return divideOwner;}
 static void SetDivideOwner(MwDivideOwner owner) {divideOwner=owner;}
-static uint8_t ReadRomByte(uint16_t selector,uint16_t offset)
+static uint8_t ReadRomByte(CombatRomByte byte)
 {
-    uint32_t address=(((uint32_t)selector<<4)+offset)&HOST_REAL_MODE_ADDRESS_MASK;
-    return address==HOST_BIOS_MODEL_ADDRESS?HOST_BIOS_AT_MODEL:UINT8_MAX; /* Configured AT/EGA, not PCjr/Tandy. */
+    return byte==CombatRomByte::Model?HOST_BIOS_AT_MODEL:UINT8_MAX; /* Configured AT/EGA, not PCjr/Tandy. */
 }
 static uint16_t QueryEgaInfo(void) {return 0;}
 static void ResetMouse(void) {mwCampaignInput.resetMouse();}

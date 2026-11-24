@@ -61,5 +61,5 @@ FILE *BtechOpenStreamWithRetry(const char *filename,const char *mode);
 uint16_t BtechGetActiveRuntimeDelayFar(void);
 uint16_t BtechReadJoystickAxisTiming(uint8_t axisMask);
 BtechDosAllocation BtechAllocateDosMemoryBlock(uint32_t bytes);
-void BtechFreeDosMemorySelector(uint8_t *allocation);
+void BtechFreeDosMemoryBlock(uint8_t *allocation);
 #endif

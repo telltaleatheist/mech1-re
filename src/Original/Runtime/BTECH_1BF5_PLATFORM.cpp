@@ -19,7 +19,7 @@ BtechDosAllocation BtechAllocateDosMemoryBlock(uint32_t bytes)
 /*1BF5:1F10. DOS49 boundary; native reads the selector WORD at BP+08 only,
  * preserving ES. BP+06 offset is unused. A typed allocation replaces that
  * unobserved address transport, not a one-WORD native signature. */
-void BtechFreeDosMemorySelector(uint8_t *allocation)
+void BtechFreeDosMemoryBlock(uint8_t *allocation)
 {
     if (!btechHostFreeDosAllocation) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostFreeDosAllocation");
     btechHostFreeDosAllocation(allocation);
