@@ -126,10 +126,7 @@ std::string run_screen(bool setupOnly, const std::string& found, bool searched, 
     o.in_use = found, o.play_button = !setupOnly;
     const std::string files = say_files(setup::check_folder(found, setup::story_imported(user)));
     if (!files.empty()) o.notice = "The files in use: " + files;
-    // A pick of the player's own copy, when another is in use, is a choice: only then not stayed on.
-    std::error_code ec;
-    if (!std::filesystem::is_directory(o.default_out, ec) || std::filesystem::equivalent(found, o.default_out, ec))
-      o.same_words = "Those are the files in use. Pick another copy.";
+    o.same_words = "Those are the files in use. Pick another copy.";
   }
   const rekit::sdl::SetupResult r = rekit::sdl::run_setup(g, theme(), o);
   *exit = r.exit;

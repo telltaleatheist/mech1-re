@@ -226,6 +226,17 @@ def main():
         check(p.returncode == 1 and "setup: status Those are the files in use. Pick another copy." in out and
               not any(l.startswith("setup: screen confirm") for l in out), "a pick of the copy in use stays on the find screen (%d)" % p.returncode)
 
+        # Another copy in use: a pick of the player's own goes back to it; a pick of that other one stays.
+        ini = os.path.join(user, "MechWarrior.ini")
+        text = open(ini).read()
+        open(ini, "w").write(re.sub(r"(?m)^game_folder=.*$", lambda m: "game_folder=" + pick, text))
+        p, _ = run(a.program, ["--setup"], dict(again, REKIT_SETUP_PICKER="path:" + os.path.join(pick, "BTECH.EXE")))
+        check(p.returncode == 1 and "setup: status Those are the files in use. Pick another copy." in p.stdout.splitlines(),
+              "another copy in use, picked: stays on the find screen (%d)" % p.returncode)
+        p, _ = run(a.program, ["--setup"], again)
+        check(p.returncode == 0 and "Those are the files in use" not in p.stdout and
+              os.path.normpath(install) in os.path.normpath(open(ini).read()), "the player's own copy, picked: switched to (%d)" % p.returncode)
+
         # The same copy through the setup screen (hidden): found, offered, installed; and into a picked folder.
         user = os.path.join(work, "user-c")
         env = dict(base, MECHWARRIOR_SAVE_DIRECTORY=user)
