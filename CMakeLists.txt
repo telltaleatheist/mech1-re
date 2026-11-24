@@ -198,7 +198,6 @@ add_library(mechwarrior_original STATIC
     src/Original/Memory/BTECH_304E_POLYGONS.cpp
     src/Original/Memory/BTECH_2FEB.cpp
     src/Original/Memory/BTECH_1ADF_STATE.cpp
-    src/Original/Memory/BTECH_0810_STATE.cpp
     src/Original/Memory/BTECH_1BF5_STATE.cpp
     src/Original/Memory/BTECH_22B6_DATA.cpp
     src/Support/CombatPlatform.cpp
