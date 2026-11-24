@@ -91,7 +91,7 @@ cleanup:
     }
     if (!loaded)
     {
-        if (primary.bytes) BtechFreeDosMemorySelector(primary.bytes);
+        if (primary.bytes) BtechFreeDosMemoryBlock(primary.bytes);
         if (archiveCodeOrError) BtechFlushAndCloseCompressedArchive((uint16_t)archiveCodeOrError);
         BtechReleaseBitmapListNearBlocks(list);
         list=NULL;
@@ -114,7 +114,7 @@ void BtechFreeRegisteredBitmapList(BtechBitmapList *list)
     if (BtechIsBitmapListRegistered(list))
     {
         BtechUnregisterBitmapList(list);
-        BtechFreeDosMemorySelector(list->pixels.bytes);
+        BtechFreeDosMemoryBlock(list->pixels.bytes);
         BtechReleaseBitmapListNearBlocks(list);
     }
 }

@@ -46,7 +46,7 @@ uint16_t BtechReleaseArchiveDescriptor(uint16_t handle)
         BtechReleaseNearArchiveBlockIfNonzero(combatResources.selectedArchive->state);
         if (combatResources.selectedArchive->workspace && !combatResources.borrowedArchiveWorkspace)
         {
-            BtechFreeDosMemorySelector((uint8_t *)combatResources.selectedArchive->workspace);
+            BtechFreeDosMemoryBlock((uint8_t *)combatResources.selectedArchive->workspace);
         }
     }
     BtechReleaseNearArchiveBlockIfNonzero(combatResources.selectedArchive);
@@ -81,11 +81,6 @@ uint16_t BtechAllocateArchiveMethodState(int16_t method,const char *mode)
         if (!combatResources.selectedArchive->workspace)
             combatResources.selectedArchive->workspace=(BtechLzwReaderWorkspace *)BtechAllocateDosMemoryBlock(0x3AB3).bytes;
         if (!combatResources.selectedArchive->workspace) return UINT16_MAX;
-        if (combatResources.selectedArchive->workspace!=combatResources.borrowedArchiveWorkspace)
-        {
-            if (!btechHostDosAllocationSelector) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !btechHostDosAllocationSelector");
-            combatResources.selectedArchive->workspaceSelector=btechHostDosAllocationSelector((const uint8_t *)combatResources.selectedArchive->workspace);
-        }
     }
     combatResources.selectedArchive->methodAndFlags=(uint8_t)method;
     return (uint16_t)method; /* Only FFFF/non-FFFF is consumed; native incidental AH is not host ABI. */
