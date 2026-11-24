@@ -13,10 +13,17 @@ enum { OPL_TIMER_ONE=2,OPL_TIMER_CONTROL=4,OPL_TIMER_STATUS_MASK=0xE0,
     OPL_CALIBRATION_START=0x21,OPL_CALIBRATION_ADDRESS_READS=20,
     OPL_ADDRESS_CALIBRATION_SCALE=0x060F,OPL_DATA_CALIBRATION_SCALE=0x00E4 };
 
-/* MW_MAIN0F41:069A. Calibrated reads, including native zero-count LOOP wrap. */
+/* MW_MAIN0F41:069A. Calibrated reads, including native zero-count LOOP wrap.
+ * A rhythm release inherits its port from the last variable-length quantity's
+ * high word (MwStopAdlibVoice), normally 0. There the original's pair went to
+ * DMA channel 0's ports, which no device of the rebuild has: nothing is
+ * written or read, and the release reaches no chip, as before (H5's first
+ * part). Any other port has no device either, and stays a failure. */
 void MwWriteAdlibRegisterPair(uint16_t registerAndValue,uint16_t port)
 {
     midiAdlibOutputPort=port;
+    if (port==0) return;
+    if (port!=ADLIB_INDEX_PORT) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: port!=ADLIB_INDEX_PORT");
     mwMusicHardware.writePort(port,(uint8_t)registerAndValue);
     uint16_t remaining=adlibAddressDelayReads;
     do {mwMusicHardware.readPort(port);} while (--remaining);

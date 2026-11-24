@@ -167,8 +167,7 @@ static void AudioLogOpen(void)
 }
 static bool AudioPort(uint16_t port)
 {
-    return port==ADLIB_INDEX_PORT || port==ADLIB_DATA_PORT || port==MPU_DATA_PORT || port==MPU_STATUS_COMMAND_PORT
-        || port==0 || port==1;
+    return port==ADLIB_INDEX_PORT || port==ADLIB_DATA_PORT || port==MPU_DATA_PORT || port==MPU_STATUS_COMMAND_PORT;
 }
 static void AudioLogEvent(char kind,uint16_t port,uint8_t value)
 {
@@ -200,10 +199,9 @@ void MwSdlWriteDevicePort(uint16_t port,uint8_t value)
             MwAdlibWritePort(port==ADLIB_DATA_PORT,value,hardwareTime*1000000.0/(double)HOST_PIT_CLOCK_HZ);
         return;
     }
-    /* Native rhythm note-off can retain DX=0 from the VLQ reader. Those writes
-     * reach unused DMA channel 0 ports, not the OPL card; never redirect them. */
-    if (port==0 || port==1) return;
-    MwSdlFail("Unsupported hardware write"); /* The PIT and port 61h are gone: tones (S5, S6), the timer period (H4b). */
+    /* The PIT and port 61h are gone: tones (S5, S6), the timer period (H4b).
+     * Ports 0 and 1 too: the rhythm release's pair stops at 0F41 (H5). */
+    MwSdlFail("Unsupported hardware write");
 }
 /* The timer's period (H4b), where the games programmed PIT channel 0: in the
  * PIT's clock units, so the interrupts fall where they did; 0 is the PIT's
@@ -227,8 +225,8 @@ static uint8_t ReadDevicePort(uint16_t port)
     if (port==ADLIB_INDEX_PORT)
         return mwSdlSoundSystem==MW_SOUND_ADLIB
             ?MwAdlibReadStatus(hardwareTime*1000000.0/(double)HOST_PIT_CLOCK_HZ):UINT8_MAX;
-    if (port!=0 && port!=1) MwSdlFail("Unsupported hardware read");
-    return 0; /* Only ignored calibrated-delay reads here. */
+    MwSdlFail("Unsupported hardware read"); /* Ports 0 and 1's delay reads stop at 0F41 (H5). */
+    return 0;
 }
 void MwSdlInitializeTimer(void)
 {
