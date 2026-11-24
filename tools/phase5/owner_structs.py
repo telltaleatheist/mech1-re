@@ -20,6 +20,7 @@ uint16_t[8] and uint16_t[9] are not.
 import json,os,re,subprocess,sys,tempfile
 
 MEMORY='src/Original/Memory'
+OWNERS=set()  # the owner structs of the tree being read
 MARK=re.compile(r'/\* (?:Campaign|Combat) state owned by [\w.]+ \(plan, slice B\d[a-e]?\)\. \*/\nstruct (\w+)\n')
 
 def run(*args):
@@ -32,6 +33,9 @@ def clang(root,path,*more):
 def value(node):
     """An initialiser's tree, without the parts that name a place in a file.
     None where everything in it is zero without being written."""
+    if node.get('kind')=='MemberExpr':  # an owner's instance.field is the variable the field was
+        base=node['inner'][0]
+        if base.get('kind')=='DeclRefExpr' and base['type']['qualType'] in OWNERS: return ((('kind','DeclRefExpr'),('ref',node['name'])),())
     if node.get('kind') in ('ImplicitValueInitExpr','CXXConstructExpr') and not node.get('inner'): return None
     keep={k:node[k] for k in ('kind','value','opcode','castKind','name') if k in node}
     if 'referencedDecl' in node: keep['ref']=node['referencedDecl'].get('name')
@@ -47,6 +51,7 @@ def variables(root,path,owners):
     if not os.path.exists(root+'/'+path): return {}
     dump=clang(root,path,'-Xclang','-ast-dump=json')
     if dump.returncode: sys.exit(dump.stderr.decode()[:2000])
+    OWNERS.clear(); OWNERS.update(owners)
     records,found,main={},{},os.path.join(root,path)
     unit,current=json.loads(dump.stdout)['inner'],None
     for node in unit:
