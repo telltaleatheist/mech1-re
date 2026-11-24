@@ -47,8 +47,7 @@ int16_t joystickFirstAxisValue,joystickDirectionX,joystickDirectionY;
 const char *combatInputReplayFilename;
 uint16_t combatInputReplayMode;
 BtechCharacterClassStorage characterClassStorage;
-BtechResourceBank *shapeResourceBanks,initialShapeResourceBank;
-BtechSurfaceBank surfaceResourceBank;
+CombatResourceState combatResources;
 CombatEffectState combatEffects;
 BtechBodyDestructionEmitter bodyDestructionEmitters[COMBAT_DESTRUCTION_EMITTER_SLOTS];
 CombatBallisticsState combatBallistics;
@@ -59,17 +58,6 @@ static BtechRenderPrimitive ppcBeamPrimitive,laserBeamPrimitive;
 static BtechRenderPolygon ppcBeamPolygons[2],laserBeamPolygons[2];
 static uint8_t beamVerticalTriangleIndices[4],beamHorizontalTriangleIndices[4];
 uint16_t *const effectResourceSequences[2]={combatEffects.defaultEffectResourceDeltas,combatEffects.machineGunEffectResourceDeltas};
-uint16_t shapeResourceBankCount;
-char resourceFilename[0x50];
-BtechArchiveDescriptor *archiveDescriptors[RESOURCE_ARCHIVE_SLOTS],*selectedArchive;
-uint8_t *archiveDestination;
-uint16_t archiveRemainingBytes;
-uint8_t archiveIoFlags,lzwInitialLiteralPending,lzwPhraseResumePending;
-uint16_t lzwCodeWidth,lzwCodeWidthLimit,lzwNextFreeCode,lzwPacketBitOffset,lzwPacketBitLimit;
-uint16_t lzwClearPending,lzwReverseReadOffset,lzwPreviousCode,lzwIncomingCode,lzwPhraseFirstByte;
-uint8_t lzwPacketBytes[12];
-BtechLzwReaderWorkspace *borrowedArchiveWorkspace;
-uint8_t archiveStreamScratch[0x32];
 
 /* Installation IO, not a runtime memory mirror. Strings are resolved exactly
  * once from authored near directories. Runtime consumers use real C strings. */
@@ -82,7 +70,7 @@ bool BtechImportWorldInitialData(const uint8_t *data,size_t bytes,const uint8_t 
 {
     if (!data || bytes<0x10000 || !segment22B6 || segmentBytes<0x6473) return false;
     if (MwReadNativeWord(data,0x4A6C) || MwReadNativeWord(data,0x4A6E)) return false;
-    borrowedArchiveWorkspace=NULL;
+    combatResources.borrowedArchiveWorkspace=NULL;
     memcpy(nullNearSegment,data,sizeof(nullNearSegment));
     memcpy(combatTactics.boundaryMaskByCode,data+0x0EB6,sizeof(combatTactics.boundaryMaskByCode));
     /* The rule tables come from data/rules (src/Rules), laid out as the exe's. */
@@ -211,7 +199,7 @@ void BtechInitializeFreshWorldOwners(const uint8_t *data)
     for (uint16_t slot=0;slot<COMBAT_BODY_EFFECT_SLOTS;++slot) combatEffects.bodyDamageEffects[slot]=BtechBodyDamageEffect{};
     for (uint16_t slot=0;slot<COMBAT_DESTRUCTION_EMITTER_SLOTS;++slot) bodyDestructionEmitters[slot]=BtechBodyDestructionEmitter{};
     for (uint16_t slot=0;slot<COMBAT_EFFECT_SLOTS;++slot) combatEffects.effectSequences[slot]=BtechEffectSequenceState{};
-    for (uint16_t byte=0;byte<sizeof(archiveStreamScratch);++byte) archiveStreamScratch[byte]=0;
+    for (uint16_t byte=0;byte<sizeof(combatResources.archiveStreamScratch);++byte) combatResources.archiveStreamScratch[byte]=0;
     scenarioSelectors=BtechScenarioSelectors{};
     for (uint16_t slot=0;slot<8;++slot)
         unitFormationPositions[slot]=BtechFormationPosition{};
@@ -249,24 +237,24 @@ void BtechInitializeFreshWorldOwners(const uint8_t *data)
     playerPoseCameraContext=NULL;
     specialTargetDamageRemaining=0;
     for (uint16_t slot=0;slot<0x50;++slot)
-        resourceFilename[slot]=0;
+        combatResources.resourceFilename[slot]=0;
     for (uint16_t slot=0;slot<RESOURCE_ARCHIVE_SLOTS;++slot)
-        archiveDescriptors[slot]=NULL;
-    selectedArchive=NULL;
-    archiveDestination=NULL;
-    archiveRemainingBytes=0;
-    archiveIoFlags=0;
-    lzwInitialLiteralPending=0;
-    lzwPhraseResumePending=0;
-    lzwCodeWidth=0;
-    lzwCodeWidthLimit=0;
-    lzwNextFreeCode=0;
-    lzwPacketBitOffset=0;
-    lzwPacketBitLimit=0;
-    lzwClearPending=0;
-    lzwPreviousCode=0;
-    lzwIncomingCode=0;
-    lzwPhraseFirstByte=0;
+        combatResources.archiveDescriptors[slot]=NULL;
+    combatResources.selectedArchive=NULL;
+    combatResources.archiveDestination=NULL;
+    combatResources.archiveRemainingBytes=0;
+    combatResources.archiveIoFlags=0;
+    combatResources.lzwInitialLiteralPending=0;
+    combatResources.lzwPhraseResumePending=0;
+    combatResources.lzwCodeWidth=0;
+    combatResources.lzwCodeWidthLimit=0;
+    combatResources.lzwNextFreeCode=0;
+    combatResources.lzwPacketBitOffset=0;
+    combatResources.lzwPacketBitLimit=0;
+    combatResources.lzwClearPending=0;
+    combatResources.lzwPreviousCode=0;
+    combatResources.lzwIncomingCode=0;
+    combatResources.lzwPhraseFirstByte=0;
     for (uint16_t slot=0;slot<sizeof(sceneChassisResourcePresent)/sizeof(sceneChassisResourcePresent[0]);++slot) sceneChassisResourcePresent[slot]=0; /*06EC*/
     beforeObjectListCallbackOffset=0; /*2CE8*/
     afterObjectListCallbackOffset=0; /*2CEA*/
@@ -281,12 +269,12 @@ void BtechInitializeFreshWorldOwners(const uint8_t *data)
     joystickDirectionY=0; /*41DF*/
     for (uint16_t slot=0;slot<sizeof(joystickAxisReciprocals)/sizeof(joystickAxisReciprocals[0]);++slot) joystickAxisReciprocals[slot]=0; /*41D0*/
     combatInputReplayMode=0; /*084C*/
-    lzwReverseReadOffset=0; /*4AAF*/
-    for (uint16_t slot=0;slot<sizeof(lzwPacketBytes)/sizeof(lzwPacketBytes[0]);++slot) lzwPacketBytes[slot]=data[0x4A9A+slot*1];
+    combatResources.lzwReverseReadOffset=0; /*4AAF*/
+    for (uint16_t slot=0;slot<sizeof(combatResources.lzwPacketBytes)/sizeof(combatResources.lzwPacketBytes[0]);++slot) combatResources.lzwPacketBytes[slot]=data[0x4A9A+slot*1];
     combatInputReplayFilename=NULL;
     chassisResourceBases=BtechChassisResourceBases{};
-    surfaceResourceBank=BtechSurfaceBank{};
-    initialShapeResourceBank=BtechResourceBank{};
-    shapeResourceBanks=&initialShapeResourceBank;
-    shapeResourceBankCount=1;
+    combatResources.surfaceResourceBank=BtechSurfaceBank{};
+    combatResources.initialShapeResourceBank=BtechResourceBank{};
+    combatResources.shapeResourceBanks=&combatResources.initialShapeResourceBank;
+    combatResources.shapeResourceBankCount=1;
 }

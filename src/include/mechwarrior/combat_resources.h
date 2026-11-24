@@ -87,8 +87,6 @@ typedef struct BtechLzwReaderWorkspace {
     uint16_t prefixCodes[LZW_DICTIONARY_LIMIT];
     uint8_t unidentifiedField23[0x720],suffixBytes[LZW_DICTIONARY_LIMIT],reversePhraseBytes[0x393];
 } BtechLzwReaderWorkspace;
-extern BtechLzwReaderWorkspace *borrowedArchiveWorkspace;
-extern uint8_t archiveStreamScratch[0x32];
 typedef struct BtechArchiveDescriptor {
     uint16_t workspaceSelector; /* Identity survives DOS workspace release. */
     uint16_t streamIdentity; /* Native FILE slot survives fclose and host FILE reuse. */
@@ -101,17 +99,24 @@ typedef struct BtechArchiveDescriptor {
     uint32_t initialStreamPosition;
     uint8_t methodAndFlags;
 } BtechArchiveDescriptor;
-extern BtechResourceBank *shapeResourceBanks,initialShapeResourceBank;
-extern BtechSurfaceBank surfaceResourceBank;
-extern uint16_t shapeResourceBankCount;
-extern char resourceFilename[0x50];
-extern BtechArchiveDescriptor *archiveDescriptors[RESOURCE_ARCHIVE_SLOTS],*selectedArchive;
-extern uint8_t *archiveDestination;
-extern uint16_t archiveRemainingBytes;
-extern uint8_t archiveIoFlags,lzwInitialLiteralPending,lzwPhraseResumePending;
-extern uint16_t lzwCodeWidth,lzwCodeWidthLimit,lzwNextFreeCode,lzwPacketBitOffset,lzwPacketBitLimit;
-extern uint16_t lzwClearPending,lzwReverseReadOffset,lzwPreviousCode,lzwIncomingCode,lzwPhraseFirstByte;
-extern uint8_t lzwPacketBytes[12];
+/* Combat state owned by combat_resources.h (plan, slice B3d). */
+struct CombatResourceState
+{
+    BtechLzwReaderWorkspace *borrowedArchiveWorkspace;
+    uint8_t archiveStreamScratch[0x32];
+    BtechResourceBank *shapeResourceBanks, initialShapeResourceBank;
+    BtechSurfaceBank surfaceResourceBank;
+    uint16_t shapeResourceBankCount;
+    char resourceFilename[0x50];
+    BtechArchiveDescriptor *archiveDescriptors[RESOURCE_ARCHIVE_SLOTS], *selectedArchive;
+    uint8_t *archiveDestination;
+    uint16_t archiveRemainingBytes;
+    uint8_t archiveIoFlags, lzwInitialLiteralPending, lzwPhraseResumePending;
+    uint16_t lzwCodeWidth, lzwCodeWidthLimit, lzwNextFreeCode, lzwPacketBitOffset, lzwPacketBitLimit;
+    uint16_t lzwClearPending, lzwReverseReadOffset, lzwPreviousCode, lzwIncomingCode, lzwPhraseFirstByte;
+    uint8_t lzwPacketBytes[12];
+};
+extern CombatResourceState combatResources;
 uint16_t BtechSelectArchiveDescriptor(uint16_t handle);
 uint16_t BtechArchiveModeContainsRead(const char *mode);
 void BtechReleaseNearArchiveBlockIfNonzero(void *allocation);

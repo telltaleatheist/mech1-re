@@ -20,10 +20,10 @@ int16_t BtechSortWorldObjectsBySurfacePriority(BtechWorldObjectPrefix **objects,
         if (index>=COMBAT_WORLD_OBJECTS || !objects[index]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: index>=COMBAT_WORLD_OBJECTS || !objects[index]");
         int16_t resource=objects[index]->resourceId;
         uint8_t priority=0;
-        if (resource>=0 && resource<(int16_t)surfaceResourceBank.resourceCount)
+        if (resource>=0 && resource<(int16_t)combatResources.surfaceResourceBank.resourceCount)
         {
-            if (!surfaceResourceBank.surfaces || !surfaceResourceBank.surfaces[resource]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !surfaceResourceBank.surfaces || !surfaceResourceBank.surfaces[resource]");
-            priority=surfaceResourceBank.surfaces[resource]->priorityClass;
+            if (!combatResources.surfaceResourceBank.surfaces || !combatResources.surfaceResourceBank.surfaces[resource]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: !surfaceResourceBank.surfaces || !surfaceResourceBank.surfaces[resource]");
+            priority=combatResources.surfaceResourceBank.surfaces[resource]->priorityClass;
         }
         priorities[index]=priority;
     }

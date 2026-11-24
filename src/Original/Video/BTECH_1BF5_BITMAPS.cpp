@@ -50,9 +50,9 @@ BtechBitmapList *BtechLoadBitmapList(const char *filename,BtechRuntimeStream *st
     scratch=static_cast<uint8_t *>(BtechAllocateNearBytes(COMBAT_BITMAP_WORKSPACE_BYTES,COMBAT_BITMAP_WORKSPACE_BYTES,BTECH_NEAR_BYTES));
     if (scratch)
     {
-        borrowedArchiveWorkspace=(BtechLzwReaderWorkspace *)scratch;
-        borrowedArchiveWorkspace=(BtechLzwReaderWorkspace *)(scratch+0x10);
-        borrowedArchiveWorkspace=(BtechLzwReaderWorkspace *)((uintptr_t)borrowedArchiveWorkspace&~(uintptr_t)0x0F);
+        combatResources.borrowedArchiveWorkspace=(BtechLzwReaderWorkspace *)scratch;
+        combatResources.borrowedArchiveWorkspace=(BtechLzwReaderWorkspace *)(scratch+0x10);
+        combatResources.borrowedArchiveWorkspace=(BtechLzwReaderWorkspace *)((uintptr_t)combatResources.borrowedArchiveWorkspace&~(uintptr_t)0x0F);
     } // Paragraph alignment is actual borrowed decoder storage, not an address-to-object lookup.
     if (BtechFindResourceTagPosition(stream,"BMP:BIN:",0)==UINT32_MAX) goto cleanup;
     uint32_t archiveBytes;archiveBytes=BtechGetTaggedPayloadLength(stream);
@@ -87,7 +87,7 @@ cleanup:
     if (scratch)
     {
         BtechReleaseNearBlockAndProbeAllocation(scratch);
-        borrowedArchiveWorkspace=NULL;
+        combatResources.borrowedArchiveWorkspace=NULL;
     }
     if (!loaded)
     {

@@ -142,7 +142,7 @@ void BtechExportCombatResultsAndTransition(uint16_t resultCode)
         {
             BtechWorldObjectPrefix *registered=worldObjects[object];
             if (!registered) break;
-            if ((int16_t)registered->resourceId<(int16_t)surfaceResourceBank.resourceCount && (int16_t)registered->resourceId>=0)
+            if ((int16_t)registered->resourceId<(int16_t)combatResources.surfaceResourceBank.resourceCount && (int16_t)registered->resourceId>=0)
             {
                 if (selectedObjectCount>=COMBAT_SELECTED_WORLD_OBJECTS) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: selectedObjectCount>=COMBAT_SELECTED_WORLD_OBJECTS");
                 selectedWorldObjects[selectedObjectCount++]=worldObjects[object];

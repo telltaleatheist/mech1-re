@@ -8,7 +8,7 @@
  * Boundary equality is inside. No bank and zero boundaries both reject. */
 uint8_t BtechTestPatchBoundaryHalfPlanes(const BtechSurfacePatch *patch,uint16_t queryA,uint16_t queryB)
 {
-    if (!surfaceResourceBank.allocation.bytes) return 0;
+    if (!combatResources.surfaceResourceBank.allocation.bytes) return 0;
     uint16_t count=patch->boundaryCount;
     if (!count) return 0;
     if (count>SURFACE_MAXIMUM_BOUNDARIES) BtechShowFatalErrorAndExit("a surface has more boundary edges than the renderer allows"); // Authored304E:2CB6.
@@ -41,7 +41,7 @@ uint8_t BtechTestPatchBoundaryHalfPlanes(const BtechSurfacePatch *patch,uint16_t
  * This is the authored plane-height equation, not interpolation of vertices. */
 uint16_t BtechEvaluateSurfacePatchHeight(const BtechSurfacePatch *patch,uint16_t queryA,uint16_t queryB)
 {
-    if (!surfaceResourceBank.allocation.bytes) return 0;
+    if (!combatResources.surfaceResourceBank.allocation.bytes) return 0;
     const BtechSurfaceBoundary *boundary=&patch->heightBoundary;
     uint32_t products=0;
     if (boundary->coefficientA)
@@ -110,7 +110,7 @@ uint16_t BtechTestSurfacePatches(BtechSurfaceQueryResult *result,const BtechPosi
 uint16_t BtechQueryWorldSurface(BtechSurfaceQueryResult *result,const BtechPosition3D *position,
     BtechWorldObjectPrefix *const *objects,int16_t objectCount)
 {
-    if (!surfaceResourceBank.allocation.bytes) return 0; /* Leave old result entirely untouched. */
+    if (!combatResources.surfaceResourceBank.allocation.bytes) return 0; /* Leave old result entirely untouched. */
     const BtechSurfaceDefinition *surface=result->surface;
     if (surface && !surface->priorityClass)
     {
@@ -127,9 +127,9 @@ uint16_t BtechQueryWorldSurface(BtechSurfaceQueryResult *result,const BtechPosit
         BtechWorldObjectPrefix *object=objects[index];
         if (!(object->renderFlags&WORLD_OBJECT_SURFACE_QUERY_CANDIDATE)) continue;
         uint16_t resource=object->resourceId;
-        if (resource>=surfaceResourceBank.resourceCount || !surfaceResourceBank.surfaces
-            || !surfaceResourceBank.surfaces[resource]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: resource>=surfaceResourceBank.resourceCount || !surfaceResourceBank.surfaces || !surfaceResourceBank.surfaces[resource]");
-        surface=surfaceResourceBank.surfaces[resource];
+        if (resource>=combatResources.surfaceResourceBank.resourceCount || !combatResources.surfaceResourceBank.surfaces
+            || !combatResources.surfaceResourceBank.surfaces[resource]) /* Port failsafe; not an original DOS exit. */ MW_PORT_FAILSAFE("Rejected condition: resource>=surfaceResourceBank.resourceCount || !surfaceResourceBank.surfaces || !surfaceResourceBank.surfaces[resource]");
+        surface=combatResources.surfaceResourceBank.surfaces[resource];
         if (!surface->patchCount || (found && surface->priorityClass>bestPriority)) continue;
         combatRender.resourceScaleShift=BtechGetResourceScaleShift(object->resourceId);
         if (BtechTestSurfacePatches(result,position,surface,object,0))
