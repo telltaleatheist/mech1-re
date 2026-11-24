@@ -322,7 +322,11 @@ std::string game_in(const std::string& dir, int depth) {
       for (fs::directory_iterator it(f, fs::directory_options::skip_permission_denied, ec), end; !ec && it != end;
            it.increment(ec)) {
         std::error_code e2;
-        if (it->is_directory(e2) && !it->is_symlink(e2)) subs.push_back(it->path().string());
+        if (!it->is_directory(e2) || it->is_symlink(e2)) continue;
+        try {
+          subs.push_back(it->path().string());
+        } catch (const std::exception&) {  // a name that isn't text (Windows): no game is looked for under it
+        }
       }
       std::sort(subs.begin(), subs.end());
       next.insert(next.end(), subs.begin(), subs.end());
@@ -348,6 +352,20 @@ std::string find_install(const std::string& remembered, const std::string& user,
       if (searched) *searched = true;
       return g;
     }
+  }
+  return "";
+}
+
+std::string find_other_install(const std::vector<std::string>& not_these, const std::string& user, const std::string& program_dir) {
+  const bool imported = story_imported(user);
+  for (const std::string& place : rekit::install_candidates(hints(), program_dir)) {
+    const std::string g = game_in(place, 2);
+    if (g.empty() || check_install(g, imported).state == rekit::Status::kMissing) continue;
+    const bool known = std::any_of(not_these.begin(), not_these.end(), [&g](const std::string& d) {
+      std::error_code ec;
+      return !d.empty() && fs::equivalent(g, d, ec);
+    });
+    if (!known) return g;
   }
   return "";
 }

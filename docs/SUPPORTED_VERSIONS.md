@@ -40,7 +40,14 @@ exe in either revision below. Nothing else differs in what it imports:
   Hawk stops with it: the bank doesn't unpack to the length its header gives,
   and the program says "phapck.tbl unpacks to less than its header says" and
   what to do (before B4e, only "Rejected condition: total!=allocation.byteCount").
-  Nothing imports the file; the traces use the 1990 one.
+  Nothing imports the file; the traces use the 1990 one. The setup names it
+  (below).
+
+The setup compares the game's other files with the two copies we have
+(src/Setup/FileCheck.h: 117 files the program opens, by size and SHA-256; the
+list and where each is opened are in tools/setup/make_game_files.py). It says
+what a copy lacks, what is known to be damaged (that PHAPCK.TBL) and what
+differs, which another edition may, and the player can go on all the same.
 
 The tests take the further revisions as `MW1O_BTECH_REFERENCE` (the 1989
 BTECH.EXE) and `MW1O_MAIN_1989` (the 1989 MW_MAIN.EXE), besides the game folder

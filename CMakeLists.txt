@@ -392,7 +392,7 @@ if(MECHWARRIOR_BUILD_SDL)
     if(NOT MECHWARRIOR_RELEASE_TAG STREQUAL "" AND NOT MECHWARRIOR_RELEASE_TAG MATCHES "^mw1r-v[0-9]+\\.[0-9]+\\.[0-9]+$")
         message(FATAL_ERROR "MECHWARRIOR_RELEASE_TAG is a release's tag, mw1r-vX.Y.Z, or empty: ${MECHWARRIOR_RELEASE_TAG}")
     endif()
-    add_library(mechwarrior_setup STATIC src/Setup/Setup.cpp src/Setup/ProgramRecord.cpp)
+    add_library(mechwarrior_setup STATIC src/Setup/Setup.cpp src/Setup/FileCheck.cpp src/Setup/GameFilesTable.cpp src/Setup/ProgramRecord.cpp)
     target_include_directories(mechwarrior_setup PUBLIC src)
     target_link_libraries(mechwarrior_setup PUBLIC rekit mechwarrior_original)
     add_library(mechwarrior_sdl STATIC

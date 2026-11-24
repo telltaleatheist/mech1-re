@@ -115,6 +115,8 @@ std::string game_in(const std::string& dir, int depth = 2);
 // says the answer came from the search (offered, never taken unasked). "" when none.
 std::string find_install(const std::string& remembered, const std::string& user, const std::string& program_dir,
                          bool* searched);
+// A copy the search finds that is none of `not_these` (the one in use, the player's own), or "": choosing again.
+std::string find_other_install(const std::vector<std::string>& not_these, const std::string& user, const std::string& program_dir);
 
 // The answer to `--status`: nothing written, no window. `version` is the program's.
 rekit::Status status(const std::string& remembered, const std::string& user, const std::string& program_dir,

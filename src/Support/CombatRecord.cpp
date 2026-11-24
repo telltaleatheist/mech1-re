@@ -7,7 +7,7 @@
 {
     static char reason[400];
     snprintf(reason, sizeof(reason), "%s %s. Your copy of the game's files is damaged: run mw1r --setup and pick a "
-        "good copy (not the one it finds in use).", file, what);
+        "good copy.", file, what);
     MwAbortWithReason("port failsafe", reason, __FILE__, __LINE__, __func__);
 }
 

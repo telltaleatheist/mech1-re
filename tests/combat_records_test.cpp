@@ -79,7 +79,7 @@ void Reset() {
 
 // What the call was refused for, without the advice; or nothing.
 const std::string kAdvice =
-    " Your copy of the game's files is damaged: run mw1r --setup and pick a good copy (not the one it finds in use).";
+    " Your copy of the game's files is damaged: run mw1r --setup and pick a good copy.";
 template <class Call>
 std::string RefusedFor(Call call) {
   Reset();

@@ -185,6 +185,7 @@ def main():
     p, _ = run(a.program, ["--setup"], dict(env, MECHWARRIOR_SETUP_PICK=fake))
     check(p.returncode == 2 and "a revision this program doesn't know" in p.stdout, "a scripted pick of it says so too")
 
+    # The file check, on a copy with nothing but the two programs of the game: said, and the player goes on.
     game = os.environ.get("MW1O_GAME")
     btech = os.environ.get("MW1O_BTECH_1990")
     if game and btech:
@@ -196,6 +197,8 @@ def main():
         env = dict(base, MECHWARRIOR_SAVE_DIRECTORY=user)
         p, _ = run(a.program, ["--setup"], dict(env, MECHWARRIOR_SETUP_PICK=os.path.join(pick, "BTECH.EXE")))
         check(p.returncode == 0, "--setup from a pick of BTECH.EXE exits 0 (%d)" % p.returncode)
+        check("setup: files: missing: " in p.stdout and "You can continue, or choose another copy." in p.stderr,
+              "a scripted pick's missing files are logged and said, and it is installed all the same")
         install = os.path.join(user, "install")
         check(os.path.isfile(os.path.join(install, "BTECH.EXE")), "the copy is in the player's folder's install")
         check(os.path.isfile(os.path.join(pick, "BTECH.EXE")), "the player's original is left as it was")
@@ -208,8 +211,20 @@ def main():
         check(files.get("state") == "ready" and os.path.normcase(os.path.normpath(files.get("where", ""))) ==
               os.path.normcase(os.path.normpath(install)), "--status after the setup: ready, where = the install")
         check(files.get("data") == "1990-01-22", "--status: the revision")
+        check(p.stdout.count("\n") == 1 and "Missing: MW_EGA.EXE, 6X6.FNT, FOX88.FNT and 114 more." in st.get("note", ""),
+              "--status: ready, its note names the missing files (%s)" % st.get("note"))
         check(tree(work) == before, "break: --status wrote nothing after a setup either")
         check(took < 1.0, "--status found the game in %.2f s (< 1 s)" % took)
+
+        # Choosing again: what is amiss with the copy in use, and a pick of it stays on the find screen.
+        again = dict(env, **alone, REKIT_SETUP_FRAMES="60", REKIT_SETUP_FIND="1", REKIT_SETUP_GO="1",
+                     REKIT_SETUP_PICKER="path:" + os.path.join(install, "BTECH.EXE"))
+        p, _ = run(a.program, ["--setup"], again)
+        out = p.stdout.splitlines()
+        check(any(l.startswith("setup: notice The files in use: Missing: MW_EGA.EXE, 6X6.FNT, FOX88.FNT and 114 more.") for l in out),
+              "the screen says what is amiss with the files in use")
+        check(p.returncode == 1 and "setup: status Those are the files in use. Pick another copy." in out and
+              not any(l.startswith("setup: screen confirm") for l in out), "a pick of the copy in use stays on the find screen (%d)" % p.returncode)
 
         # The same copy through the setup screen (hidden): found, offered, installed; and into a picked folder.
         user = os.path.join(work, "user-c")
@@ -221,6 +236,8 @@ def main():
         check(p.returncode == 0, "the screen: --setup exits 0 (%d)" % p.returncode)
         check("setup: screen confirm: MECHWAR, INSTALL, CHANGE FOLDER, BACK" in out and
               "setup: work: INSTALLING MECHWARRIOR 1" in out, "the screen's log: offered, then installing")
+        check(any(l.startswith("setup: found plate: ") and "Missing: MW_EGA.EXE, 6X6.FNT, FOX88.FNT and 114 more. As it is, " in l for l in out),
+              "the screen's offer names what is missing")
         check(os.path.isfile(os.path.join(user, "install", "BTECH.EXE")), "the screen's copy in the player's folder")
         games = os.path.join(work, "games")
         os.makedirs(os.path.join(games, "something else"))

@@ -1,7 +1,10 @@
 #include "SDLSetup.h"
 #include "SDLBackend.h"
+#include "Setup/FileCheck.h"
 #include "Setup/ProgramRecord.h"
 #include "Setup/Setup.h"
+
+#include "mechwarrior/problem.h"
 
 #include <rekit/sdl/pickers.h>
 #include <rekit/sdl/setup_screen.h>
@@ -53,12 +56,21 @@ std::string json_text(const std::string& s) {
 void say_error(bool setupOnly, const std::string& why) {
   std::fprintf(stderr, "setup: %s\n", why.c_str());
   if (setupOnly) std::printf("{\"error\": \"%s\"}\n", json_text(why).c_str()), std::fflush(stdout);
+  else MwNoteProblem(why.c_str());  // the start's message (SDLMain)
 }
 
-// The words for a find: which BTECH.EXE it holds.
-std::string describe(const rekit::Found& f) {
+// A file check's one line, on stdout (and in the log). "" nothing was amiss; else what the player is told.
+std::string say_files(const setup::FilesReport& r) {
+  std::printf("setup: %s\n", setup::files_log(r).c_str());
+  std::fflush(stdout);
+  return setup::files_note(r);
+}
+
+// The words for a find: which BTECH.EXE it holds, and what is amiss with its files.
+std::string describe(const rekit::Found& f, bool imported) {
   const std::string what = f.version == "1990-01-22" ? " (the 1990-01-22 revision)" : f.version == "reference" ? " (the 1989 release)" : "";
-  return std::string(f.on_disk ? "An installed copy of " : "A download of ") + setup::kTitle + what + ".";
+  const std::string files = say_files(setup::check_found(f, imported));
+  return std::string(f.on_disk ? "An installed copy of " : "A download of ") + setup::kTitle + what + "." + (files.empty() ? "" : " " + files);
 }
 
 // MW1's look on the kit's screen: the rebuild's badge, its screens' face (Saira Condensed Bold, SIL OFL, beside it
@@ -83,11 +95,14 @@ std::string run_screen(bool setupOnly, const std::string& found, bool searched, 
   g.program = "BTECH.EXE";
   g.rules = setup::rules(), g.hints = setup::hints();
   const std::string pdir = program_dir();
-  g.search = [user, pdir] {
+  const std::string in_use = searched ? std::string() : found;
+  g.search = [user, pdir, in_use] {
+    // Choosing again: another copy than the one in use, or the player's own.
+    if (!in_use.empty()) return setup::find_other_install({in_use, setup::default_install(user)}, user, pdir);
     bool s = false;
     return setup::find_install("", user, pdir, &s);
   };
-  g.describe = describe;
+  g.describe = [imported = setup::story_imported(user)](const rekit::Found& f) { return describe(f, imported); };
   g.recognise = setup::recognise;
   g.install = [](const rekit::Found& f, const std::string& out, const std::string&, const rekit::sdl::ProgressFn& progress) {
     const setup::Installed r = setup::install(f, out, [&](double at, const std::string& file) {
@@ -104,7 +119,15 @@ std::string run_screen(bool setupOnly, const std::string& found, bool searched, 
   o.hidden = unattended();
   o.user_folder = user, o.default_out = setup::default_install(user), o.program_dir = pdir;
   if (searched) o.look_first = found;  // found by the search: offered, to copy in or pass over
-  else if (!found.empty()) o.in_use = found, o.play_button = !setupOnly;
+  else if (!found.empty()) {
+    o.in_use = found, o.play_button = !setupOnly;
+    const std::string files = say_files(setup::check_folder(found, setup::story_imported(user)));
+    if (!files.empty()) o.notice = "The files in use: " + files;
+    // A pick of the player's own copy, when another is in use, is a choice: only then not stayed on.
+    std::error_code ec;
+    if (!std::filesystem::is_directory(o.default_out, ec) || std::filesystem::equivalent(found, o.default_out, ec))
+      o.same_words = "Those are the files in use. Pick another copy.";
+  }
   const rekit::sdl::SetupResult r = rekit::sdl::run_setup(g, theme(), o);
   *exit = r.exit;
   if (r.exit == rekit::kSetupFailed) say_error(setupOnly, r.error);
@@ -121,6 +144,8 @@ std::string take_copy(const std::string& picked, const std::string& user, std::s
     if (why->empty()) *why = "No copy of " + std::string(setup::kTitle) + " this program knows was found in " + picked + ".";
     return "";
   }
+  const std::string files = say_files(setup::check_found(f, setup::story_imported(user)));
+  if (!files.empty()) std::fprintf(stderr, "setup: %s\n", files.c_str());
   const setup::Installed r = setup::install(f, setup::default_install(user));
   if (!r.ok) {
     *why = r.error;
@@ -138,7 +163,10 @@ int MwSetupPrintStatus(void) {
   // Anything else printed while answering goes to stderr: stdout carries the one JSON line.
   std::fflush(stdout);
   const std::string user = setup::user_folder();
-  const rekit::Status st = setup::status(setup::remembered_folder(user), user, program_dir(), MECHWARRIOR_VERSION);
+  rekit::Status st = setup::status(setup::remembered_folder(user), user, program_dir(), MECHWARRIOR_VERSION);
+  // The files, for a copy that is ready and has nothing else to be said of it.
+  if (st.state == rekit::Status::kReady && st.note.empty())
+    st.note = setup::files_status_note(setup::check_folder(st.where, setup::story_imported(user)));
   std::printf("%s\n", rekit::status_json(st).c_str());
   std::fflush(stdout);
   return 0;

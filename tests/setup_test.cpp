@@ -7,8 +7,10 @@
 // an entry climbing out of the archive left out. Prints names and counts only, never the game's bytes.
 //
 //     setup_test <work folder>
+#include "Setup/FileCheck.h"
 #include "Setup/ProgramRecord.h"
 #include "Setup/Setup.h"
+#include "Support/Sha256.h"
 
 #include <rekit/archive.h>
 
@@ -330,6 +332,118 @@ void game_free(const fs::path& work) {
         "status JSON names mech1");
 }
 
+std::string sha_of(const std::string& text) {
+  return mw1o::support::sha256_hex({reinterpret_cast<const uint8_t*>(text.data()), text.size()});
+}
+std::string joined(const std::vector<std::string>& v) {
+  std::string out;
+  for (const std::string& s : v) out += (out.empty() ? "" : " ") + s;
+  return out;
+}
+
+// The file check (FileCheck.h) on made-up files and a made-up table.
+void files_game_free(const fs::path& work) {
+  using When = setup::GameFile::When;
+  const std::string a = "the first", b = "the second", c = "the third", d = "the fourth", hurt = "the fxurth";
+  const std::string sa = sha_of(a), sb = sha_of(b), sc = sha_of(c), sd = sha_of(d), sh = sha_of(hurt);
+  const std::vector<setup::GameFile> files = {
+      {"A.DAT", uint32_t(a.size()), sa.c_str(), When::kStart, "nothing starts"},
+      {"B.DAT", uint32_t(b.size()), sb.c_str(), When::kPlay, "a battle stops"},
+      {"C.DAT", uint32_t(c.size()), sc.c_str(), When::kPlay, "a battle stops"},
+      {"D.DAT", uint32_t(d.size()), sd.c_str(), When::kSome, "a look stops"},
+      {"E.EXE", uint32_t(a.size()), sa.c_str(), When::kImport, "no import"},
+  };
+  const std::vector<setup::KnownDamage> damage = {{"D.DAT", uint32_t(hurt.size()), sh.c_str()}};
+  const fs::path dir = work / "files";
+  const auto look = [&](bool imported = false) { return setup::check_folder(dir.string(), imported, files, damage); };
+  write(dir / "A.DAT", a), write(dir / "b.dat", b), write(dir / "C.Dat", c), write(dir / "D.DAT", d), write(dir / "E.EXE", a);
+  write(dir / "SAVED.GAM", "whatever"), write(dir / "sub" / "A.DAT", "another");
+  setup::FilesReport r = look();
+  check(r.all_known() && setup::files_note(r).empty() && setup::files_log(r) == "files: all known" && setup::files_status_note(r).empty(),
+        "files: every one known, in any case; unlisted ones and folders below ignored; nothing said");
+  fs::remove(dir / "A.DAT"), fs::remove(dir / "b.dat"), fs::remove(dir / "C.Dat");
+  fs::create_directories(dir / "C.DAT");  // a folder of a listed name is no such file
+  write(dir / "D.DAT", hurt);
+  r = look();
+  check(joined(r.missing) == "A.DAT B.DAT C.DAT" && joined(r.damaged) == "D.DAT" && r.different.empty(),
+        "files: missing (a folder of the name too), and known damaged by its bytes");
+  check(r.effects == std::vector<std::string>{"nothing starts", "a battle stops", "a look stops"}, "files: what fails, each once");
+  std::string note = setup::files_note(r);
+  check(note == "Missing: A.DAT, B.DAT, C.DAT. Known to be damaged: D.DAT. As it is, nothing starts; a battle stops and 1 more. "
+                "You can continue, or choose another copy.", "files: the note: " + note);
+  check(setup::files_status_note(r) == "Missing, damaged or different: A.DAT, B.DAT, C.DAT and 1 more.", "files: --status' line");
+  // Different: the same length, another length, empty. Never called damaged.
+  write(dir / "A.DAT", "the fixst"), write(dir / "B.DAT", b + " and more"), fs::remove(dir / "C.DAT"), write(dir / "C.DAT", "");
+  write(dir / "D.DAT", d);
+  r = look();
+  note = setup::files_note(r);
+  check(joined(r.different) == "A.DAT B.DAT C.DAT" && r.missing.empty() && r.damaged.empty() && r.effects.empty(), "files: three differ");
+  check(note == "3 files differ from the copies this program knows: A.DAT, B.DAT, C.DAT. You can continue. A changed or different edition "
+                "may still work." && note.find("amage") == std::string::npos, "break: what differs is not called damaged");
+  write(dir / "D.DAT", "x");
+  r = look();
+  check(setup::files_note(r).find("4 files differ from the copies this program knows: A.DAT, B.DAT, C.DAT and 1 more.") == 0 &&
+            setup::files_log(r).find("A.DAT, B.DAT, C.DAT, D.DAT") != std::string::npos, "files: three names on the screen, all in the log");
+  // The known damage is a name's: the same bytes elsewhere differ.
+  write(dir / "A.DAT", a), write(dir / "B.DAT", b), write(dir / "C.DAT", c), write(dir / "D.DAT", d);
+  fs::remove(dir / "E.EXE");
+  check(joined(look().missing) == "E.EXE" && look(true).all_known(), "files: one only the import reads, not asked for once imported");
+  write(dir / "E.EXE", hurt);
+  check(joined(look().different) == "E.EXE", "break: another file's damage is not this one's");
+  r = setup::check_folder((work / "nowhere").string(), false, files, damage);
+  check(!r.unchecked.empty() && !r.all_known() && setup::files_note(r).find("weren't checked") != std::string::npos &&
+            setup::files_status_note(r).empty(), "break: a folder that can't be read isn't called missing files");
+  check(!setup::check_found(rekit::Found{}, false).unchecked.empty(), "break: no find, nothing checked");
+  check(setup::game_files().size() == 117 && setup::known_damage().size() == 1, "files: 117 listed, 1 known damaged");
+}
+
+// And on the real copies: MW1O_GAME whole; MW1O_BTECH_REFERENCE's folder, the copy with the damaged bank.
+void files_with_game(const fs::path& work, const fs::path& game) {
+  fs::create_directories(work);
+  const auto start = std::chrono::steady_clock::now();
+  setup::FilesReport r = setup::check_folder(game.string(), false);
+  const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
+  char took[32];
+  std::snprintf(took, sizeof took, "%.1f ms", ms);
+  check(r.all_known(), "files: MW1O_GAME's are all known (" + std::string(took) + "): " + setup::files_log(r));
+  const char* ref = std::getenv("MW1O_BTECH_REFERENCE");
+  const fs::path old = ref ? fs::path(ref).parent_path() : fs::path();
+  if (ref && !rekit::any_case_path(old.string(), "PHAPCK.TBL").empty()) {
+    r = setup::check_folder(old.string(), false);
+    check(joined(r.damaged) == "PHAPCK.TBL" && r.missing.empty() && r.different.empty() &&
+              joined(r.effects) == "a battle with a Phoenix Hawk stops", "files: the 1989 copy: PHAPCK.TBL known to be damaged, no other");
+  } else {
+    std::printf("skip the 1989 copy's files: MW1O_BTECH_REFERENCE's folder doesn't hold them\n");
+  }
+#if REKIT_HAVE_LIBARCHIVE
+  // The same in a zip, the game a folder down: one changed, one missing there and in another folder.
+  std::vector<std::pair<std::string, fs::path>> entries;
+  for (const setup::GameFile& f : setup::game_files())
+    if (std::string(f.name) != "MECH.MUS" && std::string(f.name) != "TERPCK.GI")
+      entries.push_back({std::string("g/MECHWAR/") + f.name, rekit::any_case_path(game.string(), f.name)});
+  for (const char* exe : {"BTECH.EXE", "MW_MAIN.EXE"})
+    entries.push_back({std::string("g/MECHWAR/") + exe, rekit::any_case_path(game.string(), exe)});
+  entries.push_back({"g/MECH.MUS", rekit::any_case_path(game.string(), "MECH.MUS")});
+  entries.push_back({"g/MECHWAR/TERPCK.GI", {}});
+  const fs::path zip = work / "files.zip";
+  check(make_zip(zip, entries), "a zip of the files built in the work folder");
+  const rekit::Found f = rekit::find_source(zip.string(), setup::rules());
+  r = setup::check_found(f, false);
+  check(f.root == "g/MECHWAR/" && joined(r.missing) == "MECH.MUS" && joined(r.different) == "TERPCK.GI" && r.damaged.empty(),
+        "files: a zip: one missing, one different: " + setup::files_log(r));
+  // Break: a zip cut short is not called a copy with files missing.
+  rekit::Found cut = f;
+  cut.path = (work / "cut.zip").string();
+  write(cut.path, read(zip).substr(0, 4000));
+  r = setup::check_found(cut, false);
+  check(!r.unchecked.empty() && r.missing.empty(), "break: a zip cut short isn't judged: " + setup::files_log(r));
+  std::ofstream(work / "big.zip", std::ios::binary).seekp(static_cast<std::streamoff>(setup::kMaxCheckedArchive)).put('x');
+  cut.path = (work / "big.zip").string();
+  r = setup::check_found(cut, false);
+  check(r.unchecked == "the archive is over 64 MB", "break: an archive past 64 MB isn't read");
+#endif
+}
+
 void with_game(const fs::path& work, const char* game_env, const char* ref_env, const char* r1990_env) {
   const fs::path game = game_env, ref = ref_env, r1990 = r1990_env;
   const fs::path main_exe = rekit::any_case_path(game.string(), "MW_MAIN.EXE");
@@ -378,6 +492,18 @@ void with_game(const fs::path& work, const char* game_env, const char* ref_env, 
   fs::remove(rekit::any_case_path(out.string(), "MW_MAIN.EXE"));
   check(setup::check_install(out.string(), false).state == rekit::Status::kIncomplete, "no MW_MAIN.EXE before the import: incomplete");
   check(setup::check_install(out.string(), true).state == rekit::Status::kReady, "no MW_MAIN.EXE after the import: ready");
+  // Choosing again: the search passes over the copies it is told of.
+  const fs::path drop = work / "drop";
+  fs::create_directories(drop);
+  for (const char* n : {"MechWarrior", "MECHWAR"}) {
+    fs::create_directories(drop / n);
+    fs::copy_file(r1990, drop / n / "BTECH.EXE");
+    fs::copy_file(main_exe, drop / n / "MW_MAIN.EXE");
+  }
+  const std::string one = setup::find_other_install({}, "", drop.string());
+  const std::string two = setup::find_other_install({one}, "", drop.string());
+  check(!one.empty() && !two.empty() && !fs::equivalent(one, two), "choosing again: the search passes over the copy in use");
+  check(setup::find_other_install({one, two}, "", drop.string()).rfind(drop.string(), 0) != 0, "break: all known, none of them found");
 
   // status: the player's own install found, ready, nothing written beyond what is there.
   const size_t before = count_files(work / "user");
@@ -420,11 +546,13 @@ int main(int argc, char** argv) {
   fs::remove_all(work, ec);  // the test's own folder (the build dir's setup_work)
   fs::create_directories(work);
   game_free(work / "free");
+  files_game_free(work / "free");
   const char* game = std::getenv("MW1O_GAME");
   const char* ref = std::getenv("MW1O_BTECH_REFERENCE");
   const char* r1990 = std::getenv("MW1O_BTECH_1990");
   if (game && ref && r1990) with_game(work / "game", game, ref, r1990);
   else std::printf("skip the game parts: MW1O_GAME, MW1O_BTECH_REFERENCE and MW1O_BTECH_1990 not all set\n");
+  if (game) files_with_game(work / "game-files", game);
   fs::remove_all(work, ec);  // nothing of the game's kept
   std::printf("%s (%d failed)\n", g_failures ? "FAILED" : "passed", g_failures);
   return g_failures ? 1 : 0;
