@@ -473,7 +473,8 @@ def package(root, build, sdl, output, label, game=None, installer=False, tools=N
 
 def write_digest(file):
     digest = hashlib.sha256(file.read_bytes()).hexdigest()
-    (file.parent / (file.name + ".sha256")).write_text(f"{digest}  {file.name}\n", encoding="utf-8")
+    # Bytes: text would end in CRLF on Windows, and `sha256sum -c` elsewhere would look for a name ending in CR.
+    (file.parent / (file.name + ".sha256")).write_bytes(f"{digest}  {file.name}\n".encode("utf-8"))
 
 
 def find_iscc():

@@ -464,6 +464,18 @@ class FolderToolTests(unittest.TestCase):
                 return  # Windows without the right to make links
             self.assertEqual(self.tool("check_paths.py", folder.parent.parent).returncode, 1)  # a link by that name too
 
+    def test_the_digest_ends_its_line_with_a_newline_alone(self):
+        # Text is written as on Windows here, so a digest written as text is caught on every system.
+        real = Path.write_text
+        windows = lambda path, data, encoding=None, errors=None, newline=None: real(path, data, encoding, errors, newline or "\r\n")
+        with tempfile.TemporaryDirectory() as directory, patch.object(Path, "write_text", windows):
+            file = Path(directory) / "MW1-Rebuild-test-Setup.exe"
+            file.write_bytes(b"setup")
+            build_package.write_digest(file)
+            written = (Path(directory) / (file.name + ".sha256")).read_bytes()
+            self.assertNotIn(b"\r", written)
+            self.assertEqual(written, hashlib.sha256(b"setup").hexdigest().encode() + b"  " + file.name.encode() + b"\n")
+
     def test_sums_leaves_out_itself_and_the_single_sums(self):
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory)
