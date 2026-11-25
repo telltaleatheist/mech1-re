@@ -25,8 +25,8 @@ checked on e223eb2, on the Mac, Linux and Windows, with the packages' own SDL:
   files stay as they were. The game wasn't started from it.
 
 The rest is 1.0.0's and wasn't repeated. Its release gate ran on cadfb67, with both editions of the game
-([results](phase5/GATE_PLAN.md#results-on-cadfb67)). From there to cd33ea4 no source, data or build file changed, only packaging, its tests and documents. The packages'
-own checks ran again on the packages built from cd33ea4.
+([results](phase5/GATE_PLAN.md#results-on-cadfb67)). From there to cd33ea4 no source, data or build file
+changed, only packaging, its tests and documents. The packages' own checks ran again on the packages built from cd33ea4.
 
 | What | By | Where |
 | --- | --- | --- |
