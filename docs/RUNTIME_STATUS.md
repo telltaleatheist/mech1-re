@@ -29,11 +29,12 @@ own checks ran again on the packages built from cd33ea4.
 | The Mac app's Intel half in play | `combat_cockpit` under Rosetta | Mac |
 | The Windows installer | its twin under a test AppId: over the files of an earlier preview, then uninstalled | Windows |
 
-The recordings come from the program itself. At an earlier commit (3b226e8) the seven scripts there were then matched
-the original under DOSBox-X, frames and state (`tools/trace/README.md`), and the music's were
-compared too, on sound paths taken out since (`tools/trace/audio/README.md`). Neither was repeated for the release. The
-port this is built on had checks of its own, listed here before: all eight chassis' start and deployment, and one
-contract won and paid. They aren't in this repository and weren't repeated.
+The recordings come from the program itself. On 2026-11-25, with the tools and recordings of 436a4d3, the original of
+1990 under DOSBox-X ran all eight scripts and matched the recordings, frames and state (`tools/trace/README.md`); the
+original of 1989 wasn't run. The music's recordings were compared at an earlier commit, on sound paths taken out since
+(`tools/trace/audio/README.md`), and not again; the other logs never were. The port this is built on had checks of its
+own, listed here before: all eight chassis' start and deployment, and one contract won and paid. They aren't in this
+repository and weren't repeated.
 
 ## What isn't checked
 

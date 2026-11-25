@@ -2,8 +2,8 @@
 
 `tools/trace/traces/*.jsonl` record what this program did for each key
 script in `tools/trace/scripts/`; they are its own recordings, not the
-original's. At an earlier commit (3b226e8) the seven there were then matched
-the original under DOSBox-X (`tools/trace/README.md`). A candidate (a port
+original's. The original under DOSBox-X matched all eight at 436a4d3
+(`tools/trace/README.md`). A candidate (a port
 build, or the rebuild) runs the same scripts, and `tools/trace/check.py`
 compares its records with the golden ones, snap by snap. This is what the
 rebuild must do to take part.

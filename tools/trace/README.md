@@ -180,10 +180,12 @@ BTECH.EXE) in `~/mwsnap/game`:
     python3 tools/trace/run.py --home ~/mwsnap --out ~/mw1-orig
 
 It runs every golden script against the original, headless and one run at a
-time (about 3.5 minutes for all seven), and prints check.py's verdict; exit 0
+time (a few minutes for all eight), and prints check.py's verdict; exit 0
 means every frame and field matches. `--dosbox-x PATH` names an unpacked
-DOSBox-X (set `LD_LIBRARY_PATH` to its library folder). Last run (main
-3b226e8): 7 of 7, no MWSNAP flags.
+DOSBox-X (set `LD_LIBRARY_PATH` to its library folder). Last run
+(2026-11-25, tools and goldens of 436a4d3, DOSBox-X 2024.03.01 on WSL): 8 of
+8, no MWSNAP flags. Before it, 3b226e8: the seven there were then. MWSNAP
+skips the copy protection, in memory.
 
 ## Limits
 
