@@ -16,8 +16,7 @@ The campaign's music is chosen in the existing `MechWarrior.ini`: see [sound con
 For the default installation location, put your original game files directly
 inside `assets/original-game`, then omit `-GameDirectory`. That entire folder
 is Git-ignored except for its `.gitignore`; original files must never be committed.
-The window title shows the selected card in campaign and combat. Combat also
-uses the native PC-speaker effects bank.
+Combat uses the native PC-speaker effects bank.
 
 ## Preparing for a mission
 

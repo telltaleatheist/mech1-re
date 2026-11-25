@@ -59,8 +59,8 @@ the existing launcher option:
 .\src\Run-MechWarrior.ps1 -TimingConfiguration .\MechWarrior.ini
 ```
 
-Restart the game after changing it. The window title identifies the sound in
-use; the launcher prints the exact configuration and runtime-log paths.
+Restart the game after changing it. The launcher prints the exact configuration
+and runtime-log paths.
 
 For a useful first test:
 

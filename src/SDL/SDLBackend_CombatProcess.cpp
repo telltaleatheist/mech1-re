@@ -130,7 +130,6 @@ bool MwSdlExecuteCombatChild(const MwCampaignLaunch *launch,uint8_t audioCode,ui
     if (childActive) MwSdlFail("Nested BTECH EXEC");
     if (!BtechHostLoadInitialData()) return true;
     MwSdlResetCombatHardware();mwSdlCombatActive=true;
-    MwSdlUpdateWindowTitle();
     /* MW.EXE's DOS tail is03,<graphics>,20,<audio>,0D. Phase/transfer live in
      * its private FCB; they are NOT an extra C command-line argument. */
     char graphics[2]={(char)launch->graphicsCode,0},audio[2]={(char)audioCode,0};
@@ -142,7 +141,6 @@ bool MwSdlExecuteCombatChild(const MwCampaignLaunch *launch,uint8_t audioCode,ui
         MwSdlFail("Native BTECH main unexpectedly returned");
     }
     childActive=false;mwSdlCombatActive=false;
-    MwSdlUpdateWindowTitle();
     *exitCode=childExitCode;
     BtechHostDiscardChildData();
     return false;

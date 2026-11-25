@@ -74,7 +74,6 @@ uint64_t MwSdlAudioUnderrunFrames(void);
 uint64_t MwSdlAudioClockSkippedFrames(void);
 bool MwSdlInitializeVideo(const char *captureDirectory);
 const char *MwSdlCaptureDirectory(void);
-void MwSdlUpdateWindowTitle(void);
 void MwSdlPresentVideo(bool force);
 /* Show the current frame again at the next pump (a window event). */
 void MwSdlRepeatPresent(void);
