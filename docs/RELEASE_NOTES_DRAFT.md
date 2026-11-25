@@ -10,7 +10,6 @@ patched copy. It is unofficial and free, and not affiliated with or endorsed by 
 
 - **The campaign and combat of the 1989 game**, rebuilt function by function: the company and its money, planets, travel,
   contracts, the bar and its pilots, buying, repairing and rearming Mechs, the story, and the battles from the cockpit.
-  <!-- CHECK (gate steps 2, 4, 5 and 6): the tests and the recorded runs pass on this commit on all three systems. -->
 - **The same speed on any computer.** A combat tick has a fixed length. The - and + keys make combat up to four times
   as fast, and the game remembers your choice.
 - **The campaign's music on a bundled soundfont.** `music=` in `MechWarrior.ini` plays it as the PC speaker did, or turns
@@ -35,10 +34,11 @@ The BattleTech launcher can install, set up and start the game too.
   `MW1-Rebuild-mw1r-v1.0.0-win64.zip` is the same program to unpack anywhere and run `mw1r.exe`. Neither is signed, so
   Windows may warn first: choose "More info", then "Run anyway".
 - **macOS 12 or later (Apple silicon and Intel):** `MW1-Rebuild-mw1r-v1.0.0-mac.dmg`. Open it and drag MechWarrior 1
-  Rebuild to Applications. <!-- CHECK (gate steps 9 and 10): both architectures; the Intel half only under Rosetta. -->
-- **Linux (x86-64, glibc 2.39 or later, such as Ubuntu 24.04):** `MW1-Rebuild-mw1r-v1.0.0-x86_64.AppImage`: make it
-  executable and run it. `MW1-Rebuild-mw1r-v1.0.0-linux-x86_64.tar.gz` is the same program to unpack and run as
-  `./mw1r`. <!-- CHECK (gate step 9): the glibc the built files need, and that the AppImage starts without FUSE 2. -->
+  Rebuild to Applications.
+- **Linux (x86-64; needs glibc 2.38 or later and GCC 13's libstdc++; tested on Ubuntu 24.04):**
+  `MW1-Rebuild-mw1r-v1.0.0-x86_64.AppImage`: make it executable and run it. An AppImage needs FUSE's `fusermount`; on a
+  system without it, start it with `APPIMAGE_EXTRACT_AND_RUN=1` set. `MW1-Rebuild-mw1r-v1.0.0-linux-x86_64.tar.gz` is the
+  same program to unpack and run as `./mw1r`.
 - **`SHA256SUMS`** lists every file's SHA-256.
 
 ## The first start on a Mac
@@ -63,7 +63,9 @@ Automated tests and recorded runs check these, but nobody has gone through them 
 <!-- CHECK (lead): take out what the project owner has played by the release. -->
 
 - The whole story, from start to end, and every kind of contract with every Mech.
-- The Linux package and the Intel half of the Mac one, which are built and smoke-tested automatically.
+- The Linux package, which is built and smoke-tested automatically.
+- The Intel half of the Mac package. It answered `--status` and matched one recorded battle under Rosetta, not on a real
+  Intel Mac.
 - Real game controllers: only simulated ones have been tested.
 - The message box that says why a start was refused: its text was checked, the box was not seen.
 - Setting the game up on the launcher's screens.
