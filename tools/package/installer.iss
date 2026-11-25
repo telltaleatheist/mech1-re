@@ -64,6 +64,19 @@ Source: "{#Dist}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs creat
 Type: filesandordirs; Name: "{app}\data"
 ; An earlier version's program, before it was named mw1r.
 Type: files; Name: "{app}\mechwarrior.exe"
+; What the previews and test versions shipped and no version does now, by exact name:
+; the libraries of the old music and the MSVC runtime DLLs nothing here loads.
+Type: files; Name: "{app}\mt32emu-2.dll"
+Type: files; Name: "{app}\nukedopl.dll"
+Type: files; Name: "{app}\concrt140.dll"
+Type: files; Name: "{app}\msvcp140_1.dll"
+Type: files; Name: "{app}\msvcp140_2.dll"
+Type: files; Name: "{app}\msvcp140_atomic_wait.dll"
+Type: files; Name: "{app}\msvcp140_codecvt_ids.dll"
+Type: files; Name: "{app}\vccorlib140.dll"
+Type: files; Name: "{app}\vcruntime140_threads.dll"
+Type: files; Name: "{app}\licenses\Munt-COPYING.LESSER.txt"
+Type: files; Name: "{app}\licenses\Nuked-LICENSE"
 
 [Icons]
 Name: "{autoprograms}\MechWarrior 1 Rebuild"; Filename: "{app}\mw1r.exe"; WorkingDir: "{app}"; Comment: "MechWarrior (1989), rebuilt"
