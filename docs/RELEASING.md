@@ -156,7 +156,10 @@ platform's files are named `MW1-Rebuild-<label>-...`:
   `Program Files\MechWarrior 1 Rebuild` (or "only for me"), with Start-menu
   and desktop shortcuts and an uninstaller that leaves the save directory. Its
   AppId is this project's own and stays the same every version, so a new
-  Setup upgrades in place.
+  Setup upgrades in place. It first deletes what earlier previews and test
+  versions left there and no version ships now, by exact name; a player who
+  installs into a folder holding another program's file of such a name would
+  lose that file.
 - **macOS**: the libraries go to `Contents/Frameworks` named `@rpath`, `data/`
   and `MechWarrior.ini` to `Contents/Resources` (SDL's base path); the
   libraries, the program and the app are signed ad hoc with
@@ -206,6 +209,59 @@ game folder):
 The packaging unit tests (no build, no game files):
 
     python -m unittest discover -s tools -p 'test_build_package.py' -v
+
+## Making a release
+
+By hand, when the project owner has cleared it and not before. The gate
+(`phase5/GATE_PLAN.md`) is run on the candidate, one commit of main, before
+any of this. What fails a step stops the release.
+
+1. Choose the version, `mw1r-vX.Y.Z`, and the commit. Finish its notes
+   (`RELEASE_NOTES_DRAFT.md` for the first one) on main, with every line
+   marked CHECK in them and in `README.md` confirmed or taken out, and copy
+   `DEPLOY.md` if the family's has changed. The project owner reads the notes
+   and the README. If main moved, the steps of the gate it can affect run again.
+2. Tag that commit on each building machine, locally: `git tag mw1r-vX.Y.Z`.
+   Nothing is pushed yet. Packaging refuses this label in any other tree.
+3. Build the packages from the tag, each in a clean checkout with its
+   submodules and with the game given, so the smoke test does its first run:
+
+       # macOS
+       tools/deps/build_archive.sh mac
+       python3 -I tools/build_package.py --sdl SDL --label mw1r-vX.Y.Z --game GAME
+       # Linux (or WSL)
+       tools/deps/build_archive.sh linux
+       tools/deps/get_appimage_tools.sh DIR
+       python3 -I tools/build_package.py --sdl SDL --label mw1r-vX.Y.Z --game GAME --installer --appimage-tools DIR
+       # Windows
+       tools\windows\build_deps_archive.cmd
+       python -I tools\build_package.py --sdl SDL --label mw1r-vX.Y.Z --game GAME --installer
+
+   SDL is the pinned commit (`.github/workflows/linux.yml` names it). Visual
+   Studio's `cmake` must be the first on Windows' PATH. Each run must end with
+   its smoke test, the first run and the served setup passed, none skipped.
+4. Put the five packages in one empty folder (`-win64.zip`, `-Setup.exe`,
+   `-mac.dmg`, `-x86_64.AppImage` and `-linux-x86_64.tar.gz`), check each
+   against its `.sha256`, then write the one list:
+
+       python3 -I tools/package/sums.py FOLDER
+
+5. Check each package by hand on its system ("Before calling a package
+   validated", below), from the file that will be uploaded: a Setup install
+   and its uninstall only where no other copy of the game is installed, or
+   with another AppId.
+6. Push the tag: `git push origin mw1r-vX.Y.Z`.
+7. Publish, with the notes as the text:
+
+       gh release create mw1r-vX.Y.Z --verify-tag --title "MechWarrior 1 Rebuild X.Y.Z" \
+         --notes-file NOTES <the five packages> SHA256SUMS
+
+   Not a draft and not a prerelease: the launcher takes only a published, full
+   release, and installs nothing without the package's line in `SHA256SUMS`.
+8. Download every asset again from the release, and check it against
+   `SHA256SUMS`.
+9. On a clean games folder, the launcher's INSTALL must take the game, set it
+   up and start it; with an older copy there, UPDATE must.
 
 ## Before calling a package validated
 
