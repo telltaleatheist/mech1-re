@@ -1,18 +1,28 @@
 # Runtime status
 
-1.0.0 (tag `mw1r-v1.0.0`, commit cd33ea4) is out for Windows x64, macOS 12 or later (Apple silicon and Intel) and Linux
+1.0.1 (tag `mw1r-v1.0.1`, commit e223eb2) is out for Windows x64, macOS 12 or later (Apple silicon and Intel) and Linux
 x86-64. It plays the campaign and combat of the 1989 release and of the one of 1990-01-22 in EGA, with the campaign's
 music from the bundled soundfont, as speaker tones, or off, and combat's effects as speaker tones
 ([audio](AUDIO.md)). Combat runs at a fixed `combat_tick_ms=60` per tick at 1x, with speed keys for 2x to 4x
 ([game speed](CPU_TIMING_PROFILE.md)).
 
 The checks below are automatic: tests, and key scripts whose results are compared with recordings. They don't say that
-a whole campaign has been played. [The notes](release-notes/mw1r-v1.0.0.md) list the known differences and limits.
+a whole campaign has been played. [The notes](release-notes/mw1r-v1.0.1.md) list the known differences and limits.
 
 ## What is checked
 
-The release gate ran on cadfb67, with both editions of the game ([results](phase5/GATE_PLAN.md#results-on-cadfb67)).
-From there to cd33ea4 no source, data or build file changed, only packaging, its tests and documents. The packages'
+1.0.1 is 1.0.0 with the window's new picture and a graphics device that resets ([WINDOW](WINDOW.md)). What changed was
+checked on e223eb2, on the Mac, Linux and Windows, with the packages' own SDL:
+
+- ctest `picture`, `canvas`, `joystick`, `sdl_joystick`, `music_setting`, `notice`, `setup`, `status_setup` and
+  `read_only_install`: all pass. `picture` draws in software, on no display. On the Mac, SDL's Metal, OpenGL and GPU
+  drawing were tried too, in hidden windows; Direct3D, Vulkan and Linux's OpenGL weren't.
+- The recorded runs `bar`, `mech_complex`, `combat_cockpit` and `combat_retreat`: they match, but for the two of combat
+  with the 1989 edition, as below.
+- The five packages, as 1.0.0's below. The installer's twin ran over 1.0.0's.
+
+The rest is 1.0.0's and wasn't repeated. Its release gate ran on cadfb67, with both editions of the game
+([results](phase5/GATE_PLAN.md#results-on-cadfb67)). From there to cd33ea4 no source, data or build file changed, only packaging, its tests and documents. The packages'
 own checks ran again on the packages built from cd33ea4.
 
 | What | By | Where |
@@ -45,7 +55,9 @@ repository and weren't repeated.
 - **Real game controllers.** Only simulated ones were used.
 - **The message box** that says why a start was refused: its text was checked, the box wasn't seen.
 - **The setup on the launcher's screens.** The program's side of it is checked; nobody has gone through the screens.
-- **The packages in a window.** The gate's runs are hidden and play nothing aloud.
+- **The packages in a window,** 1.0.1's new one included: resized, maximised or in full screen. The runs are hidden and
+  play nothing aloud.
+- **A real reset or loss of a graphics device.** The tests send what SDL would say, and refuse to draw.
 - **`Setup.exe` itself.** It wasn't run before the release; its twin was ([RELEASING](RELEASING.md), step 5).
 - **The 1989 edition** under the sanitizers, and its sound logs.
 - **The same picture and sound as the original's.** Nothing here claims it. CGA and Tandy graphics, and the AdLib, MT-32
