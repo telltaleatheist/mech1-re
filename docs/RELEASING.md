@@ -146,7 +146,7 @@ holds no such string and writes nothing; packaging refuses a program whose
 stamp is not its label's.
 
 Every installer's contents pass `tools/package/check_paths.py`: no local path
-or user name in any file. Each file gets a `.sha256` beside it; for a release,
+or user name in any file, and no file of the game, by name. Each file gets a `.sha256` beside it; for a release,
 `python3 -I tools/package/sums.py <folder>` writes one `SHA256SUMS` over all
 the platforms' files.
 

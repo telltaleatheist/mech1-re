@@ -2,6 +2,7 @@
 import hashlib
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -66,6 +67,28 @@ class PackageTests(unittest.TestCase):
             for name in build_package.SOUNDFONT_LICENCES:
                 self.assertTrue((extracted / "licenses" / name).exists(), name)
             self.assertEqual(len(list((root / "dist").glob("*.sha256"))), 1)
+
+    def test_a_game_file_blocks_packaging(self):
+        # A build's leftover in data/, which the package takes whole: the check itself runs, the build doesn't.
+        check = lambda *args, **kwargs: subprocess.run(args, check=True, capture_output=True) if any("check_paths.py" in a for a in args) else None
+        real = Path(build_package.__file__).resolve().parent / "package/check_paths.py"
+        for name in ("", "data/rules/SNARIO.DAT", "data/mw_main.exe", "data/ui/text.json"):
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                self.fixture(root)
+                (root / "tools/package").mkdir(parents=True)
+                (root / "tools/package/check_paths.py").write_bytes(real.read_bytes())
+                if name:
+                    (root / name).write_bytes(b"x")
+                package = lambda: build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
+                with patch.object(build_package, "run", check), patch.object(build_package, "platform_name", return_value="linux-x86_64"):
+                    if name:
+                        with self.assertRaises(subprocess.CalledProcessError) as refused:
+                            package()
+                        self.assertIn(Path(name).name.encode() + b": a file of the original game", refused.exception.stdout)
+                    else:
+                        package()
+                self.assertEqual(len(list((root / "dist").glob("*.tar.gz"))), 0 if name else 1)
 
     def test_missing_or_removed_library_blocks_packaging(self):
         for broken in ("missing", "libmt32emu.so.2", "_deps/libnukedopl.so"):
@@ -297,11 +320,41 @@ class PackageTests(unittest.TestCase):
 
 
 class FolderToolTests(unittest.TestCase):
-    """sums.py, run on a folder of its own."""
+    """check_paths.py and sums.py, run on a folder of their own."""
     tools = Path(build_package.__file__).resolve().parent / "package"
 
     def tool(self, name, folder):
         return subprocess.run([sys.executable, "-I", str(self.tools / name), str(folder)], capture_output=True, text=True)
+
+    def test_check_paths_refuses_every_game_file_by_name(self):
+        table = (self.tools.parent.parent / "src/Setup/GameFilesTable.cpp").read_text(encoding="utf-8")
+        played = sorted(set(re.findall(r'^\s*\{"([A-Z0-9_]+\.[A-Z]+)"', table, re.MULTILINE)))
+        self.assertGreater(len(played), 100)
+        others = ["MW.EXE", "MW_MAIN.EXE", "MW_TANDY.EXE", "MW_CPICS.EXE", "BTECH.EXE", "BIG.GAM", "DATA.DEF",
+                  "import.json", "text.json", "words.json", "event_text.json", "missions.json", "native.json", "pilots.json", "planets.json"]
+        ours = ["mw1r", "mw1r.exe", "SDL3.dll", "libSDL3.so.0", "events.json", "units.json", "FluidR3_GM-subset.sf2", "MechWarrior.ini",
+                "SairaCondensed-Bold.ttf", "badge.png", "mechwarrior.icns", "README.txt", "soundfont_subset.sha256", "CodeResources"]
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory) / "package" / "data" / "deeper"
+            folder.mkdir(parents=True)
+            for name in ours:
+                (folder / name).write_bytes(b"ours")
+            found = self.tool("check_paths.py", folder.parent.parent)
+            self.assertEqual(found.returncode, 0, found.stdout + found.stderr)
+            for names in (played + others, [n.lower() for n in played + others]):
+                for name in names:
+                    (folder / name).write_bytes(b"")
+                found = self.tool("check_paths.py", folder.parent.parent)
+                self.assertEqual(found.returncode, 1)
+                refused = re.findall(r"([^/\\]+): a file of the original game", found.stdout)
+                self.assertEqual(sorted(refused), sorted(names))
+                for name in names:
+                    (folder / name).unlink()
+            try:
+                (folder / "BTECH.EXE").symlink_to("units.json")
+            except OSError:
+                return  # Windows without the right to make links
+            self.assertEqual(self.tool("check_paths.py", folder.parent.parent).returncode, 1)  # a link by that name too
 
     def test_sums_leaves_out_itself_and_the_single_sums(self):
         with tempfile.TemporaryDirectory() as directory:

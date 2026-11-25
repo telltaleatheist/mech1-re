@@ -5,7 +5,9 @@
 # GitHub address (github.com/<user>, and api.github.com/repos/<user>) is the
 # one allowed use of the name. A compiler may store that address in
 # overlapping pieces (GCC's immediate stores of a short string), so the name
-# may follow the address and a first part of itself.
+# may follow the address and a first part of itself. Fails too on a file of
+# the original game by its name, or of what the first start imports from it
+# (the player's story/ folder), so no package can carry one.
 # Usage: check_paths.py <folder> [extra name ...]   (tools/build_package.py)
 import getpass, os, re, sys
 
@@ -17,10 +19,19 @@ pat = re.compile(b'|'.join(re.escape(w) for w in words))
 pat16 = re.compile(b'|'.join(re.escape(w.decode().encode('utf-16-le')) for w in words))
 allowed = re.compile(rb'github\.com/(repos/)?([A-Za-z0-9-]{0,16})$', re.I)
 
+# The game's files by name: its programs, and the kinds its data files come in
+# (src/Setup/GameFilesTable.cpp; .def and .gam are a copy's leavings and saves).
+# events.json isn't among the import's: data/ui has one of ours by that name.
+game_file = re.compile(r'(mw|mw_[a-z]+|btech)\.exe|.+\.(bin|bmp|dat|def|fnt|gam|gi|grd|mus|pal|scr|snd|tbl|wld)'
+                       r'|(event_text|import|missions|native|pilots|planets|text|words)\.json', re.I)
+
 bad = []
 for d, _, files in os.walk(root):
     for f in files:
         p = os.path.join(d, f)
+        if game_file.fullmatch(f):
+            bad.append(f"{os.path.relpath(p, root)}: a file of the original game")
+            continue
         if os.path.islink(p):
             continue
         data = open(p, 'rb').read()
@@ -35,7 +46,7 @@ for d, _, files in os.walk(root):
             if pat16.search(data):
                 bad.append(f"{os.path.relpath(p, root)}: (UTF-16)")
 for b in bad:
-    print('local path or user name in the package:', b)
+    print('not allowed in the package:', b)
 if bad:
     sys.exit(1)
-print(f"check_paths: no local path or user name in {root}")
+print(f"check_paths: no local path, user name or game file in {root}")

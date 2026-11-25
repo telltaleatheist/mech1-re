@@ -359,7 +359,7 @@ def check_architectures(files, archs=None):
 
 
 def check_paths(root, folder, *extra):
-    """No local path or user name in anything shipped (tools/package/check_paths.py), nor the folders
+    """No local path, user name or file of the game in anything shipped (tools/package/check_paths.py), nor the folders
     the build ran in (`extra`: the tree and SDL's source, which __FILE__ would name)."""
     run(sys.executable, "-I", str(root / "tools/package/check_paths.py"), str(folder),
         *[str(Path(p).resolve()) for p in extra])
