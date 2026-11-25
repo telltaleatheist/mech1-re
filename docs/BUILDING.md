@@ -57,7 +57,9 @@ cmake --build build-headless --config Release
 The equivalent Windows command is `./src/Build.ps1 -Headless`.
 Headless compilation does not produce a playable game.
 
-Research tests, native comparisons, asset extraction and code-generation tools
-are not included here. The reverse-engineering repository owns those workflows.
-This tree builds without them; compilation alone does not certify a mission or
-complete campaign. See [runtime status](RUNTIME_STATUS.md).
+The tests (`tests/`, run by `ctest` in the build folder) and the recorded runs
+(`tools/trace`) are in this repository. What needs your own copy of the game is
+skipped unless `MW1O_GAME` names its folder; `exe_free` and `events` also want
+`MW1O_EXE_FREE=1` and `MW1O_EVENTS=1`. Compilation alone does not certify a
+mission or complete campaign. What was checked is in the
+[runtime status](RUNTIME_STATUS.md).

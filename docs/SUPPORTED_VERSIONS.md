@@ -56,6 +56,7 @@ BTECH.EXE) and `MW1O_MAIN_1989` (the 1989 MW_MAIN.EXE), besides the game folder
 This is not a claim of compatibility with every release/language variant.
 Executable-derived animation/chassis tables require a reviewed revision.
 Separate native model/map browsing can still work without recognising an EXE.
-Tandy's listed identity does not make the playable Tandy adapter release-qualified.
+MW_TANDY.EXE is listed as a file of the game only: the program draws in EGA, and has
+no playable Tandy or CGA adapter.
 Retain the remaining installation resources; these hashes are not a minimal
 list of files sufficient to play the game.

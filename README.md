@@ -14,8 +14,10 @@ the readable reconstruction of the original program.
 rights holders; none of its files are in this project.*
 
 It is **not** an emulator or a patched copy of the original. The original program's logic is rebuilt function by
-function, without emulating the old PC's sound, graphics or timer hardware. It is checked against recorded runs of
-the game. The aim is for it to play as the original does.
+function, without emulating the old PC's sound, graphics or timer hardware. It is checked by automatic tests and against
+recorded runs of this program itself; at an earlier commit those recorded then were also compared with the original
+under DOSBox-X, and matched. What is checked and what isn't is in [the runtime status](docs/RUNTIME_STATUS.md). The aim
+is for it to play as the original does.
 
 **Status:** 1.0.0 is out for Windows, macOS and Linux on the
 [Releases page](https://github.com/telltaleatheist/mech1-re/releases). What is known to differ from the original, and
