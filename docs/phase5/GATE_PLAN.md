@@ -92,7 +92,7 @@ nothing re-recorded. No test was skipped. Commits after cadfb67 aren't covered b
   its two checks for that file by design (seen on Linux and Windows).
 - **Found:** the `.sha256` files written on Windows end their line with CRLF, so `sha256sum -c` refuses them on the
   other systems; the hashes are right and `SHA256SUMS` isn't affected. Changed since: they are written as bytes, with
-  a newline alone (tested on the Mac; the next Windows package is the first to show it).
+  a newline alone. The ones of mw1r-v1.0.0's two Windows packages have no CR, and `shasum -c` accepts them on the Mac.
 - **Found:** the Mac app's hidden runs in steps 9 and 10 came up as foreground apps. Changed since: the checks run a
   background copy of the app ([RELEASING.md](../RELEASING.md), "The smoke test").
 - **Not covered:** `sums.py` over all the packages, a run of any package in a window, and 1989 under the sanitizer.

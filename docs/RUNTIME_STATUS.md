@@ -7,7 +7,7 @@ music from the bundled soundfont, as speaker tones, or off, and combat's effects
 ([game speed](CPU_TIMING_PROFILE.md)).
 
 The checks below are automatic: tests, and key scripts whose results are compared with recordings. They don't say that
-a whole campaign has been played. [The notes](RELEASE_NOTES_DRAFT.md) list the known differences and limits.
+a whole campaign has been played. [The notes](release-notes/mw1r-v1.0.0.md) list the known differences and limits.
 
 ## What is checked
 
