@@ -2,13 +2,15 @@
 import hashlib
 import os
 from pathlib import Path
+import plistlib
 import re
 import subprocess
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import DEFAULT, patch
 import build_package
+from build_package import background_app
 
 
 @unittest.skipIf(os.name == "nt", "Native Linux archive layout test")
@@ -322,6 +324,107 @@ class PackageTests(unittest.TestCase):
             exe = self.first_run_fixture(root, imports=False)
             with self.assertRaisesRegex(RuntimeError, "did not import the story"):
                 build_package.check_first_run(exe, root / "game", timeout=2)
+
+
+class VersionTests(unittest.TestCase):
+    """The version a player is shown: a release's number, and any other label as it is."""
+    labels = (("mw1r-v1.0.0", "1.0.0"), ("mw1r-v12.3.45", "12.3.45"), ("1.0.0-test.436522e", "1.0.0-test.436522e"), ("mw1r-v1.0.0-test", "mw1r-v1.0.0-test"))
+
+    def test_mac_app(self):
+        for label, shown in self.labels:
+            plist = plistlib.loads(plistlib.dumps(build_package.mac_plist(label, "12.0")))
+            self.assertEqual((plist["CFBundleShortVersionString"], plist["CFBundleVersion"], plist["LSMinimumSystemVersion"]), (shown, shown, "12.0"))
+            self.assertNotIn("LSBackgroundOnly", plist)  # the shipped app is one the player sees
+
+    def test_windows_setup(self):
+        for label, shown in self.labels:
+            with tempfile.TemporaryDirectory() as directory:
+                output = Path(directory)
+                setup = output / f"MW1-Rebuild-{label}-Setup.exe"  # the file keeps the label: the launcher's name for it
+                with patch.object(build_package, "find_iscc", return_value="iscc"), \
+                        patch.object(build_package.subprocess, "run", return_value=subprocess.CompletedProcess([], 0, "Inno Setup", "")), \
+                        patch.object(build_package, "run", side_effect=lambda *args: setup.write_bytes(b"setup")) as iscc:
+                    build_package.windows_installer(output, output / "stage", output, label, output)
+                given = iscc.call_args[0]
+                self.assertIn(f"/DAppVersion={shown}", given)
+                self.assertIn(f"/DStem=MW1-Rebuild-{label}", given)
+                self.assertTrue(Path(str(setup) + ".sha256").is_file())
+
+
+class BackgroundAppTests(unittest.TestCase):
+    """A check's runs of a Mac app are its background copy's."""
+
+    def test_a_program_outside_an_app_runs_itself(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for program in (Path(directory) / "mw1r", Path(directory) / "Contents/MacOS/mw1r"):  # the second: no Info.plist
+                program.parent.mkdir(parents=True, exist_ok=True)
+                program.write_bytes(b"")
+                with background_app.runnable(program) as runs:
+                    self.assertEqual(runs, program)
+
+    def app(self, folder):
+        app = Path(folder) / "A game.app"
+        for name in ("MacOS/mw1r", "Resources/data/rules/x.json"):
+            (app / "Contents" / name).parent.mkdir(parents=True, exist_ok=True)
+            (app / "Contents" / name).write_text("#!/bin/sh\nexit 0\n" if name == "MacOS/mw1r" else "{}")
+        (app / "Contents/MacOS/mw1r").chmod(0o755)
+        (app / "Contents/Info.plist").write_bytes(plistlib.dumps(build_package.mac_plist("mw1r-v1.2.3", "12.0")))
+        subprocess.run(["codesign", "--force", "--sign", "-", str(app)], check=True, capture_output=True)
+        return app
+
+    def files(self, app):
+        return {str(f.relative_to(app)): f.read_bytes() for f in Path(app).rglob("*") if f.is_file()}
+
+    @unittest.skipIf(sys.platform != "darwin", "A Mac's apps and signatures")
+    def test_the_smoke_runs_the_copy_and_leaves_the_app(self):
+        with tempfile.TemporaryDirectory() as directory:
+            app = self.app(directory)
+            before, ran = self.files(app), []
+
+            def seen(program, *args):
+                copy = program.parents[2]
+                ran.append(copy)
+                self.assertEqual(program.name, "mw1r")
+                self.assertFalse(os.path.samefile(copy, app))
+                subprocess.run(["codesign", "--verify", "--deep", "--strict", str(copy)], check=True)
+                now = self.files(copy)
+                self.assertEqual(plistlib.loads(now["Contents/Info.plist"]), {**plistlib.loads(before["Contents/Info.plist"]), "LSBackgroundOnly": True})
+                self.assertEqual({k: v for k, v in now.items() if k in before and before[k] != v}.keys() - {"Contents/Info.plist"},
+                                 {k for k in before if "_CodeSignature" in k and before[k] != now.get(k)})
+                self.assertEqual(now.keys(), before.keys())
+
+            with patch.multiple(build_package, check_usage=DEFAULT, check_served_setup=DEFAULT, check_first_run=DEFAULT) as checks:
+                for check in checks.values():
+                    check.side_effect = seen
+                build_package.smoke(app / "Contents/MacOS/mw1r", Path(directory))
+                for check in checks.values():
+                    check.assert_called_once()
+            self.assertEqual(len(set(ran)), 1)
+            self.assertFalse(ran[0].exists())
+            self.assertEqual(self.files(app), before)
+
+    @unittest.skipIf(sys.platform != "darwin", "A Mac's apps and signatures")
+    def test_an_app_with_a_broken_signature_is_not_run(self):
+        with tempfile.TemporaryDirectory() as directory:
+            app = self.app(directory)
+            (app / "Contents/Resources/data/rules/x.json").write_text("changed")
+            with patch.multiple(build_package, check_usage=DEFAULT, check_served_setup=DEFAULT, check_first_run=DEFAULT) as checks:
+                with self.assertRaisesRegex(RuntimeError, "codesign"):
+                    build_package.smoke(app / "Contents/MacOS/mw1r", Path(directory))
+                for check in checks.values():
+                    check.assert_not_called()
+
+    @unittest.skipIf(sys.platform != "darwin", "A Mac's apps and signatures")
+    def test_by_hand(self):
+        with tempfile.TemporaryDirectory() as directory:
+            app, out = self.app(directory), Path(directory) / "out"
+            out.mkdir()
+            tool = [sys.executable, "-I", background_app.__file__, str(app), str(out)]
+            found = subprocess.run(tool, capture_output=True, text=True)
+            self.assertEqual(found.returncode, 0, found.stderr)
+            self.assertTrue(os.path.samefile(found.stdout.strip(), out / app.name / "Contents/MacOS/mw1r"))
+            self.assertNotEqual(subprocess.run(tool, capture_output=True).returncode, 0)  # a copy is there already
+            self.assertTrue(plistlib.loads((out / app.name / "Contents/Info.plist").read_bytes())["LSBackgroundOnly"])
 
 
 class FolderToolTests(unittest.TestCase):

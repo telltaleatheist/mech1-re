@@ -1,7 +1,7 @@
 ; The Windows installer for players: Inno Setup (jrsoftware.org, free), built
 ; by tools/build_package.py --installer from the package folder it has just
 ; staged:
-;   iscc /DAppVersion=<label> /DDist=<package folder> /DStem=<file stem> /O<out dir> tools\package\installer.iss
+;   iscc /DAppVersion=<version> /DDist=<package folder> /DStem=<file stem> /O<out dir> tools\package\installer.iss
 ; It installs to Program Files\MechWarrior 1 Rebuild with a Start-menu
 ; shortcut (a desktop one ticked by default) and an uninstaller. The game
 ; writes nothing there: the player's settings (MechWarrior.ini), the copy of

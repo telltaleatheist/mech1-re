@@ -38,7 +38,7 @@ than four jobs, one suite at a time. Opt-ins are set together with the rest: `MW
 | 7 | `audio.py` | Mac | 2 of 2 | estimate 1 min |
 | 8 | Sanitizer build (address, and bounds for combat) on the 8 traces and the sound logs | Mac | 0 reports | estimate 4 min each |
 | 9 | Packages from the local tag, the build's stamp and the release-label checks on | all three | zip and Setup.exe; dmg, both architectures; tar.gz and AppImage; smoke test and first run each; `sums.py` over all | Windows about 1 min, Linux 1 min, Mac about 2 min |
-| 10 | `combat_cockpit` on the Intel half of the Mac package, under Rosetta | Mac | the trace matches | 10 s measured |
+| 10 | `combat_cockpit` on the Intel half of the Mac package, under Rosetta, run from the app's background copy (`tools/package/background_app.py`) | Mac | the trace matches | 10 s measured |
 | 11 | The kit's non-ASCII name case, its home away from the program's folder, with and without the manifest | Windows | no abort. At 7d9c5d9 (kit 2f0feb1): none, with the manifest and without it; on 9341f31 four of the ten cases abort, all in the program's own folders | 5 min |
 | 12 | The setup's file check on both copies, 1990 and 1989 (and on the served setup, which status_setup and every package's smoke test ask) | Mac, Linux, Windows | each copy accepted as its revision; its own failures named as its branch says | Windows: 13 to 14 ms for the 1990 folder |
 

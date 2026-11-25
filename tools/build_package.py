@@ -18,6 +18,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import plistlib
 import re
 import shutil
 import signal
@@ -29,6 +30,7 @@ import time
 import zipfile
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "package"))
+import background_app  # noqa: E402
 import served_setup  # noqa: E402
 
 # Our data beside the program: each folder must hold JSON files.
@@ -127,10 +129,13 @@ def check_served_setup(executable, game):
 
 
 def smoke(executable, game):
-    check_usage(executable)
-    check_served_setup(executable, game)
-    if game:
-        check_first_run(executable, game)
+    """The checks on a package's program. A Mac app's runs are its background copy's (background_app.py): the app itself
+    would come up in the foreground."""
+    with background_app.runnable(executable) as program:
+        check_usage(program)
+        check_served_setup(program, game)
+        if game:
+            check_first_run(program, game)
 
 
 def run(*args, **kwargs):
@@ -490,7 +495,7 @@ def windows_installer(root, stage, output, label, sdl):
     iscc = find_iscc()
     banner = subprocess.run([iscc, "/?"], capture_output=True, text=True)
     print(f"{next(iter((banner.stdout + banner.stderr).splitlines()), 'Inno Setup')} ({iscc})")
-    run(iscc, "/Qp", f"/DAppVersion={label}", f"/DDist={stage.resolve()}", f"/DStem={stem}",
+    run(iscc, "/Qp", f"/DAppVersion={program_version(label)}", f"/DDist={stage.resolve()}", f"/DStem={stem}",
         f"/O{output.resolve()}", str(root / "tools/package/installer.iss"))
     setup = output / f"{stem}-Setup.exe"
     if not setup.is_file():
@@ -566,6 +571,18 @@ def appimage(root, stage, output, label, tools, game, sdl):
     print(f"AppImage {image}")
 
 
+def mac_plist(label, minos):
+    """The app's Info.plist; its version is the program's (program_version)."""
+    version = program_version(label)
+    return {"CFBundleName": APP_NAME, "CFBundleDisplayName": APP_NAME, "CFBundleIdentifier": BUNDLE_ID,
+            "CFBundleExecutable": PROGRAM, "CFBundleIconFile": "mechwarrior", "CFBundlePackageType": "APPL",
+            "CFBundleShortVersionString": version, "CFBundleVersion": version, "CFBundleDevelopmentRegion": "en",
+            "CFBundleInfoDictionaryVersion": "6.0", "LSMinimumSystemVersion": minos,
+            "LSApplicationCategoryType": "public.app-category.games", "NSHighResolutionCapable": True,
+            "NSHumanReadableCopyright": "A fan rebuild; MechWarrior is a trademark of its owners. "
+                                        "Needs your own copy of MechWarrior (1989)."}
+
+
 def package_mac(root, build, sdl, output, label, game):
     """MechWarrior 1 Rebuild.app and MW1-Rebuild-<label>-mac.dmg: the program in Contents/MacOS, data/,
     MechWarrior.ini and the notices in Contents/Resources (SDL_GetBasePath), the libraries in
@@ -634,16 +651,8 @@ def package_mac(root, build, sdl, output, label, game):
     shutil.rmtree(iconset)
     minos = re.search(r"minos (\S+)", subprocess.run(["otool", "-l", str(exe)], capture_output=True, text=True,
                                                       check=True).stdout)
-    plist = {"CFBundleName": APP_NAME, "CFBundleDisplayName": APP_NAME, "CFBundleIdentifier": BUNDLE_ID,
-             "CFBundleExecutable": PROGRAM, "CFBundleIconFile": "mechwarrior", "CFBundlePackageType": "APPL",
-             "CFBundleShortVersionString": label, "CFBundleVersion": label, "CFBundleDevelopmentRegion": "en",
-             "CFBundleInfoDictionaryVersion": "6.0", "LSMinimumSystemVersion": minos.group(1) if minos else "12.0",
-             "LSApplicationCategoryType": "public.app-category.games", "NSHighResolutionCapable": True,
-             "NSHumanReadableCopyright": "A fan rebuild; MechWarrior is a trademark of its owners. "
-                                         "Needs your own copy of MechWarrior (1989)."}
-    import plistlib
     with open(app / "Contents/Info.plist", "wb") as f:
-        plistlib.dump(plist, f)
+        plistlib.dump(mac_plist(label, minos.group(1) if minos else "12.0"), f)
     # Ad hoc (no identity, so no name in the signature): the libraries, the program, then the app.
     entitlements = str(root / "tools/package/mechwarrior.entitlements")
     for lib in sorted(frameworks.iterdir()):

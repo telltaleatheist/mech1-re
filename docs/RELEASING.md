@@ -135,7 +135,8 @@ A release is tagged `mw1r-vX.Y.Z`, only when the project decides to; the
 label below is that tag (or any other name for a test build: a name with
 `-test` in it, so it is never taken for a release). The label is the program's
 version too (`MECHWARRIOR_VERSION`, the `version` `--status` reports), a
-release tag's number alone (`mw1r-v1.0.0` reports `1.0.0`). Packaging with a
+release tag's number alone (`mw1r-v1.0.0` reports `1.0.0`); the Mac app's
+Info.plist and the Windows Setup show the same. Packaging with a
 release's label is refused unless the tree is a git checkout at that tag with
 nothing changed, added or missing (ignored files don't count). Each
 platform's files are named `MW1-Rebuild-<label>-...`:
@@ -200,6 +201,15 @@ Packaging ends by extracting the archive and starting the program from it:
   reach the game's first input wait before it is stopped. The game folder is
   only read and is never packaged. CI has no game folder, so this half runs
   only where one is given.
+
+On a Mac these runs start a temporary copy of the app
+(`tools/package/background_app.py`): a program inside an app comes up in the
+foreground, whatever the hidden run's settings say, so the copy's Info.plist
+says `LSBackgroundOnly`, and it is signed ad hoc again. The app's own signature
+is checked first, and the app is only read. For a run by hand, the Intel half's
+under Rosetta among them, make the copy and start its program:
+
+    python3 -I tools/package/background_app.py "MechWarrior 1 Rebuild.app" FOLDER
 
 To run the same checks on a package already extracted (on any platform with a
 game folder):
