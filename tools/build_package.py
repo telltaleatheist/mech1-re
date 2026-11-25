@@ -146,8 +146,10 @@ README = (
     "A rebuild of MechWarrior (1989)'s program. Your own copy of the game is required and is\n"
     "not included: no game data or saves are in this package.\n\n"
     "The first time it starts without your game, it asks for your copy of MechWarrior: its\n"
-    "BTECH.EXE, any file in its folder, or the archive it came in (a .zip, for example). It\n"
-    "copies the game into your own folder and plays from there; your copy is never changed.\n"
+    "BTECH.EXE, any file in its folder, or the archive it came in (a .zip, for example), or\n"
+    "the launcher asks for it on its own screens. It copies the game into your own folder, or\n"
+    "the one you choose, and plays from there; your copy is never changed. It plays the 1989\n"
+    "release and the one of 1990-01-22.\n"
     "Your settings (MechWarrior.ini), saves, the copied game and the log (mechwarrior.log)\n"
     "live in your own folder:\n"
     "  Windows: %APPDATA%\\BattleTech\\MechWarrior 1 Rebuild\n"
@@ -157,7 +159,12 @@ README = (
     "saves from the earlier previews (BattleTechReverse/MechWarrior) are copied there once.\n\n"
     "Keys: arrows and Enter; in combat - and + change the speed (1x to 4x); F12 saves a\n"
     "screenshot beside your saves; Ctrl+Escape quits.\n\n"
-    "From a command line: mw1r <game folder> [capture folder] starts on that folder.\n")
+    "From a command line: mw1r <game folder> [capture folder] starts on that folder; mw1r\n"
+    "--setup sets the game up again; mw1r --help lists the rest.\n\n"
+    "MechWarrior (1989) was developed by Dynamix and published by Activision. This rebuild is\n"
+    "a fan project, not affiliated with any of them or with any holder of rights in the game.\n"
+    "It is built on Elthial's MechWarrior SDL port. LICENSE and the licenses folder say what\n"
+    "covers it and what doesn't.\n")
 
 
 def platform_name():
