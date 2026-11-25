@@ -77,6 +77,8 @@ const char *MwSdlCaptureDirectory(void);
 void MwSdlPresentVideo(bool force);
 /* Show the current frame again at the next pump (a window event). */
 void MwSdlRepeatPresent(void);
+/* The device's own events (docs/WINDOW.md); false for any other. */
+bool MwSdlHandleRenderEvent(const SDL_Event &event);
 void MwSdlShutdownVideo(void);
 void MwSdlSetMousePosition(uint16_t x,uint16_t y); /* The frame's pixels. */
 void MwSdlReadMousePosition(uint16_t *x,uint16_t *y);
