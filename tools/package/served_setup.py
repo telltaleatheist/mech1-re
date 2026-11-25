@@ -185,12 +185,31 @@ def checks(program, env, scratch, game=None):
     scratch.mkdir(parents=True, exist_ok=True)
     (scratch / "home").mkdir()
 
+    asked = []  # every ask and its answer
+
     def run(user, args, **more):
-        return ask(program, args, asking_env(env, scratch / user), **more)
+        a = ask(program, args, asking_env(env, scratch / user), **more)
+        asked.append((args, a, more))
+        return a
+
+    def stray():
+        """The asks with anything on stdout but messages, `done` last and only there. One that was killed or whose
+        pipe was closed ends early: its whole lines are messages."""
+        out = []
+        for args, a, more in asked:
+            early = "gone_at" in more or "kill_at" in more
+            lines = a.messages[:-1] if "kill_at" in more else a.messages
+            if (None in lines) if early else (not a.clean() and args[0] in ("--describe", "--search", "--look", "--install")):
+                out.append(" ".join(str(w) for w in args))
+        return out
 
     def status(user):
         p = subprocess.run([str(program), "--status"], env=asking_env(env, scratch / user), stdout=subprocess.PIPE, timeout=SECONDS)
-        return json.loads(p.stdout.decode("utf-8"))
+        try:
+            st = json.loads(p.stdout.decode("utf-8"))
+        except ValueError:
+            st = {}
+        return st if "files" in st else {"files": {"state": "no answer", "where": ""}}
 
     yield status("empty").get("setup") == 1, "--status says the setup is served"
     d = run("empty", ["--describe"])
@@ -201,6 +220,12 @@ def checks(program, env, scratch, game=None):
     yield s.clean() and len(s.lines) == 1 and s.code == 0 and s.last.get("ok") and \
         (not s.last.get("path") or os.path.exists(s.last["path"])), "search: an empty home: a copy that is there, or none (%s)" % s
     yield not (scratch / "empty").exists(), "break: --status, --describe and --search make nothing in the player's folder"
+    # As the launcher starts it: not a hidden run.
+    shown = asking_env(env, scratch / "empty")
+    del shown["MW1O_HIDDEN"]
+    for args in (["--describe"], ["--search"], ["--look"]):
+        a = ask(program, args, shown)
+        yield a.clean() and len(a.lines) == 1, "%s with a player at the run: one line on stdout (%s)" % (args[0], a)
 
     notgame = scratch / "notgame"
     notgame.mkdir()
@@ -235,6 +260,7 @@ def checks(program, env, scratch, game=None):
     yield tree(scratch / "look") == [], "break: nothing made in the player's folder but the log"
 
     if not game:
+        yield not stray(), "break: every ask: nothing on stdout but its messages %s" % stray()
         for part in COPY_PARTS:
             yield None, part
         return
@@ -357,6 +383,7 @@ def checks(program, env, scratch, game=None):
         "other characters: --folder, and it is remembered (%s)" % a
     st = status(far_user)
     yield st["files"]["state"] == "ready" and same(st["files"]["where"], drive / "install"), "other characters: --status says that folder"
+    yield not stray(), "break: every ask (%d): nothing on stdout but its messages %s" % (len(asked), stray())
 
 
 if __name__ == "__main__":

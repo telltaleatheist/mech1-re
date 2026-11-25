@@ -45,9 +45,13 @@ class PackageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             self.fixture(root)
-            with patch.object(build_package, "run"), patch.object(build_package, "platform_name", return_value="linux-x86_64"):
+            # The fixture's program answers nothing but --help: what it is asked is checked, on the extracted one.
+            with patch.object(build_package, "run"), patch.object(build_package, "platform_name", return_value="linux-x86_64"), \
+                    patch.object(build_package, "check_served_setup") as served:
                 build_package.package(root, root / "build", root / "sdl", root / "dist", "v0.1.0-test")
             extracted = root / "dist/smoke/MW1-Rebuild-v0.1.0-test-linux-x86_64"
+            served.assert_called_once()
+            self.assertTrue(os.path.samefile(served.call_args[0][0], extracted / "mw1r"))
             self.assertEqual([f.name for f in extracted.glob("libSDL3*")], ["libSDL3.so.0"])
             self.assertFalse((extracted / "libSDL3.so.0").is_symlink())
             self.assertEqual((extracted / "libSDL3.so.0").read_bytes(), b"fixture library")
