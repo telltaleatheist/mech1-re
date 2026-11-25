@@ -3,6 +3,7 @@ import hashlib
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -293,6 +294,31 @@ class PackageTests(unittest.TestCase):
             exe = self.first_run_fixture(root, imports=False)
             with self.assertRaisesRegex(RuntimeError, "did not import the story"):
                 build_package.check_first_run(exe, root / "game", timeout=2)
+
+
+class FolderToolTests(unittest.TestCase):
+    """sums.py, run on a folder of its own."""
+    tools = Path(build_package.__file__).resolve().parent / "package"
+
+    def tool(self, name, folder):
+        return subprocess.run([sys.executable, "-I", str(self.tools / name), str(folder)], capture_output=True, text=True)
+
+    def test_sums_leaves_out_itself_and_the_single_sums(self):
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            for name in ("b.zip", "a.dmg"):
+                (folder / name).write_bytes(name.encode())
+                (folder / (name + ".sha256")).write_text("x")
+            for _ in range(2):  # a second run finds the SHA256SUMS of the first
+                found = self.tool("sums.py", folder)
+                self.assertEqual(found.returncode, 0, found.stdout + found.stderr)
+                self.assertEqual((folder / "SHA256SUMS").read_bytes(), b"".join(
+                    hashlib.sha256(n.encode()).hexdigest().encode() + b"  " + n.encode() + b"\n" for n in ("a.dmg", "b.zip")))
+        with tempfile.TemporaryDirectory() as directory:
+            (Path(directory) / "only.sha256").write_text("x")
+            found = self.tool("sums.py", directory)
+            self.assertNotEqual(found.returncode, 0)
+            self.assertFalse((Path(directory) / "SHA256SUMS").exists())
 
 
 if __name__ == "__main__":

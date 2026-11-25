@@ -1,5 +1,5 @@
 """SHA256SUMS over a release's files (docs/RELEASING.md): every file in the folder but SHA256SUMS
-itself, sorted by name, one "<64 hex>  <name>" line each, as sha256sum writes them and the launcher's updater reads
+itself and the single .sha256 files packaging writes beside each, sorted by name, one "<64 hex>  <name>" line each, as sha256sum writes them and the launcher's updater reads
 them. Run it on the folder that holds every platform's files before they are uploaded.
 
     python3 -I tools/package/sums.py <folder>
@@ -14,7 +14,7 @@ def main():
         sys.exit(__doc__)
     folder = pathlib.Path(sys.argv[1])
     lines = []
-    for f in sorted(p for p in folder.iterdir() if p.is_file() and p.name != 'SHA256SUMS'):
+    for f in sorted(p for p in folder.iterdir() if p.is_file() and p.name != 'SHA256SUMS' and p.suffix != '.sha256'):
         h = hashlib.sha256()
         with f.open('rb') as fh:
             for chunk in iter(lambda: fh.read(1 << 20), b''):
