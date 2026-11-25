@@ -1,7 +1,7 @@
 # The release gate
 
-Run once, when everything that goes into the release is on main and the project owner has said go. Nothing here has
-been run for this page. Times are measured on earlier commits unless marked as an estimate.
+Run once, when everything that goes into the release is on main and the project owner has said go. It was run on
+cadfb67; the [results](#results-on-cadfb67) are below. Times in the plan are measured on earlier commits unless marked as an estimate.
 
 **The candidate** is one commit of main. Every step below is on fresh builds of it. If it changes afterwards, the
 steps that change can affect are run again. B4f's campaign and the setup's file check
@@ -58,6 +58,41 @@ on the same commit already did them; then name it.
 Not repeated, because no path to them changed since they were checked: the soundfont's subset and bank goldens
 (`soundfont_subset`, `soundfont_bank` run in step 2 anyway), and the controller path (`joystick`, `sdl_joystick`,
 same). MW2's recognise rules for DATABASE.MW2 and MECH2 were never tried on real data; nothing here covers them.
+
+## Results on cadfb67
+
+The gate on cadfb67 (kit 2f0feb1, SDL 535d80b), 2026-11-25: every step as expected, no failure the plan doesn't name,
+nothing re-recorded. No test was skipped. Commits after cadfb67 aren't covered by this section.
+
+| # | Mac (macOS 26.3.1, arm64) | Linux (Ubuntu 24.04, WSL) | Windows (MSVC) |
+| --- | --- | --- | --- |
+| 1 | 0 warnings, 41 s | 0 warnings, 143 s | 0 warnings of ours, 142 s; one command-line notice (D9025) in the kit's project |
+| 2 | 38 of 38, 350 s | | |
+| 3 | 13 of 13, 337 s | | |
+| 4 | | 38 of 38, 255 s; 1989's list 13 of 13, 250 s | |
+| 5 | | | 38 of 38 with both opt-ins, 364 s; their first run on Windows |
+| 6 | 1990: 8 of 8. 1989: 6 of 8, the two expected. 864 of 864 frames identical to 4632030's | 1990: 8 of 8. 1989: 6 of 8, the same two | 1990: 8 of 8. 1989: 6 of 8, the same two; the differing lines are Linux's |
+| 7 | 2 of 2, 33 s | | |
+| 8 | 8 of 8 traces and 2 of 2 sound logs on 1990, 0 reports (address and bounds; leak detection off) | | |
+| 9 | dmg, 107 s: both architectures, stamp in each half, ad hoc signature verifies. arm64: smoke and first run on both copies | tar.gz and AppImage, 135 s: stamp and version 1.0.0; smoke and first run on both copies | zip and Setup.exe, 184 s: the zip's stamp and version 1.0.0; smoke and first run on both copies |
+| 10 | x86_64 under Rosetta: 1 of 1, 10 s | | |
+| 11 | | | 10 of 10 cases with the manifest and 10 of 10 without, no abort |
+| 12 | each copy accepted as its revision | each copy accepted as its revision | each copy accepted as its revision; 13 ms for the 1990 folder |
+
+- **Step 9:** the served setup's 72 checks passed in every smoke test, none skipped. `check_paths` found no local path,
+  user name or game file in any package. The two warnings in the Mac's packaging are the linker's, on SDL's library.
+  `Setup.exe` itself wasn't run; its test-AppId twin was installed, compared (56 of 56 files), smoke-tested on both
+  copies and uninstalled ([RELEASING.md](../RELEASING.md), step 5).
+- **Linux's needs:** the built files need glibc 2.38 and GLIBCXX 3.4.31 (GCC 13). They ran on Ubuntu 24.04 only. The
+  AppImage starts with `libfuse.so.2` hidden; with no `fusermount` on the path it stops, and starts with
+  `APPIMAGE_EXTRACT_AND_RUN=1`.
+- **The Mac's Intel half:** `--status` and step 10, both under Rosetta. The smoke test ran on arm64 only, and nothing
+  ran on a real Intel Mac.
+- **Step 12:** 1989's PHAPCK.TBL is named as damaged, and nothing else. With the 1989 copy as `MW1O_GAME`, `setup` fails
+  its two checks for that file by design (seen on Linux and Windows).
+- **Found:** the `.sha256` files written on Windows end their line with CRLF, so `sha256sum -c` refuses them on the
+  other systems; the hashes are right and `SHA256SUMS` isn't affected.
+- **Not covered:** `sums.py` over all the packages, a run of any package in a window, and 1989 under the sanitizer.
 
 ## For the project owner
 

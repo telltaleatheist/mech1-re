@@ -16,7 +16,8 @@ Each package workflow uploads its archive as a workflow artifact
 (`release-linux`, `release-windows`); none creates a tag or a release.
 
 Windows uses MSVC x64 on Windows Server 2022. Linux uses GCC on Ubuntu 24.04
-x86-64 (glibc 2.39+). SDL 3.2.0 is pinned by commit, matching the supported CMake
+x86-64; what it builds needs glibc 2.38 and GCC 13's libstdc++, by the symbol
+versions in the files. SDL 3.2.0 is pinned by commit, matching the supported CMake
 minimum; CMake 3.31.6 is pinned for the older dependency build scripts. SDL is
 bundled as a shared library. Windows also bundles the MSVC CRT.
 Linux requires compatible system C/C++ runtime, desktop and audio libraries.
@@ -257,9 +258,16 @@ any of this. What fails a step stops the release.
        python3 -I tools/package/sums.py FOLDER
 
 5. Check each package by hand on its system ("Before calling a package
-   validated", below), from the file that will be uploaded: a Setup install
-   and its uninstall only where no other copy of the game is installed, or
-   with another AppId.
+   validated", below), from the file that will be uploaded. `Setup.exe` is the
+   exception: it isn't run before the release. It carries the AppId every
+   version shares, so where a copy of the game is installed it would replace
+   that copy, and its uninstaller would remove it. Its twin is run instead: the
+   same packaged folder and label, compiled from a copy of `installer.iss` with
+   a test AppId and a test name (so its folder and shortcuts are its own too).
+   The twin is installed into its own folder, its files compared with the
+   packaged folder's, the smoke test run on it with both copies of the game,
+   and it is uninstalled; a copy that was installed before must be unchanged.
+   What this leaves unproved is the release file itself, beyond its hash.
 6. Push the tag: `git push origin mw1r-vX.Y.Z`.
 7. Publish, with the notes as the text:
 
