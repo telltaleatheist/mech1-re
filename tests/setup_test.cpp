@@ -570,6 +570,14 @@ void with_game(const fs::path& work, const char* game_env, const char* ref_env, 
   const rekit::Status st = setup::status("", (work / "user").string(), (work / "notgame").string(), "test");
   check(st.state == rekit::Status::kIncomplete && fs::path(st.where).lexically_normal() == out.lexically_normal(), "status: the player's install found (incomplete without MW_MAIN.EXE)");
   check(count_files(work / "user") == before, "break: status wrote nothing in the player's folder");
+  // What the player is told of the edition: the 1989 release by its year, never by this program's name for it.
+  check(st.data == "1990-01-22", "status: the copy is 1990-01-22");
+  const fs::path user_1989 = work / "user-1989";
+  fs::create_directories(user_1989 / "install");
+  fs::copy_file(ref, user_1989 / "install" / "BTECH.EXE");
+  fs::copy_file(main_exe, user_1989 / "install" / "MW_MAIN.EXE");
+  const rekit::Status st_1989 = setup::status("", user_1989.string(), (work / "notgame").string(), "test");
+  check(st_1989.state == rekit::Status::kReady && st_1989.data == "1989", "status: the copy is 1989 (" + st_1989.data + ")");
 
 #if REKIT_HAVE_LIBARCHIVE
   // A download: the game a folder down in a zip, with an entry trying to climb out.

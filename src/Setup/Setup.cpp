@@ -264,6 +264,8 @@ std::string btech_revision(const std::vector<uint8_t>& bytes) {
   return name ? name : "";
 }
 
+std::string edition(const std::string& revision) { return revision == "reference" ? "1989" : revision; }
+
 rekit::SourceRules rules() {
   rekit::SourceRules r;
   rekit::Clue btech;
@@ -470,7 +472,7 @@ rekit::Status status(const std::string& remembered, const std::string& user, con
   const bool imported = story_imported(user);
   if (!found.empty()) {
     const Check c = check_install(found, imported);
-    st.where = found, st.data = c.version, st.state = c.state, st.missing = c.missing;
+    st.where = found, st.data = edition(c.version), st.state = c.state, st.missing = c.missing;
     if (searched) st.note = "found by the search, not set up yet";
   }
   if (!imported) st.pending.push_back("story import");

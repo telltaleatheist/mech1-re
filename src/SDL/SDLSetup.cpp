@@ -73,11 +73,12 @@ std::string say_files(const setup::FilesReport& r, std::FILE* to = stdout) {
 
 // The words for a find: which BTECH.EXE it holds, and what is amiss with its files.
 std::string describe(const rekit::Found& f, bool imported, std::FILE* log) {
-  const std::string what = f.version == "1990-01-22" ? " (the 1990-01-22 revision)" : f.version == "reference" ? " (the 1989 release)" : "";
+  const std::string which = setup::edition(f.version);
+  const std::string what = which == "1989" ? " (the 1989 release)" : which.empty() ? "" : " (the " + which + " revision)";
   const setup::FilesReport report = setup::check_found(f, imported);
   say_files(report, log);
   if (const std::string files = setup::files_pick_note(report); !files.empty())
-    return std::string(setup::kTitle) + (f.version == "1990-01-22" ? " (1990-01-22)" : f.version == "reference" ? " (1989)" : "") + ". " + files;
+    return std::string(setup::kTitle) + (which.empty() ? "" : " (" + which + ")") + ". " + files;
   return std::string(f.on_disk ? "An installed copy of " : "A download of ") + setup::kTitle + what + ".";
 }
 
@@ -157,7 +158,7 @@ std::string run_screen(bool setupOnly, const std::string& found, bool searched, 
 // What the player picked, walked by the kit and copied into the player's folder. "" with `why` when not.
 std::string take_copy(const std::string& picked, const std::string& user, std::string* why) {
   const rekit::Found f = rekit::find_source(picked, setup::rules());
-  std::printf("setup: looked at %s: %s\n", picked.c_str(), f.kind == rekit::Found::kNothing ? "nothing" : f.version.c_str());
+  std::printf("setup: looked at %s: %s\n", picked.c_str(), f.kind == rekit::Found::kNothing ? "nothing" : setup::edition(f.version).c_str());
   if (!f.detail.empty()) std::fprintf(stderr, "%s", f.detail.c_str());
   if (f.kind != rekit::Found::kInstall) {
     *why = setup::recognise(picked);

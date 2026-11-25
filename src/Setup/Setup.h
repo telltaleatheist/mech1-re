@@ -80,6 +80,9 @@ Settled settle_user_folder(const std::string& folder, const std::string& preview
 
 // BTECH.EXE's revision by its bytes ("reference", "1990-01-22"; combat_installation.h), "" when not a known one.
 std::string btech_revision(const std::vector<uint8_t>& bytes);
+// What the player is told of it: "1989" or "1990-01-22". Never the revision's own name, which the story's import.json
+// and the walk's finds keep.
+std::string edition(const std::string& revision);
 
 // What the kit's walk looks for: BTECH.EXE judged by its revision; a pick of BTECH.EXE or MW_MAIN.EXE stands
 // for its folder.
