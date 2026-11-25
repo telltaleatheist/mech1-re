@@ -55,8 +55,8 @@ repository and weren't repeated.
 - **Real game controllers.** Only simulated ones were used.
 - **The message box** that says why a start was refused: its text was checked, the box wasn't seen.
 - **The setup on the launcher's screens.** The program's side of it is checked; nobody has gone through the screens.
-- **The packages in a window,** 1.0.1's new one included: resized, maximised or in full screen. The runs are hidden and
-  play nothing aloud.
+- **The packages in a window,** 1.0.1's new one included: on Windows and Linux at all, on a Mac maximised or in full
+  screen. Resizing it on a Mac (Apple silicon) was tried by hand, and works. The runs are hidden and play nothing aloud.
 - **A real reset or loss of a graphics device.** The tests send what SDL would say, and refuse to draw.
 - **`Setup.exe` itself.** It wasn't run before the release; its twin was ([RELEASING](RELEASING.md), step 5).
 - **The 1989 edition** under the sanitizers, and its sound logs.
