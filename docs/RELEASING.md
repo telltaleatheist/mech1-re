@@ -288,5 +288,6 @@ any of this. What fails a step stops the release.
 
 The smoke test establishes loading, the first-run import and startup only.
 Before a package goes to anyone, check by hand on each platform: SDL
-initialisation, the campaign, a combat and its return, input and audio. macOS
-and Linux playable builds are not yet qualified (`RUNTIME_STATUS.md`).
+initialisation, the campaign, a combat and its return, input and audio.
+What was checked on each platform for the last release, and what nobody has
+played yet, is in [RUNTIME_STATUS.md](RUNTIME_STATUS.md).
