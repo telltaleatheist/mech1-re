@@ -20,6 +20,9 @@ checked on e223eb2, on the Mac, Linux and Windows, with the packages' own SDL:
 - The recorded runs `bar`, `mech_complex`, `combat_cockpit` and `combat_retreat`: they match, but for the two of combat
   with the 1989 edition, as below.
 - The five packages, as 1.0.0's below. The installer's twin ran over 1.0.0's.
+- The launcher's UPDATE, 1.0.0 to 1.0.1, after the release, on the Mac: launcher 1.5.1, hidden, with the published
+  package. The app it installs is the package's, file for file, and the game's copy, the settings and the player's own
+  files stay as they were. The game wasn't started from it.
 
 The rest is 1.0.0's and wasn't repeated. Its release gate ran on cadfb67, with both editions of the game
 ([results](phase5/GATE_PLAN.md#results-on-cadfb67)). From there to cd33ea4 no source, data or build file changed, only packaging, its tests and documents. The packages'
