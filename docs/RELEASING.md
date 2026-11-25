@@ -64,6 +64,43 @@ writes nothing; `mw1r --setup` sets the game up and exits 0 ready,
 1 cancelled or 2 failed (the reason as `{"error": ...}` on stdout).
 `tests/status_setup_test.py` checks both on the built program.
 
+### The setup served to the launcher
+
+`mw1r --setup` followed by `--describe`, `--search`, `--look <pick>` or
+`--install <pick> [--folder <dir>]` is the setup for the launcher's own
+screens (the kit's `rekit/sdl/setup_serve.h`; `--status` says `"setup": 1`).
+It opens no window and no picker. It answers on stdout with JSON lines and
+nothing else, the last one with `done`, and exits 0 (ready), 1 (cancelled) or
+2 (failed). `MwSetupServe` (`src/SDL/SDLSetup.cpp`) answers with the setup
+screen's recipe, so what is found, the words for it, the sentence for a pick
+that can't be used, the file check's short note and the install are the
+screen's.
+
+- The folder a served install went to is remembered in `MechWarrior.ini`, as
+  after the screen. So is a looked-at copy that is in place already.
+- `--search` passes over the copy in use and the player's own install. It
+  answers the player's own when that is ready and the copy in use isn't.
+- `--folder` names the game's own folder: the kit marks it, refuses one that
+  holds other things or is another game's, and installs to its `install`.
+- A `cancel` line on stdin stops a look or an install at its next progress
+  step. What was copied is removed; a folder named with `--folder` keeps the
+  kit's mark. A launcher that closes the pipe stops nothing.
+- Wrong arguments get one `done` line saying what is wrong, and exit 2.
+  Anything else after `--setup` is the usage and exit 2. So is an ask with a
+  test's hook (`MECHWARRIOR_SETUP_PICK`, `REKIT_SETUP_GO`) set and
+  `MECHWARRIOR_SAVE_DIRECTORY` not: one line, exit 2.
+- What a look or an install says besides its answer (the file check's line)
+  goes to `setup.log` in the save directory, anew each time.
+- One install at a time into a folder: `install.lock` beside it is locked
+  while the copy is made, and removed after. A second one is refused. A game
+  that is playing from the folder isn't asked.
+- No program record is written.
+
+`tools/package/served_setup.py` asks a built or packaged program through
+pipes, as the launcher does, with a video driver that doesn't exist.
+`status_setup` and every package's smoke test run it. Without the game's
+folder, the parts that need a copy are skipped and named.
+
 The save directory is `MECHWARRIOR_SAVE_DIRECTORY`, or SDL's per-user folder:
 `%APPDATA%\BattleTech\MechWarrior 1 Rebuild` on Windows,
 `~/Library/Application Support/BattleTech/MechWarrior 1 Rebuild` on macOS and

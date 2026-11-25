@@ -523,6 +523,31 @@ void with_game(const fs::path& work, const char* game_env, const char* ref_env, 
     check(!r.ok && read(knew) == "a file", "break: a file in its place is refused and kept");
   }
 
+  // One install at a time into a folder; what is at the lock's name is never the player's to lose.
+  {
+    const fs::path lout = work / "luser" / "install", file = work / "luser" / "install.lock";
+    bool held = false, second_ran = false;
+    setup::Installed second;
+    r = setup::install(f, lout.string(), [&](double, const std::string&) {
+      if (!second_ran) second_ran = true, held = fs::exists(file), second = setup::install(f, lout.string());
+      return true;
+    });
+    check(r.ok && second_ran && held, "an install holds its lock and finishes");
+    check(!second.ok && !second.cancelled && second.error.find("Another setup is copying the game into " + lout.string()) == 0,
+          "break: a second install into the same folder meanwhile is refused");
+    check(!fs::exists(file) && fs::exists(lout / "BTECH.EXE"), "the lock's file is gone after");
+    write(file, "");
+    r = setup::install(f, lout.string());
+    check(r.ok && !fs::exists(file), "an empty lock file nobody holds (a killed run's) stops nothing");
+    write(file, "the player's");
+    r = setup::install(f, lout.string());
+    check(!r.ok && r.error.find("The file " + file.string() + " is in the way") == 0 && read(file) == "the player's",
+          "break: a file with something in it at the lock's name is refused, named and not touched");
+    fs::remove(file);
+    r = setup::install(f, lout.string(), [](double, const std::string&) { return false; });
+    check(r.cancelled && !fs::exists(file), "a cancelled install leaves no lock file");
+  }
+
   // Incomplete without MW_MAIN.EXE until the story is imported.
   fs::remove(rekit::any_case_path(out.string(), "MW_MAIN.EXE"));
   check(setup::check_install(out.string(), false).state == rekit::Status::kIncomplete, "no MW_MAIN.EXE before the import: incomplete");

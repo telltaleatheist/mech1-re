@@ -128,7 +128,8 @@ std::string remembered_folder(const std::string& user);
 // Installing what the kit's walk found into `out_dir`: a folder on disk copied (rekit::copy_folder), an archive's
 // game folder unpacked in one forward read; staged in `out_dir`.new and swapped in (rekit::swap_in_folder), so a
 // failure or a cancel leaves nothing and `out_dir` is replaced only when our install made it. The player's
-// original (folder or archive) is only read, never moved or deleted.
+// original (folder or archive) is only read, never moved or deleted. One at a time into a folder: `out_dir`.lock is
+// locked meanwhile, and a second install is refused. (A game that is playing isn't asked: it can see the swap.)
 struct Installed {
   bool ok = false, cancelled = false;
   std::string dir;    // the folder now holding the game
