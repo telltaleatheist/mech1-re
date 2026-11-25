@@ -90,9 +90,19 @@ def stamps(a, work, base):
     code, text = start("setup", a.stamped, ["--setup"], False)
     check(code == 2 and text is None, "break: --setup records nothing")
     check(start("served", a.stamped, ["--setup", "--describe"], False) == (0, None), "break: a served ask records nothing")
+    # With a configuration that can be read, so the exit is the option's and not the configuration's.
+    ini = os.path.join(work, "tick.ini")
+    open(ini, "w").write("combat_tick_ms=60\n")
+    for name, args in (("option", ["--no-such-option"]), ("version", ["--version"]), ("status x", ["--status", "x"]), ("late", [absent, "--no-such-option"]),
+                       ("short", ["-x"]), ("help x", ["--help", "x"]), ("pilot", ["--support-pilot"])):
+        user = os.path.join(work, "record-" + name)
+        code, text = start(name, a.stamped, args, False, MECHWARRIOR_TIMING_CONFIG=ini)
+        check(code == 2 and text is None and os.listdir(user) == [], "an unknown option (%s): exit 2, nothing written" % name)
+        check("--help" in (shown[name] or ""), "and it is shown, with what to do")
     code, text = start("usage", a.stamped, ["a", "b", "c", "d"], False)
     check(code == 2 and text is None, "break: a start that is refused its arguments records nothing")
-    check(start("option", a.stamped, ["--no-such-option"], False)[1] is None, "break: an unknown option records nothing")
+    p, _ = run(a.stamped, ["--no-such-option"], dict(base, MECHWARRIOR_SAVE_DIRECTORY=os.path.join(work, "record-hidden")))
+    check(p.returncode == 2 and p.stdout == "" and "Usage: mw1r" in p.stderr and "--no-such-option" in p.stderr, "an unknown option prints the usage, on stderr")
     check(all(shown[n] is not None for n in ("plays", "usage", "option")), "a refused start shows its reason")
     check(shown["plays"] is not None and "absent.ini" in shown["plays"], "and what is wrong")
     check(all(shown[n] is None for n in ("hidden", "status", "help", "setup", "served")), "break: a hidden start, --status, --help, --setup and a served ask show nothing")
