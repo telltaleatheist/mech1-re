@@ -50,7 +50,8 @@ Arrows and Enter work the menus. In combat:
 | - and + | combat speed, 1x to 4x |
 
 F12 saves a screenshot beside your saves, and Ctrl+Escape quits. Up to two game controllers work as the original's
-joysticks. The window can be made any size.
+joysticks. The window can be made any size, and the picture fills it at 16:10
+([docs/WINDOW.md](docs/WINDOW.md)).
 
 The music plays from a bundled soundfont. `music=` in `MechWarrior.ini`, in your own folder, changes it to the PC
 speaker's (`speaker`) or turns it off (`off`); see [docs/AUDIO.md](docs/AUDIO.md).

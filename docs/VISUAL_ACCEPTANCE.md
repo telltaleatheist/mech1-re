@@ -29,6 +29,12 @@ and the program should end when it is closed. No game, save or setting of the
 player's is touched. Close that PowerShell afterwards, as it keeps both
 variables.
 
+## The window
+
+Drag the window to several sizes, by a side and by a corner: no bars, its shape held. Maximise it and use full screen:
+bars at two sides at most. At an odd size, click on the edges and corners of the buttons, and press - and + in combat
+for the speed notice ([WINDOW.md](WINDOW.md)).
+
 ## Captures and their limits
 
 F12 records actual SDL output with supporting state. Keep raw comparison sets

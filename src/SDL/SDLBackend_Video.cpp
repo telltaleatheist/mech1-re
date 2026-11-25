@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include "SDLBackend.h"
+#include "SDLPicture.h"
 #include "mechwarrior/ega_campaign.h"
 #include "mechwarrior/combat_video.h"
 #include "mechwarrior/combat_startup.h"
@@ -9,7 +10,9 @@
 
 static SDL_Window *window;
 static SDL_Renderer *renderer;
-static SDL_Texture *texture;
+static SDL_Texture *texture; /* The canvas page. */
+static SDL_Texture *frame;   /* It and the speed notice, before they are scaled to the window. */
+static MwSdlPicture picture;
 using mw1o::video::Canvas;
 using mw1o::video::GameCanvas;
 static_assert(Canvas::WIDTH==EGA_COLUMNS && Canvas::HEIGHT==EGA_ROWS && Canvas::BORDER+1==EGA_PALETTE_ENTRIES,
@@ -29,35 +32,41 @@ void (*mwSdlFrameObserver)(void);
 
 /* A frame of the canvas as it is now set up: a mode set starts a new screen. */
 static bool HaveFrame(void) {return haveFrame && lastSetUps==GameCanvas().setUps();}
+/* The picture as the window now is (docs/WINDOW.md). */
+static const MwSdlPicture &Picture(const char *what)
+{
+    if (!renderer || !window || !MwSdlReadPicture(window,renderer,&picture)) MwSdlFail(what);
+    return picture;
+}
 /* The pointer in the frame's pixels (H3; INT 33h's x was twice them). */
 void MwSdlSetMousePosition(uint16_t x,uint16_t y)
 {
-    float windowX,windowY;
-    if (!renderer || !window || !SDL_RenderCoordinatesToWindow(renderer,(float)x,(float)y,&windowX,&windowY))
-        MwSdlFail("Position mouse in EGA coordinates");
-    SDL_WarpMouseInWindow(window,windowX,windowY);
+    const SDL_FPoint point=MwSdlPointInFramePixel(Picture("Position mouse in EGA coordinates"),x,y);
+    SDL_WarpMouseInWindow(window,point.x,point.y);
 }
 void MwSdlReadMousePosition(uint16_t *x,uint16_t *y)
 {
-    float windowX,windowY,logicalX,logicalY;
-    if (!x || !y || !renderer) MwSdlFail("Read mouse in EGA coordinates");
-    SDL_GetMouseState(&windowX,&windowY);
-    if (!SDL_RenderCoordinatesFromWindow(renderer,windowX,windowY,&logicalX,&logicalY))
-        MwSdlFail("Read mouse in EGA coordinates");
-    if (logicalX<0) logicalX=0;else if (logicalX>EGA_COLUMNS-1) logicalX=EGA_COLUMNS-1;
-    if (logicalY<0) logicalY=0;else if (logicalY>EGA_ROWS-1) logicalY=EGA_ROWS-1;
-    *x=(uint16_t)logicalX;
-    *y=(uint16_t)logicalY;
+    if (!x || !y) MwSdlFail("Read mouse in EGA coordinates");
+    SDL_FPoint point;
+    SDL_GetMouseState(&point.x,&point.y);
+    const SDL_Point pixel=MwSdlFramePixel(Picture("Read mouse in EGA coordinates"),point);
+    *x=(uint16_t)pixel.x;
+    *y=(uint16_t)pixel.y;
 }
 void MwSdlConvertMouseMotion(float windowXMotion,float windowYMotion,
     float *logicalXMotion,float *logicalYMotion)
 {
-    float originX,originY,movedX,movedY;
-    if (!logicalXMotion || !logicalYMotion || !renderer
-        || !SDL_RenderCoordinatesFromWindow(renderer,0,0,&originX,&originY)
-        || !SDL_RenderCoordinatesFromWindow(renderer,windowXMotion,windowYMotion,&movedX,&movedY))
-        MwSdlFail("Convert mouse motion to EGA coordinates");
-    *logicalXMotion=movedX-originX;*logicalYMotion=movedY-originY;
+    if (!logicalXMotion || !logicalYMotion) MwSdlFail("Convert mouse motion to EGA coordinates");
+    const SDL_FPoint motion=MwSdlMotionToFrame(Picture("Convert mouse motion to EGA coordinates"),{windowXMotion,windowYMotion});
+    *logicalXMotion=motion.x;*logicalYMotion=motion.y;
+}
+/* The whole frame as a renderer target, for the window or for a capture. */
+static SDL_Texture *MakeTarget(int scale)
+{
+    SDL_Texture *target=SDL_CreateTexture(renderer,SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_TARGET,EGA_COLUMNS*scale,EGA_ROWS*scale);
+    if (target && SDL_SetTextureScaleMode(target,SDL_SCALEMODE_NEAREST) && SDL_SetTextureBlendMode(target,SDL_BLENDMODE_NONE)) return target;
+    SDL_DestroyTexture(target);
+    return NULL;
 }
 static void PresentCanvasPage(const Canvas &canvas,int page,bool force);
 bool MwSdlInitializeVideo(const char *directory)
@@ -68,20 +77,24 @@ bool MwSdlInitializeVideo(const char *directory)
     /* mw1-original: MW1O_HIDDEN keeps the window hidden for headless test runs
      * (macOS's offscreen video driver has no renderer, as mw3-re's --hidden). */
     const SDL_WindowFlags hidden=getenv("MW1O_HIDDEN")?SDL_WINDOW_HIDDEN:0;
-    window=SDL_CreateWindow("MechWarrior 1 Rebuild",960,600,SDL_WINDOW_RESIZABLE|hidden);
+    enum { WINDOW_WIDTH=EGA_COLUMNS*3,WINDOW_HEIGHT=EGA_ROWS*3 };
+    window=SDL_CreateWindow("MechWarrior 1 Rebuild",WINDOW_WIDTH,WINDOW_HEIGHT,SDL_WINDOW_RESIZABLE|SDL_WINDOW_HIGH_PIXEL_DENSITY|hidden);
     if (!window) return false;
+    /* Held to the frame's shape while it is resized. A system that can't
+     * leaves bars at two of the sides. */
+    const float shape=(float)EGA_COLUMNS/(float)EGA_ROWS;
+    SDL_SetWindowAspectRatio(window,shape,shape);
+    SDL_SetWindowMinimumSize(window,EGA_COLUMNS,EGA_ROWS);
+    picture=MwSdlPicture{{0,0,WINDOW_WIDTH,WINDOW_HEIGHT},{1,1}};
     renderer=SDL_CreateRenderer(window,NULL);
-    if (!renderer || !SDL_SetRenderLogicalPresentation(renderer,EGA_COLUMNS,EGA_ROWS,SDL_LOGICAL_PRESENTATION_INTEGER_SCALE)) return false;
+    if (!renderer) return false;
     texture=SDL_CreateTexture(renderer,SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_STREAMING,EGA_COLUMNS,EGA_ROWS);
     if (!texture || !SDL_SetTextureScaleMode(texture,SDL_SCALEMODE_NEAREST)) return false;
+    frame=MakeTarget(1);
+    if (!frame) return false;
     GameCanvas().setPresenter([](const Canvas &canvas,int page) {PresentCanvasPage(canvas,page,true);});
     haveFrame=presenting=false;
     return true;
-}
-static void Render(void)
-{
-    if (!SDL_SetRenderDrawColor(renderer,0,0,0,255) || !SDL_RenderClear(renderer)
-        || !SDL_RenderTexture(renderer,texture,NULL,NULL)) MwSdlFail("Render EGA texture");
 }
 /* A small boxed line at the top right of the 320x200 frame (SDL's 8x8 font). */
 static void DrawNotice(const char *text)
@@ -91,6 +104,14 @@ static void DrawNotice(const char *text)
     if (!SDL_SetRenderDrawColor(renderer,0,0,0,255) || !SDL_RenderFillRect(renderer,&box)
         || !SDL_SetRenderDrawColor(renderer,255,255,85,255) || !SDL_RenderDebugText(renderer,x,y,text))
         MwSdlFail("Draw the speed notice");
+}
+/* The frame to the window. It is put together at its own size and scaled
+ * once, so the notice's pixels are the picture's at any size. */
+static void Render(const char *notice)
+{
+    if (!SDL_SetRenderTarget(renderer,frame) || !SDL_RenderTexture(renderer,texture,NULL,NULL)) MwSdlFail("Render EGA texture");
+    if (notice) DrawNotice(notice);
+    if (!SDL_SetRenderTarget(renderer,NULL) || !MwSdlDrawPicture(renderer,frame)) MwSdlFail("Render EGA texture");
 }
 /* A frame is presented only when it changes, so a frame the window system
  * drops or holds back (seen on Windows: two presents a few ms apart, the
@@ -130,8 +151,7 @@ static void PresentCanvasPage(const Canvas &canvas,int page,bool force)
         uint64_t now=SDL_GetTicksNS();
         if (!HaveFrame() || !repeatPresentAt || now<repeatPresentAt) return;
         presenting=true;
-        Render();
-        if (showNotice) DrawNotice(notice);
+        Render(showNotice?notice:NULL);
         if (!SDL_RenderPresent(renderer)) MwSdlFail("Present EGA texture");
         repeatPresentAt=now+HOST_REPEAT_IDLE_NS;
         presenting=false;
@@ -145,8 +165,7 @@ static void PresentCanvasPage(const Canvas &canvas,int page,bool force)
         rgbaPixels[pixel]=0xFF000000u|((uint32_t)colour.r<<16)|((uint32_t)colour.g<<8)|colour.b;
     }
     if (!SDL_UpdateTexture(texture,NULL,rgbaPixels,EGA_COLUMNS*sizeof(uint32_t))) MwSdlFail("Upload EGA texture");
-    Render();
-    if (showNotice) DrawNotice(notice);
+    Render(showNotice?notice:NULL);
     noticeShown=showNotice;
     if (!SDL_RenderPresent(renderer)) MwSdlFail("Present EGA texture");
     lastPage=page;lastRgb=palette;lastSetUps=canvas.setUps();haveFrame=true;
@@ -166,11 +185,16 @@ bool MwSdlCapture(const char *stem)
     if (snprintf(path,sizeof(path),"%s/%s.bmp",captureDirectory,stem)>=(int)sizeof(path)) return false;
     /* Reserve exclusively: never overwrite an earlier observation. */
     FILE *file=fopen(path,"wbx");if (!file) return false;fclose(file);
-    Render();
-    SDL_Surface *surface=SDL_RenderReadPixels(renderer,NULL);
+    /* 3 pixels to each of the frame's, whatever the window or the display. */
+    SDL_Texture *target=MakeTarget(3);
+    if (!target) return false;
+    SDL_Surface *surface=SDL_SetRenderTarget(renderer,target) && SDL_RenderTexture(renderer,texture,NULL,NULL)
+        ?SDL_RenderReadPixels(renderer,NULL):NULL;
+    bool saved=SDL_SetRenderTarget(renderer,NULL);
+    SDL_DestroyTexture(target);
     if (!surface) return false;
-    bool saved=SDL_SaveBMP(surface,path);SDL_DestroySurface(surface);
-    if (!SDL_RenderPresent(renderer)) saved=false;
+    if (!SDL_SaveBMP(surface,path)) saved=false;
+    SDL_DestroySurface(surface);
     if (!saved) return false;
     if (snprintf(path,sizeof(path),"%s/%s.indices",captureDirectory,stem)>=(int)sizeof(path)) return false;
     file=fopen(path,"wbx");if (!file) return false;
@@ -193,6 +217,6 @@ bool MwSdlCapture(const char *stem)
 }
 void MwSdlShutdownVideo(void)
 {
-    SDL_DestroyTexture(texture);SDL_DestroyRenderer(renderer);SDL_DestroyWindow(window);
-    texture=NULL;renderer=NULL;window=NULL;
+    SDL_DestroyTexture(frame);SDL_DestroyTexture(texture);SDL_DestroyRenderer(renderer);SDL_DestroyWindow(window);
+    frame=NULL;texture=NULL;renderer=NULL;window=NULL;
 }

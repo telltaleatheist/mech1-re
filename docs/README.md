@@ -10,7 +10,7 @@ Current entry points:
 - [Screenshots and capture provenance](SCREENSHOTS.md).
 - [Preservation rules](PRESERVATION_PLAN.md) and [coding style](CODE_STYLE.md).
 - [Source naming/provenance](READABLE_SOURCE_NAMES.md).
-- [CPU/audio timing](CPU_TIMING_PROFILE.md).
+- [CPU/audio timing](CPU_TIMING_PROFILE.md) and [the window](WINDOW.md).
 - [Build instructions](BUILDING.md), [playing the game](PLAYABLE_TEST_BUILD.md) and [original-game requirements](ORIGINAL_GAME.md).
 - [Elthial's README for the port, as forked](PORT_README.md).
 - [Contributing](CONTRIBUTING.md) and [licensing](LICENSES/README.md).

@@ -406,7 +406,7 @@ if(MECHWARRIOR_BUILD_SDL)
         src/SDL/SDLNotice.cpp
         src/SDL/SDLBackend_DebugControl.cpp
         src/SDL/SDLBackend_Pilot.cpp src/Support/SupportPilot.cpp src/Support/SupportPilotObservation.cpp
-        src/SDL/SDLBackend_Video.cpp src/SDL/SDLBackend_CombatPlatform.cpp
+        src/SDL/SDLBackend_Video.cpp src/SDL/SDLPicture.cpp src/SDL/SDLBackend_CombatPlatform.cpp
         src/SDL/SDLBackend_CombatProcess.cpp src/SDL/SDLBackend_Audio.cpp)
     target_link_libraries(mechwarrior_sdl PUBLIC mechwarrior_original SDL3::SDL3 mechwarrior_audio
                           mechwarrior_setup)  # the player's folder's names and order (src/Setup/Setup.h)
@@ -442,6 +442,11 @@ if(MECHWARRIOR_BUILD_SDL)
         target_include_directories(sdl_joystick_test PRIVATE src/SDL)
         add_test(NAME sdl_joystick COMMAND sdl_joystick_test)
         set_tests_properties(sdl_joystick PROPERTIES SKIP_RETURN_CODE 77)
+        # The frame in the window, and the mouse in it (docs/WINDOW.md): no window is made on the screen.
+        add_executable(picture_test tests/picture_test.cpp)
+        target_link_libraries(picture_test PRIVATE mechwarrior_sdl)
+        target_include_directories(picture_test PRIVATE src/SDL)
+        add_test(NAME picture COMMAND picture_test "${CMAKE_CURRENT_BINARY_DIR}/picture_work")
         # The music setting and its old keys (src/SDL/SDLBackend_Config.cpp).
         add_executable(music_setting_test tests/music_setting_test.cpp)
         target_include_directories(music_setting_test PRIVATE src/SDL)
