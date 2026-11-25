@@ -232,7 +232,9 @@ static SDL_Surface *ReadBack(void)
     SDL_Texture *target=page?SDL_CreateTexture(renderer,SDL_PIXELFORMAT_ARGB8888,SDL_TEXTUREACCESS_TARGET,EGA_COLUMNS*3,EGA_ROWS*3):NULL;
     SDL_Surface *surface=target && SDL_SetRenderTarget(renderer,target) && SDL_RenderTexture(renderer,page,NULL,NULL)
         ?SDL_RenderReadPixels(renderer,NULL):NULL;
-    if (target && !SDL_SetRenderTarget(renderer,NULL)) {SDL_DestroySurface(surface);surface=NULL;}
+    /* Sent now: SDL 3.2 would draw the next frame with the window's size as it
+     * is here, though the window had grown since. */
+    if (target && !(SDL_SetRenderTarget(renderer,NULL) && SDL_FlushRenderer(renderer))) {SDL_DestroySurface(surface);surface=NULL;}
     SDL_DestroyTexture(target);SDL_DestroyTexture(page);
     return surface;
 }
