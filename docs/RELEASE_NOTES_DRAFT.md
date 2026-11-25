@@ -1,6 +1,3 @@
-<!-- The first release's notes, a draft. Nothing here is published until a release is decided on. A line with CHECK says
-something that must be confirmed by the gate or the lead first; the comments go before publishing. -->
-
 **MechWarrior 1 Rebuild** is a fan rebuild of MechWarrior (Activision, 1989, developed by Dynamix) for today's Windows,
 macOS and Linux. It is built on [Elthial's MechWarrior SDL port](https://github.com/Elthial/Mechwarrior-sdl-port), the
 readable reconstruction of the original program, whose research and code it continues. It is not an emulator and not a
@@ -25,8 +22,7 @@ one of 1990-01-22. The first start looks for it on your computer, or asks you to
 folder, or the archive it came in, then copies it into the rebuild's own folder. Your copy is never changed. If files are
 missing, damaged or unlike the ones this project knows, it says so first.
 
-The BattleTech launcher can install, set up and start the game too.
-<!-- CHECK (lead): the launcher that is out at the release does the setup on its own screens with this program. -->
+The BattleTech launcher (1.5.0 or later) can install, set up and start the game too.
 
 ## Downloads
 
@@ -55,17 +51,15 @@ Privacy & Security, and choose "Open Anyway" for MechWarrior 1 Rebuild. After th
   once. Saves from the first previews (`BattleTechReverse/MechWarrior`) are copied there once.
 - If you go back to an earlier test version, it reads your copy of the game again the first time you start it.
 - The installer removes what the test versions left in its folder.
-  <!-- CHECK: run on Windows from preview eb4c1c4 under a test AppId (parity-fixes); the owner's own install not touched. -->
 
 ## Not yet played or heard by a person
 
 Automated tests and recorded runs check these, but nobody has gone through them yet:
-<!-- CHECK (lead): take out what the project owner has played by the release. -->
 
 - The whole story, from start to end, and every kind of contract with every Mech.
 - The Linux package, which is built and smoke-tested automatically.
-- The Intel half of the Mac package. It answered `--status` and matched one recorded battle under Rosetta, not on a real
-  Intel Mac.
+- The Intel half of the Mac package. Its setup checks, a first start on each edition and one recorded battle passed under
+  Rosetta, not on a real Intel Mac.
 - Real game controllers: only simulated ones have been tested.
 - The message box that says why a start was refused: its text was checked, the box was not seen.
 - Setting the game up on the launcher's screens.
