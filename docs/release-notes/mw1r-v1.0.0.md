@@ -54,7 +54,7 @@ Privacy & Security, and choose "Open Anyway" for MechWarrior 1 Rebuild. After th
 
 ## Not yet played or heard by a person
 
-Automated tests and recorded runs check these, but nobody has gone through them yet:
+Nobody has gone through these yet. Automated tests and recorded runs check parts of them:
 
 - The whole story, from start to end, and every kind of contract with every Mech.
 - The Linux package, which is built and smoke-tested automatically.
