@@ -362,11 +362,11 @@ class BackgroundAppTests(unittest.TestCase):
                 with background_app.runnable(program) as runs:
                     self.assertEqual(runs, program)
 
-    def app(self, folder):
+    def app(self, folder, program=b"#!/bin/sh\nexit 0\n"):
         app = Path(folder) / "A game.app"
         for name in ("MacOS/mw1r", "Resources/data/rules/x.json"):
             (app / "Contents" / name).parent.mkdir(parents=True, exist_ok=True)
-            (app / "Contents" / name).write_text("#!/bin/sh\nexit 0\n" if name == "MacOS/mw1r" else "{}")
+            (app / "Contents" / name).write_bytes(program if name == "MacOS/mw1r" else b"{}")
         (app / "Contents/MacOS/mw1r").chmod(0o755)
         (app / "Contents/Info.plist").write_bytes(plistlib.dumps(build_package.mac_plist("mw1r-v1.2.3", "12.0")))
         subprocess.run(["codesign", "--force", "--sign", "-", str(app)], check=True, capture_output=True)
@@ -413,6 +413,26 @@ class BackgroundAppTests(unittest.TestCase):
                     build_package.smoke(app / "Contents/MacOS/mw1r", Path(directory))
                 for check in checks.values():
                     check.assert_not_called()
+
+    def test_an_architecture_is_for_an_app(self):
+        with self.assertRaisesRegex(RuntimeError, "a Mac app only"):
+            with background_app.runnable(Path("mw1r"), "x86_64"):
+                self.fail("ran")
+
+    @unittest.skipIf(sys.platform != "darwin", "A Mac's apps and signatures")
+    def test_one_half_of_the_program(self):
+        with tempfile.TemporaryDirectory() as directory:
+            app = self.app(directory, program=Path("/usr/bin/true").read_bytes())  # a universal one; only looked at
+            before = self.files(app)
+            archs = lambda file: subprocess.run(["lipo", "-archs", str(file)], check=True, capture_output=True, text=True).stdout.split()
+            self.assertGreater(len(archs(app / "Contents/MacOS/mw1r")), 1)
+            with background_app.runnable(app / "Contents/MacOS/mw1r", "x86_64") as program:
+                self.assertEqual(archs(program), ["x86_64"])
+                subprocess.run(["codesign", "--verify", "--deep", "--strict", str(program.parents[2])], check=True)
+            with self.assertRaisesRegex(RuntimeError, "lipo"):
+                with background_app.runnable(app / "Contents/MacOS/mw1r", "ppc"):
+                    self.fail("ran")
+            self.assertEqual(self.files(app), before)
 
     @unittest.skipIf(sys.platform != "darwin", "A Mac's apps and signatures")
     def test_by_hand(self):

@@ -207,15 +207,18 @@ On a Mac these runs start a temporary copy of the app
 (`tools/package/background_app.py`): a program inside an app comes up in the
 foreground, whatever the hidden run's settings say, so the copy's Info.plist
 says `LSBackgroundOnly`, and it is signed ad hoc again. The app's own signature
-is checked first, and the app is only read. For a run by hand, the Intel half's
-under Rosetta among them, make the copy and start its program:
+is checked first, and the app is only read. For a run by hand, make the copy and
+start its program; `x86_64` after the folder makes it the Intel half alone,
+which Rosetta runs on an Apple silicon Mac:
 
-    python3 -I tools/package/background_app.py "MechWarrior 1 Rebuild.app" FOLDER
+    python3 -I tools/package/background_app.py "MechWarrior 1 Rebuild.app" FOLDER [x86_64]
 
 To run the same checks on a package already extracted (on any platform with a
 game folder):
 
     python3 tools/build_package.py --smoke DIR/MechWarrior-LABEL-PLATFORM --game "$GAME"
+
+On a Mac, `--smoke "MechWarrior 1 Rebuild.app" --arch x86_64` runs the Intel half.
 
 The packaging unit tests (no build, no game files):
 

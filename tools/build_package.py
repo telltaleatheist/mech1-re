@@ -1,7 +1,7 @@
 """Build and smoke-test a redistributable runtime, without original game data.
 
     build_package.py --sdl SDL_SOURCE --label LABEL [--game GAME_DIR]
-    build_package.py --smoke EXTRACTED_PACKAGE_DIR [--game GAME_DIR]
+    build_package.py --smoke EXTRACTED_PACKAGE_DIR [--game GAME_DIR] [--arch x86_64]
 
 The package holds the program, its libraries, our data/ (rules and screen
 layout, which play reads beside the program, and the music soundfont the
@@ -128,10 +128,10 @@ def check_served_setup(executable, game):
         print("  skipped: " + what)
 
 
-def smoke(executable, game):
+def smoke(executable, game, architecture=None):
     """The checks on a package's program. A Mac app's runs are its background copy's (background_app.py): the app itself
-    would come up in the foreground."""
-    with background_app.runnable(executable) as program:
+    would come up in the foreground. `architecture`: one half of a Mac app's program."""
+    with background_app.runnable(executable, architecture) as program:
         check_usage(program)
         check_served_setup(program, game)
         if game:
@@ -689,6 +689,7 @@ if __name__ == "__main__":
     parser.add_argument("--sdl", type=Path)
     parser.add_argument("--label")
     parser.add_argument("--smoke", type=Path, help="an extracted package directory: run the smoke test only")
+    parser.add_argument("--arch", choices=MAC_ARCHITECTURES, help="with --smoke of a Mac app: run this half of it (default: the one that starts)")
     parser.add_argument("--installer", action="store_true",
                         help="also the installer: Setup.exe (Windows, Inno Setup) or AppImage (Linux); a Mac always makes its .dmg")
     parser.add_argument("--appimage-tools", type=Path, help="Linux: the folder with linuxdeploy and appimagetool")
@@ -700,7 +701,7 @@ if __name__ == "__main__":
         executable = next((options.smoke / n for n in names if (options.smoke / n).is_file()), None)
         if not executable:
             parser.error(f"no {PROGRAM} program in {options.smoke}")
-        smoke(executable.resolve(), options.game)
+        smoke(executable.resolve(), options.game, options.arch)
     else:
         if not options.sdl or not options.label:
             parser.error("--sdl and --label are required to package")

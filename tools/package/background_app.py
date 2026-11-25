@@ -5,7 +5,10 @@ says (that only keeps SDL from asking for it). So a check runs a temporary copy 
 LSBackgroundOnly, signed ad hoc again. The copy differs from the app in Info.plist and the signature, no more. The app's
 own signature is checked first, and the app is only read.
 
-    background_app.py APP FOLDER     # the copy in FOLDER; prints its program
+With an architecture, the copy's program is that half of it alone (lipo -thin), so nothing but that half can run: x86_64
+on an Apple silicon Mac is Rosetta's. The libraries stay as they are.
+
+    background_app.py APP FOLDER [ARCHITECTURE]     # the copy in FOLDER; prints its program
 """
 from contextlib import contextmanager
 from pathlib import Path
@@ -28,7 +31,7 @@ def command(*args):
         raise RuntimeError(f"{args[0]}: {(done.stderr or done.stdout).strip()}")
 
 
-def background_copy(app, folder):
+def background_copy(app, folder, architecture=None):
     """The copy of `app` in `folder`; returns its app."""
     app = Path(app)
     command("codesign", "--verify", "--deep", "--strict", app)
@@ -40,24 +43,29 @@ def background_copy(app, folder):
     plist = plistlib.loads(info.read_bytes())
     plist["LSBackgroundOnly"] = True
     info.write_bytes(plistlib.dumps(plist))
+    if architecture:
+        program = copy / "Contents/MacOS" / plist["CFBundleExecutable"]
+        command("lipo", program, "-thin", architecture, "-output", program)
     command("codesign", "--force", "--sign", "-", "--preserve-metadata=identifier,entitlements,flags", copy)
     command("codesign", "--verify", "--deep", "--strict", copy)
     return copy
 
 
 @contextmanager
-def runnable(executable):
+def runnable(executable, architecture=None):
     """The program a check runs for `executable`: an app's is its background copy's, any other is itself."""
     app = app_of(executable) if sys.platform == "darwin" else None
     if app is None:
+        if architecture:
+            raise RuntimeError("An architecture can be chosen for a Mac app only")
         yield executable
         return
     with tempfile.TemporaryDirectory(prefix="mw1-background-") as folder:
-        yield (background_copy(app, folder) / "Contents/MacOS" / Path(executable).name).resolve()
+        yield (background_copy(app, folder, architecture) / "Contents/MacOS" / Path(executable).name).resolve()
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
+    if len(sys.argv) not in (3, 4):
         sys.exit(__doc__)
-    copy = background_copy(Path(sys.argv[1]).resolve(), Path(sys.argv[2]).resolve())
+    copy = background_copy(Path(sys.argv[1]).resolve(), Path(sys.argv[2]).resolve(), *sys.argv[3:])
     print(copy / "Contents/MacOS" / plistlib.loads((copy / "Contents/Info.plist").read_bytes())["CFBundleExecutable"])

@@ -38,7 +38,7 @@ than four jobs, one suite at a time. Opt-ins are set together with the rest: `MW
 | 7 | `audio.py` | Mac | 2 of 2 | estimate 1 min |
 | 8 | Sanitizer build (address, and bounds for combat) on the 8 traces and the sound logs | Mac | 0 reports | estimate 4 min each |
 | 9 | Packages from the local tag, the build's stamp and the release-label checks on | all three | zip and Setup.exe; dmg, both architectures; tar.gz and AppImage; smoke test and first run each; `sums.py` over all | Windows about 1 min, Linux 1 min, Mac about 2 min |
-| 10 | `combat_cockpit` on the Intel half of the Mac package, under Rosetta, run from the app's background copy (`tools/package/background_app.py`) | Mac | the trace matches | 10 s measured |
+| 10 | On the Intel half of the Mac package, under Rosetta, from the app's background copy (`tools/package/background_app.py APP FOLDER x86_64`): `combat_cockpit`; the smoke test with its first run on each copy of the game (`build_package.py --smoke APP --arch x86_64 --game GAME`) | Mac | the trace matches; smoke and first run pass on both, none skipped | the trace 10 s measured; the rest not measured |
 | 11 | The kit's non-ASCII name case, its home away from the program's folder, with and without the manifest | Windows | no abort. At 7d9c5d9 (kit 2f0feb1): none, with the manifest and without it; on 9341f31 four of the ten cases abort, all in the program's own folders | 5 min |
 | 12 | The setup's file check on both copies, 1990 and 1989 (and on the served setup, which status_setup and every package's smoke test ask) | Mac, Linux, Windows | each copy accepted as its revision; its own failures named as its branch says | Windows: 13 to 14 ms for the 1990 folder |
 
@@ -91,7 +91,10 @@ nothing re-recorded. No test was skipped. Commits after cadfb67 aren't covered b
 - **Step 12:** 1989's PHAPCK.TBL is named as damaged, and nothing else. With the 1989 copy as `MW1O_GAME`, `setup` fails
   its two checks for that file by design (seen on Linux and Windows).
 - **Found:** the `.sha256` files written on Windows end their line with CRLF, so `sha256sum -c` refuses them on the
-  other systems; the hashes are right and `SHA256SUMS` isn't affected.
+  other systems; the hashes are right and `SHA256SUMS` isn't affected. Changed since: they are written as bytes, with
+  a newline alone (tested on the Mac; the next Windows package is the first to show it).
+- **Found:** the Mac app's hidden runs in steps 9 and 10 came up as foreground apps. Changed since: the checks run a
+  background copy of the app ([RELEASING.md](../RELEASING.md), "The smoke test").
 - **Not covered:** `sums.py` over all the packages, a run of any package in a window, and 1989 under the sanitizer.
 
 ## For the project owner
