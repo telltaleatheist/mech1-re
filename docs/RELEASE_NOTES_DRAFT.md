@@ -1,9 +1,84 @@
-# Release notes, a draft
+<!-- The first release's notes, a draft. Nothing here is published until a release is decided on. A line with CHECK says
+something that must be confirmed by the gate or the lead first; the comments go before publishing. -->
 
-Lines for the first release's notes, in players' words. Nothing here is published until a release is decided on.
+**MechWarrior 1 Rebuild** is a fan rebuild of MechWarrior (Activision, 1989, developed by Dynamix) for today's Windows,
+macOS and Linux. It is built on [Elthial's MechWarrior SDL port](https://github.com/Elthial/Mechwarrior-sdl-port), the
+readable reconstruction of the original program, whose research and code it continues. It is not an emulator and not a
+patched copy. It is unofficial and free, and not affiliated with or endorsed by any holder of rights in the game.
 
-**If you played an earlier test version**
+## What it is
+
+- **The campaign and combat of the 1989 game**, rebuilt function by function: the company and its money, planets, travel,
+  contracts, the bar and its pilots, buying, repairing and rearming Mechs, the story, and the battles from the cockpit.
+  <!-- CHECK (gate steps 2, 4, 5 and 6): the tests and the recorded runs pass on this commit on all three systems. -->
+- **The same speed on any computer.** A combat tick has a fixed length. The - and + keys make combat up to four times
+  as fast, and the game remembers your choice.
+- **The campaign's music on a bundled soundfont.** `music=` in `MechWarrior.ini` plays it as the PC speaker did, or turns
+  it off. Combat's sounds are the original's speaker effects.
+- **Up to two game controllers** as the original's joysticks.
+- **A resizable window** that keeps the picture's pixels whole.
+- **No copy protection.** The original's is left out.
+
+## Bring your own copy of the game
+
+None of the game's files are in these downloads. You need your own copy of MechWarrior for DOS: the 1989 release or the
+one of 1990-01-22. The first start looks for it on your computer, or asks you to pick its `BTECH.EXE`, any file in its
+folder, or the archive it came in, then copies it into the rebuild's own folder. Your copy is never changed. If files are
+missing, damaged or unlike the ones this project knows, it says so first.
+
+The BattleTech launcher can install, set up and start the game too.
+<!-- CHECK (lead): the launcher that is out at the release does the setup on its own screens with this program. -->
+
+## Downloads
+
+- **Windows (64-bit):** `MW1-Rebuild-mw1r-v1.0.0-Setup.exe` installs it with a Start-menu shortcut.
+  `MW1-Rebuild-mw1r-v1.0.0-win64.zip` is the same program to unpack anywhere and run `mw1r.exe`. Neither is signed, so
+  Windows may warn first: choose "More info", then "Run anyway".
+- **macOS 12 or later (Apple silicon and Intel):** `MW1-Rebuild-mw1r-v1.0.0-mac.dmg`. Open it and drag MechWarrior 1
+  Rebuild to Applications. <!-- CHECK (gate steps 9 and 10): both architectures; the Intel half only under Rosetta. -->
+- **Linux (x86-64, glibc 2.39 or later, such as Ubuntu 24.04):** `MW1-Rebuild-mw1r-v1.0.0-x86_64.AppImage`: make it
+  executable and run it. `MW1-Rebuild-mw1r-v1.0.0-linux-x86_64.tar.gz` is the same program to unpack and run as
+  `./mw1r`. <!-- CHECK (gate step 9): the glibc the built files need, and that the AppImage starts without FUSE 2. -->
+- **`SHA256SUMS`** lists every file's SHA-256.
+
+## The first start on a Mac
+
+The app isn't notarized, so macOS stops it the first time. Right-click (or Control-click) MechWarrior 1 Rebuild in
+Applications and choose Open, then Open again. On macOS 15 or later, if that offers no Open button, open System Settings,
+Privacy & Security, and choose "Open Anyway" for MechWarrior 1 Rebuild. After that it starts normally.
+
+## If you played an earlier test version
 
 - A `MechWarrior.ini` from a test version that says `sound_system=speaker` still plays the music as the PC speaker
   did. Change that line to `music=soundfont` for the new music, or use the new `MechWarrior.ini`.
+- Your folder from a test version (`MicroProse/MechWarrior 1 Rebuild`) is moved to `BattleTech/MechWarrior 1 Rebuild`
+  once. Saves from the first previews (`BattleTechReverse/MechWarrior`) are copied there once.
 - If you go back to an earlier test version, it reads your copy of the game again the first time you start it.
+- The installer removes what the test versions left in its folder.
+  <!-- CHECK: run on Windows from preview eb4c1c4 under a test AppId (parity-fixes); the owner's own install not touched. -->
+
+## Not yet played or heard by a person
+
+Automated tests and recorded runs check these, but nobody has gone through them yet:
+<!-- CHECK (lead): take out what the project owner has played by the release. -->
+
+- The whole story, from start to end, and every kind of contract with every Mech.
+- The Linux package and the Intel half of the Mac one, which are built and smoke-tested automatically.
+- Real game controllers: only simulated ones have been tested.
+- The message box that says why a start was refused: its text was checked, the box was not seen.
+- Setting the game up on the launcher's screens.
+
+Please report anything that looks or sounds wrong.
+
+## Known differences from the original
+
+- Combat doesn't run at the old PC's own speed but at the fixed one above, which you can change.
+- The graphics are the EGA version's. CGA and Tandy graphics aren't there, nor the AdLib, MT-32 and Tandy sound.
+- The music's instruments are the soundfont's, chosen to be near the MT-32 version's.
+- Saved games of the DOS original aren't copied in.
+
+## Known limits
+
+- A battle that needs a file that is damaged in your copy stops with a message naming the file. The setup names the one
+  damaged file this project knows of, and it can be set up again from a good copy.
+- Only the two editions above play.

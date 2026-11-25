@@ -1,0 +1,96 @@
+*Elthial's README for the MechWarrior SDL port, as it stood when this repository forked from it (`e119a72a`). Only its
+links are changed, to work from this folder. Its status, sound and build notes describe the port then, not this
+program: the [README](../README.md) and the [guides](README.md) say how this program is now. Its present home is
+https://github.com/Elthial/Mechwarrior-sdl-port.*
+
+<p align="center"><img src="images/title-banner.svg" alt="MechWarrior preservation project" width="900"></p>
+
+# MechWarrior SDL port
+
+A readable, assembly-loyal C17/SDL3 reconstruction of **MechWarrior (1989)**.
+The aim is preservation: run the original game behaviour on modern hardware
+and expose its interior—BattleMechs, weapons, pilots, contracts and renderer—for
+education and research. This is not a redesign, remake or original asset pack.
+
+**A legally obtained original game installation is required. No original game
+executables or data files are distributed.** See [the rights notice](NOTICE.md) and the
+[licensing map](LICENSES/README.md). This is an independent, unofficial project.
+
+## Status
+
+Experimental playable Windows x64 EGA/PC-speaker build, not a finished v1.0.
+The real campaign/launcher chain reaches briefing, movement, firing and combat
+return. Campaign travel, Bar/recruitment, contracts, Mech repair/rearm and trading
+are connected. A local Support-pilot defence victory was recorded; that does not
+certify the full campaign, all scenarios, adapters or audiovisual fidelity.
+Combat runs at a fixed **60 ms per tick** at 1x, with the main-row `-` and `=` keys
+for 2x to 4x ([game speed](CPU_TIMING_PROFILE.md)).
+Campaign music also supports [MT-32 and AdLib](AUDIO.md), with user-provided
+ROMs required for MT-32. Combat initializes the selected card but retains the
+original speaker effects supplied by its sound bank.
+
+See [runtime status](RUNTIME_STATUS.md) for current gameplay limits.
+Research tooling and verification suites are maintained separately in the
+reverse-engineering repository, not bundled with this public game.
+
+| Campaign planet hub | Combat gameplay |
+| --- | --- |
+| ![Planet hub](images/planet-hub.png) | ![EGA cockpit](images/gameplay.png) |
+
+[More real runtime captures and provenance](SCREENSHOTS.md).
+
+## Build and play
+
+Requirements: Windows x64, Visual Studio C++ and CMake tools, PowerShell, and an
+existing SDL3 package/source tree.
+Dependencies are not silently downloaded.
+
+```powershell
+# Compile the platform-independent library without SDL or original game files:
+./src/Build.ps1 -Headless -Configuration Release
+
+# Supply your SDL3 installation (or use -SDLSourceDirectory):
+./src/Build.ps1 -Configuration Release -SDL3Directory 'D:/Libraries/SDL3/cmake'
+
+# Game data remains in your own installation:
+./src/Run-MechWarrior.ps1 -GameDirectory 'D:/Games/MechWarrior'
+```
+
+Alternatively place private files in ignored `assets/original-game`. Saves and
+F12 captures go to ignored local directories, not into the original installation.
+On the first run the importer reads the game's exes once into a story file in
+the save directory; from then on play opens only resource files, never an exe
+(the program stops if anything tries). Copying just the TBL/BMP assets is
+still insufficient for that first run. Keep SDL3.dll next to the built
+executable. Visual Studio opens the repository folder as a CMake project
+(File > Open > Folder) for source navigation and debugging.
+The [reviewed executable hashes](SUPPORTED_VERSIONS.md) identify the tested revision.
+See [build instructions](BUILDING.md) for direct CMake and Visual Studio setup.
+
+Arrows/Enter operate campaign menus. In combat: Up/Down throttle, Left/Right
+turn, Space fire, Tab fire all, Enter target, C command, D damage, E target
+damage, Q return, T map, Z zoom, P pause. Repair and rearm before deployment.
+F12 captures actual output. See [controls and testing](PLAYABLE_TEST_BUILD.md).
+Optional Support pilot is disabled unless explicitly requested; it is not native AI.
+
+## Find your way around
+
+| Path | Responsibility |
+| --- | --- |
+| `src/Original/Campaign` | MW_MAIN: economy, planets, contracts, pilots, Mech services |
+| `src/Original/Combat` | BTECH: units, movement, AI, weapons, damage and mission loop |
+| `src/Original/Geometry`, `Video`, `Audio` | Original projection/raster and sound/music logic |
+| `src/Original/Memory` | Canonical typed state and executable-derived initialisation |
+| `src/SDL` | Narrow file/input/time/audio/video host boundaries |
+| `src/Support` | Necessary representation bridges and optional automation |
+| `src/include/mechwarrior` | Shared typed records and interfaces |
+| `src/Build.ps1`, `src/Run-MechWarrior.ps1` | Build and launch scripts |
+| `docs` | Current user, gameplay, code and licensing guides |
+
+Start with [code/data guide](CODE_GUIDE.md), [BattleMechs and weapons](GAME_DATA.md),
+[documentation index](README.md), [preservation policy](PRESERVATION_PLAN.md)
+and [code style](CODE_STYLE.md). Runtime identifiers use readable names;
+native annotations and symbol mappings stay in the reverse-engineering repository.
+
+The separate [MechwarriorTools](https://github.com/Elthial/MechwarriorTools) repository contains the .NET desktop asset
+viewer/editor and CLI, not another game engine. Neither project includes the game.
