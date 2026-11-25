@@ -50,8 +50,7 @@ Step 3's list (with `MW1O_GAME` the 1989 copy and both BTECH revisions given) is
     ctest -j1 -R '^(btech_revisions|combat_records|words_exe|rules_exe|ui_exe|start_exe|import_exe|text_audit|status_setup|read_only_install|feed_calls|events|exe_free)$'
 
 `setup` isn't in it: it wants a whole copy in `MW1O_GAME` and the 1989 one's PHAPCK.TBL is known to be damaged, so two
-of its checks fail there by design. It checks the 1989 copy through `MW1O_BTECH_REFERENCE` and `MW1O_MAIN_1989`, in
-steps 2, 4 and 5.
+of its checks fail there by design. It checks the 1989 copy through `MW1O_BTECH_REFERENCE`, in steps 2, 4 and 5.
 
 Sum, an estimate: about an hour of Mac time and 45 minutes of PC time. Steps 2 to 5 can be skipped only if a later slice's end set
 on the same commit already did them; then name it.
