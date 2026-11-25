@@ -181,7 +181,7 @@ void MwSdlPollEvents(void)
         if(event.type==SDL_EVENT_KEY_DOWN && (event.key.scancode==SDL_SCANCODE_P || event.key.scancode==SDL_SCANCODE_ESCAPE))
             MwSdlStopSupportPilot(); /* Explicit manual pause/retreat always takes over. */
         if (event.type==SDL_EVENT_QUIT) {MwSdlRequestQuit();continue;}
-        if (MwSdlHandleJoystickEvent(event)) continue;
+        if (MwSdlHandleJoystickEvent(event) || MwSdlHandleRenderEvent(event)) continue;
         if (event.type==SDL_EVENT_WINDOW_EXPOSED) {MwSdlPresentVideo(true);continue;}
         if (event.type==SDL_EVENT_WINDOW_SHOWN || event.type==SDL_EVENT_WINDOW_RESIZED
             || event.type==SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED || event.type==SDL_EVENT_WINDOW_MAXIMIZED

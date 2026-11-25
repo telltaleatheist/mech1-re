@@ -282,6 +282,158 @@ void Host(const std::filesystem::path &work) {
   MwSdlShutdownVideo();
 }
 
+// The device reset, refusing textures and lost, through the host's own event
+// loop. The software renderer keeps what it has, so the reset is only said,
+// and what a lost device does is done: it refuses a texture, then everything.
+struct Output {
+  int w = 0, h = 0;
+  std::vector<Uint32> pixels;
+  friend bool operator==(const Output &a, const Output &b) { return a.w == b.w && a.h == b.h && a.pixels == b.pixels; }
+};
+Output Read(SDL_Renderer *renderer) {
+  Output out;
+  SDL_Surface *read = SDL_RenderReadPixels(renderer, nullptr);
+  SDL_Surface *argb = read ? SDL_ConvertSurface(read, SDL_PIXELFORMAT_ARGB8888) : nullptr;
+  SDL_DestroySurface(read);
+  if (argb) {
+    out.w = argb->w, out.h = argb->h;
+    for (int y = 0; y < argb->h; ++y) {
+      const Uint32 *row = reinterpret_cast<const Uint32 *>(static_cast<const Uint8 *>(argb->pixels) + y * argb->pitch);
+      out.pixels.insert(out.pixels.end(), row, row + argb->w);
+    }
+    SDL_DestroySurface(argb);
+  }
+  return out;
+}
+void Blank(SDL_Renderer *renderer) {  // what is on the window, gone
+  SDL_SetRenderDrawColor(renderer, 255, 0, 255, 255);
+  SDL_RenderClear(renderer);
+  SDL_RenderPresent(renderer);
+}
+void Say(Uint32 type) {
+  SDL_Event event{};
+  event.type = type;
+  Check(SDL_PushEvent(&event), "push an event");
+  MwSdlPollEvents();
+}
+void Device(const std::filesystem::path &work) {
+  std::error_code ignored;
+  std::filesystem::remove_all(work, ignored);
+  std::filesystem::create_directories(work);
+  if (!MwSdlInitializeVideo(work.string().c_str())) {
+    Check(false, std::string("start the host's video: ") + SDL_GetError());
+    return;
+  }
+  SDL_Window **windows = SDL_GetWindows(nullptr);
+  SDL_Window *window = windows ? windows[0] : nullptr;
+  SDL_free(windows);
+  SDL_Renderer *renderer = SDL_GetRenderer(window);
+  Check(renderer != nullptr, "the host's renderer");
+  if (!renderer) return;
+  const auto largest = [&](int side) {
+    SDL_SetNumberProperty(SDL_GetRendererProperties(renderer), SDL_PROP_RENDERER_MAX_TEXTURE_SIZE_NUMBER, side);
+  };
+  const auto capture = [&](const char *stem) { return MwSdlCapture(stem); };
+  const auto there = [&](const char *name) { return std::filesystem::exists(work / name); };
+  SDL_SetWindowSize(window, 1000, 625);
+  MwSdlPollEvents();
+  mw1o::video::Canvas &canvas = mw1o::video::GameCanvas();
+  canvas.setUp();
+  const auto paint = [&](int add) {
+    for (int y = 0; y < H; ++y)
+      for (int x = 0; x < W; ++x) canvas.pixel(0, x, y, uint8_t((CanvasColour(x, y) + add) & 15));
+  };
+  paint(0);
+  mwSdlFrameObserver = Presented;
+  mwSdlCombatActive = true;
+  MwSdlStepCombatSpeed(0);
+  MwSdlPresentVideo(true);
+  const Output first = Read(renderer);
+  Check(first.w == 1000 && first.h == 625, "read the window");
+
+  // Reset, and targets reset: the same frame again, the notice too, from
+  // the next pump, with nothing changed in the game.
+  for (const Uint32 type : {SDL_EVENT_RENDER_DEVICE_RESET, SDL_EVENT_RENDER_TARGETS_RESET, SDL_EVENT_RENDER_DEVICE_RESET}) {
+    Blank(renderer);
+    Check(!(Read(renderer) == first), "the window is blank");
+    const int before = presents;
+    Say(type);
+    MwSdlPresentVideo(false);
+    Check(Read(renderer) == first, "the same frame after " + std::to_string(type));
+    Check(presents == before, "which is no new frame of the game's");
+  }
+  Check(capture("reset"), "a capture after a reset");
+  // A changed frame right after one, before the next pump.
+  MwSdlStepCombatSpeed(0);  // the notice for its 1.5 s from here
+  Say(SDL_EVENT_RENDER_DEVICE_RESET);
+  paint(1);
+  MwSdlPresentVideo(false);
+  const Output second = Read(renderer);
+  Check(!(second == first), "a changed frame after a reset");
+
+  // The texture refused: the frames are skipped and the game's go on.
+  Say(SDL_EVENT_RENDER_DEVICE_RESET);
+  largest(100);
+  Blank(renderer);
+  const Output blank = Read(renderer);
+  for (int i = 0; i < 3; ++i) {
+    const int before = presents;
+    MwSdlPresentVideo(true);
+    Check(presents == before + 1 && Read(renderer) == blank, "a frame that can't be drawn is skipped");
+  }
+  Check(!capture("refused") && !there("refused.bmp") && !there("refused.indices"), "no capture, and no file, while refused");
+  uint16_t x = 0, y = 0;
+  MwSdlSetMousePosition(100, 50);
+  MwSdlReadMousePosition(&x, &y);
+  Check(x == 100 && y == 50, "the mouse while refused");
+  SDL_Delay(60);  // the retry's 50 ms: refused again
+  MwSdlPresentVideo(false);
+  Check(Read(renderer) == blank, "and asked for again");
+  largest(0);
+  SDL_Delay(60);
+  MwSdlPresentVideo(false);
+  Check(Read(renderer) == second, "the frame is back, with nothing changed in the game");
+  Check(capture("refused"), "a capture is there again, under the same name");
+
+  // Nothing more can be drawn: first a device that fails everything, unsaid,
+  // then one SDL says is lost.
+  SDL_DestroyRenderer(renderer);
+  for (int i = 0; i < 6; ++i) {
+    if (i == 3) Say(SDL_EVENT_RENDER_DEVICE_LOST);
+    paint(i);
+    const int before = presents;
+    MwSdlPresentVideo(false);
+    MwSdlPresentVideo(true);
+    Check(presents == before + 2, "the game's frames go on without a device");
+    Check(!capture("lost") && !there("lost.bmp"), "no capture without a device");
+    MwSdlSetMousePosition(uint16_t(10 + i), 60);
+    MwSdlReadMousePosition(&x, &y);
+    Check(x == 10 + i && y == 60, "the mouse without a device");
+    float mx = 0, my = 0;
+    MwSdlConvertMouseMotion(1000, 625, &mx, &my);
+    Check(std::fabs(mx - W) < 0.01f && std::fabs(my - H) < 0.01f, "the motion without a device");
+  }
+  Say(SDL_EVENT_RENDER_DEVICE_LOST);
+  mwSdlCombatActive = false;
+  MwSdlShutdownVideo();
+}
+
+// What the program says, each once: run with stderr in a file.
+void Said(const std::filesystem::path &log) {
+  std::fflush(stderr);
+  const std::vector<uint8_t> bytes = Contents(log);
+  const std::string text(bytes.begin(), bytes.end());
+  const auto times = [&](const char *what) {
+    int n = 0;
+    for (size_t at = 0; (at = text.find(what, at)) != std::string::npos; ++at) ++n;
+    return n;
+  };
+  Check(times("can't draw: ") == 1, "a frame that can't be drawn is said once");
+  Check(times("can't draw: Texture dimensions") == 1, "and why");
+  Check(times("device is lost") == 1, "a lost device is said once");
+  Check(times("device was reset") == 4, "each reset is said");
+}
+
 }  // namespace
 
 int main(int argc, char **argv) {
@@ -300,6 +452,13 @@ int main(int argc, char **argv) {
   }
   Check(!std::strcmp(SDL_GetCurrentVideoDriver(), "dummy"), "the dummy video driver");
   Host(argv[1]);
+  const std::filesystem::path log = std::filesystem::path(argv[1]) / "stderr.txt";
+  if (std::freopen(log.string().c_str(), "wb", stderr)) {
+    Device(std::filesystem::path(argv[1]) / "device");
+    Said(log);
+  } else {
+    Check(false, "stderr to a file");
+  }
   SDL_Quit();
   std::printf(failures ? "%d failed\n" : "All checks passed\n", failures);
   return failures ? 1 : 0;
