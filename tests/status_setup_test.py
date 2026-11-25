@@ -19,6 +19,9 @@ import subprocess
 import sys
 import time
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "tools", "package"))
+import served_setup  # noqa: E402
+
 failures = 0
 
 
@@ -86,12 +89,13 @@ def stamps(a, work, base):
     check(start("help", a.stamped, ["--help"], False) == (0, None), "break: --help records nothing")
     code, text = start("setup", a.stamped, ["--setup"], False)
     check(code == 2 and text is None, "break: --setup records nothing")
+    check(start("served", a.stamped, ["--setup", "--describe"], False) == (0, None), "break: a served ask records nothing")
     code, text = start("usage", a.stamped, ["a", "b", "c", "d"], False)
     check(code == 2 and text is None, "break: a start that is refused its arguments records nothing")
     check(start("option", a.stamped, ["--no-such-option"], False)[1] is None, "break: an unknown option records nothing")
     check(all(shown[n] is not None for n in ("plays", "usage", "option")), "a refused start shows its reason")
     check(shown["plays"] is not None and "absent.ini" in shown["plays"], "and what is wrong")
-    check(all(shown[n] is None for n in ("hidden", "status", "help", "setup")), "break: a hidden start, --status, --help and --setup show nothing")
+    check(all(shown[n] is None for n in ("hidden", "status", "help", "setup", "served")), "break: a hidden start, --status, --help, --setup and a served ask show nothing")
     # Paths with any character in them: the program's folder, the player's, a file it can't open.
     far = os.path.join(work, "Spiel \u00e9\u00df\u65e5\u672c")
     os.makedirs(far)
@@ -138,6 +142,7 @@ def main():
     st = json.loads(lines[0]) if len(lines) == 1 else {}
     check(st.get("kit") == 1 and st.get("game") == "mech1", "--status: kit 1, game mech1")
     check(st.get("files", {}).get("state") in ("missing", "ready", "incomplete"), "--status: a state")
+    check(st.get("setup") == 1, "--status: the setup is served")
     check("story import" in st.get("first_run", {}).get("pending", []), "--status: the story import pending")
     check(tree(work) == before, "break: --status wrote nothing (no player folder, no log)")
     check(took < 5, "--status answered in %.2f s" % took)
@@ -265,6 +270,16 @@ def main():
         check(os.listdir(os.path.join(games, "something else")) == [], "what was there is left as it was")
     else:
         print("skip the game parts: MW1O_GAME and MW1O_BTECH_1990 not both set")
+
+    # The setup as the launcher asks for it, through pipes.
+    skipped = 0
+    for passed, what in served_setup.checks(a.program, base, os.path.join(work, "served"), game if game and btech else None):
+        if passed is None:
+            print("skip served: " + what)
+            skipped += 1
+        else:
+            check(passed, "served: " + what)
+    print("served: %d parts skipped" % skipped)
 
     stamps(a, work, base)
 

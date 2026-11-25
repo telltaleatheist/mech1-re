@@ -80,6 +80,12 @@ int main(int argc,char **argv)
         for (int rest=index;rest+2<=argc;++rest) argv[rest]=argv[rest+2];
         argc-=2;break;
     }
+    /* The launcher's asks about the setup, answered on stdout alone, before anything else of a start. */
+    if (argc>=3 && !strcmp(argv[1],"--setup") && MwSetupServedAsk(argv[2]))
+    {
+        MwSdlPrepareNotices(false);
+        return MwSetupServe(argc-2,argv+2);
+    }
     if(argc>=3 && !strcmp(argv[argc-2],"--support-pilot"))
     {pilotDirectory=argv[argc-1];argc-=2;}
     else if(argc>=2 && !strcmp(argv[argc-1],"--no-support-pilot"))--argc;
@@ -88,27 +94,29 @@ int main(int argc,char **argv)
      * is read or written; --setup sets the game up and plays nothing. */
     if (argc==2 && !strcmp(argv[1],"--status")) return MwSetupPrintStatus();
     bool setupOnly=argc==2 && !strcmp(argv[1],"--setup");
+    bool setupWords=argc>2 && !strcmp(argv[1],"--setup"); /* Words it doesn't know: no game folder of that name is meant. */
     bool installed=argc==1 || setupOnly;
-    if (help || setupOnly) MwSdlPrepareNotices(false); /* Their answer is what they print. */
-    if (!help) MwSetupSettleUserFolder();
+    if (help || setupOnly || setupWords) MwSdlPrepareNotices(false); /* Their answer is what they print. */
+    if (!help && !setupWords) MwSetupSettleUserFolder();
     /* Not for a start that is refused its arguments: too many, or an unknown option. */
     if (!help && argc<=3 && (argc==1 || argv[1][0]!='-')) MwSetupRecordProgram();
-    if (!help && !setupOnly)
+    if (!help && !setupOnly && !setupWords)
     {
         /* No console when double-clicked: the log goes beside the saves. */
         char logPath[4200];
         if (JoinWriteDirectory("mechwarrior.log",logPath,sizeof(logPath))) MwSdlOpenLog(logPath,argc==1);
     }
     if (badData) return Refuse(2,"--data needs a folder.");
-    if (help || argc>3)
+    if (help || setupWords || argc>3)
     {const char *name="mw1r";  /* the shipped program's name (an AppImage starts it as AppRun) */
     fprintf(help?stdout:stderr,"Usage: %s [<game folder> [existing capture directory]] [--support-pilot DIRECTORY | --no-support-pilot] [--data DIRECTORY]\n"
         "       %s --status | --setup\n"
+        "       %s --setup --describe | --search | --look PICK | --install PICK [--folder DIRECTORY]\n"
         "Without a game folder: the one remembered in the player's MechWarrior.ini or the player's own copy, else the\n"
         "setup (pick your copy, its folder or the archive it came in: it is copied beside the saves); the log and F12\n"
-        "captures then go beside the saves. --status prints what is found as JSON; --setup only sets the game up.\n"
+        "captures then go beside the saves. --status prints what is found as JSON; --setup only sets the game up, with more words as the launcher asks it.\n"
         "EGA; music= in MechWarrior.ini; arrows and Enter; Ctrl+Escape quits; F12 captures; F11 stops Support pilot;\n"
-        "- and + change the combat speed.\n",name,name);
+        "- and + change the combat speed.\n",name,name,name);
     return help?0:Refuse(2,"It was started with more arguments than it knows.");}
     SDL_SetMainReady();
     if(!MwSdlConfigureSupportPilot(pilotDirectory))

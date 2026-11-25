@@ -15,6 +15,18 @@
 #include <iterator>
 #include <memory>
 
+#if defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#else
+#include <cerrno>
+#include <fcntl.h>
+#include <sys/file.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
+
 namespace fs = std::filesystem;
 
 namespace mw1o::setup {
@@ -66,6 +78,67 @@ bool larger_than(const std::string& dir, uint64_t cap) {
   }
   return false;
 }
+
+// One install at a time into a folder: an empty file beside it, locked while the copy is made and swapped in, and
+// removed after. The system lets a lock go with the program that holds it, so a killed one's file stops nobody. A file
+// system without locks stops nobody either.
+class InstallLock {
+ public:
+  enum Got { kTaken, kBusy, kInTheWay };
+  Got take(const fs::path& file) {
+    // Not an empty file, so not ours: the player's, never touched.
+    std::error_code ec;
+    const fs::file_status there_now = fs::symlink_status(file, ec);
+    if (fs::exists(there_now)) {
+      if (!fs::is_regular_file(there_now)) return kInTheWay;
+      const uintmax_t size = fs::file_size(file, ec);
+      if (!ec && size != 0) return kInTheWay;
+    }
+#if defined(_WIN32)
+    handle_ = CreateFileW(file.c_str(), GENERIC_READ | GENERIC_WRITE | DELETE, 0, nullptr, OPEN_ALWAYS,
+                          FILE_ATTRIBUTE_NORMAL | FILE_FLAG_DELETE_ON_CLOSE, nullptr);
+    if (handle_ != INVALID_HANDLE_VALUE) return kTaken;
+    const DWORD e = GetLastError();
+    if (e == ERROR_SHARING_VIOLATION || e == ERROR_LOCK_VIOLATION) return kBusy;
+    return e == ERROR_ACCESS_DENIED && fs::exists(file, ec) ? kBusy : kTaken;  // one being removed; else the copy says why
+#else
+    for (int tries = 0; tries < 100; ++tries) {
+      const int fd = ::open(file.c_str(), O_RDWR | O_CREAT | O_CLOEXEC | O_NOFOLLOW, 0644);
+      if (fd < 0) return kTaken;  // the copy itself says why nothing can be written there
+      if (::flock(fd, LOCK_EX | LOCK_NB) != 0) {
+        const bool busy = errno == EWOULDBLOCK;
+        ::close(fd);
+        return busy ? kBusy : kTaken;
+      }
+      struct stat held, there;
+      if (::fstat(fd, &held) == 0 && ::stat(file.c_str(), &there) == 0 && held.st_ino == there.st_ino && held.st_dev == there.st_dev)
+        return fd_ = fd, file_ = file, kTaken;
+      ::close(fd);  // another's, removed between the two: again
+    }
+    return kBusy;
+#endif
+  }
+  InstallLock() = default;
+  InstallLock(const InstallLock&) = delete;
+  InstallLock& operator=(const InstallLock&) = delete;
+  ~InstallLock() {
+#if defined(_WIN32)
+    if (handle_ != INVALID_HANDLE_VALUE) CloseHandle(handle_);  // and the file goes
+#else
+    if (fd_ < 0) return;
+    ::unlink(file_.c_str());  // while it is held: nobody else's
+    ::close(fd_);
+#endif
+  }
+
+ private:
+#if defined(_WIN32)
+  HANDLE handle_ = INVALID_HANDLE_VALUE;
+#else
+  int fd_ = -1;
+  fs::path file_;
+#endif
+};
 
 // `entry` ('/'-separated, as an archive stores it) under the game folder `root` ("" or ending '/'): its parts
 // below root, made safe; false when outside root or unsafe.
@@ -414,7 +487,16 @@ Installed install(const rekit::Found& found, const std::string& out_dir, const P
     return fail("That is not " + std::string(kTitle) + ": nothing was copied.");
   if (out_dir.empty()) return fail("There is no folder to copy the game into.");
   std::error_code ec;
-  const fs::path dest(out_dir), tmp(out_dir + ".new");
+  const fs::path dest(out_dir), tmp(out_dir + ".new"), lock_file(out_dir + ".lock");
+  fs::create_directories(dest.parent_path(), ec);
+  InstallLock lock;
+  switch (lock.take(lock_file)) {
+    case InstallLock::kTaken: break;
+    case InstallLock::kBusy: return fail("Another setup is copying the game into " + dest.string() + ". Wait until it has finished, then set the game up again.");
+    case InstallLock::kInTheWay:
+      return fail("The file " + lock_file.string() + " is in the way, and it was not touched. Move it somewhere else, or delete it "
+                  "if you don't need it, then set the game up again.");
+  }
   // tmp is ours only when it carries the marker (an earlier run's, stopped); else it is the player's, and never
   // deleted. It is made and marked before anything goes in it, so a run killed at any point leaves one that is ours.
   if (fs::exists(tmp, ec) && !fs::exists(tmp / kInstallMarker, ec) && !(fs::is_directory(tmp, ec) && fs::is_empty(tmp, ec)))
@@ -430,7 +512,6 @@ Installed install(const rekit::Found& found, const std::string& out_dir, const P
     return mark ? "" : "Could not write in " + tmp.string() + ".";
   };
   fs::path ready = tmp;  // what is swapped in
-  fs::create_directories(dest.parent_path(), ec);
 
   if (found.on_disk && found.steps.empty()) {
     // An installed copy in a folder: copied, never moved.

@@ -8,16 +8,20 @@
 
 #include <rekit/sdl/pickers.h>
 #include <rekit/sdl/setup_screen.h>
+#include <rekit/sdl/setup_serve.h>
 #include <rekit/sources.h>
 #include <rekit/status.h>
 
 #include <SDL3/SDL.h>
 
+#include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <exception>
 #include <filesystem>
 #include <string>
+#include <vector>
 
 #ifndef MECHWARRIOR_VERSION
 #define MECHWARRIOR_VERSION "dev"
@@ -59,18 +63,19 @@ void say_error(bool setupOnly, const std::string& why) {
   else MwNoteProblem(why.c_str());  // the start's message (SDLMain)
 }
 
-// A file check's one line, on stdout (and in the log). "" nothing was amiss; else what the player is told.
-std::string say_files(const setup::FilesReport& r) {
-  std::printf("setup: %s\n", setup::files_log(r).c_str());
-  std::fflush(stdout);
+// A file check's one line, on stdout (and in the log); on stderr when stdout carries the launcher's answer. "" nothing
+// was amiss; else what the player is told.
+std::string say_files(const setup::FilesReport& r, std::FILE* to = stdout) {
+  std::fprintf(to, "setup: %s\n", setup::files_log(r).c_str());
+  std::fflush(to);
   return setup::files_note(r);
 }
 
 // The words for a find: which BTECH.EXE it holds, and what is amiss with its files.
-std::string describe(const rekit::Found& f, bool imported) {
+std::string describe(const rekit::Found& f, bool imported, std::FILE* log) {
   const std::string what = f.version == "1990-01-22" ? " (the 1990-01-22 revision)" : f.version == "reference" ? " (the 1989 release)" : "";
   const setup::FilesReport report = setup::check_found(f, imported);
-  say_files(report);
+  say_files(report, log);
   if (const std::string files = setup::files_pick_note(report); !files.empty())
     return std::string(setup::kTitle) + (f.version == "1990-01-22" ? " (1990-01-22)" : f.version == "reference" ? " (1989)" : "") + ". " + files;
   return std::string(f.on_disk ? "An installed copy of " : "A download of ") + setup::kTitle + what + ".";
@@ -91,22 +96,28 @@ rekit::sdl::Theme theme() {
   return t;
 }
 
-// The kit's screen with MW1's recipe: the find offered or looked for, copied in, the game's folder (or "").
-std::string run_screen(bool setupOnly, const std::string& found, bool searched, const std::string& user, int* exit) {
+// MW1's recipe for the kit's setup, on its screen or on the launcher's (`served`: stdout is the launcher's then).
+// `in_use`: the game folder in use, "" none.
+rekit::sdl::Game kit_game(const std::string& user, const std::string& in_use, bool served) {
   rekit::sdl::Game g;
   g.id = setup::kId, g.title = setup::kTitle, g.folder_key = setup::kFolderKey, g.folder_name = setup::kFolderName;
   g.program = "BTECH.EXE";
   g.rules = setup::rules(), g.hints = setup::hints();
   const std::string pdir = program_dir();
-  const std::string in_use = searched ? std::string() : found;
-  g.search = [user, pdir, in_use] {
-    // Choosing again: another copy than the one in use, or the player's own.
-    if (!in_use.empty()) return setup::find_other_install({in_use, setup::default_install(user)}, user, pdir);
-    bool s = false;
-    return setup::find_install("", user, pdir, &s);
-  };
   const bool imported = setup::story_imported(user);
-  g.describe = [imported](const rekit::Found& f) { return describe(f, imported); };
+  g.search = [user, pdir, in_use, imported, served] {
+    bool s = false;
+    if (in_use.empty()) return setup::find_install("", user, pdir, &s);
+    // Choosing again: another copy than the one in use, or the player's own. But for the launcher a ready one of the
+    // player's own is the answer while the one in use can't be played: its look finds that in place, and it is used.
+    const std::string own = setup::default_install(user);
+    if (served && setup::check_install(in_use, imported).state != rekit::Status::kReady &&
+        setup::check_install(own, imported).state == rekit::Status::kReady)
+      return own;
+    return setup::find_other_install({in_use, own}, user, pdir);
+  };
+  std::FILE* const log = served ? stderr : stdout;
+  g.describe = [imported, log](const rekit::Found& f) { return describe(f, imported, log); };
   g.recognise = setup::recognise;
   g.install = [imported](const rekit::Found& f, const std::string& out, const std::string&, const rekit::sdl::ProgressFn& progress) {
     const setup::Installed r = setup::install(f, out, [&](double at, const std::string& file) {
@@ -121,9 +132,15 @@ std::string run_screen(bool setupOnly, const std::string& found, bool searched, 
       if (const std::string files = setup::files_note(setup::check_folder(r.dir, imported)); !files.empty()) o.summary += " " + files;
     return o;
   };
+  return g;
+}
+
+// The kit's screen: the find offered or looked for, copied in, the game's folder (or "").
+std::string run_screen(bool setupOnly, const std::string& found, bool searched, const std::string& user, int* exit) {
+  const rekit::sdl::Game g = kit_game(user, searched ? std::string() : found, false);
   rekit::sdl::SetupOptions o;
   o.hidden = unattended();
-  o.user_folder = user, o.default_out = setup::default_install(user), o.program_dir = pdir;
+  o.user_folder = user, o.default_out = setup::default_install(user), o.program_dir = program_dir();
   if (searched) o.look_first = found;  // found by the search: offered, to copy in or pass over
   else if (!found.empty()) {
     o.in_use = found, o.play_button = !setupOnly;
@@ -158,6 +175,49 @@ std::string take_copy(const std::string& picked, const std::string& user, std::s
   return r.dir;
 }
 
+// What is wrong with a served ask's arguments, else "". The kit passes over arguments it doesn't know, and would
+// install into the default folder for a --folder without its folder.
+std::string wrong_ask(const std::vector<std::string>& args) {
+  const std::string& ask = args[0];
+  const std::size_t n = args.size();
+  if (ask == "--describe" || ask == "--search") return n == 1 ? "" : "--setup " + ask + " takes nothing after it.";
+  if (n < 2 || args[1].empty()) return "--setup " + ask + " needs the pick.";
+  if (ask == "--look") return n == 2 ? "" : "--setup --look takes the pick and nothing after it.";
+  if (n == 2 || (n == 4 && args[2] == "--folder" && !args[3].empty())) return "";
+  return "--setup --install takes the pick, then --folder and a folder or nothing.";
+}
+
+// A test's hook without the test's own player's folder: why a served ask is refused, else "".
+std::string hook_without_folder() {
+  if (const char* own = std::getenv("MECHWARRIOR_SAVE_DIRECTORY"); own && *own) return "";
+  for (const char* hook : {"MECHWARRIOR_SETUP_PICK", "REKIT_SETUP_GO"})
+    if (const char* v = std::getenv(hook); v && *v)
+      return std::string(hook) + " is a test's, so it needs MECHWARRIOR_SAVE_DIRECTORY to name the test's own folder. Nothing was done.";
+  return "";
+}
+
+// A served ask that isn't answered: its last line and exit.
+int refuse_ask(const std::string& why) {
+  rekit::SetupMessage m;
+  m.done = true, m.summary = why;
+  std::printf("%s\n", rekit::setup_message_json(m).c_str());
+  std::fflush(stdout);
+  std::fprintf(stderr, "setup: %s\n", why.c_str());
+  return rekit::kSetupFailed;
+}
+
+// stderr of a served look or install, into setup.log in the player's folder, anew each time: the launcher shows
+// nobody what is said there. Left where it is when the file can't be written.
+void open_served_log(const std::string& user) {
+  std::error_code ec;
+  std::filesystem::create_directories(user, ec);
+  const std::string path = (std::filesystem::path(user) / "setup.log").string();
+  std::FILE* can = std::fopen(path.c_str(), "w");  // freopen closes a stream it can't open: see first that it can
+  if (!can) return;
+  std::fclose(can);
+  if (std::freopen(path.c_str(), "w", stderr)) std::setvbuf(stderr, nullptr, _IONBF, 0);
+}
+
 }  // namespace
 
 bool MwSetupUnattended(void) { return unattended(); }
@@ -170,6 +230,7 @@ int MwSetupPrintStatus(void) {
   // The files, for a copy that is ready and has nothing else to be said of it.
   if (st.state == rekit::Status::kReady && st.note.empty())
     st.note = setup::files_status_note(setup::check_folder(st.where, setup::story_imported(user)));
+  st.setup = rekit::kServedSetup;  // MwSetupServe answers the launcher
   std::printf("%s\n", rekit::status_json(st).c_str());
   std::fflush(stdout);
   return 0;
@@ -197,6 +258,46 @@ void MwSetupRecordProgram(void) {
   s.appimage = appimage ? appimage : "", s.appdir = appdir ? appdir : "";
   s.user = setup::user_folder();
   setup::record_program(s);
+}
+
+bool MwSetupServedAsk(const char* arg) {
+  for (const char* ask : {"--describe", "--search", "--look", "--install"})
+    if (!std::strcmp(arg, ask)) return true;
+  return false;
+}
+
+int MwSetupServe(int count, char** words) {
+  const std::vector<std::string> args(words, words + count);
+#if !defined(_WIN32)
+  std::signal(SIGPIPE, SIG_IGN);  // a launcher that has gone: the work goes on
+#endif
+  if (const std::string why = wrong_ask(args); !why.empty()) return refuse_ask(why);
+  if (const std::string why = hook_without_folder(); !why.empty()) return refuse_ask(why);
+  MwSetupSettleUserFolder();
+  const std::string user = setup::user_folder();
+  if (user.empty()) return refuse_ask("There is no folder for the player's files.");
+  try {
+    if (args[0] == "--look" || args[0] == "--install") open_served_log(user);
+    const std::string remembered = setup::remembered_folder(user);
+    std::string in_use;
+    if (args[0] == "--search") {
+      bool searched = false;
+      in_use = setup::find_install(remembered, user, program_dir(), &searched);
+      if (searched) in_use.clear();
+    }
+    rekit::sdl::SetupOptions o;
+    o.hidden = true, o.user_folder = user, o.default_out = setup::default_install(user), o.program_dir = program_dir();
+    const rekit::sdl::SetupResult r = rekit::sdl::serve_setup(kit_game(user, in_use, true), o, args);
+    if (!r.install_dir.empty() && remembered != r.install_dir) {
+      MwSdlLoadUserConfiguration();  // names the file; what it holds isn't used here
+      MwSdlSaveUserText("game_folder", r.install_dir.c_str());
+      if (setup::remembered_folder(user) != r.install_dir)
+        std::fprintf(stderr, "setup: couldn't save the game folder in MechWarrior.ini\n");
+    }
+    return r.exit;
+  } catch (const std::exception& e) {
+    return refuse_ask(std::string("The setup failed: ") + e.what());
+  }
 }
 
 int MwSetupResolveGame(bool setupOnly, char* folder, size_t size) {

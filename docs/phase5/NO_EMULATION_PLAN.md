@@ -583,6 +583,13 @@ Every slice below is its own branch with the full gate green: both setups, the t
 - **Every file is written beside its place before any is renamed**, so a full disk or a folder that can't be written changes nothing. If a rename fails after that, import.json is gone (as before this): the folder counts as missing, and the next start imports again.
 - A failed import says whose fault it is: the copy of the game (set it up again), or the player's folder (can't be written).
 
+**From the served setup** (the setup on the launcher's screens; `docs/RELEASING.md`):
+- It follows Inception's, as released (chi-v1.0.0), and adds three things: `--search` passes over the copy in use, an install takes a lock beside its folder, and a look's or an install's stderr goes to `setup.log`.
+- **The lock is the install's half only.** A game that is playing can see a swap, as before.
+- **Windows before 1903** has no UTF-8 code page for the program: folder names outside its code page are not supported there.
+- `--setup` with words it doesn't know is the usage and exit 2. It was a start on a game folder named `--setup`. `--status` with more words still is one on a folder named `--status`.
+- A copy only the search found is `ready` in `--status` ("found by the search, not set up yet"), as Inception's is. The launcher's PLAY then starts the program plain, and the program's own screen offers it.
+
 **For R** (found by earlier slices, to be done or decided there):
 - The setup on a finished install (`mw1r --setup`): FIND THE GAME offers the copy in use first, even a damaged one, and INSTALL on it copies nothing. It should verify the game's files (today only BTECH.EXE and MW_MAIN.EXE are looked at) and offer "choose another" plainly.
 - The failure in combat's load names "BTECH.EXE", a file that play never opens (`MwFailGameFileRead`). It did not go with the built image (B4f).

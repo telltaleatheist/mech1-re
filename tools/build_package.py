@@ -6,7 +6,8 @@
 The package holds the program, its libraries, our data/ (rules and screen
 layout, which play reads beside the program, and the music soundfont the
 build cuts), the configuration and the notices; never the original game's files. The smoke test starts the
-extracted archive: without arguments it must print its usage. With a game
+extracted archive: with --help it must print its usage, and it must answer the
+launcher's asks about the setup (package/served_setup.py). With a game
 folder (--game, or MW1O_GAME) it also runs the first run headless from a
 scratch save directory and must import the story and reach the game's first
 input wait (the debug control's status.json) before it is stopped. --smoke
@@ -26,6 +27,9 @@ import tarfile
 import tempfile
 import time
 import zipfile
+
+sys.path.insert(0, str(Path(__file__).resolve().parent / "package"))
+import served_setup  # noqa: E402
 
 # Our data beside the program: each folder must hold JSON files.
 DATA_FOLDERS = ("data/rules", "data/ui")
@@ -105,8 +109,26 @@ def check_first_run(executable, game, timeout=FIRST_RUN_SECONDS):
     print(f"First run from the package: story imported, the game reached its first input wait")
 
 
+def check_served_setup(executable, game):
+    """The setup as the launcher asks for it (tools/package/served_setup.py). Without the game the parts that need a
+    copy are skipped, and said to be."""
+    with tempfile.TemporaryDirectory(prefix="mw1-served-") as scratch:
+        done, skipped = 0, []
+        for passed, what in served_setup.checks(executable, os.environ, Path(scratch), game):
+            if passed is None:
+                skipped.append(what)
+            elif not passed:
+                raise RuntimeError("The packaged program's served setup: " + what)
+            else:
+                done += 1
+    print(f"Served setup from the package: {done} checks passed, " + (f"{len(skipped)} PARTS SKIPPED (no game given):" if skipped else "none skipped"))
+    for what in skipped:
+        print("  skipped: " + what)
+
+
 def smoke(executable, game):
     check_usage(executable)
+    check_served_setup(executable, game)
     if game:
         check_first_run(executable, game)
 
