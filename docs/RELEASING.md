@@ -218,8 +218,8 @@ any of this. What fails a step stops the release.
 
 1. Choose the version, `mw1r-vX.Y.Z`, and the commit. Finish its notes
    (`RELEASE_NOTES_DRAFT.md` for the first one) on main, with every line
-   marked CHECK in them and in `README.md` confirmed or taken out, and copy
-   `DEPLOY.md` if the family's has changed. The project owner reads the notes
+   marked CHECK in them confirmed or taken out. In `README.md`, the status
+   line and the launcher's sentence say what is true then. Copy `DEPLOY.md` if the family's has changed. The project owner reads the notes
    and the README. If main moved, the steps of the gate it can affect run again.
 2. Tag that commit on each building machine, locally: `git tag mw1r-vX.Y.Z`.
    Nothing is pushed yet. Packaging refuses this label in any other tree.

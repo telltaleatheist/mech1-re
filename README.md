@@ -14,14 +14,11 @@ the readable reconstruction of the original program.
 rights holders; none of its files are in this project.*
 
 It is **not** an emulator or a patched copy of the original. The original program's logic is rebuilt function by
-function, without emulating the old PC's sound, graphics or timer hardware. Every step is checked against recorded runs
-of the game. The aim is for it to play as the original does.
+function, without emulating the old PC's sound, graphics or timer hardware. It is checked against recorded runs of
+the game. The aim is for it to play as the original does.
 
-<!-- CHECK (lead): true only once mw1r-v1.0.0 is published, on all three systems. -->
-**Status:** mw1r-v1.0.0 is out for Windows, macOS and Linux on the
-[Releases page](https://github.com/telltaleatheist/mech1-re/releases). What is known to differ from the original, and
-what no one has played yet, is in its notes. Your own copy of the game is needed (below): the first start finds it or
-asks you where it is.
+**Status:** not released yet. 1.0.0, for Windows, macOS and Linux, is in its last testing; until it is out, it can be
+built from the source (below). Your own copy of the game is needed: the first start finds it or asks you where it is.
 
 ## Your own copy of the game
 
@@ -63,7 +60,8 @@ update or an uninstall leaves them alone:
 | macOS | `~/Library/Application Support/BattleTech/MechWarrior 1 Rebuild` |
 | Linux | `~/.local/share/BattleTech/MechWarrior 1 Rebuild` |
 
-The [BattleTech launcher](https://github.com/telltaleatheist/mech3-re) can install, set up, start and update it too.
+The [BattleTech launcher](https://github.com/telltaleatheist/mech3-re) will be able to install, set up, start and
+update it too.
 
 The original's copy protection is left out: the game never asks for it.
 
