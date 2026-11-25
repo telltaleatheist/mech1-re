@@ -110,11 +110,12 @@ void MwSdlOpenLog(const std::string &path,bool always)
     /* A first start's save directory isn't there yet. */
     std::error_code ignored;
     std::filesystem::create_directories(std::filesystem::path(path).parent_path(),ignored);
-    /* freopen closes a stream it can't open: see first that it can. */
+    /* freopen closes a stream it can't open: see first that it can. This empties the log too. */
     FILE *log=fopen(path.c_str(),"w");
     if (!log) return;
     fclose(log);
-    if (!freopen(path.c_str(),"w",stdout) || !freopen(path.c_str(),"a",stderr)) {}
+    /* Both append: each has its own place in the file, and one that only writes would write over the other's lines. */
+    if (!freopen(path.c_str(),"a",stdout) || !freopen(path.c_str(),"a",stderr)) {}
     setvbuf(stderr,NULL,_IONBF,0);
     logPath=path;
 }

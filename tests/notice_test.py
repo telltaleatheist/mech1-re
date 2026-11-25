@@ -76,6 +76,13 @@ def main():
         check(os.path.exists(new) and "The log is " + new in text, "a save directory that isn't there yet is made for the log")
     else:
         check(not os.path.exists(log), "off Windows a log is opened only by a start without a folder")
+    both = os.path.join(work, "both.log")
+    with open(both, "w") as f:
+        f.write("a line of the start before\n" * 20)
+    code, err, text = run("hidden", "lines", both)
+    wanted = [line % n for n in range(3) for line in ("out %d: a line of the output, longer than the other", "err %d: a line of the errors")]
+    check(code == 0 and open(both, encoding="utf-8").read().split("\n") == wanted + [""],
+          "the log holds both streams' lines whole, in turn, and nothing of the start before")
     return 1 if failures else 0
 
 
