@@ -123,6 +123,8 @@ def stamps(a, work, base):
 
 
 def main():
+    # What the program answers may hold any character, and a Windows log's code page doesn't.
+    sys.stdout.reconfigure(encoding="utf-8", errors="backslashreplace")
     ap = argparse.ArgumentParser()
     ap.add_argument("--program", required=True)
     ap.add_argument("--stamped", required=True, help="the same program built with the tag mw1r-v0.0.1")
