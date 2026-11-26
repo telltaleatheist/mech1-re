@@ -3,6 +3,7 @@
 Current entry points:
 
 - [Runtime status and known failures](RUNTIME_STATUS.md).
+- [Discoveries: how the 1989 game really works](discoveries.md).
 - [Reconstructed code navigation](CODE_GUIDE.md).
 - [Campaign: company, planets and contracts](CAMPAIGN_GUIDE.md).
 - [Combat: lance, weapons and objectives](COMBAT_GUIDE.md).
