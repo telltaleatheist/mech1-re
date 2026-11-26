@@ -28,7 +28,7 @@ AppName=MechWarrior 1 Rebuild
 AppVersion={#AppVersion}
 AppVerName=MechWarrior 1 Rebuild {#AppVersion}
 AppPublisher=MechWarrior 1 Rebuild (a fan project)
-AppComments=A rebuild of MechWarrior (1989)'s program; it needs your own copy of the game.
+AppComments=MechWarrior (1989), reverse engineered and rebuilt. Built on Elthial's SDL port. It needs your own copy of the game.
 DefaultDirName={autopf}\MechWarrior 1 Rebuild
 ; The folder page every time, an upgrade's too, offering the folder already
 ; installed to.
@@ -79,9 +79,9 @@ Type: files; Name: "{app}\licenses\Munt-COPYING.LESSER.txt"
 Type: files; Name: "{app}\licenses\Nuked-LICENSE"
 
 [Icons]
-Name: "{autoprograms}\MechWarrior 1 Rebuild"; Filename: "{app}\mw1r.exe"; WorkingDir: "{app}"; Comment: "MechWarrior (1989), rebuilt"
+Name: "{autoprograms}\MechWarrior 1 Rebuild"; Filename: "{app}\mw1r.exe"; WorkingDir: "{app}"; Comment: "MechWarrior (1989), rebuilt; built on Elthial's SDL port"
 Name: "{autoprograms}\MechWarrior 1 Rebuild - Read me"; Filename: "{app}\README.txt"
-Name: "{autodesktop}\MechWarrior 1 Rebuild"; Filename: "{app}\mw1r.exe"; WorkingDir: "{app}"; Comment: "MechWarrior (1989), rebuilt"; Tasks: desktopicon
+Name: "{autodesktop}\MechWarrior 1 Rebuild"; Filename: "{app}\mw1r.exe"; WorkingDir: "{app}"; Comment: "MechWarrior (1989), rebuilt; built on Elthial's SDL port"; Tasks: desktopicon
 
 [Run]
 Filename: "{app}\mw1r.exe"; Description: "{cm:LaunchProgram,MechWarrior 1 Rebuild}"; Flags: nowait postinstall skipifsilent

@@ -580,8 +580,8 @@ def mac_plist(label, minos):
             "CFBundleShortVersionString": version, "CFBundleVersion": version, "CFBundleDevelopmentRegion": "en",
             "CFBundleInfoDictionaryVersion": "6.0", "LSMinimumSystemVersion": minos,
             "LSApplicationCategoryType": "public.app-category.games", "NSHighResolutionCapable": True,
-            "NSHumanReadableCopyright": "A fan rebuild; MechWarrior is a trademark of its owners. "
-                                        "Needs your own copy of MechWarrior (1989)."}
+            "NSHumanReadableCopyright": "A fan rebuild, built on Elthial's SDL port; MechWarrior is a "
+                                        "trademark of its owners. Needs your own copy of MechWarrior (1989)."}
 
 
 def package_mac(root, build, sdl, output, label, game):
