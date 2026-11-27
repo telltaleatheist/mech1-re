@@ -3,6 +3,8 @@
  * the one-time carry-over of the previews' saves. */
 #pragma once
 #include <stddef.h>
+#include <rekit/sdl/setup_screen.h>
+#include <string>
 
 /* --status: one JSON line on stdout, exit 0; no window, nothing written. */
 int MwSetupPrintStatus(void);
@@ -31,3 +33,5 @@ void MwSetupRecordProgram(void);
  * 0 ready, 1 the player cancelled, 2 failed (with --setup the reason goes to
  * stdout as {"error": ...}). */
 int MwSetupResolveGame(bool setupOnly,char *folder,size_t size);
+/* MW1's recipe for the kit's setup screen, for a fresh setup of the player's folder `user` (tests/setup_download_test.cpp). */
+rekit::sdl::Game MwSetupKitGame(const std::string &user);

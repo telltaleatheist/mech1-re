@@ -436,6 +436,15 @@ if(MECHWARRIOR_BUILD_SDL)
         add_executable(setup_test tests/setup_test.cpp)
         target_link_libraries(setup_test PRIVATE mechwarrior_setup)
         add_test(NAME setup COMMAND setup_test "${CMAKE_CURRENT_BINARY_DIR}/setup_work")
+        # The catalog's download on the kit's screen, from a local catalog signed by the kit's test key (no network).
+        add_executable(setup_download_test tests/setup_download_test.cpp src/SDL/SDLSetup.cpp src/Setup/BuildTag.cpp)
+        target_link_libraries(setup_download_test PRIVATE mechwarrior_sdl mechwarrior_setup)
+        if(TARGET rekit_sdl)
+            target_link_libraries(setup_download_test PRIVATE rekit_sdl)
+        endif()
+        target_include_directories(setup_download_test PRIVATE src/SDL
+            extern/re-setup-kit/tests extern/re-setup-kit/third_party)
+        add_test(NAME setup_download COMMAND setup_download_test "${CMAKE_CURRENT_BINARY_DIR}/setup_download_work")
         # Controllers through the real SDL host (H3b): virtual gamepads and joysticks, plugged in and taken out.
         add_executable(sdl_joystick_test tests/sdl_joystick_test.cpp)
         target_link_libraries(sdl_joystick_test PRIVATE mechwarrior_sdl)
@@ -466,7 +475,7 @@ if(MECHWARRIOR_BUILD_SDL)
         # The icon Explorer, the taskbar and the installer's shortcuts show.
         target_sources(mechwarrior PRIVATE tools/package/mechwarrior.rc)
         # Paths are UTF-8 on Windows too.
-        foreach(program mechwarrior mechwarrior_stamped setup_test notice_probe)
+        foreach(program mechwarrior mechwarrior_stamped setup_test setup_download_test notice_probe)
             if(MSVC AND TARGET ${program})
                 target_sources(${program} PRIVATE tools/package/mechwarrior.manifest)
             endif()

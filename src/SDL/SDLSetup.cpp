@@ -20,6 +20,7 @@
 #include <cstring>
 #include <exception>
 #include <filesystem>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -104,6 +105,10 @@ rekit::sdl::Game kit_game(const std::string& user, const std::string& in_use, bo
   g.id = setup::kId, g.title = setup::kTitle, g.folder_key = setup::kFolderKey, g.folder_name = setup::kFolderName;
   g.program = "BTECH.EXE";
   g.rules = setup::rules(), g.hints = setup::hints();
+  // A fresh setup searches this computer first and offers the catalog's download only when it finds no copy.
+  g.original_catalogs.assign(std::begin(setup::kOriginalCatalogs), std::end(setup::kOriginalCatalogs));
+  g.catalog_keys = {setup::kCatalogKey}, g.original_key = setup::kOriginalKey;
+  g.version = setup::build_tag();
   const std::string pdir = program_dir();
   const bool imported = setup::story_imported(user);
   g.search = [user, pdir, in_use, imported, served] {
@@ -220,6 +225,8 @@ void open_served_log(const std::string& user) {
 }
 
 }  // namespace
+
+rekit::sdl::Game MwSetupKitGame(const std::string& user) { return kit_game(user, "", false); }
 
 bool MwSetupUnattended(void) { return unattended(); }
 
