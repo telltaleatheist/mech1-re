@@ -634,6 +634,14 @@ def mac_plist(label, minos):
                                         "trademark of its owners. Needs your own copy of MechWarrior (1989)."}
 
 
+def build_rpaths(otool_lines):
+    """The LC_RPATH paths in `otool -l`'s lines, each once, in order. A path is everything between "path " and
+    " (offset N)", so a folder whose name has a space is kept whole."""
+    found = (re.match(r"\s*path (.*) \(offset \d+\)$", otool_lines[i + 2])
+             for i, line in enumerate(otool_lines) if "cmd LC_RPATH" in line and i + 2 < len(otool_lines))
+    return list(dict.fromkeys(m.group(1) for m in found if m))
+
+
 def package_mac(root, build, sdl, output, label, game):
     """MechWarrior 1 Rebuild.app and MW1-Rebuild-<label>-mac.dmg: the program in Contents/MacOS, data/,
     MechWarrior.ini and the notices in Contents/Resources (SDL_GetBasePath), the libraries in
@@ -681,7 +689,7 @@ def package_mac(root, build, sdl, output, label, game):
                 todo.append(target)
             copied[dep] = leaf
     rpaths = subprocess.run(["otool", "-l", str(exe)], capture_output=True, text=True, check=True).stdout.splitlines()
-    for rpath in sorted({rpaths[i + 2].strip().split(" ")[1] for i, line in enumerate(rpaths) if "cmd LC_RPATH" in line}):
+    for rpath in build_rpaths(rpaths):
         run("install_name_tool", "-delete_rpath", rpath, str(exe))  # (listed once for each architecture, deleted in both)
     run("install_name_tool", "-add_rpath", "@executable_path/../Frameworks", str(exe))
     left = [d for f in [exe, *frameworks.iterdir()] for d in dependencies(f)

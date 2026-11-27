@@ -556,6 +556,17 @@ class FolderToolTests(unittest.TestCase):
 
 
 
+class RpathTests(unittest.TestCase):
+    def test_a_build_folder_with_a_space_is_kept_whole(self):
+        lines = ["Load command 20", "          cmd LC_RPATH", "      cmdsize 64",
+                 "         path /Volumes/Disk/Projects/a game/build-package/sdl3 (offset 12)",
+                 "Load command 21", "          cmd LC_RPATH", "      cmdsize 32", "         path @loader_path (offset 12)",
+                 "Load command 40", "          cmd LC_RPATH", "      cmdsize 64",
+                 "         path /Volumes/Disk/Projects/a game/build-package/sdl3 (offset 12)"]
+        self.assertEqual(build_package.build_rpaths(lines),
+                         ["/Volumes/Disk/Projects/a game/build-package/sdl3", "@loader_path"])
+
+
 class MacSigningTests(unittest.TestCase):
     """The commands only: run is a mock, so nothing is signed, and the identity is a made-up word."""
 
