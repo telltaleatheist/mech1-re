@@ -34,6 +34,10 @@ namespace fs = std::filesystem;
 namespace mw1o::setup {
 namespace {
 
+// Files an install leaves out though they sit among the game's: archive.org's MechWarrior_1989.zip carries
+// NEV_UNIV.EXE, a copy-protection remover, beside the game. The game doesn't need it; the install takes none.
+const std::vector<rekit::LeaveOut> kLeaveOut = {{"NEV_UNIV.EXE", ""}};
+
 std::string lower(std::string s) {
   for (char& c : s) c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
   return s;
@@ -535,7 +539,7 @@ Installed install(const rekit::Found& found, const std::string& out_dir, const P
     ready = tmp / "copy";
     const rekit::CopyResult c = rekit::copy_folder(src, ready.string(), [&](uint64_t done, uint64_t total, const std::string& f) {
       return !progress || progress(total ? double(done) / double(total) : 0.0, f);
-    });
+    }, kLeaveOut);
     if (!c.ok) {
       fs::remove_all(tmp, ec);  // ours: marked above
       r.cancelled = c.cancelled;
@@ -576,6 +580,7 @@ Installed install(const rekit::Found& found, const std::string& out_dir, const P
     while (why.empty() && a.next(&e)) {
       if (e.other || !under_root(e.path, found.root, &rel)) continue;
       if (lower(fs::path(rel).filename().string()) == kInstallMarker) continue;
+      if (!e.dir && rekit::left_out(kLeaveOut, fs::path(rel).filename().string(), nullptr)) continue;
       const fs::path out = tmp / fs::path(rel);
       if (e.dir) {
         fs::create_directories(out, ec);

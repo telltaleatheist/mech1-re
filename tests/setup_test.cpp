@@ -464,6 +464,7 @@ void with_game(const fs::path& work, const char* game_env, const char* ref_env, 
   fs::copy_file(r1990, copy / "BTECH.EXE");
   fs::copy_file(main_exe, copy / "MW_MAIN.EXE");
   write(copy / "SAVED.DAT", "x");
+  write(copy / "nev_univ.exe", "a stand-in");  // left out by name, without case
   check(setup::game_in(picked.string()) == copy.string(), "game_in finds the copy a level down");
   rekit::Found f = rekit::find_source(copy.string(), setup::rules());
   check(f.kind == rekit::Found::kInstall && f.game == "mech1" && f.version == v_1990, "find_source: the folder is mech1 " + v_1990);
@@ -476,6 +477,8 @@ void with_game(const fs::path& work, const char* game_env, const char* ref_env, 
   check(r.ok && setup::check_install(out.string(), false).state == rekit::Status::kReady, "installed from a folder: ready");
   check(fs::exists(copy / "BTECH.EXE") && fs::exists(copy / "SAVED.DAT"), "the player's folder is left as it was");
   check(fs::exists(out / setup::kInstallMarker), "our install carries its marker");
+  check(!fs::exists(out / "nev_univ.exe") && !fs::exists(out / "NEV_UNIV.EXE") && fs::exists(copy / "nev_univ.exe"),
+        "a folder's NEV_UNIV.EXE is left out of the install, and left where it was");
 
   // Installing again replaces our own install.
   r = setup::install(f, out.string());
@@ -584,6 +587,7 @@ void with_game(const fs::path& work, const char* game_env, const char* ref_env, 
   const fs::path zip = work / "MechWarrior_1989.zip";
   check(make_zip(zip, {{"mechwarrior/MECHWAR/BTECH.EXE", ref},
                        {"mechwarrior/MECHWAR/MW_MAIN.EXE", main_exe},
+                       {"mechwarrior/MECHWAR/NEV_UNIV.EXE", {}},
                        {"mechwarrior/MECHWAR/../../ESCAPE.TXT", {}},
                        {"mechwarrior/OTHER.TXT", {}}}),
         "a zip built in the work folder");
@@ -595,6 +599,7 @@ void with_game(const fs::path& work, const char* game_env, const char* ref_env, 
   check(!fs::exists(work / "ESCAPE.TXT") && !fs::exists(work / "zuser" / "ESCAPE.TXT") && !fs::exists(zout / "OTHER.TXT"),
         "break: nothing outside the game's folder in the zip is written");
   check(fs::exists(zip), "the zip is left as it was");
+  check(!fs::exists(zout / "NEV_UNIV.EXE"), "a zip's NEV_UNIV.EXE is left out of the install");
   // Break: a zip with a BTECH.EXE of no known revision.
   const fs::path bad = work / "bad.zip";
   make_zip(bad, {{"MECHWAR/BTECH.EXE", {}}});
