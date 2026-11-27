@@ -145,7 +145,7 @@ platform's files are named `MW1-Rebuild-<label>-...`:
 | Platform | Made on | Files |
 |---|---|---|
 | Windows x64 | Windows, MSVC | `-win64.zip`, and with `--installer` `-Setup.exe` (Inno Setup) |
-| macOS | a Mac | `-mac.dmg` (`MechWarrior 1 Rebuild.app`, signed ad hoc), universal (x86_64 and arm64), macOS 12 and later |
+| macOS | a Mac | `-mac.dmg` (`MechWarrior 1 Rebuild.app`; a release's signed with a Developer ID and notarized, a check build's ad hoc), universal (x86_64 and arm64), macOS 12 and later |
 | Linux x86-64 | Linux or WSL | `-linux-x86_64.tar.gz`, and with `--installer` `-x86_64.AppImage` |
 
     python tools/build_package.py --sdl SDL_SOURCE --label LABEL [--game GAME] [--installer] [--appimage-tools DIR]
@@ -164,11 +164,22 @@ platform's files are named `MW1-Rebuild-<label>-...`:
   lose that file.
 - **macOS**: the libraries go to `Contents/Frameworks` named `@rpath`, `data/`
   and `MechWarrior.ini` to `Contents/Resources` (SDL's base path); the
-  libraries, the program and the app are signed ad hoc with
-  `tools/package/mechwarrior.entitlements` and checked with
-  `codesign --verify --deep --strict`. The dmg holds the app, a link to
-  Applications and the read-me. Unsigned by a developer identity: the first
-  start needs right-click, Open.
+  libraries, the program and the app are signed with
+  `tools/package/mechwarrior.entitlements` (no exceptions to the hardened
+  runtime) and checked with `codesign --verify --deep --strict`, before the
+  smoke test, so what is started is what ships. The dmg holds the app, a link
+  to Applications and the read-me.
+  - Without a signing identity (a check build, CI), everything is signed ad
+    hoc and the first start needs right-click, Open.
+  - With one, re-setup-kit's `tools/macos/sign_notarize.sh` signs instead
+    (`sign_app`): a Developer ID, the hardened runtime and a timestamp. It
+    then signs the dmg, notarizes it, and staples the ticket to the dmg and
+    the app (`notarize_dmg`), and the `.sha256` is written after that. Who
+    signs comes only from the environment, set on the command itself and
+    never written down: `RE_SIGN_IDENTITY` (the keychain's Developer ID
+    Application identity, by its SHA-1) and `RE_NOTARY_PROFILE` (a
+    `notarytool` keychain profile). The kit's `check` runs first, so a build
+    that couldn't be notarized stops before anything is built.
 - **Linux**: `--appimage-tools DIR` names the folder with
   `linuxdeploy-x86_64.AppImage`, `appimagetool-x86_64.AppImage` and
   `runtime-x86_64`, which `tools/deps/get_appimage_tools.sh DIR` fetches; each
@@ -240,7 +251,7 @@ any of this. What fails a step stops the release.
 3. Build the packages from the tag, each in a clean checkout with its
    submodules and with the game given, so the smoke test does its first run:
 
-       # macOS
+       # macOS, RE_SIGN_IDENTITY and RE_NOTARY_PROFILE set on this command alone
        tools/deps/build_archive.sh mac
        python3 -I tools/build_package.py --sdl SDL --label mw1r-vX.Y.Z --game GAME
        # Linux (or WSL)
@@ -254,6 +265,8 @@ any of this. What fails a step stops the release.
    SDL is the pinned commit (`.github/workflows/linux.yml` names it). Visual
    Studio's `cmake` must be the first on Windows' PATH. Each run must end with
    its smoke test, the first run and the served setup passed, none skipped.
+   The dmg must also pass `spctl -a -vv -t install` and
+   `xcrun stapler validate`.
 4. Put the five packages in one empty folder (`-win64.zip`, `-Setup.exe`,
    `-mac.dmg`, `-x86_64.AppImage` and `-linux-x86_64.tar.gz`), check each
    against its `.sha256`, then write the one list:

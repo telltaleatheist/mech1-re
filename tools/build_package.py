@@ -138,6 +138,40 @@ def smoke(executable, game, architecture=None):
             check_first_run(program, game)
 
 
+# re-setup-kit's Mac signing (its README, Mac signing): a Developer ID, the hardened runtime and
+# notarization. Who signs comes from the environment alone (RE_SIGN_IDENTITY, RE_NOTARY_PROFILE),
+# never from here; without an identity the package is signed ad hoc, as a check build is.
+SIGNER = "extern/re-setup-kit/tools/macos/sign_notarize.sh"
+
+
+def developer_id():
+    """Whether a Developer ID signs this package: RE_SIGN_IDENTITY (or MW3_SIGN_IDENTITY, which the
+    kit reads when it is unset) names one."""
+    return bool(os.environ.get("RE_SIGN_IDENTITY") or os.environ.get("MW3_SIGN_IDENTITY"))
+
+
+def sign_app(root, app, frameworks, exe, entitlements):
+    """The app's signature. With a Developer ID, the kit's `app` alone: every library, the program,
+    then the app, with the hardened runtime and a timestamp (it replaces any signature they had).
+    Without one, ad hoc (no name in the signature). Then checked either way."""
+    if developer_id():
+        run(str(root / SIGNER), "app", str(app), "--entitlements", entitlements)
+    else:
+        for lib in sorted(frameworks.iterdir()):
+            run("codesign", "--force", "--sign", "-", str(lib))
+        run("codesign", "--force", "--sign", "-", "--entitlements", entitlements, str(exe))
+        run("codesign", "--force", "--sign", "-", "--entitlements", entitlements, str(app))
+    run("codesign", "--verify", "--deep", "--strict", str(app))
+
+
+def notarize_dmg(root, dmg, app):
+    """With a Developer ID, the kit's `dmg`: the dmg signed, notarized (refused unless Apple accepts
+    it), its ticket stapled to it and to the app, and Gatekeeper's verdict checked. Without one,
+    nothing: a check build's dmg isn't signed."""
+    if developer_id():
+        run(str(root / SIGNER), "dmg", str(dmg), str(app))
+
+
 def run(*args, **kwargs):
     return subprocess.run(args, check=True, **kwargs)
 
@@ -587,7 +621,10 @@ def mac_plist(label, minos):
 def package_mac(root, build, sdl, output, label, game):
     """MechWarrior 1 Rebuild.app and MW1-Rebuild-<label>-mac.dmg: the program in Contents/MacOS, data/,
     MechWarrior.ini and the notices in Contents/Resources (SDL_GetBasePath), the libraries in
-    Contents/Frameworks named @rpath, every binary universal (x86_64 and arm64) and signed ad hoc."""
+    Contents/Frameworks named @rpath, every binary universal (x86_64 and arm64), signed ad hoc or with a
+    Developer ID and the dmg notarized (sign_app, notarize_dmg)."""
+    if developer_id():  # refused before anything is built when it couldn't be notarized
+        run(str(root / SIGNER), "check")
     binary = configure_and_build(root, build, sdl, label)
     check_stamp(binary, label)
     app = output / f"{APP_NAME}.app"
@@ -654,13 +691,8 @@ def package_mac(root, build, sdl, output, label, game):
                                                       check=True).stdout)
     with open(app / "Contents/Info.plist", "wb") as f:
         plistlib.dump(mac_plist(label, minos.group(1) if minos else "12.0"), f)
-    # Ad hoc (no identity, so no name in the signature): the libraries, the program, then the app.
-    entitlements = str(root / "tools/package/mechwarrior.entitlements")
-    for lib in sorted(frameworks.iterdir()):
-        run("codesign", "--force", "--sign", "-", str(lib))
-    run("codesign", "--force", "--sign", "-", "--entitlements", entitlements, str(exe))
-    run("codesign", "--force", "--sign", "-", "--entitlements", entitlements, str(app))
-    run("codesign", "--verify", "--deep", "--strict", str(app))
+    # Signed before the smoke test, so a release's hardened runtime is what is started.
+    sign_app(root, app, frameworks, exe, str(root / "tools/package/mechwarrior.entitlements"))
     smoke(exe, game)
 
     dmg = output / f"{STEM}-{label}-mac.dmg"
@@ -679,6 +711,7 @@ def package_mac(root, build, sdl, output, label, game):
     run("hdiutil", "create", "-volname", APP_NAME, "-srcfolder", str(dmg_stage), "-ov", "-format", "UDZO", str(dmg),
         stdout=subprocess.DEVNULL)
     shutil.rmtree(dmg_stage)
+    notarize_dmg(root, dmg, app)  # stapling changes the dmg: its digest comes after
     write_digest(dmg)
     print(f"App: {app}\nDMG: {dmg}")
     return dmg

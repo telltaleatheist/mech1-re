@@ -514,5 +514,48 @@ class FolderToolTests(unittest.TestCase):
             self.assertFalse((Path(directory) / "SHA256SUMS").exists())
 
 
+
+class MacSigningTests(unittest.TestCase):
+    """The commands only: run is a mock, so nothing is signed, and the identity is a made-up word."""
+
+    def calls(self, work, env):
+        root = Path(work)
+        app, dmg = root / "MechWarrior 1 Rebuild.app", root / "x.dmg"
+        frameworks = app / "Contents/Frameworks"
+        frameworks.mkdir(parents=True)
+        (frameworks / "libSDL3.0.dylib").write_text("fixture")
+        with patch.dict(os.environ, env, clear=False), patch.object(build_package, "run") as run:
+            for name in ("RE_SIGN_IDENTITY", "MW3_SIGN_IDENTITY"):
+                if name not in env:
+                    os.environ.pop(name, None)
+            build_package.sign_app(root, app, frameworks, app / "Contents/MacOS/mechwarrior", "mw.entitlements")
+            build_package.notarize_dmg(root, dmg, app)
+        return root, app, dmg, [c.args for c in run.call_args_list]
+
+    def test_without_an_identity_it_is_signed_ad_hoc_and_the_dmg_is_left(self):
+        with tempfile.TemporaryDirectory() as d:
+            root, app, dmg, calls = self.calls(d, {})
+            self.assertTrue(all(c[0] == "codesign" for c in calls))
+            self.assertEqual(sum(1 for c in calls if c[:4] == ("codesign", "--force", "--sign", "-")), 3)
+            self.assertEqual(calls[-1], ("codesign", "--verify", "--deep", "--strict", str(app)))
+
+    def test_with_an_identity_the_kit_alone_signs_and_notarizes(self):
+        with tempfile.TemporaryDirectory() as d:
+            root, app, dmg, calls = self.calls(d, {"RE_SIGN_IDENTITY": "made-up"})
+            signer = str(root / build_package.SIGNER)
+            self.assertEqual(calls, [(signer, "app", str(app), "--entitlements", "mw.entitlements"),
+                                     ("codesign", "--verify", "--deep", "--strict", str(app)),
+                                     (signer, "dmg", str(dmg), str(app))])
+            self.assertFalse(any("made-up" in a for c in calls for a in c))
+
+    def test_the_kits_older_name_counts_as_an_identity(self):
+        with patch.dict(os.environ, {"MW3_SIGN_IDENTITY": "made-up"}, clear=False):
+            os.environ.pop("RE_SIGN_IDENTITY", None)
+            self.assertTrue(build_package.developer_id())
+
+    def test_the_signer_is_the_kits(self):
+        self.assertTrue((Path(__file__).resolve().parent.parent / build_package.SIGNER).is_file())
+
+
 if __name__ == "__main__":
     unittest.main()
