@@ -21,8 +21,10 @@
 #include <archive_entry.h>
 #endif
 
+#include <cctype>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -73,6 +75,23 @@ bool make_zip(const fs::path& out, const std::vector<std::pair<std::string, std:
   return true;
 }
 
+// A file:// address for `p`, percent-encoded, so a checkout's path may hold a space.
+std::string file_url(const fs::path& p) {
+  static const char* hex = "0123456789ABCDEF";
+  std::string url = "file://";
+  for (const char ch : p.generic_string()) {
+    const auto c = static_cast<unsigned char>(ch);
+    if (std::isalnum(c) || std::strchr("/-._~", c)) {
+      url += ch;
+    } else {
+      url += '%';
+      url += hex[c >> 4];
+      url += hex[c & 15];
+    }
+  }
+  return url;
+}
+
 bool has(const std::vector<std::string>& log, const std::string& line) {
   for (const std::string& l : log)
     if (l == line) return true;
@@ -117,16 +136,17 @@ void download(const fs::path& work, const char* game, const char* ref) {
   check(make_zip(zip, files), "a zip built in the work folder");
   const std::string bytes = read(zip);
   const std::string sum = rekit::sha256_hex(reinterpret_cast<const uint8_t*>(bytes.data()), bytes.size());
-  const std::string text = "{\"revision\": 9, \"games\": [{\"key\": \"mw1r\", \"name\": \"MechWarrior 1\", \"original\": [{\"url\": \"file://" +
-                           zip.generic_string() + "\", \"sha256\": \"" + sum + "\", \"size\": " + std::to_string(bytes.size()) +
-                           ", \"name\": \"MechWarrior_1989.zip\", \"note\": \"a test\"}]}]}";
+  const std::string source = "{\"url\": \"" + file_url(zip) + "\", \"sha256\": \"" + sum + "\", \"size\": " +
+                             std::to_string(bytes.size()) + ", \"name\": \"MechWarrior_1989.zip\", \"note\": \"a test\"}";
+  const std::string text =
+      "{\"revision\": 9, \"games\": [{\"key\": \"mw1r\", \"name\": \"MechWarrior 1\", \"original\": [" + source + "]}]}";
   const fs::path cat = work / "catalog.json";
   write(cat, text);
   write(cat.string() + ".sig", test_keys::sign(text, 1));
 
   const fs::path user = work / "user";
   rekit::sdl::Game g = MwSetupKitGame(user.string());
-  g.original_catalogs = {"file://" + cat.generic_string()};
+  g.original_catalogs = {file_url(cat)};
   g.catalog_keys = {test_keys::public_key(1)};
   g.search = [] { return std::string(); };  // nothing on this computer: the test never looks at the real one
 
