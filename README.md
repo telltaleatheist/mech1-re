@@ -19,7 +19,7 @@ recorded runs of this program itself; the original of 1990, run under DOSBox-X, 
 eight that were compared. What is checked and what isn't is in [the runtime status](docs/RUNTIME_STATUS.md). The aim is
 for it to play as the original does.
 
-**Status:** 1.0.1 is out for Windows, macOS and Linux on the
+**Status:** 1.0.2 is out for Windows, macOS and Linux on the
 [Releases page](https://github.com/telltaleatheist/mech1-re/releases). What is known to differ from the original, and
 what no one has played yet, is in its notes. Your own copy of the game is needed (below): the first start finds it or
 asks you where it is.
