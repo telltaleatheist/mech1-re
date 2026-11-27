@@ -2,8 +2,9 @@
 # Fails when any file under a package folder carries a local path or the
 # building user's name (docs/RELEASING.md): every byte of every file, as
 # ASCII and as UTF-16, so a library's built-in strings count too. The public
-# GitHub address (github.com/<user>, and api.github.com/repos/<user>) is the
-# one allowed use of the name. A compiler may store that address in
+# GitHub addresses (github.com/<user>, api.github.com/repos/<user>, and
+# raw.githubusercontent.com/<user>, where the launcher's catalog has its copy)
+# are the one allowed use of the name. A compiler may store such an address in
 # overlapping pieces (GCC's immediate stores of a short string), so the name
 # may follow the address and a first part of itself. Fails too on a file of
 # the original game by its name, or of what the first start imports from it
@@ -17,7 +18,7 @@ names = {n for n in [getpass.getuser(), os.environ.get('SUDO_USER', ''),
 words = [b'/Volumes/', b'/Users/', b'/home/', b'C:\\Users\\', b'C:/Users/'] + [n.encode() for n in sorted(names)]
 pat = re.compile(b'|'.join(re.escape(w) for w in words))
 pat16 = re.compile(b'|'.join(re.escape(w.decode().encode('utf-16-le')) for w in words))
-allowed = re.compile(rb'github\.com/(repos/)?([A-Za-z0-9-]{0,16})$', re.I)
+allowed = re.compile(rb'(?:github\.com/(?:repos/)?|raw\.githubusercontent\.com/)([A-Za-z0-9-]{0,16})$', re.I)
 
 # The game's files by name: its programs, and the kinds its data files come in
 # (src/Setup/GameFilesTable.cpp; .def and .gam are a copy's leavings and saves).
@@ -37,7 +38,7 @@ for d, _, files in os.walk(root):
         data = open(p, 'rb').read()
         for m in pat.finditer(data):
             a = allowed.search(data[max(0, m.start() - 40):m.start()])
-            if a and m.group().lower().startswith(a.group(2).lower()):
+            if a and m.group().lower().startswith(a.group(1).lower()):
                 continue
             ctx = data[max(0, m.start() - 30):m.end() + 50]
             bad.append(f"{os.path.relpath(p, root)}: {ctx.decode('latin-1')!r}")

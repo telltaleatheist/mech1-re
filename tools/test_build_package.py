@@ -454,6 +454,20 @@ class FolderToolTests(unittest.TestCase):
     def tool(self, name, folder):
         return subprocess.run([sys.executable, "-I", str(self.tools / name), str(folder)], capture_output=True, text=True)
 
+    def test_check_paths_allows_the_name_only_in_a_public_github_address(self):
+        name = "someonemadeup"
+        for text, code in [("https://github.com/someonemadeup/x/releases", 0),
+                           ("https://api.github.com/repos/someonemadeup/x", 0),
+                           ("https://raw.githubusercontent.com/someonemadeup/x/main/catalog.json", 0),
+                           ("https://raw.githubusercontent.com/someosomeonemadeup/x", 0),
+                           ("https://example.com/someonemadeup/x", 1),
+                           ("built by someonemadeup", 1)]:
+            with tempfile.TemporaryDirectory() as d:
+                (Path(d) / "mw1r.exe").write_text(text)
+                found = subprocess.run([sys.executable, "-I", str(self.tools / "check_paths.py"), d, name],
+                                       capture_output=True, text=True)
+                self.assertEqual(found.returncode, code, text)
+
     def test_check_paths_refuses_every_game_file_by_name(self):
         table = (self.tools.parent.parent / "src/Setup/GameFilesTable.cpp").read_text(encoding="utf-8")
         played = sorted(set(re.findall(r'^\s*\{"([A-Z0-9_]+\.[A-Z]+)"', table, re.MULTILINE)))
