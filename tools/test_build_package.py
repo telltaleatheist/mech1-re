@@ -404,6 +404,33 @@ class BackgroundAppTests(unittest.TestCase):
             self.assertEqual(self.files(app), before)
 
     @unittest.skipIf(sys.platform != "darwin", "A Mac's apps and signatures")
+    def test_the_copy_of_a_runtime_signed_app_has_no_runtime(self):
+        def flags(app):
+            shown = subprocess.run(["codesign", "-dv", str(app)], capture_output=True, text=True).stderr
+            return re.search(r"flags=\S+", shown).group()
+
+        with tempfile.TemporaryDirectory() as directory:
+            app = self.app(directory)
+            subprocess.run(["codesign", "--force", "--sign", "-", "--options", "runtime", str(app)], check=True,
+                           capture_output=True)
+            self.assertIn("runtime", flags(app))
+            out = Path(directory) / "out"
+            out.mkdir()
+            copy = background_app.background_copy(app, out)
+            self.assertNotIn("runtime", flags(copy))
+            self.assertIn("runtime", flags(app))
+            subprocess.run(["codesign", "--verify", "--deep", "--strict", str(copy)], check=True)
+
+    @unittest.skipIf(sys.platform != "darwin", "A Mac's apps and signatures")
+    def test_the_smoke_starts_the_apps_own_program_once_with_status(self):
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / "started.txt"
+            app = self.app(directory, f'#!/bin/sh\necho "$0 $*" >> "{log}"\nexit 0\n'.encode())
+            with patch.multiple(build_package, check_usage=DEFAULT, check_served_setup=DEFAULT, check_first_run=DEFAULT):
+                build_package.smoke(app / "Contents/MacOS/mw1r", Path(directory))
+            self.assertEqual(log.read_text().splitlines(), [f"{app}/Contents/MacOS/mw1r --status"])
+
+    @unittest.skipIf(sys.platform != "darwin", "A Mac's apps and signatures")
     def test_an_app_with_a_broken_signature_is_not_run(self):
         with tempfile.TemporaryDirectory() as directory:
             app = self.app(directory)

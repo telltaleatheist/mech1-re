@@ -128,9 +128,25 @@ def check_served_setup(executable, game):
         print("  skipped: " + what)
 
 
+def check_own_signature(executable, architecture=None):
+    """A Mac app's own program, as signed, loads its libraries and answers --status, hidden. A release's signature has
+    the hardened runtime, which the background copy can't keep (background_app.py), so this is the one start of the app
+    itself. --status opens no window, so the run is no foreground app."""
+    with tempfile.TemporaryDirectory(prefix="mw1-own-signature-") as scratch:
+        env = {**os.environ, "HOME": scratch, "MECHWARRIOR_SAVE_DIRECTORY": scratch, "MW1O_HIDDEN": "1",
+               "SDL_MAC_BACKGROUND_APP": "1", "SDL_VIDEO_DRIVER": "dummy", "SDL_AUDIO_DRIVER": "dummy"}
+        args = (["arch", f"-{architecture}"] if architecture else []) + [str(executable), "--status"]
+        result = subprocess.run(args, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=60)
+    if result.returncode != 0:
+        raise RuntimeError(f"The app's own program failed to start as signed: {result.returncode}\n{result.stderr[-2000:]}")
+
+
 def smoke(executable, game, architecture=None):
     """The checks on a package's program. A Mac app's runs are its background copy's (background_app.py): the app itself
-    would come up in the foreground. `architecture`: one half of a Mac app's program."""
+    would come up in the foreground. Its own program starts once, with --status (check_own_signature). `architecture`:
+    one half of a Mac app's program."""
+    if sys.platform == "darwin" and background_app.app_of(executable) is not None:
+        check_own_signature(executable, architecture)
     with background_app.runnable(executable, architecture) as program:
         check_usage(program)
         check_served_setup(program, game)
