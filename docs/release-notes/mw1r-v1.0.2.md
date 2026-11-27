@@ -6,9 +6,10 @@ patched copy. It is unofficial and free, and not affiliated with or endorsed by 
 ## New in 1.0.2
 
 - **No copy of the game? It can fetch one.** When the first start finds no copy on your computer, it offers to download
-  the 1989 release from the BattleTech launcher's own list, and installs it at once. A copy found on your computer is
-  always offered first, and then the download isn't asked about. The list is used only when its signature checks, and
-  the download only when it is exactly the file the list names. You can still pick your own copy instead.
+  a 1990 copy of the DOS release (the 1990-01-22 revision) from the BattleTech launcher's own list, and installs it at
+  once. A copy found on your computer is always offered first, and then the download isn't asked about. The list is used
+  only when its signature checks, and the download only when it is exactly the file the list names. You can still pick
+  your own copy instead.
 - **A download that breaks off goes on from where it stopped** when it is tried again.
 - **Only the game is copied in.** Some copies, the downloaded one among them, carry a small tool beside the game for
   removing the original's copy protection. The rebuild has no copy protection to remove, so the install leaves that tool
@@ -37,8 +38,8 @@ Nothing in the game itself has changed. Your saves, settings and copied game sta
 None of the game's files are in these downloads. You need your own copy of MechWarrior for DOS: the 1989 release or the
 one of 1990-01-22. The first start looks for it on your computer, or asks you to pick its `BTECH.EXE`, any file in its
 folder, or the archive it came in, then copies it into the rebuild's own folder. Your copy is never changed. If files are
-missing, damaged or unlike the ones this project knows, it says so first. If none is found, it can download the 1989
-release for you (above).
+missing, damaged or unlike the ones this project knows, it says so first. If none is found, it can download the 1990-01-22
+revision for you (above).
 
 The BattleTech launcher (1.5.0 or later) can install, set up and start the game too.
 
