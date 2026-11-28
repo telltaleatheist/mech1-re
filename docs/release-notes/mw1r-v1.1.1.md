@@ -107,8 +107,8 @@ Nobody has gone through these yet. Automated tests and recorded runs check parts
   not yet by a player.
 - The menu over the game on a real screen, and its keys on real keyboards. It was tested on hidden windows, with its keys
   sent by the tests.
-- Updating from the menu with a real release. The same updater has been tried on Windows (zip and installer) with
-  Inception Rebuild's releases; on a Mac and on Linux it has not yet been tried with a real release.
+- Updating from the menu with a real release. The same updater has been tried on Windows (zip and installer) and on a
+  Mac with Inception Rebuild's releases; on Linux it has not yet been tried with a real release.
 
 Please report anything that looks or sounds wrong.
 
