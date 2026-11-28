@@ -37,6 +37,14 @@ void MwSdlInitializeTimer(void);
  * host would wait, so the PIT timeline depends on the input alone. */
 bool MwSdlVirtualClock(void);
 uint64_t MwSdlNowNanoseconds(void);
+/* The game's clock stopped and started again by the kit's menu (SDLMenu.cpp):
+ * paused, MwSdlNowNanoseconds stands still and the audio device waits; the
+ * pause is never caught up. */
+void MwSdlPauseClock(void);
+void MwSdlResumeClock(void);
+bool MwSdlClockPaused(void);
+void MwSdlPauseAudio(void);
+void MwSdlResumeAudio(uint64_t pausedNanoseconds);
 void MwSdlAudioLogSnap(const char *name);
 void MwSdlAudioLogTone(double frequency); /* Both in the tone log (MECHWARRIOR_AUDIO_LOG); a snap is a mark. */
 void MwSdlPumpTimer(void);
@@ -59,6 +67,11 @@ const char *MwSdlDataDirectory(void);
 bool MwSdlLoadUserConfiguration(void);
 void MwSdlSaveUserSetting(const char *key,unsigned value);
 void MwSdlSaveUserText(const char *key,const char *value);
+/* RESET SETTINGS: the player's MechWarrior.ini back to the game folder alone,
+ * and the packaged combat tick and speed in play; false when it couldn't be
+ * written. The file's path, "" before MwSdlLoadUserConfiguration. */
+bool MwSdlResetUserConfiguration(void);
+const char *MwSdlUserConfigurationPath(void);
 /* game_folder: the player's MW1 files, set up once by the setup screen when
  * the program starts without them (an installed copy, double-clicked). */
 extern char mwSdlGameFolder[4096];
@@ -80,6 +93,24 @@ void MwSdlRepeatPresent(void);
 /* The device's own events (docs/WINDOW.md); false for any other. */
 bool MwSdlHandleRenderEvent(const SDL_Event &event);
 void MwSdlShutdownVideo(void);
+/* The game's window (NULL before video starts and after it ends). */
+SDL_Window *MwSdlVideoWindow(void);
+/* The current frame shown again, with whatever the kit's menu now draws over it. */
+void MwSdlShowAgain(void);
+/* The kit's in-game menu (SDLMenu.cpp, rekit/sdl/game_menu.h). MwSdlStartMenu
+ * after video, audio and the timer, with the game folder in use; MwSdlStopMenu
+ * before video ends. MwSdlMenuEvent: each SDL event, first; the game's go on to
+ * MwSdlHandleEvent. MwSdlMenuPump: after the events, the menu's frames while it
+ * shows (the game's clock is paused then and the game draws nothing new).
+ * MwSdlMenuOverlay: its picture over the frame, before present; false only when
+ * drawing failed. MwSdlMenuDeviceReset: the device's textures are gone. */
+void MwSdlStartMenu(const char *gameDirectory);
+void MwSdlStopMenu(void);
+void MwSdlMenuEvent(const SDL_Event &event);
+void MwSdlHandleEvent(const SDL_Event &event);
+void MwSdlMenuPump(void);
+bool MwSdlMenuOverlay(SDL_Renderer *renderer);
+void MwSdlMenuDeviceReset(void);
 void MwSdlSetMousePosition(uint16_t x,uint16_t y); /* The frame's pixels. */
 void MwSdlReadMousePosition(uint16_t *x,uint16_t *y);
 void MwSdlConvertMouseMotion(float windowXMotion,float windowYMotion,

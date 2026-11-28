@@ -74,7 +74,7 @@ def check_first_run(executable, game, timeout=FIRST_RUN_SECONDS):
             d.mkdir()
         headless = ({"MW1O_HIDDEN": "1", "SDL_MAC_BACKGROUND_APP": "1"} if sys.platform == "darwin"
                     else {"SDL_VIDEO_DRIVER": "offscreen"})  # a background app on macOS: never activated
-        env = dict(os.environ, **headless, SDL_AUDIO_DRIVER="dummy",
+        env = dict(os.environ, **headless, SDL_AUDIO_DRIVER="dummy", RE_KIT_TEST="1",
                    MECHWARRIOR_SAVE_DIRECTORY=str(saves), MECHWARRIOR_DEBUG_CONTROL_DIRECTORY=str(control))
         log_path = scratch / "run.log"
         with open(log_path, "wb") as log:
@@ -134,7 +134,7 @@ def check_own_signature(executable, architecture=None):
     itself. --status opens no window, so the run is no foreground app."""
     with tempfile.TemporaryDirectory(prefix="mw1-own-signature-") as scratch:
         env = {**os.environ, "HOME": scratch, "MECHWARRIOR_SAVE_DIRECTORY": scratch, "MW1O_HIDDEN": "1",
-               "SDL_MAC_BACKGROUND_APP": "1", "SDL_VIDEO_DRIVER": "dummy", "SDL_AUDIO_DRIVER": "dummy"}
+               "SDL_MAC_BACKGROUND_APP": "1", "SDL_VIDEO_DRIVER": "dummy", "SDL_AUDIO_DRIVER": "dummy", "RE_KIT_TEST": "1"}
         args = (["arch", f"-{architecture}"] if architecture else []) + [str(executable), "--status"]
         result = subprocess.run(args, env=env, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=60)
     if result.returncode != 0:
@@ -213,7 +213,9 @@ README = (
     "A folder from a test version (MicroProse/MechWarrior 1 Rebuild) is moved there once;\n"
     "saves from the earlier previews (BattleTechReverse/MechWarrior) are copied there once.\n\n"
     "Keys: arrows and Enter; in combat - and + change the speed (1x to 4x); F12 saves a\n"
-    "screenshot beside your saves; Ctrl+Escape quits.\n\n"
+    "screenshot beside your saves; Ctrl+Escape quits. Shift+Alt+F1 (Cmd+Shift+F1 on a Mac)\n"
+    "opens a menu over the game, which waits meanwhile: the game files, updates, a file\n"
+    "check, reset settings and where to report a problem; Esc goes back.\n\n"
     "From a command line: mw1r <game folder> [capture folder] starts on that folder; mw1r\n"
     "--setup sets the game up again; mw1r --help lists the rest.\n\n"
     "MechWarrior (1989) was developed by Dynamix and published by Activision. This rebuild is\n"
@@ -356,7 +358,18 @@ def shipped_libraries(files):
 
 # What every package holds the licence or notice of, in its licenses/ folder.
 NOTICES = ("NOTICE.md", "THIRD_PARTY_NOTICES.md", "SDL-LICENSE.txt", "hidapi-LICENSE-bsd.txt", "re-setup-kit-LICENSE",
-           "stb-LICENSE", "miniz-LICENSE", "TinySoundFont-LICENSE")
+           "stb-LICENSE", "miniz-LICENSE", "monocypher-LICENCE.md", "re-setup-kit-OFL.txt", "TinySoundFont-LICENSE")
+
+
+def kit_notice_files(build):
+    """The files the kit lists for a package beside the program (REKIT_NOTICE_FILES in the build's CMake cache: its
+    built-in fonts' licence), each into licenses/ as re-setup-kit-<name>. None listed is refused."""
+    cache = (build / "CMakeCache.txt").read_text(encoding="utf-8", errors="replace")
+    found = re.search(r"^REKIT_NOTICE_FILES:INTERNAL=(.*)$", cache, re.M)
+    files = [Path(f) for f in found.group(1).split(";") if f] if found else []
+    if not files:
+        raise RuntimeError(f"The kit lists no notice files in {build / 'CMakeCache.txt'} (REKIT_NOTICE_FILES)")
+    return {"re-setup-kit-" + f.name: f for f in files}
 
 
 def check_notices(licenses):
@@ -390,11 +403,13 @@ def stage_common(root, build, sdl, resources):
         shutil.copy2(source, notices / (prefix + source.name))
     archive_licences(build, notices)
     stage_soundfont(root, build, resources, notices)
-    # The setup kit's own third-party code (stb, miniz), and hidapi, which SDL compiles in and which we use under its
+    # The setup kit's own third-party code (stb, miniz, Monocypher) and its fonts' licence, and hidapi, which SDL compiles in and which we use under its
     # BSD-style licence: a package without their licences is refused.
     kit = root / "extern/re-setup-kit"
     for name, source in [("re-setup-kit-LICENSE", kit / "LICENSE"), ("stb-LICENSE", kit / "third_party/stb/LICENSE"),
                          ("miniz-LICENSE", kit / "third_party/miniz/LICENSE"),
+                         ("monocypher-LICENCE.md", kit / "third_party/monocypher/LICENCE.md"),
+                         *kit_notice_files(build).items(),
                          ("hidapi-LICENSE-bsd.txt", sdl / "src/hidapi/LICENSE-bsd.txt"),
                          ("TinySoundFont-LICENSE", root / "extern/TinySoundFont/LICENSE")]:
         if not source.is_file():
@@ -442,6 +457,37 @@ def check_architectures(files, archs=None):
         raise RuntimeError("Not universal: " + ", ".join(wrong))
 
 
+# The record of a package's own files the in-game menu's CHECK MY FILES reads (the kit's include/rekit/manifest.h).
+FILES_RECORD = "rebuild-files.sha256"
+FILES_MANIFEST = "extern/re-setup-kit/tools/files_manifest.py"
+
+
+def write_files_record(root, folder):
+    """FILES_RECORD at the top of `folder`, by the kit's tool, on the finished folder: after its last file is in place,
+    before anything packs or seals it (the zip, the Setup, the AppImage, a Mac app's signature). The program finds it
+    in its own folder (SDL_GetBasePath: a Mac app's Contents/Resources, an AppImage's usr/bin)."""
+    subprocess.run([sys.executable, "-I", str(root / FILES_MANIFEST), str(folder)], check=True, stdout=subprocess.DEVNULL)
+
+
+def check_files_record(folder):
+    """`folder`'s FILES_RECORD names every file in it (but itself), each with its SHA-256, and nothing that is gone."""
+    record = folder / FILES_RECORD
+    if not record.is_file():
+        raise RuntimeError(f"No {FILES_RECORD} in {folder}")
+    named = {}
+    for line in record.read_text(encoding="utf-8").splitlines():
+        found = re.fullmatch(r"([0-9a-f]{64})  (.+)", line)
+        if not found:
+            raise RuntimeError(f"{record}: not a record line: {line!r}")
+        named[found.group(2)] = found.group(1)
+    there = {f.relative_to(folder).as_posix() for f in folder.rglob("*")
+             if f.is_file() and not f.is_symlink() and f.name != FILES_RECORD}
+    wrong = sorted(set(named) ^ there) + sorted(n for n in set(named) & there
+                                               if hashlib.sha256((folder / n).read_bytes()).hexdigest() != named[n])
+    if wrong:
+        raise RuntimeError(f"{record} doesn't match its folder: " + ", ".join(wrong[:10]))
+
+
 def check_paths(root, folder, *extra):
     """No local path, user name or file of the game in anything shipped (tools/package/check_paths.py), nor the folders
     the build ran in (`extra`: the tree and SDL's source, which __FILE__ would name)."""
@@ -486,6 +532,7 @@ def package(root, build, sdl, output, label, game=None, installer=False, tools=N
     require_libraries(stage, "SDL3.dll" if windows else "libSDL3.so*")
     stage_common(root, build, sdl, stage)
     check_paths(root, stage, root, sdl)
+    write_files_record(root, stage)  # the zip, the tarball and the Setup carry it
     archive = output / (name + (".zip" if windows else ".tar.gz"))
     if windows:
         with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as target:
@@ -508,6 +555,7 @@ def package(root, build, sdl, output, label, game=None, installer=False, tools=N
             source.extractall(extracted, filter="data")
     executable = extracted / name / program
     check_notices(extracted / name / "licenses")
+    check_files_record(extracted / name)
     if not windows:
         run("ldd", str(executable))
     smoke(executable, game)
@@ -601,8 +649,9 @@ def appimage(root, stage, output, label, tools, game, sdl):
                LD_LIBRARY_PATH=str(stage.resolve()) + os.pathsep + os.environ.get("LD_LIBRARY_PATH", ""))
     run(str(tools / "linuxdeploy-x86_64.AppImage"), "--appdir", str(appdir), "-e", str(bin_dir / PROGRAM),
         "-d", str(root / "tools/package/mechwarrior.desktop"), "-i", str(root / "tools/package/mechwarrior.png"), env=env)
-    smoke(bin_dir / PROGRAM, game)
     check_paths(root, appdir, root, sdl)
+    write_files_record(root, bin_dir)  # after linuxdeploy (it changes the program), before the image; before the smoke too
+    smoke(bin_dir / PROGRAM, game)
     image = output / f"{STEM}-{label}-x86_64.AppImage"
     run(str(tools / "appimagetool-x86_64.AppImage"), "--runtime-file", str(tools / "runtime-x86_64"), str(appdir), str(image), env=env)
     result = subprocess.run([str(image.resolve()), "--help"], capture_output=True, text=True, timeout=60, env=env)
@@ -615,6 +664,7 @@ def appimage(root, stage, output, label, tools, game, sdl):
     unpacked.mkdir()
     subprocess.run([str(image.resolve()), "--appimage-extract"], cwd=unpacked, stdout=subprocess.DEVNULL, check=True, timeout=600)
     program = unpacked / "squashfs-root/usr/bin" / PROGRAM
+    check_files_record(program.parent)
     check_stamp(program, label)
     check_notices(unpacked / f"squashfs-root/usr/share/doc/{PROGRAM}/licenses")
     smoke(program, game)
@@ -715,8 +765,12 @@ def package_mac(root, build, sdl, output, label, game):
                                                       check=True).stdout)
     with open(app / "Contents/Info.plist", "wb") as f:
         plistlib.dump(mac_plist(label, minos.group(1) if minos else "12.0"), f)
+    # The record of Contents/Resources, where the program looks (SDL_GetBasePath), written before the signature seals
+    # it: codesign refuses a plain file at the top of Contents, and Info.plist and the programs are the signature's.
+    write_files_record(root, resources)
     # Signed before the smoke test, so a release's hardened runtime is what is started.
     sign_app(root, app, frameworks, exe, str(root / "tools/package/mechwarrior.entitlements"))
+    check_files_record(resources)
     smoke(exe, game)
 
     dmg = output / f"{STEM}-{label}-mac.dmg"
@@ -732,6 +786,7 @@ def package_mac(root, build, sdl, output, label, game):
     shutil.copy2(resources / "README.txt", dmg_stage / "Read me.txt")
     check_paths(root, dmg_stage, root, sdl)
     check_notices(dmg_stage / app.name / "Contents/Resources/licenses")
+    check_files_record(dmg_stage / app.name / "Contents/Resources")
     run("hdiutil", "create", "-volname", APP_NAME, "-srcfolder", str(dmg_stage), "-ov", "-format", "UDZO", str(dmg),
         stdout=subprocess.DEVNULL)
     shutil.rmtree(dmg_stage)

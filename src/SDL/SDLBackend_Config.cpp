@@ -95,6 +95,12 @@ bool MwSdlLoadTimingConfiguration(const char *path,bool optional)
 
 /* The player's MechWarrior.ini, in the write directory beside the saves. It
  * is optional and holds only the keys the player set (or changed in play). */
+/* The settings before the player's file: the program's defaults and the
+ * packaged MechWarrior.ini, which SDLMain reads first. RESET SETTINGS goes
+ * back to them. */
+static uint32_t packagedTickMs;
+static uint8_t packagedSpeed;
+static bool packagedKept;
 bool MwSdlLoadUserConfiguration(void)
 {
     char directory[4096];
@@ -103,8 +109,29 @@ bool MwSdlLoadUserConfiguration(void)
     const char *separator=length && (directory[length-1]=='/' || directory[length-1]=='\\')?"":"/";
     if (snprintf(userConfigurationPath,sizeof(userConfigurationPath),"%s%sMechWarrior.ini",directory,separator)>=(int)sizeof(userConfigurationPath))
     {userConfigurationPath[0]=0;return false;}
+    packagedTickMs=mwSdlCombatTickMs;packagedSpeed=mwSdlCombatSpeed;packagedKept=true;
     return MwSdlLoadTimingConfiguration(userConfigurationPath,true);
 }
+/* RESET SETTINGS (the kit's menu): the player's MechWarrior.ini keeps only
+ * game_folder, where the game's files are, which is no setting; the combat
+ * tick and speed are the packaged ones again at once. The music plays on as
+ * it is until the next start, which reads it from the packaged file. */
+bool MwSdlResetUserConfiguration(void)
+{
+    if (!userConfigurationPath[0] || !packagedKept) return false;
+    if (mwSdlGameFolder[0])
+    {
+        FILE *file=fopen(userConfigurationPath,"w");
+        if (!file) return false;
+        bool written=fprintf(file,"game_folder=%s\n",mwSdlGameFolder)>0;
+        if (fclose(file)) written=false;
+        if (!written) return false;
+    }
+    else if (remove(userConfigurationPath) && errno!=ENOENT) return false;
+    mwSdlCombatTickMs=packagedTickMs;mwSdlCombatSpeed=packagedSpeed;
+    return true;
+}
+const char *MwSdlUserConfigurationPath(void) {return userConfigurationPath;}
 void MwSdlSaveUserSetting(const char *key,unsigned value)
 {char text[16];snprintf(text,sizeof(text),"%u",value);MwSdlSaveUserText(key,text);}
 /* Replace (or add) one key's line, keeping the player's other lines. */

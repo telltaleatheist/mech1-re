@@ -119,6 +119,7 @@ void MwSdlOpenLog(const std::string &path,bool always)
     setvbuf(stderr,NULL,_IONBF,0);
     logPath=path;
 }
+const std::string &MwSdlLogPath(void) {return logPath;}
 void MwSdlRefuseStart(const std::string &why)
 {
     fprintf(stderr,"%s\n",why.c_str());fflush(stderr);

@@ -193,7 +193,7 @@ def main():
     # background app (never activated, so it can't take the keyboard).
     headless = ({"MW1O_HIDDEN": "1", "SDL_MAC_BACKGROUND_APP": "1"} if sys.platform == "darwin"
                 else {"SDL_VIDEO_DRIVER": "offscreen"})
-    env = dict(os.environ, **headless, SDL_AUDIO_DRIVER="dummy",
+    env = dict(os.environ, **headless, SDL_AUDIO_DRIVER="dummy", RE_KIT_TEST="1",
                MECHWARRIOR_SAVE_DIRECTORY=saves, MECHWARRIOR_DEBUG_CONTROL_DIRECTORY=ctl,
                MECHWARRIOR_DEBUG_BIOS_TICKS=args.bios_ticks)
     if args.real_clock:

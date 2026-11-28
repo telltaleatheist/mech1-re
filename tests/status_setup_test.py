@@ -182,8 +182,8 @@ def main():
     p, _ = run(a.program, ["--setup"], screen)
     out = p.stdout.splitlines()
     check(p.returncode == 1, "break: the screen with a pick that is not the game ends cancelled (%d)" % p.returncode)
-    check("setup: screen find: FIND THE GAME, QUIT" in out and "setup: header MECHWARRIOR 1" in out,
-          "the screen's log: the find screen, MW1's header")
+    check("setup: screen files: PICK A FILE, PICK A FOLDER, SEARCH AGAIN, QUIT" in out and "setup: header MECHWARRIOR 1" in out,
+          "the screen's log: the files screen (no copy found), MW1's header")
     check("setup: the file picker asked for" in out and not any(l.startswith("setup: screen confirm") for l in out),
           "break: not the game, not offered")
     check(any(l.startswith("setup: font ") and l.endswith("SairaCondensed-Bold.ttf") for l in out),

@@ -4,6 +4,7 @@
 #pragma once
 #include <stddef.h>
 #include <rekit/sdl/setup_screen.h>
+#include "SDLMenu.h"
 #include <string>
 
 /* --status: one JSON line on stdout, exit 0; no window, nothing written. */
@@ -35,3 +36,6 @@ void MwSetupRecordProgram(void);
 int MwSetupResolveGame(bool setupOnly,char *folder,size_t size);
 /* MW1's recipe for the kit's setup screen, for a fresh setup of the player's folder `user` (tests/setup_download_test.cpp). */
 rekit::sdl::Game MwSetupKitGame(const std::string &user);
+/* MW1's part of the kit's menu over the game (SDLMenu.h): its words, the player's folder, the log, the file check,
+ * RESET SETTINGS and UPDATES. */
+MwSdlMenuRecipe MwSetupMenuRecipe(void);

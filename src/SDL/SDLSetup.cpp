@@ -1,11 +1,14 @@
 #include "SDLSetup.h"
 #include "SDLBackend.h"
+#include "SDLMenu.h"
+#include "SDLNotice.h"
 #include "Setup/FileCheck.h"
 #include "Setup/ProgramRecord.h"
 #include "Setup/Setup.h"
 
 #include "mechwarrior/problem.h"
 
+#include <rekit/sdl/game_menu.h>
 #include <rekit/sdl/pickers.h>
 #include <rekit/sdl/setup_screen.h>
 #include <rekit/sdl/setup_serve.h>
@@ -17,12 +20,23 @@
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
+#include <cctype>
 #include <cstring>
 #include <exception>
 #include <filesystem>
 #include <iterator>
 #include <string>
 #include <vector>
+
+#if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#endif
 
 #ifndef MECHWARRIOR_VERSION
 #define MECHWARRIOR_VERSION "dev"
@@ -124,6 +138,11 @@ rekit::sdl::Game kit_game(const std::string& user, const std::string& in_use, bo
   };
   std::FILE* const log = served ? stderr : stdout;
   g.describe = [imported, log](const rekit::Found& f) { return describe(f, imported, log); };
+  // A copy found on this computer is shown first, with describe's words, when its edition is unknown or its files
+  // aren't all the known ones; else it is installed at once.
+  g.asks_first = [imported](const rekit::Found& f) {
+    return setup::edition(f.version).empty() || !setup::files_pick_note(setup::check_found(f, imported)).empty();
+  };
   g.recognise = setup::recognise;
   g.install = [imported](const rekit::Found& f, const std::string& out, const std::string&, const rekit::sdl::ProgressFn& progress) {
     const setup::Installed r = setup::install(f, out, [&](double at, const std::string& file) {
@@ -224,7 +243,114 @@ void open_served_log(const std::string& user) {
   if (std::freopen(path.c_str(), "w", stderr)) std::setvbuf(stderr, nullptr, _IONBF, 0);
 }
 
+#if defined(_WIN32)
+// Inno Setup's record of an install (tools/package/installer.iss: its AppId) in `root` (this user's registry or the
+// machine's), naming `folder`.
+bool setup_record_names(HKEY root, const std::filesystem::path& folder) {
+  HKEY key;
+  if (RegOpenKeyExW(root, L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{56BFB0C4-541E-42DD-909E-874C8EDA0D47}_is1", 0,
+                    KEY_READ | KEY_WOW64_64KEY, &key) != ERROR_SUCCESS)
+    return false;
+  wchar_t value[4096] = {};
+  DWORD size = sizeof(value) - sizeof(wchar_t), type = 0;
+  const bool read = RegQueryValueExW(key, L"InstallLocation", nullptr, &type, reinterpret_cast<BYTE*>(value), &size) == ERROR_SUCCESS &&
+                    type == REG_SZ;
+  RegCloseKey(key);
+  std::error_code ec;
+  return read && std::filesystem::equivalent(std::filesystem::path(value), folder, ec);
+}
+#endif
+
+// How this program was installed, for the menu's UPDATES (rekit/update.h): a build that is no release is never
+// updated; a Mac app; Inno Setup's install (its uninstaller beside the program), for this user or every user; an
+// AppImage; else the folder a zip or tarball was unpacked into.
+rekit::InstallKind install_kind() {
+  using K = rekit::InstallKind;
+  if (!*setup::build_tag()) return K::kDevelopment;
+  const std::string self = setup::self_path();
+  if (self.empty()) return K::kUnknown;
+  const std::filesystem::path dir = std::filesystem::path(self).parent_path();
+#if defined(__APPLE__)
+  const std::filesystem::path contents = dir.parent_path();
+  return dir.filename() == "MacOS" && contents.filename() == "Contents" && contents.parent_path().extension() == ".app" ? K::kMacApp
+                                                                                                                      : K::kUnknown;
+#elif defined(_WIN32)
+  std::error_code ec;
+  if (!std::filesystem::exists(dir / "unins000.exe", ec)) return K::kFolder;
+  if (setup_record_names(HKEY_CURRENT_USER, dir)) return K::kWindowsSetupUser;
+  return setup_record_names(HKEY_LOCAL_MACHINE, dir) ? K::kWindowsSetupMachine : K::kUnknown;
+#else
+  const char *appimage = std::getenv("APPIMAGE"), *appdir = std::getenv("APPDIR");
+  if (appimage && appdir && setup::started_file(self, appimage, appdir) == appimage) return K::kAppImage;
+  return K::kFolder;
+#endif
+}
+
+// The release's file an install of this kind updates from (tools/build_package.py names them).
+std::string release_file(rekit::InstallKind kind) {
+  using K = rekit::InstallKind;
+  switch (kind) {
+    case K::kWindowsSetupUser:
+    case K::kWindowsSetupMachine: return "MW1-Rebuild-{tag}-Setup.exe";
+    case K::kMacApp: return "MW1-Rebuild-{tag}-mac.dmg";
+    case K::kAppImage: return "MW1-Rebuild-{tag}-x86_64.AppImage";
+#if defined(_WIN32)
+    case K::kFolder: return "MW1-Rebuild-{tag}-win64.zip";
+#else
+    case K::kFolder: return "MW1-Rebuild-{tag}-linux-x86_64.tar.gz";
+#endif
+    default: return "";
+  }
+}
+
+// What the menu says and does for MW1 (SDLMenu.h), for the game folder in use.
+rekit::sdl::MenuHooks menu_hooks(const std::string& game) {
+  namespace fs = std::filesystem;
+  rekit::sdl::MenuHooks h;
+  const std::string user = setup::user_folder();  // MECHWARRIOR_SAVE_DIRECTORY when the run names one
+  const bool imported = setup::story_imported(user);
+  h.title = setup::kTitle;
+  h.version = MECHWARRIOR_VERSION;
+  h.user_folder = user;
+  h.log_file = MwSdlLogPath();
+  h.files_in_use = game;
+  h.report_url = "https://github.com/telltaleatheist/mech1-re/issues";
+  h.install = install_kind();
+  // The program's folder: on the Mac the app's Contents/Resources, where the package's record is (the signature
+  // seals the rest); an AppImage's usr/bin.
+  h.program_dir = program_dir();
+  h.leave_out = setup::leave_out();
+  // A copy installed before the kit kept records: the program's own check of the files it knows.
+  h.check_game_files = [game, imported] {
+    std::vector<std::string> problems;
+    if (const std::string note = setup::files_note(setup::check_folder(game, imported)); !note.empty()) problems.push_back(note);
+    return problems;
+  };
+  const std::string settings = MwSdlUserConfigurationPath();
+  if (!settings.empty()) h.settings = {settings};
+  h.reset_settings = [] { return MwSdlResetUserConfiguration(); };
+  // UPDATES: the Rebuild's releases (mw1r-vX.Y.Z on mech1-re), found through the launcher's signed catalog; before an
+  // update the saves, the story and the settings are copied to Backups. A build that is no release has no version to
+  // compare: no check at all (an empty repo).
+  if (!*setup::build_tag()) return h;
+  rekit::sdl::UpdateSource& u = h.update;
+  u.recipe = {setup::kOriginalKey, "mech1-re", "mw1r-v", setup::build_tag(), release_file(h.install)};
+  u.catalogs.assign(std::begin(setup::kOriginalCatalogs), std::end(setup::kOriginalCatalogs));
+  u.keys = {setup::kCatalogKey};
+  std::error_code ec;
+  for (fs::directory_iterator it(user, ec), end; !ec && it != end; it.increment(ec)) {
+    std::string ext = it->path().extension().string();
+    for (char& c : ext) c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+    if (ext == ".GAM" && it->is_regular_file(ec)) u.keep.push_back(it->path().string());
+  }
+  u.keep.push_back((fs::path(user) / "story").string());
+  if (!settings.empty()) u.keep.push_back(settings);
+  return h;
+}
+
 }  // namespace
+
+MwSdlMenuRecipe MwSetupMenuRecipe(void) { return MwSdlMenuRecipe{menu_hooks, theme}; }
 
 rekit::sdl::Game MwSetupKitGame(const std::string& user) { return kit_game(user, "", false); }
 

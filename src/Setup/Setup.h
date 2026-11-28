@@ -7,6 +7,7 @@
 #pragma once
 
 #include <rekit/family_folder.h>
+#include <rekit/files.h>
 #include <rekit/sources.h>
 #include <rekit/search.h>
 #include <rekit/status.h>
@@ -56,6 +57,8 @@ bool has_content(const std::string& dir);
 std::string unmoved_folder(const std::string& folder);
 // <user folder>/install: where the setup puts the game's files unless the player picks another folder.
 std::string default_install(const std::string& user);
+// The files an install leaves out on purpose though a copy carries them (the menu's CHECK MY FILES passes them over).
+const std::vector<rekit::LeaveOut>& leave_out();
 
 // The one-time carry-over from the previews' folder: every file of `from` copied into `to` (made when missing)
 // where `to` has none of that name; nothing is ever moved, deleted or overwritten. A marker in `to` makes it once

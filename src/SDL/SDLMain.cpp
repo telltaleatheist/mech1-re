@@ -120,7 +120,7 @@ int main(int argc,char **argv)
         "setup (pick your copy, its folder or the archive it came in: it is copied beside the saves); the log and F12\n"
         "captures then go beside the saves. --status prints what is found as JSON; --setup only sets the game up, with more words as the launcher asks it.\n"
         "EGA; music= in MechWarrior.ini; arrows and Enter; Ctrl+Escape quits; F12 captures; F11 stops Support pilot;\n"
-        "- and + change the combat speed.\n",name,name,name);
+        "- and + change the combat speed; Shift+Alt+F1 (Cmd+Shift+F1 on a Mac) opens the setup menu over the game.\n",name,name,name);
     if (unknown) return Refuse(2,std::string("It was started with an option it doesn't know: ")+unknown+". --help lists what it knows.");
     return help?0:Refuse(2,"It was started with more arguments than it knows.");}
     SDL_SetMainReady();
@@ -143,6 +143,7 @@ int main(int argc,char **argv)
     printf("Combat tick: %u ms at 1x, speed %ux (- and + in combat); PIT/audio keep hardware rate.\n",
         mwSdlCombatTickMs,(unsigned)mwSdlCombatSpeed);
     fflush(stdout); /* Keep startup information live when the launcher logs it. */
+    MwSdlSetMenuRecipe(MwSetupMenuRecipe()); /* the kit's menu over the game, started with it */
     char installedFolder[4096],captures[4200];
     if (installed)
     {

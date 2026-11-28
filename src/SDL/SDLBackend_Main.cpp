@@ -174,6 +174,7 @@ bool MwSdlInitialize(const char *gameDirectory,const char *captureDirectory)
     initialized=true;
     if (!MwSdlInitializeVideo(captureDirectory) || !MwSdlInitializeAudio()) return RefuseStart();
     MwSdlInitializeTimer();MwSdlInitializeInput();
+    MwSdlStartMenu(gameDirectory);
     MwSdlInitializeCombatHardware();
     if (!MwSdlInitializeCombatProcess(gameDirectory)) return RefuseStart();
     mwHostValidateFileDestination=ValidateFileDestination;
@@ -200,6 +201,7 @@ void MwSdlShutdown(void)
     MwSdlShutdownDebugControl();
     mwHostValidateFileDestination=NULL;
     ReleaseChildResources();
+    MwSdlStopMenu();
     MwSdlShutdownAudio();MwSdlShutdownVideo();
     SDL_Quit();initialized=false;
 }

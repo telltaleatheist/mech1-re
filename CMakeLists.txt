@@ -407,9 +407,11 @@ if(MECHWARRIOR_BUILD_SDL)
         src/SDL/SDLBackend_DebugControl.cpp
         src/SDL/SDLBackend_Pilot.cpp src/Support/SupportPilot.cpp src/Support/SupportPilotObservation.cpp
         src/SDL/SDLBackend_Video.cpp src/SDL/SDLPicture.cpp src/SDL/SDLBackend_CombatPlatform.cpp
-        src/SDL/SDLBackend_CombatProcess.cpp src/SDL/SDLBackend_Audio.cpp)
+        src/SDL/SDLBackend_CombatProcess.cpp src/SDL/SDLBackend_Audio.cpp
+        src/SDL/SDLMenu.cpp)
     target_link_libraries(mechwarrior_sdl PUBLIC mechwarrior_original SDL3::SDL3 mechwarrior_audio
-                          mechwarrior_setup)  # the player's folder's names and order (src/Setup/Setup.h)
+                          mechwarrior_setup  # the player's folder's names and order (src/Setup/Setup.h)
+                          rekit_sdl)  # the kit's menu over the game (src/SDL/SDLMenu.cpp)
     if(NOT MSVC)
         target_link_libraries(mechwarrior_sdl PUBLIC m)
     endif()
@@ -456,6 +458,11 @@ if(MECHWARRIOR_BUILD_SDL)
         target_link_libraries(picture_test PRIVATE mechwarrior_sdl)
         target_include_directories(picture_test PRIVATE src/SDL)
         add_test(NAME picture COMMAND picture_test "${CMAKE_CURRENT_BINARY_DIR}/picture_work")
+        # The kit's menu over the game, the host's half (src/SDL/SDLMenu.cpp), and RESET SETTINGS' part: hidden, silent.
+        add_executable(menu_host_test tests/menu_host_test.cpp)
+        target_link_libraries(menu_host_test PRIVATE mechwarrior_sdl)
+        target_include_directories(menu_host_test PRIVATE src/SDL)
+        add_test(NAME menu_host COMMAND menu_host_test "${CMAKE_CURRENT_BINARY_DIR}/menu_host_work")
         # The music setting and its old keys (src/SDL/SDLBackend_Config.cpp).
         add_executable(music_setting_test tests/music_setting_test.cpp)
         target_include_directories(music_setting_test PRIVATE src/SDL)
@@ -583,12 +590,17 @@ if(MECHWARRIOR_BUILD_SDL)
         target_link_options(mechwarrior PRIVATE $<$<CONFIG:Release>:/DEBUG:FULL>)
     endif()
 endif()
-# Every test runs as a background app on macOS (SDL reads the hint from the
-# environment): a test's SDL never becomes a foreground app or takes the
-# keyboard from whoever is at the machine.
-if(APPLE AND MECHWARRIOR_BUILD_TESTS)
+# Every test runs with the kit's test switch (RE_KIT_TEST=1: the in-game
+# menu's keys and hint off, no network), and on macOS as a silent background
+# app (SDL reads both from the environment): a test's SDL never becomes a
+# foreground app, takes the keyboard from whoever is at the machine, or plays
+# through the speakers.
+if(MECHWARRIOR_BUILD_TESTS)
     get_property(mw1_tests DIRECTORY PROPERTY TESTS)
     if(mw1_tests)
-        set_property(TEST ${mw1_tests} APPEND PROPERTY ENVIRONMENT "SDL_MAC_BACKGROUND_APP=1")
+        set_property(TEST ${mw1_tests} APPEND PROPERTY ENVIRONMENT "RE_KIT_TEST=1")
+        if(APPLE)
+            set_property(TEST ${mw1_tests} APPEND PROPERTY ENVIRONMENT "SDL_MAC_BACKGROUND_APP=1" "SDL_AUDIO_DRIVER=dummy")
+        endif()
     endif()
 endif()

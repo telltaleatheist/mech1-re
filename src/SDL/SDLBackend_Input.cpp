@@ -154,7 +154,9 @@ bool MwSdlInitializeJoysticks(void)
 MwJoystickState MwSdlReadJoystick(uint16_t joystick)
 {
     MwJoystickState state={false,0,0,false,false};
-    if (joystick>1 || !joysticksEnabled) return state;
+    /* Nothing pressed while the kit's menu has the game paused: its loops
+     * still poll, and the stick is the menu's then. */
+    if (joystick>1 || !joysticksEnabled || MwSdlClockPaused()) return state;
     SDL_UpdateJoysticks();
     if (SDL_Gamepad *gamepad=gamepads[joystick])
     {
@@ -169,65 +171,69 @@ MwJoystickState MwSdlReadJoystick(uint16_t joystick)
     }
     return state;
 }
+/* One event of the game's: every event, unless the kit's menu keeps it
+ * (SDLMenu.cpp hands the rest here, in order). */
+void MwSdlHandleEvent(const SDL_Event &event)
+{
+    if(event.type==SDL_EVENT_KEY_DOWN && event.key.scancode==SDL_SCANCODE_F11)
+    {MwSdlStopSupportPilot();return;}
+    if(event.type==SDL_EVENT_KEY_DOWN && (event.key.scancode==SDL_SCANCODE_P || event.key.scancode==SDL_SCANCODE_ESCAPE))
+        MwSdlStopSupportPilot(); /* Explicit manual pause/retreat always takes over. */
+    if (event.type==SDL_EVENT_QUIT) {MwSdlRequestQuit();return;}
+    if (MwSdlHandleJoystickEvent(event) || MwSdlHandleRenderEvent(event)) return;
+    if (event.type==SDL_EVENT_WINDOW_EXPOSED) {MwSdlPresentVideo(true);return;}
+    if (event.type==SDL_EVENT_WINDOW_SHOWN || event.type==SDL_EVENT_WINDOW_RESIZED
+        || event.type==SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED || event.type==SDL_EVENT_WINDOW_MAXIMIZED
+        || event.type==SDL_EVENT_WINDOW_RESTORED || event.type==SDL_EVENT_WINDOW_FOCUS_GAINED
+        || event.type==SDL_EVENT_WINDOW_DISPLAY_CHANGED || event.type==SDL_EVENT_WINDOW_ENTER_FULLSCREEN
+        || event.type==SDL_EVENT_WINDOW_LEAVE_FULLSCREEN)
+    {MwSdlRepeatPresent();return;}
+    if (event.type==SDL_EVENT_MOUSE_BUTTON_UP)
+    {
+        uint16_t button=event.button.button==SDL_BUTTON_LEFT?MOUSE_BUTTON_LEFT:
+            event.button.button==SDL_BUTTON_RIGHT?MOUSE_BUTTON_RIGHT:UINT16_MAX;
+        if (button<MOUSE_BUTTON_COUNT && mouseReleaseCounts[button]!=UINT16_MAX) ++mouseReleaseCounts[button];
+        return;
+    }
+    if (event.type==SDL_EVENT_MOUSE_MOTION)
+    {
+        float logicalXMotion,logicalYMotion;
+        MwSdlConvertMouseMotion(event.motion.xrel,event.motion.yrel,&logicalXMotion,&logicalYMotion);
+        mouseXMotion+=logicalXMotion;mouseYMotion+=logicalYMotion;
+        return;
+    }
+    if (mwSdlCombatActive && (event.type==SDL_EVENT_KEY_DOWN || event.type==SDL_EVENT_KEY_UP)
+        && (event.key.scancode==SDL_SCANCODE_MINUS || event.key.scancode==SDL_SCANCODE_EQUALS))
+    {
+        /* The host's speed keys: main-row - and =/+ (BTECH reads neither;
+         * its keypad - and + select weapons and stay the game's). */
+        if (event.type==SDL_EVENT_KEY_DOWN && !event.key.repeat)
+            MwSdlStepCombatSpeed(event.key.scancode==SDL_SCANCODE_EQUALS?1:-1);
+        return;
+    }
+    if (mwSdlCombatActive && (event.type==SDL_EVENT_KEY_DOWN || event.type==SDL_EVENT_KEY_UP) && event.key.scancode!=SDL_SCANCODE_F12)
+    {
+        uint8_t key=KeyNumber(event.key.scancode);
+        if (key) QueueCombatKey(key,event.type==SDL_EVENT_KEY_UP);
+        return;
+    }
+    if (event.type!=SDL_EVENT_KEY_DOWN) return;
+    if (event.key.scancode==SDL_SCANCODE_F12)
+    {
+        char stem[48];snprintf(stem,sizeof(stem),"capture-%u",captureNumber++);
+        if (!MwSdlCapture(stem)) fprintf(stderr,"Capture failed or file already exists.\n");
+        return;
+    }
+    MwCampaignKey key;
+    if (CampaignKey(event.key.scancode,event.key.key,event.key.mod,&key)) MwSdlQueueCampaignKey(key);
+}
 void MwSdlPollEvents(void)
 {
     MwSdlPollDebugControl();
     MwSdlPollSupportPilot();
     SDL_Event event;
-    while (SDL_PollEvent(&event))
-    {
-        if(event.type==SDL_EVENT_KEY_DOWN && event.key.scancode==SDL_SCANCODE_F11)
-        {MwSdlStopSupportPilot();continue;}
-        if(event.type==SDL_EVENT_KEY_DOWN && (event.key.scancode==SDL_SCANCODE_P || event.key.scancode==SDL_SCANCODE_ESCAPE))
-            MwSdlStopSupportPilot(); /* Explicit manual pause/retreat always takes over. */
-        if (event.type==SDL_EVENT_QUIT) {MwSdlRequestQuit();continue;}
-        if (MwSdlHandleJoystickEvent(event) || MwSdlHandleRenderEvent(event)) continue;
-        if (event.type==SDL_EVENT_WINDOW_EXPOSED) {MwSdlPresentVideo(true);continue;}
-        if (event.type==SDL_EVENT_WINDOW_SHOWN || event.type==SDL_EVENT_WINDOW_RESIZED
-            || event.type==SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED || event.type==SDL_EVENT_WINDOW_MAXIMIZED
-            || event.type==SDL_EVENT_WINDOW_RESTORED || event.type==SDL_EVENT_WINDOW_FOCUS_GAINED
-            || event.type==SDL_EVENT_WINDOW_DISPLAY_CHANGED || event.type==SDL_EVENT_WINDOW_ENTER_FULLSCREEN
-            || event.type==SDL_EVENT_WINDOW_LEAVE_FULLSCREEN)
-        {MwSdlRepeatPresent();continue;}
-        if (event.type==SDL_EVENT_MOUSE_BUTTON_UP)
-        {
-            uint16_t button=event.button.button==SDL_BUTTON_LEFT?MOUSE_BUTTON_LEFT:
-                event.button.button==SDL_BUTTON_RIGHT?MOUSE_BUTTON_RIGHT:UINT16_MAX;
-            if (button<MOUSE_BUTTON_COUNT && mouseReleaseCounts[button]!=UINT16_MAX) ++mouseReleaseCounts[button];
-            continue;
-        }
-        if (event.type==SDL_EVENT_MOUSE_MOTION)
-        {
-            float logicalXMotion,logicalYMotion;
-            MwSdlConvertMouseMotion(event.motion.xrel,event.motion.yrel,&logicalXMotion,&logicalYMotion);
-            mouseXMotion+=logicalXMotion;mouseYMotion+=logicalYMotion;
-            continue;
-        }
-        if (mwSdlCombatActive && (event.type==SDL_EVENT_KEY_DOWN || event.type==SDL_EVENT_KEY_UP)
-            && (event.key.scancode==SDL_SCANCODE_MINUS || event.key.scancode==SDL_SCANCODE_EQUALS))
-        {
-            /* The host's speed keys: main-row - and =/+ (BTECH reads neither;
-             * its keypad - and + select weapons and stay the game's). */
-            if (event.type==SDL_EVENT_KEY_DOWN && !event.key.repeat)
-                MwSdlStepCombatSpeed(event.key.scancode==SDL_SCANCODE_EQUALS?1:-1);
-            continue;
-        }
-        if (mwSdlCombatActive && (event.type==SDL_EVENT_KEY_DOWN || event.type==SDL_EVENT_KEY_UP) && event.key.scancode!=SDL_SCANCODE_F12)
-        {
-            uint8_t key=KeyNumber(event.key.scancode);
-            if (key) QueueCombatKey(key,event.type==SDL_EVENT_KEY_UP);
-            continue;
-        }
-        if (event.type!=SDL_EVENT_KEY_DOWN) continue;
-        if (event.key.scancode==SDL_SCANCODE_F12)
-        {
-            char stem[48];snprintf(stem,sizeof(stem),"capture-%u",captureNumber++);
-            if (!MwSdlCapture(stem)) fprintf(stderr,"Capture failed or file already exists.\n");
-            continue;
-        }
-        MwCampaignKey key;
-        if (CampaignKey(event.key.scancode,event.key.key,event.key.mod,&key)) MwSdlQueueCampaignKey(key);
-    }
+    while (SDL_PollEvent(&event)) MwSdlMenuEvent(event);
+    MwSdlMenuPump();
     if (quitRequested)
     {
         if (mwSdlCombatActive) {QueueCombatKey(COMBAT_KEY_CONTROL,false);QueueCombatKey(COMBAT_KEY_ESCAPE,false);quitRequested=false;}

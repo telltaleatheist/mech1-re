@@ -132,7 +132,9 @@ static bool Show(bool upload)
     bool shown=true;
     if (!texture) shown=(texture=MakeTexture(shownPixels))!=NULL;
     else if (upload) shown=SDL_UpdateTexture(texture,NULL,shownPixels,EGA_COLUMNS*sizeof(uint32_t));
-    shown=shown && SDL_SetRenderTarget(renderer,NULL) && MwSdlDrawPicture(renderer,texture) && SDL_RenderPresent(renderer);
+    /* The kit's menu or hint over the frame, when one shows (SDLMenu.cpp). */
+    shown=shown && SDL_SetRenderTarget(renderer,NULL) && MwSdlDrawPicture(renderer,texture) && MwSdlMenuOverlay(renderer)
+        && SDL_RenderPresent(renderer);
     if (shown) return true;
     if (!drawErrorSaid) fprintf(stderr,"MechWarrior: can't draw: %s\n",SDL_GetError());
     drawErrorSaid=true;
@@ -158,6 +160,7 @@ bool MwSdlHandleRenderEvent(const SDL_Event &event)
         deviceLost=true;
     }
     else if (event.type!=SDL_EVENT_RENDER_TARGETS_RESET) return false;
+    MwSdlMenuDeviceReset();
     MwSdlRepeatPresent();
     return true;
 }
@@ -171,6 +174,15 @@ bool MwSdlHandleRenderEvent(const SDL_Event &event)
 enum { HOST_REPEAT_SETTLE_NS=50000000,HOST_REPEAT_IDLE_NS=1000000000 };
 static uint64_t repeatPresentAt;
 void MwSdlRepeatPresent(void) {repeatPresentAt=1;}
+/* The frame shown again as it is, for the kit's menu over it (its picture
+ * changes while the game's doesn't, the game's clock paused). Like a repeat it
+ * touches neither displayedIndices nor the frame observer. */
+void MwSdlShowAgain(void)
+{
+    if (!renderer || presenting) return;
+    presenting=true;Show(false);presenting=false;
+}
+SDL_Window *MwSdlVideoWindow(void) {return window;}
 void MwSdlPresentVideo(bool force)
 {
     if (!renderer || presenting || !GameCanvas().shown()) return;

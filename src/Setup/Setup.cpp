@@ -222,6 +222,8 @@ Settled settle_user_folder(const std::string& folder, const std::string& preview
   return s;
 }
 
+const std::vector<rekit::LeaveOut>& leave_out() { return kLeaveOut; }
+
 std::string default_install(const std::string& user) {
   return user.empty() ? "" : (fs::path(user).lexically_normal() / "install").lexically_normal().string();
 }

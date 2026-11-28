@@ -26,10 +26,14 @@ in `data/music` and copied into the package's `licenses` folder; a package
 without them is refused. The music is played through TinySoundFont (MIT,
 `extern/TinySoundFont`, with its licence and pinned commit).
 
-The setup screen comes from re-setup-kit (MIT, `extern/re-setup-kit`), which
-carries stb_truetype and stb_image (public domain or MIT, the reader's choice)
-and miniz's inflate (MIT); their licences are in the kit's `third_party`
-folders and are copied into the package's `licenses` folder. The screen's
+The setup screen and the menu over the game (Shift+Alt+F1, Cmd+Shift+F1 on
+the Mac) come from re-setup-kit (MIT, `extern/re-setup-kit`), which carries
+stb_truetype and stb_image (public domain or MIT, the reader's choice), miniz's
+inflate (MIT) and Monocypher (CC0 or BSD 2-clause, for the signed catalog and
+updates); their licences are in the kit's `third_party` folders and are copied
+into the package's `licenses` folder. The kit's own text is Saira Condensed
+Bold and Medium (SIL Open Font License 1.1), built into the program; its
+licence is the package's `licenses/re-setup-kit-OFL.txt`. The setup screen's
 face is Saira Condensed Bold (SIL Open Font License 1.1, "Saira" a reserved
 name), unchanged from github.com/google/fonts `ofl/sairacondensed` at
 `06bfe0d62a98375cb09c942fa18e68bd32cff057`; it ships with its licence in

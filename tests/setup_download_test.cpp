@@ -1,5 +1,5 @@
 // The original files from the launcher's catalog (the kit's Game::original_catalogs): MW1's recipe names the catalog,
-// its key and the Rebuild's entry, and a fresh setup that finds no copy offers the download and gets it. The catalog
+// its key and the Rebuild's entry, and a fresh setup that finds no copy gets the download at once. The catalog
 // here is a local one, signed by the kit's test key, its source a zip built in the work folder (file:// stands in for
 // https://, REKIT_SETUP_ALLOW_FILE): nothing is fetched from the network. With the player's files (MW1O_GAME,
 // MW1O_BTECH_REFERENCE) the zip holds the game and NEV_UNIV.EXE, and the install is ready without it; without them
@@ -119,7 +119,8 @@ void recipe(const fs::path& work) {
 }
 
 #if REKIT_HAVE_LIBARCHIVE
-// A fresh setup that finds no copy: the download offered, pressed, fetched, and installed when it is the game.
+// A fresh setup that finds no copy: the download started at once (the small window), fetched, and installed when it
+// is the game.
 void download(const fs::path& work, const char* game, const char* ref) {
   const bool real = game && ref;
   std::string main_exe;
@@ -166,9 +167,10 @@ void download(const fs::path& work, const char* game, const char* ref) {
   const rekit::sdl::SetupResult r = rekit::sdl::run_setup(g, rekit::sdl::Theme{}, o);
 
   check(has(log, "start: no copy found on this computer"), "a fresh setup searched this computer first");
-  check(has(log, "screen find: DOWNLOAD THE GAME FILES, PICK MY OWN COPY, QUIT"), "no copy found: the download offered");
+  check(has(log, "window small") && has(log, "screen asking: USE MY OWN COPY INSTEAD, CANCEL"),
+        "no copy found: the download asked for at once, in the small window, the player's own copy offered instead");
   check(has(log, "work: GETTING THE ORIGINAL GAME FILES") && has(log, "original: downloaded MechWarrior_1989.zip"),
-        "the download pressed and fetched from the catalog's source");
+        "the download fetched from the catalog's source");
   check(pickers == 0, "no picker opened");
   if (real && !main_exe.empty()) {
     const fs::path out = o.default_out;

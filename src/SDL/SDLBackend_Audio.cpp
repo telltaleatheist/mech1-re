@@ -197,6 +197,21 @@ void MwSdlPlayTone(double frequency)
     if (frequency>0) mixer.tone().play(frequency);
     else mixer.tone().stop();
 }
+/* The game's clock paused (the kit's menu): the device stops asking, and on
+ * resume its timeline is moved on by the pause, so the frames it would have
+ * played meanwhile are not counted as played (they'd be late for good). */
+void MwSdlPauseAudio(void)
+{
+    if (audioStream) SDL_PauseAudioStreamDevice(audioStream);
+}
+void MwSdlResumeAudio(uint64_t pausedNanoseconds)
+{
+    if (!audioStream) return;
+    SDL_LockMutex(audioQueueMutex);
+    audioStartedNanoseconds+=pausedNanoseconds;
+    SDL_UnlockMutex(audioQueueMutex);
+    SDL_ResumeAudioStreamDevice(audioStream);
+}
 uint32_t MwSdlQueuedAudioMilliseconds(void)
 {
     int bytes=SDL_GetAudioStreamQueued(audioStream);

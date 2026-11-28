@@ -14,6 +14,8 @@ bool MwSdlScriptedRun(void);
  * game folder, else only where they would go nowhere (a Windows program with no
  * console and no redirection). */
 void MwSdlOpenLog(const std::string &path,bool always);
+/* The log MwSdlOpenLog opened; "" when the output goes where it went. */
+const std::string &MwSdlLogPath(void);
 /* Prints `why` to stderr and shows it, "MechWarrior couldn't start". */
 void MwSdlRefuseStart(const std::string &why);
 /* MECHWARRIOR_NOTICE_FILE, a test's stand-in for the box: the text is added to that file instead. */

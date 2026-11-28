@@ -22,7 +22,31 @@ static uint64_t speedNoticeUntil;
 static bool virtualClock;
 static uint64_t virtualNanoseconds;
 bool MwSdlVirtualClock(void) {return virtualClock;}
-uint64_t MwSdlNowNanoseconds(void) {return virtualClock?virtualNanoseconds:SDL_GetTicksNS();}
+/* The kit's menu over the game (SDLMenu.cpp) stops the game's time while it
+ * is open: the clock stands at the moment it opened, and the time it was open
+ * is taken out for good when it closes, so nothing catches up (no PIT edges,
+ * no combat ticks owed). The audio device waits with it. */
+static bool clockPaused;
+static uint64_t pausedAt,pausedTotal;
+uint64_t MwSdlNowNanoseconds(void)
+{
+    if (virtualClock) return virtualNanoseconds;
+    return (clockPaused?pausedAt:SDL_GetTicksNS())-pausedTotal;
+}
+bool MwSdlClockPaused(void) {return clockPaused;}
+void MwSdlPauseClock(void)
+{
+    if (clockPaused) return;
+    pausedAt=SDL_GetTicksNS();clockPaused=true;
+    MwSdlPauseAudio();
+}
+void MwSdlResumeClock(void)
+{
+    if (!clockPaused) return;
+    uint64_t paused=SDL_GetTicksNS()-pausedAt;
+    pausedTotal+=paused;clockPaused=false;
+    MwSdlResumeAudio(paused);
+}
 /* The host's idle (H4d), defined with the timer below. A wait's deadline, while
  * one runs, bounds it. */
 static void HostIdle(void);
@@ -132,8 +156,12 @@ void MwSdlWaitIdle(void)
  * the test clock it stays the 100 us step, so no log moves. */
 static void HostIdle(void)
 {
+    /* Paused (the kit's menu): no game time passes, the test clock's neither;
+     * the loop still polls, so the menu gets its input and frames. */
+    if (clockPaused) {SDL_DelayNS(HOST_IDLE_MAX_NS);return;}
     if (virtualClock) {virtualNanoseconds+=HOST_IDLE_WAIT_NS;return;}
-    uint64_t now=SDL_GetTicksNS(),wake=now+HOST_IDLE_MAX_NS;
+    /* Game time, as the deadlines are: the wait is the same span on the wall. */
+    uint64_t now=MwSdlNowNanoseconds(),wake=now+HOST_IDLE_MAX_NS;
     if (idleDeadline && idleDeadline<wake) wake=idleDeadline;
     double due=DeviceIrqEnabled(MwDeviceIrq::Timer)?nextIrq:DBL_MAX;
     double dueNanoseconds=(double)startNanoseconds+due*(double)HOST_NS_PER_SECOND/(double)HOST_PIT_CLOCK_HZ;

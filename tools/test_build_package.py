@@ -20,6 +20,7 @@ class PackageTests(unittest.TestCase):
                      "docs/THIRD_PARTY_NOTICES.md", "sdl/LICENSE.txt", "sdl/src/hidapi/LICENSE-bsd.txt",
                      "data/rules/units.json", "data/ui/hub.json", "data/music/soundfont_programs.txt", "extern/re-setup-kit/LICENSE",
                      "extern/re-setup-kit/third_party/stb/LICENSE", "extern/re-setup-kit/third_party/miniz/LICENSE",
+                     "extern/re-setup-kit/third_party/monocypher/LICENCE.md", "extern/re-setup-kit/assets/OFL.txt",
                      "extern/TinySoundFont/LICENSE"]:
             file = root / name
             file.parent.mkdir(parents=True, exist_ok=True)
@@ -34,7 +35,12 @@ class PackageTests(unittest.TestCase):
         (root / "build/soundfont").mkdir(parents=True)
         (root / "build/soundfont" / build_package.SOUNDFONT).write_bytes(b"fixture bank")
         (music / "soundfont_subset.sha256").write_text(hashlib.sha256(b"fixture bank").hexdigest() + "  x\n")
-        (root / "build/CMakeCache.txt").write_text(f"REKIT_LIBARCHIVE_LIB:FILEPATH={prefix / 'lib/libarchive.a'}\n")
+        (root / "build/CMakeCache.txt").write_text(f"REKIT_LIBARCHIVE_LIB:FILEPATH={prefix / 'lib/libarchive.a'}\n"
+                                                   f"REKIT_NOTICE_FILES:INTERNAL={root / 'extern/re-setup-kit/assets/OFL.txt'}\n")
+        # The kit's own tool writes the files' record (the real one: the record is checked in the package).
+        tool = root / build_package.FILES_MANIFEST
+        tool.parent.mkdir(parents=True, exist_ok=True)
+        tool.write_bytes((Path(build_package.__file__).resolve().parents[1] / build_package.FILES_MANIFEST).read_bytes())
         exe = root / "build/mechwarrior"
         exe.write_text('#!/bin/sh\n[ "$1" = --help ] && { echo "Usage: mw1r [<game folder>]"; exit 0; }\nexit 2\n')
         exe.chmod(0o755)
@@ -64,6 +70,12 @@ class PackageTests(unittest.TestCase):
             self.assertFalse([f for f in extracted.rglob("*") if any(n in f.name.lower() for n in build_package.REMOVED_LIBRARIES)])
             self.assertTrue((extracted / "licenses/stb-LICENSE").exists() and (extracted / "licenses/miniz-LICENSE").exists())
             self.assertTrue((extracted / "licenses/TinySoundFont-LICENSE").exists())
+            self.assertTrue((extracted / "licenses/re-setup-kit-OFL.txt").exists())
+            self.assertTrue((extracted / "licenses/monocypher-LICENCE.md").exists())
+            record = (extracted / build_package.FILES_RECORD).read_text(encoding="utf-8")
+            self.assertIn("  mw1r\n", record)
+            self.assertIn("  data/rules/units.json\n", record)
+            self.assertNotIn(build_package.FILES_RECORD, record)
             self.assertTrue((extracted / "licenses/hidapi-LICENSE-bsd.txt").exists())
             for name in ["libarchive-COPYING", "zlib-LICENSE", "xz-COPYING", "xz-COPYING.0BSD"]:
                 self.assertTrue((extracted / "licenses" / name).exists(), name)
@@ -231,7 +243,8 @@ class PackageTests(unittest.TestCase):
                 (licenses / name).write_text("text")
 
     def test_missing_kit_or_hidapi_licence_blocks_packaging(self):
-        for licence in ("extern/re-setup-kit/third_party/stb/LICENSE", "sdl/src/hidapi/LICENSE-bsd.txt"):
+        for licence in ("extern/re-setup-kit/third_party/stb/LICENSE", "sdl/src/hidapi/LICENSE-bsd.txt",
+                        "extern/re-setup-kit/assets/OFL.txt", "extern/re-setup-kit/third_party/monocypher/LICENCE.md"):
             with tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 self.fixture(root)
@@ -239,6 +252,23 @@ class PackageTests(unittest.TestCase):
                 with patch.object(build_package, "run"), patch.object(build_package, "platform_name", return_value="linux-x86_64"), self.assertRaisesRegex(RuntimeError, "Missing licence"):
                     build_package.package(root, root / "build", root / "sdl", root / "dist", "test")
                 self.assertFalse(list((root / "dist").glob("*.tar.gz")))
+
+    def test_the_files_record_is_checked(self):
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory) / "package"
+            (folder / "data").mkdir(parents=True)
+            (folder / "mw1r").write_bytes(b"program")
+            (folder / "data/a.json").write_bytes(b"data")
+            root = Path(build_package.__file__).resolve().parents[1]
+            build_package.write_files_record(root, folder)
+            build_package.check_files_record(folder)
+            (folder / "data/a.json").write_bytes(b"changed")
+            with self.assertRaisesRegex(RuntimeError, "data/a.json"):
+                build_package.check_files_record(folder)
+            build_package.write_files_record(root, folder)
+            (folder / "extra.txt").write_bytes(b"after the record")
+            with self.assertRaisesRegex(RuntimeError, "extra.txt"):
+                build_package.check_files_record(folder)
 
     def test_missing_archive_licence_or_library_blocks_packaging(self):
         for broken in ("licence", "library"):
