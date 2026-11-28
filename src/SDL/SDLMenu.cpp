@@ -2,8 +2,11 @@
 #include "SDLBackend.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <filesystem>
 #include <memory>
+#include <string>
 #include <utility>
+#include <vector>
 
 /* The host's half of the kit's menu (SDLMenu.h). The menu is a picture the
  * kit draws (RGBA at the window's pixel size), put over the game's frame just
@@ -24,6 +27,7 @@ enum { MENU_FRAME_NS=16000000 };  /* about 60 frames a second while it shows */
 /* The way out the menu asked for: after the event loop, never from inside the
  * kit (its object is destroyed on the way out). */
 bool exitAsked,setupAfter;
+std::string gameFolder;           /* the files in use, for the setup's way back to them */
 
 void DropPicture(void)
 {
@@ -50,8 +54,10 @@ void Draw(const rekit::sdl::MenuImage &image)
     if (SDL_RenderTexture(drawingOn,picture,NULL,NULL)) drew=true;
 }
 /* The program closes: the setup started first when CHANGE asked for it (in
- * its own window, as the kit's relaunch_for_setup does), then the host shut
- * down as at the end of a play, and the log flushed. */
+ * its own window, as the kit's relaunch_for_setup does: --setup --then-play,
+ * which starts the game again when the setup is done, with the files in use
+ * if the player cancels it or it fails), then the host shut down as at the
+ * end of a play, and the log flushed. */
 [[noreturn]] void ExitNow(void)
 {
     printf("menu: the game closes%s\n",setupAfter?" for its setup":"");
@@ -68,6 +74,13 @@ void MwSdlStartMenu(const char *gameDirectory)
 {
     if (menu || !recipe.hooks || !MwSdlVideoWindow()) return;
     rekit::sdl::MenuHooks hooks=recipe.hooks(gameDirectory?gameDirectory:"");
+    std::error_code ec;
+    gameFolder.clear();
+    if (gameDirectory && *gameDirectory)
+    {
+        std::filesystem::path whole=std::filesystem::absolute(std::filesystem::path(gameDirectory),ec);
+        gameFolder=ec?std::string(gameDirectory):whole.string();
+    }
     hooks.window=MwSdlVideoWindow();
     hooks.draw=Draw;
     hooks.deliver=[](const SDL_Event &event) {MwSdlHandleEvent(event);};
@@ -77,7 +90,9 @@ void MwSdlStartMenu(const char *gameDirectory)
     hooks.restart_for_setup=[] {
         /* Started now, while this one is still up: if it can't be, the game
          * goes on rather than leave the player with nothing. */
-        if (rekit::sdl::relaunch_for_setup({"--setup"})) exitAsked=setupAfter=true;
+        std::vector<std::string> args{"--setup","--then-play"};
+        if (!gameFolder.empty()) args.push_back(gameFolder);
+        if (rekit::sdl::relaunch_for_setup(args)) exitAsked=setupAfter=true;
         else fprintf(stderr,"menu: the setup could not be started; the game goes on\n");
     };
     exitAsked=setupAfter=drew=inEvent=false;lastShown=0;

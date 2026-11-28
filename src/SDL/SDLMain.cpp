@@ -94,31 +94,36 @@ int main(int argc,char **argv)
      * is read or written; --setup sets the game up and plays nothing. */
     if (argc==2 && !strcmp(argv[1],"--status")) return MwSetupPrintStatus();
     bool setupOnly=argc==2 && !strcmp(argv[1],"--setup");
-    bool setupWords=argc>2 && !strcmp(argv[1],"--setup"); /* Words it doesn't know: no game folder of that name is meant. */
+    /* The menu's CHANGE (SDLMenu.cpp): the setup, then the game, with the new
+     * files when it is done, else with the ones it had (the folder after it). */
+    bool thenPlay=(argc==3 || argc==4) && !strcmp(argv[1],"--setup") && !strcmp(argv[2],"--then-play");
+    const char *formerFolder=thenPlay && argc==4?argv[3]:NULL;
+    bool setupWords=argc>2 && !strcmp(argv[1],"--setup") && !thenPlay; /* Words it doesn't know: no game folder of that name is meant. */
     /* Any other word with a dash is an option it doesn't know (a folder of such a name is given as ./-name). */
     const char *unknown=NULL;
-    for (int index=1;index<argc && !unknown && !help && !setupOnly && !setupWords && !badData;++index)
+    for (int index=1;index<argc && !unknown && !help && !setupOnly && !thenPlay && !setupWords && !badData;++index)
         if (argv[index][0]=='-' && argv[index][1]) unknown=argv[index];
-    bool installed=argc==1 || setupOnly;
+    bool installed=argc==1 || setupOnly || thenPlay;
     if (help || setupOnly || setupWords) MwSdlPrepareNotices(false); /* Their answer is what they print. */
     if (!help && !setupWords && !unknown) MwSetupSettleUserFolder();
     /* Not for a start that is refused its arguments: too many, or an unknown option. */
-    if (!help && !unknown && argc<=3 && (argc==1 || argv[1][0]!='-')) MwSetupRecordProgram();
+    if (!help && !unknown && (thenPlay || (argc<=3 && (argc==1 || argv[1][0]!='-')))) MwSetupRecordProgram();
     if (!help && !setupOnly && !setupWords && !unknown)
     {
         /* No console when double-clicked: the log goes beside the saves. */
         char logPath[4200];
-        if (JoinWriteDirectory("mechwarrior.log",logPath,sizeof(logPath))) MwSdlOpenLog(logPath,argc==1);
+        if (JoinWriteDirectory("mechwarrior.log",logPath,sizeof(logPath))) MwSdlOpenLog(logPath,argc==1 || thenPlay);
     }
     if (badData) return Refuse(2,"--data needs a folder.");
-    if (help || setupWords || unknown || argc>3)
+    if (help || setupWords || unknown || (argc>3 && !thenPlay))
     {const char *name="mw1r";  /* the shipped program's name (an AppImage starts it as AppRun) */
     fprintf(help?stdout:stderr,"Usage: %s [<game folder> [existing capture directory]] [--support-pilot DIRECTORY | --no-support-pilot] [--data DIRECTORY]\n"
-        "       %s --status | --setup\n"
+        "       %s --status | --setup | --setup --then-play [<game folder before>]\n"
         "       %s --setup --describe | --search | --look PICK | --install PICK [--folder DIRECTORY]\n"
         "Without a game folder: the one remembered in the player's MechWarrior.ini or the player's own copy, else the\n"
         "setup (pick your copy, its folder or the archive it came in: it is copied beside the saves); the log and F12\n"
-        "captures then go beside the saves. --status prints what is found as JSON; --setup only sets the game up, with more words as the launcher asks it.\n"
+        "captures then go beside the saves. --status prints what is found as JSON; --setup only sets the game up, with more words as the launcher asks it;\n"
+        "--setup --then-play sets it up and plays, with the folder before if the setup is cancelled or fails.\n"
         "EGA; music= in MechWarrior.ini; arrows and Enter; Ctrl+Escape quits; F12 captures; F11 stops Support pilot;\n"
         "- and + change the combat speed; Shift+Alt+F1 (Cmd+Shift+F1 on a Mac) opens the setup menu over the game.\n",name,name,name);
     if (unknown) return Refuse(2,std::string("It was started with an option it doesn't know: ")+unknown+". --help lists what it knows.");
@@ -149,7 +154,20 @@ int main(int argc,char **argv)
     {
         /* F12 captures go beside the saves too. */
         if (!MwSdlResolveWriteDirectory(captures,sizeof(captures))) return Refuse(1,"The folder for saves can't be made: "+Because());
-        int ready=MwSetupResolveGame(setupOnly,installedFolder,sizeof(installedFolder));
+        int ready=MwSetupResolveGame(thenPlay?MW_SETUP_THEN_PLAY:setupOnly?MW_SETUP_ONLY:MW_SETUP_PLAY,
+            installedFolder,sizeof(installedFolder));
+        if (thenPlay && ready)
+        {
+            /* Not set up again: the game goes on with the files it had. */
+            printf("setup: %s; the game starts with the files it had\n",ready==1?"cancelled":"failed");
+            if (formerFolder && strlen(formerFolder)<sizeof(installedFolder))
+            {
+                strcpy(installedFolder,formerFolder);ready=0;
+                printf("setup: game files %s\n",installedFolder);
+            }
+            else ready=MwSetupResolveGame(MW_SETUP_PLAY,installedFolder,sizeof(installedFolder));
+            fflush(stdout);
+        }
         if (setupOnly || ready)
         {
             /* The setup has printed why; 1 is the player's own cancel. */

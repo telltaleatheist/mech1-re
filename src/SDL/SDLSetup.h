@@ -30,10 +30,16 @@ void MwSetupRecordProgram(void);
 /* The game folder a start plays from, into `folder`: the remembered one, the
  * player's own install, else the setup (the player picks a copy, a folder or
  * an archive, which is copied into the player's folder). `setupOnly`: the
- * setup whatever is found (--setup). Returns the launcher contract's exit:
- * 0 ready, 1 the player cancelled, 2 failed (with --setup the reason goes to
- * stdout as {"error": ...}). */
-int MwSetupResolveGame(bool setupOnly,char *folder,size_t size);
+ * setup whatever is found. Returns the launcher contract's exit: 0 ready,
+ * 1 the player cancelled, 2 failed (with --setup the reason goes to stdout as
+ * {"error": ...}). */
+enum MwSetupMode
+{
+    MW_SETUP_PLAY,      /* a start: the setup only when nothing is found */
+    MW_SETUP_ONLY,      /* --setup: the setup, nothing played (the launcher's) */
+    MW_SETUP_THEN_PLAY  /* --setup --then-play: the setup, then the game (the menu's CHANGE) */
+};
+int MwSetupResolveGame(MwSetupMode mode,char *folder,size_t size);
 /* MW1's recipe for the kit's setup screen, for a fresh setup of the player's folder `user` (tests/setup_download_test.cpp). */
 rekit::sdl::Game MwSetupKitGame(const std::string &user);
 /* MW1's part of the kit's menu over the game (SDLMenu.h): its words, the player's folder, the log, the file check,

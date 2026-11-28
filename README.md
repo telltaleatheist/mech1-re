@@ -51,7 +51,8 @@ Arrows and Enter work the menus. In combat:
 
 F12 saves a screenshot beside your saves, and Ctrl+Escape quits. Shift+Alt+F1 (Cmd+Shift+F1 on a Mac) opens a menu
 over the game, which waits meanwhile: the game files in use, updates, a check of the files, reset settings, the data
-folder and where to report a problem; Esc goes back. Up to two game controllers work as the original's
+folder and where to report a problem; Esc goes back. On Windows, if the keyboard-layout hotkey Alt+Shift is
+turned on, those keys may also switch the layout. Up to two game controllers work as the original's
 joysticks. The window can be made any size, and the picture fills it at 16:10
 ([docs/WINDOW.md](docs/WINDOW.md)).
 

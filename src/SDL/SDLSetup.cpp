@@ -434,13 +434,14 @@ int MwSetupServe(int count, char** words) {
   }
 }
 
-int MwSetupResolveGame(bool setupOnly, char* folder, size_t size) {
+int MwSetupResolveGame(MwSetupMode mode, char* folder, size_t size) {
   rekit::sdl::unattended() = [] { return unattended(); };
+  const bool setupOnly = mode == MW_SETUP_ONLY;  // its errors go to the launcher as JSON; no PLAY on the screen
   const std::string user = setup::user_folder();
   std::string game;
   bool searched = false;
   const std::string found = setup::find_install(mwSdlGameFolder, user, program_dir(), &searched);
-  if (!setupOnly && !found.empty() && !searched) game = found;
+  if (mode == MW_SETUP_PLAY && !found.empty() && !searched) game = found;
   // A test's stand-in for the player's pick: walked and copied in with no screen.
   if (const char* scripted = std::getenv("MECHWARRIOR_SETUP_PICK"); game.empty() && scripted) {
     std::string why;

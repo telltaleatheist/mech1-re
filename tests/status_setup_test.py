@@ -46,6 +46,28 @@ def run(program, args, env, timeout=60):
     return p, time.monotonic() - t
 
 
+def then_play(program, args, env, timeout=60):
+    """--setup --then-play (the menu's CHANGE): it plays once the setup is done, so it is stopped once its log, beside
+    the saves, names the game files it plays from (or it has ended). The log's lines."""
+    log = os.path.join(env["MECHWARRIOR_SAVE_DIRECTORY"], "mechwarrior.log")
+    if os.path.exists(log):
+        os.remove(log)
+    p = subprocess.Popen([program, "--setup", "--then-play"] + args, env=env, stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL)
+    end = time.monotonic() + timeout
+    lines = []
+    while time.monotonic() < end:
+        done = p.poll() is not None
+        lines = open(log, errors="replace").read().splitlines() if os.path.exists(log) else []
+        if done or any(l.startswith("setup: game files ") for l in lines):
+            break
+        time.sleep(0.2)
+    if p.poll() is None:
+        p.kill()
+    p.wait()
+    return open(log, errors="replace").read().splitlines() if os.path.exists(log) else lines
+
+
 def find_any_case(folder, name):
     for f in os.listdir(folder):
         if f.lower() == name.lower():
@@ -253,6 +275,28 @@ def main():
         p, _ = run(a.program, ["--setup"], again)
         check(p.returncode == 0 and "Those are the files in use" not in p.stdout and
               os.path.normpath(install) in os.path.normpath(open(ini).read()), "the player's own copy, picked: switched to (%d)" % p.returncode)
+
+        # The menu's CHANGE: --setup --then-play, the files in use after it. Set up again: the game plays the new
+        # files; cancelled or failed: the ones it had (that folder, else the remembered one).
+        play = dict(env, **alone, SDL_AUDIO_DRIVER="dummy")
+        had = "setup: game files " + install
+        out = then_play(a.program, [install], play)
+        check("setup: cancelled; the game starts with the files it had" in out and had in out,
+              "then-play, cancelled (no player): the game starts with the files it had")
+        out = then_play(a.program, [install], dict(play, MECHWARRIOR_SETUP_PICK=os.path.join(notgame, "README.TXT")))
+        check("setup: failed; the game starts with the files it had" in out and had in out,
+              "then-play, a pick that isn't the game: the game starts with the files it had")
+        out = then_play(a.program, [], play)
+        check("setup: cancelled; the game starts with the files it had" in out and had in out,
+              "then-play with no folder given, cancelled: the remembered folder")
+        text = open(ini).read()
+        open(ini, "w").write(re.sub(r"(?m)^game_folder=.*$", lambda m: "game_folder=" + pick, text))
+        out = then_play(a.program, [pick], dict(again, SDL_AUDIO_DRIVER="dummy"))
+        check(had in out and not any("the files it had" in l for l in out) and
+              os.path.normpath(install) in os.path.normpath(open(ini).read()),
+              "then-play, another copy picked on the screen: the game starts with it, remembered")
+        p, _ = run(a.program, ["--setup", "--then-play", install, "more"], env)
+        check(p.returncode == 2 and "more arguments than it knows" in p.stderr, "then-play with more words: refused (%d)" % p.returncode)
 
         # The same copy through the setup screen (hidden): found, offered, installed; and into a picked folder.
         user = os.path.join(work, "user-c")
