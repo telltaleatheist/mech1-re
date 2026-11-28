@@ -393,7 +393,9 @@ def require_libraries(folder, sdl_name):
 def stage_common(root, build, sdl, resources):
     """The configuration, our data, the read-me and the notices, into `resources`
     (beside the program, or a Mac app's Contents/Resources)."""
-    for source in [root / "LICENSE", root / "MechWarrior.ini"]:
+    # setup-kit-settings.json: the setup kit's settings for this game (its report page, its catalogs), where the kit
+    # looks (the program's folder: SDL_GetBasePath), before the files record lists it.
+    for source in [root / "LICENSE", root / "MechWarrior.ini", root / "setup-kit-settings.json"]:
         shutil.copy2(source, resources / source.name)
     stage_data(root, resources)
     notices = resources / "licenses"
@@ -640,7 +642,8 @@ def appimage(root, stage, output, label, tools, game, sdl):
     bin_dir.mkdir(parents=True)
     doc.mkdir(parents=True)
     shutil.copy2(stage / PROGRAM, bin_dir / PROGRAM)
-    shutil.copy2(stage / "MechWarrior.ini", bin_dir / "MechWarrior.ini")
+    for name in ("MechWarrior.ini", "setup-kit-settings.json"):
+        shutil.copy2(stage / name, bin_dir / name)
     shutil.copytree(stage / "data", bin_dir / "data")
     for name in ("LICENSE", "README.txt"):
         shutil.copy2(stage / name, doc / name)

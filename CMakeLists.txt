@@ -525,7 +525,10 @@ if(MECHWARRIOR_BUILD_SDL)
     # copied on every build so an edited file is picked up.
     add_custom_target(mechwarrior_data ALL
         COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/data" "$<TARGET_FILE_DIR:mechwarrior>/data"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${MECHWARRIOR_SOUNDFONT}" "$<TARGET_FILE_DIR:mechwarrior>/data/music")
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${MECHWARRIOR_SOUNDFONT}" "$<TARGET_FILE_DIR:mechwarrior>/data/music"
+        # The setup kit's settings for this game (its report page and catalogs), where the kit looks: beside the program.
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/setup-kit-settings.json"
+            "$<TARGET_FILE_DIR:mechwarrior>/setup-kit-settings.json")
     add_dependencies(mechwarrior_data mechwarrior_soundfont)
     add_dependencies(mechwarrior mechwarrior_data)
     if(TARGET SDL3::SDL3-shared)

@@ -21,6 +21,7 @@
 #include <archive_entry.h>
 #endif
 
+#include <algorithm>
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
@@ -118,6 +119,22 @@ void recipe(const fs::path& work) {
         "the recipe checks the catalog's signature against the launcher's key");
   check(g.original_key == "mw1r", "the recipe's entry is the Rebuild's (mw1r), not the Remake's (mw1)");
   check(g.version == setup::build_tag(), "the recipe's version is the build's release tag (\"" + g.version + "\")");
+  // What an update backs up, as the folder is at backup time: a game saved after the start is in it.
+  const fs::path user = work / "user";
+  fs::create_directories(user);
+  std::ofstream(user / "SLOT1.GAM") << "x";
+  const std::string ini = (user / "MechWarrior.ini").string();
+  std::vector<std::string> keep = MwSetupBackupList(user.string(), ini);
+  std::ofstream(user / "later.gam") << "x";
+  std::ofstream(user / "notes.txt") << "x";
+  const std::vector<std::string> now = MwSetupBackupList(user.string(), ini);
+  const auto holds = [](const std::vector<std::string>& v, const fs::path& p) {
+    return std::find(v.begin(), v.end(), p.string()) != v.end();
+  };
+  check(keep.size() == 3 && holds(keep, user / "SLOT1.GAM") && holds(keep, user / "story") && holds(keep, ini),
+        "the backup list: the saves, the story, the settings");
+  check(now.size() == 4 && holds(now, user / "later.gam") && !holds(now, user / "notes.txt"),
+        "asked again: the game saved since is in it, nothing else");
 }
 
 #if REKIT_HAVE_LIBARCHIVE

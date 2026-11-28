@@ -16,7 +16,7 @@ from build_package import background_app
 @unittest.skipIf(os.name == "nt", "Native Linux archive layout test")
 class PackageTests(unittest.TestCase):
     def fixture(self, root):
-        for name in ["LICENSE", "MechWarrior.ini", "docs/LICENSES/MIT.txt", "docs/NOTICE.md",
+        for name in ["LICENSE", "MechWarrior.ini", "setup-kit-settings.json", "docs/LICENSES/MIT.txt", "docs/NOTICE.md",
                      "docs/THIRD_PARTY_NOTICES.md", "sdl/LICENSE.txt", "sdl/src/hidapi/LICENSE-bsd.txt",
                      "data/rules/units.json", "data/ui/hub.json", "data/music/soundfont_programs.txt", "extern/re-setup-kit/LICENSE",
                      "extern/re-setup-kit/third_party/stb/LICENSE", "extern/re-setup-kit/third_party/miniz/LICENSE",
@@ -75,6 +75,7 @@ class PackageTests(unittest.TestCase):
             record = (extracted / build_package.FILES_RECORD).read_text(encoding="utf-8")
             self.assertIn("  mw1r\n", record)
             self.assertIn("  data/rules/units.json\n", record)
+            self.assertIn("  setup-kit-settings.json\n", record)  # the kit's settings beside the program, in the record
             self.assertNotIn(build_package.FILES_RECORD, record)
             self.assertTrue((extracted / "licenses/hidapi-LICENSE-bsd.txt").exists())
             for name in ["libarchive-COPYING", "zlib-LICENSE", "xz-COPYING", "xz-COPYING.0BSD"]:
@@ -531,7 +532,7 @@ class FolderToolTests(unittest.TestCase):
         self.assertGreater(len(played), 100)
         others = ["MW.EXE", "MW_MAIN.EXE", "MW_TANDY.EXE", "MW_CPICS.EXE", "BTECH.EXE", "BIG.GAM", "DATA.DEF",
                   "import.json", "text.json", "words.json", "event_text.json", "missions.json", "native.json", "pilots.json", "planets.json"]
-        ours = ["mw1r", "mw1r.exe", "SDL3.dll", "libSDL3.so.0", "events.json", "units.json", "FluidR3_GM-subset.sf2", "MechWarrior.ini",
+        ours = ["mw1r", "mw1r.exe", "SDL3.dll", "libSDL3.so.0", "events.json", "units.json", "FluidR3_GM-subset.sf2", "MechWarrior.ini", "setup-kit-settings.json",
                 "SairaCondensed-Bold.ttf", "badge.png", "mechwarrior.icns", "README.txt", "soundfont_subset.sha256", "CodeResources"]
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory) / "package" / "data" / "deeper"

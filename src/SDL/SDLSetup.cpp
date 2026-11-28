@@ -337,14 +337,7 @@ rekit::sdl::MenuHooks menu_hooks(const std::string& game) {
   u.recipe = {setup::kOriginalKey, "mech1-re", "mw1r-v", setup::build_tag(), release_file(h.install)};
   u.catalogs.assign(std::begin(setup::kOriginalCatalogs), std::end(setup::kOriginalCatalogs));
   u.keys = {setup::kCatalogKey};
-  std::error_code ec;
-  for (fs::directory_iterator it(user, ec), end; !ec && it != end; it.increment(ec)) {
-    std::string ext = it->path().extension().string();
-    for (char& c : ext) c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
-    if (ext == ".GAM" && it->is_regular_file(ec)) u.keep.push_back(it->path().string());
-  }
-  u.keep.push_back((fs::path(user) / "story").string());
-  if (!settings.empty()) u.keep.push_back(settings);
+  u.keep_now = [user, settings] { return MwSetupBackupList(user, settings); };  // at backup time: today's saves too
   return h;
 }
 
@@ -353,6 +346,20 @@ rekit::sdl::MenuHooks menu_hooks(const std::string& game) {
 MwSdlMenuRecipe MwSetupMenuRecipe(void) { return MwSdlMenuRecipe{menu_hooks, theme}; }
 
 rekit::sdl::Game MwSetupKitGame(const std::string& user) { return kit_game(user, "", false); }
+
+std::vector<std::string> MwSetupBackupList(const std::string& user, const std::string& settings) {
+  namespace fs = std::filesystem;
+  std::vector<std::string> keep;
+  std::error_code ec;
+  for (fs::directory_iterator it(user, ec), end; !ec && it != end; it.increment(ec)) {
+    std::string ext = it->path().extension().string();
+    for (char& c : ext) c = static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+    if (ext == ".GAM" && it->is_regular_file(ec)) keep.push_back(it->path().string());
+  }
+  keep.push_back((fs::path(user) / "story").string());
+  if (!settings.empty()) keep.push_back(settings);
+  return keep;
+}
 
 bool MwSetupUnattended(void) { return unattended(); }
 

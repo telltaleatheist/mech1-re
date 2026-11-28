@@ -6,6 +6,7 @@
 #include <rekit/sdl/setup_screen.h>
 #include "SDLMenu.h"
 #include <string>
+#include <vector>
 
 /* --status: one JSON line on stdout, exit 0; no window, nothing written. */
 int MwSetupPrintStatus(void);
@@ -42,6 +43,9 @@ enum MwSetupMode
 int MwSetupResolveGame(MwSetupMode mode,char *folder,size_t size);
 /* MW1's recipe for the kit's setup screen, for a fresh setup of the player's folder `user` (tests/setup_download_test.cpp). */
 rekit::sdl::Game MwSetupKitGame(const std::string &user);
+/* What an update backs up first, as the player's folder `user` holds it now: the saved games (*.GAM), the story and
+ * the settings file `settings` ("" none). The menu's UPDATES asks it at backup time (UpdateSource::keep_now). */
+std::vector<std::string> MwSetupBackupList(const std::string &user,const std::string &settings);
 /* MW1's part of the kit's menu over the game (SDLMenu.h): its words, the player's folder, the log, the file check,
  * RESET SETTINGS and UPDATES. */
 MwSdlMenuRecipe MwSetupMenuRecipe(void);
