@@ -21,6 +21,12 @@ patched copy. It is unofficial and free, and not affiliated with or endorsed by 
   - **Report a problem**: the page to report it on, and the log to attach (open it, or copy its path).
   - **Open my data folder**: the folder that holds your saves, settings and log.
 - On Windows, if your keyboard-layout hotkey Alt+Shift is turned on, the menu's keys may also switch the layout.
+- **The first start sets itself up.** A copy of the game found on your computer is checked and copied in at once, in a
+  small window, with no question. If the check finds something to say, such as the one damaged file this project knows
+  of, it shows that first. With no copy found, the download of the 1990-01-22 revision starts at once in the same small
+  window: from the BattleTech launcher's signed list, only the exact file the list names, and going on from where it
+  stopped if it breaks off. CANCEL and USE MY OWN COPY INSTEAD are there all along. A failure or a cancel opens the setup
+  window, where you pick a copy yourself or start the download again.
 
 Nothing in the game itself has changed. Your saves, settings and copied game stay as they are.
 
@@ -38,11 +44,11 @@ Nothing in the game itself has changed. Your saves, settings and copied game sta
 
 ## Bring your own copy of the game
 
-None of the game's files are in these downloads. You need your own copy of MechWarrior for DOS: the 1989 release or the
-one of 1990-01-22. The first start looks for it on your computer, or asks you to pick its `BTECH.EXE`, any file in its
-folder, or the archive it came in, then copies it into the rebuild's own folder. Your copy is never changed. If files are
-missing, damaged or unlike the ones this project knows, it says so first. If none is found, it offers to download the
-1990-01-22 revision from the BattleTech launcher's own signed list.
+None of the game's files are in these downloads. The game needs a copy of MechWarrior for DOS: the 1989 release or the
+one of 1990-01-22. The first start looks for one on your computer and copies it into the rebuild's own folder. If files
+are missing, damaged or unlike the ones this project knows, it says so first. If none is found, it downloads the
+1990-01-22 revision (above). You can instead pick your own copy: its `BTECH.EXE`, any file in its folder, or the archive
+it came in. Your copy is never changed.
 
 The BattleTech launcher (1.5.0 or later) can install, set up and start the game too.
 
@@ -52,7 +58,7 @@ The BattleTech launcher (1.5.0 or later) can install, set up and start the game 
   `MW1-Rebuild-mw1r-v1.1.0-win64.zip` is the same program to unpack anywhere and run `mw1r.exe`. Neither is signed, so
   Windows may warn first: choose "More info", then "Run anyway".
 - **macOS 12 or later (Apple silicon and Intel):** `MW1-Rebuild-mw1r-v1.1.0-mac.dmg`. Open it and drag MechWarrior 1
-  Rebuild to Applications.
+  Rebuild to Applications. The app is signed and notarized, so it opens like any other app.
 - **Linux (x86-64; needs glibc 2.38 or later and GCC 13's libstdc++; tested on Ubuntu 24.04):**
   `MW1-Rebuild-mw1r-v1.1.0-x86_64.AppImage`: make it executable and run it. An AppImage needs FUSE's `fusermount`; on a
   system without it, start it with `APPIMAGE_EXTRACT_AND_RUN=1` set. `MW1-Rebuild-mw1r-v1.1.0-linux-x86_64.tar.gz` is the
@@ -82,8 +88,8 @@ Nobody has gone through these yet. Automated tests and recorded runs check parts
 - A real reset or loss of a graphics device. The tests send what SDL would say, and refuse to draw.
 - The message box that says why a start was refused: its text was checked, the box was not seen.
 - Setting the game up on the launcher's screens.
-- The download of the original files on the setup screen. It has been tested with the launcher's own file and with a test
-  list, not yet by a player.
+- The first start's download of the original files. It has been tested with the launcher's own file and with a test list,
+  not yet by a player.
 - The menu over the game on a real screen, and its keys on real keyboards. It was tested on hidden windows, with its keys
   sent by the tests.
 - Updating from the menu. The setup kit's own tests run its download, backup and swap with test releases; no real
