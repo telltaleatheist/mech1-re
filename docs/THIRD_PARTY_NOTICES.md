@@ -33,11 +33,7 @@ inflate (MIT) and Monocypher (CC0 or BSD 2-clause, for the signed catalog and
 updates); their licences are in the kit's `third_party` folders and are copied
 into the package's `licenses` folder. The kit's own text is Saira Condensed
 Bold and Medium (SIL Open Font License 1.1), built into the program; its
-licence is the package's `licenses/re-setup-kit-OFL.txt`. The setup screen's
-face is Saira Condensed Bold (SIL Open Font License 1.1, "Saira" a reserved
-name), unchanged from github.com/google/fonts `ofl/sairacondensed` at
-`06bfe0d62a98375cb09c942fa18e68bd32cff057`; it ships with its licence in
-`data/setup`.
+licence is the package's `licenses/re-setup-kit-OFL.txt`.
 
 The Linux AppImage starts with the type-2 AppImage runtime (release 20251108,
 pinned), a separate program with libfuse (LGPL 2.1) and other libraries linked

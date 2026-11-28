@@ -208,8 +208,8 @@ def main():
           "the screen's log: the files screen (no copy found), MW1's header")
     check("setup: the file picker asked for" in out and not any(l.startswith("setup: screen confirm") for l in out),
           "break: not the game, not offered")
-    check(any(l.startswith("setup: font ") and l.endswith("SairaCondensed-Bold.ttf") for l in out),
-          "the theme's face read")
+    check("setup: font the kit's Saira Condensed Bold" in out and not any("not used" in l for l in out),
+          "the kit's face, and no theme item of MW1's left unused")
     check(not os.path.exists(os.path.join(user, "install")), "break: nothing installed from the screen either")
     kit_words = "No copy of MechWarrior 1 was found in"
     check(any(kit_words in l for l in out), "break: no recognise answer: the kit's sentence")

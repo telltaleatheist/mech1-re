@@ -24,8 +24,8 @@ and data belong to their rights holders. Nothing of the game is in the packages.
 | miniz's inflate, in the kit | yes | yes | yes | yes | MIT |
 | TinySoundFont | yes | yes | yes | yes | MIT |
 | FluidR3 GM 3.1, a subset cut at build time | yes | yes | yes | yes | MIT (copyright Frank Wen) |
-| Saira Condensed Bold, the setup screen's face | yes | yes | yes | yes | SIL OFL 1.1 (reserved name "Saira") |
-| The badge, the program's icon | yes | yes | yes | yes | the MW1 remake's own, used with leave; no trademark rights |
+| Saira Condensed Bold and Medium, the setup kit's faces, built into the program | yes | yes | yes | yes | SIL OFL 1.1 (reserved name "Saira") |
+| The program's icon; the setup screens' badge (the launcher's medallion) | yes | yes | yes | yes | the MW1 remake's own, used with leave; no trademark rights |
 | Microsoft Visual C++ runtime: three DLLs | yes | no | no | no | Microsoft redistributable, as its licence allows |
 | Inno Setup's installer code in Setup.exe | yes | no | no | no | Inno Setup's licence, which allows distributing installers it makes |
 | AppImage runtime (type 2, release 20251108) | no | no | no | yes | MIT |

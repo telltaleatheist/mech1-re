@@ -533,7 +533,7 @@ class FolderToolTests(unittest.TestCase):
         others = ["MW.EXE", "MW_MAIN.EXE", "MW_TANDY.EXE", "MW_CPICS.EXE", "BTECH.EXE", "BIG.GAM", "DATA.DEF",
                   "import.json", "text.json", "words.json", "event_text.json", "missions.json", "native.json", "pilots.json", "planets.json"]
         ours = ["mw1r", "mw1r.exe", "SDL3.dll", "libSDL3.so.0", "events.json", "units.json", "FluidR3_GM-subset.sf2", "MechWarrior.ini", "setup-kit-settings.json",
-                "SairaCondensed-Bold.ttf", "badge.png", "mechwarrior.icns", "README.txt", "soundfont_subset.sha256", "CodeResources"]
+                "badge.png", "mechwarrior.icns", "README.txt", "soundfont_subset.sha256", "CodeResources"]
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory) / "package" / "data" / "deeper"
             folder.mkdir(parents=True)

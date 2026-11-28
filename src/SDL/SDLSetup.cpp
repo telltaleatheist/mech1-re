@@ -97,18 +97,13 @@ std::string describe(const rekit::Found& f, bool imported, std::FILE* log) {
   return std::string(f.on_disk ? "An installed copy of " : "A download of ") + setup::kTitle + what + ".";
 }
 
-// MW1's look on the kit's screen: the rebuild's badge, its screens' face (Saira Condensed Bold, SIL OFL, beside it
-// in data/setup) and colours. Nothing in it is the original game's.
+// MW1 on the kit's screens: its title and the rebuild's badge (data/setup). The look is the kit's, the same in every
+// game (re-setup-kit one_look). Nothing in it is the original game's.
 rekit::sdl::Theme theme() {
   rekit::sdl::Theme t;
   const std::filesystem::path setup = std::filesystem::path(MwSdlDataDirectory()) / "setup";
   t.header = "MECHWARRIOR 1";
-  t.font = (setup / "SairaCondensed-Bold.ttf").string();
   t.badge = (setup / "badge.png").string();
-  t.bg = {10, 11, 13, 255}, t.band_colour = {24, 26, 30, 255}, t.rule = {255, 176, 64, 255};
-  t.text = {233, 236, 238, 255}, t.dim = {150, 156, 162, 255}, t.accent = {255, 176, 64, 255};
-  t.plate_colour = {52, 56, 62, 255}, t.plate_off = {34, 36, 40, 255};
-  t.good = {255, 176, 64, 255}, t.bad = {240, 150, 130, 255};
   return t;
 }
 
