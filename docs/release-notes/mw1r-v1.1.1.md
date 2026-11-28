@@ -9,8 +9,8 @@ game and a first start that sets itself up. The game itself plays as in 1.0.2.
 ## New in 1.1.1
 
 - **Updating from the menu now works for the Windows zip.** A copy unpacked from the zip and started from its own folder
-  now puts the new version in place and starts it again, also when that folder is at the top of a drive. If you play the
-  Windows zip of 1.1.0, download this version by hand once; after that, updates work from the menu.
+  now puts the new version in place and starts it again. If you play the Windows zip of 1.1.0, download this version by
+  hand once; after that, updates work from the menu.
 - **A found update is a small notice in the corner.** "UPDATE AVAILABLE" and the version show in the corner for a few
   seconds, without stopping the game or covering it. Press the menu's keys (Shift+Alt+F1, Cmd+Shift+F1 on a Mac) to see
   the update and start it.
@@ -107,8 +107,8 @@ Nobody has gone through these yet. Automated tests and recorded runs check parts
   not yet by a player.
 - The menu over the game on a real screen, and its keys on real keyboards. It was tested on hidden windows, with its keys
   sent by the tests.
-- Updating from the menu. The setup kit's own tests run its download, backup and swap with test releases; no real
-  release has been updated to yet, by a player or a test.
+- Updating from the menu with a real release. The same updater has been tried on Windows (zip and installer) with
+  Inception Rebuild's releases; on a Mac and on Linux it has not yet been tried with a real release.
 
 Please report anything that looks or sounds wrong.
 
