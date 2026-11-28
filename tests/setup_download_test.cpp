@@ -75,13 +75,15 @@ bool make_zip(const fs::path& out, const std::vector<std::pair<std::string, std:
   return true;
 }
 
-// A file:// address for `p`, percent-encoded, so a checkout's path may hold a space.
+// A file:/// address for `p` ("file:///E:/..." on Windows, as the kit takes one in a test run), percent-encoded, so a
+// checkout's path may hold a space.
 std::string file_url(const fs::path& p) {
   static const char* hex = "0123456789ABCDEF";
-  std::string url = "file://";
-  for (const char ch : p.generic_string()) {
+  const std::string path = p.generic_string();
+  std::string url = path.rfind('/', 0) == 0 ? "file://" : "file:///";
+  for (const char ch : path) {
     const auto c = static_cast<unsigned char>(ch);
-    if (std::isalnum(c) || std::strchr("/-._~", c)) {
+    if (std::isalnum(c) || std::strchr("/-._~:", c)) {
       url += ch;
     } else {
       url += '%';
