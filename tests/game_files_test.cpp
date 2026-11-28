@@ -6,6 +6,7 @@
 #include "mechwarrior/game_files.h"
 
 #include <algorithm>
+#include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <filesystem>
@@ -167,6 +168,8 @@ void Guard(const std::string &self) {
 
 int main(int argc, char **argv) {
   if (argc == 3 && std::string(argv[1]) == "--open-program") {
+    // The stop is an abort(); this child ends with 3 instead, so the system writes no crash report for it.
+    std::signal(SIGABRT, [](int) { std::_Exit(3); });
     (void)find_game_file(".", argv[2], "game_files_test");
     return 0;
   }
